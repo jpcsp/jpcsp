@@ -17,7 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 public class GeneralJpcspException extends Exception {
-    public GeneralJpcspException(String msg){
+	private static final long serialVersionUID = 1L;
+
+	public GeneralJpcspException(String msg){
         super(msg);
     }
 }

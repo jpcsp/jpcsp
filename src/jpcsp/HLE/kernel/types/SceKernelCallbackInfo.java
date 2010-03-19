@@ -22,7 +22,6 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.util.Utilities;
 
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 

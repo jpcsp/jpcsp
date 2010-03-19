@@ -22,7 +22,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLECallback;
 import jpcsp.HLE.pspSysMem;

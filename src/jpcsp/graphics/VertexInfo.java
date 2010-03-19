@@ -210,8 +210,7 @@ public class VertexInfo {
             int u10 = mem.read8(addr + 10);
             int u11 = mem.read8(addr + 11);
             int u12 = mem.read8(addr + 12);
-            VideoEngine.log.debug("vertex "
-                + String.format("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",
+            VideoEngine.log.debug("vertex " + String.format("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",
                     u0, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12));
         }
         

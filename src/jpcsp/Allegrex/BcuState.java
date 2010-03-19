@@ -5,7 +5,6 @@
 
 package jpcsp.Allegrex;
 
-import jpcsp.Allegrex.*;
 import jpcsp.Emulator;
 import jpcsp.Processor;
 

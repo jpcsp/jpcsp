@@ -17,13 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.util.Utilities;
 
 public class SceKernelVplInfo {

@@ -1,7 +1,6 @@
 package jpcsp.Allegrex;
 
 import jpcsp.Allegrex.Common.*;
-import jpcsp.Allegrex.Instructions.*;
 
 public class Decoder {
 

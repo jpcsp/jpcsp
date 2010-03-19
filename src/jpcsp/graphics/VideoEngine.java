@@ -4868,10 +4868,8 @@ public class VideoEngine {
                 gl.glUniform1f(Uniforms.zPos.getId(), zpos);
                 gl.glUniform1f(Uniforms.zScale.getId(), zscale);
             }
-
-            // TODO I don't know why, but the GL_MODELVIEW matrix has to be reloaded
-            // each time in 2D mode... Otherwise textures are not displayed.
-        	modelMatrixChanged = true;
+            // TODO
+            modelMatrixChanged = true;
         }
         projectionMatrixChanged = false;
 
