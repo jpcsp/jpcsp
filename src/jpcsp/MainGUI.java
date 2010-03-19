@@ -196,6 +196,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Lithuanian = new javax.swing.JMenuItem();
         Spanish = new javax.swing.JMenuItem();
         Catalan = new javax.swing.JMenuItem();
+        PortugueseBR = new javax.swing.JMenuItem();
         Portuguese = new javax.swing.JMenuItem();
         Japanese = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
@@ -536,6 +537,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         LanguageMenu.add(Catalan);
+
+        PortugueseBR.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_BR.png"))); // NOI18N
+        PortugueseBR.setText(Resource.get("portuguesebr"));
+        PortugueseBR.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PortugueseBRActionPerformed(evt);
+            }
+        });
+        LanguageMenu.add(PortugueseBR);
 
         Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT.png"))); // NOI18N
         Portuguese.setText(Resource.get("portuguese"));
@@ -1326,6 +1336,10 @@ private void JapaneseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 changeLanguage("jp_JP");
 }//GEN-LAST:event_JapaneseActionPerformed
 
+private void PortugueseBRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PortugueseBRActionPerformed
+changeLanguage("pt_BR");
+}//GEN-LAST:event_PortugueseBRActionPerformed
+
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1496,6 +1510,7 @@ private void processArgs(String[] args) {
     private javax.swing.JToggleButton PauseButton;
     private javax.swing.JMenuItem PauseEmu;
     private javax.swing.JMenuItem Portuguese;
+    private javax.swing.JMenuItem PortugueseBR;
     private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetEmu;
