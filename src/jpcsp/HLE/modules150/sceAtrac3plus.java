@@ -191,8 +191,9 @@ public class sceAtrac3plus implements HLEModule {
         Modules.log.warn("Skipping:sceAtracSetDataAndGetID buffer = 0x" + Integer.toHexString(buffer)
                 + " bufferSize = 0x" + Integer.toHexString(bufferSize));
 
-        mem.write32(buffer, 0x0000);
-        mem.write32(bufferSize, 0x4000);
+        if (mem.isAddressGood(buffer)) {
+        	mem.write32(buffer, 0x0000);
+        }
 
         cpu.gpr[2] = 0;
     }
