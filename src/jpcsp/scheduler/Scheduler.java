@@ -37,7 +37,7 @@ public class Scheduler {
 		return instance;
 	}
 
-	public void reset() {
+	public synchronized void reset() {
 		actions = new LinkedList<SchedulerAction>();
 		nextAction = null;
 	}
@@ -62,12 +62,19 @@ public class Scheduler {
 		updateNextAction(schedulerAction);
 	}
 
-	public void addAction(long schedule, IAction action) {
+	/**
+	 * Add a new action to the Scheduler.
+	 * This method has to be thread-safe.
+	 *
+	 * @param schedule	microTime when the action has to be executed. 0 for now.
+	 * @param action	action to be executed on the defined schedule.
+	 */
+	public synchronized void addAction(long schedule, IAction action) {
 		SchedulerAction schedulerAction = new SchedulerAction(schedule, action);
 		addSchedulerAction(schedulerAction);
 	}
 
-	public void removeAction(long schedule, IAction action) {
+	public synchronized void removeAction(long schedule, IAction action) {
 		for (ListIterator<SchedulerAction> lit = actions.listIterator(); lit.hasNext(); ) {
 			SchedulerAction schedulerAction = lit.next();
 			if (schedulerAction.getSchedule() == schedule && schedulerAction.getAction() == action) {

@@ -26,6 +26,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import javax.media.opengl.DebugGL;
 import java.nio.IntBuffer;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.io.*;
 import javax.imageio.*;
 import javax.media.opengl.GL;
@@ -39,8 +41,11 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.State;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.capture.CaptureManager;
+import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
@@ -141,6 +146,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private double averageFPS = 0.0;
 
     private long startVcount = 0;
+    private long lastVblankMicroTime;
+    private DisplayVblankAction displayVblankAction;
 
     // Texture state
     private float[] texRgbScale = new float[2];
@@ -149,6 +156,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int texStackIndex = 0;
 
     public DurationStatistics statistics;
+    public DurationStatistics statisticsCopyGeToMemory;
+    public DurationStatistics statisticsCopyMemoryToGe;
+
+    // Async Display
+    private AsyncDisplayThread asyncDisplayThread;
 
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
@@ -160,6 +172,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void Initialise() {
         statistics = new DurationStatistics("pspdisplay Statistics");
+        statisticsCopyGeToMemory = new DurationStatistics("Copy GE to Memory");
+        statisticsCopyMemoryToGe = new DurationStatistics("Copy Memory to GE");
 
         mode          = 0;
         width         = 480;
@@ -201,24 +215,39 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         averageFPS = 0.0;
 
         startVcount = Emulator.getClock().currentTimeMillis();
+
+    	if (asyncDisplayThread == null) {
+    		asyncDisplayThread = new AsyncDisplayThread(this);
+    		asyncDisplayThread.setDaemon(true);
+    		asyncDisplayThread.setName("Async Display Thread");
+    		asyncDisplayThread.start();
+    	}
+
+    	if (displayVblankAction == null) {
+    		displayVblankAction = new DisplayVblankAction();
+    		IntrManager.getInstance().addVBlankAction(displayVblankAction);
+    	}
     }
 
     public void exit() {
         if (statistics != null) {
             Modules.log.info("----------------------------- pspdisplay exit -----------------------------");
             Modules.log.info(statistics.toString());
+            Modules.log.info(statisticsCopyGeToMemory.toString());
+            Modules.log.info(statisticsCopyMemoryToGe.toString());
         }
     }
 
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
-        if (immediately || now - lastUpdate > 1000 / 60) {
+        if (immediately || now - lastUpdate > 1000 / 60 || geDirty) {
         	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists()) {
 	            if (geDirty || detailsDirty || displayDirty) {
-	                display();
                     detailsDirty = false;
-	                displayDirty = false;
-	                geDirty = false;
+                    displayDirty = false;
+                    geDirty = false;
+
+            		asyncDisplayThread.display();
 	            }
         	}
             lastUpdate = now;
@@ -319,6 +348,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             		VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", topaddrGe, bottomaddrGe));
             	}
 
+            	if (statisticsCopyGeToMemory != null) {
+            		statisticsCopyGeToMemory.start();
+            	}
+
             	// Set texFb as the current texture
                 gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
 
@@ -332,6 +365,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
                 copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
                 loadGEToScreen = true;
+
+            	if (statisticsCopyGeToMemory != null) {
+            		statisticsCopyGeToMemory.end();
+            	}
             }
 
             this.topaddrGe     = topaddr;
@@ -369,6 +406,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             		VideoEngine.log.debug(String.format("Reloading GE Memory (0x%08X-0x%08X) to screen (%dx%d)", topaddrGe, bottomaddrGe, widthGe, heightGe));
             	}
 
+            	if (statisticsCopyMemoryToGe != null) {
+            		statisticsCopyMemoryToGe.start();
+            	}
+
             	// Set texFb as the current texture
             	gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
 
@@ -385,7 +426,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 				// Draw the GE
 	            drawFrameBuffer(gl, false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 
-	            if (State.captureGeNextFrame) {
+            	if (statisticsCopyMemoryToGe != null) {
+            		statisticsCopyMemoryToGe.end();
+            	}
+
+            	if (State.captureGeNextFrame) {
 	            	captureGeImage(gl);
 	            }
             }
@@ -964,31 +1009,56 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayWaitVblankStart() {
-        // TODO: implement sceDisplayWaitVblankStart
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.getInstance().yieldCurrentThread();
+
+        // Block the current thread
+        ThreadMan threadMan = ThreadMan.getInstance();
+        int threadId = threadMan.getCurrentThreadID();
+        threadMan.blockCurrentThread();
+
+        // Add a Vblank action to unblock the thread
+        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
     }
 
     public void sceDisplayWaitVblankStartCB() {
-        // TODO: implement sceDisplayWaitVblankStartCB
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.getInstance().yieldCurrentThreadCB();
+
+        // Block the current thread
+        ThreadMan threadMan = ThreadMan.getInstance();
+        int threadId = threadMan.getCurrentThreadID();
+        threadMan.blockCurrentThreadCB();
+
+        // Add a Vblank action to unblock the thread
+        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
     }
 
-    /** Returns 0 or 1.
-     * 1 = something like sceDisplayWaitVblankStart was called before calling this but not exactly. */
+    private void hleVblankStart() {
+    	lastVblankMicroTime = Emulator.getClock().microTime();
+    }
+
+    private boolean isVblank() {
+    	// Test result: isVblank == true during 4.39% of the time
+    	// -> Vblank takes 731.5 micros at each vblank interrupt
+    	long nowMicroTime = Emulator.getClock().microTime();
+    	long microTimeSinceLastVblank = nowMicroTime - lastVblankMicroTime;
+
+    	return (microTimeSinceLastVblank <= 731);
+    }
+
     public void sceDisplayWaitVblank() {
-        // TODO: implement sceDisplayWaitVblank
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.getInstance().yieldCurrentThread();
+    	if (!isVblank()) {
+    		sceDisplayWaitVblankStart();
+    	}
     }
 
-    /** Returns 0 or 1.
-     * 1 = something like sceDisplayWaitVblankStart was called before calling this but not exactly. */
     public void sceDisplayWaitVblankCB() {
-        // TODO: implement sceDisplayWaitVblankCB
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.getInstance().yieldCurrentThreadCB();
+        if (!isVblank()) {
+        	sceDisplayWaitVblankStartCB();
+        }
     }
 
     public void sceDisplayGetCurrentHcount() {
@@ -1002,9 +1072,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayGetFramePerSec() {
-        // "return" whatever was already in v0
-        Modules.log.debug("sceDisplayGetFramePerSec ret:0x"
-            + Integer.toHexString(Emulator.getProcessor().cpu.gpr[2]));
+    	// Return float value in $f0
+    	Emulator.getProcessor().cpu.fpr[0] = 59.940060f;
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceDisplayGetFramePerSec ret: " + Emulator.getProcessor().cpu.fpr[0]);
+    	}
     }
 
     public boolean isGeAddress(int address) {
@@ -1175,4 +1247,62 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     	// Delete the GE texture
         gl.glDeleteTextures(1, textures, 0);
     }
+
+	private static class AsyncDisplayThread extends Thread {
+		private Semaphore displaySemaphore;
+		private pspdisplay display;
+		private boolean run;
+
+		public AsyncDisplayThread(pspdisplay display) {
+			this.display = display;
+			displaySemaphore = new Semaphore(1);
+			run = true;
+		}
+
+		@Override
+		public void run() {
+			while (run) {
+				waitForDisplay();
+				if (run) {
+		        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
+		        		display.display();
+		        	}
+				}
+			}
+		}
+
+		public void display() {
+			displaySemaphore.release();
+		}
+
+		private void waitForDisplay() {
+			while (true) {
+				try {
+					int availablePermits = displaySemaphore.drainPermits();
+					if (availablePermits > 0) {
+						break;
+					}
+
+					if (displaySemaphore.tryAcquire(100, TimeUnit.MILLISECONDS)) {
+						break;
+					} else {
+						//VideoEngine.log.info("Waiting for Display...");
+					}
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+
+		public void exit() {
+			run = false;
+			display();
+		}
+	}
+
+	private class DisplayVblankAction implements IAction {
+		@Override
+		public void execute() {
+			hleVblankStart();
+		}
+	}
 }

@@ -319,6 +319,14 @@ public class IntrManager {
 		return vblankInterruptHandler.removeVBlankAction(action);
 	}
 
+	public void addVBlankActionOnce(IAction action) {
+		vblankInterruptHandler.addVBlankActionOnce(action);
+	}
+
+	public boolean removeVBlankActionOnce(IAction action) {
+		return vblankInterruptHandler.removeVBlankActionOnce(action);
+	}
+
 	public int sceKernelRegisterSubIntrHandler(int intrNumber, int subIntrNumber, int handlerAddress, int handlerArgument) {
 		if (Modules.log.isDebugEnabled()) {
 			Modules.log.debug(String.format("sceKernelRegisterSubIntrHandler(%d, %d, 0x%08X, 0x%08X)", intrNumber, subIntrNumber, handlerAddress, handlerArgument));

@@ -37,14 +37,15 @@ public class CaptureList {
     private CaptureRAM listBuffer;
 
     public CaptureList(PspGeList list) throws Exception {
-        this.list = new PspGeList(list.list_addr, list.stall_addr, list.cbid, list.arg_addr);
+    	this.list = new PspGeList(list.id);
+    	this.list.init(list.list_addr, list.getStallAddr(), list.cbid, list.arg_addr);
 
-        if (list.stall_addr - list.list_addr == 0) {
+        if (list.getStallAddr() - list.list_addr == 0) {
             throw new Exception("Command list is empty");
         }
 
         int listSize = 0;
-        if (list.stall_addr == 0) {
+        if (list.getStallAddr() == 0) {
             // Scan list for END command
         	Memory mem = Memory.getInstance();
         	for (int listPc = list.list_addr; mem.isAddressGood(listPc); listPc += 4) {
@@ -66,7 +67,7 @@ public class CaptureList {
         		}
         	}
         } else {
-        	listSize = list.stall_addr - list.list_addr;
+        	listSize = list.getStallAddr() - list.list_addr;
         }
 
         listBuffer = new CaptureRAM(list.list_addr & Memory.addressMask, listSize);
@@ -77,7 +78,7 @@ public class CaptureList {
 
         data.writeInt(packetSize);
         data.writeInt(list.list_addr);
-        data.writeInt(list.stall_addr);
+        data.writeInt(list.getStallAddr());
         data.writeInt(list.cbid);
         data.writeInt(list.arg_addr);
 
@@ -104,7 +105,8 @@ public class CaptureList {
             int arg_addr = data.readInt(); sizeRemaining -= 4;
             data.skipBytes(sizeRemaining);
 
-            list.list = new PspGeList(list_addr, stall_addr, cbid, arg_addr);
+            list.list = new PspGeList(0);
+            list.list.init(list_addr, stall_addr, cbid, arg_addr);
 
             CaptureHeader header = CaptureHeader.read(in);
             int packetType = header.getPacketType();

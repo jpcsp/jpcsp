@@ -632,12 +632,36 @@ public class ThreadMan {
             checkCallbacks();
     }
 
-    public void blockCurrentThread()
+    public void blockCurrentThread() {
+    	blockCurrentThread(null);
+    }
+
+    public void blockCurrentThreadCB() {
+    	blockCurrentThreadCB(null);
+    }
+
+    public void blockCurrentThread(IAction onUnblockAction)
     {
         if (LOG_CONTEXT_SWITCHING)
             Modules.log.debug("-------------------- block SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "' caller:" + getCallingFunction());
 
-        changeThreadState(current_thread, PSP_THREAD_SUSPEND);
+        if (current_thread.status != PSP_THREAD_SUSPEND) {
+	        current_thread.onUnblockAction = onUnblockAction;
+	        changeThreadState(current_thread, PSP_THREAD_SUSPEND);
+        }
+        contextSwitch(nextThread());
+    }
+
+    public void blockCurrentThreadCB(IAction onUnblockAction)
+    {
+        if (LOG_CONTEXT_SWITCHING)
+            Modules.log.debug("-------------------- block SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "' caller:" + getCallingFunction());
+
+        if (current_thread.status != PSP_THREAD_SUSPEND) {
+            current_thread.do_callbacks = true;
+	        current_thread.onUnblockAction = onUnblockAction;
+	        changeThreadState(current_thread, PSP_THREAD_SUSPEND);
+        }
         contextSwitch(nextThread());
     }
 
@@ -789,6 +813,11 @@ public class ThreadMan {
         } else if (thread.status == PSP_THREAD_READY) {
         	synchronized (readyThreads) {
         		readyThreads.remove(thread);
+        	}
+        } else if (thread.status == PSP_THREAD_SUSPEND) {
+        	if (thread.onUnblockAction != null) {
+        		thread.onUnblockAction.execute();
+        		thread.onUnblockAction = null;
         	}
         }
 

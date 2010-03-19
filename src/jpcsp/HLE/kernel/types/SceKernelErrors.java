@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 public class SceKernelErrors {
 
+	public static final int ERROR_INVALID_LIST_ID = 0x80000100;
     public static final int ERROR_POINTER  = 0x80000103;
     public static final int ERROR_ARGUMENT = 0x80000107;
 
