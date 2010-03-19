@@ -50,6 +50,10 @@ public class IntrHandler extends AbstractInterruptHandler {
 	}
 
 	public boolean removeSubIntrHandler(int id) {
+		if (id < 0 || id >= subInterrupts.size()) {
+			return false;
+		}
+
 		boolean removed = (subInterrupts.remove(id) != null);
 
 		if (maxIndex >= subInterrupts.size()) {
