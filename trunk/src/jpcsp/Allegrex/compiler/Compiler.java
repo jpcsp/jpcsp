@@ -30,6 +30,7 @@ import org.xml.sax.SAXException;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
@@ -227,8 +228,16 @@ public class Compiler implements ICompiler {
         pendingBlockAddresses.push(startAddress);
         while (!pendingBlockAddresses.isEmpty()) {
             int pc = pendingBlockAddresses.pop();
+            if (!mem.isAddressGood(pc)) {
+                if (isIgnoreInvalidMemory()) {
+                    log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", pc));
+                } else {
+                    log.error(String.format("Trying to compile an invalid address 0x%08X", pc));
+                }
+            	return null;
+            }
             boolean isBranchTarget = true;
-            int endPc = Integer.MAX_VALUE;
+            int endPc = MemoryMap.END_RAM;
             if (context.analysedAddresses.contains(pc) && isBranchTarget) {
                 codeBlock.setIsBranchTarget(pc);
             } else {
