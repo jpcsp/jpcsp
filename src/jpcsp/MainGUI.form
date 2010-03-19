@@ -16,6 +16,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="openUmd">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+O"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/LoadUmdIcon.png"/>
                 </Property>
@@ -29,6 +32,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="OpenFile">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Alt+O"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/LoadFileIcon.png"/>
                 </Property>
@@ -42,6 +48,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="OpenMemStick">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Shift+O"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/LoadMemoryStick.png"/>
                 </Property>
@@ -65,6 +74,9 @@
             </Menu>
             <MenuItem class="javax.swing.JMenuItem" name="ExitEmu">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="Ctrl+E"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/CloseIcon.png"/>
                 </Property>
@@ -87,6 +99,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="RunEmu">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F2"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/PlayIcon.png"/>
                 </Property>
@@ -100,6 +115,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="PauseEmu">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F3"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/PauseIcon.png"/>
                 </Property>
@@ -113,6 +131,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="ResetEmu">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F4"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/StopIcon.png"/>
                 </Property>
@@ -135,6 +156,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="RotateItem">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F11"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/RotateIcon.png"/>
                 </Property>
@@ -148,6 +172,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="SetttingsMenu">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F12"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/SettingsIcon.png"/>
                 </Property>
@@ -440,6 +467,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="About">
               <Properties>
+                <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
+                  <KeyStroke key="F1"/>
+                </Property>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
                   <Image iconType="3" name="/jpcsp/icons/AboutIcon.png"/>
                 </Property>
