@@ -26,6 +26,7 @@ import jpcsp.scheduler.Scheduler;
 
 public class VBlankInterruptHandler extends AbstractInterruptHandler {
 	private List<IAction> vblankActions = new LinkedList<IAction>();
+	private List<IAction> vblankActionsOnce = new LinkedList<IAction>();
 
 	@Override
 	protected void executeInterrupt() {
@@ -34,12 +35,20 @@ public class VBlankInterruptHandler extends AbstractInterruptHandler {
 		// Re-schedule next VBLANK interrupt in 1/60 second
 		scheduler.addAction(scheduler.getNow() + IntrManager.VBLANK_SCHEDULE_MICROS, this);
 
-		// Execute all the registered VBlank actions
+		// Execute all the registered VBlank actions (each time)
 		for (IAction action : vblankActions) {
 			if (action != null) {
 				action.execute();
 			}
 		}
+
+		// Execute all the registered VBlank actions (once)
+		for (IAction action : vblankActionsOnce) {
+			if (action != null) {
+				action.execute();
+			}
+		}
+		vblankActionsOnce.clear();
 
 		// Trigger VBLANK interrupt
 		IntrManager.getInstance().triggerInterrupt(IntrManager.PSP_VBLANK_INTR, null, null);
@@ -51,5 +60,13 @@ public class VBlankInterruptHandler extends AbstractInterruptHandler {
 
 	public boolean removeVBlankAction(IAction action) {
 		return vblankActions.remove(action);
+	}
+
+	public void addVBlankActionOnce(IAction action) {
+		vblankActionsOnce.add(action);
+	}
+
+	public boolean removeVBlankActionOnce(IAction action) {
+		return vblankActionsOnce.remove(action);
 	}
 }

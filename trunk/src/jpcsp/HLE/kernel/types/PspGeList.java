@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 import jpcsp.HLE.pspge;
 import jpcsp.graphics.VideoEngine;
 import static jpcsp.HLE.pspge.*;
@@ -24,7 +27,7 @@ public class PspGeList
 {
 	private VideoEngine videoEngine;
     public int list_addr;
-    public int stall_addr;
+    private int stall_addr;
     public int cbid;
     public int arg_addr;
     public int context_addr; // pointer to 2k buffer for storing GE context, used as a paramater for the callbacks?
@@ -35,35 +38,49 @@ public class PspGeList
     private int[] stack = new int[32*2];
     private int stackIndex;
 
-    public int currentStatus;
-    public int syncStatus;
+    public int status;
     public int id;
 
     public int thid; // the thread we are blocking
-    public boolean listHasFinished;
+    private boolean finished;
+    private boolean paused;
+    private boolean reset;
+    private Semaphore sync; // Used for async display
 
-    public PspGeList(int list_addr, int stall_addr, int cbid, int arg_addr) {
+    public PspGeList(int id) {
     	videoEngine = VideoEngine.getInstance();
+    	this.id = id;
+    	reset();
+    }
+
+    private void init() {
+    	stackIndex = 0;
+    	thid = 0;
+    	finished = true;
+    	paused = false;
+    	reset = true;
+    }
+
+    public void init(int list_addr, int stall_addr, int cbid, int arg_addr) {
+        init();
+
         this.list_addr = list_addr;
         this.stall_addr = stall_addr;
         this.cbid = cbid;
         this.arg_addr = arg_addr;
 
         context_addr = (arg_addr != 0) ? arg_addr + 4 : 0;
-
-        // nice spam
-        //if (context_addr != 0)
-        //    VideoEngine.log.warn("UNIMPLEMENTED: PspGeList GE context at 0x" + Integer.toHexString(context_addr));
-
-        // check
-        //base = 0x08000000; // old
-        //base = 0x0;
-
         pc = list_addr;
+        status = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
+    	finished = false;
+    	reset = false;
 
-        currentStatus = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
-        syncStatus = currentStatus;
-        stackIndex = 0;
+    	sync = new Semaphore(0);
+    }
+
+    public void reset() {
+    	status = PSP_GE_LIST_DONE;
+    	init();
     }
 
     public void pushSignalCallback(int listId, int behavior, int signal) {
@@ -106,4 +123,90 @@ public class PspGeList
     		pc = popStack();
     	}
     }
+
+    private void sync() {
+		if (sync != null) {
+			sync.release();
+
+			if (false) {
+				// Test for single-core processor: force a context
+				Thread.yield();
+			}
+		}
+    }
+
+    public boolean waitForSync(int millis) {
+    	while (true) {
+	    	try {
+	    		int availablePermits = sync.drainPermits();
+	    		if (availablePermits > 0) {
+	    			break;
+	    		}
+
+    			if (sync.tryAcquire(millis, TimeUnit.MILLISECONDS)) {
+    				break;
+    			} else {
+    				return false;
+    			}
+			} catch (InterruptedException e) {
+				// Ignore exception and retry again
+			}
+    	}
+
+    	return true;
+    }
+
+    public void setStallAddr(int stall_addr) {
+    	if (this.stall_addr != stall_addr) {
+    		this.stall_addr = stall_addr;
+    		sync();
+    	}
+    }
+
+    public int getStallAddr() {
+    	return stall_addr;
+    }
+
+    public boolean isStallReached() {
+    	return pc == stall_addr;
+    }
+
+    public void startList() {
+    	paused = false;
+        videoEngine.pushDrawList(this);
+    }
+
+    public void pauseList() {
+    	paused = true;
+    }
+
+    public void restartList() {
+    	paused = false;
+    	sync();
+    }
+
+    public boolean isPaused() {
+    	return paused;
+    }
+
+    public boolean isFinished() {
+    	return finished;
+    }
+
+    public void finishList() {
+    	finished = true;
+    }
+
+    public boolean isDone() {
+    	return status == PSP_GE_LIST_DONE || status == PSP_GE_LIST_CANCEL_DONE;
+    }
+
+	public boolean isReset() {
+		return reset;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("id=0x%x %s", id, pspge.PSP_GE_LIST_STRINGS[status]);
+	}
 }

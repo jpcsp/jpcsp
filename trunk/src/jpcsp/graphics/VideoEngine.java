@@ -29,6 +29,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GLException;
@@ -41,6 +42,7 @@ import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.graphics.capture.CaptureManager;
@@ -303,6 +305,7 @@ public class VideoEngine {
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
     private boolean geBufChanged;
+    private IAction hleAction;
 
     private class MatrixUpload {
     	float[] matrix;
@@ -406,6 +409,35 @@ public class VideoEngine {
 
     public boolean hasDrawLists() {
         return !drawListQueue.isEmpty();
+    }
+
+    public boolean hasDrawList(int listAddr) {
+    	if (currentList != null && currentList.list_addr == listAddr) {
+    		return true;
+    	}
+
+    	for (PspGeList list : drawListQueue) {
+    		if (list != null && list.list_addr == listAddr) {
+    			return true;
+    		}
+    	}
+
+    	return false;
+    }
+
+    public PspGeList getLastDrawList() {
+    	PspGeList lastList = null;
+    	for (PspGeList list : drawListQueue) {
+    		if (list != null) {
+    			lastList = list;
+    		}
+    	}
+
+    	if (lastList == null) {
+    		lastList = currentList;
+    	}
+
+    	return lastList;
     }
 
     public void setGL(GL gl) {
@@ -594,6 +626,7 @@ public class VideoEngine {
      * @return true if an update was made
      */
     public boolean update() {
+        int listCount = drawListQueue.size();
         PspGeList list = drawListQueue.poll();
         if (list == null)
             return false;
@@ -615,13 +648,19 @@ public class VideoEngine {
             // TODO this is assuming there is only 1 list in drawListQueue at this point, only the last list is the replay list
             PspGeList replayList = drawListQueue.poll();
             replayList.id = list.id;
-            replayList.syncStatus = list.syncStatus;
-            replayList.thid = list.thid;
+        	replayList.thid = list.thid;
             list = replayList;
         }
 
+        // Draw only as many lists as currently available in the drawListQueue.
+        // Some game add automatically a new list to the queue when the current
+        // list is finishing.
         do {
             executeList(list);
+        	listCount--;
+            if (listCount <= 0) {
+            	break;
+            }
             list = drawListQueue.poll();
         } while(list != null);
 
@@ -728,7 +767,7 @@ public class VideoEngine {
             }
     	} else {
     		// Finish this list
-    		currentList.listHasFinished = true;
+    		currentList.finishList();
     		listHasEnded = true;
     		abort = true;
     	}
@@ -753,6 +792,13 @@ public class VideoEngine {
         }
     }
 
+    private void executeHleAction() {
+    	if (hleAction != null) {
+    		hleAction.execute();
+    		hleAction = null;
+    	}
+    }
+
     // call from GL thread
     // There is an issue here with Emulator.pause
     // - We want to stop on errors
@@ -762,42 +808,75 @@ public class VideoEngine {
     private void executeList(PspGeList list) {
         currentList = list;
         listHasEnded = false;
+        currentList.status = PSP_GE_LIST_DRAWING;
 
         if (isLogDebugEnabled) {
             log("executeList id=" + list.id);
         }
 
+        executeHleAction();
+
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
         int memoryReaderPc = currentList.pc;
-        while (!listHasEnded &&
-                currentList.pc != currentList.stall_addr
-                && (!Emulator.pause || State.captureGeNextFrame)) {
-        	if (currentList.pc != memoryReaderPc) {
-        		// The currentList.pc is no longer reading in sequence
-        		// and has jumped to a next location, get a new memory reader.
-        		checkCurrentListPc();
-        		if (listHasEnded || Emulator.pause) {
-        			break;
-        		}
-    			memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
+        int stallCount = 0;
+        while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
+        	if (currentList.isPaused()) {
+	    		if (currentList.isFinished()) {
+	    			listHasEnded = true;
+	    			break;
+	    		} else {
+	    			if (isLogDebugEnabled) {
+	    				log.debug(String.format("SIGNAL / END reached, waiting for Sync"));
+	    			}
+	    			currentList.status = PSP_GE_LIST_END_REACHED;
+	    			while (!currentList.waitForSync(10)) {
+	    				executeHleAction();
+	    			}
+	    			if (!currentList.isPaused()) {
+	    				currentList.status = PSP_GE_LIST_DRAWING;
+	    			}
+	    		}
+        	} else if (currentList.isStallReached()) {
+    			if (isLogDebugEnabled) {
+    				log.debug(String.format("Stall address 0x%08X reached, waiting for Sync", currentList.pc));
+    			}
+    			currentList.status = PSP_GE_LIST_STALL_REACHED;
+    			if (!currentList.waitForSync(10)) {
+    				if (isLogDebugEnabled) {
+    					log.debug("Wait for sync while stall reached");
+    				}
+    				stallCount++;
+    				if (stallCount > 100) {
+    					error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.pc, currentList));
+    				}
+    			} else {
+    				stallCount = 0;
+    			}
+				executeHleAction();
+    			if (!currentList.isStallReached()) {
+    				currentList.status = PSP_GE_LIST_DRAWING;
+    			}
+        	} else {
+	        	if (currentList.pc != memoryReaderPc) {
+	        		// The currentList.pc is no longer reading in sequence
+	        		// and has jumped to a next location, get a new memory reader.
+	        		checkCurrentListPc();
+	        		if (listHasEnded || Emulator.pause) {
+	        			break;
+	        		}
+	    			memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
+	        	}
+	            int ins = memoryReader.readNext();
+	            currentList.pc += 4;
+	            memoryReaderPc = currentList.pc;
+
+	            executeCommand(ins);
         	}
-            int ins = memoryReader.readNext();
-            currentList.pc += 4;
-            memoryReaderPc = currentList.pc;
-
-        	executeCommand(ins);
-        }
-
-        if (currentList.pc == currentList.stall_addr) {
-            currentList.currentStatus = PSP_GE_LIST_STALL_REACHED;
-            if (isLogDebugEnabled) {
-                log("list id=" + currentList.id + " stalled at " + String.format("%08x", currentList.stall_addr) + " listHasEnded=" + listHasEnded);
-            }
         }
 
         if (Emulator.pause && !listHasEnded) {
             VideoEngine.log.info("Emulator paused - cancelling current list id=" + currentList.id);
-            currentList.currentStatus = PSP_GE_LIST_CANCEL_DONE;
+            currentList.status = PSP_GE_LIST_CANCEL_DONE;
         }
 
         // let DONE take priority over STALL_REACHED
@@ -807,20 +886,24 @@ public class VideoEngine {
             // this could explain games trying to sync lists that have been discarded (fiveofhearts)
             // No FINISH:
             // - Virtua Tennis: World Tour (1 instruction: signal)
-            if (!currentList.listHasFinished) {
-            	currentList.currentStatus = PSP_GE_LIST_END_REACHED;
+            if (!currentList.isFinished()) {
+            	currentList.status = PSP_GE_LIST_END_REACHED;
             } else {
-            	currentList.currentStatus = PSP_GE_LIST_DONE;
+            	currentList.status = PSP_GE_LIST_DONE;
             }
         }
 
-        if (list.currentStatus == list.syncStatus ||
-            list.currentStatus == PSP_GE_LIST_DONE ||
-            list.currentStatus == PSP_GE_LIST_STALL_REACHED ||
-            list.currentStatus == PSP_GE_LIST_CANCEL_DONE ||
-            list.currentStatus == PSP_GE_LIST_END_REACHED) {
+        if (list.isDone()) {
             pspge.getInstance().hleGeListSyncDone(list);
         }
+
+        executeHleAction();
+
+        currentList = null;
+    }
+
+    public PspGeList getCurrentList() {
+    	return currentList;
     }
 
     public static int command(int instruction) {
@@ -1111,7 +1194,7 @@ public class VideoEngine {
         commandStatistics[command].start();
         switch (command) {
             case END:
-        		listHasEnded = true;
+    			currentList.pauseList();
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.pc));
                 }
@@ -1122,7 +1205,7 @@ public class VideoEngine {
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
                 }
-                currentList.listHasFinished = true;
+                currentList.finishList();
                 currentList.pushFinishCallback(normalArgument);
                 break;
 
@@ -5228,7 +5311,7 @@ public class VideoEngine {
 
     private boolean isVertexBufferEmbedded() {
         // stall_addr may be 0
-        return (vinfo.ptr_vertex >= currentList.list_addr && vinfo.ptr_vertex < currentList.stall_addr);
+        return (vinfo.ptr_vertex >= currentList.list_addr && vinfo.ptr_vertex < currentList.getStallAddr());
     }
 
     private boolean isVRAM(int addr) {
@@ -5237,7 +5320,44 @@ public class VideoEngine {
     	return addr >= MemoryMap.START_VRAM && addr <= MemoryMap.END_VRAM;    	
     }
 
-    public void saveContext(pspGeContext context) {
+    private void hlePerformAction(IAction action, Semaphore sync) {
+    	hleAction = action;
+
+    	while (true) {
+	    	try {
+				sync.acquire();
+				break;
+			} catch (InterruptedException e) {
+				// Retry again..
+			}
+		}
+    }
+
+    public void hleSaveContext(pspGeContext context) {
+    	// If we are rendering, we have to wait for a consistent state
+    	// before saving the context: let the display thread perform
+    	// the save when appropriate.
+    	if (hasDrawLists() || currentList != null) {
+	    	Semaphore sync = new Semaphore(0);
+	    	hlePerformAction(new SaveContextAction(context, sync), sync);
+    	} else {
+    		saveContext(context);
+    	}
+    }
+
+    public void hleRestoreContext(pspGeContext context) {
+    	// If we are rendering, we have to wait for a consistent state
+    	// before restoring the context: let the display thread perform
+    	// the restore when appropriate.
+    	if (hasDrawLists() || currentList != null) {
+	    	Semaphore sync = new Semaphore(0);
+	    	hlePerformAction(new RestoreContextAction(context, sync), sync);
+    	} else {
+    		restoreContext(context);
+    	}
+    }
+
+    private void saveContext(pspGeContext context) {
     	context.base = base;
     	context.baseOffset = baseOffset;
 
@@ -5368,7 +5488,7 @@ public class VideoEngine {
         context.copyGLToContext(gl);
     }
 
-    public void restoreContext(pspGeContext context) {
+    private void restoreContext(pspGeContext context) {
     	base = context.base;
     	baseOffset = context.baseOffset;
 
@@ -5497,6 +5617,15 @@ public class VideoEngine {
         System.arraycopy(context.glColorMask, 0, glColorMask, 0, glColorMask.length);
 
         context.copyContextToGL(gl);
+
+        modelMatrixChanged = true;
+        projectionMatrixChanged = true;
+        viewMatrixChanged = true;
+        textureMatrixChanged = true;
+        lightingChanged = true;
+        blendChanged = true;
+        textureChanged = true;
+        geBufChanged = true;
     }
 
 	public boolean isUseViewport() {
@@ -5540,5 +5669,37 @@ public class VideoEngine {
 
 	public void setBaseOffset(int baseOffset) {
 		this.baseOffset = baseOffset;
+	}
+
+	private class SaveContextAction implements IAction {
+		private pspGeContext context;
+		private Semaphore sync;
+
+		public SaveContextAction(pspGeContext context, Semaphore sync) {
+			this.context = context;
+			this.sync = sync;
+		}
+
+		@Override
+		public void execute() {
+			saveContext(context);
+			sync.release();
+		}
+	}
+
+	private class RestoreContextAction implements IAction {
+		private pspGeContext context;
+		private Semaphore sync;
+
+		public RestoreContextAction(pspGeContext context, Semaphore sync) {
+			this.context = context;
+			this.sync = sync;
+		}
+
+		@Override
+		public void execute() {
+			restoreContext(context);
+			sync.release();
+		}
 	}
 }
