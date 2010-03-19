@@ -30,7 +30,7 @@ public class MetaInformation {
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
     public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
     public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
-    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts, hlide, Nutzje,<br/>aisesal, shashClp, spip2, mozvip, Orphis, gigaherz, gid15, hykem,<br/>Drakon, raziel1000";
+    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts, hlide, Nutzje,<br/>aisesal, shashClp, spip2, mozvip, Orphis, gigaherz, gid15, hykem,<br/>Drakon, raziel1000, theball, J_BYYX";
 
     private static MetaInformation singleton;
 

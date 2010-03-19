@@ -27,15 +27,19 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionListener;
@@ -346,10 +350,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         ResetToPCbutton = new javax.swing.JButton();
         JumpToAddress = new javax.swing.JButton();
         jSeparator4 = new javax.swing.JToolBar.Separator();
-        AddBreakpoint = new javax.swing.JButton();
-        DeleteBreakpoint = new javax.swing.JButton();
-        DeleteAllBreakpoints = new javax.swing.JButton();
-        jSeparator3 = new javax.swing.JToolBar.Separator();
         DumpCodeToText = new javax.swing.JButton();
         disasmTabs = new javax.swing.JTabbedPane();
         gprTable = new javax.swing.JTable();
@@ -380,8 +380,17 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         dumpDebugStateButton = new javax.swing.JButton();
         SearchField = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
+        disasmToolbar2 = new javax.swing.JToolBar();
+        AddBreakpoint = new javax.swing.JButton();
+        DeleteBreakpoint = new javax.swing.JButton();
+        DeleteAllBreakpoints = new javax.swing.JButton();
+        jSeparator3 = new javax.swing.JToolBar.Separator();
+        ExportBreaks = new javax.swing.JButton();
+        ImportBreaks = new javax.swing.JButton();
+        jSeparator5 = new javax.swing.JSeparator();
+        jSeparator6 = new javax.swing.JSeparator();
 
-        CopyAddress.setText(Resource.get("copyaddress"));
+        CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyAddressActionPerformed(evt);
@@ -389,7 +398,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(CopyAddress);
 
-        CopyAll.setText(Resource.get("copyall"));
+        CopyAll.setText("Copy All");
         CopyAll.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyAllActionPerformed(evt);
@@ -397,7 +406,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(CopyAll);
 
-        BranchOrJump.setText(Resource.get("copybranch"));
+        BranchOrJump.setText("Copy Branch Or Jump address");
         BranchOrJump.setEnabled(false); //disable as default
         BranchOrJump.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -406,7 +415,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(BranchOrJump);
 
-        SetPCToCursor.setText(Resource.get("setpctocursor"));
+        SetPCToCursor.setText("Set PC to Cursor");
         SetPCToCursor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SetPCToCursorActionPerformed(evt);
@@ -414,7 +423,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(SetPCToCursor);
 
-        CopyValue.setText(Resource.get("copyvalue"));
+        CopyValue.setText("Copy value");
         CopyValue.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyValueActionPerformed(evt);
@@ -422,7 +431,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         RegMenu.add(CopyValue);
 
-        setTitle(Resource.get("debugger"));
+        setTitle("Debugger");
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowDeactivated(java.awt.event.WindowEvent evt) {
@@ -547,50 +556,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         disasmToolbar.add(JumpToAddress);
         disasmToolbar.add(jSeparator4);
-
-        AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
-        AddBreakpoint.setMnemonic('A');
-        AddBreakpoint.setText(Resource.get("addbreak"));
-        AddBreakpoint.setFocusable(false);
-        AddBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        AddBreakpoint.setIconTextGap(2);
-        AddBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        AddBreakpoint.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AddBreakpointActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(AddBreakpoint);
-
-        DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
-        DeleteBreakpoint.setMnemonic('D');
-        DeleteBreakpoint.setText(Resource.get("deletebreak"));
-        DeleteBreakpoint.setFocusable(false);
-        DeleteBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        DeleteBreakpoint.setIconTextGap(2);
-        DeleteBreakpoint.setInheritsPopupMenu(true);
-        DeleteBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DeleteBreakpoint.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                DeleteBreakpointActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(DeleteBreakpoint);
-
-        DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
-        DeleteAllBreakpoints.setMnemonic('E');
-        DeleteAllBreakpoints.setText(Resource.get("deleteall"));
-        DeleteAllBreakpoints.setFocusable(false);
-        DeleteAllBreakpoints.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        DeleteAllBreakpoints.setIconTextGap(2);
-        DeleteAllBreakpoints.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DeleteAllBreakpoints.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                DeleteAllBreakpointsActionPerformed(evt);
-            }
-        });
-        disasmToolbar.add(DeleteAllBreakpoints);
-        disasmToolbar.add(jSeparator3);
 
         DumpCodeToText.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
         DumpCodeToText.setMnemonic('W');
@@ -901,14 +866,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 .addContainerGap()
                 .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(miscPanelLayout.createSequentialGroup()
-                        .addComponent(SearchField, javax.swing.GroupLayout.DEFAULT_SIZE, 198, Short.MAX_VALUE)
+                        .addComponent(SearchField, javax.swing.GroupLayout.DEFAULT_SIZE, 229, Short.MAX_VALUE)
                         .addContainerGap())
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(jLabel3)
                         .addContainerGap())
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(gpioLabel)
-                        .addContainerGap(166, Short.MAX_VALUE))
+                        .addContainerGap(197, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(gpoLabel1)
@@ -937,26 +902,26 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(gpoLabel7))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(gpoLabel8))
-                        .addGap(22, 22, 22))
+                            .addComponent(gpoLabel8)
+                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(46, 46, 46))
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(jLabel1)
-                        .addContainerGap(116, Short.MAX_VALUE))
+                        .addContainerGap(147, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(jLabel2)
-                        .addContainerGap(120, Short.MAX_VALUE))
+                        .addContainerGap(173, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(dumpDebugStateButton)
-                        .addContainerGap(97, Short.MAX_VALUE))
+                        .addContainerGap(140, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(captureButton)
-                        .addContainerGap(81, Short.MAX_VALUE))
+                        .addContainerGap(140, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(replayButton)
-                        .addContainerGap(35, Short.MAX_VALUE))))
+                        .addContainerGap(140, Short.MAX_VALUE))))
         );
         miscPanelLayout.setVerticalGroup(
             miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -965,28 +930,30 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 .addComponent(gpioLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(gpoLabel1)
-                    .addComponent(gpoLabel8)
-                    .addComponent(gpoLabel2)
-                    .addComponent(gpoLabel3)
-                    .addComponent(gpoLabel4)
-                    .addComponent(gpoLabel5)
-                    .addComponent(gpoLabel6)
-                    .addComponent(gpoLabel7))
-                .addGap(11, 11, 11)
-                .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                    .addComponent(gpiButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(gpiButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(gpiButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(gpiButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(gpiButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(gpiButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(captureButton)
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpoLabel1)
+                            .addComponent(gpoLabel2)
+                            .addComponent(gpoLabel3)
+                            .addComponent(gpoLabel4)
+                            .addComponent(gpoLabel5)
+                            .addComponent(gpoLabel6)
+                            .addComponent(gpoLabel7))
+                        .addGap(11, 11, 11)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                            .addComponent(gpiButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(captureButton))
+                    .addComponent(gpoLabel8))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(replayButton)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -1002,28 +969,114 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         disasmTabs.addTab("Misc", miscPanel);
 
+        disasmToolbar2.setFloatable(false);
+        disasmToolbar2.setRollover(true);
+
+        AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
+        AddBreakpoint.setMnemonic('A');
+        AddBreakpoint.setText(Resource.get("addbreak"));
+        AddBreakpoint.setFocusable(false);
+        AddBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        AddBreakpoint.setIconTextGap(2);
+        AddBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        AddBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AddBreakpointActionPerformed(evt);
+            }
+        });
+        disasmToolbar2.add(AddBreakpoint);
+
+        DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
+        DeleteBreakpoint.setMnemonic('D');
+        DeleteBreakpoint.setText(Resource.get("deletebreak"));
+        DeleteBreakpoint.setFocusable(false);
+        DeleteBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        DeleteBreakpoint.setIconTextGap(2);
+        DeleteBreakpoint.setInheritsPopupMenu(true);
+        DeleteBreakpoint.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        DeleteBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DeleteBreakpointActionPerformed(evt);
+            }
+        });
+        disasmToolbar2.add(DeleteBreakpoint);
+
+        DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
+        DeleteAllBreakpoints.setMnemonic('E');
+        DeleteAllBreakpoints.setText(Resource.get("deleteall"));
+        DeleteAllBreakpoints.setFocusable(false);
+        DeleteAllBreakpoints.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        DeleteAllBreakpoints.setIconTextGap(2);
+        DeleteAllBreakpoints.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        DeleteAllBreakpoints.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DeleteAllBreakpointsActionPerformed(evt);
+            }
+        });
+        disasmToolbar2.add(DeleteAllBreakpoints);
+        disasmToolbar2.add(jSeparator3);
+
+        ExportBreaks.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
+        ExportBreaks.setText("Export Breaks");
+        ExportBreaks.setFocusable(false);
+        ExportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        ExportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        ExportBreaks.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ExportBreaksActionPerformed(evt);
+            }
+        });
+        disasmToolbar2.add(ExportBreaks);
+
+        ImportBreaks.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
+        ImportBreaks.setText("Import Breaks");
+        ImportBreaks.setFocusable(false);
+        ImportBreaks.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        ImportBreaks.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        ImportBreaks.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ImportBreaksActionPerformed(evt);
+            }
+        });
+        disasmToolbar2.add(ImportBreaks);
+
+        jSeparator5.setForeground(new java.awt.Color(0, 0, 0));
+
+        jSeparator6.setForeground(new java.awt.Color(0, 0, 0));
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(disasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 763, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(disasmToolbar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 503, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 254, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 503, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(19, 19, 19))
+                .addComponent(disasmToolbar2, javax.swing.GroupLayout.DEFAULT_SIZE, 469, Short.MAX_VALUE)
+                .addGap(326, 326, 326))
+            .addComponent(jSeparator5, javax.swing.GroupLayout.DEFAULT_SIZE, 795, Short.MAX_VALUE)
+            .addComponent(jSeparator6, javax.swing.GroupLayout.DEFAULT_SIZE, 795, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(disasmToolbar, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(disasmToolbar, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(disasmToolbar2, javax.swing.GroupLayout.PREFERRED_SIZE, 18, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 1, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(13, 13, 13)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 588, Short.MAX_VALUE)
-                    .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(disasmTabs, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 588, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -1494,6 +1547,79 @@ private void SearchFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     }
 }//GEN-LAST:event_SearchFieldActionPerformed
 
+private void ExportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExportBreaksActionPerformed
+JFileChooser fc = new JFileChooser();
+fc.setSelectedFile(new File(State.discId + ".brk"));
+fc.setDialogTitle("Export breakpoints");
+fc.setCurrentDirectory(new java.io.File("."));
+int returnVal = fc.showSaveDialog(this);
+if (returnVal != JFileChooser.APPROVE_OPTION)
+    return;
+
+File f = fc.getSelectedFile();
+BufferedWriter out = null;
+try {
+    if (f.exists()) {
+        int res = JOptionPane.showConfirmDialog(
+                this,
+                "File '" + f.getName() + "' already exists! Do you want to override?",
+                "Export breakpoints",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (res != JOptionPane.YES_OPTION)
+            return;
+    }
+
+    out = new BufferedWriter(new FileWriter(f));
+
+    for(int i = 0; i < breakpoints.size(); i++)
+        out.write(Integer.toHexString(breakpoints.get(i)) + System.getProperty("line.separator"));
+
+} catch (Exception ex) {
+    ex.printStackTrace();
+} finally {
+    Utilities.close(out);
+}
+}//GEN-LAST:event_ExportBreaksActionPerformed
+
+private void ImportBreaksActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ImportBreaksActionPerformed
+JFileChooser fc = new JFileChooser();
+fc.setDialogTitle("Import breakpoints");
+fc.setCurrentDirectory(new java.io.File("."));
+int returnVal = fc.showOpenDialog(this);
+if (returnVal != JFileChooser.APPROVE_OPTION)
+    return;
+
+File f = fc.getSelectedFile();
+BufferedReader in = null;
+try {
+    if(!f.getName().contains(".brk")) {
+        JOptionPane.showMessageDialog(this,
+                "File '" + f.getName() + "' is not a valid .brk file!",
+                "Import breakpoints",
+                JOptionPane.ERROR_MESSAGE);
+
+        return;
+    }
+
+    in = new BufferedReader(new FileReader(f));
+    String nextBrk = in.readLine();
+
+    while (nextBrk != null) {
+        breakpoints.add(Integer.parseInt(nextBrk, 16));
+        nextBrk = in.readLine();
+    }
+
+    RefreshDebugger(true);
+
+} catch (Exception ex) {
+    ex.printStackTrace();
+} finally {
+    Utilities.close(in);
+}
+}//GEN-LAST:event_ImportBreaksActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
@@ -1504,6 +1630,8 @@ private void SearchFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     private javax.swing.JButton DeleteBreakpoint;
     private javax.swing.JPopupMenu DisMenu;
     private javax.swing.JButton DumpCodeToText;
+    private javax.swing.JButton ExportBreaks;
+    private javax.swing.JButton ImportBreaks;
     private javax.swing.JButton JumpToAddress;
     private javax.swing.JButton PauseDebugger;
     private javax.swing.JPopupMenu RegMenu;
@@ -1518,6 +1646,7 @@ private void SearchFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     private javax.swing.JList disasmList;
     private javax.swing.JTabbedPane disasmTabs;
     private javax.swing.JToolBar disasmToolbar;
+    private javax.swing.JToolBar disasmToolbar2;
     private javax.swing.JButton dumpDebugStateButton;
     private javax.swing.JToggleButton gpiButton1;
     private javax.swing.JToggleButton gpiButton2;
@@ -1546,6 +1675,8 @@ private void SearchFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JToolBar.Separator jSeparator3;
     private javax.swing.JToolBar.Separator jSeparator4;
+    private javax.swing.JSeparator jSeparator5;
+    private javax.swing.JSeparator jSeparator6;
     private javax.swing.JPanel miscPanel;
     private javax.swing.JButton replayButton;
     // End of variables declaration//GEN-END:variables
