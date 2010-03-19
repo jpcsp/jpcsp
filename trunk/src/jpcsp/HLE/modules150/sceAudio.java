@@ -947,26 +947,31 @@ public class sceAudio implements HLEModule, HLEThread {
                 Modules.log.debug(String.format("sceAudioSRCOutputBlocking 0x%08X", buf));
             }
 
-            for(int i = 0; pspchannels[i].reserved; i++) {
-            if (!pspchannels[i].isOutputBlocking() || disableBlockingAudio) {
-            	if (Modules.log.isDebugEnabled()) {
-            		Modules.log.debug("sceAudioSRCOutputBlocking[not blocking] " + pspchannels[i].toString());
-            	}
-	            sceAudioChangeChannelVolume(i, vol, vol);
-	            doAudioOutput(i, buf);
-                cpu.gpr[2] = 0;
-
-            } else {
-            	if (Modules.log.isDebugEnabled()) {
-            		Modules.log.debug("sceAudioSRCOutputBlocking[blocking] " + pspchannels[i].toString());
-            	}
-	            pspchannels[i].waitingThreadId = threadMan.getCurrentThreadID();
-	            pspchannels[i].waitingAudioDataAddr = buf;
-	            pspchannels[i].waitingVolumeLeft  = vol;
-	            pspchannels[i].waitingVolumeRight = vol;
-	            threadMan.blockCurrentThread();
+            boolean blockThread = false;
+            // FIXME: the following loop can't be correct:
+            // shouldn't we output on the channels reserved by sceAudioSRCChReserve()?
+            for (int i = 0; pspchannels[i].reserved; i++) {
+            	if (!pspchannels[i].isOutputBlocking() || disableBlockingAudio) {
+            		if (Modules.log.isDebugEnabled()) {
+            			Modules.log.debug("sceAudioSRCOutputBlocking[not blocking] " + pspchannels[i].toString());
+            		}
+		            sceAudioChangeChannelVolume(i, vol, vol);
+		            doAudioOutput(i, buf);
+	                cpu.gpr[2] = 0;
+	            } else {
+	            	if (Modules.log.isDebugEnabled()) {
+	            		Modules.log.debug("sceAudioSRCOutputBlocking[blocking] " + pspchannels[i].toString());
+	            	}
+		            pspchannels[i].waitingThreadId = threadMan.getCurrentThreadID();
+		            pspchannels[i].waitingAudioDataAddr = buf;
+		            pspchannels[i].waitingVolumeLeft  = vol;
+		            pspchannels[i].waitingVolumeRight = vol;
+		            blockThread = true;
+	            }
             }
-        }
+            if (blockThread) {
+            	threadMan.blockCurrentThread();
+            }
         }
 
     }
