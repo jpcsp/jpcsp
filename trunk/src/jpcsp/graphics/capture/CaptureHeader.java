@@ -22,8 +22,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import jpcsp.graphics.VideoEngine;
-
 /**
  * generic packet header for saved capture stream
  * immutable */

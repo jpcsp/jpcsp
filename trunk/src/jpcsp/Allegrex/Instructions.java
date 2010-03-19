@@ -20,7 +20,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 
 import jpcsp.Allegrex.Common.*;

@@ -17,12 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
-import static jpcsp.util.Utilities.*;
 
-import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
 public class SceKernelEventFlagInfo {

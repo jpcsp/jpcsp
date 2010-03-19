@@ -183,8 +183,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         pixelformatFb = PSP_DISPLAY_PIXEL_FORMAT_8888;
         sync          = PSP_DISPLAY_SETBUF_IMMEDIATE;
 
-        bottomaddrFb =
-            topaddrFb + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
+        bottomaddrFb = topaddrFb + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
 
         detailsDirty = true;
         displayDirty = true;

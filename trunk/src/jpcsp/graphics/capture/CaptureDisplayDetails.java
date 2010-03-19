@@ -22,15 +22,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-
-import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.MemoryReader;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.HLE.pspdisplay;
 
