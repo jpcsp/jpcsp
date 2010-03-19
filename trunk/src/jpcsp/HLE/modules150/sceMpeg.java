@@ -278,6 +278,15 @@ public class sceMpeg implements HLEModule {
         mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 80 + 12));
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
 
+        if (mpegRingbuffer != null) {
+        	mpegRingbuffer.reset();
+        	mpegRingbuffer.write(mem, mpegRingbufferAddr);
+        }
+        mpegAtracCurrentTimestamp = 0;
+        mpegAvcCurrentTimestamp = 0;
+        videoFrameCount = 0;
+        audioFrameCount = 0;
+
         if (!enableMpeg) {
             // HACK: if fake 0 size maybe it won't play :)
             Modules.log.warn("sceMpegQueryStreamSize using fake size 0");

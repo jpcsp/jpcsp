@@ -63,6 +63,12 @@ public class SceMpegRingbuffer {
         return ringbuffer;
     }
 
+    public void reset() {
+    	packetsRead = 0;
+    	packetsWritten = 0;
+    	packetsFree = packets;
+    }
+
     public boolean isEmpty() {
     	return packetsFree == packets;
     }
