@@ -29,7 +29,7 @@ public class LoadCoreForKernel extends jpcsp.HLE.modules150.LoadCoreForKernel {
 	
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }
 

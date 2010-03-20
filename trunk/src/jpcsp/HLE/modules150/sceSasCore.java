@@ -351,8 +351,7 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasRevParam(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -361,11 +360,17 @@ public class sceSasCore implements HLEModule {
         int unk1 = cpu.gpr[5]; // 0, 64
         int unk2 = cpu.gpr[6]; // 0, 64
         // 99% sure there are no more parameters
-
-        Modules.log.warn("IGNORING:__sceSasRevParam("
-            + String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
-
-        cpu.gpr[2] = 0;
+        
+        Modules.log.warn("IGNORING:__sceSasRevParam("+ String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
+        // TODO This is a fake param
+        
+        if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
+            cpu.gpr[2] = -1;
+        }
+        else {
+        	
+        	cpu.gpr[2] = 0;
+        }
     }
 
     // we could do some trickery in here too
@@ -413,7 +418,7 @@ public class sceSasCore implements HLEModule {
         //int unk3 = cpu.gpr[7]; // unused or 0, 1, 0x1000
 
         Modules.log.warn("IGNORING:__sceSasRevType(type=" + type + ") " + makeLogParams(cpu));
-
+        
         cpu.gpr[2] = 0;
     }
 

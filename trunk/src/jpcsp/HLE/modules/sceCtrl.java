@@ -31,6 +31,6 @@ public class sceCtrl extends jpcsp.HLE.modules150.sceCtrl {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
+        super.uninstallModule(mm, version);
     }
 }

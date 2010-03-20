@@ -29,6 +29,6 @@ public class sceSuspendForUser extends jpcsp.HLE.modules150.sceSuspendForUser {
 	
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }

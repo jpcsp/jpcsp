@@ -29,6 +29,6 @@ public class sceUtility extends jpcsp.HLE.modules310.sceUtility {
 
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }

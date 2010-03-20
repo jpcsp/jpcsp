@@ -31,6 +31,6 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
+        super.uninstallModule(mm, version);
     }
 }

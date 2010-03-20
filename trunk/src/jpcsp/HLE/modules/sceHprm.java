@@ -29,6 +29,6 @@ public class sceHprm extends jpcsp.HLE.modules150.sceHprm {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
+        super.uninstallModule(mm, version);
     }
 }

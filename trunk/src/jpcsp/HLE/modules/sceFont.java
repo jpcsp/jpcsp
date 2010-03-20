@@ -27,6 +27,6 @@ public class sceFont extends jpcsp.HLE.modules150.sceFont {
 	
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }

@@ -426,7 +426,6 @@ public class sceUmdUser implements HLEModule {
     // TODO not fully implemented yet
     public void sceUmdRegisterUMDCallBack(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
         Modules.log.debug("sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));

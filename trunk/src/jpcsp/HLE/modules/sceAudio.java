@@ -29,6 +29,6 @@ public class sceAudio extends jpcsp.HLE.modules150.sceAudio {
 	
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }
