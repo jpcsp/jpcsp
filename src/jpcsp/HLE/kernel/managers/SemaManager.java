@@ -345,7 +345,7 @@ public class SemaManager {
             }
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
-            if (yield && !threadMan.getCurrentThread().insideCallback) {
+            if (yield && !threadMan.isInsideCallback()) {
                 Modules.log.debug("sceKernelSignalSema yielding to thread with higher priority");
                 threadMan.yieldCurrentThread();
             }

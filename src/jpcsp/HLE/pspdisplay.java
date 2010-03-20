@@ -1008,29 +1008,45 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayWaitVblankStart() {
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceDisplayWaitVblankStart");
+        }
+
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
         // Block the current thread
         ThreadMan threadMan = ThreadMan.getInstance();
-        int threadId = threadMan.getCurrentThreadID();
-        threadMan.blockCurrentThread();
+        if (threadMan.isInsideCallback()) {
+        	Modules.log.warn("sceDisplayWaitVblankStart inside callback currently not supported");
+        } else {
+	        int threadId = threadMan.getCurrentThreadID();
+	        threadMan.blockCurrentThread();
 
-        // Add a Vblank action to unblock the thread
-        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
-        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+	        // Add a Vblank action to unblock the thread
+	        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+	        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+        }
     }
 
     public void sceDisplayWaitVblankStartCB() {
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceDisplayWaitVblankStartCB");
+        }
+
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
         // Block the current thread
         ThreadMan threadMan = ThreadMan.getInstance();
-        int threadId = threadMan.getCurrentThreadID();
-        threadMan.blockCurrentThreadCB();
+        if (threadMan.isInsideCallback()) {
+        	Modules.log.warn("sceDisplayWaitVblankStartCB inside callback currently not supported");
+        } else {
+	        int threadId = threadMan.getCurrentThreadID();
+	        threadMan.blockCurrentThreadCB();
 
-        // Add a Vblank action to unblock the thread
-        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
-        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+	        // Add a Vblank action to unblock the thread
+	        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+	        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+        }
     }
 
     private void hleVblankStart() {
@@ -1047,6 +1063,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayWaitVblank() {
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceDisplayWaitVblank");
+        }
+
         Emulator.getProcessor().cpu.gpr[2] = 0;
     	if (!isVblank()) {
     		sceDisplayWaitVblankStart();
@@ -1054,6 +1074,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayWaitVblankCB() {
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceDisplayWaitVblankCB");
+        }
+
         Emulator.getProcessor().cpu.gpr[2] = 0;
         if (!isVblank()) {
         	sceDisplayWaitVblankStartCB();
