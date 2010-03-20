@@ -29,6 +29,6 @@ public class sceDmac extends jpcsp.HLE.modules150.sceDmac {
 	
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }

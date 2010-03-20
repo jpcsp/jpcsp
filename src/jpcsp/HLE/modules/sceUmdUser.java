@@ -31,6 +31,6 @@ public class sceUmdUser extends jpcsp.HLE.modules200.sceUmdUser {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
+        super.uninstallModule(mm, version);
     }
 }

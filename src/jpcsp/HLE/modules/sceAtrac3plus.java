@@ -29,6 +29,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 	
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }

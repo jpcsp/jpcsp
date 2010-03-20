@@ -1105,9 +1105,11 @@ public class sceAudio implements HLEModule, HLEThread {
             //    Modules.log.debug("hleAudioGetChannelRestLen(channel=" + channel + ") framesPlayed=" + framesPlayed);
 
             len = pspchannels[channel].allocatedSamples - (int)framesPlayed;
-            //if (len > 0 || pspchannels[channel].waitingThreadId >= 0) {
-            //    Modules.log.debug("hleAudioGetChannelRestLen(channel=" + channel + ") len=" + len);
-            //}
+            /*
+            if (len > 0 || pspchannels[channel].waitingThreadId >= 0) {
+                Modules.log.debug("hleAudioGetChannelRestLen(channel=" + channel + ") len=" + len);
+            }
+            */
 
             if (len < 0) {
                 //Modules.log.error("hleAudioGetChannelRestLen(channel=" + channel

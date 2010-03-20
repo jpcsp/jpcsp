@@ -20,7 +20,6 @@ package jpcsp.HLE.modules271;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.pspSysMem;
-import jpcsp.Memory;
 import jpcsp.Processor;
 
 public class Sample extends jpcsp.HLE.modules150.Sample {

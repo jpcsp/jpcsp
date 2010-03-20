@@ -29,6 +29,6 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules271.ModuleMgrForUser {
 
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
+		super.uninstallModule(mm, version);
 	}
 }

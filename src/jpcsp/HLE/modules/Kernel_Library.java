@@ -31,6 +31,6 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
+        super.uninstallModule(mm, version);
     }
 }

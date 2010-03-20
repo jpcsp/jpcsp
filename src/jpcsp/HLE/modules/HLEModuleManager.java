@@ -28,7 +28,6 @@ import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.HLE.kernel.Managers;
 
 

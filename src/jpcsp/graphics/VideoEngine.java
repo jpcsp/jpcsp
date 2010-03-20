@@ -4868,8 +4868,6 @@ public class VideoEngine {
                 gl.glUniform1f(Uniforms.zPos.getId(), zpos);
                 gl.glUniform1f(Uniforms.zScale.getId(), zscale);
             }
-            // TODO
-            modelMatrixChanged = true;
         }
         projectionMatrixChanged = false;
 
@@ -4974,7 +4972,6 @@ public class VideoEngine {
 	        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
 	            gl.glMultMatrixf(model_uploaded_matrix, 0);
 	        }
-	        modelMatrixChanged = false;
         }
 
         boolean useVertexColor = false;

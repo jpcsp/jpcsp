@@ -31,6 +31,6 @@ public class StdioForUser extends jpcsp.HLE.modules150.StdioForUser {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
+        super.uninstallModule(mm, version);
     }
 }
