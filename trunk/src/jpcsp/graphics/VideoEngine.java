@@ -335,7 +335,7 @@ public class VideoEngine {
     		boolean done = false;
 
     		if (currentY >= matrixHeight) {
-    			error("Ignored Matrix upload value");
+    			error(String.format("Ignored Matrix upload value (X=%d,Y=%d,idx=%08X)" , currentX, currentY, currentY * matrixWidth + currentX));
     			return true;
     		}
 
