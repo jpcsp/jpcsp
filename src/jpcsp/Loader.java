@@ -795,7 +795,7 @@ public class Loader {
                     data += S;
 
                 	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_32 addr=%08X before%%08X after=%08X", data_addr, word32, data));
+                		Memory.log.trace(String.format("R_MIPS_32 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
                     break;
 
