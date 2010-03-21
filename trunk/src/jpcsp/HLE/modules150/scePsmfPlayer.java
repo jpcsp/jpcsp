@@ -160,23 +160,17 @@ public class scePsmfPlayer implements HLEModule {
     }
 
     public void scePsmfPlayerStart(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int psmf = cpu.gpr[4];
         int unk1 = cpu.gpr[5];  //Another output address?
         int unk2 = cpu.gpr[6];  //MPEG stream to be used?
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
         Modules.log.warn("UNIMPLEMENTED: scePsmfPlayerStart psmf=" + Integer.toHexString(psmf)
                 + " unk1=" + Integer.toHexString(unk1) + " unk2=" + Integer.toHexString(unk2));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayer_3EA82A4B(Processor processor) {
@@ -187,15 +181,10 @@ public class scePsmfPlayer implements HLEModule {
         int psmf = cpu.gpr[4];
         int unk = cpu.gpr[5];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
         Modules.log.warn("UNIMPLEMENTED: scePsmfPlayer_3EA82A4B psmf=" + Integer.toHexString(psmf)
                 + " unk=" + Integer.toHexString(unk));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerStop(Processor processor) {
@@ -309,15 +298,10 @@ public class scePsmfPlayer implements HLEModule {
         int unk1 = cpu.gpr[5];
         int unk2 = cpu.gpr[6];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
         Modules.log.warn("UNIMPLEMENTED: scePsmfPlayer_1E57A8E7 psmf=" + Integer.toHexString(psmf)
                 + " unk1=" + Integer.toHexString(unk1) + " unk2=" + Integer.toHexString(unk2));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayer_2BEB1569(Processor processor) {

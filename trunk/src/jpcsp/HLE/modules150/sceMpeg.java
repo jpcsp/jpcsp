@@ -170,7 +170,7 @@ public class sceMpeg implements HLEModule {
     public static final int PSMF_VERSION_0012 = 0x32313030;
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
-    public static final int PSMF_VERSION_0015 = 0x35313030; // V_0015? for CRISIS CORE -FINAL FANTASY VII-
+    public static final int PSMF_VERSION_0015 = 0x35313030;
     protected static final int MPEG_MEMSIZE = 0x10000; // 64k
     protected static final int MPEG_ESBUF_HANDLE = 1; // assume we only need 1 esBuf
     protected static final int atracDecodeDelay = 50;       // milliseconds
@@ -202,7 +202,7 @@ public class sceMpeg implements HLEModule {
     protected static final int MPEG_VERSION_0012 = 0;
     protected static final int MPEG_VERSION_0013 = 1;
     protected static final int MPEG_VERSION_0014 = 2;
-    protected static final int MPEG_VERSION_0015 = 3; // V_0015?
+    protected static final int MPEG_VERSION_0015 = 3;
     protected int mpegVersion;
     protected int mpegRawVersion;
     protected int mpegMagic;
