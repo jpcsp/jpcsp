@@ -102,7 +102,7 @@ public class sceAtrac3plus implements HLEModule {
         }
     }
 
-    protected static final int PSP_MODE_AT_3_Plus = 0x00001000;
+    protected static final int PSP_MODE_AT_3_PLUS = 0x00001000;
     protected static final int PSP_MODE_AT_3      = 0x00001001;
 
     private static int atracID;
@@ -130,16 +130,18 @@ public class sceAtrac3plus implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
-        int codecType = cpu.gpr[4];//noxa:codecType, //0x1000(AT3PLUS), 0x1001(AT3).
+        int codecType = cpu.gpr[4];//noxa:codecType.
+        //0x1000(AT3PLUS), 0x1001(AT3).
 
-        Modules.log.warn("PARTIAL:sceAtracGetAtracID: atracID = 0x" + Integer.toHexString(codecType));
+        Modules.log.warn("PARTIAL:sceAtracGetAtracID: codecType = 0x" + Integer.toHexString(codecType));
 
-        if(codecType == 0x1000)
+        if (codecType == PSP_MODE_AT_3_PLUS)
             atracID = 0;
-        else if (codecType == 0x1001)
+        else if (codecType == PSP_MODE_AT_3)
             atracID = 1;
 
-        cpu.gpr[2] = atracID; // return the attracID or 0?
+
+        cpu.gpr[2] = atracID;
     }
     
     public void sceAtracReleaseAtracID(Processor processor) {
@@ -147,7 +149,7 @@ public class sceAtrac3plus implements HLEModule {
         Memory mem = Processor.memory;
 
         int atID = cpu.gpr[4];
-        atracID = atID;
+        //atracID = atID;
 
         Modules.log.warn("Skipping:sceAtracReleaseAtracID: atracID = " + atID);
         
@@ -218,16 +220,18 @@ public class sceAtrac3plus implements HLEModule {
         int RemainFrames = cpu.gpr[8];
 
         // Do something to decode here!
-        mem.write32(SamplesNbr  , 0x4000);//mem.write32(SamplesNbr  , "decodedSamples");
-        mem.write32(SamplesNbr  , 0x0010);//16?
-        mem.write32(outEnd      , 0x0000);
-        mem.write32(RemainFrames, -1);
+        if (mem.isAddressGood(SamplesAdrr)) {
+            mem.write32(SamplesAdrr , 0x0000);//0 for now; write32(SamplesNbr  , "decodedSamples");
+            mem.write32(SamplesNbr  , 0x0010);//16?
+            mem.write32(outEnd      , 0x0000);
+            mem.write32(RemainFrames, -1);
+            return;
+        }
 
         Modules.log.warn("Unimplemented sceAtracDecodeData: "
-                + String.format("atracID=0x%08x, SamplesAdrr=%d, SamplesNbr=0x%08x, outEnd=0x%08x, RemainFrames=%d",
+                + String.format("atracID=0x%08x, SamplesAdrr=0x%08x, SamplesNbr=0x%08x, outEnd=0x%08x, RemainFrames=%d",
                 atID, SamplesAdrr, SamplesNbr, outEnd, RemainFrames));
 
-        
         cpu.gpr[2] = 0;
     }
 
@@ -241,7 +245,7 @@ public class sceAtrac3plus implements HLEModule {
         mem.write32(RemainFrames, 0);
         
         Modules.log.warn("Unimplemented sceAtracGetRemainFrame: atracID = " + atID
-                + "RemainFrames = 0x" + Integer.toHexString(RemainFrames));
+                + ", RemainFrames = 0x" + Integer.toHexString(RemainFrames));
 
         cpu.gpr[2] = 0;
     }
@@ -282,12 +286,12 @@ public class sceAtrac3plus implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
         
-        int unknown = cpu.gpr[4]; // atracID?
+        int atID = cpu.gpr[4];
         int outPosition = cpu.gpr[5];
         int outBytes = cpu.gpr[6];
         
-        Modules.log.warn("Skipping:sceAtracGetSecondBufferInfo outPos=0x" + Integer.toHexString(outPosition)
-                + " outBytes=0x" + Integer.toHexString(outBytes));
+        Modules.log.warn("Skipping:sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition)
+                + ", outBytes=0x" + Integer.toHexString(outBytes));
 
         mem.write32(outPosition, 0);
         mem.write32(outBytes, 0x4000);
@@ -299,7 +303,7 @@ public class sceAtrac3plus implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
-        //like sceAtracSetData ?
+        //like sceAtracSetData?
         Modules.log.warn("Unimplemented NID function sceAtracIsSecondBufferNeeded [0xECA32A99] "
             + String.format("%08x %08x %08x %08x %08x %08x",
             cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
@@ -329,7 +333,7 @@ public class sceAtrac3plus implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
-        //int atId = cpu.gpr[4]; // ??
+        int atId = cpu.gpr[4];
         int EndSample = cpu.gpr[5];
         int LoopStartSample = cpu.gpr[6];
         int LoopEndSample = cpu.gpr[7];
@@ -349,8 +353,8 @@ public class sceAtrac3plus implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
         
-        // int atID = cpu.gpr[4]; // ??
-        // int channel = cpu.gpr[5]; // ??
+         //int atID = cpu.gpr[4]; // ??
+         //int channel = cpu.gpr[5]; // ??
         Modules.log.warn("Unimplemented NID function sceAtracGetChannel [0x31668BAA]");
 
         cpu.gpr[2] = 0;
@@ -374,6 +378,8 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
         int nbrSamples = cpu.gpr[5];
+
+      //  mem.write32(nbrSamples, 0x10);
         
         Modules.log.warn("Unimplemented sceAtracGetNextSample: atracID = " + atID + ", nbrSamples = " + nbrSamples);
         
