@@ -257,6 +257,9 @@ public class pspge {
         	cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
         } else if (id < 0 || id >= NUMBER_GE_LISTS) {
         	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
+        } else if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
+    		VideoEngine.log.warn("sceGeListSync mode=0 called inside an Interrupt!");
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
         	PspGeList list = allGeLists[id];
         	if (VideoEngine.log.isDebugEnabled()) {
@@ -296,29 +299,28 @@ public class pspge {
     public synchronized void sceGeDrawSync(int mode) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-    		VideoEngine.log.warn("sceGeDrawSync called inside an Interrupt!");
-    		cpu.gpr[2] = -1;
-    		return;
-    	}
-
     	if (VideoEngine.log.isDebugEnabled()) {
     		VideoEngine.log.debug("sceGeDrawSync mode=" + mode);
     	}
 
         if (mode == 0) {
-    		cpu.gpr[2] = 0;
-
-    		PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
-    		if (lastList != null) {
-    			blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
-    		} else {
-    			if (VideoEngine.log.isDebugEnabled()) {
-    				VideoEngine.log.debug("sceGeDrawSync all lists completed, not waiting");
-    			}
-    			hleGeAfterDrawSyncAction();
-    			ThreadMan.getInstance().rescheduleCurrentThread();
-    		}
+            if (IntrManager.getInstance().isInsideInterrupt()) {
+        		VideoEngine.log.warn("sceGeDrawSync mode=0 called inside an Interrupt!");
+        		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        	} else {
+	    		cpu.gpr[2] = 0;
+	
+	    		PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
+	    		if (lastList != null) {
+	    			blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
+	    		} else {
+	    			if (VideoEngine.log.isDebugEnabled()) {
+	    				VideoEngine.log.debug("sceGeDrawSync all lists completed, not waiting");
+	    			}
+	    			hleGeAfterDrawSyncAction();
+	    			ThreadMan.getInstance().rescheduleCurrentThread();
+	    		}
+        	}
     	} else if (mode == 1) {
     		PspGeList currentList = VideoEngine.getInstance().getCurrentList();
     		if (currentList == null) {
