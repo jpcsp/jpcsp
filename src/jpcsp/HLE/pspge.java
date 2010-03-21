@@ -434,10 +434,12 @@ public class pspge {
 
     private void triggerAsyncCallback(int cbid, int listId, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
     	SceKernelCallbackInfo callback = callbacks.get(cbid);
-    	if (callback != null) {
+    	if (callback != null && callback.callback_addr != 0) {
     		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.callback_addr, callback.callback_arg_addr);
     		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);
     		Emulator.getScheduler().addAction(0, geInterruptHandler);
+    	} else {
+    		hleGeOnAfterCallback(listId, behavior);
     	}
     }
 
