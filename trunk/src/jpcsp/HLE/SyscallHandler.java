@@ -751,7 +751,9 @@ public class SyscallHandler {
                 case 0x2143:
                     pspdisplay.getInstance().sceDisplayGetVcount();
                     break;
-		// sceDisplayIsVblank(0x2144),
+                case 0x2144:
+                	pspdisplay.getInstance().sceDisplayIsVblank();
+                	break;
                 case 0x2145:
                     pspdisplay.getInstance().sceDisplayWaitVblank();
                     break;

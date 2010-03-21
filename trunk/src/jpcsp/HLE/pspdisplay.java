@@ -1062,6 +1062,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     	return (microTimeSinceLastVblank <= 731);
     }
 
+    public void sceDisplayIsVblank() {
+        Emulator.getProcessor().cpu.gpr[2] = isVblank() ? 1 : 0;
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceDisplayIsVblank returns " + Emulator.getProcessor().cpu.gpr[2]);
+        }
+    }
+
     public void sceDisplayWaitVblank() {
         if (Modules.log.isDebugEnabled()) {
         	Modules.log.debug("sceDisplayWaitVblank");
