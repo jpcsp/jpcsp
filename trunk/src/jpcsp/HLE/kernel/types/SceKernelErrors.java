@@ -42,6 +42,7 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_SAVE_NO_UMD = 0x80110389;
     public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD = 0x8011038a;
 
+    public final static int ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT = 0x80020064;
     public final static int ERROR_UNKNOWN_UID = 0x800200cb;
     public final static int ERROR_UNMATCH_TYPE_UID = 0x800200cc;
     public final static int ERROR_NOT_EXIST_ID = 0x800200cd;
