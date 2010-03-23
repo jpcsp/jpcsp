@@ -311,6 +311,7 @@ public class EventFlagManager {
             Modules.log.warn("hleKernelWaitEventFlag already another thread waiting on it");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_EVENT_FLAG_NO_MULTI_PERM;
         } else {
+            ThreadMan threadMan = ThreadMan.getInstance();
             Memory mem = Memory.getInstance();
             int micros = 0;
             if (mem.isAddressGood(timeout_addr)) {
@@ -324,13 +325,13 @@ public class EventFlagManager {
                 event.numWaitThreads++;
 
                 // Go to wait state
-                SceKernelThreadInfo currentThread = ThreadMan.getInstance().getCurrentThread();
+                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
                 currentThread.do_callbacks = do_callbacks;
                 currentThread.waitType = PSP_WAIT_MISC;
                 currentThread.waitId = uid;
 
                 // Wait on a specific event flag
-                ThreadMan.getInstance().hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
+                threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
 
                 currentThread.wait.waitingOnEventFlag = true;
                 currentThread.wait.EventFlag_id = uid;
@@ -338,18 +339,23 @@ public class EventFlagManager {
                 currentThread.wait.EventFlag_wait = wait;
                 currentThread.wait.EventFlag_outBits_addr = outBits_addr;
 
-                ThreadMan.getInstance().changeThreadState(currentThread, PSP_THREAD_WAITING);
-                ThreadMan.getInstance().contextSwitch(ThreadMan.getInstance().nextThread());
+                threadMan.changeThreadState(currentThread, PSP_THREAD_WAITING);
+                threadMan.contextSwitch(ThreadMan.getInstance().nextThread());
             } else {
                 // Success
                 Modules.log.debug("hleKernelWaitEventFlag fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
 
-                // TODO yield anyway? probably yes, at least when do_callbacks is true
-                if (do_callbacks)
-                    ThreadMan.getInstance().yieldCurrentThreadCB();
-                else
-                    ThreadMan.getInstance().yieldCurrentThread();
+                if (!threadMan.isInsideCallback()) {
+	                // TODO yield anyway? probably yes, at least when do_callbacks is true
+	                if (do_callbacks) {
+	                	threadMan.yieldCurrentThreadCB();
+	                } else {
+	                	//threadMan.yieldCurrentThread();
+	                }
+                } else {
+                    Modules.log.warn("hleKernelWaitEventFlag called from inside callback!");
+                }
             }
         }
     }
