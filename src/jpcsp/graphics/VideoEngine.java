@@ -1212,7 +1212,11 @@ public class VideoEngine {
             case SIGNAL:
             	int behavior = (normalArgument >> 16) & 0xFF;
             	int signal = normalArgument & 0xFFFF;
-            	if (isLogDebugEnabled) {
+            	if (behavior < 1 || behavior > 3) {
+            		if (isLogWarnEnabled) {
+                        log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ") unknown behavior");
+            		}
+            	} else if (isLogDebugEnabled) {
                     log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
                 }
                 currentList.pushSignalCallback(currentList.id, behavior, signal);
