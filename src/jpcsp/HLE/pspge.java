@@ -180,7 +180,7 @@ public class pspge {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (VideoEngine.log.isDebugEnabled()) {
-        	VideoEngine.log.debug(String.format("sceGeListUpdateStallAddr(id=%d, stall=0x%08X)", id, stall_addr));
+        	VideoEngine.log.debug(String.format("sceGeListUpdateStallAddr(id=0x%x, stall=0x%08X)", id, stall_addr));
         }
 
         stall_addr &= Memory.addressMask;
@@ -250,7 +250,7 @@ public class pspge {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (VideoEngine.log.isDebugEnabled()) {
-        	VideoEngine.log.debug("sceGeListSync(id=" + id + ",mode=" + mode + ")");
+        	VideoEngine.log.debug(String.format("sceGeListSync(id=0x%x,mode=%d)", id, mode));
         }
 
         if (mode != 0 && mode != 1) {

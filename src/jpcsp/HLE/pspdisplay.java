@@ -636,7 +636,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             if (temp instanceof ByteBuffer) {
                 ((ByteBuffer) pixels).put((ByteBuffer) temp);
             } else if (temp instanceof IntBuffer) {
-            	if (VideoEngine.getInstance().isUsingTRXKICK()) {
+            	VideoEngine videoEngine = VideoEngine.getInstance();
+            	if (videoEngine.isUsingTRXKICK() && videoEngine.getMaxSpriteHeight() < Integer.MAX_VALUE) {
             		// Hack: God of War is using GE command lists stored into the non-visible
             		// part of the GE buffer. The lists are copied from the main memory into
             		// the VRAM using TRXKICK. Be careful to not overwrite these non-visible
