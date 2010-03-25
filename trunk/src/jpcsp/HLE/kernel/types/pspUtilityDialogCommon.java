@@ -56,6 +56,10 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 		writeUnknown(16);
 	}
 
+	public void writeResult(Memory mem) {
+		writeResult(mem, getBaseAddress());
+	}
+
 	public void writeResult(Memory mem, int address) {
 		mem.write32(address + 28, result);
 	}

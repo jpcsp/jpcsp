@@ -429,4 +429,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public int sizeof() {
         return base.size;
     }
+
+	@Override
+	public String toString() {
+		return String.format("Address 0x%08X, mode=%d, gameName=%s, saveName=%s, fileName=%s",
+				getBaseAddress(), mode, gameName, saveName, fileName);
+	}
 }
