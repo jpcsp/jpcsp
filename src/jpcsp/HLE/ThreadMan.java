@@ -1913,6 +1913,34 @@ public class ThreadMan {
         }
     }
 
+    public void ThreadMan_sceKernelReleaseWaitThread(int uid) {
+        if (uid == 0) uid = current_thread.uid;
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") unknown thread");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else if (thread.status != PSP_THREAD_WAITING) {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") Thread not waiting: status=" + thread.status);
+        	}
+    		Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_THREAD_IS_NOT_WAIT;
+        } else {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") releasing waiting thread: " + thread.toString());
+        	}
+
+    		Emulator.getProcessor().cpu.gpr[2] = 0;
+    		thread.cpuContext.gpr[2] = SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
+    		changeThreadState(thread, PSP_THREAD_READY);
+
+    		// Switch to the released thread if it has a higher priority
+    		if (thread.currentPriority < current_thread.currentPriority) {
+    			contextSwitch(nextThread());
+    		}
+        }
+    }
+
     /** Registers a callback on the current thread.
      * @return true on success (the cbid was a valid callback uid) */
     public boolean setCallback(int callbackType, int cbid) {
