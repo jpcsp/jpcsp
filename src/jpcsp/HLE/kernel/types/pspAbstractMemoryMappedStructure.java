@@ -358,4 +358,8 @@ public abstract class pspAbstractMemoryMappedStructure {
     protected int getOffset() {
     	return offset;
     }
+
+    public int getBaseAddress() {
+    	return baseAddress;
+    }
 }
