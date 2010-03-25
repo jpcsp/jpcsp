@@ -259,6 +259,10 @@ public class CaptureImage {
     		pixelBytes[0] = (byte) ((pixel >> 4) & 0xF0);
     		pixelBytes[1] = (byte) ((pixel     ) & 0xF0);
     		pixelBytes[2] = (byte) ((pixel << 4) & 0xF0);
+    		int alpha = (pixel >> 12) & 0x0F;
+    		pixelBytes[0] = (byte) ((pixelBytes[0] * alpha) / 0x0F);
+    		pixelBytes[1] = (byte) ((pixelBytes[1] * alpha) / 0x0F);
+    		pixelBytes[2] = (byte) ((pixelBytes[2] * alpha) / 0x0F);
     		break;
 		default:
 			pixelBytes[0] = 0;
