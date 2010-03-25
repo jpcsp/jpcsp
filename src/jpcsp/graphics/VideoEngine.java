@@ -811,7 +811,7 @@ public class VideoEngine {
         currentList.status = PSP_GE_LIST_DRAWING;
 
         if (isLogDebugEnabled) {
-            log("executeList id=" + list.id);
+            log("executeList " + list);
         }
 
         executeHleAction();
@@ -3605,7 +3605,15 @@ public class VideoEngine {
                             	maxSpriteHeight = (int) v2.p[1];
                             }
 
-                            if (isLogDebugEnabled && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                            // Flipped:
+                            //  sprite (16,0)-(0,56) at (0,16,65535)-(56,0,65535)
+                            // Not flipped:
+                            //	sprite (24,0)-(0,48) at (226,120,0)-(254,178,0)
+                            boolean flippedTexture = v1.t[0] > v2.t[0] && v1.p[1] > v2.p[1];
+
+                            if (flippedTexture && isLogInfoEnabled) {
+                                log.info("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ") flipped");
+                            } else if (isLogDebugEnabled && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
                                 log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
                             }
 
@@ -3615,10 +3623,16 @@ public class VideoEngine {
                             if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
                             if (vinfo.position != 0) vboFloatBuffer.put(v1.p);
 
-                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+                            if (vinfo.texture  != 0) {
+                            	if (flippedTexture) {
+                            		vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+                            	} else {
+                            		vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+                            	}
+                            }
                             if (useVertexColor) vboFloatBuffer.put(v2.c);
                             if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
 
                             // V2
                             if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t);
@@ -3626,10 +3640,16 @@ public class VideoEngine {
                             if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
                             if (vinfo.position != 0) vboFloatBuffer.put(v2.p);
 
-                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+                            if (vinfo.texture  != 0) {
+                            	if (flippedTexture) {
+                                    vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+                            	} else {
+                                    vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+                            	}
+                            }
                             if (useVertexColor) vboFloatBuffer.put(v2.c);
                             if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
                         }
                         if(useVBO) {
                         	if (useVertexCache) {
