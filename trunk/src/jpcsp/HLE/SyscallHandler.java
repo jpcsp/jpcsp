@@ -360,7 +360,9 @@ public class SyscallHandler {
                 case 0x2079:
                     ThreadMan.getInstance().ThreadMan_sceKernelRotateThreadReadyQueue(gpr[4]);
                     break;
-		// sceKernelReleaseWaitThread(0x207a),
+                case 0x207a:
+                	ThreadMan.getInstance().ThreadMan_sceKernelReleaseWaitThread(gpr[4]);
+                	break;
                 case 0x207b:
                     ThreadMan.getInstance().ThreadMan_sceKernelGetThreadId();
                     break;
