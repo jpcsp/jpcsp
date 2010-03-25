@@ -150,7 +150,9 @@ public class pspiofilemgr {
     public final static int PSP_ERROR_NO_ASYNC_OP           = 0x8002032a;
     public final static int PSP_ERROR_DEVCTL_BAD_PARAMS     = 0x80220081; // actual name unknown
 
-
+    // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
+    // SeekableRandomFile doesn't support write only: take "rw",
+    private final static String[] modeStrings = { "r", "r", "rw", "rw" };
 
     private HashMap<Integer, IoInfo> filelist;
     private HashMap<Integer, IoDirInfo> dirlist;
@@ -619,19 +621,7 @@ public class pspiofilemgr {
     }
 
     private String getMode(int flags) {
-        String mode = null;
-
-        // PSP_O_RDWR check must come before the individual PSP_O_RDONLY and PSP_O_WRONLY checks
-        if ((flags & PSP_O_RDWR) == PSP_O_RDWR) {
-            mode = "rw";
-        } else if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY || flags == 0) {
-            mode = "r";
-        } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY) {
-            // SeekableRandomFile doesn't support write only
-            mode = "rw";
-        }
-
-        return mode;
+    	return modeStrings[flags & PSP_O_RDWR];
     }
 
     public void hleIoOpen(int filename_addr, int flags, int permissions, boolean async) {
@@ -662,10 +652,11 @@ public class pspiofilemgr {
         }
 
         //Retry count.
-        int retry = (flags >> 16);
+        int retry = (flags >> 16) & 0x000F;
 
-        if(retry != 0)
+        if (retry != 0) {
             Modules.log.warn("hleIoOpen - retry count is " + retry);
+        }
 
         // TODO we may want to do something with PSP_O_CREAT and permissions
         // using java File and its setReadable/Writable/Executable.
