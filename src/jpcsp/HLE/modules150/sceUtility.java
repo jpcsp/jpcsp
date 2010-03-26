@@ -217,6 +217,8 @@ public class sceUtility implements HLEModule {
     protected Object saveListSelection;
     protected boolean saveListSelected;
 
+    protected int updatedSavedataAddr;
+
 	protected String formatMessageForDialog(String message) {
 		StringBuilder formattedMessage = new StringBuilder();
 
@@ -275,13 +277,13 @@ public class sceUtility implements HLEModule {
     }
 
     protected boolean canDisplay() {
-    	// A call to the GUI (JOptionPane) is only possible when the VideoEngine is not
-    	// busy waiting on a sync: call JOptionPane only when the VideoEngine
-    	// is not processing a list.
-    	return VideoEngine.getInstance().getCurrentList() == null;
+        // A call to the GUI (JOptionPane) is only possible when the VideoEngine is not
+        // busy waiting on a sync: call JOptionPane only when the VideoEngine
+        // is not processing a list.
+        return VideoEngine.getInstance().getCurrentList() == null;
     }
 
-    public void sceUtilityGameSharingInitStart(Processor processor) {
+	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu;
 
 		Modules.log.warn("Unimplemented NID function sceUtilityGameSharingInitStart [0xC492F751]");
@@ -389,7 +391,8 @@ public class sceUtility implements HLEModule {
         Memory mem = Processor.memory;
 
         if (!canDisplay()) {
-        	return;
+            savedataStatus = PSP_UTILITY_DIALOG_VISIBLE;
+            return;
         }
 
         switch (savedataParams.mode) {
@@ -607,7 +610,7 @@ public class sceUtility implements HLEModule {
 
         savedataParams.base.writeResult(mem);
         if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("hleUtilitySavedataDisplay savedResult:0x" + Integer.toHexString(savedataParams.base.result));
+            Modules.log.debug("hleUtilitySavedataDisplay savedResult:0x" + Integer.toHexString(savedataParams.base.result));
         }
 
         // Dialog has exited
@@ -623,14 +626,26 @@ public class sceUtility implements HLEModule {
         savedataParams = new SceUtilitySavedataParam();
         savedataParams.read(mem, savedataParamAddr);
 
-        if (Modules.log.isInfoEnabled()) {
-	        Modules.log.info("PARTIAL:sceUtilitySavedataInitStart " + savedataParams.toString());
-        }
+       if (Modules.log.isInfoEnabled()) {
+           Modules.log.info("PARTIAL:sceUtilitySavedataInitStart " + savedataParams.toString());
+       }
 
-        // We are ready to display something
-        savedataStatus = PSP_UTILITY_DIALOG_VISIBLE;
+        // Start with INIT and hleUtilitySavedataDisplay() should change it to QUIT.
+        savedataStatus = PSP_UTILITY_DIALOG_INIT;
 
         hleUtilitySavedataDisplay();
+
+        // There's an additional condition that has to be verified.
+        // Some games reach sceUtilitySavedataInitStart with empty params which only
+        // get filled with a subsquent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
+        // This may be some kind of mechanism the PSP expects and corrects.
+
+        // If, after processing the save mode, there's still no fileName
+        // it means sceUtilitySavedataUpdate will be called next.
+        if(savedataParams.fileName.equals("")) {
+            savedataStatus = PSP_UTILITY_DIALOG_VISIBLE;  //Change the status back from QUIT to VISIBLE.
+            updatedSavedataAddr = savedataParamAddr;      //Save the params' address (some games change it).
+        }
 
         cpu.gpr[2] = 0;
     }
@@ -639,7 +654,7 @@ public class sceUtility implements HLEModule {
         CpuState cpu = processor.cpu;
 
         if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceUtilitySavedataShutdownStart");
+        Modules.log.debug("sceUtilitySavedataShutdownStart");
         }
 
         savedataStatus = PSP_UTILITY_DIALOG_FINISHED;
@@ -649,13 +664,22 @@ public class sceUtility implements HLEModule {
 
     public void sceUtilitySavedataUpdate(Processor processor) {
         CpuState cpu = processor.cpu;
+		Memory mem = Processor.memory;
 
-		int unk = cpu.gpr[4];
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug("sceUtilitySavedataUpdate unk=" + unk);
-		}
+        int unk = cpu.gpr[4];
 
-		if (savedataStatus == PSP_UTILITY_DIALOG_VISIBLE) {
+        // If the status is VISIBLE, try hleUtilitySavedataDisplay() again.
+		if(savedataStatus == PSP_UTILITY_DIALOG_VISIBLE) {
+
+            // Use the saved address, if there's one.
+            if(mem.isAddressGood(updatedSavedataAddr)) {
+                savedataParams.read(mem, updatedSavedataAddr);
+            }
+
+           if (Modules.log.isDebugEnabled()) {
+               Modules.log.debug("sceUtilitySavedataUpdate unk=" + unk);
+           }
+
             hleUtilitySavedataDisplay();
         }
 
@@ -666,7 +690,7 @@ public class sceUtility implements HLEModule {
         CpuState cpu = processor.cpu;
 
         if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceUtilitySavedataGetStatus status " + savedataStatus);
+        Modules.log.debug("sceUtilitySavedataGetStatus status " + savedataStatus);
         }
 
         cpu.gpr[2] = savedataStatus;
@@ -680,7 +704,7 @@ public class sceUtility implements HLEModule {
 	public void sceUtility_2995D020(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
+        Modules.log.warn("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -709,29 +733,37 @@ public class sceUtility implements HLEModule {
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
 
-	protected void hleUtilityMsgDialogDisplay() {
-		if (canDisplay()) {
-	        Memory mem = Processor.memory;
+    protected void hleUtilityMsgDialogDisplay() {
+        if (canDisplay()) {
+            Memory mem = Processor.memory;
 
-	        String title = String.format("Message from %s", State.title);
-	        if (msgDialogParams.isOptionYesNo()) {
-	            int result = JOptionPane.showConfirmDialog(null, formatMessageForDialog(msgDialogParams.message), null, JOptionPane.YES_NO_OPTION);
-	            if (result == JOptionPane.YES_OPTION) {
-	            	msgDialogParams.buttonPressed = 1;
-	            } else if (result == JOptionPane.NO_OPTION) {
-	            	msgDialogParams.buttonPressed = 2;
-	            } else if (result == JOptionPane.CANCEL_OPTION) {
-	            	msgDialogParams.buttonPressed = 3;
-	            }
-	        } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
-	        	JOptionPane.showMessageDialog(null, formatMessageForDialog(msgDialogParams.message), title, JOptionPane.INFORMATION_MESSAGE);
-	        }
-	        msgDialogParams.base.result = 0;
-	        msgDialogParams.write(mem);
-		}
-	}
+            String title = String.format("Message from %s", State.title);
+            if (msgDialogParams.isOptionYesNo()) {
+                int result = JOptionPane.showConfirmDialog(null, formatMessageForDialog(msgDialogParams.message), null, JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                    msgDialogParams.buttonPressed = 1;
+                } else if (result == JOptionPane.NO_OPTION) {
+                    msgDialogParams.buttonPressed = 2;
+                } else if (result == JOptionPane.CANCEL_OPTION) {
+                    msgDialogParams.buttonPressed = 3;
+                }
+            } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
+                JOptionPane.showMessageDialog(null, formatMessageForDialog(msgDialogParams.message), title, JOptionPane.INFORMATION_MESSAGE);
+            }
+            msgDialogParams.base.result = 0;
+            msgDialogParams.write(mem);
 
-	public void sceUtilityMsgDialogInitStart(Processor processor) {
+            // If the process finished (canDisplay is true), msgDialogStatus changes to QUIT.
+            msgDialogStatus = PSP_UTILITY_DIALOG_QUIT;
+
+        } else {
+            // If the process didn't finish (canDisplay is false),
+            // msgDialogStatus changes to VISIBLE and waits for an update.
+            msgDialogStatus = PSP_UTILITY_DIALOG_VISIBLE;
+        }
+    }
+
+    public void sceUtilityMsgDialogInitStart(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
@@ -740,17 +772,17 @@ public class sceUtility implements HLEModule {
             Modules.log.error("sceUtilityMsgDialogInitStart bad address " + String.format("0x%08X", params_addr));
             cpu.gpr[2] = -1;
         } else {
-            msgDialogParams = new SceUtilityMsgDialogParams();
-            msgDialogParams.read(mem, params_addr);
+        msgDialogParams = new SceUtilityMsgDialogParams();
+        msgDialogParams.read(mem, params_addr);
 
-            Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart " + msgDialogParams.toString());
+        Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart " + msgDialogParams.toString());
 
-            // We are ready to display something
-            msgDialogStatus = PSP_UTILITY_DIALOG_VISIBLE;
+        // Start on INIT.
+        msgDialogStatus = PSP_UTILITY_DIALOG_INIT;
 
-            hleUtilityMsgDialogDisplay();
+        hleUtilityMsgDialogDisplay();
 
-            cpu.gpr[2] = 0;
+        cpu.gpr[2] = 0;
         }
     }
 
@@ -768,22 +800,22 @@ public class sceUtility implements HLEModule {
 		CpuState cpu = processor.cpu;
 
 		int unk = cpu.gpr[4];
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug("sceUtilityMsgDialogUpdate unk=" + unk);
-		}
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("sceUtilityMsgDialogUpdate unk=" + unk);
+        }
 
-		if (msgDialogStatus == PSP_UTILITY_DIALOG_VISIBLE) {
-			hleUtilityMsgDialogDisplay();
-		}
+        if (msgDialogStatus == PSP_UTILITY_DIALOG_VISIBLE) {
+            hleUtilityMsgDialogDisplay();
+        }
 
-		cpu.gpr[2] = 0;
+        cpu.gpr[2] = 0;
 	}
 
     public void sceUtilityMsgDialogGetStatus(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceUtilityMsgDialogGetStatus status: " + msgDialogStatus);
+            Modules.log.debug("sceUtilityMsgDialogGetStatus status: " + msgDialogStatus);
         }
 
         cpu.gpr[2] = msgDialogStatus;
@@ -795,21 +827,26 @@ public class sceUtility implements HLEModule {
     }
 
     protected void hleUtilityOskDisplay() {
-    	if (canDisplay()) {
-    		Memory mem = Processor.memory;
+        if (canDisplay()) {
+            Memory mem = Processor.memory;
 
-    		oskParams.oskData.outText = JOptionPane.showInputDialog(oskParams.oskData.desc, oskParams.oskData.inText);
-	        oskParams.base.result = 0;
-	        oskParams.oskData.result = 2;	// Unknown value, but required by "SEGA Rally"
-	        oskParams.write(mem);
-	        Modules.log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
+            oskParams.oskData.outText = JOptionPane.showInputDialog(oskParams.oskData.desc, oskParams.oskData.inText);
+            oskParams.base.result = 0;
+            oskParams.oskData.result = 2; // Unknown value, but required by "SEGA Rally"
+            oskParams.write(mem);
+            Modules.log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
 
-	        // Dialog has exited
-	        oskStatus = PSP_UTILITY_DIALOG_QUIT;
-    	}
+            // Dialog has exited
+            oskStatus = PSP_UTILITY_DIALOG_QUIT;
+        }
+        else {
+            // Process couldn't be finished.
+            // Wait for an update.
+            oskStatus = PSP_UTILITY_DIALOG_VISIBLE;
+        }
     }
 
-    public void sceUtilityOskInitStart(Processor processor) {
+	public void sceUtilityOskInitStart(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
 
@@ -823,8 +860,9 @@ public class sceUtility implements HLEModule {
             ", inText=" + oskParams.oskData.inText +
             ", outText=" + oskParams.oskData.outText);
 
-        // Set the status saying we are ready to display something.
-        oskStatus = PSP_UTILITY_DIALOG_VISIBLE;
+        // Set the status saying we are ready to init.
+        oskStatus = PSP_UTILITY_DIALOG_INIT;
+
         hleUtilityOskDisplay();
 
         cpu.gpr[2] = 0;
@@ -843,14 +881,14 @@ public class sceUtility implements HLEModule {
 	public void sceUtilityOskUpdate(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int unk = cpu.gpr[4];
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug("sceUtilityOskUpdate unk=" + unk);
-		}
+        int unk = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("sceUtilityOskUpdate unk=" + unk);
+        }
 
 		if (oskStatus == PSP_UTILITY_DIALOG_VISIBLE) {
-			hleUtilityOskDisplay();
-		}
+            hleUtilityOskDisplay();
+        }
 
 		cpu.gpr[2] = 0;
 	}
@@ -863,7 +901,7 @@ public class sceUtility implements HLEModule {
 		cpu.gpr[2] = oskStatus;
 
         // after returning FINISHED once, return NONE on following calls
-		if (oskStatus == PSP_UTILITY_DIALOG_FINISHED) {
+        if (oskStatus == PSP_UTILITY_DIALOG_FINISHED) {
             oskStatus = PSP_UTILITY_DIALOG_NONE;
         }
 	}

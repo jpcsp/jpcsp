@@ -71,6 +71,7 @@ public class pspiofilemgr {
     public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
     public final static int PSP_O_NOWAIT   = 0x8000;
     public final static int PSP_O_UNKNOWN2 = 0x2000000; // seen on Puzzle Guzzle, Hammerin' Hero
+    public final static int PSP_O_UNKNOWN3 = 0x40000000; // From "Kingdom Hearts: Birth by Sleep".
 
     //Every flag seems to be ORed with a retry count.
     //In Activision Hits Remixed, an error is produced after
@@ -641,6 +642,7 @@ public class pspiofilemgr {
         }
         if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
         if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
+        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
 
         String mode = getMode(flags);
 
