@@ -62,6 +62,21 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 
 	public void writeResult(Memory mem, int address) {
 		mem.write32(address + 28, result);
+        
+        int newResultAddr = ((address + size) - 4);
+
+        // While most games fill the base address + size - 4 (end of dialog data)
+        // with zeros (and occasionally with addresses), others fill this area
+        // with 1 and then try to read them as an address, if it's not 0.
+
+        // Final Fantasy expects to find a pointer to "0xBABEFACE" (????), when
+        // saving, if it doesn't find 0 first.
+        // Is this some kind of fake saving detection mechanism?
+
+        if(mem.read32(newResultAddr) != 0) {
+            mem.write32(newResultAddr, result);
+            mem.write32(newResultAddr - 4, result);
+        }
 	}
 
 	public int sizeof() {
