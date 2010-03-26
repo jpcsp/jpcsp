@@ -410,9 +410,8 @@ public class EventFlagManager {
 
             // TODO CANNOT_CANCEL 0x80020261
             Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(result_addr)) {
-                mem.write32(result_addr, 0);
-            }
+            if (mem.isAddressGood(result_addr))
+            	mem.write32(result_addr, 0);
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
             onEventFlagCancelled(uid);

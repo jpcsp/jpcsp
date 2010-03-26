@@ -714,7 +714,6 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegGetAvcAu(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -778,7 +777,6 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegGetPcmAu(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -824,7 +822,6 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegGetAtracAu(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -884,7 +881,6 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegFlushStream(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -894,14 +890,11 @@ public class sceMpeg implements HLEModule {
 
         System.out.println("Unimplemented NID function sceMpegFlushStream [0x500F0429]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0x0;
     }
 
     public void sceMpegFlushAllStream(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -1048,7 +1041,7 @@ public class sceMpeg implements HLEModule {
                 cpu.gpr[2] = 0;
             } else {
                 // unimplemented
-                cpu.gpr[2] = 0xDEADC0DE;
+                cpu.gpr[2] = 0x0;
             }
         } else {
             Modules.log.warn("sceMpegAvcDecode bad address "

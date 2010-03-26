@@ -17,7 +17,7 @@ public class Iso9660Directory {
     {
         // parse directory sector
         UmdIsoFile dataStream = new UmdIsoFile(r, directorySector, directorySize, null, null);
-
+        
         files = new ArrayList<Iso9660File>();
 
         byte[] b;
@@ -41,7 +41,6 @@ public class Iso9660Directory {
             Iso9660File file = new Iso9660File(b,b.length);
             files.add(file);
         }
-
     }
 
     public Iso9660File getEntryByIndex(int index) throws ArrayIndexOutOfBoundsException
@@ -59,7 +58,6 @@ public class Iso9660Directory {
                 return i;
             }
         }
-
 
         throw new FileNotFoundException("File " + fileName + " not found in directory.");
     }

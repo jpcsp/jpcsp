@@ -706,8 +706,7 @@ public class pspiofilemgr {
                                 UmdIsoFile file = iso.getFile(trimmedFileName);
                                 IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
                                 if (trimmedFileName != null && trimmedFileName.length() == 0) {
-                                    // Opening "umd0:" is allowing to read the whole UMD
-                                    // per sectors.
+                                    // Opening "umd0:" is allowing to read the whole UMD per sectors.
                                     info.sectorBlockMode = true;
                                 }
                                 //info.result = info.uid;
@@ -726,15 +725,13 @@ public class pspiofilemgr {
                 } else {
                     // First check if the file already exists
                     File file = new File(pcfilename);
-                    if (file.exists() &&
-                        (flags & PSP_O_CREAT) == PSP_O_CREAT &&
+                    if (file.exists() && (flags & PSP_O_CREAT) == PSP_O_CREAT &&
                         (flags & PSP_O_EXCL) == PSP_O_EXCL) {
                         // PSP_O_CREAT + PSP_O_EXCL + file already exists = error
                         if (debug) Modules.log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                         Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_ALREADY_EXISTS;
                     } else {
-                        if (file.exists() &&
-                            (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                        if (file.exists() && (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
                             if (debug) Modules.log.warn("hleIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
                             //file.delete();
                         }

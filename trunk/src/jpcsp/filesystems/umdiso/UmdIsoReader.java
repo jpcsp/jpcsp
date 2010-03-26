@@ -210,7 +210,7 @@ public class UmdIsoReader {
     private Iso9660File getFileEntry(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660File info;
-
+        
         info = fileCache.get(filePath);
         if (info != null) {
         	return info;
@@ -231,7 +231,7 @@ public class UmdIsoReader {
         }
 
         Iso9660Directory dir = new Iso9660Handler(this);
-
+        
         String[] path = filePath.split("[\\/]");
 
         // walk through path
@@ -252,10 +252,10 @@ public class UmdIsoReader {
             }
             else
             {
-                String pathName = path[i];
-                int index = dir.getFileIndex(pathName);
+                int index = dir.getFileIndex(path[i]);
+                
                 info = dir.getEntryByIndex(index);
-                dir  = null;
+                
                 if((info.getProperties()&2)==2) // if it's a directory
                 {
                     dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
@@ -268,7 +268,7 @@ public class UmdIsoReader {
                 i++;
             }
         }
-
+        
         if (info != null) {
         	fileCache.put(filePath, info);
         }
@@ -282,7 +282,7 @@ public class UmdIsoReader {
         long fileLength;
         Date timestamp = null;
         String fileName = null;
-
+        System.out.println(filePath);
         if (filePath != null && filePath.startsWith("sce_lbn"))
         {
             //
