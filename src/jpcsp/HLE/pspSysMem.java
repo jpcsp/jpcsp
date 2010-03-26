@@ -217,7 +217,7 @@ public class pspSysMem {
         }
 
         if (allocatedAddress != 0) {
-            Modules.log.debug("malloc(size=0x" + Integer.toHexString(size)
+            Modules.log.debug("pspSysMem.malloc(size=0x" + Integer.toHexString(size)
                     + ") new heapBottom=0x" + Integer.toHexString(heapBottom)
                     + ", new heapTop=0x" + Integer.toHexString(heapTop));
         }
@@ -337,6 +337,7 @@ public class pspSysMem {
         } else if (!freeBlockSet.contains(info)) {
             Modules.log.info("PARTIAL: pspSysMem.free(info) successful (" + freeBlockSet.size() + " block(s) still pending)");
         } else {
+        	// this message appears only when we make pause on the emulator ?
             Modules.log.warn("PARTIAL: pspSysMem.free(info) partially implemented " + info);
         }
     }

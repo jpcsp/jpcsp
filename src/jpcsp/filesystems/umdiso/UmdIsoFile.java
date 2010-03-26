@@ -33,7 +33,7 @@ public class UmdIsoFile extends SeekableInputStream {
         startSectorNumber = startSector;
         currentSectorNumber = startSectorNumber;
         currentOffset = 0;
-
+        
         // Some ISO directory entries indicate a file length past the size of the complete ISO.
         // Truncate the file length in that case to the available sectors.
         // This might be some sort of copy protection?

@@ -92,8 +92,7 @@ public class Iso9660File {
         for(int i=0;i<fileNameLength;i++)
         {
             char c =(char)(data[32+i]);
-            if(c==0)
-                c='.';
+            if(c==0) c='.';
                 
             fileName += c;
         }
