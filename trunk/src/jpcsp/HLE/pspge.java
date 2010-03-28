@@ -242,8 +242,9 @@ public class pspge {
     }
 
     private void startGeList(PspGeList list) {
-    	pspdisplay.getInstance().setGeDirty(true);
+    	// Send the list to the VideoEngine before triggering the display (setting GE dirty)
     	list.startList();
+    	pspdisplay.getInstance().setGeDirty(true);
     }
 
     public synchronized void sceGeListSync(int id, int mode) {
