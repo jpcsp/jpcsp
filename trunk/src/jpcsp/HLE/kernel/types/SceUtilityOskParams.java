@@ -111,4 +111,9 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 	public int sizeof() {
 		return base.size;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("desc=%s, inText=%s, outText=%s", oskData.desc, oskData.inText, oskData.outText);
+	}
 }
