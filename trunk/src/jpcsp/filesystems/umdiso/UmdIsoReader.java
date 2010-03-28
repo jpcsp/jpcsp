@@ -282,7 +282,7 @@ public class UmdIsoReader {
         long fileLength;
         Date timestamp = null;
         String fileName = null;
-        System.out.println(filePath);
+
         if (filePath != null && filePath.startsWith("sce_lbn"))
         {
             //
