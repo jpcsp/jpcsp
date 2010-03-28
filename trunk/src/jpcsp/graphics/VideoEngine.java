@@ -3078,7 +3078,7 @@ public class VideoEngine {
                 break;
             }
 
-            case PMSKC:
+            case PMSKC: {
                 if (isLogDebugEnabled) {
                     log(String.format("%s color mask=0x%06X", helper.getCommandString(PMSKC), normalArgument));
                 }
@@ -3089,8 +3089,9 @@ public class VideoEngine {
             		setGLColorMask();
             	}
                 break;
+            }
                 
-            case PMSKA:
+            case PMSKA: {
                 if (isLogDebugEnabled) {
                     log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
                 }
@@ -3099,39 +3100,45 @@ public class VideoEngine {
                 	setGLColorMask();
             	}
                 break;
-            
-            case PCE:
-            	if(normalArgument != 0)
-            		gl.glEnable(GL.GL_CULL_FACE);
-            	else
-            		gl.glDisable(GL.GL_CULL_FACE);
-            	break;
-            
-            case CTE:
-            	if(normalArgument != 0)
-            	{
-            		gl.glEnable(GL.GL_COLOR);
-            		gl.glEnable(GL.GL_COLOR3_BIT_PGI);
-            		gl.glEnable(GL.GL_COLOR4_BIT_PGI);
-            	} else {
-            		gl.glDisable(GL.GL_COLOR);
-            		gl.glEnable(GL.GL_COLOR3_BIT_PGI);
-            		gl.glEnable(GL.GL_COLOR4_BIT_PGI);
-            	}
-            	break;
-            
-            case RNORM:
-            	if (isLogDebugEnabled) {
-                    log(String.format("%s reverse fase normal mask=0x%06X", helper.getCommandString(PMSKA), normalArgument));
-                }
-            	break;
-            
-            case PFACE:
-            	if(normalArgument != 0)
-            		gl.glEnable(GL.GL_FRONT_FACE);
-            	else
-            		gl.glDisable(GL.GL_FRONT_FACE);
-            	break;
+            }
+
+            //
+            // Incorrect implementation of PCE, CTE, RNORM, PFACE:
+            // - see comments from http://code.google.com/p/jpcsp/source/detail?r=1435
+            // - not matching test results using 3DStudio
+            //
+//            case PCE:
+//            	if(normalArgument != 0)
+//            		gl.glEnable(GL.GL_CULL_FACE);
+//            	else
+//            		gl.glDisable(GL.GL_CULL_FACE);
+//            	break;
+//
+//            case CTE:
+//            	if(normalArgument != 0)
+//            	{
+//            		gl.glEnable(GL.GL_COLOR);
+//            		gl.glEnable(GL.GL_COLOR3_BIT_PGI);
+//            		gl.glEnable(GL.GL_COLOR4_BIT_PGI);
+//            	} else {
+//            		gl.glDisable(GL.GL_COLOR);
+//            		gl.glEnable(GL.GL_COLOR3_BIT_PGI);
+//            		gl.glEnable(GL.GL_COLOR4_BIT_PGI);
+//            	}
+//            	break;
+//            
+//            case RNORM:
+//            	if (isLogDebugEnabled) {
+//                    log(String.format("%s reverse fase normal mask=0x%06X", helper.getCommandString(PMSKA), normalArgument));
+//                }
+//            	break;
+//
+//            case PFACE:
+//            	if(normalArgument != 0)
+//            		gl.glEnable(GL.GL_FRONT_FACE);
+//            	else
+//            		gl.glDisable(GL.GL_FRONT_FACE);
+//            	break;
             
 
             case UNKNOWNCOMMAND_0xFF: {
