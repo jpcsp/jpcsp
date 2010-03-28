@@ -62,7 +62,7 @@ public class ThreadMan {
     private static ThreadMan instance;
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private ArrayList<SceKernelThreadInfo> waitingThreads;
-    private ArrayList<SceKernelThreadInfo> readyThreads;
+    private LinkedList<SceKernelThreadInfo> readyThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo real_current_thread; // for use with callbacks
@@ -145,7 +145,7 @@ public class ThreadMan {
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
-        readyThreads = new ArrayList<SceKernelThreadInfo>();
+        readyThreads = new LinkedList<SceKernelThreadInfo>();
         toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
         statistics = new Statistics();
 
@@ -1830,7 +1830,7 @@ public class ThreadMan {
     				contextSwitched = true;
     			} else {
 	    			// Move the thread to the end of the list
-	    			readyThreads.remove(thread);
+                                it.remove();
 	    			readyThreads.add(thread);
     			}
     			break;
