@@ -161,6 +161,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     // Async Display
     private AsyncDisplayThread asyncDisplayThread;
+    private Semaphore displayLock;
 
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
@@ -215,6 +216,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         startVcount = Emulator.getClock().currentTimeMillis();
 
+        displayLock = new Semaphore(1);
     	if (asyncDisplayThread == null) {
     		asyncDisplayThread = new AsyncDisplayThread(this);
     		asyncDisplayThread.setDaemon(true);
@@ -1280,7 +1282,26 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glDeleteTextures(1, textures, 0);
     }
 
-	private static class AsyncDisplayThread extends Thread {
+    public boolean tryLockDisplay() {
+    	return displayLock.tryAcquire();
+    }
+
+    public void lockDisplay() {
+    	while (true) {
+	    	try {
+				displayLock.acquire();
+				break;
+			} catch (InterruptedException e) {
+				// Try again
+			}
+    	}
+    }
+
+    public void unlockDisplay() {
+    	displayLock.release();
+    }
+
+    private static class AsyncDisplayThread extends Thread {
 		private Semaphore displaySemaphore;
 		private pspdisplay display;
 		private boolean run;
@@ -1297,7 +1318,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 				waitForDisplay();
 				if (run) {
 		        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
+		        		display.lockDisplay();
 		        		display.display();
+		        		display.unlockDisplay();
 		        	}
 				}
 			}
