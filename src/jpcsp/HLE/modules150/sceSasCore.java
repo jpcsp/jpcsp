@@ -82,6 +82,9 @@ public class sceSasCore implements HLEModule {
         	voices[i] = new pspVoice();
         }
 
+        grainSamples = 0x100; // Normal base value for sound processing.
+        outputMode = 1; // Let's try starting with 1. Needs to be checked.
+
         if (voicesCheckerThread == null) {
 	        voicesCheckerThread = new VoicesCheckerThread(500);
 	        voicesCheckerThread.setDaemon(true);
@@ -137,6 +140,7 @@ public class sceSasCore implements HLEModule {
         public int noise;
     	public byte[] buffer;
     	public int bufferIndex;
+        public boolean paused;
 
     	public pspVoice() {
     		outputDataLine = null;
@@ -148,6 +152,7 @@ public class sceSasCore implements HLEModule {
             noise = 0;
     		buffer = null;
     		bufferIndex = 0;
+            paused = false;
     	}
 
     	private float getSampleRate() {
@@ -229,6 +234,14 @@ public class sceSasCore implements HLEModule {
     		return false;
     	}
 
+        public synchronized boolean isPaused() {
+            return paused;
+        }
+
+        public synchronized void pause() {
+            paused = true;
+        }
+
     	private byte[] encodeSamples() {
         	int numSamples = samples.length;
             byte[] buffer = new byte[numSamples * 4];
@@ -291,6 +304,8 @@ public class sceSasCore implements HLEModule {
     protected pspVoice[] voices;
     protected int sampleRate;
     protected boolean audioMuted;
+    protected int grainSamples;
+    protected int outputMode;
 
     public void setAudioMuted(boolean muted) {
     	audioMuted = muted;
@@ -347,61 +362,53 @@ public class sceSasCore implements HLEModule {
         if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
             cpu.gpr[2] = 0;
         }
-           // cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void __sceSasRevParam(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
         int unk1 = cpu.gpr[5]; // 0, 64
         int unk2 = cpu.gpr[6]; // 0, 64
         // 99% sure there are no more parameters
-        
+
         Modules.log.warn("IGNORING:__sceSasRevParam("+ String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
         // TODO This is a fake param
-        
+
         if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
             cpu.gpr[2] = -1;
         }
         else {
-        	
-        	cpu.gpr[2] = 0;
+            cpu.gpr[2] = 0;
         }
     }
 
     // we could do some trickery in here too
     // 2C8E6AB3
     public void __sceSasGetPauseFlag(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // set to 1, if this matches __sceSasSetPause then it's a voice bitfield
-        //int unk2 = cpu.gpr[6]; // looks like a heap address, but so far 0x10000 aligned
-        // 99% sure there are no more parameters
-        // probably matches __sceSasGetEndFlag
-
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("IGNORING:__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
-        }
+        // It does match __sceSasGetEndFlag.
 
         if (isSasHandleGood(sasCore, "__sceSasGetPauseFlag", cpu)) {
-            // Fake all voices NOT paused
-            cpu.gpr[2] = 0x0;
+        	int pauseFlag = 0;
+        	for (int i = 0; i < voices.length; i++) {
+        		if (voices[i].isPaused()) {
+        			pauseFlag |= (1 << i);
+        		}
+        	}
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(pauseFlag));
+        	}
+            cpu.gpr[2] = pauseFlag;
         }
     }
 
     public void __sceSasRevType(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
 
@@ -418,7 +425,7 @@ public class sceSasCore implements HLEModule {
         //int unk3 = cpu.gpr[7]; // unused or 0, 1, 0x1000
 
         Modules.log.warn("IGNORING:__sceSasRevType(type=" + type + ") " + makeLogParams(cpu));
-        
+
         cpu.gpr[2] = 0;
     }
 
@@ -470,9 +477,7 @@ public class sceSasCore implements HLEModule {
 
     // 50A14DFC
     public void __sceSasCoreWithMix(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         //int unk1 = cpu.gpr[5]; // looks like a heap address
@@ -487,29 +492,23 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetSL(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
-        /* put your own code here instead */
+        int sasCore = cpu.gpr[4];
+        int voice = cpu.gpr[5];
+        int unk = cpu.gpr[6];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("IGNORING: __sceSasSetSL: "
+                + String.format("sasCore=0x%08x, voice=0x%08x, unk=0x%08x", sasCore, voice, unk));
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetSL [0x5F9529F6] " + makeLogParams(cpu));
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     // 68A46B95
     public void __sceSasGetEndFlag(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        // 99% sure there are no more parameters
 
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
         	// Returns a 32 bits bitfield (tested using "if (result & (1 << n))")
@@ -527,11 +526,7 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasGetEnvelopeHeight(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
@@ -540,7 +535,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.debug("IGNORING:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
     // I think this means start playing this channel, key off would then mean stop or pause the playback (fiveofhearts)
@@ -562,18 +557,22 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetPause(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int voice_bit = cpu.gpr[5]; // bitfield instead of index, example: 0x08 is voice 3
-        int pause = cpu.gpr[6]; // 0
+        int voice_bit = cpu.gpr[5];
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetPause [0x787D04D5] " + makeLogParams(cpu));
-
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (isSasHandleGood(sasCore, "__sceSasSetPause", cpu)) {
+        	for (int i = 0; i < voices.length; i++) {
+        		if ((Integer.lowestOneBit(voice_bit >> i)) == 1) {
+        			voices[i].pause();
+        		}
+        	}
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("__sceSasSetPause(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(voice_bit));
+        	}
+            cpu.gpr[2] = 0;
+        }
     }
 
     protected short[] decodeSamples(Processor processor, int vagAddr, int size) {
@@ -673,11 +672,7 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetADSRmode(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
@@ -690,8 +685,6 @@ public class sceSasCore implements HLEModule {
             cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
     public void __sceSasSetKeyOff(Processor processor) {
@@ -712,26 +705,16 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetTrianglarWave(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function __sceSasSetTrianglarWave [0xA232CBE6] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
     // A3589D81
     public void __sceSasCore(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         //int unk1 = cpu.gpr[5]; // looks like a heap address, bss, 0x40 aligned
@@ -787,28 +770,20 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasGetGrain(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
-        /* put your own code here instead */
+        int sasCore = cpu.gpr[4];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasGetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples="
+                        + grainSamples);
+        	}
 
-        Modules.log.warn("Unimplemented NID function __sceSasGetGrain [0xBD11B7C2] " + makeLogParams(cpu));
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        cpu.gpr[2] = grainSamples;
     }
 
     public void __sceSasSetSimpleADSR(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
@@ -816,31 +791,32 @@ public class sceSasCore implements HLEModule {
         //int unk2 = cpu.gpr[7]; // 0x1fc6
         // doesn't look like any more parameters, they look like error codes
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] "
-            + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        Modules.log.warn("IGNORING:__sceSasSetSimpleADSR " + makeLogParams(cpu));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void __sceSasSetGrain(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int grain = cpu.gpr[5]; // 0x400
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetGrain [0xD1E0A01E] " + makeLogParams(cpu));
+        // Sets the global ammount of grain samples (TODO: consider this when processing sound).
+        if (isSasHandleGood(sasCore, "__sceSasSetGrain", cpu)) {
+            grainSamples = grain;
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples="
+                        + grain);
+        	}
+
+        cpu.gpr[2] = 0;
     }
 
     public void __sceSasRevEVOL(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int left = cpu.gpr[5]; // left channel volume 0 - 0x1000
@@ -853,54 +829,45 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetSteepWave(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function __sceSasSetSteepWave [0xD5EBBBCD] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
     public void __sceSasGetOutputmode(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0, 1 (most common), 0x1f
+        int mode = cpu.gpr[5]; // 0, 1 (most common), 0x1f
         // 99% sure there are no more parameters
 
-        Modules.log.warn("Unimplemented NID function __sceSasGetOutputmode [0xE175EF66] " + makeLogParams(cpu));
+        // Similar to sceAudio (STEREO/MONO)?
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode="
+                        + mode);
+        	}
 
-        // beq t0 (t0=1)
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        cpu.gpr[2] = outputMode;
     }
 
     public void __sceSasSetOutputmode(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
-        /* put your own code here instead */
+        int sasCore = cpu.gpr[4];
+        int mode = cpu.gpr[5];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        if (isSasHandleGood(sasCore, "__sceSasSetOutputmode", cpu)) {
+            outputMode = mode;
+        }
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetOutputmode [0xE855BF76] " + makeLogParams(cpu));
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode="
+                        + mode);
+        	}
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void __sceSasRevVON(Processor processor) {

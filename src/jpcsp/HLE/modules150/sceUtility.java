@@ -30,6 +30,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import jpcsp.Settings;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
@@ -418,7 +419,8 @@ public class sceUtility implements HLEModule {
         listFrame.setTitle("Savedata List");
         listFrame.setSize(200, 220);
         listFrame.setResizable(false);
-        listFrame.setLocation(800, 200);
+        int pos[] = Settings.getInstance().readWindowPos("savedata");
+        listFrame.setLocation(pos[0], pos[1]);
         listFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         final JList saveList = new JList(options);
@@ -448,6 +450,8 @@ public class sceUtility implements HLEModule {
                 }
             });
         }
+        
+        Settings.getInstance().writeWindowPos("savedata", listFrame.getLocation());
     }
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
