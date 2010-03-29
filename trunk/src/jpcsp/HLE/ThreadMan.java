@@ -2280,7 +2280,7 @@ public class ThreadMan {
      * This is a wrapper for the readyThreads map to hold the collections
      * of the ready threadinfos of a given priority in a map. Needed to be able
      * to rotate the threadinfo's of a given priority (to avoid starvation)
-     * but also to use identityhashcode and identity equals for the sortedmap
+     * but also to use simpler hashcode and equals for the sortedmap
      * (much faster because it doesn't iterate the list)
      */
     private static final class PriorityIdentityList extends LinkedList<SceKernelThreadInfo>{
