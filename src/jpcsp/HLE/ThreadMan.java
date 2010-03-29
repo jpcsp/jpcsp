@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -65,7 +66,7 @@ public class ThreadMan {
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private ArrayList<SceKernelThreadInfo> waitingThreads;
     private TreeMap<Integer, PriorityIdentityList> readyThreads;
-    private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
+    private HashSet<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo real_current_thread; // for use with callbacks
     private SceKernelThreadInfo idle0, idle1;
@@ -148,7 +149,7 @@ public class ThreadMan {
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
         readyThreads = new TreeMap<Integer, PriorityIdentityList>();
-        toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
+        toBeDeletedThreads = new HashSet<SceKernelThreadInfo>();
         statistics = new Statistics();
 
         insideCallback = false;
@@ -795,9 +796,7 @@ public class ThreadMan {
             // Example:
             // - main thread calls sceKernelDeleteThread on child thread
             // - child thread calls sceKernelExitDeleteThread
-            if (!toBeDeletedThreads.contains(thread)) {
-                toBeDeletedThreads.add(thread);
-            }
+            toBeDeletedThreads.add(thread);
         }
     }
 
