@@ -431,26 +431,16 @@ public class ThreadMan {
             }
         }
 
-            // Cleanup stopped threads (deferred deletion)
-        if (!toBeDeletedThreads.isEmpty()) {
-            ArrayList<SceKernelThreadInfo> workList = new ArrayList<SceKernelThreadInfo>(toBeDeletedThreads.size());
-
-            for (int i = 0; i < toBeDeletedThreads.size(); i++) {
-                SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
-                // this check shouldn't be necessary anymore, can be inferred by the thread existing in the toBeDeletedThreads list
-                if (thread.do_delete) {
-                    workList.add(thread);
-                } else {
-                    Modules.log.warn("thread:'" + thread.name + "' in toBeDeletedThreads list with do_delete = false");
-                }
+            // Cleanup stopped threads     
+        for (int i = 0; i < toBeDeletedThreads.size(); i++) {
+            SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
+            // this check shouldn't be necessary anymore, can be inferred by the thread existing in the toBeDeletedThreads list
+            if (!thread.do_delete) {
+                Modules.log.warn("thread:'" + thread.name + "' in toBeDeletedThreads list with do_delete = false");
             }
-
-            // Use deferred removal to prevent concurrent modification of the collection
-            for (int i = 0; i < workList.size(); i++) {
-                SceKernelThreadInfo thread = workList.get(i);
-                deleteThread(thread);
-            }
+            deleteThread(thread);
         }
+        
 
         /* this isn't really necessary if we only handle the umd callback.
          * the other way is when we implement exit and power callback -
