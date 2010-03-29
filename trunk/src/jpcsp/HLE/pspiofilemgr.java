@@ -1756,6 +1756,57 @@ public class pspiofilemgr {
                     break;
                 }
 
+                // UMD file seek whence
+                case 0x01F100A6:
+                {
+                    if (mem.isAddressGood(indata_addr) && inlen >= 16) {
+                        if (info.isUmdFile()) {
+                            try {
+                                long offset = mem.read64(indata_addr);
+                                int whence = mem.read32(indata_addr + 12);
+                                if (Modules.log.isDebugEnabled()) {
+                                	Modules.log.debug("hleIoIoctl umd file seek offset " + offset + ", whence " + whence);
+                                }
+                            	switch (whence) {
+                            		case PSP_SEEK_SET: {
+                                        info.position = offset;
+                            			info.readOnlyFile.seek(info.position);
+                                        result = 0;
+                            			break;
+                            		}
+                            		case PSP_SEEK_CUR: {
+                                        info.position = info.position + offset;
+                            			info.readOnlyFile.seek(info.position);
+                                        result = 0;
+                            			break;
+                            		}
+                            		case PSP_SEEK_END: {
+                                        info.position = info.readOnlyFile.length() + offset;
+                            			info.readOnlyFile.seek(info.position);
+                                        result = 0;
+                            			break;
+                            		}
+                            		default: {
+                            			Modules.log.error("hleIoIoctl - unhandled whence " + whence);
+                                        result = -1;
+                            			break;
+                            		}
+                            	}
+                            } catch (IOException e) {
+                                // Should never happen?
+                                Modules.log.warn("hleIoIoctl cmd=0x01F100A6 exception: " + e.getMessage());
+                                result = -1;
+                            }
+                        } else {
+                            Modules.log.warn("hleIoIoctl cmd=0x01F100A6 only allowed on UMD files");
+                        }
+                    } else {
+                        Modules.log.warn("hleIoIoctl cmd=0x01F100A6 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
+                        result = PSP_ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
+
                 default:
                 {
                     Modules.log.warn("hleIoIoctl " + String.format("0x%08X", cmd) + " unknown command");
