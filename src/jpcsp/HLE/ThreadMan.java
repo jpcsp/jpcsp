@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
@@ -59,10 +60,11 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
 public class ThreadMan {
+
     private static ThreadMan instance;
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private ArrayList<SceKernelThreadInfo> waitingThreads;
-    private LinkedList<SceKernelThreadInfo> readyThreads;
+    private TreeMap<Integer, PriorityIdentityList> readyThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo real_current_thread; // for use with callbacks
@@ -145,7 +147,7 @@ public class ThreadMan {
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
-        readyThreads = new LinkedList<SceKernelThreadInfo>();
+        readyThreads = new TreeMap<Integer, PriorityIdentityList>();
         toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
         statistics = new Statistics();
 
@@ -547,21 +549,14 @@ public class ThreadMan {
      * unless current_thread is already null.
      * @return The next thread to schedule (based on thread priorities). */
     public SceKernelThreadInfo nextThread() {
-        SceKernelThreadInfo found = null;
-
         // Find the thread with status PSP_THREAD_READY and the highest priority.
         // In this implementation low priority threads can get starved.
         // Remark: the current_thread is not present in the readyThreads List.
         synchronized (readyThreads) {
-            for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext(); ) {
-            	SceKernelThreadInfo thread = it.next();
-        		if (found == null || (thread != null && thread.currentPriority < found.currentPriority)) {
-        			found = thread;
-            	}
-            }
-		}
-
-        return found;
+            //priority starts at 0 till 127. Return most prioritary.
+            Map.Entry<Integer, PriorityIdentityList> p = readyThreads.firstEntry();
+            return p == null ? null : p.getValue().getFirst();
+        }
     }
 
     /**
@@ -777,6 +772,26 @@ public class ThreadMan {
         statistics.addThreadStatistics(thread);
     }
 
+    private void removeFromReadyThreads(SceKernelThreadInfo thread) {
+        synchronized (readyThreads) {
+            PriorityIdentityList p = readyThreads.get(thread.currentPriority);
+            if (p != null) {
+                p.remove(thread);
+            }
+        }
+    }
+
+    private void addToReadyThreads(SceKernelThreadInfo thread) {
+        synchronized (readyThreads) {
+            PriorityIdentityList p = readyThreads.get(thread.currentPriority);
+            if (p == null) {
+                p = new PriorityIdentityList(thread.currentPriority);
+                readyThreads.put(thread.currentPriority, p);
+            }
+            p.add(thread);
+        }
+    }
+
     private void setToBeDeletedThread(SceKernelThreadInfo thread) {
         thread.do_delete = true;
 
@@ -811,9 +826,7 @@ public class ThreadMan {
         } else if (thread.status == PSP_THREAD_STOPPED) {
             toBeDeletedThreads.remove(thread);
         } else if (thread.status == PSP_THREAD_READY) {
-        	synchronized (readyThreads) {
-        		readyThreads.remove(thread);
-        	}
+            removeFromReadyThreads(thread);
         } else if (thread.status == PSP_THREAD_SUSPEND) {
         	if (thread.onUnblockAction != null) {
         		thread.onUnblockAction.execute();
@@ -847,9 +860,7 @@ public class ThreadMan {
             }
             onThreadStopped(thread);
         } else if (thread.status == PSP_THREAD_READY) {
-        	synchronized (readyThreads) {
-        		readyThreads.add(thread);
-        	}
+            addToReadyThreads(thread);
             thread.waitType = PSP_WAIT_NONE;
         } else if (thread.status == PSP_THREAD_RUNNING) {
             // debug
@@ -1806,37 +1817,32 @@ public class ThreadMan {
      */
     public void ThreadMan_sceKernelRotateThreadReadyQueue(int priority) {
     	if (priority == 0) {
-    		// TODO "Untold Legends: Brotherhood of the Blade" calls with priority=0 and expects to the async IOs to complete
-    		// TODO "Aliens vs. Predator - Requiem" calls with priority=0. Check if this has a special meaning.
-    		Modules.log.warn("sceKernelRotateThreadReadyQueue priority=" + priority + " is this a special priority value?");
-    		priority = current_thread.currentPriority;	// Assuming we are rotating the queue of the current thread
-    	} else {
-	    	if (Modules.log.isDebugEnabled()) {
-	    		Modules.log.debug("sceKernelRotateThreadReadyQueue priority=" + priority);
-	    	}
-    	}
+            // TODO "Untold Legends: Brotherhood of the Blade" calls with priority=0 and expects to the async IOs to complete
+            // TODO "Aliens vs. Predator - Requiem" calls with priority=0. Check if this has a special meaning.
+            Modules.log.warn("sceKernelRotateThreadReadyQueue priority=" + priority + " is this a special priority value?");
+            priority = current_thread.currentPriority;	// Assuming we are rotating the queue of the current thread
+        } else if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("sceKernelRotateThreadReadyQueue priority=" + priority);
+        }
 
     	boolean contextSwitched = false;
-
-    	// TODO Check if the current_thread should yield if a thread with higher priority is ready
-    	for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext(); ) {
-    		SceKernelThreadInfo thread = it.next();
-    		if (thread.currentPriority == priority) {
-    			if (current_thread.currentPriority == priority) {
-    	    		// We are rotating the ThreadReadyQueue of the current_thread,
-    	    		// we can just yield the current thread.
-    	    		// TODO Check if this should yield only to a thread of the same priority or also to a thread with higher priority
-    				yieldCurrentThread();
-    				contextSwitched = true;
-    			} else {
-	    			// Move the thread to the end of the list
-                                it.remove();
-	    			readyThreads.add(thread);
-    			}
-    			break;
-    		}
-    	}
-
+        // TODO Check if the current_thread should yield if a thread with higher priority is ready
+        synchronized (readyThreads) {
+            PriorityIdentityList p = readyThreads.get(priority);
+            if (p != null && !p.isEmpty()) {
+                if (current_thread.currentPriority == priority) {
+                    // We are rotating the ThreadReadyQueue of the current_thread,
+                    // we can just yield the current thread.
+                    // TODO Check if this should yield only to a thread of the same priority or also to a thread with higher priority
+                    yieldCurrentThread();
+                    contextSwitched = true;
+                } else {
+                    // Move the thread to the end of the list to avoid thread starvation on nextThread()
+                    p.addLast(p.removeFirst());
+                }
+            }
+        }
+        
     	if (!contextSwitched) {
     		// Check if pending async IOs can be completed...
             pspiofilemgr.getInstance().onContextSwitch();
@@ -2267,6 +2273,31 @@ public class ThreadMan {
         private static class ThreadStatistics {
             public String name;
             public long runClocks;
+        }
+    }
+
+    /**
+     * This is a wrapper for the readyThreads map to hold the collections
+     * of the ready threadinfos of a given priority in a map. Needed to be able
+     * to rotate the threadinfo's of a given priority (to avoid starvation)
+     * but also to use identityhashcode and identity equals for the sortedmap
+     * (much faster because it doesn't iterate the list)
+     */
+    private static final class PriorityIdentityList extends LinkedList<SceKernelThreadInfo>{
+        public final int priority;
+
+        public PriorityIdentityList(int priority) {
+            this.priority = priority;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return priority == ((PriorityIdentityList)o).priority;
+        }
+
+        @Override
+        public int hashCode() {
+            return priority;
         }
     }
 
