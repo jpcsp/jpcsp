@@ -777,6 +777,8 @@ public class ThreadMan {
             PriorityIdentityList p = readyThreads.get(thread.currentPriority);
             if (p != null) {
                 p.remove(thread);
+                if(p.isEmpty())
+                    readyThreads.remove(thread.currentPriority);
             }
         }
     }
