@@ -302,6 +302,10 @@ public class VideoEngine {
 	private int shaderAttribWeights1;
 	private int shaderAttribWeights2;
 
+	private boolean glQueryAvailable;
+	private int bboxQueryId;
+	float[][] bboxVertices;
+
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
     private boolean geBufChanged;
@@ -400,6 +404,11 @@ public class VideoEngine {
         }
 
         drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
+
+        bboxVertices = new float[8][3];
+    	for (int i = 0; i < 8; i++) {
+    		bboxVertices[i] = new float[3];
+    	}
     }
 
     /** Called from pspge module */
@@ -487,6 +496,15 @@ public class VideoEngine {
         } else {
         	// VertexCache is relying on VBO
         	useVertexCache = false;
+        }
+
+        glQueryAvailable = gl.isFunctionAvailable("glGenQueries") &&
+                           gl.isFunctionAvailable("glBeginQuery") &&
+                           gl.isFunctionAvailable("glEndQuery");
+        if (glQueryAvailable) {
+	        int[] queryIds = new int[1];
+	    	gl.glGenQueries(1, queryIds, 0);
+	    	bboxQueryId = queryIds[0];
         }
     }
 
@@ -3063,31 +3081,12 @@ public class VideoEngine {
 
                 break;
 
-            case BBOX: {
-                int numberOfVertexBoundingBox = normalArgument;
-                // TODO Check if the bounding box is visible
-                if (isLogInfoEnabled) {
-                    log.info("Not implemented (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
-                }
-                // If not visible, set takeConditionalJump to true.
-            	takeConditionalJump = false;
+            case BBOX:
+            	executeCommandBBOX(normalArgument);
             	break;
-            }
-            case BJUMP: {
-            	if (takeConditionalJump) {
-                	int oldPc = currentList.pc;
-                	currentList.jump(normalArgument);
-                	int newPc = currentList.pc;
-                    if (isLogDebugEnabled) {
-                        log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
-                    }
-            	} else {
-	                if (isLogDebugEnabled) {
-	                    log(helper.getCommandString(BJUMP) + " not taking Conditional Jump");
-	                }
-            	}
+            case BJUMP:
+            	executeCommandBJUMP(normalArgument);
                 break;
-            }
 
             case PMSKC: {
                 if (isLogDebugEnabled) {
@@ -3915,6 +3914,197 @@ public class VideoEngine {
             gl.glPopAttrib();
 
             gl.glDeleteTextures(1, textures, 0);
+    	}
+    }
+
+    private void executeCommandBBOX(int normalArgument) {
+        int numberOfVertexBoundingBox = normalArgument;
+
+        if (vinfo.position == 0) {
+            log.warn(helper.getCommandString(BBOX) + " no positions for vertex!");
+            return;
+        } else if (!glQueryAvailable) {
+            log.info("Not supported by your OpenGL version (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
+            return;
+        } else if ((numberOfVertexBoundingBox % 8) != 0) {
+        	// How to interpret non-multiple of 8?
+            log.warn(helper.getCommandString(BBOX) + " unsupported numberOfVertex=" + numberOfVertexBoundingBox);
+        } else if (isLogDebugEnabled) {
+            log.debug(helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
+        }
+
+    	Memory mem = Memory.getInstance();
+        boolean useVertexColor = initRendering();
+
+        // Bounding box should not be displayed, disable all drawings
+        gl.glPushAttrib(GL.GL_ENABLE_BIT | GL.GL_COLOR_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+        gl.glColorMask(false, false, false, false);
+        gl.glDepthMask(false);
+		gl.glDisable(GL.GL_BLEND);
+		gl.glDisable(GL.GL_STENCIL_TEST);
+		gl.glDisable(GL.GL_LIGHTING);
+		gl.glDisable(GL.GL_TEXTURE_2D);
+		gl.glDisable(GL.GL_ALPHA_TEST);
+		gl.glDisable(GL.GL_FOG);
+		gl.glDisable(GL.GL_DEPTH_TEST);
+		gl.glDisable(GL.GL_LOGIC_OP);
+		gl.glDisable(GL.GL_CULL_FACE);
+        gl.glDisable(GL.GL_SCISSOR_TEST);
+
+		if (useShaders) {
+			gl.glUniform1f(Uniforms.zPos.getId(), 0);
+			gl.glUniform1f(Uniforms.zScale.getId(), 0);
+			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
+			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
+			gl.glUniform1i(Uniforms.numberBones.getId(), 0);
+		}
+
+		gl.glBeginQuery(GL.GL_SAMPLES_PASSED, bboxQueryId);
+        //
+        // The bounding box is a cube defined by 8 vertices.
+        // It is not clear if the vertices have to be listed in a pre-defined order.
+        // Which primitive should be used?
+        // - GL_TRIANGLE_STRIP: we only draw 3 faces of the cube
+        // - GL_QUADS: how are organized the 8 vertices to draw all the cube faces?
+        //
+    	gl.glBegin(GL.GL_QUADS);
+        for (int i = 0; i < numberOfVertexBoundingBox; i++) {
+            int addr = vinfo.getAddress(mem, i);
+
+            VertexState v = vinfo.readVertex(mem, addr);
+        	if (isLogDebugEnabled) {
+        		log.debug(String.format("%s (%f,%f,%f)", helper.getCommandString(BBOX), v.p[0], v.p[1], v.p[2]));
+        	}
+
+        	int vertexIndex = i % 8;
+        	bboxVertices[vertexIndex][0] = v.p[0];
+        	bboxVertices[vertexIndex][1] = v.p[1];
+        	bboxVertices[vertexIndex][2] = v.p[2];
+
+            if (vertexIndex == 7) {
+            	//
+            	// Cube from BBOX:
+            	//
+            	// BBOX Front face:
+            	//  2---3
+            	//  |   |
+            	//  |   |
+            	//  0---1
+            	//
+            	// BBOX Back face:
+            	//  6---7
+            	//  |   |
+            	//  |   |
+            	//  4---5
+            	//
+            	// OpenGL QUAD:
+            	//  3---2
+            	//  |   |
+            	//  |   |
+            	//  0---1
+            	//
+
+            	// Front face
+            	gl.glVertex3fv(bboxVertices[0], 0);
+            	gl.glVertex3fv(bboxVertices[1], 0);
+            	gl.glVertex3fv(bboxVertices[3], 0);
+            	gl.glVertex3fv(bboxVertices[2], 0);
+
+            	// Back face
+            	gl.glVertex3fv(bboxVertices[4], 0);
+            	gl.glVertex3fv(bboxVertices[5], 0);
+            	gl.glVertex3fv(bboxVertices[7], 0);
+            	gl.glVertex3fv(bboxVertices[6], 0);
+
+            	// Right face
+            	gl.glVertex3fv(bboxVertices[1], 0);
+            	gl.glVertex3fv(bboxVertices[5], 0);
+            	gl.glVertex3fv(bboxVertices[7], 0);
+            	gl.glVertex3fv(bboxVertices[3], 0);
+
+            	// Left face
+            	gl.glVertex3fv(bboxVertices[0], 0);
+            	gl.glVertex3fv(bboxVertices[4], 0);
+            	gl.glVertex3fv(bboxVertices[6], 0);
+            	gl.glVertex3fv(bboxVertices[2], 0);
+
+            	// Top face
+            	gl.glVertex3fv(bboxVertices[2], 0);
+            	gl.glVertex3fv(bboxVertices[3], 0);
+            	gl.glVertex3fv(bboxVertices[7], 0);
+            	gl.glVertex3fv(bboxVertices[6], 0);
+
+            	// Bottom face
+            	gl.glVertex3fv(bboxVertices[0], 0);
+            	gl.glVertex3fv(bboxVertices[1], 0);
+            	gl.glVertex3fv(bboxVertices[5], 0);
+            	gl.glVertex3fv(bboxVertices[4], 0);
+            }
+        }
+        gl.glEnd();
+        gl.glEndQuery(GL.GL_SAMPLES_PASSED);
+        gl.glPopAttrib();
+
+        if (useShaders) {
+			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
+			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
+			gl.glUniform1i(Uniforms.texEnable.getId(), tex_enable);
+			gl.glUniform1i(Uniforms.lightingEnable.getId(), lighting ? 1 : 0);
+		}
+
+        endRendering(useVertexColor, false);
+    }
+
+    private void executeCommandBJUMP(int normalArgument) {
+    	takeConditionalJump = false;
+
+    	if (glQueryAvailable) {
+        	int[] result = new int[1];
+        	boolean resultAvailable = false;
+
+        	// Wait for query result available
+	        for (int i = 0; i < 10000; i++) {
+	        	gl.glGetQueryObjectiv(bboxQueryId, GL.GL_QUERY_RESULT_AVAILABLE, result, 0);
+	        	if (isLogTraceEnabled) {
+	        		log.trace("glGetQueryObjectiv result available " + result[0]);
+	        	}
+
+	        	// 0 means result not yet available, 1 means result available
+	        	if (result[0] != 0) {
+	        		resultAvailable = true;
+
+	        		// Retrieve query result (number of visible samples)
+	                gl.glGetQueryObjectiv(bboxQueryId, GL.GL_QUERY_RESULT, result, 0);
+	            	if (isLogTraceEnabled) {
+	            		log.trace("glGetQueryObjectiv result " + result[0]);
+	            	}
+
+	            	// 0 samples visible means the bounding box was occluded (not visible)
+	                if (result[0] == 0) {
+	                	takeConditionalJump = true;
+	                }
+	        		break;
+	        	}
+	        }
+
+	        if (!resultAvailable) {
+	        	if (isLogWarnEnabled) {
+	        		log.warn(helper.getCommandString(BJUMP) + " glQuery result not available in due time");
+	        	}
+	        }
+    	}
+
+    	if (takeConditionalJump) {
+        	int oldPc = currentList.pc;
+        	currentList.jump(normalArgument);
+        	int newPc = currentList.pc;
+            if (isLogDebugEnabled) {
+                log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
+            }
+    	} else {
+            if (isLogDebugEnabled) {
+                log(helper.getCommandString(BJUMP) + " not taking Conditional Jump");
+            }
     	}
     }
 
