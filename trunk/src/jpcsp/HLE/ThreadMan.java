@@ -286,15 +286,11 @@ public class ThreadMan {
             Modules.log.info("----------------------------- ThreadMan exit -----------------------------");
 
             // Delete all the threads to collect statistics
-            while (!threadMap.isEmpty()) {
-                SceKernelThreadInfo thread = threadMap.values().iterator().next();
-                deleteThread(thread);
-            }
+            safeDeleteThreads(threadMap.values());
 
             statistics.endTimeMillis = System.currentTimeMillis();
             Modules.log.info(String.format("ThreadMan Statistics (%,d cycles in %.3fs):", statistics.allCycles, statistics.getDurationMillis() / 1000.0));
-            for (Iterator<Statistics.ThreadStatistics> it = statistics.threads.iterator(); it.hasNext(); ) {
-                Statistics.ThreadStatistics threadStatistics = it.next();
+            for (Statistics.ThreadStatistics threadStatistics : statistics.threads) {
                 double percentage = 0;
                 if (statistics.allCycles != 0) {
                 	percentage = (threadStatistics.runClocks / (double) statistics.allCycles) * 100;
@@ -431,16 +427,9 @@ public class ThreadMan {
             }
         }
 
-            // Cleanup stopped threads     
-        for (int i = 0; i < toBeDeletedThreads.size(); i++) {
-            SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
-            // this check shouldn't be necessary anymore, can be inferred by the thread existing in the toBeDeletedThreads list
-            if (!thread.do_delete) {
-                Modules.log.warn("thread:'" + thread.name + "' in toBeDeletedThreads list with do_delete = false");
-            }
-            deleteThread(thread);
-        }
-        
+            // Cleanup stopped threads
+        if(!toBeDeletedThreads.isEmpty())
+            safeDeleteThreads(toBeDeletedThreads);
 
         /* this isn't really necessary if we only handle the umd callback.
          * the other way is when we implement exit and power callback -
@@ -732,6 +721,19 @@ public class ThreadMan {
         }
 
         // IO has no timeout, it's always forever
+    }
+
+    private void safeDeleteThreads(Iterable<SceKernelThreadInfo> iterable){
+        //by removing the value from the iterable BEFORE it is tried to remove
+        //from all collections this assures that concurrent modification exception will
+        //not occur, on the jdk collections, since only that only happens when they
+        //alter the collection.
+        Iterator<SceKernelThreadInfo> it = iterable.iterator();
+        while(it.hasNext()){
+            SceKernelThreadInfo t = it.next();
+            it.remove();
+            deleteThread(t);
+        }
     }
 
     private void deleteThread(SceKernelThreadInfo thread) {
