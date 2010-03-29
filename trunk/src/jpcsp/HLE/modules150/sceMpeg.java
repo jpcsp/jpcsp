@@ -962,8 +962,25 @@ public class sceMpeg implements HLEModule {
 
                 mpegAvcCurrentTimestamp += (int)(90000 / 29.97); // value based on pmfplayer
 
+                int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
+                int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
+                int processedSize = processedPackets * mpegRingbuffer.packetSize;
+
                 // let's go with 3 packets per frame for now
                 int packetsConsumed = 3;
+                if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
+                	// Try a better approximation of the packets consumed based on the timestamp
+                	int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentTimestamp) / mpegLastTimestamp) * mpegStreamSize);
+                	if (processedSizeBasedOnTimestamp < processedSize) {
+                		packetsConsumed = 0;
+                	} else {
+                		packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
+                		if (packetsConsumed > 10) {
+                			packetsConsumed = 10;
+                		}
+                	}
+                	Modules.log.info(String.format("sceMpegAvcDecode consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
+                }
 
                 // Generate a random image...
                 Random random = new Random();
@@ -1011,9 +1028,6 @@ public class sceMpeg implements HLEModule {
                 	String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
                 	Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
                 }
-                int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-                int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
-                int processedSize = processedPackets * mpegRingbuffer.packetSize;
                 String displayedString;
                 if (mpegStreamSize > 0) {
                 	displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
