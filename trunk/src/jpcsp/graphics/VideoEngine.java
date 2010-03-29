@@ -846,7 +846,18 @@ public class VideoEngine {
     					log.debug("Wait for sync while stall reached");
     				}
     				stallCount++;
-    				if (stallCount > 100) {
+
+    				// Waiting maximum 100 * 10ms (= 1 second) on a stall address.
+    				// After this timeout, abort the list.
+    				//
+    				// When the stall address is at the very beginning of the list
+    				// (i.e. the list has just been enqueued, but the stall has not yet been updated),
+    				// allow waiting for a longer time (the CPU might be busy
+    				// compiling a huge CodeBlock on the first call).
+    				// This avoids aborting the first list enqueued.
+    				int maxStallCount = (currentList.pc != currentList.list_addr ? 100 : 400);
+
+    				if (stallCount > maxStallCount) {
     					error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.pc, currentList));
     				}
     			} else {
