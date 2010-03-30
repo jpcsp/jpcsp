@@ -65,7 +65,7 @@ public class ThreadMan {
     private static ThreadMan instance;
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private ArrayList<SceKernelThreadInfo> waitingThreads;
-    private TreeMap<Integer, PriorityIdentityList> readyThreads;
+    private LinkedList<SceKernelThreadInfo> readyThreads;
     private HashSet<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo real_current_thread; // for use with callbacks
@@ -148,7 +148,7 @@ public class ThreadMan {
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
-        readyThreads = new TreeMap<Integer, PriorityIdentityList>();
+        readyThreads = new LinkedList<SceKernelThreadInfo>();
         toBeDeletedThreads = new HashSet<SceKernelThreadInfo>();
         statistics = new Statistics();
 
@@ -532,11 +532,15 @@ public class ThreadMan {
         // Find the thread with status PSP_THREAD_READY and the highest priority.
         // In this implementation low priority threads can get starved.
         // Remark: the current_thread is not present in the readyThreads List.
+        SceKernelThreadInfo found = null;
         synchronized (readyThreads) {
-            //priority starts at 0 till 127. Return most prioritary.
-            Map.Entry<Integer, PriorityIdentityList> p = readyThreads.firstEntry();
-            return p == null ? null : p.getValue().getFirst();
+            for (SceKernelThreadInfo thread : readyThreads) {
+                if (found == null || thread.currentPriority < found.currentPriority) {
+                    found = thread;
+                }
+            }
         }
+        return found;
     }
 
     /**
@@ -767,23 +771,13 @@ public class ThreadMan {
 
     private void removeFromReadyThreads(SceKernelThreadInfo thread) {
         synchronized (readyThreads) {
-            PriorityIdentityList p = readyThreads.get(thread.currentPriority);
-            if (p != null) {
-                p.remove(thread);
-                if(p.isEmpty())
-                    readyThreads.remove(thread.currentPriority);
-            }
+            readyThreads.remove(thread);
         }
     }
 
     private void addToReadyThreads(SceKernelThreadInfo thread) {
         synchronized (readyThreads) {
-            PriorityIdentityList p = readyThreads.get(thread.currentPriority);
-            if (p == null) {
-                p = new PriorityIdentityList(thread.currentPriority);
-                readyThreads.put(thread.currentPriority, p);
-            }
-            p.add(thread);
+            readyThreads.add(thread);
         }
     }
 
@@ -1821,17 +1815,21 @@ public class ThreadMan {
     	boolean contextSwitched = false;
         // TODO Check if the current_thread should yield if a thread with higher priority is ready
         synchronized (readyThreads) {
-            PriorityIdentityList p = readyThreads.get(priority);
-            if (p != null && !p.isEmpty()) {
-                if (current_thread.currentPriority == priority) {
-                    // We are rotating the ThreadReadyQueue of the current_thread,
-                    // we can just yield the current thread.
-                    // TODO Check if this should yield only to a thread of the same priority or also to a thread with higher priority
-                    yieldCurrentThread();
-                    contextSwitched = true;
-                } else {
-                    // Move the thread to the end of the list to avoid thread starvation on nextThread()
-                    p.addLast(p.removeFirst());
+            for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext();) {
+                SceKernelThreadInfo thread = it.next();
+                if (thread.currentPriority == priority) {
+                    if (current_thread.currentPriority == priority) {
+                        // We are rotating the ThreadReadyQueue of the current_thread,
+                        // we can just yield the current thread.
+                        // TODO Check if this should yield only to a thread of the same priority or also to a thread with higher priority
+                        yieldCurrentThread();
+                        contextSwitched = true;
+                    } else {
+                        // Move the thread to the end of the list to avoid thread starvation on nextThread()
+                        it.remove();
+                        readyThreads.addLast(thread);
+                    }
+                    break;
                 }
             }
         }
@@ -2266,31 +2264,6 @@ public class ThreadMan {
         private static class ThreadStatistics {
             public String name;
             public long runClocks;
-        }
-    }
-
-    /**
-     * This is a wrapper for the readyThreads map to hold the collections
-     * of the ready threadinfos of a given priority in a map. Needed to be able
-     * to rotate the threadinfo's of a given priority (to avoid starvation)
-     * but also to use simpler hashcode and equals for the sortedmap
-     * (much faster because it doesn't iterate the list)
-     */
-    private static final class PriorityIdentityList extends LinkedList<SceKernelThreadInfo>{
-        public final int priority;
-
-        public PriorityIdentityList(int priority) {
-            this.priority = priority;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return priority == ((PriorityIdentityList)o).priority;
-        }
-
-        @Override
-        public int hashCode() {
-            return priority;
         }
     }
 
