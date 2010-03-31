@@ -281,11 +281,24 @@ public class pspge {
     private void blockCurrentThreadOnList(PspGeList list, IAction action) {
         ThreadMan threadMan = ThreadMan.getInstance();
         list.thid = threadMan.getCurrentThreadID();
-    	if (VideoEngine.log.isDebugEnabled()) {
-    		VideoEngine.log.debug("blockCurrentThreadOnList blocking thread " + Integer.toHexString(list.thid) + " on list " + list);
+
+        if (list.isDone()) {
+    		// There has been some race condition: the list has just completed
+        	// do not block the thread
+	    	if (VideoEngine.log.isDebugEnabled()) {
+	    		VideoEngine.log.debug("blockCurrentThreadOnList not blocking thread " + Integer.toHexString(list.thid) + ", list completed " + list);
+	    	}
+    		list.thid = 0;
+    		if (action != null) {
+    			action.execute();
+    		}
+    	} else {
+	    	if (VideoEngine.log.isDebugEnabled()) {
+	    		VideoEngine.log.debug("blockCurrentThreadOnList blocking thread " + Integer.toHexString(list.thid) + " on list " + list);
+	    	}
+    		threadMan.blockCurrentThreadCB(action);
+	        //threadMan.checkCallbacks();
     	}
-        threadMan.blockCurrentThreadCB(action);
-        //threadMan.checkCallbacks();
     }
 
     // sceGeDrawSync is resetting all the lists having status PSP_GE_LIST_DONE
@@ -310,7 +323,7 @@ public class pspge {
         		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         	} else {
 	    		cpu.gpr[2] = 0;
-	
+
 	    		PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
 	    		if (lastList != null) {
 	    			blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
