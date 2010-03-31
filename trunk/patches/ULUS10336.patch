@@ -1,0 +1,8 @@
+# TITLE = CRISIS CORE:FINAL FANTASY VII
+emu.disablesceAudio=1
+emu.ignoreaudiothreads=0
+emu.disableblockingaudio=0
+emu.useViewport=1
+emu.enableMpeg=1
+emu.useVertexCache=1
+emu.disablereservedthreadmemory=1
