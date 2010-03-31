@@ -330,7 +330,7 @@ public class CodeBlock {
 
         context.compileExecuteInterpreter(getStartAddress());
 
-        mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
+        mv.visitMaxs(context.getMaxStack(), context.getMaxLocals());
         mv.visitEnd();
 
         cv.visitEnd();
@@ -388,7 +388,7 @@ public class CodeBlock {
         }
 
         compile(context, mv, codeInstructions);
-        mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
+        mv.visitMaxs(context.getMaxStack(), context.getMaxLocals());
         mv.visitEnd();
 
         for (SequenceCodeInstruction sequenceCodeInstruction : sequenceCodeInstructions) {
@@ -404,7 +404,7 @@ public class CodeBlock {
             compile(context, mv, sequenceCodeInstruction.getCodeSequence().getInstructions());
 
             context.endSequenceMethod();
-            mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
+            mv.visitMaxs(context.getMaxStack(), context.getMaxLocals());
             mv.visitEnd();
         }
         currentSequence = null;
