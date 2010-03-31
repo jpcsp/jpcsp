@@ -166,7 +166,7 @@ public class pspiofilemgr {
     private HashMap<Integer, SceKernelThreadInfo> asyncThreadMap;
     private SceKernelThreadInfo currentAsyncThread;
 
-    private byte[] AES128Key;
+    private byte[] AES128Key = new byte[16];
 
     public static pspiofilemgr getInstance() {
         if (instance == null) {
@@ -1081,13 +1081,20 @@ public class pspiofilemgr {
                     info.position += size; // check - use clamping or not
 
                     // Check for encrypted files.
-                    if(!info.isEncrypted)
+                    if(info.isEncrypted) {
+                        Modules.log.info("hleIoRead - " + info.filename + " with size="
+                                + info.readOnlyFile.length() + " is encrypted.");
+                        
+                        if(decryptAES128(info, data_addr, (int)info.readOnlyFile.length())) {
+                             Modules.log.info("hleIoRead - file successfully decrypted.");
+                        } else {
+                            Modules.log.warn("hleIoRead - file decryption failed!");
+                            // Try reading anyway.
+                            Utilities.readFully(info.readOnlyFile, data_addr, size);
+                        }           
+                    } else {
                         Utilities.readFully(info.readOnlyFile, data_addr, size);
-                    else if(info.isEncrypted && decryptAES128(info, data_addr, size))
-                        Modules.log.info("hleIoRead - file successfully decrypted. key="
-                                + new String(AES128Key) + " data_addr=" + Integer.toHexString(data_addr));
-                    else
-                        Modules.log.warn("hleIoRead - file decryption failed!");
+                    }
 
                     result = size;
                     if (info.sectorBlockMode) {
@@ -1857,11 +1864,12 @@ public class pspiofilemgr {
                 case 0x04100001:
                 {
                     if (mem.isAddressGood(indata_addr) && inlen == 16) {
-                        AES128Key = new byte[16];
+                        String key = "";
                         for(int i = 0; i < inlen; i++) {
                             AES128Key[i] = (byte)mem.read8(indata_addr+i);
+                            key += Byte.toString(AES128Key[i]);
                         }
-                        Modules.log.info("hleIoIoctl get AES key " + new String(AES128Key));
+                        Modules.log.info("hleIoIoctl get AES key " + key);
                         result = 0;
                     } else {
                         Modules.log.warn("hleIoIoctl cmd=0x04100001 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
