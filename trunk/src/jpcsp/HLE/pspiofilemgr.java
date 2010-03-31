@@ -166,7 +166,7 @@ public class pspiofilemgr {
     private HashMap<Integer, SceKernelThreadInfo> asyncThreadMap;
     private SceKernelThreadInfo currentAsyncThread;
 
-    private String AES128Key;
+    private String AES128Key = "";
 
     public static pspiofilemgr getInstance() {
         if (instance == null) {
@@ -935,7 +935,7 @@ public class pspiofilemgr {
         boolean res = false;
         Memory mem = Memory.getInstance();
 
-        if(AES128Key != null) {
+        if(!AES128Key.equals("")) {
             byte[] key = AES128Key.getBytes();
             byte[] encFile = new byte[size];
             SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
