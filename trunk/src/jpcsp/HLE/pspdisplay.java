@@ -145,7 +145,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private long reportCount;
     private double averageFPS = 0.0;
 
-    private long startVcount = 0;
+    private int vcount;
     private long lastVblankMicroTime;
     private DisplayVblankAction displayVblankAction;
 
@@ -214,7 +214,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         reportCount = 0;
         averageFPS = 0.0;
 
-        startVcount = Emulator.getClock().currentTimeMillis();
+        vcount = 0;
 
         displayLock = new Semaphore(1);
     	if (asyncDisplayThread == null) {
@@ -998,10 +998,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     private int getVcount() {
-    	// Vcount increases by 60 units per second
-        long now = Emulator.getClock().currentTimeMillis();
-        int vcount = (int) ((now - startVcount) * 60 / 1000);
-
         return vcount;
     }
 
@@ -1054,6 +1050,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     private void hleVblankStart() {
     	lastVblankMicroTime = Emulator.getClock().microTime();
+
+    	// Vcount increases at each VBLANK
+    	vcount++;
     }
 
     private boolean isVblank() {
