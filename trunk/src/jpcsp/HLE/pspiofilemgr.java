@@ -930,15 +930,14 @@ public class pspiofilemgr {
     }
 
     // Try to decrypt a file with a given AES-128 bit key.
-    private boolean decryptAES128(IoInfo info, int addr, int size){
+    private boolean decryptAES128(IoInfo info, int addr, int size) throws Exception {
         byte[] decFile = null;
+        byte[] encFile = null;
         boolean res = false;
+        SecretKeySpec keySpec = new SecretKeySpec(AES128Key, "AES");
         Memory mem = Memory.getInstance();
 
         if(AES128Key != null) {
-            byte[] encFile = new byte[size];
-            SecretKeySpec keySpec = new SecretKeySpec(AES128Key, "AES");
-
             try {
                 info.readOnlyFile.readFully(encFile);
                 Cipher c = Cipher.getInstance("AES");
@@ -1081,20 +1080,14 @@ public class pspiofilemgr {
                     info.position += size; // check - use clamping or not
 
                     // Check for encrypted files.
-                    if(info.isEncrypted) {
-                        Modules.log.info("hleIoRead - " + info.filename + " with size="
-                                + info.readOnlyFile.length() + " is encrypted.");
-                        
-                        if(decryptAES128(info, data_addr, (int)info.readOnlyFile.length())) {
-                             Modules.log.info("hleIoRead - file successfully decrypted.");
-                        } else {
-                            Modules.log.warn("hleIoRead - file decryption failed!");
-                            // Try reading anyway.
-                            Utilities.readFully(info.readOnlyFile, data_addr, size);
-                        }           
-                    } else {
+                    if(!info.isEncrypted)
                         Utilities.readFully(info.readOnlyFile, data_addr, size);
-                    }
+
+                    else if(info.isEncrypted && decryptAES128(info, data_addr, size))
+                             Modules.log.info("hleIoRead - file successfully decrypted.");
+
+                    else
+                        Modules.log.warn("hleIoRead - file decryption failed!");
 
                     result = size;
                     if (info.sectorBlockMode) {
@@ -1864,12 +1857,10 @@ public class pspiofilemgr {
                 case 0x04100001:
                 {
                     if (mem.isAddressGood(indata_addr) && inlen == 16) {
-                        String key = "";
-                        for(int i = 0; i < inlen; i++) {
+                        for(int i = 0; i < inlen; i++)
                             AES128Key[i] = (byte)mem.read8(indata_addr+i);
-                            key += Byte.toString(AES128Key[i]);
-                        }
-                        Modules.log.info("hleIoIoctl get AES key " + key);
+
+                        Modules.log.info("hleIoIoctl get AES key");
                         result = 0;
                     } else {
                         Modules.log.warn("hleIoIoctl cmd=0x04100001 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
