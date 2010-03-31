@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.regex.Pattern;
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.log4j.Logger;
 
@@ -163,6 +165,8 @@ public class pspiofilemgr {
 
     private HashMap<Integer, SceKernelThreadInfo> asyncThreadMap;
     private SceKernelThreadInfo currentAsyncThread;
+
+    private String AES128Key;
 
     public static pspiofilemgr getInstance() {
         if (instance == null) {
@@ -642,7 +646,7 @@ public class pspiofilemgr {
         }
         if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
         if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
-        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
+        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("PARTIAL:hleIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
 
         String mode = getMode(flags);
 
@@ -705,6 +709,10 @@ public class pspiofilemgr {
                                 String trimmedFileName = trimUmdPrefix(pcfilename);
                                 UmdIsoFile file = iso.getFile(trimmedFileName);
                                 IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
+
+                                if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3)
+                                    info.isEncrypted = true;
+
                                 if (trimmedFileName != null && trimmedFileName.length() == 0) {
                                     // Opening "umd0:" is allowing to read the whole UMD per sectors.
                                     info.sectorBlockMode = true;
@@ -921,6 +929,37 @@ public class pspiofilemgr {
         return newResult;
     }
 
+    // Try to decrypt a file with a given AES-128 bit key.
+    private boolean decryptAES128(IoInfo info, int addr, int size){
+        byte[] decFile = null;
+        boolean res = false;
+        Memory mem = Memory.getInstance();
+
+        if(AES128Key != null) {
+            byte[] key = AES128Key.getBytes();
+            byte[] encFile = new byte[size];
+            SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
+
+            try {
+                info.readOnlyFile.readFully(encFile);
+                Cipher c = Cipher.getInstance("AES");
+                c.init(Cipher.DECRYPT_MODE, keySpec);
+                decFile = c.doFinal(encFile);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if(decFile != null) {
+                for(int i = 0; i < size; i++) {
+                    mem.write8(addr+i, decFile[i]);
+                }
+                res = true;
+            }
+        }
+
+        return res;
+    }
+
     private void hleIoWrite(int uid, int data_addr, int size, boolean async) {
         IoInfo info = null;
         int result;
@@ -1042,7 +1081,15 @@ public class pspiofilemgr {
 
                     info.position += size; // check - use clamping or not
 
-                    Utilities.readFully(info.readOnlyFile, data_addr, size);
+                    // Check for encrypted files.
+                    if(!info.isEncrypted)
+                        Utilities.readFully(info.readOnlyFile, data_addr, size);
+                    else if(info.isEncrypted && decryptAES128(info, data_addr, size))
+                        Modules.log.info("hleIoRead - file successfully decrypted. key="
+                                + AES128Key + " data_addr=" + Integer.toHexString(data_addr));
+                    else
+                        Modules.log.warn("hleIoRead - file decryption failed!");
+
                     result = size;
                     if (info.sectorBlockMode) {
                     	result /= UmdIsoFile.sectorLength;
@@ -1807,6 +1854,23 @@ public class pspiofilemgr {
                     break;
                 }
 
+                // Get AES-128 bit key.
+                case 0x04100001:
+                {
+                    if (mem.isAddressGood(indata_addr) && inlen == 16) {
+                        AES128Key += Integer.toHexString(mem.read32(indata_addr));
+                        AES128Key += Integer.toHexString(mem.read32(indata_addr + 4));
+                        AES128Key += Integer.toHexString(mem.read32(indata_addr + 8));
+                        AES128Key += Integer.toHexString(mem.read32(indata_addr + 12));
+                        Modules.log.info("hleIoIoctl get AES key " + AES128Key);
+                        result = 0;
+                    } else {
+                        Modules.log.warn("hleIoIoctl cmd=0x04100001 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
+                        result = PSP_ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
+
                 default:
                 {
                     Modules.log.warn("hleIoIoctl " + String.format("0x%08X", cmd) + " unknown command");
@@ -2169,6 +2233,7 @@ public class pspiofilemgr {
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
         public boolean sectorBlockMode;
+        public boolean isEncrypted; // Used to check for new encryption mechanism (PSP_O_UNKNOWN3).
 
         public final int uid;
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
@@ -2190,6 +2255,7 @@ public class pspiofilemgr {
             this.sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
+            isEncrypted = false;
         }
 
         /** UMD version (read only) */
@@ -2203,6 +2269,7 @@ public class pspiofilemgr {
             this.sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
+            isEncrypted = false;
         }
 
         public boolean isUmdFile() {
