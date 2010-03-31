@@ -1766,8 +1766,8 @@ public class ThreadMan {
             // yield if we moved ourself to lower priority
             // TODO only yield if there are other ready threads of higher priority (idle threads are always ready)
             } else if (uid == current_thread.uid && priority > oldPriority) {
-                Modules.log.debug("sceKernelChangeThreadPriority yielding");
-                yieldCurrentThread();
+                Modules.log.debug("sceKernelChangeThreadPriority rescheduling");
+                rescheduleCurrentThread();
             }
         }
     }
