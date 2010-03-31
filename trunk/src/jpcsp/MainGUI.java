@@ -51,6 +51,7 @@ import javax.swing.UIManager;
 
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
@@ -61,6 +62,8 @@ import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.RecentElement;
 import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.UmdBrowser;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
@@ -1067,30 +1070,30 @@ private void installCompatibilitySettings()
     VideoEngine.getInstance().setUseVertexCache(useVertexCache);
 
     boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
-    jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
+    Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
 
     boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
-    jpcsp.HLE.Modules.sceAudioModule.setAudioMuted(audioMuted);
-    jpcsp.HLE.Modules.sceSasCoreModule.setAudioMuted(audioMuted);
+    Modules.sceAudioModule.setAudioMuted(audioMuted);
+    Modules.sceSasCoreModule.setAudioMuted(audioMuted);
 
     boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
-    jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
+    Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
 
     boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-    jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
+    ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
 
     boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
     Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
-    jpcsp.Allegrex.compiler.Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
+    Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
 
     boolean disableReservedThreadMemory = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
-    jpcsp.HLE.pspSysMem.getInstance().setDisableReservedThreadMemory(disableReservedThreadMemory);
+    pspSysMem.getInstance().setDisableReservedThreadMemory(disableReservedThreadMemory);
 
     boolean enableWaitThreadEndCB = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
-    jpcsp.HLE.ThreadMan.getInstance().setEnableWaitThreadEndCB(enableWaitThreadEndCB);
+    ThreadMan.getInstance().setEnableWaitThreadEndCB(enableWaitThreadEndCB);
 
     boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
-    jpcsp.HLE.SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
+    SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
 }
 
 /** @return true if a patch file was found */
@@ -1110,22 +1113,6 @@ public boolean installCompatibilityPatches(String filename)
         patchInputStream = new BufferedInputStream(new FileInputStream(patchfile));
         patchSettings.load(patchInputStream);
 
-        String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
-        if (disableAudio != null)
-            jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!(Integer.parseInt(disableAudio) != 0));
-
-        String disableBlocking = patchSettings.getProperty("emu.disableblockingaudio");
-        if (disableBlocking != null)
-            jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!(Integer.parseInt(disableBlocking) != 0));
-
-        String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
-        if (ignoreAudioThreads != null)
-            jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
-
-        String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
-        if (ignoreInvalidMemoryAccess != null)
-            Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
-
         String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
         if (onlyGEGraphics != null)
             pspdisplay.getInstance().setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
@@ -1142,9 +1129,35 @@ public boolean installCompatibilityPatches(String filename)
         if (useVertexCache != null)
             VideoEngine.getInstance().setUseVertexCache(Integer.parseInt(useVertexCache) != 0);
 
+        String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
+        if (disableAudio != null)
+            jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!(Integer.parseInt(disableAudio) != 0));
+
+        String disableBlocking = patchSettings.getProperty("emu.disableblockingaudio");
+        if (disableBlocking != null)
+            jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!(Integer.parseInt(disableBlocking) != 0));
+
+        String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
+        if (ignoreAudioThreads != null)
+            jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
+
+        String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
+        if (ignoreInvalidMemoryAccess != null) {
+            Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
+            Compiler.setIgnoreInvalidMemory(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
+        }
+
         String disableReservedThreadMemory = patchSettings.getProperty("emu.disablereservedthreadmemory");
         if (disableReservedThreadMemory != null)
             pspSysMem.getInstance().setDisableReservedThreadMemory(Integer.parseInt(disableReservedThreadMemory) != 0);
+
+        String enableWaitThreadEndCB = patchSettings.getProperty("emu.enablewaitthreadendcb");
+        if (disableReservedThreadMemory != null)
+        	ThreadMan.getInstance().setEnableWaitThreadEndCB(Integer.parseInt(enableWaitThreadEndCB) != 0);
+
+        String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
+        if (disableReservedThreadMemory != null)
+        	SyscallHandler.setEnableIgnoreUnmappedImports(Integer.parseInt(ignoreUnmappedImports) != 0);
 
     } catch (IOException e) {
         e.printStackTrace();
