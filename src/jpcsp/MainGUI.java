@@ -1152,11 +1152,11 @@ public boolean installCompatibilityPatches(String filename)
             pspSysMem.getInstance().setDisableReservedThreadMemory(Integer.parseInt(disableReservedThreadMemory) != 0);
 
         String enableWaitThreadEndCB = patchSettings.getProperty("emu.enablewaitthreadendcb");
-        if (disableReservedThreadMemory != null)
+        if (enableWaitThreadEndCB != null)
         	ThreadMan.getInstance().setEnableWaitThreadEndCB(Integer.parseInt(enableWaitThreadEndCB) != 0);
 
         String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
-        if (disableReservedThreadMemory != null)
+        if (ignoreUnmappedImports != null)
         	SyscallHandler.setEnableIgnoreUnmappedImports(Integer.parseInt(ignoreUnmappedImports) != 0);
 
     } catch (IOException e) {
