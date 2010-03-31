@@ -930,15 +930,16 @@ public class pspiofilemgr {
     }
 
     // Try to decrypt a file with a given AES-128 bit key.
-    private boolean decryptAES128(IoInfo info, int addr, int size) throws Exception {
-        byte[] decFile = null;
+    private boolean decryptAES128(IoInfo info, int addr, int size) {
         byte[] encFile = null;
+        byte[] decFile = null;
         boolean res = false;
         SecretKeySpec keySpec = new SecretKeySpec(AES128Key, "AES");
         Memory mem = Memory.getInstance();
 
         if(AES128Key != null) {
             try {
+                encFile = new byte[(int)info.readOnlyFile.length()];
                 info.readOnlyFile.readFully(encFile);
                 Cipher c = Cipher.getInstance("AES");
                 c.init(Cipher.DECRYPT_MODE, keySpec);
@@ -1080,14 +1081,10 @@ public class pspiofilemgr {
                     info.position += size; // check - use clamping or not
 
                     // Check for encrypted files.
-                    if(!info.isEncrypted)
-                        Utilities.readFully(info.readOnlyFile, data_addr, size);
+                    if(info.isEncrypted)
+                        Modules.log.warn("hleIoRead - encrypted file detected.");
 
-                    else if(info.isEncrypted && decryptAES128(info, data_addr, size))
-                             Modules.log.info("hleIoRead - file successfully decrypted.");
-
-                    else
-                        Modules.log.warn("hleIoRead - file decryption failed!");
+                    Utilities.readFully(info.readOnlyFile, data_addr, size);
 
                     result = size;
                     if (info.sectorBlockMode) {
@@ -1860,7 +1857,7 @@ public class pspiofilemgr {
                         for(int i = 0; i < inlen; i++)
                             AES128Key[i] = (byte)mem.read8(indata_addr+i);
 
-                        Modules.log.info("hleIoIoctl get AES key");
+                        Modules.log.debug("hleIoIoctl get AES key");
                         result = 0;
                     } else {
                         Modules.log.warn("hleIoIoctl cmd=0x04100001 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
