@@ -162,6 +162,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     // Async Display
     private AsyncDisplayThread asyncDisplayThread;
     private Semaphore displayLock;
+    private boolean tryLockDisplay;
+    private long tryLockTimestamp;
 
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
@@ -1282,7 +1284,17 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public boolean tryLockDisplay() {
-    	return displayLock.tryAcquire();
+    	boolean locked = displayLock.tryAcquire();
+    	if (!locked) {
+    		// Could not lock the display...
+    		// Remember for 1 second that someone tried to lock the display
+    		tryLockDisplay = true;
+    		tryLockTimestamp = Emulator.getClock().milliTime();
+    	} else {
+    		tryLockDisplay = false;
+    	}
+
+    	return locked;
     }
 
     public void lockDisplay() {
@@ -1300,6 +1312,18 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     	displayLock.release();
     }
 
+    public boolean isTryLockActive() {
+    	if (tryLockDisplay) {
+    		long now = Emulator.getClock().milliTime();
+    		// tryLockDisplay is only active for 1 second, then release it
+    		if (now - tryLockTimestamp > 1000) {
+    			tryLockDisplay = false;
+    		}
+    	}
+
+    	return tryLockDisplay;
+    }
+
     private static class AsyncDisplayThread extends Thread {
 		private Semaphore displaySemaphore;
 		private pspdisplay display;
@@ -1314,13 +1338,23 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 		@Override
 		public void run() {
 			while (run) {
-				waitForDisplay();
-				if (run) {
-		        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
-		        		display.lockDisplay();
-		        		display.display();
-		        		display.unlockDisplay();
-		        	}
+				// If someone is trying to lock the display, leave it to him.
+				if (display.isTryLockActive()) {
+					try {
+						// Sleep for 10 ms
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						// Ignore Interrupt
+					}
+				} else {
+					waitForDisplay();
+					if (run) {
+			        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
+			        		display.lockDisplay();
+			        		display.display();
+			        		display.unlockDisplay();
+			        	}
+					}
 				}
 			}
 		}
