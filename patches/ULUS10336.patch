@@ -1,5 +1,5 @@
 # TITLE = CRISIS CORE:FINAL FANTASY VII
-emu.disablesceAudio=1
+emu.disablesceAudio=0
 emu.ignoreaudiothreads=0
 emu.disableblockingaudio=0
 emu.useViewport=1
