@@ -156,7 +156,7 @@ public class Emulator implements Runnable {
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid);
+        ThreadMan.Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid);
         psputils.getInstance().Initialise();
         pspge.getInstance().Initialise();
         pspdisplay.getInstance().Initialise();
