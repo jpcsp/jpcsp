@@ -38,6 +38,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
@@ -59,68 +60,94 @@ import jpcsp.HLE.modules.HLECallback;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
-public final class ThreadMan {
+public class ThreadMan {
 
-        private static ThreadMan instance;
+    private static ThreadMan instance;
+    private HashMap<Integer, SceKernelThreadInfo> threadMap;
+    private ArrayList<SceKernelThreadInfo> waitingThreads;
+    private LinkedList<SceKernelThreadInfo> readyThreads;
+    private HashSet<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo real_current_thread; // for use with callbacks
+    private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
+    public Statistics statistics;
+
     private boolean dispatchThreadEnabled;
-    private boolean insideCallback;
-    public  boolean exitCalled = false;
-    private boolean enableWaitThreadEndCB;
-    private boolean USE_THREAD_BANLIST = false;
-    private final HashMap<Integer, SceKernelThreadInfo> threadMap;
-    private final LinkedList<SceKernelThreadInfo> readyThreads;
-    private final HashSet<SceKernelThreadInfo> waitingThreads;
-    private final HashSet<SceKernelThreadInfo> toBeDeletedThreads;
-    private final SceKernelThreadInfo idle0, idle1;
-    private final HashMap<Integer, SceKernelCallbackInfo> callbackMap;
-    private final CallbackManager callbackManager = new CallbackManager();
-    public  final Statistics statistics;
-    //private static int stackAllocated;
-    
-    // see sceKernelGetThreadmanIdList
-    public final static int SCE_KERNEL_TMID_Thread = 1;
-    public final static int SCE_KERNEL_TMID_Semaphore = 2;
-    public final static int SCE_KERNEL_TMID_EventFlag = 3;
-    public final static int SCE_KERNEL_TMID_Mbox = 4;
-    public final static int SCE_KERNEL_TMID_Vpl = 5;
-    public final static int SCE_KERNEL_TMID_Fpl = 6;
-    public final static int SCE_KERNEL_TMID_Mpipe = 7;
-    public final static int SCE_KERNEL_TMID_Callback = 8;
-    public final static int SCE_KERNEL_TMID_ThreadEventHandler = 9;
-    public final static int SCE_KERNEL_TMID_Alarm = 10;
-    public final static int SCE_KERNEL_TMID_VTimer = 11;
-    public final static int SCE_KERNEL_TMID_SleepThread = 64;
-    public final static int SCE_KERNEL_TMID_DelayThread = 65;
-    public final static int SCE_KERNEL_TMID_SuspendThread = 66;
-    public final static int SCE_KERNEL_TMID_DormantThread = 67;
-    private static final int IDLE_THREAD_ADDRESS = MemoryMap.START_RAM;
-    private static final int THREAD_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x20;
-    private static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
-    private static final int ASYNC_LOOP_ADDRESS = MemoryMap.START_RAM + 0x40;
-    private static final boolean LOG_CONTEXT_SWITCHING = false;
-    private static final boolean IGNORE_DELAY = false;
-    private static final boolean LOG_INSTRUCTIONS = false;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED = 0;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED = 1;
+
     // TODO figure out a decent number of cycles to wait
     private static final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private static final int WDT_THREAD_HOG_CYCLES = (0x0A000000 - 0x08400000) * 3; // memset can take a while when you're using sb!
-    private static final int CALLBACKID_REGISTER = 16; // $s0
+
+	protected static final int CALLBACKID_REGISTER = 16; // $s0
+	protected CallbackManager callbackManager = new CallbackManager();
+
+	protected static final int IDLE_THREAD_ADDRESS           = MemoryMap.START_RAM;
+	protected static final int THREAD_EXIT_HANDLER_ADDRESS   = MemoryMap.START_RAM + 0x20;
+	protected static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
+    protected static final int ASYNC_LOOP_ADDRESS            = MemoryMap.START_RAM + 0x40;
+
+    private boolean insideCallback;
+    private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
+
+    private boolean enableWaitThreadEndCB;
+    private boolean USE_THREAD_BANLIST = false;
+    private static final boolean LOG_CONTEXT_SWITCHING = false;
+    private static final boolean IGNORE_DELAY = false;
+    private static final boolean LOG_INSTRUCTIONS = false;
+    public boolean exitCalled = false;
+
+    // see sceKernelGetThreadmanIdList
+    public final static int SCE_KERNEL_TMID_Thread             = 1;
+    public final static int SCE_KERNEL_TMID_Semaphore          = 2;
+    public final static int SCE_KERNEL_TMID_EventFlag          = 3;
+    public final static int SCE_KERNEL_TMID_Mbox               = 4;
+    public final static int SCE_KERNEL_TMID_Vpl                = 5;
+    public final static int SCE_KERNEL_TMID_Fpl                = 6;
+    public final static int SCE_KERNEL_TMID_Mpipe              = 7;
+    public final static int SCE_KERNEL_TMID_Callback           = 8;
+    public final static int SCE_KERNEL_TMID_ThreadEventHandler = 9;
+    public final static int SCE_KERNEL_TMID_Alarm              = 10;
+    public final static int SCE_KERNEL_TMID_VTimer             = 11;
+    public final static int SCE_KERNEL_TMID_SleepThread        = 64;
+    public final static int SCE_KERNEL_TMID_DelayThread        = 65;
+    public final static int SCE_KERNEL_TMID_SuspendThread      = 66;
+    public final static int SCE_KERNEL_TMID_DormantThread      = 67;
+
+    //private static int stackAllocated;
 
     public static ThreadMan getInstance() {
         if (instance == null) {
-            throw new IllegalStateException("Called get instance without inicialization");
+            instance = new ThreadMan();
         }
         return instance;
     }
 
-    private ThreadMan(int entry_addr, int attr, String pspfilename, int moduleid) {
+    private ThreadMan() {
+    }
+
+    public Iterator<SceKernelThreadInfo> iterator() {
+        return threadMap.values().iterator();
+    }
+
+    public Iterator<SceKernelThreadInfo> iteratorByPriority() {
+        Collection<SceKernelThreadInfo> c = threadMap.values();
+        List<SceKernelThreadInfo> list = new LinkedList<SceKernelThreadInfo>(c);
+        Collections.sort(list, idle0); // We need an instance of SceKernelThreadInfo for the comparator, so we use idle0
+        return list.iterator();
+    }
+
+    /** call this when resetting the emulator
+     * @param entry_addr entry from ELF header
+     * @param attr from sceModuleInfo ELF section header */
+    public void Initialise(int entry_addr, int attr, String pspfilename, int moduleid) {
+        //Modules.log.debug("ThreadMan: Initialise entry:0x" + Integer.toHexString(entry_addr));
+
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
-        waitingThreads = new HashSet<SceKernelThreadInfo>();
+        waitingThreads = new ArrayList<SceKernelThreadInfo>();
         readyThreads = new LinkedList<SceKernelThreadInfo>();
         toBeDeletedThreads = new HashSet<SceKernelThreadInfo>();
         statistics = new Statistics();
@@ -133,10 +160,7 @@ public final class ThreadMan {
         //pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
         //stackAllocated = 0;
 
-        install_idle_threads_memory();
-        idle0 = createIdleThread("idle0");
-        idle1 = createIdleThread("idle1");
-        continuousIdleCycles = 0;
+        install_idle_threads();
         install_thread_exit_handler();
         install_callback_exit_handler();
         install_async_loop_handler();
@@ -168,36 +192,7 @@ public final class ThreadMan {
         dispatchThreadEnabled = true;
     }
 
-    private SceKernelThreadInfo createIdleThread(String name){
-        // lowest allowed priority is 0x77, so we are ok at 0x7f
-        // Allocate a small stack because interrupts can be processed by the
-        // idle thread, using its stack.
-        SceKernelThreadInfo idle  = new SceKernelThreadInfo(name, IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x200, PSP_THREAD_ATTR_KERNEL);
-        threadMap.put(idle.uid, idle);
-        changeThreadState(idle, PSP_THREAD_READY);
-        return idle;
-    }
-
-    public Iterator<SceKernelThreadInfo> iterator() {
-        return threadMap.values().iterator();
-    }
-
-    public Iterator<SceKernelThreadInfo> iteratorByPriority() {
-        Collection<SceKernelThreadInfo> c = threadMap.values();
-        List<SceKernelThreadInfo> list = new LinkedList<SceKernelThreadInfo>(c);
-        Collections.sort(list, idle0); // We need an instance of SceKernelThreadInfo for the comparator, so we use idle0
-        return list.iterator();
-    }
-
-    /** call this when resetting the emulator
-     * @param entry_addr entry from ELF header
-     * @param attr from sceModuleInfo ELF section header */
-    public static void Initialise(int entry_addr, int attr, String pspfilename, int moduleid) {
-        //Modules.log.debug("ThreadMan: Initialise entry:0x" + Integer.toHexString(entry_addr));
-        instance = new ThreadMan(entry_addr, attr, pspfilename, moduleid);
-    }
-
-    private void install_idle_threads_memory() {
+    private void install_idle_threads() {
         Memory mem = Memory.getInstance();
 
         // Generate 2 idle threads which can toggle between each other when there are no ready threads
@@ -225,6 +220,19 @@ public final class ThreadMan {
         mem.write32(IDLE_THREAD_ADDRESS + 4,  instruction_lui);
         mem.write32(IDLE_THREAD_ADDRESS + 8,  instruction_jr);
         mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
+
+        // lowest allowed priority is 0x77, so we are ok at 0x7f
+        // Allocate a small stack because interrupts can be processed by the
+        // idle thread, using its stack.
+        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x200, PSP_THREAD_ATTR_KERNEL);
+        threadMap.put(idle0.uid, idle0);
+        changeThreadState(idle0, PSP_THREAD_READY);
+
+        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x200, PSP_THREAD_ATTR_KERNEL);
+        threadMap.put(idle1.uid, idle1);
+        changeThreadState(idle1, PSP_THREAD_READY);
+
+        continuousIdleCycles = 0;
     }
 
     private void install_thread_exit_handler() {
@@ -279,7 +287,7 @@ public final class ThreadMan {
             Modules.log.info("----------------------------- ThreadMan exit -----------------------------");
 
             // Delete all the threads to collect statistics
-            deleteThreads(threadMap.values());
+            safeDeleteThreads(threadMap.values());
 
             statistics.endTimeMillis = System.currentTimeMillis();
             Modules.log.info(String.format("ThreadMan Statistics (%,d cycles in %.3fs):", statistics.allCycles, statistics.getDurationMillis() / 1000.0));
@@ -399,14 +407,30 @@ public final class ThreadMan {
             Modules.log.error("No ready threads!");
         }
 
-
         if (!waitingThreads.isEmpty()) {
-            waitThreadsTimeout();
+            long microTimeNow = Emulator.getClock().microTime();
+            ArrayList<SceKernelThreadInfo> workList = new ArrayList<SceKernelThreadInfo>(waitingThreads.size());
+
+            // Access waitingThreads using array indexing because
+            // this is more efficient than iterator access for short lists
+            for (int i = 0; i < waitingThreads.size(); i++) {
+                SceKernelThreadInfo thread = waitingThreads.get(i);
+                if (!thread.wait.forever && microTimeNow >= thread.wait.microTimeTimeout) {
+                    workList.add(thread);
+                }
+            }
+
+            // Use deferred removal to prevent concurrent modification of the collection
+            for (int i = 0; i < workList.size(); i++) {
+                SceKernelThreadInfo thread = workList.get(i);
+                onWaitTimeout(thread);
+                changeThreadState(thread, PSP_THREAD_READY);
+            }
         }
 
-        // Cleanup stopped threads
+            // Cleanup stopped threads
         if(!toBeDeletedThreads.isEmpty())
-            deleteThreads((Iterable<SceKernelThreadInfo>) toBeDeletedThreads.clone());
+            safeDeleteThreads(toBeDeletedThreads);
 
         /* this isn't really necessary if we only handle the umd callback.
          * the other way is when we implement exit and power callback -
@@ -416,37 +440,6 @@ public final class ThreadMan {
             checkCallbacks();
         }
         */
-    }
-
-    // this can use the original collection, or a defensive copy
-    private void deleteThreads(Iterable<SceKernelThreadInfo> iterable){
-        //by removing the value from the iterable BEFORE it is tried to remove
-        //from all collections this assures that concurrent modification exception will
-        //not occur (on a single thread), on the jdk collections, since only
-        //that only happens when they alter the collection.
-        Iterator<SceKernelThreadInfo> it = iterable.iterator();
-        while(it.hasNext()){
-            SceKernelThreadInfo t = it.next();
-            it.remove();
-            deleteThread(t);
-        }
-    }
-
-    private void waitThreadsTimeout() {
-        long microTimeNow = Emulator.getClock().microTime();
-        ArrayList<SceKernelThreadInfo> workList = new ArrayList<SceKernelThreadInfo>(waitingThreads.size());
-        //Use iterator (only way) because it is a set since thread will be removed later on.
-        for (SceKernelThreadInfo thread : waitingThreads) {
-            if (!thread.wait.forever && microTimeNow >= thread.wait.microTimeTimeout) {
-                workList.add(thread);
-            }
-        }
-        // Use deferred removal to prevent concurrent modification of the collection
-        for (int i = 0; i < workList.size(); i++) {
-            SceKernelThreadInfo thread = workList.get(i);
-            onWaitTimeout(thread);
-            changeThreadState(thread, PSP_THREAD_READY);
-        }
     }
 
     /** Part of watch dog timer */
@@ -733,6 +726,19 @@ public final class ThreadMan {
         }
 
         // IO has no timeout, it's always forever
+    }
+
+    private void safeDeleteThreads(Iterable<SceKernelThreadInfo> iterable){
+        //by removing the value from the iterable BEFORE it is tried to remove
+        //from all collections this assures that concurrent modification exception will
+        //not occur, on the jdk collections, since only that only happens when they
+        //alter the collection.
+        Iterator<SceKernelThreadInfo> it = iterable.iterator();
+        while(it.hasNext()){
+            SceKernelThreadInfo t = it.next();
+            it.remove();
+            deleteThread(t);
+        }
     }
 
     private void deleteThread(SceKernelThreadInfo thread) {
@@ -1827,7 +1833,7 @@ public final class ThreadMan {
                 }
             }
         }
-
+        
     	if (!contextSwitched) {
     		// Check if pending async IOs can be completed...
             pspiofilemgr.getInstance().onContextSwitch();
