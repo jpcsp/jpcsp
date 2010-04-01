@@ -178,12 +178,10 @@ public class sceSasCore implements HLEModule {
             		AudioFormat format = new AudioFormat(wantedSampleRate, 16, 2, true, false);
             		outputDataLine = AudioSystem.getSourceDataLine(format);
             		outputDataLineSampleRate = wantedSampleRate;
-            		if (!audioMuted) {
-	            		if (wantedBufferSize > 0) {
-	            			outputDataLine.open(format, wantedBufferSize);
-	            		} else {
-	            			outputDataLine.open(format);
-	            		}
+            		if (wantedBufferSize > 0) {
+            			outputDataLine.open(format, wantedBufferSize);
+            		} else {
+            			outputDataLine.open(format);
             		}
     			} catch (LineUnavailableException e) {
     				Modules.log.error("sceSasCore.pspVoice.init: " + e.toString());
@@ -245,10 +243,12 @@ public class sceSasCore implements HLEModule {
     	private byte[] encodeSamples() {
         	int numSamples = samples.length;
             byte[] buffer = new byte[numSamples * 4];
+            int leftVol  = (audioMuted ? 0 : leftVolume );
+            int rightVol = (audioMuted ? 0 : rightVolume);
             for (int i = 0; i < numSamples; i++) {
             	short sample = samples[i];
-            	short lval = (short) ((sample * leftVolume ) >> 16);
-            	short rval = (short) ((sample * rightVolume) >> 16);
+            	short lval = (short) ((sample * leftVol ) >> 16);
+            	short rval = (short) ((sample * rightVol) >> 16);
             	buffer[i*4+0] = (byte) (lval);
             	buffer[i*4+1] = (byte) (lval >> 8);
             	buffer[i*4+2] = (byte) (rval);

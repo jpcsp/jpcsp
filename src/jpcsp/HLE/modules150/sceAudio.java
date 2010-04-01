@@ -129,13 +129,11 @@ public class sceAudio implements HLEModule, HLEThread {
             		AudioFormat format = new AudioFormat(wantedSampleRate, 16, 2, true, false);
             		outputDataLine = AudioSystem.getSourceDataLine(format);
             		outputDataLineSampleRate = wantedSampleRate;
-            		if (!audioMuted) {
 	            		if (wantedBufferSize > 0) {
 	            			outputDataLine.open(format, wantedBufferSize);
 	            		} else {
 	            			outputDataLine.open(format);
 	            		}
-            		}
     			} catch (LineUnavailableException e) {
     				Modules.log.error("sceSasCore.pspVoice.init: " + e.toString());
     			}
@@ -443,8 +441,8 @@ public class sceAudio implements HLEModule, HLEThread {
 
             // process audio volumes ourselves for now
             int nsamples = pspchannels[channel].allocatedSamples;
-            int leftVolume = pspchannels[channel].leftVolume;
-            int rightVolume = pspchannels[channel].rightVolume;
+            int leftVolume  = (audioMuted ? 0 : pspchannels[channel].leftVolume );
+            int rightVolume = (audioMuted ? 0 : pspchannels[channel].rightVolume);
             Memory mem = Memory.getInstance();
             if(channels == 1)
             {
