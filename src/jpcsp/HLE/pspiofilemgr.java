@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.regex.Pattern;
@@ -930,27 +931,24 @@ public class pspiofilemgr {
     }
 
     // Try to decrypt a file with a given AES-128 bit key.
-    private boolean decryptAES128(IoInfo info, int addr, int size) {
-        byte[] encFile = null;
-        byte[] decFile = null;
+    private boolean decryptAES128(ByteBuffer encData, int out_addr, int size) {
+        byte[] decData = null;
         boolean res = false;
-        SecretKeySpec keySpec = new SecretKeySpec(AES128Key, "AES");
         Memory mem = Memory.getInstance();
 
         if(AES128Key != null) {
             try {
-                encFile = new byte[(int)info.readOnlyFile.length()];
-                info.readOnlyFile.readFully(encFile);
+                SecretKeySpec keySpec = new SecretKeySpec(AES128Key, "AES");
                 Cipher c = Cipher.getInstance("AES");
                 c.init(Cipher.DECRYPT_MODE, keySpec);
-                decFile = c.doFinal(encFile);
+                decData = c.doFinal(encData.array());
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
-            if(decFile != null) {
+            if(decData != null) {
                 for(int i = 0; i < size; i++) {
-                    mem.write8(addr+i, decFile[i]);
+                    mem.write8(out_addr+i, decData[i]);
                 }
                 res = true;
             }
@@ -1081,10 +1079,34 @@ public class pspiofilemgr {
                     info.position += size; // check - use clamping or not
 
                     // Check for encrypted files.
-                    if(info.isEncrypted)
+                    if(info.isEncrypted) {
                         Modules.log.warn("hleIoRead - encrypted file detected.");
 
-                    Utilities.readFully(info.readOnlyFile, data_addr, size);
+                        int capacity = size;
+
+                        // If "size" is not a multiple of 16,
+                        // set the buffer's capacity to the next
+                        // multiple (required for decryption).
+                        while (capacity % 16 != 0)
+                            capacity++;
+
+                        // Allocate a buffer with a multiple of 16
+                        // as it's capacity.
+                        ByteBuffer encBuf = ByteBuffer.allocate(capacity);
+
+                        // Read only "size" data. The rest
+                        // of the buffer should remain filled with
+                        // zeros (padding).
+                        Utilities.readBytesToBuffer(info.readOnlyFile, encBuf, (int)info.position, size);
+
+                        if(decryptAES128(encBuf, data_addr, size))
+                            Modules.log.info("hleIoRead - encrypted file successfully decrypted.");
+                        else
+                            Modules.log.warn("hleIoRead - file decryption failed.");
+                    }
+
+                    else
+                        Utilities.readFully(info.readOnlyFile, data_addr, size);
 
                     result = size;
                     if (info.sectorBlockMode) {
@@ -1854,10 +1876,12 @@ public class pspiofilemgr {
                 case 0x04100001:
                 {
                     if (mem.isAddressGood(indata_addr) && inlen == 16) {
-                        for(int i = 0; i < inlen; i++)
+                        String key = "";
+                        for(int i = 0; i < inlen; i++) {
                             AES128Key[i] = (byte)mem.read8(indata_addr+i);
-
-                        Modules.log.debug("hleIoIoctl get AES key");
+                            key += Integer.toHexString(AES128Key[i]);
+                        }
+                        Modules.log.info("hleIoIoctl get AES key " + key);
                         result = 0;
                     } else {
                         Modules.log.warn("hleIoIoctl cmd=0x04100001 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
