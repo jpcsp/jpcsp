@@ -383,7 +383,10 @@ public class sceMpeg implements HLEModule {
 	                cpu.gpr[2] = 0;
             	} else {
             		mem.write32(size_addr, 0);
-            		cpu.gpr[2] = 0x806101FE;
+                    if(!enableMpeg) // Do not return an error if fake MPEG is disabled.
+                        cpu.gpr[2] = 0;
+                    else
+                        cpu.gpr[2] = 0x806101FE;
             	}
             } else {
                 Modules.log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", mpegMagic));

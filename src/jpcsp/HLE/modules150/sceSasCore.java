@@ -582,6 +582,8 @@ public class sceSasCore implements HLEModule {
         short[] samples = new short[size / 16 * 28];
         int numSamples = 0;
 
+        // VAG address can be null. In this case, just return empty samples.
+        if(vagAddr != 0) {
         int headerCheck = mem.read32(vagAddr);
         if ((headerCheck & 0x00FFFFFF) == 0x00474156)	{ // VAGx
         	vagAddr += 0x30;	// Skip the VAG header
@@ -643,6 +645,7 @@ public class sceSasCore implements HLEModule {
         		resizedSamples[i] = samples[i];
         	}
         	samples = resizedSamples;
+        }
         }
 
         return samples;

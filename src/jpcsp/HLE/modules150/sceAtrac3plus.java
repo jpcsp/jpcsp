@@ -228,10 +228,10 @@ public class sceAtrac3plus implements HLEModule {
         	mem.memset(samplesAddr, (byte) 0, maxSamples * 4);	// 4 bytes per sample
         }
         if (mem.isAddressGood(samplesNbrAddr)) {
-            mem.write32(samplesNbrAddr, 0); // 0 samples written
+            mem.write32(samplesNbrAddr, 0x0010); // Write dummy ammount of samples. If it's 0, some games will fall into a loop.
         }
         if (mem.isAddressGood(outEndAddr)) {
-            mem.write32(outEndAddr, 1); // end of samples
+            mem.write32(outEndAddr, 0); // end of samples
         }
         if (mem.isAddressGood(remainFramesAddr)) {
             mem.write32(remainFramesAddr, remainFrames); // Unknown?

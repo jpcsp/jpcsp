@@ -125,6 +125,10 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    protected long hleGetCurrentClock() {
+        return Emulator.getClock().currentTimeMillis();
+    }
+
     protected long hleGetCurrentTick() {
         return Emulator.getClock().microTime();
     }
@@ -183,20 +187,16 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcGetCurrentClock(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int addr = cpu.gpr[4];
+        int unk = cpu.gpr[5];
+        mem.write64(addr, hleGetCurrentClock());
 
+        Modules.log.debug("sceRtcGetCurrentClock addr=" + Integer.toHexString(addr) + " unk=" + unk);
 
-
-
-        Modules.log.warn("Unimplemented NID function sceRtcGetCurrentClock [0x4CFA57B0]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-
+        cpu.gpr[2] = 0;
     }
 
     public void sceRtcGetCurrentClockLocalTime(Processor processor) {
