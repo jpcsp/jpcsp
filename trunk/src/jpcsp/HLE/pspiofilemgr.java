@@ -647,7 +647,7 @@ public class pspiofilemgr {
         }
         if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
         if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
-        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("PARTIAL:hleIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
+        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
 
         String mode = getMode(flags);
 
@@ -710,10 +710,6 @@ public class pspiofilemgr {
                                 String trimmedFileName = trimUmdPrefix(pcfilename);
                                 UmdIsoFile file = iso.getFile(trimmedFileName);
                                 IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
-
-                                if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3)
-                                    info.isEncrypted = true;
-
                                 if (trimmedFileName != null && trimmedFileName.length() == 0) {
                                     // Opening "umd0:" is allowing to read the whole UMD per sectors.
                                     info.sectorBlockMode = true;
@@ -930,33 +926,6 @@ public class pspiofilemgr {
         return newResult;
     }
 
-    // Try to decrypt a file with a given AES-128 bit key.
-    private boolean decryptAES128(ByteBuffer encData, int out_addr, int size) {
-        byte[] decData = null;
-        boolean res = false;
-        Memory mem = Memory.getInstance();
-
-        if(AES128Key != null) {
-            try {
-                SecretKeySpec keySpec = new SecretKeySpec(AES128Key, "AES");
-                Cipher c = Cipher.getInstance("AES");
-                c.init(Cipher.DECRYPT_MODE, keySpec);
-                decData = c.doFinal(encData.array());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if(decData != null) {
-                for(int i = 0; i < size; i++) {
-                    mem.write8(out_addr+i, decData[i]);
-                }
-                res = true;
-            }
-        }
-
-        return res;
-    }
-
     private void hleIoWrite(int uid, int data_addr, int size, boolean async) {
         IoInfo info = null;
         int result;
@@ -1078,35 +1047,7 @@ public class pspiofilemgr {
 
                     info.position += size; // check - use clamping or not
 
-                    // Check for encrypted files.
-                    if(info.isEncrypted) {
-                        Modules.log.warn("hleIoRead - encrypted file detected.");
-
-                        int capacity = size;
-
-                        // If "size" is not a multiple of 16,
-                        // set the buffer's capacity to the next
-                        // multiple (required for decryption).
-                        while (capacity % 16 != 0)
-                            capacity++;
-
-                        // Allocate a buffer with a multiple of 16
-                        // as it's capacity.
-                        ByteBuffer encBuf = ByteBuffer.allocate(capacity);
-
-                        // Read only "size" data. The rest
-                        // of the buffer should remain filled with
-                        // zeros (padding).
-                        Utilities.readBytesToBuffer(info.readOnlyFile, encBuf, (int)info.position, size);
-
-                        if(decryptAES128(encBuf, data_addr, size))
-                            Modules.log.info("hleIoRead - encrypted file successfully decrypted.");
-                        else
-                            Modules.log.warn("hleIoRead - file decryption failed.");
-                    }
-
-                    else
-                        Utilities.readFully(info.readOnlyFile, data_addr, size);
+                    Utilities.readFully(info.readOnlyFile, data_addr, size);
 
                     result = size;
                     if (info.sectorBlockMode) {
@@ -2252,7 +2193,6 @@ public class pspiofilemgr {
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
         public boolean sectorBlockMode;
-        public boolean isEncrypted; // Used to check for new encryption mechanism (PSP_O_UNKNOWN3).
 
         public final int uid;
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
@@ -2274,7 +2214,6 @@ public class pspiofilemgr {
             this.sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
-            isEncrypted = false;
         }
 
         /** UMD version (read only) */
@@ -2288,7 +2227,6 @@ public class pspiofilemgr {
             this.sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
-            isEncrypted = false;
         }
 
         public boolean isUmdFile() {
