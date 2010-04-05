@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 import jpcsp.Memory;
 
 /**
@@ -35,6 +36,28 @@ public class ScePspDateTime {
     /** All fields will be initialised to the time the object was created. */
     public ScePspDateTime() {
         Calendar cal = Calendar.getInstance();
+
+        this.year = cal.get(Calendar.YEAR);
+        this.month = 1 + cal.get(Calendar.MONTH); // check
+        this.day = cal.get(Calendar.DAY_OF_MONTH);
+        this.hour = cal.get(Calendar.HOUR_OF_DAY);
+        this.minute = cal.get(Calendar.MINUTE);
+        this.second = cal.get(Calendar.SECOND);
+        this.microsecond = cal.get(Calendar.MILLISECOND) * 1000;
+    }
+
+    public ScePspDateTime(int timezone) {
+        Calendar cal = Calendar.getInstance();
+        int minutes = timezone;
+        int hours = 0;
+        while(minutes > 59) {
+            hours++;
+            minutes -= 60;
+        }
+
+        String timeString = String.format("UTC+%02d%02d", hours, minutes);
+        TimeZone tz = TimeZone.getTimeZone(timeString);
+        cal.setTimeZone(tz);
 
         this.year = cal.get(Calendar.YEAR);
         this.month = 1 + cal.get(Calendar.MONTH); // check
