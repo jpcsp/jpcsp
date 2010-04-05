@@ -739,8 +739,12 @@ public class SyscallHandler {
                 case 0x213c:
                     pspdisplay.getInstance().sceDisplayGetFramePerSec();
                     break;
-		// sceDisplaySetHoldMode(0x213d),
-		// sceDisplaySetResumeMode(0x213e),
+                case 0x213d:
+                    pspdisplay.getInstance().sceDisplaySetHoldMode(gpr[4]);
+                    break;
+                case 0x213e:
+                    pspdisplay.getInstance().sceDisplaySetResumeMode(gpr[4]);
+                    break;
                 case 0x213f:
                     pspdisplay.getInstance().sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;

@@ -125,25 +125,19 @@ public class sceRtc implements HLEModule {
         }
     }
 
-    protected long hleGetCurrentClock() {
-        return Emulator.getClock().currentTimeMillis();
-    }
-
     protected long hleGetCurrentTick() {
         return Emulator.getClock().microTime();
     }
 
     public void sceRtcGetTickResolution(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         // resolution = micro seconds
         cpu.gpr[2] = 1000000;
     }
 
     public void sceRtcGetCurrentTick(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int addr = cpu.gpr[4];
@@ -153,37 +147,21 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcGetAccumulativeTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
 
         Modules.log.warn("Unimplemented NID function sceRtcGetAccumulativeTime [0x011F03C1]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtc_029CA3B3(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
 
         Modules.log.warn("Unimplemented NID function sceRtc_029CA3B3 [0x029CA3B3]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcGetCurrentClock(Processor processor) {
@@ -191,16 +169,17 @@ public class sceRtc implements HLEModule {
         Memory mem = Processor.memory;
 
         int addr = cpu.gpr[4];
-        int unk = cpu.gpr[5];
-        mem.write64(addr, hleGetCurrentClock());
+        int tz = cpu.gpr[5]; //Time Zone (minutes from UTC)
+        ScePspDateTime pspTime = new ScePspDateTime(tz);
+        pspTime.write(mem, addr);
 
-        Modules.log.debug("sceRtcGetCurrentClock addr=" + Integer.toHexString(addr) + " unk=" + unk);
+        Modules.log.debug("sceRtcGetCurrentClock addr=" + Integer.toHexString(addr) + " time zone=" + tz);
 
         cpu.gpr[2] = 0;
     }
 
     public void sceRtcGetCurrentClockLocalTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int addr = cpu.gpr[4];
@@ -211,8 +190,7 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcConvertUtcToLocalTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int utc_addr = cpu.gpr[4];
@@ -228,8 +206,7 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcConvertLocalTimeToUTC(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int local_addr = cpu.gpr[4];
@@ -245,8 +222,7 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcIsLeapYear(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         Modules.log.debug("sceRtcIsLeapYear");
 
@@ -259,8 +235,7 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcGetDaysInMonth(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int year = cpu.gpr[4];
         int month = cpu.gpr[5];
@@ -275,8 +250,7 @@ public class sceRtc implements HLEModule {
 
     // pspsdk says 0=monday but I tested and 0=sunday... (fiveofhearts)
     public void sceRtcGetDayOfWeek(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-
+        CpuState cpu = processor.cpu;
         int year = cpu.gpr[4];
         int month = cpu.gpr[5];
         int day = cpu.gpr[6];
@@ -347,28 +321,16 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcSetTime_t(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcSetTime_t [0x3A807CC8]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcGetTime_t(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        /* put your own code here instead */
 
         int date_addr = cpu.gpr[4];
         int time_addr = cpu.gpr[5];
@@ -389,79 +351,42 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcSetDosTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcSetDosTime [0xF006F264]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcGetDosTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcGetDosTime [0x36075567]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcSetWin32FileTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcSetWin32FileTime [0x7ACE4C04]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcGetWin32FileTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcGetWin32FileTime [0xCF561893]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     private long rtcMagicOffset = 62135596800000000L;
 
     /** Set a pspTime struct based on ticks. */
     public void sceRtcSetTick(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int time_addr = cpu.gpr[4];
@@ -483,8 +408,7 @@ public class sceRtc implements HLEModule {
 
     /** Set ticks based on a pspTime struct. */
     public void sceRtcGetTick(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int time_addr = cpu.gpr[4];
@@ -509,8 +433,7 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcCompareTick(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int first = cpu.gpr[4];
@@ -537,8 +460,7 @@ public class sceRtc implements HLEModule {
 
     /** 64 bit addend */
     protected void hleRtcTickAdd64(Processor processor, long multiplier) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int dest_addr = cpu.gpr[4];
@@ -560,8 +482,7 @@ public class sceRtc implements HLEModule {
 
     /** 32 bit addend */
     protected void hleRtcTickAdd32(Processor processor, long multiplier) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int dest_addr = cpu.gpr[4];
@@ -634,105 +555,51 @@ public class sceRtc implements HLEModule {
     }
 
     public void sceRtcFormatRFC2822(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcFormatRFC2822 [0xC663B3B9]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcFormatRFC2822LocalTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcFormatRFC2822LocalTime [0x7DE6711B]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcFormatRFC3339(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcFormatRFC3339 [0x0498FB3C]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcFormatRFC3339LocalTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
-
+        CpuState cpu = processor.cpu;
+ 
         Modules.log.warn("Unimplemented NID function sceRtcFormatRFC3339LocalTime [0x27F98543]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcParseDateTime(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcParseDateTime [0xDFBC5F16]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public void sceRtcParseRFC3339(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-
-
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceRtcParseRFC3339 [0x28E1E988]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-
     }
 
     public final HLEModuleFunction sceRtcGetTickResolutionFunction = new HLEModuleFunction("sceRtc", "sceRtcGetTickResolution") {

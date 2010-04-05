@@ -1117,10 +1117,20 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void sceDisplayIsForeground() {
     	// Return 1 if the framebuffer is displaying.
         // TODO: Check when the framebuffer is not available?
-    	Emulator.getProcessor().cpu.gpr[0] = 1;
+    	Emulator.getProcessor().cpu.gpr[2] = 1;
     	if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug("sceDisplayIsForeground ret: " + Emulator.getProcessor().cpu.gpr[0]);
+    		Modules.log.debug("sceDisplayIsForeground ret: " + Emulator.getProcessor().cpu.gpr[2]);
     	}
+    }
+
+    public void sceDisplaySetHoldMode(int unk) {
+        Modules.log.warn("IGNORING: sceDisplaySetHoldMode unk=" + unk);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    public void sceDisplaySetResumeMode(int unk) {
+        Modules.log.warn("IGNORING: sceDisplaySetResumeMode unk=" + unk);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public boolean isGeAddress(int address) {
