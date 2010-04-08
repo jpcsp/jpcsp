@@ -19,6 +19,7 @@ package jpcsp.graphics;
 public class GeCommands {
 
     private final String[] commands;
+    private static GeCommands instance;
 
     public final static int NOP = 0x00; //	No Operation
     public final static int VADDR = 0x01; // 	Vertex List (BASE)
@@ -697,6 +698,12 @@ public class GeCommands {
         commands[BBOX] = "bbox";
         commands[JUMP] = "jump";
 
+        instance = this;
+
+    }
+
+    public static GeCommands getInstance() {
+        return instance;
     }
 
     public String getCommandString(int command) {

@@ -616,25 +616,33 @@ public class SyscallHandler {
                     break;
               // sceDmacMemcpy(0x20ed),
 		// sceDmacTryMemcpy(0x20ee),
-               case 0x20ef:
-            	   pspge.getInstance().sceGeEdramGetSize();
-                   break;
-               case 0x20f0:
+                case 0x20ef:
+                    pspge.getInstance().sceGeEdramGetSize();
+                    break;
+                case 0x20f0:
                     pspge.getInstance().sceGeEdramGetAddr();
                     break;
-                //sceGeEdramSetAddrTranslation(0x20f1),
-		// sceGeGetCmd(0x20f2),
-		// sceGeGetMtx(0x20f3),
+                case 0x20f1:
+                    pspge.getInstance().sceGeEdramSetAddrTranslation(gpr[4]);
+                    break;
+                case 0x20f2:
+                    pspge.getInstance().sceGeGetCmd(gpr[4]);
+                    break;
+                case 0x20f3:
+                    pspge.getInstance().sceGeGetMtx(gpr[4], gpr[5]);
+                    break;
                 case 0x20f4:
-            	   pspge.getInstance().sceGeSaveContext(gpr[4]);
-            	   break;
+                    pspge.getInstance().sceGeSaveContext(gpr[4]);
+                    break;
                 case 0x20f5:
-            	   pspge.getInstance().sceGeRestoreContext(gpr[4]);
-            	   break;
+                    pspge.getInstance().sceGeRestoreContext(gpr[4]);
+                    break;
                 case 0x20f6:
                     pspge.getInstance().sceGeListEnQueue(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
-               // sceGeListEnQueueHead(0x20f7),
+                case 0x20f7:
+                    pspge.getInstance().sceGeListEnQueueHead(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
                 case 0x20f8:
                     pspge.getInstance().sceGeListDeQueue(gpr[4]);
                     break;
