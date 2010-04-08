@@ -28,6 +28,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
@@ -311,6 +312,8 @@ public class VideoEngine {
     private boolean geBufChanged;
     private IAction hleAction;
 
+    private HashMap<Integer, Integer> currentCMDValues;
+
     private class MatrixUpload {
     	float[] matrix;
     	int matrixWidth;
@@ -409,11 +412,41 @@ public class VideoEngine {
     	for (int i = 0; i < 8; i++) {
     		bboxVertices[i] = new float[3];
     	}
+
+        currentCMDValues = new HashMap<Integer, Integer>();
     }
 
     /** Called from pspge module */
     public void pushDrawList(PspGeList list) {
         drawListQueue.add(list);
+    }
+
+    /** Called from pspge module */
+    public void pushDrawListHead(PspGeList list) {
+        // The ConcurrentLinkedQueue type doesn't allow adding
+        // objects directly at the head of the queue.
+
+        // This function creates a new array using the given list as it's head
+        // and constructs a new ConcurrentLinkedQueue based on it.
+        // The actual drawListQueue is then replaced by this new one.
+        int arraySize = drawListQueue.size();
+
+        if(arraySize > 0) {
+            PspGeList[] array = drawListQueue.toArray(new PspGeList[arraySize]);
+
+            ConcurrentLinkedQueue newQueue = new ConcurrentLinkedQueue<PspGeList>();
+            PspGeList[] newArray = new PspGeList[arraySize+1];
+
+            newArray[0] = list;
+            for(int i = 0; i < arraySize; i++) {
+                newArray[i+1] = array[i];
+                newQueue.add(newArray[i]);
+            }
+
+            drawListQueue = newQueue;
+        } else {    // If the queue is empty.
+            drawListQueue.add(list);
+        }
     }
 
     public boolean hasDrawLists() {
@@ -935,6 +968,57 @@ public class VideoEngine {
     	return currentList;
     }
 
+    public float[] getMatrix(int mtxtype) {
+        float resmtx[] = new float[4 * 4];
+        switch(mtxtype) {
+            case PSP_GE_MATRIX_BONE0:
+                resmtx = bone_uploaded_matrix[0];
+                break;
+            case PSP_GE_MATRIX_BONE1:
+                resmtx = bone_uploaded_matrix[1];
+                break;
+            case PSP_GE_MATRIX_BONE2:
+                resmtx = bone_uploaded_matrix[2];
+                break;
+            case PSP_GE_MATRIX_BONE3:
+                resmtx = bone_uploaded_matrix[3];
+                break;
+            case PSP_GE_MATRIX_BONE4:
+                resmtx = bone_uploaded_matrix[4];
+                break;
+            case PSP_GE_MATRIX_BONE5:
+                resmtx = bone_uploaded_matrix[5];
+                break;
+            case PSP_GE_MATRIX_BONE6:
+                resmtx = bone_uploaded_matrix[6];
+                break;
+            case PSP_GE_MATRIX_BONE7:
+                resmtx = bone_uploaded_matrix[7];
+                break;
+            case PSP_GE_MATRIX_WORLD:
+                resmtx = model_uploaded_matrix;
+                break;
+            case PSP_GE_MATRIX_VIEW:
+                resmtx = view_uploaded_matrix;
+                break;
+            case PSP_GE_MATRIX_PROJECTION:
+                resmtx = proj_uploaded_matrix;
+                break;
+            case PSP_GE_MATRIX_TEXGEN:
+                resmtx = texture_uploaded_matrix;
+                break;
+        }
+
+        return resmtx;
+    }
+    public int getCommandValue(int cmd) {
+        return currentCMDValues.get(cmd);
+    }
+
+    public String commandToString(int cmd) {
+        return GeCommands.getInstance().getCommandString(cmd);
+    }
+
     public static int command(int instruction) {
         return (instruction >>> 24);
     }
@@ -1220,6 +1304,7 @@ public class VideoEngine {
         //float floatArgument = floatArgument(instruction);
 
         int command = command(instruction);
+        currentCMDValues.put(command, normalArgument);
         commandStatistics[command].start();
         switch (command) {
             case END:

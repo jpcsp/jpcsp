@@ -77,6 +77,19 @@ public class pspge {
     public final static int PSP_GE_BEHAVIOR_CONTINUE = 2;
     public final static int PSP_GE_BEHAVIOR_BREAK    = 3;
 
+    public final static int PSP_GE_MATRIX_BONE0  = 0;
+    public final static int PSP_GE_MATRIX_BONE1  = 1;
+    public final static int PSP_GE_MATRIX_BONE2  = 2;
+    public final static int PSP_GE_MATRIX_BONE3  = 3;
+    public final static int PSP_GE_MATRIX_BONE4  = 4;
+    public final static int PSP_GE_MATRIX_BONE5  = 5;
+    public final static int PSP_GE_MATRIX_BONE6  = 6;
+    public final static int PSP_GE_MATRIX_BONE7  = 7;
+    public final static int PSP_GE_MATRIX_WORLD  = 8;
+    public final static int PSP_GE_MATRIX_VIEW   = 9;
+    public final static int PSP_GE_MATRIX_PROJECTION = 10;
+    public final static int PSP_GE_MATRIX_TEXGEN = 11;
+
     public static pspge getInstance() {
         if (instance == null) {
             instance = new pspge();
@@ -124,6 +137,11 @@ public class pspge {
         Emulator.getProcessor().cpu.gpr[2] = MemoryMap.START_VRAM;
     }
 
+    public void sceGeEdramSetAddrTranslation(int size) {
+        VideoEngine.log.warn("UNIMPLEMENTED: sceGeEdramSetAddrTranslation size=" + size);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
     public synchronized void sceGeListEnQueue(int list_addr, int stall_addr, int cbid, int arg_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
@@ -149,11 +167,53 @@ public class pspge {
 	    		list.init(list_addr, stall_addr, cbid, arg_addr);
 	    		startGeList(list);
 	            cpu.gpr[2] = list.id;
+
+                if (peekAutoListSync(cbid))
+                    blockCurrentThreadOnList(list, null);
 	    	}
     	}
 
 		if (VideoEngine.log.isDebugEnabled()) {
 			VideoEngine.log.debug(String.format("sceGeListEnQueue returning 0x%x", cpu.gpr[2]));
+		}
+    }
+
+    public synchronized void sceGeListEnQueueHead(int list_addr, int stall_addr, int cbid, int arg_addr) {
+        CpuState cpu = Emulator.getProcessor().cpu;
+
+        // Identical to sceGeListEnQueue, but places the list at the
+        // head of the drawing queue.
+
+        if (VideoEngine.log.isDebugEnabled()) {
+	        VideoEngine.log.debug("sceGeListEnQueueHead(list=0x" + Integer.toHexString(list_addr)
+	            + ",stall=0x" + Integer.toHexString(stall_addr)
+	            + ",cbid=0x" + Integer.toHexString(cbid)
+	            + ",arg=0x" + Integer.toHexString(arg_addr) + ")");
+    	}
+
+    	list_addr &= Memory.addressMask;
+    	stall_addr &= Memory.addressMask;
+
+    	if (VideoEngine.getInstance().hasDrawList(list_addr)) {
+    		cpu.gpr[2] = 0x80000021;
+    		VideoEngine.log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
+    	} else {
+	    	PspGeList list = listFreeQueue.poll();
+	    	if (list == null) {
+	    		cpu.gpr[2] = 0x80000022;
+	    		VideoEngine.log.warn("sceGeListEnQueueHead no more free list available!");
+	    	} else {
+	    		list.init(list_addr, stall_addr, cbid, arg_addr);
+	    		startGeListHead(list);
+	            cpu.gpr[2] = list.id;
+
+                if (peekAutoListSync(cbid))
+                    blockCurrentThreadOnList(list, null);
+	    	}
+    	}
+
+		if (VideoEngine.log.isDebugEnabled()) {
+			VideoEngine.log.debug(String.format("sceGeListEnQueueHead returning 0x%x", cpu.gpr[2]));
 		}
     }
 
@@ -245,6 +305,26 @@ public class pspge {
     	// Send the list to the VideoEngine before triggering the display (setting GE dirty)
     	list.startList();
     	pspdisplay.getInstance().setGeDirty(true);
+    }
+
+    private void startGeListHead(PspGeList list) {
+    	// Send the list to the VideoEngine at the head of the queue.
+    	list.startListHead();
+    	pspdisplay.getInstance().setGeDirty(true);
+    }
+
+    private boolean peekAutoListSync(int cbid) {
+        Memory mem = Memory.getInstance();
+        SceKernelCallbackInfo autoSyncCallback = finishCallbacks.get(cbid);
+        boolean res = false;
+        // Some games seem to attempt using an automatic
+        // list sync system using the "sync" Allegrex opcode.
+
+        if((autoSyncCallback != null)   // Check if we have a finish callback set.
+                && (mem.read8(autoSyncCallback.callback_addr) == 0x0F))
+            res = true;
+
+        return res;
     }
 
     public synchronized void sceGeListSync(int id, int mode) {
@@ -444,6 +524,26 @@ public class pspge {
     public synchronized void sceGeBreak() {
     	Modules.log.warn("Unsupported sceGeBreak");
         Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    public void sceGeGetCmd(int cmd) {
+        VideoEngine ve = VideoEngine.getInstance();
+        int arg = ve.getCommandValue(cmd);
+        String cmdString = ve.commandToString(cmd);
+
+
+        Modules.log.info("sceGeGetCmd " + cmdString.toUpperCase() + ":" + " cmd=0x" + Integer.toHexString(cmd) + " value=0x" + Integer.toHexString(arg));
+        Emulator.getProcessor().cpu.gpr[2] = arg;
+    }
+
+    public void sceGeGetMtx(int mtxtype, int mtx_addr) {
+        VideoEngine ve = VideoEngine.getInstance();
+        float[] mtx = ve.getMatrix(mtxtype);  // Needs to be checked on PSP. Couldn't find any sample or game using this...
+
+        // TODO: Write the matrix's values to mtx_addr.
+
+        Modules.log.info("UNIMPLEMENTED: sceGeGetMtx mtxtype=" + mtxtype + " mtx_addr=0x" + Integer.toHexString(mtx_addr));
+        Emulator.getProcessor().cpu.gpr[2] = 0;  // Check?
     }
 
     private void triggerAsyncCallback(int cbid, int listId, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {

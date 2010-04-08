@@ -176,6 +176,11 @@ public class PspGeList
         videoEngine.pushDrawList(this);
     }
 
+    public void startListHead() {
+        paused = false;
+        videoEngine.pushDrawListHead(this);
+    }
+
     public void pauseList() {
     	paused = true;
     }
