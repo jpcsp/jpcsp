@@ -99,31 +99,31 @@ public class ModuleMgrForUser implements HLEModule {
 		}
 	}
 
-    // When a module is loaded using sector syntax, try searching the for the real module's name.
-    private String extractModuleName(String path) {
+    // When an HLE module is loaded using sector syntax, try searching the for the real module's name.
+    private String extractHLEModuleName(String path) {
         String result = "UNKNOWN";
-
         String sectorString = path.substring(path.indexOf("0x"), path.indexOf("_size"));
         int PRXStartSector = Integer.parseInt(sectorString.substring(2), 16);
 
         try {
             byte[] buffer = pspiofilemgr.getInstance().getIsoReader().readSector(PRXStartSector);
-            String libName = new String(buffer);
-            String module = libName.substring(libName.indexOf("sce"), libName.indexOf(" "));
+            String libName = new String(buffer);            
+            if(libName.contains("sce")) {
+                String module = libName.substring(libName.indexOf("sce"), libName.indexOf(" "));
 
-            // Compare with known names and assign the real name for this module.
-            if(module.contains("sceFont"))
-                result = "libfont";
-            else if(module.contains("sceMpeg"))
-                result = "mpeg";
-            else if(module.contains("sceSAScore"))
-                result = "sc_sascore";
-            else if(module.contains("sceATRAC3plus"))
-                result = "libatrac3plus";
-
-            } catch (IOException ioe) {
-                // Sector doesn't exist...
+                // Compare with known names and assign the real name for this module.
+                if(module.contains("sceFont"))
+                    result = "libfont";
+                else if(module.contains("sceMpeg"))
+                    result = "mpeg";
+                else if(module.contains("sceSAScore"))
+                    result = "sc_sascore";
+                else if(module.contains("sceATRAC3plus"))
+                    result = "libatrac3plus";
             }
+        } catch (IOException ioe) {
+            // Sector doesn't exist...
+        }
         return result;
     }
 
@@ -139,7 +139,7 @@ public class ModuleMgrForUser implements HLEModule {
         if (endprx >= 0) {
             prxname.append(name.substring(findprx+1, endprx));
         } else if(name.contains("sce_lbn")) {
-            prxname.append(extractModuleName(name));
+            prxname.append(extractHLEModuleName(name));
         } else {
         	prxname.append("UNKNOWN");
         }
