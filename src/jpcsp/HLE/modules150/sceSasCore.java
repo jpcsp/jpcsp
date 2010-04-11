@@ -73,6 +73,7 @@ public class sceSasCore implements HLEModule {
             mm.addFunction(__sceSasGetOutputmodeFunction, 0xE175EF66);
             mm.addFunction(__sceSasSetOutputmodeFunction, 0xE855BF76);
             mm.addFunction(__sceSasRevVONFunction, 0xF983B186);
+            mm.addFunction(__sceSasGetAllEnvelopeHeightsFunction, 0x07F58C24);
         }
 
         sasCoreUid = -1;
@@ -124,6 +125,7 @@ public class sceSasCore implements HLEModule {
             mm.removeFunction(__sceSasGetOutputmodeFunction);
             mm.removeFunction(__sceSasSetOutputmodeFunction);
             mm.removeFunction(__sceSasRevVONFunction);
+            mm.removeFunction(__sceSasGetAllEnvelopeHeightsFunction);
 
         }
     }
@@ -141,6 +143,7 @@ public class sceSasCore implements HLEModule {
     	public byte[] buffer;
     	public int bufferIndex;
         public boolean paused;
+        public final int BASE_ENVELOPE_HEIGHT = 0x10000000;  // Faking for now. Each voice has it's own envelope.
 
     	public pspVoice() {
     		outputDataLine = null;
@@ -533,9 +536,9 @@ public class sceSasCore implements HLEModule {
         int unk1 = cpu.gpr[6]; // set to 1
         // 99% sure there are no more parameters
 
-        Modules.log.debug("IGNORING:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
+        Modules.log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
 
-        cpu.gpr[2] = 0;
+        cpu.gpr[2] = voices[voice].BASE_ENVELOPE_HEIGHT;
     }
 
     // I think this means start playing this channel, key off would then mean stop or pause the playback (fiveofhearts)
@@ -888,6 +891,28 @@ public class sceSasCore implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    public void __sceSasGetAllEnvelopeHeights(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int sasCore = cpu.gpr[4];
+
+        Modules.log.debug("PARTIAL:__sceSasGetAllEnvelopeHeights("
+            + String.format("sasCore=0x%08x)", sasCore));
+
+        // TODO: Should it return a sum of all voices' envelope heights,
+        // or a globally defined one?
+
+        int res = 0;
+
+        for(int i = 0; i < voices.length; i++) {
+            if(!voices[i].IsEnded()) {
+                res += voices[i].BASE_ENVELOPE_HEIGHT;
+            }
+        }
+
+        cpu.gpr[2] = res;
+    }
+
     public final HLEModuleFunction __sceSasSetADSRFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetADSR") {
 
         @Override
@@ -1210,6 +1235,19 @@ public class sceSasCore implements HLEModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevVON(processor);";
+        }
+    };
+
+    public final HLEModuleFunction __sceSasGetAllEnvelopeHeightsFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetAllEnvelopeHeights") {
+
+        @Override
+        public final void execute(Processor processor) {
+            __sceSasGetAllEnvelopeHeights(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetAllEnvelopeHeights(processor);";
         }
     };
 };

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -516,6 +517,17 @@ public class sceUtility implements HLEModule {
 	    return numberSectors * sectorSizeKb;
 	}
 
+    private boolean deleteSavedataDir(String saveName) {
+        File saveDir = new File(saveName);
+        if(saveDir.exists()) {
+            File[] subFiles = saveDir.listFiles();
+            for(int i = 0; i < subFiles.length; i++) {
+                subFiles[i].delete();
+            }
+        }
+        return (saveDir.delete());
+    }
+
     private void hleUtilitySavedataDisplay() {
         Memory mem = Processor.memory;
 
@@ -725,6 +737,51 @@ public class sceUtility implements HLEModule {
                 }
                 break;
             }
+
+            case SceUtilitySavedataParam.MODE_DELETE:
+                // Should receive a savedata list address as parameter.
+                // Scan the list and try to delete the saves.
+               if(savedataParams.saveNameList != null) {
+                   for(int i = 0; i < savedataParams.saveNameList.length; i++) {
+                       String save = "ms0/PSP/SAVEDATA/" + (State.discId) +
+                           (savedataParams.saveNameList[i]);
+                       if(deleteSavedataDir(save)) {
+                           Modules.log.debug("Savedata MODE_DELETE deleting " + save);
+                       }
+                   }
+                   savedataParams.base.result = 0;
+               } else {
+                   Modules.log.warn("Savedata MODE_DELETE no saves found!");
+                   savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+               }
+               break;
+
+            case SceUtilitySavedataParam.MODE_SECURE:
+                // This one acts as an hybrid save/load access test mode. If it fails loading the file
+                // it tries to save it (encrypted or decrypted) and it stores the result
+                // in a new buffer (buffer5addr).
+                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                        savedataParams.saveName = savedataParams.saveNameList[0];
+                    } else {
+                        savedataParams.saveName = "-000";
+                    }
+                }
+                try {
+                    savedataParams.load(mem, pspiofilemgr.getInstance());
+                    savedataParams.base.result = 0;
+                    savedataParams.write(mem);
+                } catch (Exception load) {
+                    savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                    try{
+                        savedataParams.save(mem, pspiofilemgr.getInstance());
+                        savedataParams.base.result = 0;
+                    } catch (Exception save) {
+                        savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                    }
+                }
+                mem.write32(savedataParams.buffer5Addr, savedataParams.base.result);
+                break;
 
             default:
                 Modules.log.warn("Savedata - Unsupported mode " + savedataParams.mode);
