@@ -99,7 +99,18 @@ public class ModuleMgrForUser implements HLEModule {
 		}
 	}
 
-    // When an HLE module is loaded using sector syntax, try searching the for the real module's name.
+	//
+    // When an HLE module is loaded using sector syntax, with no file corresponding to the
+	// referenced sector, try searching for the real module's name inside the file itself.
+	// For encrypted modules, the real name can be found in the first sector of the file.
+	// This name is not encrypted.
+	//
+	// For example:
+	//   MONSTER HUNTER FREEDOM UNITE ULES01213
+	//     hleKernelLoadModule(path='disc0:/sce_lbn0x11981_size0x59c0')
+	//   and the sector 0x11981 is found inside a huge "DATA.BIN" file (a CD image):
+	//     PSP_GAME/USRDIR/DATA.BIN: Starting at sector 0xD960, with size 737 MB
+	//
     private String extractHLEModuleName(String path) {
         String result = "UNKNOWN";
         String sectorString = path.substring(path.indexOf("0x"), path.indexOf("_size"));
