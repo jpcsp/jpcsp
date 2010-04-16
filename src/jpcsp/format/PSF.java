@@ -249,7 +249,7 @@ public class PSF {
         //int rawlen = data.length() + 1;
         int rawlen = b.length + 1;
 
-        put(key, data, rawlen + rawlen & ~3);
+        put(key, data, (rawlen + 3) & ~3);
     }
 
     public void put(String key, int data) {
@@ -408,7 +408,7 @@ public class PSF {
         }
 
         public PSFKeyValuePair(String key, int dataType, int dataSize, Object data) {
-            this(key, dataType, dataSize, dataSize + (dataSize & 3), data);
+            this(key, dataType, dataSize, (dataSize + 3) & ~3, data);
         }
 
         public PSFKeyValuePair(String key, int dataType, int dataSize, int dataSizePadded, Object data) {
@@ -419,6 +419,7 @@ public class PSF {
             this.data = data;
 
             // yapspd: 4
+            // probably alignment of the value data
             unknown1 = 4;
         }
 
