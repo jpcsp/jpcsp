@@ -869,7 +869,7 @@ public class VideoEngine {
 
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
         int memoryReaderPc = currentList.pc;
-        int stallCount = 0;
+        int waitForSyncCount = 0;
         while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
         	if (currentList.isPaused()) {
 	    		if (currentList.isFinished()) {
@@ -880,9 +880,22 @@ public class VideoEngine {
 	    				log.debug(String.format("SIGNAL / END reached, waiting for Sync"));
 	    			}
 	    			currentList.status = PSP_GE_LIST_END_REACHED;
-	    			while (!currentList.waitForSync(10)) {
-	    				executeHleAction();
+	    			if (!currentList.waitForSync(10)) {
+	    				if (isLogDebugEnabled) {
+	    					log.debug("Wait for sync while END reached");
+	    				}
+		    			waitForSyncCount++;
+
+	    				// Waiting maximum 100 * 10ms (= 1 second) on an END command.
+	    				// After this timeout, abort the list.
+		    			if (waitForSyncCount > 100) {
+		    				error(String.format("Waiting too long on an END command, aborting the list %s", currentList));
+		    			}
+	    			} else {
+	    				waitForSyncCount = 0;
 	    			}
+
+	    			executeHleAction();
 	    			if (!currentList.isPaused()) {
 	    				currentList.status = PSP_GE_LIST_DRAWING;
 	    			}
@@ -896,7 +909,7 @@ public class VideoEngine {
     				if (isLogDebugEnabled) {
     					log.debug("Wait for sync while stall reached");
     				}
-    				stallCount++;
+    				waitForSyncCount++;
 
     				// Waiting maximum 100 * 10ms (= 1 second) on a stall address.
     				// After this timeout, abort the list.
@@ -908,11 +921,11 @@ public class VideoEngine {
     				// This avoids aborting the first list enqueued.
     				int maxStallCount = (currentList.pc != currentList.list_addr ? 100 : 400);
 
-    				if (stallCount > maxStallCount) {
+    				if (waitForSyncCount > maxStallCount) {
     					error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.pc, currentList));
     				}
     			} else {
-    				stallCount = 0;
+    				waitForSyncCount = 0;
     			}
 				executeHleAction();
     			if (!currentList.isStallReached()) {
