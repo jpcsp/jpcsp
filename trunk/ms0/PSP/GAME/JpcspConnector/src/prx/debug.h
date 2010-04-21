@@ -11,7 +11,14 @@
 #define DEBUG	1
 
 #if DEBUG
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 void debug(char *s);
+#ifdef __cplusplus
+}
+#endif 
 #endif
 
 #endif

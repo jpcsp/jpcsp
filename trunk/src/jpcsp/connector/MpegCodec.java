@@ -26,7 +26,6 @@ import java.io.RandomAccessFile;
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.sceMpeg;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -43,8 +42,6 @@ public class MpegCodec {
 	private int mpegAtracCurrentTimestamp;
 	private int packetsConsumed;
 	protected String id;
-	private static final int latestSupportedMpegVersion = sceMpeg.MPEG_VERSION_0014;
-	private static final int latestSupportedPsmfVersion = sceMpeg.PSMF_VERSION_0014;
 
     protected int previousVideoBuffer;
     RawFileState videoRawFileState;
@@ -170,7 +167,9 @@ public class MpegCodec {
 			rawFileState.currentInputPosition += 4;
 			int totalBytes = getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition);
 			rawFileState.currentInputPosition += 4;
-			Modules.log.info("Raw video stream: packetsConsumed=" + packetsConsumed + ", totalBytes=" + totalBytes);
+			if (Modules.log.isDebugEnabled()) {
+				Modules.log.debug("Raw video stream: packetsConsumed=" + packetsConsumed + ", totalBytes=" + totalBytes);
+			}
 		}
 
 		Memory mem = Memory.getInstance();
@@ -355,27 +354,14 @@ public class MpegCodec {
 			}
 
 			try {
-				boolean overwriteVersion = false;
 				if (output == null) {
 					output = new RandomAccessFile(getFileName(), "rw");
-					if (mpegVersion > latestSupportedMpegVersion) {
-						overwriteVersion = true;
-					}
 				}
 
 				byte[] buffer = new byte[length];
 				IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
 				for (int i = 0; i < length; i++) {
 					buffer[i] = (byte) memoryReader.readNext();
-				}
-
-				// Hack: overwrite an unsupported MPEG version by the latest supported
-				// version and hope that the JpcspConnector can still play the movie...
-				if (overwriteVersion) {
-					buffer[4] = (byte) (latestSupportedPsmfVersion      );
-					buffer[5] = (byte) (latestSupportedPsmfVersion >> 8 );
-					buffer[6] = (byte) (latestSupportedPsmfVersion >> 16);
-					buffer[7] = (byte) (latestSupportedPsmfVersion >> 24);
 				}
 
 				output.write(buffer);

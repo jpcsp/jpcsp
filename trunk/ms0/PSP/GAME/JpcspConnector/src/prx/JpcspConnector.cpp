@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 #define	DAEMON	0
+#define USE_USB	0
 
 JpcspConnector::JpcspConnector(void)
 {
@@ -33,10 +34,12 @@ void JpcspConnector::initialize()
 		currentFileSize[stream] = 0;
 		currentFd[stream] = -1;
 		startFrameCount[stream] = 0;
+		currentFileBuffer[stream] = NULL;
 	}
 	streamName[VIDEO_STREAM] = "VideoStream";
 	streamName[AUDIO_STREAM] = "AudioStream";
 
+#if USE_USB
 	//setup USB drivers
 	int retVal = sceUsbStart(PSP_USBBUS_DRIVERNAME, 0, 0);
 	if (retVal != 0) {
@@ -50,6 +53,7 @@ void JpcspConnector::initialize()
 	if (retVal != 0) {
         sceKernelSleepThread();
 	}
+#endif
 	usbActivated = 0;
 
 	pspDebugScreenInit();
@@ -63,6 +67,37 @@ void JpcspConnector::initialize()
 	sceIoWrite(fd, command, strlen(command));
 	sceIoClose(fd);
 #endif
+
+	allocateFileBuffer(VIDEO_STREAM, MB(8));
+	allocateFileBuffer(AUDIO_STREAM, MB(8));
+}
+
+void JpcspConnector::allocateFileBuffer(int stream, int maxSize)
+{
+	fileBufferSize[stream] = 0;
+
+	for (int size = maxSize; size > 0; size -= MB(1))
+	{
+		currentFileBuffer[stream] = (char *) malloc(size);
+		if (currentFileBuffer[stream] == NULL)
+		{
+#if DEBUG
+			char msg[100];
+			sprintf(msg, "Cannot allocate buffer of size %d for stream %d, trying again with a smaller size", size, stream);
+			debug(msg);
+#endif
+		}
+		else
+		{
+#if DEBUG
+			char msg[100];
+			sprintf(msg, "Successfully allocated buffer of size %d for stream %d", size, stream);
+			debug(msg);
+#endif
+			fileBufferSize[stream] = size;
+			break;
+		}
+	}
 }
 
 
@@ -554,7 +589,7 @@ int JpcspConnector::openCurrentFile(int stream, int videoFrameCount)
 {
 	closeCurrentFile(stream);
 
-	if (getMemoryStickFreeSizeKb() < (2 * MAX_FILE_SIZE / KB(1)))
+	if (getMemoryStickFreeSizeKb() < (int) (2 * fileBufferSize[stream] / KB(1)))
 	{
 #if DAEMON
 		waitForRemoteCompletion();
@@ -599,16 +634,7 @@ int JpcspConnector::writeFrame(int stream, int frameCount, void *buffer, int len
 {
 	SceUInt32 fileSize = sizeof(fileSize) + sizeof(timeStamp) + additionalLength + length;
 
-	if (currentFileBuffer[stream] == NULL)
-	{
-		currentFileBuffer[stream] = (char *) malloc(MAX_FILE_SIZE);
-		if (currentFileBuffer[stream] == NULL)
-		{
-			return 0;
-		}
-	}
-
-	if ((currentFileSize[stream] + fileSize) > MAX_FILE_SIZE)
+	if ((currentFileSize[stream] + fileSize) > fileBufferSize[stream])
 	{
 		// write current file
 		closeCurrentFile(stream);
@@ -682,7 +708,9 @@ void JpcspConnector::activateUsb()
 {
 	if (!usbActivated)
 	{
+#if USE_USB
 		sceUsbActivate(0x1c8);
+#endif
 		usbActivated = 1;
 	}
 }
@@ -692,8 +720,10 @@ void JpcspConnector::deactivateUsb()
 {
 	if (usbActivated)
 	{
+#if USE_USB
 		sceUsbDeactivate(0x1c8);
 		sceIoDevctl("fatms0:", 0x0240D81E, NULL, 0, NULL, 0); //Avoid corrupted files 
+#endif
 		usbActivated = 0;
 	}
 }
