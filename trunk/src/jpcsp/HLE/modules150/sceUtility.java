@@ -20,19 +20,35 @@ package jpcsp.HLE.modules150;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Calendar;
 
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JFrame;
 import javax.swing.JButton;
-import javax.swing.JList;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableColumnModel;
+import javax.swing.table.TableColumn;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import jpcsp.Settings;
 import jpcsp.HLE.kernel.types.SceIoStat;
+import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
@@ -43,12 +59,15 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
+import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.format.PSF;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Resource;
 import jpcsp.State;
 
 import jpcsp.Allegrex.CpuState;
@@ -415,44 +434,183 @@ public class sceUtility implements HLEModule {
 		return formattedMessage.toString();
 	}
 
-    protected void showSavedataList(String[] options) {
-        final JFrame listFrame = new JFrame();
-        listFrame.setTitle("Savedata List");
-        listFrame.setSize(200, 220);
-        listFrame.setResizable(false);
-        int pos[] = Settings.getInstance().readWindowPos("savedata");
-        listFrame.setLocation(pos[0], pos[1]);
-        listFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    protected final class SavedataListTableColumnModel extends DefaultTableColumnModel {
+		private static final long serialVersionUID = -2460343777558549264L;
 
-        final JList saveList = new JList(options);
-        JScrollPane listScroll = new JScrollPane(saveList);
+		private final class CellRenderer extends DefaultTableCellRenderer {
+			private static final long serialVersionUID = 6230063075762638253L;
+
+			@Override
+            public Component getTableCellRendererComponent(JTable table,
+                    Object obj, boolean isSelected, boolean hasFocus,
+                    int row, int column) {
+                if (obj instanceof Icon) {
+                    setText("");
+                    setIcon((Icon) obj);
+                    return this;
+                } else if (obj instanceof String) {
+                	JTextArea textArea = new JTextArea((String) obj);
+                	textArea.setFont(new Font("SansSerif", Font.PLAIN, 8));
+                	return textArea;
+                } else {
+                	setIcon(null);
+                	return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
+                }
+            }
+        }
+
+		public SavedataListTableColumnModel() {
+            setColumnMargin(0);
+            CellRenderer cellRenderer = new CellRenderer();
+            TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
+            tableColumn.setHeaderValue(Resource.get("icon"));
+            tableColumn.setMaxWidth(144);
+            tableColumn.setMinWidth(144);
+            TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
+            tableColumn2.setHeaderValue(Resource.get("title"));
+            addColumn(tableColumn);
+            addColumn(tableColumn2);
+		}
+    }
+
+    protected final class SavedataListTableModel extends AbstractTableModel {
+		private static final long serialVersionUID = -8867168909834783380L;
+		private int numberRows;
+		private ImageIcon[] icons;
+		private String[] descriptions;
+
+		public SavedataListTableModel(String[] saveNames) {
+			numberRows = saveNames == null ? 0 : saveNames.length;
+			icons = new ImageIcon[numberRows];
+			descriptions = new String[numberRows];
+
+			for (int i = 0; i < numberRows; i++) {
+				if (saveNames[i] != null) {
+					// Get icon0 file
+					String iconFileName = savedataParams.getFileName(saveNames[i], SceUtilitySavedataParam.icon0FileName);
+					SeekableDataInput iconDataInput = pspiofilemgr.getInstance().getFile(iconFileName, pspiofilemgr.PSP_O_RDONLY);
+					if (iconDataInput != null) {
+						try {
+							int length = (int) iconDataInput.length();
+							byte[] iconBuffer = new byte[length];
+							iconDataInput.readFully(iconBuffer);
+							iconDataInput.close();
+							icons[i] = new ImageIcon(iconBuffer);
+						} catch (IOException e) {
+						}
+					}
+
+					// Get values (title, detail...) from SFO file
+					String sfoFileName = savedataParams.getFileName(saveNames[i], SceUtilitySavedataParam.paramSfoFileName);
+	                SeekableDataInput sfoDataInput = pspiofilemgr.getInstance().getFile(sfoFileName, pspiofilemgr.PSP_O_RDONLY);
+	                if (sfoDataInput != null) {
+						try {
+							int length = (int) sfoDataInput.length();
+							byte[] sfoBuffer = new byte[length];
+							sfoDataInput.readFully(sfoBuffer);
+							sfoDataInput.close();
+
+							PSF psf = new PSF();
+				            psf.read(ByteBuffer.wrap(sfoBuffer));
+				            String title = psf.getString("TITLE");
+				            String detail = psf.getString("SAVEDATA_DETAIL");
+				            String savedataTitle = psf.getString("SAVEDATA_TITLE");
+
+				            // Get Modification time of SFO file
+				            SceIoStat sfoStat = pspiofilemgr.getInstance().statFile(sfoFileName);
+				            Calendar cal = Calendar.getInstance();
+				            ScePspDateTime pspTime = sfoStat.mtime;
+				            cal.set(pspTime.year, pspTime.month, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
+
+				            descriptions[i] = String.format("%1$s\n%4$tF %4$tR\n%2$s\n%3$s", title, savedataTitle, detail, cal);
+						} catch (IOException e) {
+						}
+	                }
+				}
+
+				// default icon
+                if (icons[i] == null) {
+                    icons[i] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
+                }
+
+                // default description
+                if (descriptions[i] == null) {
+                	descriptions[i] = "Not present";
+                }
+
+                // Rescale over sized icons
+                if (icons[i] != null) {
+                    Image image = icons[i].getImage();
+                    if (image.getWidth(null) > 144 || image.getHeight(null) > 80) {
+                        image = image.getScaledInstance(144, 80, Image.SCALE_SMOOTH);
+                        icons[i].setImage(image);
+                    }
+                }
+			}
+		}
+
+		@Override
+		public int getColumnCount() {
+			return 2;
+		}
+
+		@Override
+		public int getRowCount() {
+			return numberRows;
+		}
+
+		@Override
+		public Object getValueAt(int rowIndex, int columnIndex) {
+			if (columnIndex == 0) {
+				return icons[rowIndex];
+			} else {
+				return descriptions[rowIndex];
+			}
+		}
+    }
+
+    protected void showSavedataList(final String[] saveNames) {
+        final JDialog mainDisplay = new JDialog();
+        mainDisplay.setTitle("Savedata List");
+        mainDisplay.setSize(400, 401);
+        mainDisplay.setResizable(false);
+        int pos[] = Settings.getInstance().readWindowPos("savedata");
+        mainDisplay.setLocation(pos[0], pos[1]);
+        mainDisplay.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        final JTable table = new JTable(new SavedataListTableModel(saveNames), new SavedataListTableColumnModel());
+        table.setRowHeight(80);
+        table.setRowSelectionAllowed(true);
+        table.setColumnSelectionAllowed(false);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane listScroll = new JScrollPane(table);
         JButton selectButton = new JButton("Select");
 
-        listFrame.setLayout(new BorderLayout(5,5));
-        listFrame.getContentPane().add(listScroll, BorderLayout.CENTER);
-        listFrame.getContentPane().add(selectButton, BorderLayout.SOUTH);
-        listFrame.setVisible(true);
+        mainDisplay.setLayout(new BorderLayout(5,5));
+        mainDisplay.getContentPane().add(listScroll, BorderLayout.CENTER);
+        mainDisplay.getContentPane().add(selectButton, BorderLayout.SOUTH);
+        mainDisplay.setVisible(true);
 
         saveListSelected = false;
 
         //Wait for user selection.
         while(!saveListSelected) {
-            if(!listFrame.isVisible())
+            if(!mainDisplay.isVisible())
                 break;
 
             selectButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent evt) {
-                    if(saveList.getSelectedIndex() != -1) {
-                        saveListSelection = saveList.getSelectedValue();
-                        listFrame.dispose();
+                    if(table.getSelectedRow() != -1) {
+                        saveListSelection = saveNames[table.getSelectedRow()];
+                        mainDisplay.dispose();
                         saveListSelected = true;
                     }
                 }
             });
         }
         
-        Settings.getInstance().writeWindowPos("savedata", listFrame.getLocation());
+        Settings.getInstance().writeWindowPos("savedata", mainDisplay.getLocation());
     }
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
@@ -556,24 +714,21 @@ public class sceUtility implements HLEModule {
 
             case SceUtilitySavedataParam.MODE_LISTLOAD:
                 //Search for valid saves.
-                String[] validNames = new String[savedataParams.saveNameList.length];
+            	ArrayList<String> validNames = new ArrayList<String>();
 
                 for(int i = 0; i < savedataParams.saveNameList.length; i++) {
                     savedataParams.saveName = savedataParams.saveNameList[i];
 
-                    if(savedataParams.isPresent(pspiofilemgr.getInstance()))
-                        validNames[i] = savedataParams.saveName;
-                    else
-                        validNames[i] = "NOT PRESENT";
+                    if(savedataParams.isPresent(pspiofilemgr.getInstance())) {
+                        validNames.add(savedataParams.saveName);
+                    }
                 }
 
-                showSavedataList(validNames);
-                if (saveListSelection == null || saveListSelection.equals("NOT PRESENT")) {
+                showSavedataList(validNames.toArray(new String[validNames.size()]));
+                if (saveListSelection == null) {
                     Modules.log.warn("Savedata MODE_LISTLOAD no save selected");
                     savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
-                }
-
-                else {
+                } else {
                     savedataParams.saveName = saveListSelection.toString();
                     try {
                         savedataParams.load(mem, pspiofilemgr.getInstance());

@@ -296,6 +296,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		loadPsf(mem, fileManager, path, paramSfoFileName, sfoParam);
 	}
 
+	public String getFileName(String saveName, String fileName) {
+		return savedataPath + gameName + saveName + "/" + fileName;
+	}
+
 	public boolean isPresent(pspiofilemgr fileManager) {
 	    if (fileName == null || fileName.length() <= 0) {
 	        return false;
