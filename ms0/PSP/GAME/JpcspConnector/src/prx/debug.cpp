@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void debug(char *s)
+extern "C" void debug(char *s)
 {
 #if DEBUG
 	SceUID fd = sceIoOpen("ms0:/tmp/JpcspConnector.log", PSP_O_APPEND | PSP_O_WRONLY | PSP_O_CREAT, 0777);

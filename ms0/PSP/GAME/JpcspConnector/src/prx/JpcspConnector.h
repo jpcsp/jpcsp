@@ -13,7 +13,6 @@
 #define KB(n)	((n) * 1024)
 #define MB(n)	(KB(n) * 1024)
 #define GB(n)	(MB(n) * 1024)
-#define MAX_FILE_SIZE	MB(8)
 
 #define FILE_FORMAT_VERSION		1
 
@@ -46,6 +45,7 @@ private:
 	int currentFileSize[NUMBER_STREAMS];
 	SceUID currentFd[NUMBER_STREAMS];
 	char *currentFileBuffer[NUMBER_STREAMS];
+	SceUInt32 fileBufferSize[NUMBER_STREAMS];
 	char *streamName[NUMBER_STREAMS];
 	int startFrameCount[NUMBER_STREAMS];
 	char sendBuffer[DRAW_BUFFER_SIZE];
@@ -75,6 +75,7 @@ private:
 	void waitForRemoteCompletion();
 	void refreshMemoryStick();
 	int getMemoryStickFreeSizeKb();
+	void allocateFileBuffer(int stream, int maxSize);
 };
 
 #endif
