@@ -22,6 +22,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
+import jpcsp.connector.PGDFileConnector;
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
 import jpcsp.hardware.MemoryStick;
@@ -168,6 +169,7 @@ public class pspiofilemgr {
     private SceKernelThreadInfo currentAsyncThread;
 
     private byte[] AES128Key = new byte[16];
+    private PGDFileConnector pgdFileConnector;
 
     public static pspiofilemgr getInstance() {
         if (instance == null) {
@@ -1813,16 +1815,25 @@ public class pspiofilemgr {
                     break;
                 }
 
-                // Get AES-128 bit key.
+                // Define decryption key (Kirk / AES-128?).
                 case 0x04100001:
                 {
                     if (mem.isAddressGood(indata_addr) && inlen == 16) {
-                        String key = "";
+                        String keyHex = "";
                         for(int i = 0; i < inlen; i++) {
-                            AES128Key[i] = (byte)mem.read8(indata_addr+i);
-                            key += Integer.toHexString(AES128Key[i]);
+                            AES128Key[i] = (byte)mem.read8(indata_addr + i);
+                            keyHex += String.format("%02x", AES128Key[i] & 0xFF);
                         }
-                        Modules.log.info("hleIoIoctl get AES key " + key);
+
+                        if (Modules.log.isDebugEnabled()) {
+                        	Modules.log.debug("hleIoIoctl get AES key " + keyHex);
+                        }
+
+                        if (pgdFileConnector == null) {
+                        	pgdFileConnector = new PGDFileConnector();
+                        }
+                        info.readOnlyFile = pgdFileConnector.decryptPGDFile(info.filename, info.readOnlyFile, keyHex);
+
                         result = 0;
                     } else {
                         Modules.log.warn("hleIoIoctl cmd=0x04100001 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
@@ -2189,7 +2200,7 @@ public class pspiofilemgr {
         // Internal settings
         public final String filename;
         public final SeekableRandomFile msFile; // on memory stick, should either be identical to readOnlyFile or null
-        public final SeekableDataInput readOnlyFile; // on memory stick or umd
+        public SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
         public boolean sectorBlockMode;

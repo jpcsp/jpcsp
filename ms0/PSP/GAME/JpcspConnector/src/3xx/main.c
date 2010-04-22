@@ -91,6 +91,18 @@ int main(int _argc, char** _argp)
         return -1;
     }
 
+	debug("Loading PSP_AV_MODULE_SASCORE");
+    if (sceUtilityLoadAvModule(PSP_AV_MODULE_SASCORE) < 0){
+        pspDebugScreenPrintf("Error loading PSP_AV_MODULE_SASCORE\n");
+        return -1;
+    }
+
+	debug("Loading PSP_AV_MODULE_ATRAC3PLUS");
+    if (sceUtilityLoadAvModule(PSP_AV_MODULE_ATRAC3PLUS) < 0){
+        pspDebugScreenPrintf("Error loading PSP_AV_MODULE_ATRAC3PLUS\n");
+        return -1;
+    }
+
 	debug("Loading JpcspConnector.prx");
 	char* file = "ms0:/movie.pmf";
 	if(pspSdkLoadStartModuleWithArgs(jpcspConnectorPrx, PSP_MEMORY_PARTITION_USER, 1, &file) < 0)

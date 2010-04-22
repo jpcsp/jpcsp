@@ -76,6 +76,9 @@ private:
 	void refreshMemoryStick();
 	int getMemoryStickFreeSizeKb();
 	void allocateFileBuffer(int stream, int maxSize);
+	int commandDecryptPGD(char *parameters);
+	int decodeHex(char *hex, char *buffer, int bufferLength);
+	int commandDecodeAtrac3(char *parameters);
 };
 
 #endif

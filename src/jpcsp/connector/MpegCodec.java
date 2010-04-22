@@ -37,7 +37,6 @@ import jpcsp.util.Debug;
  *
  */
 public class MpegCodec {
-	public static final String baseDirectory = "tmp/";
 	private int mpegAvcCurrentTimestamp;
 	private int mpegAtracCurrentTimestamp;
 	private int packetsConsumed;
@@ -60,7 +59,7 @@ public class MpegCodec {
 	}
 
 	public static String getMpegBaseDirectory(String id) {
-		return String.format("%s%s/%s/", baseDirectory, State.discId, id);
+		return String.format("%s%s/%s/", Connector.baseDirectory, State.discId, id);
 	}
 
 	public void init(int mpegVersion, int streamSize, long lastTimestamp) {
@@ -82,7 +81,9 @@ public class MpegCodec {
 		try {
 			PrintWriter command = new PrintWriter(String.format("%scommand.txt", getMpegBaseDirectory(id)));
 			command.println("DecodeVideo");
-			command.println("ms0:/tmp/" + mpegFileState.name);
+			command.println(Connector.basePSPDirectory + mpegFileState.name);
+			command.println("Exit");
+			command.println("");
 			command.close();
 		} catch (FileNotFoundException e) {
 			// Ignore Exception
@@ -273,24 +274,24 @@ public class MpegCodec {
 		int line = 0;
 
 		// Display additional information about the Mpeg decoding on the faked video
-		displayFakedVideoLine(""                                                  , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("The real video file is being saved under"          , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("   " + mpegFileState.getFileName()                 , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine(""                                                  , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("Let the faked video run until the end (100%)"      , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("and then copy the PMF file to your real PSP under" , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("   ms0:/tmp/" + mpegFileState.name                 , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine(""                                                  , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("Afterwards, run the JpcspConnector on your PSP"    , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("and move all the generated RAW files from your PSP", line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("   ms0:/tmp/*.raw"                                 , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("to your computer under Jpcsp:"                     , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("   " + getMpegBaseDirectory(id)                    , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine(""                                                  , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("You can then delete the raw files on your PSP."    , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("After this, the video should be displayed"         , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("correctly in Jpcsp when you restart the game."     , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine(""                                                  , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("The real video file is being saved under"                              , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("   " + mpegFileState.getFileName()                                     , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("Let the faked video run until the end (100%)"                          , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("and then copy the PMF file to your real PSP under"                     , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("   " + Connector.basePSPDirectory + mpegFileState.name                 , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("Afterwards, run the '" + Connector.jpcspConnectorName + "' on your PSP", line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("and move all the generated RAW files from your PSP"                    , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("   " + Connector.basePSPDirectory + "*.raw"                            , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("to your computer under Jpcsp:"                                         , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("   " + getMpegBaseDirectory(id)                                        , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("You can then delete the raw files on your PSP."                        , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("After this, the video should be displayed"                             , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("correctly in Jpcsp when you restart the game."                         , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
 	}
 
 	protected void displayFakedVideoLine(String text, int line, int buffer, int frameWidth, int videoPixelMode) {
