@@ -141,18 +141,52 @@ public class UmdIsoReader {
         throw new IOException("Unsupported file format or corrupt file.");
     }
 
-    public byte[] readSector(int sectorNumber) throws IOException
-    {
+    /**
+     * Read sequential sectors into a byte array
+     * 
+     * @param sectorNumber - the first sector to be read
+     * @param numberSectors - the number of sectors to be read
+     * @param buffer - the byte array where to write the sectors
+     * @param offset - offset into the byte array where to start writing
+     * @return the number of sectors read
+     * @throws IOException
+     */
+    public int readSectors(int sectorNumber, int numberSectors, byte[] buffer, int offset) throws IOException {
+        if ((sectorNumber < 0) || ((sectorNumber + numberSectors) > numSectors)) {
+            throw new ArrayIndexOutOfBoundsException("Sectors Start=" + sectorNumber + ",Length=" + numberSectors + " out of bounds.");
+        }
+
+        if (format == FileFormat.Uncompressed) {
+        	// Read an uncompressed ISO file in one call
+        	fileReader.seek(2048L * sectorNumber);
+        	fileReader.read(buffer, offset, numberSectors * 2048);
+        } else {
+        	// Read sector per sector for the other formats
+	        for (int i = 0; i < numberSectors; i++) {
+	        	readSector(sectorNumber + i, buffer, offset + i * 2048);
+	        }
+        }
+
+        return numberSectors;
+    }
+
+    /**
+     * Read one sector into a byte array
+     * 
+     * @param sectorNumber - the sector number to be read
+     * @param buffer - the byte array where to write
+     * @param offset - offset into the byte array where to start writing
+     * @throws IOException
+     */
+    public void readSector(int sectorNumber, byte[] buffer, int offset) throws IOException {
         if((sectorNumber<0)||(sectorNumber>=numSectors))
             throw new ArrayIndexOutOfBoundsException("Sector number " + sectorNumber + " out of bounds.");
 
         if(format==FileFormat.Uncompressed)
         {
-            byte[] bytes = new byte[2048];
-
             fileReader.seek(2048L * sectorNumber);
-            fileReader.read(bytes);
-            return bytes;
+            fileReader.read(buffer, offset, 2048);
+            return;
         }
 
         if(format==FileFormat.CompressedCSO)
@@ -164,11 +198,9 @@ public class UmdIsoReader {
             {
                 long realOffset = (sectorOffset&0x7fffffff)<<offsetShift;
 
-                byte[] bytes = new byte[2048];
-
                 fileReader.seek(realOffset);
-                fileReader.read(bytes);
-                return bytes;
+                fileReader.read(buffer, offset, 2048);
+                return;
             }
 
             sectorEnd    = (sectorEnd    & 0x7fffffff ) << offsetShift;
@@ -177,7 +209,10 @@ public class UmdIsoReader {
             int compressedLength = (int)(sectorEnd - sectorOffset);
             if(compressedLength<0)
             {
-                return new byte[2048];
+            	for (int i = 0; i < 2048; i++) {
+            		buffer[offset + i] = 0;
+            	}
+            	return;
             }
 
             byte[] compressedData = new byte[compressedLength];
@@ -185,26 +220,34 @@ public class UmdIsoReader {
             fileReader.seek(sectorOffset);
             fileReader.read(compressedData);
 
-            byte[] data = new byte[2048];
-
             try {
                 Inflater inf = new Inflater();
 
                 ByteArrayInputStream b = new ByteArrayInputStream(compressedData);
                 inf.reset(b);
-                //inf.setRawStream(b);
-                inf.readAll(data,0,data.length);
+                inf.readAll(buffer, offset, 2048);
             }
-            catch(IOException e)
-            {
-                System.err.print("Exception while uncompressing sector from " + fileName);
-                e.printStackTrace();
+            catch(IOException e) {
+                throw new IOException("Exception while uncompressing sector from " + fileName);
             }
 
-            return data;
+            return;
         }
 
         throw new IOException("Unsupported file format or corrupt file.");
+    }
+
+    /**
+     * Read one sector
+     * @param sectorNumber - the sector number to be read
+     * @return a new byte array of size sectorLength containing the sector
+     * @throws IOException
+     */
+    public byte[] readSector(int sectorNumber) throws IOException {
+    	byte[] buffer = new byte[2048];
+    	readSector(sectorNumber, buffer, 0);
+
+    	return buffer;
     }
 
     private Iso9660File getFileEntry(String filePath) throws IOException, FileNotFoundException
