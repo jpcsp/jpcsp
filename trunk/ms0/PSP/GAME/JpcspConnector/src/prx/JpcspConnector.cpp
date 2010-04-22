@@ -7,6 +7,7 @@
 #include <pspusb.h>
 #include <pspusbstor.h>
 #include <pspdisplay.h>
+#include <pspatrac3.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -58,13 +59,17 @@ void JpcspConnector::initialize()
 
 	pspDebugScreenInit();
 #if !DAEMON
-	// Create a simple default command file
+	// Create a simple default command file if no command file present
 	char commandFileName[100];
 	char command[1000];
 	getFileName(commandFileName, "command.txt");
-	SceUID fd = sceIoOpen(commandFileName, PSP_O_CREAT | PSP_O_TRUNC | PSP_O_WRONLY, 0777);
-	sprintf(command, "DecodeVideo\nms0:/tmp/Movie.pmf\n");
-	sceIoWrite(fd, command, strlen(command));
+	SceUID fd = sceIoOpen(commandFileName, PSP_O_RDONLY, 0);
+	if (fd < 0)
+	{
+		fd = sceIoOpen(commandFileName, PSP_O_CREAT | PSP_O_TRUNC | PSP_O_WRONLY, 0777);
+		sprintf(command, "DecodeVideo\nms0:/tmp/Movie.pmf\n");
+		sceIoWrite(fd, command, strlen(command));
+	}
 	sceIoClose(fd);
 #endif
 
@@ -265,6 +270,14 @@ int JpcspConnector::executeCommand()
 	{
 		result = commandDecodeVideo(parameters);
 	}
+	else if (strcmp(command, "DecryptPGD") == 0)
+	{
+		result = commandDecryptPGD(parameters);
+	}
+	else if (strcmp(command, "DecodeAtrac3") == 0)
+	{
+		result = commandDecodeAtrac3(parameters);
+	}
 	else if (strcmp(command, "Exit") == 0)
 	{
 		result = commandExit(parameters);
@@ -276,9 +289,8 @@ int JpcspConnector::executeCommand()
 	}
 
 	// Delete the command file to signal that its processing is completed
-#if DAEMON
 	sceIoRemove(commandFileName);
-#else
+#if !DAEMON
 	result = 2;
 #endif
 
@@ -289,6 +301,110 @@ int JpcspConnector::executeCommand()
 int JpcspConnector::commandExit(char *parameters)
 {
 	return 2;
+}
+
+
+int JpcspConnector::commandDecryptPGD(char *parameters)
+{
+	char *pSpace = strchr(parameters, ' ');
+	char *fileName = parameters;
+	*pSpace = '\0';
+	char *keyHex = pSpace + 1;
+	char key[16];
+	int keyLength = decodeHex(keyHex, key, 16);
+	char *pLastFileNamePart = strrchr(fileName, '/');
+
+#if DEBUG
+	char msg[1000];
+	sprintf(msg, "FileName: %s", fileName);
+	debug(msg);
+	sprintf(msg, "Key in Hex: %s", keyHex);
+	debug(msg);
+#endif
+	SceUID fdin = sceIoOpen(fileName, 0x40000000 | PSP_O_RDONLY, 0);
+	int result = sceIoIoctl(fdin, 0x04100001, key, keyLength, NULL, 0);
+#if DEBUG
+	if (result != 0)
+	{
+		sprintf(msg, "sceIoIoctl 0x04100001 result: %08X", result);
+		debug(msg);
+	}
+#endif
+
+	char outFileName[100];
+	sprintf(outFileName, "%s.decrypted", pLastFileNamePart + 1);
+	char outFilePath[100];
+	getFileName(outFilePath, outFileName);
+#if DEBUG
+	sprintf(msg, "Output FileName: %s", outFilePath);
+	debug(msg);
+#endif
+	SceUID fdout = sceIoOpen(outFilePath, PSP_O_CREAT | PSP_O_TRUNC | PSP_O_WRONLY, 0777);
+
+	char *buffer = currentFileBuffer[0];
+	int bufferSize = fileBufferSize[0];
+
+	pspDebugScreenPrintf("Decrypting %s...\n", fileName);
+	while (fdin > 0 && fdout > 0)
+	{
+		int length = sceIoRead(fdin, buffer, bufferSize);
+		if (length <= 0)
+		{
+#if DEBUG
+			if (length < 0)
+			{
+				sprintf(msg, "sceIoRead result: %08X", length);
+				debug(msg);
+			}
+#endif
+			break;
+		}
+		pspDebugScreenPrintf(".");
+		sceIoWrite(fdout, buffer, length);
+	}
+	pspDebugScreenPrintf("Decryption completed.");
+
+	sceIoClose(fdin);
+	sceIoClose(fdout);
+
+	return 1;
+}
+
+
+int JpcspConnector::decodeHex(char *hex, char *buffer, int bufferLength)
+{
+	int hexLength = strlen(hex);
+	int previous = 0;
+	int bufferIndex = 0;
+	for (int i = 0; i < hexLength && bufferIndex < bufferLength; i++)
+	{
+		char c = hex[i];
+		int n = 0;
+		if (c >= '0' && c <= '9')
+		{
+			n = c - '0';
+		}
+		else if (c >= 'a' && c <= 'f')
+		{
+			n = c - 'a' + 10;
+		}
+		else if (c >= 'A' && c <= 'F')
+		{
+			n = c - 'A' + 10;
+		}
+
+		if (i % 2 == 0)
+		{
+			previous = n;
+		}
+		else
+		{
+			buffer[bufferIndex] = (previous << 4) | n;
+			bufferIndex++;
+		}
+	}
+
+	return bufferIndex;
 }
 
 
@@ -748,4 +864,65 @@ void JpcspConnector::exitConnector()
 #endif
 
 	deactivateUsb();
+}
+
+
+int JpcspConnector::commandDecodeAtrac3(char *parameters)
+{
+	char *fileName = parameters;
+	SceIoStat stat;
+
+#if DEBUG
+	char msg[1000];
+	sprintf(msg, "commandDecodeAtrac3 %s", fileName);
+	debug(msg);
+#endif
+	int result = sceIoGetstat(fileName, &stat);
+#if DEBUG
+	sprintf(msg, "sceIoGetStat result %d", result);
+	debug(msg);
+#endif
+	if (result < 0)
+	{
+		return 0;
+	}
+	int size = (int) stat.st_size;
+	if (size > (int) fileBufferSize[0])
+	{
+		size = (int) fileBufferSize[0];
+	}
+#if DEBUG
+	sprintf(msg, "Input file size %d", size);
+	debug(msg);
+#endif
+
+	SceUID fd = sceIoOpen(fileName, PSP_O_RDONLY, 0);
+	int length = sceIoRead(fd, currentFileBuffer[0], size);
+	sceIoClose(fd);
+#if DEBUG
+	sprintf(msg, "Read length %d", length);
+	debug(msg);
+#endif
+
+	int atracID = sceAtracSetDataAndGetID(currentFileBuffer[0], length);
+#if DEBUG
+	sprintf(msg, "sceAtracSetDataAndGetID atracID=%d", atracID);
+	debug(msg);
+#endif
+	int samples = 0;
+	int end = 0;
+	int remainFrame = 0;
+	result = sceAtracDecodeData(atracID, (u16 *) currentFileBuffer[1], &samples, &end, &remainFrame);
+#if DEBUG
+	sprintf(msg, "sceAtracDecodeData result %d, samples=%d, end=%d, remainFrame=%d", result, samples, end, remainFrame);
+	debug(msg);
+#endif
+	if (result == 0)
+	{
+		SceUID fdout = sceIoOpen("ms0:/tmp/Atrac.out.decoded", PSP_O_CREAT | PSP_O_TRUNC | PSP_O_WRONLY, 0777);
+		sceIoWrite(fdout, currentFileBuffer[1], samples * 2048);
+		sceIoClose(fdout);
+	}
+
+	return 1;
 }

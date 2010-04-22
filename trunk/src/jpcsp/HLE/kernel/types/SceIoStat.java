@@ -93,4 +93,8 @@ public class SceIoStat {
     public void setReserved(int index, int value) {
     	reserved[index] = value;
     }
+
+    public int getReserved(int index) {
+    	return reserved[index];
+    }
 }
