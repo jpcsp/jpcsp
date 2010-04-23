@@ -1066,6 +1066,9 @@ private void installCompatibilitySettings()
     boolean enableMpeg = Settings.getInstance().readBool("emu.enableMpeg");
     sceMpeg.setEnableMpeg(enableMpeg);
 
+    boolean useMediaEngine = Settings.getInstance().readBool("emu.useMediaEngine");
+    sceMpeg.setEnableMediaEngine(useMediaEngine);
+
     boolean useVertexCache = Settings.getInstance().readBool("emu.useVertexCache");
     VideoEngine.getInstance().setUseVertexCache(useVertexCache);
 
@@ -1124,6 +1127,10 @@ public boolean installCompatibilityPatches(String filename)
         String enableMpeg = patchSettings.getProperty("emu.enableMpeg");
         if (enableMpeg != null)
             sceMpeg.setEnableMpeg(Integer.parseInt(enableMpeg) != 0);
+
+        String useMediaEngine = patchSettings.getProperty("emu.useMediaEngine");
+        if (useMediaEngine != null)
+            sceMpeg.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
 
         String useVertexCache = patchSettings.getProperty("emu.useVertexCache");
         if (useVertexCache != null)

@@ -294,6 +294,16 @@ public class MpegCodec {
 		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
 	}
 
+    public void postFakedMediaEngineVideo(int buffer, int frameWidth, int videoPixelMode) {
+        int line = 0;
+		displayFakedVideoLine(""                                               , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("Media Engine is enabled."                       , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("If you wish to watch this video decoded,"       , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("let the faked video run until the end (100%)."  , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("The real video will start afterwards."          , line++, buffer, frameWidth, videoPixelMode);
+        displayFakedVideoLine(""                                               , line++, buffer, frameWidth, videoPixelMode);
+    }
+
 	protected void displayFakedVideoLine(String text, int line, int buffer, int frameWidth, int videoPixelMode) {
 		final int baseOffset = 80;
 		final int lineWidth = 50;

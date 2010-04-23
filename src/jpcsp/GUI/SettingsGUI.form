@@ -371,8 +371,9 @@
                               <Component id="useViewportCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="enableMpegCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="useVertexCache" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="useMediaEngine" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -390,7 +391,9 @@
                           <Component id="enableMpegCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="useVertexCache" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="42" max="32767" attributes="0"/>
+                          <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                          <Component id="useMediaEngine" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace pref="16" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -424,6 +427,11 @@
                 <Component class="javax.swing.JCheckBox" name="useVertexCache">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Use Vertex Cache (can improve performance)"/>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="useMediaEngine">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Use Media Engine (experimental)"/>
                   </Properties>
                 </Component>
               </SubComponents>

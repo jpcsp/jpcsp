@@ -36,6 +36,7 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
+import jpcsp.media.MediaEngine;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -174,6 +175,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public static boolean enableMpeg = false;
+    public static boolean enableMediaEngine = false;
 
     public static final int PSMF_MAGIC = 0x464D5350;
     public static final int PSMF_VERSION_0012 = 0x32313030;
@@ -240,6 +242,17 @@ public class sceMpeg implements HLEModule {
 		sceMpeg.enableMpeg = enableMpeg;
 		if (enableMpeg) {
 			Modules.log.info("Faked MPEG Video enabled");
+		}
+	}
+
+    public static boolean isEnableMediaEngine() {
+        return enableMediaEngine;
+	}
+
+	public static void setEnableMediaEngine(boolean enableMediaEngine) {
+		sceMpeg.enableMediaEngine = enableMediaEngine;
+		if (enableMediaEngine) {
+			Modules.log.info("Media Engine enabled");
 		}
 	}
 
@@ -1106,10 +1119,12 @@ public class sceMpeg implements HLEModule {
 	                }
 	                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
 
-	                if (useMpegCodec) {
-	                	// Display additional information on the faked video
-	                	mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
-	                }
+                    // Display additional information on the faked video
+                    if (useMpegCodec && isEnableMediaEngine()) {
+                        mpegCodec.postFakedMediaEngineVideo(buffer, frameWidth, videoPixelMode);
+                    } else {
+                    mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
+                    }
                 }
 
                 videoFrameCount++;
@@ -1123,6 +1138,13 @@ public class sceMpeg implements HLEModule {
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                     mpegRingbuffer.write(mem, mpegRingbufferAddr);
+                }
+
+                // The video just finished and should be stored under the tmp folder.
+                // If the Media Engine is enabled, play the full video sequence now.
+                if(processedSize == mpegStreamSize && isEnableMediaEngine()) {
+                    MediaEngine me = new MediaEngine();
+                    me.decodeVideo("tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf");
                 }
 
                 if (isFakeAuHandle(au)) {
@@ -1514,6 +1536,19 @@ public class sceMpeg implements HLEModule {
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                     mpegRingbuffer.write(mem, mpegRingbufferAddr);
+                }
+
+                if (useMpegCodec && isEnableMediaEngine()) {
+                    mpegCodec.postFakedMediaEngineVideo(dest_addr, frameWidth, videoPixelMode);
+                } else {
+                    mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
+                }
+
+                // The video just finished and should be stored under the tmp folder.
+                // If the Media Engine is enabled, play the full video sequence now.
+                if(processedSize == mpegStreamSize && isEnableMediaEngine()) {
+                    MediaEngine me = new MediaEngine();
+                    me.decodeVideo("tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf");
                 }
 
                 cpu.gpr[2] = 0;
