@@ -1067,6 +1067,9 @@ public class sceMpeg implements HLEModule {
 
                 final int width = Math.min(480, frameWidth);
                 final int height = 272;
+                
+                String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
+
                 if (useMpegCodec && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoFrameCount)) {
                 	packetsConsumed = mpegCodec.getPacketsConsumed();
                 	mpegAvcCurrentTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
@@ -1098,8 +1101,7 @@ public class sceMpeg implements HLEModule {
 	                    }
 	                }
 
-	                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video ");
-	                Debug.printFramebuffer(buffer, frameWidth, 10, 258, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " (video decoding is not yet implemented) ");
+	                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video. ");
 
 	                Date currentDate = convertTimestampToDate(mpegAvcCurrentTimestamp);
 	                if (Modules.log.isDebugEnabled()) {
@@ -1123,7 +1125,7 @@ public class sceMpeg implements HLEModule {
                     if (useMpegCodec && isEnableMediaEngine()) {
                         mpegCodec.postFakedMediaEngineVideo(buffer, frameWidth, videoPixelMode);
                     } else {
-                    mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
+                        mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
                     }
                 }
 
@@ -1142,9 +1144,9 @@ public class sceMpeg implements HLEModule {
 
                 // The video just finished and should be stored under the tmp folder.
                 // If the Media Engine is enabled, play the full video sequence now.
-                if(processedSize == mpegStreamSize && isEnableMediaEngine()) {
+                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets && isEnableMediaEngine()) {
                     MediaEngine me = new MediaEngine();
-                    me.decodeVideo("tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf");
+                    me.decodeVideo(pmfPath);
                 }
 
                 if (isFakeAuHandle(au)) {
@@ -1479,6 +1481,8 @@ public class sceMpeg implements HLEModule {
                 	Modules.log.info(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
                 }
 
+                String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
+
                 // Generate static at dest_addr.
                 Random random = new Random();
                 final int pixelSize = 3;
@@ -1507,8 +1511,7 @@ public class sceMpeg implements HLEModule {
                     }
                 }
 
-                Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode)");
-                Debug.printFramebuffer(dest_addr, frameWidth, 10, 258, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " (video decoding is not yet implemented) ");
+                Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
                 videoFrameCount++;
 
                 if (Modules.log.isDebugEnabled()) {
@@ -1546,9 +1549,9 @@ public class sceMpeg implements HLEModule {
 
                 // The video just finished and should be stored under the tmp folder.
                 // If the Media Engine is enabled, play the full video sequence now.
-                if(processedSize == mpegStreamSize && isEnableMediaEngine()) {
+                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets && isEnableMediaEngine()) {
                     MediaEngine me = new MediaEngine();
-                    me.decodeVideo("tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf");
+                    me.decodeVideo(pmfPath);
                 }
 
                 cpu.gpr[2] = 0;
