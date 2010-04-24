@@ -24,4 +24,5 @@ public class Connector {
 	public static final String baseDirectory = "tmp/";
 	public static final String basePSPDirectory = "ms0:/tmp/";
 	public static final String jpcspConnectorName = "Jpcsp Connector 3xx";
+	public static final String commandFileName = "command.txt";
 }

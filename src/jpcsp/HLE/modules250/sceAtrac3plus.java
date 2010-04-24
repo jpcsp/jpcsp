@@ -86,7 +86,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     			+ String.format("%08x %08x %08x %08x %08x %08x",
     					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
-        cpu.gpr[2] = atracID;
+        cpu.gpr[2] = 0;
     }
 
     public void sceAtrac3plus_2DD3E298(Processor processor) {

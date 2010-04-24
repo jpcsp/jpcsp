@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.util.HashMap;
+
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -26,6 +29,7 @@ import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 import jpcsp.HLE.Modules;
+import jpcsp.connector.AtracCodec;
 
 public class sceAtrac3plus implements HLEModule {
     @Override
@@ -61,7 +65,7 @@ public class sceAtrac3plus implements HLEModule {
             mm.addFunction(sceAtracResetPlayPositionFunction, 0x644E5607);
             mm.addFunction(sceAtracGetInternalErrorInfoFunction, 0xE88F759B);
 
-            atracID = 0;
+            atracCodecs = new HashMap<Integer, AtracCodec>();
         }
     }
 
@@ -98,15 +102,21 @@ public class sceAtrac3plus implements HLEModule {
         }
     }
 
+    protected static final String uidPurpose = "sceAtrac3plus";
+
     protected static final int PSP_MODE_AT_3_PLUS = 0x00001000;
     protected static final int PSP_MODE_AT_3      = 0x00001001;
 
-    protected int atracID;
     protected int inputBufferAddr; // currently not used
     protected int inputBufferSize; // currently not used
-    protected static final int maxSamples = 1024;
-    protected static final int remainFrames = -1;
+    public static final int maxSamples = 2048;
+    public static final int remainFrames = -1;
 
+    protected HashMap<Integer, AtracCodec> atracCodecs;
+
+    protected AtracCodec getAtracCodec(int atracID) {
+    	return atracCodecs.get(atracID);
+    }
 
     public void sceAtracStartEntry(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -132,7 +142,7 @@ public class sceAtrac3plus implements HLEModule {
 
         Modules.log.warn("PARTIAL:sceAtracGetAtracID: codecType = 0x" + Integer.toHexString(codecType));
 
-        cpu.gpr[2] = hleGetAtracID(codecType);
+        cpu.gpr[2] = hleCreateAtracID(codecType);
     }
     
     public void sceAtracReleaseAtracID(Processor processor) {
@@ -141,28 +151,29 @@ public class sceAtrac3plus implements HLEModule {
         int atID = cpu.gpr[4];
 
         Modules.log.warn("Skipping:sceAtracReleaseAtracID: atracID = " + atID);
+        AtracCodec atracCodec = getAtracCodec(atID);
+        atracCodec.finish();
+        atracCodecs.remove(atID);
+        SceUidManager.releaseUid(atID, uidPurpose);
         
         cpu.gpr[2] = 0;
     }
 
-    protected void hleAtracSetData(int buffer, int bufferSize) {
+    protected void hleAtracSetData(int atracID, int buffer, int bufferSize) {
         inputBufferAddr = buffer;
         inputBufferSize = bufferSize;
+
+        getAtracCodec(atracID).atracSetData(buffer, bufferSize);
     }
 
-    protected int hleGetAtracID(int codecType) {
-    	switch (codecType) {
-    		case PSP_MODE_AT_3:
-    			atracID = 1;
-    			break;
-    		case PSP_MODE_AT_3_PLUS:
-    			atracID = 0;
-    			break;
-			default:
-				Modules.log.warn("hleGetAtracID unknown codecType " + codecType);
-				atracID = 0;
-				break;
+    protected int hleCreateAtracID(int codecType) {
+    	int atracID = SceUidManager.getNewUid(uidPurpose);
+    	if (codecType != PSP_MODE_AT_3 && codecType != PSP_MODE_AT_3_PLUS) {
+			Modules.log.warn("hleGetAtracID unknown codecType " + codecType);
     	}
+
+    	AtracCodec atracCodec = new AtracCodec();
+    	atracCodecs.put(atracID, atracCodec);
 
     	return atracID;
     }
@@ -174,8 +185,10 @@ public class sceAtrac3plus implements HLEModule {
         int buffer = cpu.gpr[5];
         int bufferSize = cpu.gpr[6];//16384
 
-        Modules.log.warn(String.format("Unimplemented sceAtracSetData: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, buffer, bufferSize));
-        hleAtracSetData(buffer, bufferSize);
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceAtracSetData: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, buffer, bufferSize));
+        }
+        hleAtracSetData(atID, buffer, bufferSize);
 
         cpu.gpr[2] = 0;
     }
@@ -194,11 +207,15 @@ public class sceAtrac3plus implements HLEModule {
         int buffer = cpu.gpr[4];
         int bufferSize = cpu.gpr[5];
 
-        Modules.log.warn(String.format("Skipping:sceAtracSetDataAndGetID buffer = 0x%08X, bufferSize = 0x%08X", buffer, bufferSize));
-        hleAtracSetData(buffer, bufferSize);
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceAtracSetDataAndGetID buffer = 0x%08X, bufferSize = 0x%08X", buffer, bufferSize));
+        }
 
         // Should decode the buffer data to find the codecType. Assume PSP_MODE_AT_3.
-        cpu.gpr[2] = hleGetAtracID(PSP_MODE_AT_3);
+        int atID = hleCreateAtracID(PSP_MODE_AT_3);
+        hleAtracSetData(atID, buffer, bufferSize);
+
+        cpu.gpr[2] = atID;
     }
 
     public void sceAtracSetHalfwayBufferAndGetID(Processor processor) {
@@ -219,22 +236,40 @@ public class sceAtrac3plus implements HLEModule {
         int outEndAddr = cpu.gpr[7];
         int remainFramesAddr = cpu.gpr[8];
 
-        Modules.log.warn(String.format("Unimplemented sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X",
-                atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr));
+        AtracCodec atracCodec = getAtracCodec(atID);
+        int samples = atracCodec.atracDecodeData(samplesAddr);
+        if (samples < 0) {
+            Modules.log.warn(String.format("Unimplemented sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X",
+                    atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr));
 
-        // Do something to decode here!
-        if (mem.isAddressGood(samplesAddr)) {
-        	// Simulate empty audio
-        	mem.memset(samplesAddr, (byte) 0, maxSamples * 4);	// 4 bytes per sample
-        }
-        if (mem.isAddressGood(samplesNbrAddr)) {
-            mem.write32(samplesNbrAddr, 0x0010); // Write dummy ammount of samples. If it's 0, some games will fall into a loop.
-        }
-        if (mem.isAddressGood(outEndAddr)) {
-            mem.write32(outEndAddr, 1); // end of samples
-        }
-        if (mem.isAddressGood(remainFramesAddr)) {
-            mem.write32(remainFramesAddr, remainFrames); // Unknown?
+        	// AtracCodec cannot decode it, return dummy values
+            if (mem.isAddressGood(samplesAddr)) {
+            	// Simulate empty audio
+            	mem.memset(samplesAddr, (byte) 0, maxSamples * 4);	// 4 bytes per sample
+            }
+            if (mem.isAddressGood(samplesNbrAddr)) {
+                mem.write32(samplesNbrAddr, 0x0010); // Write dummy ammount of samples. If it's 0, some games will fall into a loop.
+            }
+            if (mem.isAddressGood(outEndAddr)) {
+                mem.write32(outEndAddr, 1); // end of samples
+            }
+            if (mem.isAddressGood(remainFramesAddr)) {
+                mem.write32(remainFramesAddr, remainFrames); // Unknown?
+            }
+        } else {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug(String.format("sceAtracDecodeData using AtracCodec: atracID=%d, samplesAddr=0x%08X, samplesNbr=%d, end=%d, remainFrames=%d", atID, samplesAddr, samples, atracCodec.getAtracEnd(), atracCodec.getAtracRemainFrames()));
+        	}
+
+            if (mem.isAddressGood(samplesNbrAddr)) {
+                mem.write32(samplesNbrAddr, samples);
+            }
+            if (mem.isAddressGood(outEndAddr)) {
+                mem.write32(outEndAddr, atracCodec.getAtracEnd());
+            }
+            if (mem.isAddressGood(remainFramesAddr)) {
+                mem.write32(remainFramesAddr, atracCodec.getAtracRemainFrames());
+            }
         }
 
         cpu.gpr[2] = 0;
@@ -417,7 +452,11 @@ public class sceAtrac3plus implements HLEModule {
     public void sceAtracResetPlayPosition(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented NID function sceAtracResetPlayPosition [0x644E5607]");
+        int atID = cpu.gpr[4];
+        int unknown1 = cpu.gpr[5];
+        int unknown2 = cpu.gpr[6];
+        int unknown3 = cpu.gpr[7];
+        Modules.log.warn(String.format("Unimplemented sceAtracResetPlayPosition atracId=%d, %08X, %08X, %08X", atID, unknown1, unknown2, unknown3));
 
         cpu.gpr[2] = 0;
     }

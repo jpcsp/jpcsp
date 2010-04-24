@@ -14,6 +14,8 @@
 #define MB(n)	(KB(n) * 1024)
 #define GB(n)	(MB(n) * 1024)
 
+#define MEMORY_ALIGNMENT	64
+
 #define FILE_FORMAT_VERSION		1
 
 #define NUMBER_STREAMS	2
@@ -52,6 +54,10 @@ private:
 	char previousVideoBuffer[DRAW_BUFFER_SIZE];
 	CPMFPlayer *Player;
 	int usbActivated;
+	bool muted;
+	bool atracInstructionsDisplayed;
+	SceUInt32 oldButtons;
+	SceUInt32 buttons;
 
 	void initialize();
 	char *getDirectoryName(char *name);
@@ -67,7 +73,7 @@ private:
 	int writeFrame(int stream, int frameCount, void *buffer, int length, SceInt32 timeStamp, void *additionalBuffer, int additionalLength);
 	int loadStartModule(char *path);
 	int readLine(SceUID fd, char *data, SceSize size);
-	int executeCommand();
+	int executeCommandFile();
 	int commandDecodeVideo(char *parameters);
 	int commandExit(char *parameters);
 	void activateUsb();
@@ -79,6 +85,10 @@ private:
 	int commandDecryptPGD(char *parameters);
 	int decodeHex(char *hex, char *buffer, int bufferLength);
 	int commandDecodeAtrac3(char *parameters);
+	void ctrlPeekBuffer();
+	bool isButtonPressed(SceUInt32 button);
+	bool isCancel();
+	bool isCrossPressed();
 };
 
 #endif

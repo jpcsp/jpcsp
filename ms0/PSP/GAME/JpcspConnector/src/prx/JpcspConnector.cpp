@@ -8,6 +8,8 @@
 #include <pspusbstor.h>
 #include <pspdisplay.h>
 #include <pspatrac3.h>
+#include <pspaudio.h>
+#include <time.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -55,7 +57,6 @@ void JpcspConnector::initialize()
         sceKernelSleepThread();
 	}
 #endif
-	usbActivated = 0;
 
 	pspDebugScreenInit();
 #if !DAEMON
@@ -75,6 +76,12 @@ void JpcspConnector::initialize()
 
 	allocateFileBuffer(VIDEO_STREAM, MB(8));
 	allocateFileBuffer(AUDIO_STREAM, MB(8));
+
+	usbActivated = 0;
+	muted = false;
+	atracInstructionsDisplayed = false;
+	oldButtons = 0;
+	buttons = 0;
 }
 
 void JpcspConnector::allocateFileBuffer(int stream, int maxSize)
@@ -83,7 +90,7 @@ void JpcspConnector::allocateFileBuffer(int stream, int maxSize)
 
 	for (int size = maxSize; size > 0; size -= MB(1))
 	{
-		currentFileBuffer[stream] = (char *) malloc(size);
+		currentFileBuffer[stream] = (char *) malloc(size + MEMORY_ALIGNMENT);
 		if (currentFileBuffer[stream] == NULL)
 		{
 #if DEBUG
@@ -99,6 +106,8 @@ void JpcspConnector::allocateFileBuffer(int stream, int maxSize)
 			sprintf(msg, "Successfully allocated buffer of size %d for stream %d", size, stream);
 			debug(msg);
 #endif
+			// Make sure memory is MEMORY_ALIGNMENT-byte aligned
+			currentFileBuffer[stream] = (char *) ((((int) currentFileBuffer[stream]) + MEMORY_ALIGNMENT - 1) & (~(MEMORY_ALIGNMENT - 1)));
 			fileBufferSize[stream] = size;
 			break;
 		}
@@ -109,31 +118,31 @@ void JpcspConnector::allocateFileBuffer(int stream, int maxSize)
 void JpcspConnector::run(SceSize _argc, void* _argp)
 {
 	int result = 1;
-	int oldButtons = 0;
-	SceCtrlData pad;
-
 	initialize();
 
-	while (result != 2)
+#if DEBUG
+	int startTime = time(NULL);
+#endif
+	while (result != 2 && !isCancel())
 	{
 		scePowerTick(0);
 
-		sceCtrlReadBufferPositive(&pad, 1);
-		int buttonDown = (oldButtons ^ pad.Buttons) & pad.Buttons;
-
-		if (buttonDown & PSP_CTRL_CIRCLE)
-		{
-			break;
-		}
-
-		result = executeCommand();
+		result = executeCommandFile();
 		if (result == 0)
 		{
 			activateUsb();
 			sceKernelDelayThread(1000 * 1000);
 			deactivateUsb();
 		}
+
+		ctrlPeekBuffer();
 	}
+#if DEBUG
+	int endTime = time(NULL);
+	char msg[1000];
+	sprintf(msg, "Duration: %d s", endTime - startTime);
+	debug(msg);
+#endif
 
 	deactivateUsb();
 }
@@ -219,12 +228,12 @@ void JpcspConnector::refreshMemoryStick()
 }
 
 
-int JpcspConnector::executeCommand()
+int JpcspConnector::executeCommandFile()
 {
 	char commandFileName[100];
 	char command[1000];
 	char parameters[1000];
-	int result;
+	int result = 0;
 
 	refreshMemoryStick();
 
@@ -237,56 +246,59 @@ int JpcspConnector::executeCommand()
 		return 0;
 	}
 
-	// Read command line
-	int length = readLine(fd, command, sizeof(command));
-	if (length <= 0)
+	while (result != 2)
 	{
-		return 0;
-	}
+		// Read command line
+		int length = readLine(fd, command, sizeof(command));
+		if (length <= 0)
+		{
+			break;
+		}
 
-	// Read parameters line
-	length = readLine(fd, parameters, sizeof(parameters));
-	if (length <= 0)
-	{
-		// No parameters
-		parameters[0] = '\0';
+		// Read parameters line
+		length = readLine(fd, parameters, sizeof(parameters));
+		if (length <= 0)
+		{
+			// No parameters
+			parameters[0] = '\0';
+		}
+
+#if DEBUG
+		{
+			char msg[100];
+			sprintf(msg, "Command: %s", command);
+			debug(msg);
+			sprintf(msg, "Parameters: %s", parameters);
+			debug(msg);
+		}
+#endif
+
+		// Execute command
+		if (strcmp(command, "DecodeVideo") == 0)
+		{
+			result = commandDecodeVideo(parameters);
+		}
+		else if (strcmp(command, "DecryptPGD") == 0)
+		{
+			result = commandDecryptPGD(parameters);
+		}
+		else if (strcmp(command, "DecodeAtrac3") == 0)
+		{
+			result = commandDecodeAtrac3(parameters);
+		}
+		else if (strcmp(command, "Exit") == 0)
+		{
+			result = commandExit(parameters);
+		}
+		else
+		{
+			// Unknown command
+			result = 0;
+		}
 	}
 
 	// Close command file
 	sceIoClose(fd);
-
-#if DEBUG
-	{
-		char msg[100];
-		sprintf(msg, "Command: %s", command);
-		debug(msg);
-		sprintf(msg, "Parameters: %s", parameters);
-		debug(msg);
-	}
-#endif
-
-	// Execute command
-	if (strcmp(command, "DecodeVideo") == 0)
-	{
-		result = commandDecodeVideo(parameters);
-	}
-	else if (strcmp(command, "DecryptPGD") == 0)
-	{
-		result = commandDecryptPGD(parameters);
-	}
-	else if (strcmp(command, "DecodeAtrac3") == 0)
-	{
-		result = commandDecodeAtrac3(parameters);
-	}
-	else if (strcmp(command, "Exit") == 0)
-	{
-		result = commandExit(parameters);
-	}
-	else
-	{
-		// Unknown command
-		result = 0;
-	}
 
 	// Delete the command file to signal that its processing is completed
 	sceIoRemove(commandFileName);
@@ -871,58 +883,140 @@ int JpcspConnector::commandDecodeAtrac3(char *parameters)
 {
 	char *fileName = parameters;
 	SceIoStat stat;
+	char *atracBuffer = currentFileBuffer[0];
+	int atracBufferSize = (int) fileBufferSize[0];
+	char *decodeBuffer = currentFileBuffer[1];
+	int decodeBufferSize = (int) fileBufferSize[1];
 
-#if DEBUG
-	char msg[1000];
-	sprintf(msg, "commandDecodeAtrac3 %s", fileName);
-	debug(msg);
-#endif
 	int result = sceIoGetstat(fileName, &stat);
-#if DEBUG
-	sprintf(msg, "sceIoGetStat result %d", result);
-	debug(msg);
-#endif
 	if (result < 0)
 	{
 		return 0;
 	}
 	int size = (int) stat.st_size;
-	if (size > (int) fileBufferSize[0])
+	if (size > atracBufferSize)
 	{
-		size = (int) fileBufferSize[0];
+		size = atracBufferSize;
 	}
-#if DEBUG
-	sprintf(msg, "Input file size %d", size);
-	debug(msg);
-#endif
 
 	SceUID fd = sceIoOpen(fileName, PSP_O_RDONLY, 0);
-	int length = sceIoRead(fd, currentFileBuffer[0], size);
+	int length = sceIoRead(fd, atracBuffer, size);
 	sceIoClose(fd);
-#if DEBUG
-	sprintf(msg, "Read length %d", length);
-	debug(msg);
-#endif
 
-	int atracID = sceAtracSetDataAndGetID(currentFileBuffer[0], length);
-#if DEBUG
-	sprintf(msg, "sceAtracSetDataAndGetID atracID=%d", atracID);
-	debug(msg);
-#endif
-	int samples = 0;
-	int end = 0;
-	int remainFrame = 0;
-	result = sceAtracDecodeData(atracID, (u16 *) currentFileBuffer[1], &samples, &end, &remainFrame);
-#if DEBUG
-	sprintf(msg, "sceAtracDecodeData result %d, samples=%d, end=%d, remainFrame=%d", result, samples, end, remainFrame);
-	debug(msg);
-#endif
-	if (result == 0)
+	int atracID = sceAtracSetDataAndGetID(atracBuffer, length);
+
+	int maxSamples = 0;
+	result = sceAtracGetMaxSample(atracID, &maxSamples);
+	int channel = sceAudioChReserve(0, maxSamples, PSP_AUDIO_FORMAT_STEREO);
+
+	char *pLastFileNamePart = strrchr(fileName, '/');
+	char outFileName[100];
+	sprintf(outFileName, "%s.decoded", pLastFileNamePart + 1);
+	char outFilePath[100];
+	getFileName(outFilePath, outFileName);
+	SceUID fdout = sceIoOpen(outFilePath, PSP_O_CREAT | PSP_O_TRUNC | PSP_O_WRONLY, 0777);
+
+	if (!atracInstructionsDisplayed)
 	{
-		SceUID fdout = sceIoOpen("ms0:/tmp/Atrac.out.decoded", PSP_O_CREAT | PSP_O_TRUNC | PSP_O_WRONLY, 0777);
-		sceIoWrite(fdout, currentFileBuffer[1], samples * 2048);
-		sceIoClose(fdout);
+		pspDebugScreenPrintf("Press CROSS to mute (much faster processing).\n");
+		pspDebugScreenPrintf("Press CIRCLE to stop.\n");
+		atracInstructionsDisplayed = true;
 	}
 
+	pspDebugScreenPrintf("Decoding Atrac Audio %s...\n", fileName);
+
+	int end = 0;
+	int remainFrame = -1;
+	int decodeBufferPosition = 0;
+	while (!end && !isCancel())
+	{
+		if (isCrossPressed())
+		{
+			muted = !muted;
+		}
+
+		int freeSize = decodeBufferSize - decodeBufferPosition;
+		if (freeSize < maxSamples * 4)
+		{
+			sceIoWrite(fdout, decodeBuffer, decodeBufferPosition);
+			decodeBufferPosition = 0;
+		}
+
+		int samples = 0;
+		result = sceAtracDecodeData(atracID, (u16 *) (decodeBuffer + decodeBufferPosition), &samples, &end, &remainFrame);
+		if (result == 0 && samples > 0)
+		{
+			if (!muted)
+			{
+				sceAudioSetChannelDataLen(channel, samples);
+				sceAudioOutputBlocking(channel, 0x8000, decodeBuffer + decodeBufferPosition);
+			}
+
+			decodeBufferPosition += 4 * samples;
+		}
+		else
+		{
+#if DEBUG
+			char msg[100];
+			sprintf(msg, "sceAtracDecodeData result %08X, samples %d, remainFrame %08X", result, samples, remainFrame);
+			debug(msg);
+#endif
+			if (result < 0)
+			{
+				break;
+			}
+		}
+
+		ctrlPeekBuffer();
+	}
+
+	// Flush decodeBuffer
+	if (decodeBufferPosition > 0)
+	{
+		sceIoWrite(fdout, decodeBuffer, decodeBufferPosition);
+	}
+
+	sceIoClose(fdout);
+	sceAudioChRelease(channel);
+	sceAtracReleaseAtracID(atracID);
+
 	return 1;
+}
+
+
+void JpcspConnector::ctrlPeekBuffer()
+{
+	SceCtrlData pad;
+	int n = sceCtrlPeekBufferPositive(&pad, 1);
+
+	if (n > 0 && pad.Buttons != oldButtons)
+	{
+		buttons = pad.Buttons;
+		oldButtons = pad.Buttons;
+	}
+}
+
+
+bool JpcspConnector::isButtonPressed(SceUInt32 button)
+{
+	bool pressed = ((buttons & button) == button);
+
+	if (pressed)
+	{
+		buttons &= ~button;
+	}
+
+	return pressed;
+}
+
+
+bool JpcspConnector::isCancel()
+{
+	return isButtonPressed(PSP_CTRL_CIRCLE);
+}
+
+
+bool JpcspConnector::isCrossPressed()
+{
+	return isButtonPressed(PSP_CTRL_CROSS);
 }
