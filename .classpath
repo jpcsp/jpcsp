@@ -12,5 +12,11 @@
 	<classpathentry kind="lib" path="lib/ASM/asm-all-3.2.jar"/>
 	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/jdom1.1.jar"/>
+	<classpathentry kind="lib" path="lib/xuggle-xuggler.jar"/>
+	<classpathentry kind="lib" path="lib/commons-cli.jar"/>
+	<classpathentry kind="lib" path="lib/logback-classic.jar"/>
+	<classpathentry kind="lib" path="lib/logback-core.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api.jar"/>
+	<classpathentry kind="lib" path="lib/xuggle-xuggler-test.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
