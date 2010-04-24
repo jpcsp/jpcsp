@@ -319,41 +319,41 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         setTitle("Settings");
         setResizable(false);
 
-        jButtonOK.setText("OK");
+        jButtonOK.setText(Resource.get("ok"));
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOKActionPerformed(evt);
             }
         });
 
-        jButtonCancel.setText("Cancel");
+        jButtonCancel.setText(Resource.get("cancel"));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);
             }
         });
 
-        pbpunpackcheck.setText("Unpack PBP when loading");
+        pbpunpackcheck.setText(Resource.get("unpackpbp"));
 
-        saveWindowPosCheck.setText("Save window positions on exit");
+        saveWindowPosCheck.setText(Resource.get("saveposition"));
 
-        openLogwindowCheck.setText("Open console on start-up");
+        openLogwindowCheck.setText(Resource.get("openconsole"));
 
-        snapConsoleCheck.setText("Snap console to main window");
+        snapConsoleCheck.setText(Resource.get("snapconsole"));
 
-        compilerCheck.setText("Use compiler (dynarec)");
+        compilerCheck.setText(Resource.get("compiler"));
 
-        profilerCheck.setText("Output profiler info to profiler.txt (only for compiler)");
+        profilerCheck.setText(Resource.get("outputprofiler"));
 
         buttonGroup1.add(umdBrowser);
-        umdBrowser.setText("Use UMD Browser");
+        umdBrowser.setText(Resource.get("useUMDBrowser"));
 
         buttonGroup1.add(ClassicOpenDialogumd);
-        ClassicOpenDialogumd.setText("Use Classic Open Dialog for UMD");
+        ClassicOpenDialogumd.setText(Resource.get("useclassicUMD"));
 
         umdpath.setEditable(false);
 
-        jLabel1.setText("UMD path folder:");
+        jLabel1.setText(Resource.get("UMDpath"));
 
         jButton1.setText("...");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
@@ -362,9 +362,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
             }
         });
 
-        shadersCheck.setText("Use shaders (highly experimental)");
+        shadersCheck.setText(Resource.get("useshader"));
 
-        filelogCheck.setText("Enable file IO logging");
+        filelogCheck.setText(Resource.get("enablefileIO"));
 
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
         generalPanel.setLayout(generalPanelLayout);
@@ -401,7 +401,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                                 .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addContainerGap(314, Short.MAX_VALUE))))))
+                                .addContainerGap(330, Short.MAX_VALUE))))))
         );
         generalPanelLayout.setVerticalGroup(
             generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -434,17 +434,17 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addContainerGap(42, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("General", generalPanel);
+        jTabbedPane1.addTab(Resource.get("general"), generalPanel);
 
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("Audio"));
 
-        disableSoundCheck.setText("Disable audio (mute)");
+        disableSoundCheck.setText(Resource.get("mute"));
 
-        IgnoreAudioThreadsCheck.setText("Disable audio threads");
+        IgnoreAudioThreadsCheck.setText(Resource.get("disableaudiothreads"));
 
-        DisableSceAudioCheck.setText("Disable audio channels (not recommended)");
+        DisableSceAudioCheck.setText(Resource.get("disableaudiotchannels"));
 
-        disableBlockingAudioCheck.setText("Disable audio blocking");
+        disableBlockingAudioCheck.setText(Resource.get("disableaudiotblocking"));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -456,7 +456,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(IgnoreAudioThreadsCheck)
                     .addComponent(DisableSceAudioCheck)
                     .addComponent(disableBlockingAudioCheck))
-                .addContainerGap(40, Short.MAX_VALUE))
+                .addContainerGap(180, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -473,19 +473,19 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder("Video"));
 
-        disableGECheck.setText("Disable GE (not recommended)");
+        disableGECheck.setText(Resource.get("disablege"));
 
-        disableVBOCheck.setText("Disable VBO (automatically disabled if not supported)");
+        disableVBOCheck.setText(Resource.get("disablevbo"));
 
-        onlyGEGraphicsCheck.setText("Only GE graphics (not recommended for homebrew)");
+        onlyGEGraphicsCheck.setText(Resource.get("onlyGeGraphics"));
 
-        useViewportCheck.setText("Use Viewport (can improve graphics)");
+        useViewportCheck.setText(Resource.get("useViewport"));
 
-        enableMpegCheck.setText("Enable faked MPEG Video");
+        enableMpegCheck.setText(Resource.get("fakeMpeg"));
 
-        useVertexCache.setText("Use Vertex Cache (can improve performance)");
+        useVertexCache.setText(Resource.get("usevertex"));
 
-        useMediaEngine.setText("Use Media Engine (experimental)");
+        useMediaEngine.setText(Resource.get("useMediaEngine"));
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -500,7 +500,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(enableMpegCheck)
                     .addComponent(useVertexCache)
                     .addComponent(useMediaEngine))
-                .addContainerGap())
+                .addGap(194, 194, 194))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -516,16 +516,16 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(enableMpegCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useVertexCache)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useMediaEngine)
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addContainerGap(19, Short.MAX_VALUE))
         );
 
         jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder("Memory"));
 
-        invalidMemoryCheck.setText("Ignore invalid memory access (not recommended)");
+        invalidMemoryCheck.setText(Resource.get("ignoreinvalidmemory"));
 
-        disableReservedThreadMemoryCheck.setText("Disable reserved thread memory");
+        disableReservedThreadMemoryCheck.setText(Resource.get("disablereservedthread"));
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -535,7 +535,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(invalidMemoryCheck)
                     .addComponent(disableReservedThreadMemoryCheck))
-                .addContainerGap(22, Short.MAX_VALUE))
+                .addContainerGap(194, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -548,9 +548,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder("Misc"));
 
-        enableWaitThreadEndCB.setText("Enable waitThreadEndCB");
+        enableWaitThreadEndCB.setText(Resource.get("enablewaitThread"));
 
-        ignoreUnmappedImports.setText("Ignore unmapped imports (not recommended)");
+        ignoreUnmappedImports.setText(Resource.get("ignoreUnmaped"));
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -560,7 +560,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(enableWaitThreadEndCB)
                     .addComponent(ignoreUnmappedImports))
-                .addContainerGap(26, Short.MAX_VALUE))
+                .addContainerGap(180, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -600,7 +600,10 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addContainerGap())
         );
 
-        jTabbedPane1.addTab("Compatibility", compatibilityPanel);
+        jPanel3.getAccessibleContext().setAccessibleName(Resource.get("memory"));
+        jPanel4.getAccessibleContext().setAccessibleName(Resource.get("misc"));
+
+        jTabbedPane1.addTab(Resource.get("compatibility"), compatibilityPanel);
 
         keyPanel.setMinimumSize(new java.awt.Dimension(1, 1));
         keyPanel.setLayout(new java.awt.GridBagLayout());
@@ -610,7 +613,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldStart.setEditable(false);
         fieldStart.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldStart.setText("Enter");
-        fieldStart.setToolTipText("select and press desired key");
+        fieldStart.setToolTipText(Resource.get("putkey"));
         fieldStart.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldStart.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -621,7 +624,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldSelect.setEditable(false);
         fieldSelect.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldSelect.setText("Space");
-        fieldSelect.setToolTipText("select and press desired key");
+        fieldSelect.setToolTipText(Resource.get("putkey"));
         fieldSelect.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldSelect.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -632,7 +635,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldCross.setEditable(false);
         fieldCross.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldCross.setText("S");
-        fieldCross.setToolTipText("select and press desired key");
+        fieldCross.setToolTipText(Resource.get("putkey"));
         fieldCross.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldCross.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -643,7 +646,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldCircle.setEditable(false);
         fieldCircle.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldCircle.setText("D");
-        fieldCircle.setToolTipText("select and press desired key");
+        fieldCircle.setToolTipText(Resource.get("putkey"));
         fieldCircle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldCircle.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -654,7 +657,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldTriangle.setEditable(false);
         fieldTriangle.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldTriangle.setText("W");
-        fieldTriangle.setToolTipText("select and press desired key");
+        fieldTriangle.setToolTipText(Resource.get("putkey"));
         fieldTriangle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldTriangle.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -665,7 +668,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldSquare.setEditable(false);
         fieldSquare.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldSquare.setText("A");
-        fieldSquare.setToolTipText("select and press desired key");
+        fieldSquare.setToolTipText(Resource.get("putkey"));
         fieldSquare.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldSquare.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -676,7 +679,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldRight.setEditable(false);
         fieldRight.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldRight.setText("Right");
-        fieldRight.setToolTipText("select and press desired key");
+        fieldRight.setToolTipText(Resource.get("putkey"));
         fieldRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldRight.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -687,7 +690,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldUp.setEditable(false);
         fieldUp.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldUp.setText("Up");
-        fieldUp.setToolTipText("select and press desired key");
+        fieldUp.setToolTipText(Resource.get("putkey"));
         fieldUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldUp.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -698,7 +701,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldLeft.setEditable(false);
         fieldLeft.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldLeft.setText("Left");
-        fieldLeft.setToolTipText("select and press desired key");
+        fieldLeft.setToolTipText(Resource.get("putkey"));
         fieldLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldLeft.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -709,7 +712,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldDown.setEditable(false);
         fieldDown.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldDown.setText("Down");
-        fieldDown.setToolTipText("select and press desired key");
+        fieldDown.setToolTipText(Resource.get("putkey"));
         fieldDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldDown.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -720,7 +723,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldHold.setEditable(false);
         fieldHold.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldHold.setText("O");
-        fieldHold.setToolTipText("select and press desired key");
+        fieldHold.setToolTipText(Resource.get("putkey"));
         fieldHold.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldHold.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -731,7 +734,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldHome.setEditable(false);
         fieldHome.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldHome.setText("H");
-        fieldHome.setToolTipText("select and press desired key");
+        fieldHome.setToolTipText(Resource.get("putkey"));
         fieldHome.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldHome.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -742,7 +745,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldVolMin.setEditable(false);
         fieldVolMin.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldVolMin.setText("-");
-        fieldVolMin.setToolTipText("select and press desired key");
+        fieldVolMin.setToolTipText(Resource.get("putkey"));
         fieldVolMin.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldVolMin.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -753,7 +756,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldVolPlus.setEditable(false);
         fieldVolPlus.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldVolPlus.setText("+");
-        fieldVolPlus.setToolTipText("select and press desired key");
+        fieldVolPlus.setToolTipText(Resource.get("putkey"));
         fieldVolPlus.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldVolPlus.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -764,7 +767,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldLTrigger.setEditable(false);
         fieldLTrigger.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldLTrigger.setText("Q");
-        fieldLTrigger.setToolTipText("select and press desired key");
+        fieldLTrigger.setToolTipText(Resource.get("putkey"));
         fieldLTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldLTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -775,7 +778,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldRTrigger.setEditable(false);
         fieldRTrigger.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldRTrigger.setText("E");
-        fieldRTrigger.setToolTipText("select and press desired key");
+        fieldRTrigger.setToolTipText(Resource.get("putkey"));
         fieldRTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldRTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -786,7 +789,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldScreen.setEditable(false);
         fieldScreen.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldScreen.setText("S");
-        fieldScreen.setToolTipText("select and press desired key");
+        fieldScreen.setToolTipText(Resource.get("putkey"));
         fieldScreen.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldScreen.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -797,7 +800,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldMusic.setEditable(false);
         fieldMusic.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldMusic.setText("N");
-        fieldMusic.setToolTipText("select and press desired key");
+        fieldMusic.setToolTipText(Resource.get("putkey"));
         fieldMusic.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldMusic.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -808,7 +811,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogUp.setEditable(false);
         fieldAnalogUp.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogUp.setText("I");
-        fieldAnalogUp.setToolTipText("select and press desired key");
+        fieldAnalogUp.setToolTipText(Resource.get("putkey"));
         fieldAnalogUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogUp.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -819,7 +822,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogDown.setEditable(false);
         fieldAnalogDown.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogDown.setText("K");
-        fieldAnalogDown.setToolTipText("select and press desired key");
+        fieldAnalogDown.setToolTipText(Resource.get("putkey"));
         fieldAnalogDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogDown.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -830,7 +833,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogLeft.setEditable(false);
         fieldAnalogLeft.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogLeft.setText("J");
-        fieldAnalogLeft.setToolTipText("select and press desired key");
+        fieldAnalogLeft.setToolTipText(Resource.get("putkey"));
         fieldAnalogLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogLeft.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -841,7 +844,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogRight.setEditable(false);
         fieldAnalogRight.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         fieldAnalogRight.setText("L");
-        fieldAnalogRight.setToolTipText("select and press desired key");
+        fieldAnalogRight.setToolTipText(Resource.get("putkey"));
         fieldAnalogRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogRight.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -1004,7 +1007,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         gridBagConstraints.weighty = 1.0;
         keyPanel.add(bgLabel1, gridBagConstraints);
 
-        jTabbedPane1.addTab("Controls", keyPanel);
+        jTabbedPane1.addTab(Resource.get("controls"), keyPanel);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
