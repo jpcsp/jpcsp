@@ -60,11 +60,10 @@ public class PGDFileConnector {
 
 	protected void generateCommandFile(String keyHex) {
 		try {
-			PrintWriter command = new PrintWriter(String.format("%scommand.txt", getBaseDirectory(id)));
+			PrintWriter command = new PrintWriter(String.format("%s%s", getBaseDirectory(id), Connector.commandFileName));
 			command.println("DecryptPGD");
 			command.println(Connector.basePSPDirectory + encryptedFileName + " " + keyHex);
 			command.println("Exit");
-			command.println("");
 			command.close();
 		} catch (FileNotFoundException e) {
 			// Ignore Exception
@@ -112,7 +111,7 @@ public class PGDFileConnector {
 					msg += "This application contains a crypted file which needs to be decrypted on your PSP.\n";
 					msg += "Copy the following 2 files\n";
 					msg += "    " + getCompleteFileName(encryptedFileName) + "\n";
-					msg += "    " + getBaseDirectory(id) + "command.txt\n";
+					msg += "    " + getBaseDirectory(id) + Connector.commandFileName + "\n";
 					msg += "to your PSP under\n";
 					msg += "    " + Connector.basePSPDirectory + "\n";
 					msg += "and run the '" + Connector.jpcspConnectorName + "' on your PSP.\n";

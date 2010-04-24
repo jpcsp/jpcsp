@@ -79,11 +79,10 @@ public class MpegCodec {
 
 	protected void generateCommandFile() {
 		try {
-			PrintWriter command = new PrintWriter(String.format("%scommand.txt", getMpegBaseDirectory(id)));
+			PrintWriter command = new PrintWriter(String.format("%s%s", getMpegBaseDirectory(id), Connector.commandFileName));
 			command.println("DecodeVideo");
 			command.println(Connector.basePSPDirectory + mpegFileState.name);
 			command.println("Exit");
-			command.println("");
 			command.close();
 		} catch (FileNotFoundException e) {
 			// Ignore Exception
