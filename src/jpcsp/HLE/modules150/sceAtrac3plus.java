@@ -23,6 +23,7 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.ThreadMan;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -104,7 +105,15 @@ public class sceAtrac3plus implements HLEModule {
 
     protected static final String uidPurpose = "sceAtrac3plus";
 
-    protected static final int RIFF_MAGIC = 0x46464952;	// "RIFF"
+    protected static final int AT3_MAGIC      = 0x00000270; // "AT3"
+    protected static final int AT3_PLUS_MAGIC = 0x0000FFFE; // "AT3PLUS"
+    protected static final int RIFF_MAGIC     = 0x46464952; // "RIFF"
+    protected static final int WAVE_MAGIC     = 0x45564157; // "WAVE"
+
+    protected static final int PSP_ATRAC_ALLDATA_IS_ON_MEMORY              = -1;
+    protected static final int PSP_ATRAC_NONLOOP_STREAM_DATA_IS_ON_MEMORY  = -2;
+    protected static final int PSP_ATRAC_LOOP_STREAM_DATA_IS_ON_MEMORY	   = -3;
+
 
     protected static final int PSP_MODE_AT_3_PLUS = 0x00001000;
     protected static final int PSP_MODE_AT_3      = 0x00001001;
@@ -114,7 +123,7 @@ public class sceAtrac3plus implements HLEModule {
     protected int inputBufferOffset;
     protected int inputFileSize;
     protected int inputFileOffset;
-    public static final int maxSamples = 2048;
+    public static int maxSamples;
     public static final int remainFrames = -1;
 
     protected HashMap<Integer, AtracCodec> atracCodecs;
@@ -142,8 +151,13 @@ public class sceAtrac3plus implements HLEModule {
     public void sceAtracGetAtracID(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int codecType = cpu.gpr[4];//noxa:codecType.
-        //0x1000(AT3PLUS), 0x1001(AT3).
+        int codecType = cpu.gpr[4]; //0x1000(AT3PLUS), 0x1001(AT3).
+
+        if (codecType == PSP_MODE_AT_3)
+            maxSamples = 1024;
+        else if (codecType == PSP_MODE_AT_3_PLUS)
+            maxSamples = 2048;
+
 
         Modules.log.warn("PARTIAL:sceAtracGetAtracID: codecType = 0x" + Integer.toHexString(codecType));
 
@@ -157,6 +171,7 @@ public class sceAtrac3plus implements HLEModule {
 
         Modules.log.warn("Skipping:sceAtracReleaseAtracID: atracID = " + atID);
         AtracCodec atracCodec = getAtracCodec(atID);
+        if(atracCodec != null)
         atracCodec.finish();
         atracCodecs.remove(atID);
         SceUidManager.releaseUid(atID, uidPurpose);
@@ -213,6 +228,7 @@ public class sceAtrac3plus implements HLEModule {
 
     public void sceAtracSetData(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int atID = cpu.gpr[4];
         int buffer = cpu.gpr[5];
@@ -220,6 +236,25 @@ public class sceAtrac3plus implements HLEModule {
 
         if (Modules.log.isDebugEnabled()) {
         	Modules.log.debug(String.format("sceAtracSetData: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, buffer, bufferSize));
+        }
+        int codecType = 0;
+        int at3magic = 0;
+        if (mem.isAddressGood(buffer)) { // Check!
+            at3magic = mem.read32(buffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC)
+                codecType = PSP_MODE_AT_3;
+            else if (at3magic == AT3_PLUS_MAGIC)
+                codecType = PSP_MODE_AT_3_PLUS;
+
+            if (codecType == PSP_MODE_AT_3)
+                maxSamples = 1024;
+            else if (codecType == PSP_MODE_AT_3_PLUS)
+                maxSamples = 2048;
+
+            //atID = hleCreateAtracID(codecType);
+            //hleAtracSetData(atID, buffer, bufferSize);
         }
         hleAtracSetData(atID, buffer, bufferSize);
 
@@ -236,17 +271,36 @@ public class sceAtrac3plus implements HLEModule {
 
     public void sceAtracSetDataAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int buffer = cpu.gpr[4];
         int bufferSize = cpu.gpr[5];
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceAtracSetDataAndGetID buffer = 0x%08X, bufferSize = 0x%08X", buffer, bufferSize));
+        int codecType = 0;
+        int at3magic = 0;
+        int atID = 0;
+
+        if (mem.isAddressGood(buffer)) {
+            at3magic = mem.read32(buffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC)
+                codecType = PSP_MODE_AT_3;
+            else if (at3magic == AT3_PLUS_MAGIC)
+                codecType = PSP_MODE_AT_3_PLUS;
+
+            if (codecType == PSP_MODE_AT_3)
+                maxSamples = 1024;
+            else if (codecType == PSP_MODE_AT_3_PLUS)
+                maxSamples = 2048;
+            
+            atID = hleCreateAtracID(codecType);
+            hleAtracSetData(atID, buffer, bufferSize);
         }
 
-        // Should decode the buffer data to find the codecType. Assume PSP_MODE_AT_3.
-        int atID = hleCreateAtracID(PSP_MODE_AT_3);
-        hleAtracSetData(atID, buffer, bufferSize);
+        if (Modules.log.isDebugEnabled()) {
+                Modules.log.debug(String.format("sceAtracSetDataAndGetID buffer = 0x%08X, bufferSize = 0x%08X, codecType = 0x%04X", buffer, bufferSize, codecType));
+            }
 
         cpu.gpr[2] = atID;
     }
@@ -271,6 +325,7 @@ public class sceAtrac3plus implements HLEModule {
 
         int result = 0;
         AtracCodec atracCodec = getAtracCodec(atID);
+        if(atracCodec != null) {
         int samples = atracCodec.atracDecodeData(samplesAddr);
         if (samples < 0) {
             Modules.log.warn(String.format("Unimplemented sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X",
@@ -324,8 +379,9 @@ public class sceAtrac3plus implements HLEModule {
                 mem.write32(remainFramesAddr, atracCodec.getAtracRemainFrames());
             }
         }
-
+        }
         cpu.gpr[2] = result;
+        ThreadMan.getInstance().hleKernelDelayThread(10000, false);// for the spamming warn.
     }
 
     public void sceAtracGetRemainFrame(Processor processor) {
