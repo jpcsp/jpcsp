@@ -303,7 +303,7 @@ public class UmdIsoFile extends SeekableInputStream {
 
     private void checkSectorAvailable() throws IOException
     {
-    	if (sectorOffset == sectorLength) {
+    	if (sectorOffset == sectorLength && currentOffset < maxOffset) {
     		currentSectorNumber++;
     		currentSector = internalReader.readSector(currentSectorNumber);
     		sectorOffset = 0;
@@ -322,7 +322,12 @@ public class UmdIsoFile extends SeekableInputStream {
     		throw new IndexOutOfBoundsException();
     	}
 
-    	int totalLength = 0;
+		if (len > (maxOffset - currentOffset))
+		{
+			len = (int) (maxOffset - currentOffset);
+		}
+
+		int totalLength = 0;
 
 		int firstSector = readInternal(b, off, Math.min(len, sectorLength - sectorOffset));
 		off += firstSector;
@@ -330,13 +335,9 @@ public class UmdIsoFile extends SeekableInputStream {
 		totalLength += firstSector;
 
 		// Read whole sectors
-		while (len >= sectorLength && currentOffset < maxOffset)
+		if (len >= sectorLength)
 		{
-            // NOTE: Temporarily disabled new reading method due to
-            // several crashing issues.
-            // TODO: Verify this behaviour.
-
-			/*int numberSectors = len / sectorLength;
+			int numberSectors = len / sectorLength;
 			internalReader.readSectors(currentSectorNumber + 1, numberSectors, b, off);
     		currentSectorNumber += numberSectors;
     		sectorOffset = sectorLength;
@@ -345,13 +346,7 @@ public class UmdIsoFile extends SeekableInputStream {
 			checkSectorAvailable();
 			off += n;
 			len -= n;
-			totalLength += n;*/
-
-            checkSectorAvailable();
-            int n = readInternal(b, off, sectorLength);
-            off += n;
-            len -= n;
-            totalLength += n;
+			totalLength += n;
 		}
 
 		if (len > 0) {
