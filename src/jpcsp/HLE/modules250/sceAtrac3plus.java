@@ -35,7 +35,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             mm.addFunction(sceAtracGetOutputChannelFunction, 0xB3B5D042);
             mm.addFunction(sceAtracIsSecondBufferNeededFunction, 0xECA32A99);
             mm.addFunction(sceAtracReinitFunction, 0x132F1ECA);
-            mm.addFunction(sceAtrac3plus_2DD3E298Function, 0x2DD3E298);
+            mm.addFunction(sceAtracGetBufferInfoForResettingFunction, 0x2DD3E298);
             mm.addFunction(sceAtracSetMOutHalfwayBufferFunction, 0x5CF9D852);
         }
     }
@@ -48,7 +48,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             mm.removeFunction(sceAtracGetOutputChannelFunction);
             mm.removeFunction(sceAtracIsSecondBufferNeededFunction);
             mm.removeFunction(sceAtracReinitFunction);
-            mm.removeFunction(sceAtrac3plus_2DD3E298Function);
+            mm.removeFunction(sceAtracGetBufferInfoForResettingFunction);
             mm.removeFunction(sceAtracSetMOutHalfwayBufferFunction);
         }
     }
@@ -89,12 +89,15 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         cpu.gpr[2] = 0;
     }
 
-    public void sceAtrac3plus_2DD3E298(Processor processor) {
+    public void sceAtracGetBufferInfoForResetting(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented function sceAtrac3plus_2DD3E298 "
-    			+ String.format("%08x %08x %08x %08x %08x %08x",
-    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        int atID = cpu.gpr[4];
+        int sample = cpu.gpr[5];
+        int unk1Addr = cpu.gpr[6];
+
+        Modules.log.warn(String.format("Partial sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, unk1Addr));
+        hleAtracGetBufferInfoForReseting(atID, sample, unk1Addr);
 
         cpu.gpr[2] = 0;
     }
@@ -142,14 +145,14 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
     };
 
-    public final HLEModuleFunction sceAtrac3plus_2DD3E298Function = new HLEModuleFunction("sceAtrac3plus", "sceAtrac3plus_2DD3E298") {
+    public final HLEModuleFunction sceAtracGetBufferInfoForResettingFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetBufferInfoForResetting") {
         @Override
         public final void execute(Processor processor) {
-        	sceAtrac3plus_2DD3E298(processor);
+        	sceAtracGetBufferInfoForResetting(processor);
         }
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtrac3plus_2DD3E298(processor);";
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetBufferInfoForResetting(processor);";
         }
     };
 
