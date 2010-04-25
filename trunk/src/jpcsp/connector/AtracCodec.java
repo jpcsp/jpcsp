@@ -17,13 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.connector;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 
@@ -46,7 +45,7 @@ public class AtracCodec {
 	protected static final String atracSuffix = ".at3";
 	protected static final String decodedSuffix = ".decoded";
 	protected static final String decodedAtracSuffix = atracSuffix + decodedSuffix;
-	protected InputStream decodedStream;
+	protected RandomAccessFile decodedStream;
 	protected OutputStream atracStream;
 	protected int atracEnd;
 	protected int atracRemainFrames;
@@ -141,7 +140,7 @@ public class AtracCodec {
 		if (decodedFile.canRead()) {
 			// Decoded file is already present
 			try {
-				decodedStream = new FileInputStream(decodedFile);
+				decodedStream = new RandomAccessFile(decodedFile, "r");
 				atracEndSample = (int) (decodedFile.length() / 4);
 			} catch (FileNotFoundException e) {
 			}
@@ -202,6 +201,16 @@ public class AtracCodec {
 		atracRemainFrames = sceAtrac3plus.remainFrames;
 
 		return samples;
+	}
+
+	public void atracResetPlayPosition(int sample) {
+		if (decodedStream != null) {
+			try {
+				decodedStream.seek(sample * 4);
+			} catch (IOException e) {
+				Modules.log.error(e);
+			}
+		}
 	}
 
 	public int getAtracEnd() {

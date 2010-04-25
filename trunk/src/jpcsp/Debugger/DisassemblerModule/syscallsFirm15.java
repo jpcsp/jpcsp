@@ -969,7 +969,7 @@ public class syscallsFirm15 {
 
                 sceKernelSetCompiledSdkVersion395(0x308e, 0xEBD5C3E6), // 3.95+ or lower
                 sceAtracReinit(0x308f, 0x132F1ECA), // 2.50+ or lower
-                sceAtrac3plus_2DD3E298(0x3090, 0x2DD3E298), // 2.50+ or lower
+                sceAtracGetBufferInfoForResetting(0x3090, 0x2DD3E298), // 2.50+ or lower
                 sceAtracGetOutputChannel(0x3091, 0xB3B5D042), // 2.50+ or lower
 
                 sceUtilityHtmlViewerInitStart(0x3092, 0xCDC3AA41), // 2.00+

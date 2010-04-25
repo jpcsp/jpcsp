@@ -226,6 +226,16 @@ public class sceAtrac3plus implements HLEModule {
     	}
     }
 
+    protected void hleAtracGetBufferInfoForReseting(int atracID, int sample, int unk1Addr) {
+    	Memory mem = Memory.getInstance();
+
+    	if (mem.isAddressGood(unk1Addr)) {
+    		// Address of an unknown structure of size 32
+    		mem.write32(unk1Addr +  4, 0);
+    		mem.write32(unk1Addr + 20, 0);
+    	}
+    }
+
     public void sceAtracSetData(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -328,13 +338,13 @@ public class sceAtrac3plus implements HLEModule {
         if(atracCodec != null) {
         int samples = atracCodec.atracDecodeData(samplesAddr);
         if (samples < 0) {
-            Modules.log.warn(String.format("Unimplemented sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X",
-                    atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr));
-
             int fakedSamples = maxSamples;
             if (inputBufferOffset >= inputBufferSize) {
             	fakedSamples = 0; // No more data in input buffer
             }
+
+            Modules.log.warn(String.format("Unimplemented sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X, returning samples=%d",
+                    atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr, fakedSamples));
 
             // Assume consuming as many ATRAC3 input bytes as samples
             // (this is faked because it would mean ATRAC3 does not compress audio at all)
@@ -589,19 +599,29 @@ public class sceAtrac3plus implements HLEModule {
     public void sceAtracGetBufferInfoForReseting(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented NID function sceAtracGetBufferInfoForReseting [0xCA3CA3D2]");
+        int atID = cpu.gpr[4];
+        int sample = cpu.gpr[5];
+        int unk1Addr = cpu.gpr[6];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn(String.format("Partial sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, unk1Addr));
+        hleAtracGetBufferInfoForReseting(atID, sample, unk1Addr);
+
+        cpu.gpr[2] = 0;
     }
     
     public void sceAtracResetPlayPosition(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int atID = cpu.gpr[4];
-        int unknown1 = cpu.gpr[5];
-        int unknown2 = cpu.gpr[6];
-        int unknown3 = cpu.gpr[7];
-        Modules.log.warn(String.format("Unimplemented sceAtracResetPlayPosition atracId=%d, %08X, %08X, %08X", atID, unknown1, unknown2, unknown3));
+        int sample = cpu.gpr[5];
+        int unknown1 = cpu.gpr[6];
+        int unknown2 = cpu.gpr[7];
+        Modules.log.warn(String.format("Partial sceAtracResetPlayPosition atracId=%d, sample=%d, %08X, %08X", atID, sample, unknown1, unknown2));
+
+        inputBufferOffset = sample * 4;
+        inputFileSize = inputBufferSize;
+        inputFileOffset = inputBufferSize;
+        getAtracCodec(atID).atracResetPlayPosition(sample);
 
         cpu.gpr[2] = 0;
     }
