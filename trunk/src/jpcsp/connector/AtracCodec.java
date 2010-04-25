@@ -47,19 +47,23 @@ public class AtracCodec {
 	protected static final String decodedSuffix = ".decoded";
 	protected static final String decodedAtracSuffix = atracSuffix + decodedSuffix;
 	protected InputStream decodedStream;
+	protected OutputStream atracStream;
 	protected int atracEnd;
 	protected int atracRemainFrames;
+	protected int atracEndSample;
 	protected byte[] atracDecodeBuffer;
 	protected static boolean instructionsDisplayed = false;
+	protected static boolean commandFileDirty = true;
 
 	public AtracCodec() {
-		atracDecodeBuffer = new byte[sceAtrac3plus.maxSamples];
+		atracDecodeBuffer = new byte[sceAtrac3plus.maxSamples * 4];
+		generateCommandFile();
 	}
 
-	protected String generateID(int address, int length) {
+	protected String generateID(int address, int length, int fileSize) {
 		int hashCode = Hash.getHashCodeFloatingMemory(0, address, length);
 
-		return String.format("Atrac-%08X-%08X", length, hashCode);
+		return String.format("Atrac-%08X-%08X", fileSize, hashCode);
 	}
 
 	protected static String getBaseDirectory(String id) {
@@ -73,6 +77,10 @@ public class AtracCodec {
 	}
 
 	protected void generateCommandFile() {
+		if (!commandFileDirty) {
+			return;
+		}
+
 		try {
 			// Generate decode commands for all the non-decoded Atrac files
 			String baseDirectory = getBaseDirectory(id);
@@ -99,13 +107,12 @@ public class AtracCodec {
 			}
 			command.println("Exit");
 			command.close();
+			commandFileDirty = false;
 		} catch (FileNotFoundException e) {
 		}
 	}
 
-	public void atracSetData(int address, int length) {
-		id = generateID(address, length);
-
+	protected void closeStreams() {
 		if (decodedStream != null) {
 			try {
 				decodedStream.close();
@@ -113,6 +120,21 @@ public class AtracCodec {
 			}
 			decodedStream = null;
 		}
+		if (atracStream != null) {
+			try {
+				atracStream.close();
+			} catch (IOException e) {
+			}
+			atracStream = null;
+		}
+	}
+
+	public void atracSetData(int address, int length, int atracFileSize) {
+		id = generateID(address, length, atracFileSize);
+
+		closeStreams();
+
+		atracEndSample = -1;
 
 		File decodedFile = new File(getCompleteFileName(decodedAtracSuffix));
 		File atracFile = new File(getCompleteFileName(atracSuffix));
@@ -120,25 +142,42 @@ public class AtracCodec {
 			// Decoded file is already present
 			try {
 				decodedStream = new FileInputStream(decodedFile);
+				atracEndSample = (int) (decodedFile.length() / 4);
 			} catch (FileNotFoundException e) {
 			}
-		} else if (atracFile.canRead() && atracFile.length() == length) {
+		} else if (atracFile.canRead() && atracFile.length() == atracFileSize) {
 			// Atrac file is already written, no need to write it again
 		} else {
+			commandFileDirty = true;
 			displayInstructions();
 			try {
 				new File(getBaseDirectory(id)).mkdirs();
-				OutputStream output = new FileOutputStream(getCompleteFileName(atracSuffix));
+				atracStream = new FileOutputStream(getCompleteFileName(atracSuffix));
 				byte[] buffer = new byte[length];
 				IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
 				for (int i = 0; i < length; i++) {
 					buffer[i] = (byte) memoryReader.readNext();
 				}
-				output.write(buffer);
-				output.close();
-				generateCommandFile();
+				atracStream.write(buffer);
 			} catch (FileNotFoundException e) {
 			} catch (IOException e) {
+			}
+		}
+
+		generateCommandFile();
+	}
+
+	public void atracAddStreamData(int address, int length) {
+		if (atracStream != null) {
+			try {
+				byte[] buffer = new byte[length];
+				IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
+				for (int i = 0; i < length; i++) {
+					buffer[i] = (byte) memoryReader.readNext();
+				}
+				atracStream.write(buffer);
+			} catch (IOException e) {
+				Modules.log.error(e);
 			}
 		}
 	}
@@ -174,13 +213,11 @@ public class AtracCodec {
 	}
 
 	public void finish() {
-		if (decodedStream != null) {
-			try {
-				decodedStream.close();
-			} catch (IOException e) {
-			}
-			decodedStream = null;
-		}
+		closeStreams();
+	}
+
+	public int getAtracEndSample() {
+		return atracEndSample;
 	}
 
 	protected void displayInstructions() {
