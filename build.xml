@@ -1,74 +1,76 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- You may freely edit this file. See commented blocks below for -->
-<!-- some examples of how to customize the build. -->
-<!-- (If you delete it and reopen the project it will be recreated.) -->
-<!-- By default, only the Clean and Build commands use this build script. -->
-<!-- Commands such as Run, Debug, and Test only use this build script if -->
-<!-- the Compile on Save feature is turned off for the project. -->
-<!-- You can turn off the Compile on Save (or Deploy on Save) setting -->
-<!-- in the project's Project Properties dialog box.-->
-<project name="Jpcsp" default="default" basedir=".">
-    <description>Builds, tests, and runs the project Jpcsp.</description>
-    <import file="nbproject/build-impl.xml"/>
-    <!--
-
-    There exist several targets which are by default empty and which can be 
-    used for execution of your tasks. These targets are usually executed 
-    before and after some main targets. They are: 
-
-      -pre-init:                 called before initialization of project properties
-      -post-init:                called after initialization of project properties
-      -pre-compile:              called before javac compilation
-      -post-compile:             called after javac compilation
-      -pre-compile-single:       called before javac compilation of single file
-      -post-compile-single:      called after javac compilation of single file
-      -pre-compile-test:         called before javac compilation of JUnit tests
-      -post-compile-test:        called after javac compilation of JUnit tests
-      -pre-compile-test-single:  called before javac compilation of single JUnit test
-      -post-compile-test-single: called after javac compilation of single JUunit test
-      -pre-jar:                  called before JAR building
-      -post-jar:                 called after JAR building
-      -post-clean:               called after cleaning build products
-
-    (Targets beginning with '-' are not intended to be called on their own.)
-
-    Example of inserting an obfuscator after compilation could look like this:
-
-        <target name="-post-compile">
-            <obfuscate>
-                <fileset dir="${build.classes.dir}"/>
-            </obfuscate>
-        </target>
-
-    For list of available properties check the imported 
-    nbproject/build-impl.xml file. 
-
-
-    Another way to customize the build is by overriding existing main targets.
-    The targets of interest are: 
-
-      -init-macrodef-javac:     defines macro for javac compilation
-      -init-macrodef-junit:     defines macro for junit execution
-      -init-macrodef-debug:     defines macro for class debugging
-      -init-macrodef-java:      defines macro for class execution
-      -do-jar-with-manifest:    JAR building (if you are using a manifest)
-      -do-jar-without-manifest: JAR building (if you are not using a manifest)
-      run:                      execution of project 
-      -javadoc-build:           Javadoc generation
-      test-report:              JUnit report generation
-
-    An example of overriding the target for project execution could look like this:
-
-        <target name="run" depends="Jpcsp-impl.jar">
-            <exec dir="bin" executable="launcher.exe">
-                <arg file="${dist.jar}"/>
-            </exec>
-        </target>
-
-    Notice that the overridden target depends on the jar target and not only on 
-    the compile target as the regular run target does. Again, for a list of available 
-    properties which you can use, check the target you are overriding in the
-    nbproject/build-impl.xml file. 
-
-    -->
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="build" name="Jpcsp">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+	
+	<property name="jpcsp.mainclass" value="jpcsp.MainGUI"/>
+	
+    <path id="Jpcsp.classpath">
+        <pathelement location="bin/class"/>
+        <pathelement location="lib/gluegen-rt.jar"/>
+        <pathelement location="lib/javassist.jar"/>
+        <pathelement location="lib/jogl.jar"/>
+        <pathelement location="lib/kawa-1.9.1.jar"/>
+        <pathelement location="lib/jgz-0.2.jar"/>
+        <pathelement location="lib/jide-oss-2.8.4.jar"/>
+        <pathelement location="lib/log4j-1.2.15.jar"/>
+        <pathelement location="lib/asm-all-3.2.jar"/>
+        <pathelement location="lib/jaxen-1.1.1.jar"/>
+        <pathelement location="lib/jdom1.1.jar"/>
+        <pathelement location="lib/xuggle-xuggler.jar"/>
+        <pathelement location="lib/commons-cli.jar"/>
+        <pathelement location="lib/logback-classic.jar"/>
+        <pathelement location="lib/logback-core.jar"/>
+        <pathelement location="lib/slf4j-api.jar"/>
+        <pathelement location="lib/xuggle-xuggler-test.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin/class"/>
+        <copy includeemptydirs="false" todir="bin/class">
+            <fileset dir="src">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            	<exclude name="**/*.awk"/>
+            	<exclude name="**/*.disabled"/>
+            	<exclude name="**/*.form"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin/class" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="Jpcsp.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target name="MainGUI">
+        <java classname="${jpcsp.mainclass}" failonerror="true" fork="yes">
+            <jvmarg value="-Xmx512m"/>
+        	<jvmarg value="-Djava.library.path=lib/windows-x86"/>
+            <classpath refid="Jpcsp.classpath"/>
+        </java>
+    </target>
+	<target depends="build" name="jar">
+		<manifestclasspath property="jar.classpath" jarfile="bin/jpcsp.jar">
+			<classpath refid="Jpcsp.classpath"/>
+		</manifestclasspath> 
+		<exec executable="svnversion" output="bin/class/jpcsp/title.txt" failifexecutionfails="no">
+			<arg value="-n"/>
+		</exec>
+		<jar destfile="bin/jpcsp.jar" basedir="bin/class">
+			<manifest>
+				<attribute name="Main-Class" value="${jpcsp.mainclass}"/>
+				<attribute name="Class-Path" value="${jar.classpath}"/>
+			</manifest>
+		</jar>
+	</target>
 </project>

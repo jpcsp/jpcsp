@@ -702,7 +702,7 @@ public void loadFile(File file) {
     try {
         if (consolewin != null)
             consolewin.clearScreenMessages();
-        Emulator.log.info(MetaInformation.FULL_CUSTOM_NAME);
+        Emulator.log.info(MetaInformation.FULL_NAME);
 
         umdLoaded = false;
         loadedFile = file;
@@ -985,7 +985,7 @@ public void loadUMD(File file) {
     try {
         if (consolewin != null)
             consolewin.clearScreenMessages();
-        Emulator.log.info(MetaInformation.FULL_CUSTOM_NAME);
+        Emulator.log.info(MetaInformation.FULL_NAME);
 
         umdLoaded = true;
         loadedFile = file;

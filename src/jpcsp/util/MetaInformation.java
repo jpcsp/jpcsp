@@ -24,7 +24,6 @@ public class MetaInformation {
     public static String NAME = "Jpcsp";
     public static String VERSION = "v0.5";
     public static String FULL_NAME = NAME + " " + VERSION;
-    public static String FULL_CUSTOM_NAME = NAME + " " + VERSION;
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
     public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
     public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
@@ -36,12 +35,12 @@ public class MetaInformation {
         //System.err.println("MetaInformation loading...");
         try {
             InputStream is = getClass().getResourceAsStream("/jpcsp/title.txt");
-            String customName = Utilities.toString(is, true);
+            String customName = Utilities.toString(is, true).trim();
             if (customName.isEmpty()) {
                 System.err.println("first line of title.txt is blank or file is empty");
             } else {
                 //System.err.println("found title '" + customName + "'");
-                FULL_CUSTOM_NAME = NAME + " " + VERSION + " " + customName;
+                FULL_NAME = NAME + " " + VERSION + " " + customName;
             }
         } catch (IOException e) {
             System.err.println("something went wrong: " + e.getMessage());
