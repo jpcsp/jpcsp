@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/GLUEGEN-RT/gluegen-rt.jar"/>
+	<classpathentry kind="lib" path="lib/gluegen-rt.jar"/>
 	<classpathentry kind="lib" path="lib/javassist.jar"/>
-	<classpathentry kind="lib" path="lib/JOGL/jogl.jar"/>
+	<classpathentry kind="lib" path="lib/jogl.jar">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="Jpcsp/lib/win32"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/kawa-1.9.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/jgz-0.2.jar"/>
-	<classpathentry kind="lib" path="lib/jide-oss-2.3.1/jide-oss-2.8.4.jar"/>
+	<classpathentry kind="lib" path="lib/jide-oss-2.8.4.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="lib/ASM/asm-all-3.2.jar"/>
+	<classpathentry kind="lib" path="lib/asm-all-3.2.jar"/>
 	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/jdom1.1.jar"/>
 	<classpathentry kind="lib" path="lib/xuggle-xuggler.jar"/>
