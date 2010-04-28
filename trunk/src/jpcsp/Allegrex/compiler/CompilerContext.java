@@ -414,8 +414,6 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void startInternalMethod() {
-    	checkSync();
-
     	if (Profiler.enableProfiler) {
     		mv.visitLdcInsn(getCodeBlock().getStartAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addCall", "(I)V");
