@@ -2612,7 +2612,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bgez", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BGEZAL = new Instruction(76, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
+public static final Instruction BGEZAL = new Instruction(76, FLAGS_LINK_INSTRUCTION | FLAGS_BRANCH_INSTRUCTION) {
 
 @Override
 public final String name() { return "BGEZAL"; }
@@ -2642,7 +2642,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bgezal", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BGEZALL = new Instruction(77, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
+public static final Instruction BGEZALL = new Instruction(77, FLAGS_LINK_INSTRUCTION | FLAGS_BRANCH_INSTRUCTION) {
 
 @Override
 public final String name() { return "BGEZALL"; }
@@ -2852,7 +2852,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bltz", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BLTZAL = new Instruction(84, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
+public static final Instruction BLTZAL = new Instruction(84, FLAGS_LINK_INSTRUCTION | FLAGS_BRANCH_INSTRUCTION) {
 
 @Override
 public final String name() { return "BLTZAL"; }
@@ -2882,7 +2882,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bltzal", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BLTZALL = new Instruction(85, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
+public static final Instruction BLTZALL = new Instruction(85, FLAGS_LINK_INSTRUCTION | FLAGS_BRANCH_INSTRUCTION) {
 
 @Override
 public final String name() { return "BLTZALL"; }
