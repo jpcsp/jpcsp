@@ -869,6 +869,7 @@ public class ThreadMan {
         thread.wait.waitingOnSemaphore = false;
         thread.wait.waitingOnThreadEnd = false;
         thread.wait.waitingOnUmd = false;
+        thread.waitType = PSP_WAIT_NONE;
 
         RuntimeContext.onThreadExit(thread);
     }
@@ -1204,12 +1205,15 @@ public class ThreadMan {
 
     /** exit the current thread */
     public void ThreadMan_sceKernelExitThread(int exitStatus) {
-        Modules.log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(current_thread.uid)
-            + " name:'" + current_thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
+    	SceKernelThreadInfo thread = current_thread;
 
-        current_thread.exitStatus = exitStatus;
+    	Modules.log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(thread.uid)
+            + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
+
+    	thread.exitStatus = exitStatus;
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        changeThreadState(current_thread, PSP_THREAD_STOPPED);
+        changeThreadState(thread, PSP_THREAD_STOPPED);
+        RuntimeContext.onThreadExit(thread);
 
         contextSwitch(nextThread());
     }
