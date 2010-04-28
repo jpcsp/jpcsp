@@ -1031,10 +1031,6 @@ public class RuntimeContext {
     }
 
     public static void setIsHomebrew(boolean isHomebrew) {
-    	if (isHomebrew) {
-    		enableDaemonThreadSync = true;
-    	} else {
-    		enableDaemonThreadSync = false;
-    	}
+    	// Currently, nothing special to do for Homebrew's
     }
 }
