@@ -23,25 +23,24 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
+
+import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
+import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.managers.*;
 
 public class pspSysMem {
-
     private static pspSysMem instance;
+    private static Logger stdout = Logger.getLogger("stdout");
     private static HashMap<Integer, SysMemInfo> blockList;
-    private static Set<SysMemInfo> freeBlockSet;
-    private int heapTop, heapBottom;
+    private static MemoryChunkList freeMemoryChunks;
     private int firmwareVersion = PSP_FIRMWARE_150;
     private boolean disableReservedThreadMemory = false;
     // PspSysMemBlockTypes
@@ -80,11 +79,11 @@ public class pspSysMem {
     /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
     public void Initialise(int firmwareVersion) {
         blockList = new HashMap<Integer, SysMemInfo>();
-        freeBlockSet = new HashSet<SysMemInfo>();
 
-        // The loader should do the first malloc which will set the heapBottom corectly
-        heapBottom = 0x08400000; //MemoryMap.START_RAM; //0x08900000;
-        heapTop = MemoryMap.END_RAM;
+        int startFreeMem = MemoryMap.START_USERSPACE;
+        int endFreeMem = MemoryMap.END_USERSPACE;
+        MemoryChunk initialMemory = new MemoryChunk(startFreeMem, endFreeMem - startFreeMem + 1);
+        freeMemoryChunks = new MemoryChunkList(initialMemory);
 
         setFirmwareVersion(firmwareVersion);
     }
@@ -99,130 +98,56 @@ public class pspSysMem {
     public int malloc(int partitionid, int type, int size, int addr) {
         int allocatedAddress = 0;
 
-        /* if (size > maxFreeMemSize())
-        {
-        // no mem left
-        Modules.log.warn("malloc failed (want=" + size + ",free=" + maxFreeMemSize() + ")");
+        int alignment = 63;
+        if (type == PSP_SMEM_LowAligned || type == PSP_SMEM_HighAligned) {
+            // Use the alignment provided in the addr parameter
+            alignment = addr - 1;
         }
-        else */
+        size = (size + alignment) & ~alignment;
 
-        // If the heap does not provide enough free space,
-        // try to allocate from the free block list
-        if (size > heapTop - heapBottom) {
-            int alignment = 63;
-            if (type == PSP_SMEM_LowAligned || type == PSP_SMEM_HighAligned) {
-                // Use the alignment provided in the addr parameter
-                alignment = addr - 1;
-            }
-
-            // Allocate from the free block list
-            for (Iterator<SysMemInfo> lit = freeBlockSet.iterator(); lit.hasNext();) {
-                SysMemInfo info = lit.next();
-
-                // Check if this block is a candidate
-                if (info.size >= size) {
-                    // Depending on the block address, we might need some
-                    // additional alignment space
-                    int alignmentSize = (info.addr + alignment) & ~alignment - info.addr;
-
-                    // Check if the block has enough space also for the additional alignment
-                    if (info.size >= size + alignmentSize) {
-                        // OK, the block has enough free space, allocate from the block
-                        lit.remove();
-                        allocatedAddress = info.addr + alignmentSize;
-
-                        // If the block has some space left, put it back to the free list
-                        if (info.size > size + alignmentSize) {
-                            SysMemInfo resizedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size - size - alignmentSize, allocatedAddress + size);
-                            freeBlockSet.add(resizedInfo);
-                        }
-
-                        break;
-                    }
-                }
-            }
-        } else if (type == PSP_SMEM_Low) {
-            allocatedAddress = heapBottom;
-            allocatedAddress = (allocatedAddress + 63) & ~63;
-            heapBottom = allocatedAddress + size;
-
-            if (heapBottom > heapTop) {
-                Modules.log.warn("malloc overflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
-                        + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
-            }
-        } else if (type == PSP_SMEM_Addr) {
-            int highDiff = heapTop - addr;
-            int lowDiff = heapBottom - addr;
-            if (highDiff < 0) {
-                highDiff = -highDiff;
-            }
-            if (lowDiff < 0) {
-                lowDiff = -lowDiff;
-            }
-
-            if (lowDiff <= highDiff) {
-                // Alloc near bottom
-                allocatedAddress = heapBottom;
-                if (allocatedAddress < addr) {
-                    allocatedAddress = addr;
-                }
-                allocatedAddress = (allocatedAddress + 63) & ~63;
-                heapBottom = allocatedAddress + size;
-
-                if (heapBottom > heapTop) {
-                    Modules.log.warn("malloc overflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
-                            + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
-                }
-            } else {
-                // Alloc near top
-                allocatedAddress = heapTop - size;
-                if (allocatedAddress > addr) {
-                    allocatedAddress = addr;
-                }
-                allocatedAddress = (allocatedAddress + 63) & ~63;
-                heapTop = allocatedAddress;
-
-                if (heapTop < heapBottom) {
-                    Modules.log.warn("malloc underflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
-                            + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
-                }
-            }
-        } else if (type == PSP_SMEM_High) {
-            allocatedAddress = heapTop - size + 1;
-            allocatedAddress = allocatedAddress & ~63;
-            heapTop = allocatedAddress - 1;
-
-            if (heapTop < heapBottom) {
-                Modules.log.warn("malloc underflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
-                        + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
-            }
-        } else if (type == PSP_SMEM_LowAligned) {
-            allocatedAddress = heapBottom;
-            allocatedAddress = (allocatedAddress + addr - 1) & ~(addr - 1);
-            heapBottom = allocatedAddress + size;
-
-            if (heapBottom > heapTop) {
-                Modules.log.warn("malloc overflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
-                        + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
-            }
-        } else if (type == PSP_SMEM_HighAligned) {
-            allocatedAddress = heapTop - size + 1;
-            allocatedAddress = allocatedAddress & ~(addr - 1);
-            heapTop = allocatedAddress - 1;
-
-            if (heapTop < heapBottom) {
-                Modules.log.warn("malloc underflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
-                        + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
-            }
+        switch (type) {
+        	case PSP_SMEM_Low:
+        	case PSP_SMEM_LowAligned:
+        		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+        			if (memoryChunk.size >= size) {
+        				allocatedAddress = freeMemoryChunks.allocLow(memoryChunk, size);
+        				break;
+        			}
+        		}
+        		break;
+        	case PSP_SMEM_High:
+        	case PSP_SMEM_HighAligned:
+        		for (MemoryChunk memoryChunk = freeMemoryChunks.high; memoryChunk != null; memoryChunk = memoryChunk.previous) {
+        			if (memoryChunk.size >= size) {
+        				allocatedAddress = freeMemoryChunks.allocHigh(memoryChunk, size);
+        				break;
+        			}
+        		}
+        		break;
+        	case PSP_SMEM_Addr:
+        		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+        			if (memoryChunk.addr <= addr && addr < memoryChunk.addr + memoryChunk.size) {
+        				// The address is located in this MemoryChunk
+        				allocatedAddress = freeMemoryChunks.allocInside(memoryChunk, addr, size);
+        			}
+        		}
+        		break;
+    		default:
+    			Modules.log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
         }
 
-        if (allocatedAddress != 0) {
-            Modules.log.debug("pspSysMem.malloc(size=0x" + Integer.toHexString(size)
-                    + ") new heapBottom=0x" + Integer.toHexString(heapBottom)
-                    + ", new heapTop=0x" + Integer.toHexString(heapTop));
-        }
+		if (allocatedAddress == 0) {
+            Modules.log.warn(String.format("malloc cannot allocate partition=%d, type=%s, size=0x%X, addr=0x%08X", partitionid, getTypeName(type), size, addr));
+		}
 
-        return allocatedAddress;
+		if (Modules.log.isDebugEnabled()) {
+			Modules.log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(0), size, addr, allocatedAddress));
+			if (Modules.log.isTraceEnabled()) {
+				Modules.log.trace("Free list after malloc: " + freeMemoryChunks);
+			}
+		}
+
+		return allocatedAddress;
     }
 
     public int addSysMemInfo(int partitionid, String name, int type, int size, int addr) {
@@ -261,138 +186,75 @@ public class pspSysMem {
         }
     }
 
-    private void cleanupFreeBlockList(final SysMemInfo newInfo) {
-        // Delete blocks adjacent to the heap top and bottom limits
-        SysMemInfo[] sortedInfos = new SysMemInfo[freeBlockSet.size()];
-        freeBlockSet.toArray(sortedInfos);
-        Arrays.sort(sortedInfos);
-
-        int startIndex = 0;
-        for (SysMemInfo info : sortedInfos) {
-            if (info.addr != heapTop + 1) {
-                break;
-            }
-            startIndex++;
-            heapTop += info.size;
-            freeBlockSet.remove(info);
-        }
-        //reverse for bottom of memory
-        int endIndex = sortedInfos.length - 1;
-        for (int i = endIndex; i >= 0; i--) {
-            SysMemInfo info = sortedInfos[i];
-            if (info.addr + info.size != heapBottom) {
-                break;
-            }
-            endIndex--;
-            heapBottom -= info.size;
-            freeBlockSet.remove(info);
-        }
-
-        // Merge the newInfo block with adjacent blocks
-        // if it has not yet been deleted up there.
-        int mergedInfoIndex = -1;
-        for (int i = startIndex; i <= endIndex; i++) {
-            if (sortedInfos[i] == newInfo) {
-                mergedInfoIndex = i;
-                break;
-            }
-        }
-
-        if (mergedInfoIndex != -1) {
-            // partitionid, name and type are not relevant here.
-            SysMemInfo infoToMerge = newInfo;
-            //merge to the left.
-            for (int i = mergedInfoIndex - 1; i >= startIndex; i--) {
-                SysMemInfo info = sortedInfos[i];
-                if (info.addr + info.size != infoToMerge.addr) {
-                    break;
-                }
-                SysMemInfo mergedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size + infoToMerge.size, info.addr);
-                freeBlockSet.remove(info);
-                infoToMerge = mergedInfo;
-            }
-            //merge to the right.
-            for (int i = mergedInfoIndex + 1; i <= endIndex; i++) {
-                SysMemInfo info = sortedInfos[i];
-                if (infoToMerge.addr + infoToMerge.size != info.addr) {
-                    break;
-                }
-                SysMemInfo mergedInfo = new SysMemInfo(infoToMerge.partitionid, infoToMerge.name, infoToMerge.type, infoToMerge.size + info.size, infoToMerge.addr);
-                freeBlockSet.remove(info);
-                infoToMerge = mergedInfo;
-            }
-            //add the merged info
-            if (newInfo != infoToMerge) {
-                freeBlockSet.remove(newInfo);
-                freeBlockSet.add(infoToMerge);
-            }
-        }
-    }
-
     private void free(SysMemInfo info) {
-        freeBlockSet.add(info);
-        cleanupFreeBlockList(info);
-        if (freeBlockSet.isEmpty()) {
-            Modules.log.info("pspSysMem.free(info) successful (all blocks released)");
-        } else if (!freeBlockSet.contains(info)) {
-            Modules.log.info("PARTIAL: pspSysMem.free(info) successful (" + freeBlockSet.size() + " block(s) still pending)");
-        } else {
-        	// this message appears only when we make pause on the emulator ?
-            Modules.log.warn("PARTIAL: pspSysMem.free(info) partially implemented " + info);
-        }
+    	MemoryChunk memoryChunk = new MemoryChunk(info.addr, info.size);
+    	freeMemoryChunks.add(memoryChunk);
+
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("free " + info);
+    		if (Modules.log.isTraceEnabled()) {
+    			Modules.log.trace("Free list after free: " + freeMemoryChunks.toString());
+    		}
+    	}
     }
 
     public int maxFreeMemSize() {
-        // Since some apps try and allocate the value of sceKernelMaxFreeMemSize,
-        // which will leave no space for stacks we're going to reserve 0x09f00000
-        // to 0x09ffffff for stacks, but stacks are allowed to go below that
-        // (if there's free space of course).
-        int heapTopGuard = heapTop;
-        if (!disableReservedThreadMemory) {
-            if (heapTopGuard > 0x09f00000) {
-                heapTopGuard = 0x09f00000;
-            }
-        }
-        // include 64 byte alignment padding used in allocations
-        // round down to 4 byte alignment (shouldn't need this if the 64 byte thing was working properly, TODO investigate)
-        int maxFree = (heapTopGuard - heapBottom - 64) & ~3;
+    	int maxFreeMemSize = 0;
+    	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+        	// Since some apps try and allocate the value of sceKernelMaxFreeMemSize,
+            // which will leave no space for stacks we're going to reserve 0x09f00000
+            // to 0x09ffffff for stacks, but stacks are allowed to go below that
+            // (if there's free space of course).
+    		if (!disableReservedThreadMemory) {
+    			final int heapTopGuard = 0x09f00000;
+    			if (memoryChunk.addr >= heapTopGuard) {
+    				break;
+    			} else if (memoryChunk.addr + memoryChunk.size > heapTopGuard) {
+    				int sizeToTopGuard = heapTopGuard - memoryChunk.addr;
+    				if (sizeToTopGuard > maxFreeMemSize) {
+    					maxFreeMemSize = sizeToTopGuard;
+    				}
+    				break;
+    			}
+    		}
 
-        // Check if a free block is larger than the heap
-        for (Iterator<SysMemInfo> lit = freeBlockSet.iterator(); lit.hasNext();) {
-            SysMemInfo info = lit.next();
-            if (info.size > maxFree) {
-                maxFree = info.size;
-            }
-        }
+    		if (memoryChunk.size > maxFreeMemSize) {
+    			maxFreeMemSize = memoryChunk.size;
+    		}
+    	}
 
-        // Negative is ok if we are reserving thread memory, clamp back to 0
-        if (maxFree < 0) {
-            if (disableReservedThreadMemory) {
-                Modules.log.warn("pspSysMem maxFree < 0 (" + maxFree + ") maybe overflow");
-            }
-            maxFree = 0;
-        }
-
-        return maxFree;
+		return maxFreeMemSize;
     }
 
     /** @return the size of the largest allocatable block */
     public void sceKernelMaxFreeMemSize() {
-        int maxFree = maxFreeMemSize();
+        int maxFreeMemSize = maxFreeMemSize();
 
         // Some games expect size to be rounded down in 16 bytes block
-        maxFree &= ~15;
+        maxFreeMemSize &= ~15;
 
-        Modules.log.debug("sceKernelMaxFreeMemSize " + maxFree
-                + " (hex=" + Integer.toHexString(maxFree) + ")");
-        Emulator.getProcessor().cpu.gpr[2] = maxFree;
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug(String.format("sceKernelMaxFreeMemSize %d(hex=0x%1$X)", maxFreeMemSize));
+    	}
+        Emulator.getProcessor().cpu.gpr[2] = maxFreeMemSize;
+    }
+
+    public int totalFreeMemSize() {
+        int totalFreeMemSize = 0;
+    	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+    		totalFreeMemSize += memoryChunk.size;
+    	}
+
+    	return totalFreeMemSize;
     }
 
     public void sceKernelTotalFreeMemSize() {
-        int totalFree = 1 + heapTop - heapBottom;
-        Modules.log.debug("sceKernelTotalFreeMemSize " + totalFree
-                + " (hex=" + Integer.toHexString(totalFree) + ")");
-        Emulator.getProcessor().cpu.gpr[2] = totalFree;
+    	int totalFreeMemSize = totalFreeMemSize();
+
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug(String.format("sceKernelTotalFreeMemSize %d(hex=0x%1$X)", totalFreeMemSize));
+    	}
+        Emulator.getProcessor().cpu.gpr[2] = totalFreeMemSize;
     }
 
     /**
@@ -405,35 +267,12 @@ public class pspSysMem {
      * address to allocate the block from.
      */
     public void sceKernelAllocPartitionMemory(int partitionid, int pname, int type, int size, int addr) {
-        pname &= 0x3fffffff;
-        addr &= 0x3fffffff;
+        addr &= Memory.addressMask;
         String name = readStringZ(pname);
 
-        // print debug info
-        String typeStr;
-        switch (type) {
-            case PSP_SMEM_Low:
-                typeStr = "PSP_SMEM_Low";
-                break;
-            case PSP_SMEM_High:
-                typeStr = "PSP_SMEM_High";
-                break;
-            case PSP_SMEM_Addr:
-                typeStr = "PSP_SMEM_Addr";
-                break;
-            case PSP_SMEM_LowAligned:
-                typeStr = "PSP_SMEM_LowAligned";
-                break;
-            case PSP_SMEM_HighAligned:
-                typeStr = "PSP_SMEM_HighAligned";
-                break;
-            default:
-                typeStr = "UNHANDLED " + type;
-                break;
+        if (Modules.log.isDebugEnabled()) {
+	        Modules.log.debug(String.format("sceKernelAllocPartitionMemory(partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X", partitionid, name, getTypeName(type), size, addr));
         }
-        Modules.log.debug("sceKernelAllocPartitionMemory(partitionid=" + partitionid
-                + ",name='" + name + "',type=" + typeStr + ",size=" + size
-                + ",addr=0x" + Integer.toHexString(addr) + ")");
 
         if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_MEMORY_BLOCK_ALLOCATION_TYPE;
@@ -455,7 +294,9 @@ public class pspSysMem {
             Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
         } else {
-            Modules.log.warn("PARTIAL:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+        	}
             free(info);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
@@ -468,7 +309,9 @@ public class pspSysMem {
             Modules.log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
         } else {
-            Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
+        	}
             Emulator.getProcessor().cpu.gpr[2] = info.addr;
         }
     }
@@ -535,8 +378,32 @@ public class pspSysMem {
     /** TODO implement format string parsing and reading variable number of parameters */
     public void sceKernelPrintf(int string_addr) {
         String msg = readStringNZ(string_addr, 256);
-        Modules.log.info("sceKernelPrintf(string_addr=0x" + Integer.toHexString(string_addr)
-                + ") '" + msg + "'");
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelPrintf(string_addr=0x%08X) '%s'", string_addr, msg));
+        }
+
+        // Format and print the message to stdout
+        if (stdout.isInfoEnabled()) {
+        	String formattedMsg = msg;
+        	try {
+        		// Translate the C-like format string to a Java format string:
+        		// - %u or %i -> %d
+        		// - %p -> %08X
+        		String javaMsg = msg;
+        		javaMsg = javaMsg.replaceAll("\\%[ui]", "%d");
+        		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
+
+        		int[] gpr = Emulator.getProcessor().cpu.gpr;
+            	// For now, use only the 7 register parameters: $a1-$a3, $t0-$t3
+            	// Further parameters should be retrieved from the stack.
+            	// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
+        		formattedMsg = String.format(javaMsg, gpr[5], gpr[6], gpr[7], gpr[8], gpr[9], gpr[10], gpr[11]);
+        	} catch (Exception e) {
+        		// Ignore formatting exception
+        	}
+        	stdout.info(formattedMsg);
+        }
+
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
@@ -588,14 +455,13 @@ public class pspSysMem {
             allocatedSize += info.size;
         }
 
-        for (Iterator<SysMemInfo> it = freeBlockSet.iterator(); it.hasNext();) {
-            SysMemInfo info = it.next();
-            for (int i = info.addr; i < info.addr + info.size; i += SLOT_SIZE) {
+        for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+            for (int i = memoryChunk.addr; i < memoryChunk.addr + memoryChunk.size; i += SLOT_SIZE) {
                 if (i >= 0x08800000 && i < 0x0A000000) {
                     fragmented[(i - 0x08800000) / SLOT_SIZE] = true;
                 }
             }
-            fragmentedSize += info.size;
+            fragmentedSize += memoryChunk.size;
         }
 
         StringBuilder allocatedDiagram = new StringBuilder();
@@ -642,7 +508,7 @@ public class pspSysMem {
 
         @Override
         public String toString() {
-            return "SysMemInfo{ uid=" + Integer.toHexString(uid) + ";partitionid=" + partitionid + ";name=" + name + ";type=" + type + ";size=" + size + ";addr=" + Integer.toHexString(addr) + " }";
+            return String.format("SysMemInfo[uid=%x, partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X]", uid, partitionid, name, getTypeName(type), size, addr);
         }
 
         @Override
@@ -654,5 +520,291 @@ public class pspSysMem {
             }
             return addr < o.addr ? -1 : 1;
         }
+    }
+
+    static class MemoryChunk {
+    	// Start address of this MemoryChunk
+    	public int addr;
+    	// Size of this MemoryChunk: it extends from addr to (addr + size -1)
+    	public int size;
+    	// The MemoryChunk are kept sorted by addr and linked with next/previous
+    	// The MemoryChunk with the lowest addr has previous == null
+    	// The MemoryChunk with the highest addr has next == null
+    	public MemoryChunk next;
+    	public MemoryChunk previous;
+
+    	public MemoryChunk(int addr, int size) {
+    		this.addr = addr;
+    		this.size = size;
+    	}
+
+		@Override
+		public String toString() {
+			return String.format("[addr=0x%08X-0x%08X, size=0x%X]", addr, addr + size, size);
+		}
+    }
+
+    static class MemoryChunkList {
+    	// The MemoryChunk objects are linked and kept sorted by address.
+    	//
+    	// low: MemoryChunk with the lowest address.
+    	// Start point to scan list by increasing address
+    	private MemoryChunk low;
+    	// high: MemoryChunk with the highest address.
+    	// Start point to scan the list by decreasing address
+    	private MemoryChunk high;
+
+    	public MemoryChunkList(MemoryChunk initialMemoryChunk) {
+    		low = initialMemoryChunk;
+    		high = initialMemoryChunk;
+    	}
+
+    	/**
+    	 * Remove a MemoryChunk from the list.
+    	 *
+    	 * @param memoryChunk the MemoryChunk to be removed
+    	 */
+    	public void remove(MemoryChunk memoryChunk) {
+    		if (memoryChunk.previous != null) {
+    			memoryChunk.previous.next = memoryChunk.next;
+    		}
+    		if (memoryChunk.next != null) {
+    			memoryChunk.next.previous = memoryChunk.previous;
+    		}
+
+    		if (low == memoryChunk) {
+    			low = memoryChunk.next;
+    		}
+    		if (high == memoryChunk) {
+    			high = memoryChunk.previous;
+    		}
+    	}
+
+    	/**
+    	 * Allocate a memory from the MemoryChunk, at its lowest address.
+    	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
+    	 * 
+    	 * @param memoryChunk the MemoryChunk where the memory should be allocated
+    	 * @param size        the size of the memory to be allocated
+    	 * @return            the base address of the allocated memory
+    	 */
+    	public int allocLow(MemoryChunk memoryChunk, int size) {
+    		int allocatedAddr = memoryChunk.addr;
+
+    		if (memoryChunk.size == size) {
+				remove(memoryChunk);
+			} else {
+				memoryChunk.size -= size;
+				memoryChunk.addr += size;
+			}
+
+			return allocatedAddr;
+    	}
+
+    	/**
+    	 * Allocate a memory from the MemoryChunk, at its highest address.
+    	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
+    	 * 
+    	 * @param memoryChunk the MemoryChunk where the memory should be allocated
+    	 * @param size        the size of the memory to be allocated
+    	 * @return            the base address of the allocated memory
+    	 */
+    	public int allocHigh(MemoryChunk memoryChunk, int size) {
+    		int allocatedAddr;
+
+    		if (memoryChunk.size == size) {
+				allocatedAddr = memoryChunk.addr;
+				freeMemoryChunks.remove(memoryChunk);
+			} else {
+				memoryChunk.size -= size;
+				allocatedAddr = memoryChunk.addr + memoryChunk.size;
+			}
+
+    		return allocatedAddr;
+    	}
+
+    	/**
+    	 * Allocate a memory from the MemoryChunk, given the base address.
+    	 * The base address must be inside the MemoryChunk
+    	 * The MemoryChunk is updated accordingly, is removed if it stays empty or
+    	 * is split into 2 remaining free parts.
+    	 * 
+    	 * @param memoryChunk the MemoryChunk where the memory should be allocated
+    	 * @param addr        the base address of the memory to be allocated
+    	 * @param size        the size of the memory to be allocated
+    	 * @return            the base address of the allocated memory, or 0
+    	 *                    if the MemoryChunk is too small to allocate the desired size.
+    	 */
+    	public int allocInside(MemoryChunk memoryChunk, int addr, int size) {
+    		if (memoryChunk.addr == addr) {
+    			// Allocate at the lowest address
+    			return allocLow(memoryChunk, size);
+    		} else if (memoryChunk.addr + memoryChunk.size == addr + size) {
+    			// Allocate at the highest address
+    			return allocHigh(memoryChunk, size);
+    		} else if (memoryChunk.addr + memoryChunk.size < addr + size) {
+    			// The MemoryChunk is too small to allocate the desired size
+    			return 0;
+    		} else {
+    			// Allocate in the middle of a MemoryChunk: it must be split
+    			// in 2 parts: one for lowest part and one for the highest part.
+    			// Update memoryChunk to contain the lowest part,
+    			// and create a new MemoryChunk to contain to highest part.
+    			int lowSize = addr - memoryChunk.addr;
+    			int highSize = memoryChunk.size - lowSize - size;
+    			MemoryChunk highMemoryChunk = new MemoryChunk(addr + size, highSize);
+    			memoryChunk.size = lowSize;
+
+    			addAfter(highMemoryChunk, memoryChunk);
+    		}
+
+    		return addr;
+    	}
+
+    	/**
+    	 * Add a new MemoryChunk after another one.
+    	 * This method does not check if the addresses are kept ordered.
+    	 * 
+    	 * @param memoryChunk the MemoryChunk to be added
+    	 * @param reference   memoryChunk has to be added after this reference
+    	 */
+    	private void addAfter(MemoryChunk memoryChunk, MemoryChunk reference) {
+    		memoryChunk.previous = reference;
+    		memoryChunk.next = reference.next;
+    		reference.next = memoryChunk;
+    		if (memoryChunk.next != null) {
+    			memoryChunk.next.previous = memoryChunk;
+    		}
+
+    		if (high == reference) {
+    			high = memoryChunk;
+    		}
+    	}
+
+    	/**
+    	 * Add a new MemoryChunk before another one.
+    	 * This method does not check if the addresses are kept ordered.
+    	 * 
+    	 * @param memoryChunk the MemoryChunk to be added
+    	 * @param reference   memoryChunk has to be added before this reference
+    	 */
+    	private void addBefore(MemoryChunk memoryChunk, MemoryChunk reference) {
+    		memoryChunk.previous = reference.previous;
+    		memoryChunk.next = reference;
+    		reference.previous = memoryChunk;
+    		if (memoryChunk.previous != null) {
+    			memoryChunk.previous.next = memoryChunk;
+    		}
+
+    		if (low == reference) {
+    			low = memoryChunk;
+    		}
+    	}
+
+    	/**
+    	 * Add a new MemoryChunk to the list. It is added in the list so that
+    	 * the addresses are kept in increasing order.
+    	 * The MemoryChunk might be merged into another adjacent MemoryChunk.
+    	 * 
+    	 * @param memoryChunk the MemoryChunk to be added
+    	 */
+    	public void add(MemoryChunk memoryChunk) {
+    		// Scan the list to find the insertion point to keep the elements
+    		// ordered by increasing address.
+    		for (MemoryChunk scanChunk = low; scanChunk != null; scanChunk = scanChunk.next) {
+    			// Merge the MemoryChunk if it is adjacent to other elements in the list
+    			if (scanChunk.addr + scanChunk.size == memoryChunk.addr) {
+    				// The MemoryChunk is adjacent at its lowest address,
+    				// merge it into the previous one.
+    				scanChunk.size += memoryChunk.size;
+
+    				// Check if the gap to the next chunk has not been closed,
+    				// in which case, we can also merge the next chunk.
+    				MemoryChunk nextChunk = scanChunk.next;
+    				if (nextChunk != null) {
+    					if (scanChunk.addr + scanChunk.size == nextChunk.addr) {
+    						// Merge with nextChunk
+    						scanChunk.size += nextChunk.size;
+    						remove(nextChunk);
+    					}
+    				}
+    				return;
+    			} else if (memoryChunk.addr + memoryChunk.size == scanChunk.addr) {
+    				// The MemoryChunk is adjacent at its highest address,
+    				// merge it into the next one.
+    				scanChunk.addr = memoryChunk.addr;
+    				scanChunk.size += memoryChunk.size;
+
+    				// Check if the gap to the previous chunk has not been closed,
+    				// in which case, we can also merge the previous chunk.
+    				MemoryChunk previousChunk = scanChunk.previous;
+    				if (previousChunk != null) {
+    					if (previousChunk.addr + previousChunk.size == scanChunk.addr) {
+    						// Merge with previousChunk
+    						previousChunk.size += scanChunk.size;
+    						remove(scanChunk);
+    					}
+    				}
+    				return;
+    			} else if (scanChunk.addr > memoryChunk.addr) {
+    				// We have found the insertion point for the MemoryChunk,
+    				// add it before this element to keep the addresses in
+    				// increasing order.
+    				addBefore(memoryChunk, scanChunk);
+    				return;
+    			}
+    		}
+
+    		// The MemoryChunk has not yet been added, add it at the very end
+    		// of the list.
+    		if (high == null && low == null) {
+    			// The list is empty, add the element
+    			high = memoryChunk;
+    			low = memoryChunk;
+    		} else {
+    			addAfter(memoryChunk, high);
+    		}
+    	}
+
+		@Override
+		public String toString() {
+			StringBuilder result = new StringBuilder();
+
+			for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+				if (result.length() > 0) {
+					result.append(", ");
+				}
+				result.append(memoryChunk.toString());
+			}
+
+			return result.toString();
+		}
+    }
+
+    static private String getTypeName(int type) {
+        String typeName;
+
+        switch (type) {
+            case PSP_SMEM_Low:
+                typeName = "PSP_SMEM_Low";
+                break;
+            case PSP_SMEM_High:
+                typeName = "PSP_SMEM_High";
+                break;
+            case PSP_SMEM_Addr:
+                typeName = "PSP_SMEM_Addr";
+                break;
+            case PSP_SMEM_LowAligned:
+                typeName = "PSP_SMEM_LowAligned";
+                break;
+            case PSP_SMEM_HighAligned:
+                typeName = "PSP_SMEM_HighAligned";
+                break;
+            default:
+                typeName = "UNHANDLED " + type;
+                break;
+        }
+
+        return typeName;
     }
 }
