@@ -785,8 +785,45 @@ public class sceUtility implements HLEModule {
                 }
                 break;
 
-            case SceUtilitySavedataParam.MODE_TRY: {
-                Modules.log.warn("PARTIAL:Savedata mode 8");
+            case SceUtilitySavedataParam.MODE_SIZES: {
+            	// "METAL SLUG XX" outputs the following on stdout after calling mode 8:
+            	//
+            	// ------ SIZES ------
+            	// ---------- savedata result ----------
+            	// result = 0x801103c7
+            	// 
+            	// bind : un used(0x0).
+            	// 
+            	// -- dir name --
+            	// title id : ULUS10495
+            	// user  id : METALSLUGXX
+            	// 
+            	// ms free size
+            	//   cluster size(byte) : 32768 byte
+            	//   free cluster num   : 32768
+            	//   free size(KB)      : 1048576 KB
+            	//   free size(string)  : "1 GB"
+            	// 
+            	// ms data size(titleId=ULUS10495, userId=METALSLUGXX)
+            	//   cluster num        : 0
+            	//   size (KB)          : 0 KB
+            	//   size (string)      : "0 KB"
+            	//   size (32KB)        : 0 KB
+            	//   size (32KB string) : "0 KB"
+            	// 
+            	// utility data size
+            	//   cluster num        : 13
+            	//   size (KB)          : 416 KB
+            	//   size (string)      : "416 KB"
+            	//   size (32KB)        : 416 KB
+            	//   size (32KB string) : "416 KB"
+            	// error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
+            	//
+                Modules.log.warn("PARTIAL:Savedata mode 8 (SCE_UTILITY_SAVEDATA_TYPE_SIZES)");
+                String gameName = savedataParams.gameName;
+                String saveName = savedataParams.saveName;
+
+                // ms free size
                 int buffer1Addr = savedataParams.buffer1Addr;
                 if (mem.isAddressGood(buffer1Addr)) {
                     String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
@@ -798,18 +835,23 @@ public class sceUtility implements HLEModule {
 
                     Modules.log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
                 }
+
+                // ms data size
                 int buffer2Addr = savedataParams.buffer2Addr;
                 if (mem.isAddressGood(buffer2Addr)) {
-                    String gameName = Utilities.readStringNZ(mem, buffer2Addr, 16);
-                    String saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 16);
+                    gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
+                    saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
+                    int savedataSizeKb = savedataParams.getSize(pspiofilemgr.getInstance(), gameName, saveName);
+                    int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
 
-                    mem.write32(buffer2Addr + 52, MemoryStick.getSectorSize());   //Games that use buffer2Addr require this.
-
-                    savedataParams.gameName = gameName;
-                    savedataParams.saveName = saveName;
-
-                    Modules.log.debug("Changing saveName to= " + saveName);
+                    mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors
+                    mem.write32(buffer2Addr + 40, savedataSizeKb); // Size in Kb
+                    Utilities.writeStringNZ(mem, buffer2Addr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
+                    mem.write32(buffer2Addr + 52, savedataSize32Kb);
+                    Utilities.writeStringNZ(mem, buffer2Addr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
                 }
+
+                // utility data size
                 int buffer3Addr = savedataParams.buffer3Addr;
                 if (mem.isAddressGood(buffer3Addr)) {
                     int memoryStickRequiredSpaceKb = 0;
@@ -820,17 +862,23 @@ public class sceUtility implements HLEModule {
                     memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
                     memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
                     String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
+                    int memoryStickRequiredSpace32Kb = MemoryStick.getSize32Kb(memoryStickRequiredSpaceKb);
+                    String memoryStickRequiredSpace32KbString = MemoryStick.getSizeKbString(memoryStickRequiredSpace32Kb);
 
                     mem.write32(buffer3Addr +  0, memoryStickRequiredSpaceKb / MemoryStick.getSectorSizeKb());
                     mem.write32(buffer3Addr +  4, memoryStickRequiredSpaceKb);
                     Utilities.writeStringNZ(mem, buffer3Addr +  8, 8, memoryStickRequiredSpaceString);
-                    mem.write32(buffer3Addr + 16, memoryStickRequiredSpaceKb);
-                    Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpaceString);
+                    mem.write32(buffer3Addr + 16, memoryStickRequiredSpace32Kb);
+                    Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpace32KbString);
 
                     Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
                 }
 
-                savedataParams.base.result = 0;
+            	if (savedataParams.isPresent(pspiofilemgr.getInstance(), gameName, saveName)) {
+                    savedataParams.base.result = 0;
+            	} else {
+                    savedataParams.base.result = ERROR_SAVEDATA_MODE8_NO_DATA;
+            	}
                 break;
             }
 

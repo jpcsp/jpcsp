@@ -54,6 +54,10 @@ public class MemoryStick {
 		return getSectorSize() / 1024;
 	}
 
+	public static int getSize32Kb(int sizeKb) {
+		return (sizeKb + 31) & ~31;
+	}
+
 	public static String getSizeKbString(int sizeKb) {
 		if (sizeKb < 1024) {
 			return String.format("%d KB", sizeKb);
