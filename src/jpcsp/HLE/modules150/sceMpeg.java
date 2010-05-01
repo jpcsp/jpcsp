@@ -1146,7 +1146,7 @@ public class sceMpeg implements HLEModule {
                 // If the Media Engine is enabled, play the full video sequence now.
                 if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets && isEnableMediaEngine()) {
                     MediaEngine me = new MediaEngine();
-                    me.decodeVideo(pmfPath);
+                    me.decode(pmfPath);
                 }
 
                 if (isFakeAuHandle(au)) {
@@ -1551,7 +1551,7 @@ public class sceMpeg implements HLEModule {
                 // If the Media Engine is enabled, play the full video sequence now.
                 if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets && isEnableMediaEngine()) {
                     MediaEngine me = new MediaEngine();
-                    me.decodeVideo(pmfPath);
+                    me.decode(pmfPath);
                 }
 
                 cpu.gpr[2] = 0;

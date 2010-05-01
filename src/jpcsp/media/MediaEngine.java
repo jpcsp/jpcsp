@@ -22,7 +22,14 @@ import jpcsp.HLE.pspdisplay;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
+
 import com.xuggle.xuggler.Global;
+import com.xuggle.xuggler.IAudioSamples;
 import com.xuggle.xuggler.IContainer;
 import com.xuggle.xuggler.IPacket;
 import com.xuggle.xuggler.IPixelFormat;
@@ -39,7 +46,12 @@ public class MediaEngine {
     private static IContainer container;
     private static int numStreams;
     private static IStreamCoder videoCoder;
-    private static int streamID;
+    private static IStreamCoder audioCoder;
+    private static int videoStreamID;
+    private static int audioStreamID;
+    private static SourceDataLine audioLine;
+    private static long clockStartTime;
+    private static long firstTimestamp;
 
     public MediaEngine() {
         // Disable Xuggler's logging, since we do our own.
@@ -68,17 +80,25 @@ public class MediaEngine {
          return videoCoder;
     }
 
-    public int getVideoStreamID() {
-        return streamID;
+    public IStreamCoder getAudioCoder() {
+         return audioCoder;
     }
 
-    // Function based on Xuggler's DecodeAndPlayVideo demo.
+    public int getVideoStreamID() {
+        return videoStreamID;
+    }
+
+    public int getAudioStreamID() {
+        return audioStreamID;
+    }
+
+    // Function based on Xuggler's demos.
     // Given a certain file, it should parse it, look for the video stream,
     // and generate images from each packet.
     // Time control is based on timestamps, but it needs a small delay to
     // avoid speedups.
     @SuppressWarnings("deprecated")
-    public void decodeVideo(String file) {
+    public void decode(String file) {
         container = IContainer.make();
 
         if (container.open(file, IContainer.Type.READ, null) < 0)
@@ -86,32 +106,47 @@ public class MediaEngine {
 
         numStreams = container.getNumStreams();
 
-        streamID = -1;
+        videoStreamID = -1;
         videoCoder = null;
+        audioStreamID = -1;
+        audioCoder = null;
 
         for(int i = 0; i < numStreams; i++) {
             IStream stream = container.getStream(i);
             IStreamCoder coder = stream.getStreamCoder();
 
-            if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
-                streamID = i;
+            if (videoStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
+                videoStreamID = i;
                 videoCoder = coder;
-                break;
+            } else if (audioStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
+                audioStreamID = i;
+                audioCoder = coder;
             }
         }
 
-        if (streamID == -1)
+        if (videoStreamID == -1)
             Modules.log.error("MediaEngine: No video streams found!");
-
-        if (videoCoder.open() < 0)
+        else if (videoCoder.open() < 0)
             Modules.log.error("MediaEngine: Can't open video decoder!");
 
+        if (audioStreamID == -1)
+            Modules.log.error("MediaEngine: No audio streams found!");
+        else if (audioCoder.open() < 0)
+            Modules.log.error("MediaEngine: Can't open audio decoder!");
+        else {
+            try {
+                startSound(audioCoder);
+            } catch (LineUnavailableException ex) {
+                Modules.log.error("MediaEngine: Can't start audio line!");
+            }
+        }
+
         IPacket packet = IPacket.make();
-        long firstTimestampInStream = Global.NO_PTS;
-        long systemClockStartTime = 0;
+        firstTimestamp = Global.NO_PTS;
+        clockStartTime = 0;
 
         while(container.readNextPacket(packet) >= 0) {
-            if (packet.getStreamIndex() == streamID) {
+            if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
 
                 IVideoPicture picture = IVideoPicture.make(videoCoder.getPixelType(),
                         videoCoder.getWidth(), videoCoder.getHeight());
@@ -120,34 +155,17 @@ public class MediaEngine {
                     picture = resample(picture, IPixelFormat.Type.BGR24);
                 }
 
-                int offset = 0;
-                while(offset < packet.getSize()) {
-                    int bytesDecoded = videoCoder.decodeVideo(picture, packet, offset);
+                int bytesDecoded = videoCoder.decodeVideo(picture, packet, 0);
 
-                    if (bytesDecoded < 0)
-                        Modules.log.error("MediaEngine: No bytes decoded!");
-
-                    offset += bytesDecoded;
+                if (bytesDecoded < 0)
+                    Modules.log.error("MediaEngine: No video bytes decoded!");
 
            if (picture.isComplete()) {
-               if (firstTimestampInStream == Global.NO_PTS) {
-                   firstTimestampInStream = picture.getTimeStamp();
-                   systemClockStartTime = System.currentTimeMillis();
-               } else {
-                   long systemClockCurrentTime = System.currentTimeMillis();
-                   long millisecondsClockTimeSinceStartofVideo =
-                           systemClockCurrentTime - systemClockStartTime;
-                   long millisecondsStreamTimeSinceStartOfVideo =
-                           (picture.getTimeStamp() - firstTimestampInStream)/1000;
-                   final long millisecondsTolerance = 50;
-                   final long millisecondsToSleep =
-                           (millisecondsStreamTimeSinceStartOfVideo -
-                           (millisecondsClockTimeSinceStartofVideo +
-                           millisecondsTolerance));
+               long delay = calculateDelay(picture);
 
-                   if (millisecondsToSleep > 0) {
+                   if (delay > 0) {
                        try {
-                           Thread.sleep(millisecondsToSleep);
+                           Thread.sleep(delay);
                        } catch (InterruptedException e) {
                            return;
                        }
@@ -155,7 +173,21 @@ public class MediaEngine {
                }
                BufferedImage img = Utils.videoPictureToImage(picture);
                displayImage(img);
-           }
+
+            } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
+                IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
+
+                int offset = 0;
+                while(offset < packet.getSize()) {
+                    int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
+
+                    if (bytesDecoded < 0)
+                        Modules.log.error("MediaEngine: No audio bytes decoded!");
+
+                    offset += bytesDecoded;
+
+                    if (samples.isComplete())
+                        playSound(samples);
                 }
             } else {
                 do {} while(false);
@@ -184,14 +216,22 @@ public class MediaEngine {
 
     // Cleanup function.
     private void finish() {
+        if (container !=null) {
+            container.close();
+            container = null;
+        }
         if (videoCoder != null) {
             videoCoder.close();
             videoCoder = null;
         }
-
-        if (container !=null) {
-            container.close();
-            container = null;
+        if (audioCoder != null) {
+            audioCoder.close();
+            audioCoder = null;
+        }
+        if (audioLine != null) {
+            audioLine.drain();
+            audioLine.close();
+            audioLine=null;
         }
     }
 
@@ -204,5 +244,40 @@ public class MediaEngine {
         pspdisplay display = pspdisplay.getInstance();
         Graphics g = display.getGraphics();
         g.drawImage(img, 0, 0, null);
+    }
+
+    private static long calculateDelay(IVideoPicture picture) {
+        long millisecondsToSleep = 0;
+        if (firstTimestamp == Global.NO_PTS) {
+            firstTimestamp = picture.getTimeStamp();
+            clockStartTime = System.currentTimeMillis();
+            millisecondsToSleep = 0;
+        } else {
+            long systemClockCurrentTime = System.currentTimeMillis();
+            long millisecondsClockTimeSinceStartofVideo = systemClockCurrentTime - clockStartTime;
+            long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestamp)/1000;
+            final long millisecondsTolerance = 50;
+            millisecondsToSleep = (millisecondsStreamTimeSinceStartOfVideo -
+                    (millisecondsClockTimeSinceStartofVideo+millisecondsTolerance));
+        }
+        return millisecondsToSleep;
+    }
+
+    // Sound sampling functions also based on Xuggler's demos.
+    private static void startSound(IStreamCoder aAudioCoder) throws LineUnavailableException {
+        AudioFormat audioFormat = new AudioFormat(aAudioCoder.getSampleRate(),
+                (int)IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
+                aAudioCoder.getChannels(),
+                true,
+                false);
+        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+        audioLine = (SourceDataLine) AudioSystem.getLine(info);
+        audioLine.open(audioFormat);
+        audioLine.start();
+    }
+
+    private static void playSound(IAudioSamples aSamples) {
+        byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
+        audioLine.write(rawBytes, 0, aSamples.getSize());
     }
 }

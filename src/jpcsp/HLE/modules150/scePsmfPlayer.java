@@ -176,7 +176,7 @@ public class scePsmfPlayer implements HLEModule {
 
         if(Modules.sceMpegModule.isEnableMediaEngine()) {
             MediaEngine me = new MediaEngine();
-            me.decodeVideo(pmfTmpPath);
+            me.decode(pmfTmpPath);
         }
 
         cpu.gpr[2] = 0;
