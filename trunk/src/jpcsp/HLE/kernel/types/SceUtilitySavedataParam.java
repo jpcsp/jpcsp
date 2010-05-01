@@ -50,7 +50,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public final static int MODE_LISTSAVE = 5;
 		public final static int MODE_LISTDELETE = 6;
 		public final static int MODE_DELETE = 7;
-		public final static int MODE_TRY = 8;
+		public final static int MODE_SIZES = 8;
 		public final static int MODE_LIST = 11;
 		public final static int MODE_TEST = 15;
         public final static int MODE_SECURE = 22;
@@ -300,7 +300,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return savedataPath + gameName + saveName + "/" + fileName;
 	}
 
-	public boolean isPresent(pspiofilemgr fileManager) {
+	public boolean isPresent(pspiofilemgr fileManager, String gameName, String saveName) {
 	    if (fileName == null || fileName.length() <= 0) {
 	        return false;
 	    }
@@ -316,6 +316,37 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	    }
 
         return false;
+	}
+
+	public boolean isPresent(pspiofilemgr fileManager) {
+		return isPresent(fileManager, gameName, saveName);
+	}
+
+	static private int getFileSize(pspiofilemgr fileManager, String gameName, String saveName, String fileName) {
+		int size = 0;
+
+		if (fileName != null && fileName.length() > 0) {
+		    String path = savedataPath + gameName + saveName + "/";
+		    SceIoStat fileStat = fileManager.statFile(path + fileName);
+		    if (fileStat != null) {
+		    	size = (int) fileStat.size;
+		    }
+		}
+
+        return size;
+	}
+
+	public int getSize(pspiofilemgr fileManager, String gameName, String saveName) {
+		int size;
+
+		size  = getFileSize(fileManager, gameName, saveName, fileName);
+		size += getFileSize(fileManager, gameName, saveName, icon0FileName);
+		size += getFileSize(fileManager, gameName, saveName, icon1FileName);
+		size += getFileSize(fileManager, gameName, saveName, pic1FileName);
+		size += getFileSize(fileManager, gameName, saveName, snd0FileName);
+		size += getFileSize(fileManager, gameName, saveName, paramSfoFileName);
+
+        return size;
 	}
 
 	private SeekableDataInput getDataInput(pspiofilemgr fileManager, String path, String name) {
