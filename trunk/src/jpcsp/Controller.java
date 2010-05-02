@@ -29,6 +29,7 @@ public class Controller {
     private int Buttons = 0;
     private keyCode lastKey = keyCode.RELEASED;
     private long lastUpdate;
+    private static Controller instance;
 
     private HashMap<Integer, keyCode> keys;
 
@@ -42,6 +43,11 @@ public class Controller {
         keys = new HashMap<Integer, keyCode>(22);
         loadKeyConfig();
         lastUpdate = System.currentTimeMillis();
+        instance = this;
+    }
+
+    public static Controller getInstance() {
+        return instance;
     }
 
     public void loadKeyConfig() {
@@ -137,5 +143,15 @@ public class Controller {
             default: return;
         }
         lastKey = keyCode.RELEASED;
+    }
+
+    // Check if a certain key is pressed.
+    public boolean isKeyPressed(keyCode key) {
+        boolean res = false;
+
+        if (key.ordinal() == Buttons)
+            res = true;
+
+        return res;
     }
 }

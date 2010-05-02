@@ -20,6 +20,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -1068,7 +1069,15 @@ public class sceMpeg implements HLEModule {
                 final int width = Math.min(480, frameWidth);
                 final int height = 272;
                 
+                // Set the .PMF movie path for this stream and check if the file already exists.
                 String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
+                File f = null;
+
+                try {
+                    f = new File(pmfPath);
+                } catch (Exception e) {
+                    // Nothing to do...
+                }
 
                 if (useMpegCodec && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoFrameCount)) {
                 	packetsConsumed = mpegCodec.getPacketsConsumed();
@@ -1144,7 +1153,13 @@ public class sceMpeg implements HLEModule {
 
                 // The video just finished and should be stored under the tmp folder.
                 // If the Media Engine is enabled, play the full video sequence now.
-                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets && isEnableMediaEngine()) {
+                // If the video was already decoded, play it imediately.
+                // TODO: After playing the video once, this function will keep
+                // trying to load it again (but it still can be skipped). Figure out a
+                // method to waste the necessary time on the MediaEngine thread.
+                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets
+                        || f != null
+                        && isEnableMediaEngine()) {
                     MediaEngine me = new MediaEngine();
                     me.decode(pmfPath);
                 }
@@ -1481,7 +1496,15 @@ public class sceMpeg implements HLEModule {
                 	Modules.log.info(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
                 }
 
+                // Set the .PMF movie path for this stream and check if the file already exists.
                 String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
+                File f = null;
+
+                try {
+                    f = new File(pmfPath);
+                } catch (Exception e) {
+                    // Nothing to do...
+                }
 
                 // Generate static at dest_addr.
                 Random random = new Random();
@@ -1549,7 +1572,13 @@ public class sceMpeg implements HLEModule {
 
                 // The video just finished and should be stored under the tmp folder.
                 // If the Media Engine is enabled, play the full video sequence now.
-                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets && isEnableMediaEngine()) {
+                // If the video was already decoded, play it imediately.
+                // TODO: After playing the video once, this function will keep
+                // trying to load it again (but it still can be skipped). Figure out a
+                // method to waste the necessary time on the MediaEngine thread.
+                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets
+                        || f != null
+                        && isEnableMediaEngine()) {
                     MediaEngine me = new MediaEngine();
                     me.decode(pmfPath);
                 }

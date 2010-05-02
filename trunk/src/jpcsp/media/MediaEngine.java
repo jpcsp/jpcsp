@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.media;
 
+import jpcsp.Controller;
+import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspdisplay;
 import java.awt.Graphics;
@@ -66,6 +68,24 @@ public class MediaEngine {
 
     public static MediaEngine getInstance() {
         return instance;
+    }
+
+    private boolean checkSkip() {
+        Controller control = Controller.getInstance();
+
+        if(control.isKeyPressed(jpcsp.Controller.keyCode.START))
+            return true;
+
+        return false;
+    }
+
+    private boolean checkPause() {
+        Emulator emu = Emulator.getInstance();
+
+        if(emu.pause)
+            return true;
+
+        return false;
     }
 
     public IContainer getContainer() {
@@ -146,6 +166,18 @@ public class MediaEngine {
         clockStartTime = 0;
 
         while(container.readNextPacket(packet) >= 0) {
+            // Break the loop if the "START" key was pressed.
+            if(checkSkip())
+                break;
+
+            // If the emulator is paused, waste time and let the
+            // thread sleep to compensate possible video speedups.
+            do{
+                try {
+                    Thread.sleep(10);
+                } catch(Exception e) {}
+            } while(checkPause());
+
             if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
 
                 IVideoPicture picture = IVideoPicture.make(videoCoder.getPixelType(),
