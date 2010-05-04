@@ -73,7 +73,7 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
         // saving, if it doesn't find 0 first.
         // Is this some kind of fake saving detection mechanism?
 
-        if(mem.read32(newResultAddr) != 0) {
+        if(mem.read32(newResultAddr) != 0 || mem.read32(newResultAddr - 4) != 0) {
             mem.write32(newResultAddr, result);
             mem.write32(newResultAddr - 4, result);
         }

@@ -120,6 +120,7 @@ public class sceMpeg implements HLEModule {
         if (useMpegCodec) {
         	mpegCodec = new MpegCodec();
         }
+        me = new MediaEngine();
     }
 
     @Override
@@ -234,6 +235,7 @@ public class sceMpeg implements HLEModule {
     protected int avcDecodeResult;
 
     protected MpegCodec mpegCodec;
+    protected MediaEngine me;
 
     public static boolean isEnableMpeg() {
 		return enableMpeg;
@@ -337,6 +339,10 @@ public class sceMpeg implements HLEModule {
         if (useMpegCodec) {
         	mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
         	mpegCodec.writeVideo(buffer_addr, mpegOffset);
+        }
+        if(isEnableMediaEngine()) {
+            String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
+            me.init(pmfPath);
         }
     }
 
@@ -538,6 +544,9 @@ public class sceMpeg implements HLEModule {
         int mpeg = cpu.gpr[4];
 
         Modules.log.warn("PARTIAL:sceMpegDelete(mpeg=0x" + Integer.toHexString(mpeg) + ")");
+
+        if(me != null)
+            me.finish();
 
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
@@ -1068,22 +1077,23 @@ public class sceMpeg implements HLEModule {
 
                 final int width = Math.min(480, frameWidth);
                 final int height = 272;
-                
-                // Set the .PMF movie path for this stream and check if the file already exists.
-                String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
-                File f = null;
 
-                try {
-                    f = new File(pmfPath);
-                } catch (Exception e) {
-                    // Nothing to do...
+                if (isFakeAuHandle(au)) {
+                    int type = getFakeAuType(au);
+                    switch(type) {
+                    case 1: Modules.log.debug("sceMpegAvcDecode got fake avc au"); break;
+                    case 2: Modules.log.debug("sceMpegAvcDecode got fake pcm au"); break;
+                    case 3: Modules.log.debug("sceMpegAvcDecode got fake atrac au"); break;
+                    }
                 }
 
-                if (useMpegCodec && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoFrameCount)) {
+                if(isEnableMediaEngine()) {
+                    me.step();
+                } else if (useMpegCodec && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoFrameCount)) {
                 	packetsConsumed = mpegCodec.getPacketsConsumed();
                 	mpegAvcCurrentTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
                 } else {
-	                // Generate a random image...
+                    // Generate a random image...
 	                Random random = new Random();
 	                final int pixelSize = 3;
 	                final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
@@ -1132,14 +1142,10 @@ public class sceMpeg implements HLEModule {
 
                     // Display additional information on the faked video
                     if (useMpegCodec && isEnableMediaEngine()) {
-                        mpegCodec.postFakedMediaEngineVideo(buffer, frameWidth, videoPixelMode);
-                    } else {
                         mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
                     }
                 }
-
                 videoFrameCount++;
-
                 if (Modules.log.isDebugEnabled()) {
                 	Modules.log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentTimestamp);
                 }
@@ -1149,28 +1155,6 @@ public class sceMpeg implements HLEModule {
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                     mpegRingbuffer.write(mem, mpegRingbufferAddr);
-                }
-
-                // The video just finished and should be stored under the tmp folder.
-                // If the Media Engine is enabled, play the full video sequence now.
-                // If the video was already decoded, play it imediately.
-                // TODO: After playing the video once, this function will keep
-                // trying to load it again (but it still can be skipped). Figure out a
-                // method to waste the necessary time on the MediaEngine thread.
-                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets
-                        || f != null
-                        && isEnableMediaEngine()) {
-                    MediaEngine me = new MediaEngine();
-                    me.decode(pmfPath);
-                }
-
-                if (isFakeAuHandle(au)) {
-                    int type = getFakeAuType(au);
-                    switch(type) {
-                    case 1: Modules.log.debug("sceMpegAvcDecode got fake avc au"); break;
-                    case 2: Modules.log.debug("sceMpegAvcDecode got fake pcm au"); break;
-                    case 3: Modules.log.debug("sceMpegAvcDecode got fake atrac au"); break;
-                    }
                 }
 
                 avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
@@ -1459,10 +1443,6 @@ public class sceMpeg implements HLEModule {
                         + " xLen:" + rangeWidthEnd
                         + " yLen:" + rangeHeigtEnd);
 
-                //Faking.
-                //This is where the video should be converted from YCbCr mode
-                //and played.
-
                 long currentSystemTime = Emulator.getClock().milliTime();
                 int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
                 if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
@@ -1496,97 +1476,81 @@ public class sceMpeg implements HLEModule {
                 	Modules.log.info(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
                 }
 
-                // Set the .PMF movie path for this stream and check if the file already exists.
-                String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
-                File f = null;
-
-                try {
-                    f = new File(pmfPath);
-                } catch (Exception e) {
-                    // Nothing to do...
-                }
-
-                // Generate static at dest_addr.
-                Random random = new Random();
-                final int pixelSize = 3;
-                final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
-                for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
-                    int address = dest_addr + y * frameWidth * bytesPerPixel;
-                    final int width = Math.min(480, frameWidth);
-                    for (int x = 0; x < width; x += pixelSize) {
-                        int n = random.nextInt(256);
-                        int color = 0xFF000000 | (n << 16) | (n << 8) | n;
-                        int pixelColor = Debug.getPixelColor(color, videoPixelMode);
-                        if (bytesPerPixel == 4) {
-	                        for (int i = 0; i < pixelSize; i++) {
-	                            for (int j = 0; j < pixelSize; j++) {
-	                                mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
-	                            }
-	                        }
-                        } else if (bytesPerPixel == 2) {
-	                        for (int i = 0; i < pixelSize; i++) {
-	                            for (int j = 0; j < pixelSize; j++) {
-	                                mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
-	                            }
-	                        }
+                if(isEnableMediaEngine()) {
+                    me.step();
+                } else if (useMpegCodec && mpegCodec.readVideoFrame(source_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoFrameCount)) {
+                	packetsConsumed = mpegCodec.getPacketsConsumed();
+                	mpegAvcCurrentTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
+                } else {
+                    // Generate static at dest_addr.
+                    Random random = new Random();
+                    final int pixelSize = 3;
+                    final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+                    for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
+                        int address = dest_addr + y * frameWidth * bytesPerPixel;
+                        final int width = Math.min(480, frameWidth);
+                        for (int x = 0; x < width; x += pixelSize) {
+                            int n = random.nextInt(256);
+                            int color = 0xFF000000 | (n << 16) | (n << 8) | n;
+                            int pixelColor = Debug.getPixelColor(color, videoPixelMode);
+                            if (bytesPerPixel == 4) {
+                                for (int i = 0; i < pixelSize; i++) {
+                                    for (int j = 0; j < pixelSize; j++) {
+                                        mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
+                                    }
+                                }
+                            } else if (bytesPerPixel == 2) {
+                                for (int i = 0; i < pixelSize; i++) {
+                                    for (int j = 0; j < pixelSize; j++) {
+                                        mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
+                                    }
+                                }
+                            }
+                            address += pixelSize * bytesPerPixel;
                         }
-                        address += pixelSize * bytesPerPixel;
+                    }
+
+                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
+
+                    if (Modules.log.isDebugEnabled()) {
+                        Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentTimestamp);
+                    }
+
+                    Date currentDate = convertTimestampToDate(mpegAvcCurrentTimestamp);
+                    Modules.log.info("currentDate: " + currentDate.toString());
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+                    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+                    if (mpegLastDate != null) {
+                        String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+                        Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+                    }
+
+                    String displayedString;
+                    if (mpegStreamSize > 0) {
+                        displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
+                    } else {
+                        displayedString = String.format(" %d ", processedSize);
+                    }
+
+                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+                    if (useMpegCodec) {
+                        mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
                     }
                 }
-
-                Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
                 videoFrameCount++;
-
                 if (Modules.log.isDebugEnabled()) {
-                	Modules.log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentTimestamp);
+                    Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentTimestamp);
                 }
-
-                Date currentDate = convertTimestampToDate(mpegAvcCurrentTimestamp);
-                Modules.log.info("currentDate: " + currentDate.toString());
-                SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-                if (mpegLastDate != null) {
-                	String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
-                	Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-                }
-                
-                String displayedString;
-                if (mpegStreamSize > 0) {
-                	displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
-                } else {
-                	displayedString = String.format(" %d ", processedSize);
-                }
-                Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
 
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                     mpegRingbuffer.write(mem, mpegRingbufferAddr);
                 }
 
-                if (useMpegCodec && isEnableMediaEngine()) {
-                    mpegCodec.postFakedMediaEngineVideo(dest_addr, frameWidth, videoPixelMode);
-                } else {
-                    mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
-                }
-
-                // The video just finished and should be stored under the tmp folder.
-                // If the Media Engine is enabled, play the full video sequence now.
-                // If the video was already decoded, play it imediately.
-                // TODO: After playing the video once, this function will keep
-                // trying to load it again (but it still can be skipped). Figure out a
-                // method to waste the necessary time on the MediaEngine thread.
-                if(mpegRingbuffer.packetsFree == mpegRingbuffer.packets
-                        || f != null
-                        && isEnableMediaEngine()) {
-                    MediaEngine me = new MediaEngine();
-                    me.decode(pmfPath);
-                }
-
                 cpu.gpr[2] = 0;
-
             } else {
-                cpu.gpr[2] = 0xDEADC0DE;
+                cpu.gpr[2] = 0;
             }
         } else {
             Modules.log.warn("sceMpegAvcCsc bad address "
