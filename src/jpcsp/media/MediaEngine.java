@@ -20,6 +20,7 @@ package jpcsp.media;
 import jpcsp.Controller;
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
+import jpcsp.Settings;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
@@ -170,7 +171,7 @@ public class MediaEngine {
             if (bytesDecoded < 0)
                 Modules.log.error("MediaEngine: No video bytes decoded!");
 
-           if (picture.isComplete()) {
+            if (picture.isComplete()) {
                long delay = calculateDelay(picture);
 
                    if (delay > 0) {
@@ -180,26 +181,25 @@ public class MediaEngine {
                            return;
                        }
                    }
-               }
                BufferedImage img = Utils.videoPictureToImage(picture);
                displayImage(img);
-
-            } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
-                IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
-
-                int offset = 0;
-                while(offset < packet.getSize()) {
-                    int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
-
-                    if (bytesDecoded < 0)
-                        Modules.log.error("MediaEngine: No audio bytes decoded!");
-
-                    offset += bytesDecoded;
-
-                    if (samples.isComplete())
-                        playSound(samples);
-                }
             }
+        } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
+            IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
+
+            int offset = 0;
+            while(offset < packet.getSize()) {
+                int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
+
+                if (bytesDecoded < 0)
+                    Modules.log.error("MediaEngine: No audio bytes decoded!");
+
+                offset += bytesDecoded;
+
+                if (samples.isComplete())
+                    playSound(samples);
+            }
+        }
     }
 
     /*
@@ -210,7 +210,7 @@ public class MediaEngine {
      * avoid speedups.
      *
      * This method is used when the video is supposed to be played
-     * all the once (scePsmfPlayer case).
+     * all at once (scePsmfPlayer case).
      */
     @SuppressWarnings("deprecated")
     public void decodeAndPlay(String file) {
@@ -340,10 +340,11 @@ public class MediaEngine {
         if (audioLine != null) {
             audioLine.drain();
             audioLine.close();
-            audioLine=null;
+            audioLine = null;
         }
         if(movieFrame != null) {
             movieFrame.dispose();
+            movieFrame = null;
         }
     }
 
@@ -388,8 +389,12 @@ public class MediaEngine {
     private void displayImage(BufferedImage img) {
         if(movieFrame == null) {
             movieFrame = new JFrame("JPCSP - Movie Playback");
+            movieFrame.setUndecorated(true);
             movieFrame.setSize(img.getWidth(), img.getHeight());
+            int pos[] = Settings.getInstance().readWindowPos("mainwindow");
+            movieFrame.setLocation(pos[0] + 4, pos[1] + 76);
             movieFrame.setResizable(false);
+            movieFrame.setAlwaysOnTop(true);
             movieFrame.setVisible(true);
         }
 

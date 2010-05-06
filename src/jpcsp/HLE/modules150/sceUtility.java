@@ -962,7 +962,7 @@ public class sceUtility implements HLEModule {
             case SceUtilitySavedataParam.MODE_SECURE:
                 // This one acts as an hybrid save/load access test mode. If it fails loading the file
                 // it tries to save it (encrypted or decrypted) and it stores the result
-                // in a new buffer (buffer5addr).
+                // in a new buffer (buffer6Addr).
                 if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
                     if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
                         savedataParams.saveName = savedataParams.saveNameList[0];
@@ -983,7 +983,7 @@ public class sceUtility implements HLEModule {
                         savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
                     }
                 }
-                mem.write32(savedataParams.buffer5Addr, savedataParams.base.result);
+                mem.write32(savedataParams.buffer6Addr, savedataParams.base.result);
                 break;
 
             default:
