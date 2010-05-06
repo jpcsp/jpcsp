@@ -20,7 +20,6 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -117,7 +116,8 @@ public class sceMpeg implements HLEModule {
         mpegAvcCurrentTimestamp = 0;
         avcAuAddr = 0;
         atracAuAddr = 0;
-        if (useMpegCodec) {
+        if (useMpegCodec || isEnableMediaEngine()) {
+            setEnableMpeg(true);
         	mpegCodec = new MpegCodec();
         }
         me = new MediaEngine();
@@ -336,13 +336,9 @@ public class sceMpeg implements HLEModule {
             mpegStreamSize = -1;
         }
 
-        if (useMpegCodec) {
+        if ((useMpegCodec || isEnableMediaEngine()) && mpegStreamSize != -1) {
         	mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
         	mpegCodec.writeVideo(buffer_addr, mpegOffset);
-        }
-        if(isEnableMediaEngine()) {
-            String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
-            me.init(pmfPath);
         }
     }
 
@@ -1088,7 +1084,12 @@ public class sceMpeg implements HLEModule {
                 }
 
                 if(isEnableMediaEngine()) {
-                    me.step();
+                    if(me.getContainer() != null) {
+                        me.step();
+                    } else {
+                        String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
+                        me.init(pmfPath);
+                    }
                 } else if (useMpegCodec && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoFrameCount)) {
                 	packetsConsumed = mpegCodec.getPacketsConsumed();
                 	mpegAvcCurrentTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
@@ -1266,6 +1267,10 @@ public class sceMpeg implements HLEModule {
         CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
+
+        // For MediaEngine.
+        if(me != null)
+            me.finish();
 
         Modules.log.warn("IGNORING:sceMpegAvcDecodeFlush mpeg=0x" + Integer.toHexString(mpeg));
 
@@ -1477,7 +1482,12 @@ public class sceMpeg implements HLEModule {
                 }
 
                 if(isEnableMediaEngine()) {
-                    me.step();
+                    if(me.getContainer() != null) {
+                        me.step();
+                    } else {
+                        String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
+                        me.init(pmfPath);
+                    }
                 } else if (useMpegCodec && mpegCodec.readVideoFrame(source_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoFrameCount)) {
                 	packetsConsumed = mpegCodec.getPacketsConsumed();
                 	mpegAvcCurrentTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
@@ -2372,5 +2382,4 @@ public class sceMpeg implements HLEModule {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_988E9E12(processor);";
         }
     };
-
 }

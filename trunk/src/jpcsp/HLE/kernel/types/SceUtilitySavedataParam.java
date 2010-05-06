@@ -83,6 +83,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public int buffer3Addr;
 	public int buffer4Addr;
     public int buffer5Addr;
+    public int buffer6Addr;
 	public String key;		// encrypt/decrypt key for save with firmware >= 2.00
 
 	public static class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
@@ -212,7 +213,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		} else {
 			newData = null;
 		}
-		focus = read32();
+        focus = read32();
 		readUnknown(4);
 		buffer1Addr = read32();
         buffer2Addr = read32();
@@ -220,8 +221,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		key = readStringNZ(16);
 		readUnknown(8);
 		buffer4Addr = read32();
-		readUnknown(4);
         buffer5Addr = read32();
+        buffer6Addr = read32();
 	}
 
 	protected void write() {
@@ -259,8 +260,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		writeStringNZ(16, key);
 		writeUnknown(8);
 		write32(buffer4Addr);
-		writeUnknown(4);
         write32(buffer5Addr);
+        write32(buffer6Addr);
 	}
 
     private void safeLoad(Memory mem, pspiofilemgr fileManager, String filename, PspUtilitySavedataFileData fileData) throws IOException {
