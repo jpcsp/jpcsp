@@ -57,6 +57,13 @@ public class MediaEngine {
     private static long clockStartTime;
     private static long firstTimestamp;
     private static JFrame movieFrame;
+    private static BufferedImage currentImg;
+
+    // External audio loading vars.
+    private static IContainer extContainer;
+    private static IPacket extPacket;
+    private static IStreamCoder extAudioCoder;
+    private static int extAudioStreamID;
 
     public MediaEngine() {
         // Disable Xuggler's logging, since we do our own.
@@ -77,6 +84,10 @@ public class MediaEngine {
         return container;
     }
 
+    public IContainer getExtContainer() {
+        return extContainer;
+    }
+
     public int getNumStreams() {
         return numStreams;
     }
@@ -95,6 +106,10 @@ public class MediaEngine {
 
     public int getAudioStreamID() {
         return audioStreamID;
+    }
+
+    public BufferedImage getCurrentImg() {
+        return currentImg;
     }
 
     /*
@@ -171,25 +186,71 @@ public class MediaEngine {
             if (bytesDecoded < 0)
                 Modules.log.error("MediaEngine: No video bytes decoded!");
 
-            if (picture.isComplete()) {
-               long delay = calculateDelay(picture);
-
-                   if (delay > 0) {
-                       try {
-                           Thread.sleep(delay);
-                       } catch (InterruptedException e) {
-                           return;
-                       }
-                   }
-               BufferedImage img = Utils.videoPictureToImage(picture);
-               displayImage(img);
-            }
+            if (picture.isComplete())
+                currentImg = Utils.videoPictureToImage(picture);
         } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
             IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
 
             int offset = 0;
             while(offset < packet.getSize()) {
                 int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
+
+                if (bytesDecoded < 0)
+                    Modules.log.error("MediaEngine: No audio bytes decoded!");
+
+                offset += bytesDecoded;
+
+                if (samples.isComplete())
+                    playSound(samples);
+            }
+        }
+    }
+
+    // Override audio data line with one from an external file.
+    public void initExtAudio(String file) {
+        extContainer = IContainer.make();
+
+        if (extContainer.open(file, IContainer.Type.READ, null) < 0)
+            Modules.log.error("MediaEngine: Invalid file or container format!");
+
+        int extNumStreams = extContainer.getNumStreams();
+
+        extAudioStreamID = -1;
+        extAudioCoder = null;
+
+        for(int i = 0; i < extNumStreams; i++) {
+            IStream stream = extContainer.getStream(i);
+            IStreamCoder coder = stream.getStreamCoder();
+
+            if (extAudioStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
+                extAudioStreamID = i;
+                extAudioCoder = coder;
+            }
+        }
+
+        if (extAudioStreamID == -1)
+            Modules.log.error("MediaEngine: No audio streams found!");
+        else if (extAudioCoder.open() < 0)
+            Modules.log.error("MediaEngine: Can't open audio decoder!");
+
+            try {
+                startSound(extAudioCoder);
+            } catch (LineUnavailableException ex) {
+                Modules.log.error("MediaEngine: Can't start audio line!");
+
+        }
+        extPacket = IPacket.make();
+    }
+
+    public void stepExtAudio() {
+        extContainer.readNextPacket(extPacket);
+
+        if (extPacket.getStreamIndex() == extAudioStreamID && extAudioCoder != null) {
+            IAudioSamples samples = IAudioSamples.make(1024, extAudioCoder.getChannels());
+
+            int offset = 0;
+            while(offset < extPacket.getSize()) {
+                int bytesDecoded = extAudioCoder.decodeAudio(samples, extPacket, offset);
 
                 if (bytesDecoded < 0)
                     Modules.log.error("MediaEngine: No audio bytes decoded!");
@@ -325,9 +386,13 @@ public class MediaEngine {
 
     // Cleanup function.
     public void finish() {
-        if (container !=null) {
+        if (container != null) {
             container.close();
             container = null;
+        }
+        if (extContainer != null) {
+            extContainer.close();
+            extContainer = null;
         }
         if (videoCoder != null) {
             videoCoder.close();
@@ -336,6 +401,10 @@ public class MediaEngine {
         if (audioCoder != null) {
             audioCoder.close();
             audioCoder = null;
+        }
+        if (extAudioCoder != null) {
+            extAudioCoder.close();
+            extAudioCoder = null;
         }
         if (audioLine != null) {
             audioLine.drain();
