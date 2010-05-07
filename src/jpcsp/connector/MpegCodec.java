@@ -269,7 +269,7 @@ public class MpegCodec {
 		return packetsConsumed;
 	}
 
-	public void postFakedVideo(int buffer, int frameWidth, int videoPixelMode) {
+    public void postFakedVideo(int buffer, int frameWidth, int videoPixelMode) {
 		int line = 0;
 
 		// Display additional information about the Mpeg decoding on the faked video
@@ -281,10 +281,11 @@ public class MpegCodec {
 		displayFakedVideoLine("and then copy the PMF file to your real PSP under"                     , line++, buffer, frameWidth, videoPixelMode);
 		displayFakedVideoLine("   " + Connector.basePSPDirectory + mpegFileState.name                 , line++, buffer, frameWidth, videoPixelMode);
 		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("Afterwards, run the '" + Connector.jpcspConnectorName + "' on your PSP", line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("and move all the generated RAW files from your PSP"                    , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("Afterwards, run the '" + Connector.jpcspConnectorName + "' on your"    , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("PSP and move all the generated RAW files from your"                    , line++, buffer, frameWidth, videoPixelMode);
+		displayFakedVideoLine("PSP"                                                                   , line++, buffer, frameWidth, videoPixelMode);
 		displayFakedVideoLine("   " + Connector.basePSPDirectory + "*.raw"                            , line++, buffer, frameWidth, videoPixelMode);
-		displayFakedVideoLine("to your computer under Jpcsp:"                                         , line++, buffer, frameWidth, videoPixelMode);
+        displayFakedVideoLine("to your computer under Jpcsp:"                                         , line++, buffer, frameWidth, videoPixelMode);
 		displayFakedVideoLine("   " + getMpegBaseDirectory(id)                                        , line++, buffer, frameWidth, videoPixelMode);
 		displayFakedVideoLine(""                                                                      , line++, buffer, frameWidth, videoPixelMode);
 		displayFakedVideoLine("You can then delete the raw files on your PSP."                        , line++, buffer, frameWidth, videoPixelMode);

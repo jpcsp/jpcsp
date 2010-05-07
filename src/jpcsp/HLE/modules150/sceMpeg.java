@@ -20,6 +20,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -339,6 +340,78 @@ public class sceMpeg implements HLEModule {
         if ((useMpegCodec || isEnableMediaEngine()) && mpegStreamSize != -1) {
         	mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
         	mpegCodec.writeVideo(buffer_addr, mpegOffset);
+        }
+    }
+
+    private void generateFakeMPEGVideo(int dest_addr, int frameWidth) {
+        Memory mem = Memory.getInstance();
+
+        Random random = new Random();
+        final int pixelSize = 3;
+        final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+        for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
+            int address = dest_addr + y * frameWidth * bytesPerPixel;
+            final int width = Math.min(480, frameWidth);
+            for (int x = 0; x < width; x += pixelSize) {
+                int n = random.nextInt(256);
+                int color = 0xFF000000 | (n << 16) | (n << 8) | n;
+                int pixelColor = Debug.getPixelColor(color, videoPixelMode);
+                if (bytesPerPixel == 4) {
+                    for (int i = 0; i < pixelSize; i++) {
+                        for (int j = 0; j < pixelSize; j++) {
+                            mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
+                        }
+                    }
+                } else if (bytesPerPixel == 2) {
+                    for (int i = 0; i < pixelSize; i++) {
+                        for (int j = 0; j < pixelSize; j++) {
+                            mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
+                        }
+                    }
+                }
+                address += pixelSize * bytesPerPixel;
+            }
+        }
+    }
+
+    private void writeVideoImage(int dest_addr, int frameWidth){
+        Memory mem = Memory.getInstance();
+
+        final int pixelSize = 1; // Reduced granularity.
+        final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+        final int width = Math.min(480, frameWidth);
+
+        // Get the current generated image, convert it to pixels and write it
+        // to memory.
+        if(me != null && me.getCurrentImg() != null) {
+            for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
+                int address = dest_addr + y * frameWidth * bytesPerPixel;
+
+                for (int x = 0; x < width; x += pixelSize) {
+                    int color = me.getCurrentImg().getRGB(x, y);
+                    // Convert from ARGB to ABGR.
+                    int a = (color >>> 24) & 0xFF;
+                    int r = (color >>> 16) & 0xFF;
+                    int g = (color >>> 8) & 0xFF;
+                    int b = color & 0xFF;
+                    int pixelColor = a << 24 | b << 16 | g << 8 | r;
+
+                    if (bytesPerPixel == 4) {
+                        for (int i = 0; i < pixelSize; i++) {
+                            for (int j = 0; j < pixelSize; j++) {
+                                mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
+                            }
+                        }
+                    } else if (bytesPerPixel == 2) {
+                        for (int i = 0; i < pixelSize; i++) {
+                            for (int j = 0; j < pixelSize; j++) {
+                                mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
+                            }
+                        }
+                    }
+                    address += pixelSize * bytesPerPixel;
+                }
+            }
         }
     }
 
@@ -1086,6 +1159,7 @@ public class sceMpeg implements HLEModule {
                 if(isEnableMediaEngine()) {
                     if(me.getContainer() != null) {
                         me.step();
+                        writeVideoImage(buffer, frameWidth);
                     } else {
                         String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
                         me.init(pmfPath);
@@ -1094,56 +1168,33 @@ public class sceMpeg implements HLEModule {
                 	packetsConsumed = mpegCodec.getPacketsConsumed();
                 	mpegAvcCurrentTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
                 } else {
-                    // Generate a random image...
-	                Random random = new Random();
-	                final int pixelSize = 3;
-	                final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
-	                for (int y = 0; y < height - pixelSize + 1; y += pixelSize) {
-	                    int address = buffer + y * frameWidth * bytesPerPixel;
-	                    for (int x = 0; x < width; x += pixelSize) {
-	                        int n = random.nextInt(256);
-	                        int color = 0xFF000000 | (n << 16) | (n << 8) | n;
-	                        int pixelColor = Debug.getPixelColor(color, videoPixelMode);
-	                        if (bytesPerPixel == 4) {
-		                        for (int i = 0; i < pixelSize; i++) {
-		                            for (int j = 0; j < pixelSize; j++) {
-		                                mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
-		                            }
-		                        }
-	                        } else if (bytesPerPixel == 2) {
-		                        for (int i = 0; i < pixelSize; i++) {
-		                            for (int j = 0; j < pixelSize; j++) {
-		                                mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
-		                            }
-		                        }
-	                        }
-	                        address += pixelSize * bytesPerPixel;
-	                    }
-	                }
+                    // Generate static.
+                    generateFakeMPEGVideo(buffer, frameWidth);
 
-	                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video. ");
-
-	                Date currentDate = convertTimestampToDate(mpegAvcCurrentTimestamp);
-	                if (Modules.log.isDebugEnabled()) {
-	                	Modules.log.debug("currentDate: " + currentDate.toString());
-	                }
-	                SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-	                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-	                if (mpegLastDate != null) {
-	                	String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
-	                	Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-	                }
-	                String displayedString;
-	                if (mpegStreamSize > 0) {
-	                	displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
-	                } else {
-	                	displayedString = String.format(" %d ", processedSize);
-	                }
-	                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-
-                    // Display additional information on the faked video
-                    if (useMpegCodec && isEnableMediaEngine()) {
+                    if (useMpegCodec)
                         mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
+
+                    Date currentDate = convertTimestampToDate(mpegAvcCurrentTimestamp);
+                    Modules.log.info("currentDate: " + currentDate.toString());
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+                    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+                    Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
+
+                    String displayedString;
+                    if (mpegLastDate != null) {
+                        displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+                        Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+                    }
+                    if (mpegStreamSize > 0) {
+                        displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
+                    } else {
+                        displayedString = String.format(" %d ", processedSize);
+                    }
+                    Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+
+                    if (Modules.log.isDebugEnabled()) {
+                        Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentTimestamp);
                     }
                 }
                 videoFrameCount++;
@@ -1484,6 +1535,7 @@ public class sceMpeg implements HLEModule {
                 if(isEnableMediaEngine()) {
                     if(me.getContainer() != null) {
                         me.step();
+                        writeVideoImage(dest_addr, frameWidth);
                     } else {
                         String pmfPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/Movie.pmf";
                         me.init(pmfPath);
@@ -1492,63 +1544,38 @@ public class sceMpeg implements HLEModule {
                 	packetsConsumed = mpegCodec.getPacketsConsumed();
                 	mpegAvcCurrentTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
                 } else {
-                    // Generate static at dest_addr.
-                    Random random = new Random();
-                    final int pixelSize = 3;
-                    final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
-                    for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
-                        int address = dest_addr + y * frameWidth * bytesPerPixel;
-                        final int width = Math.min(480, frameWidth);
-                        for (int x = 0; x < width; x += pixelSize) {
-                            int n = random.nextInt(256);
-                            int color = 0xFF000000 | (n << 16) | (n << 8) | n;
-                            int pixelColor = Debug.getPixelColor(color, videoPixelMode);
-                            if (bytesPerPixel == 4) {
-                                for (int i = 0; i < pixelSize; i++) {
-                                    for (int j = 0; j < pixelSize; j++) {
-                                        mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
-                                    }
-                                }
-                            } else if (bytesPerPixel == 2) {
-                                for (int i = 0; i < pixelSize; i++) {
-                                    for (int j = 0; j < pixelSize; j++) {
-                                        mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
-                                    }
-                                }
-                            }
-                            address += pixelSize * bytesPerPixel;
-                        }
-                    }
+                    // Generate static.
+                    generateFakeMPEGVideo(dest_addr, frameWidth);
 
-                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
-
-                    if (Modules.log.isDebugEnabled()) {
-                        Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentTimestamp);
-                    }
+                    if (useMpegCodec)
+                        mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
 
                     Date currentDate = convertTimestampToDate(mpegAvcCurrentTimestamp);
                     Modules.log.info("currentDate: " + currentDate.toString());
                     SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
                     dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-                    if (mpegLastDate != null) {
-                        String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
-                        Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-                    }
+                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
 
                     String displayedString;
+                    if (mpegLastDate != null) {
+                        displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+                        Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+                    }
                     if (mpegStreamSize > 0) {
                         displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
                     } else {
                         displayedString = String.format(" %d ", processedSize);
                     }
-
                     Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-                    if (useMpegCodec) {
-                        mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
+
+                    if (Modules.log.isDebugEnabled()) {
+                        Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentTimestamp);
                     }
+
                 }
                 videoFrameCount++;
+
                 if (Modules.log.isDebugEnabled()) {
                     Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentTimestamp);
                 }
@@ -1604,7 +1631,22 @@ public class sceMpeg implements HLEModule {
 	            	lastAtracSystemTime = currentSystemTime;
 	            }
 
-	            if (useMpegCodec && mpegCodec.readAudioFrame(buffer_addr, audioFrameCount)) {
+                if(isEnableMediaEngine()) {
+                    String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.wav";
+                    File f = null;
+                    try {
+                        f = new File(pmfExtAudioPath);
+                        if(f.exists()) {
+                            if(me.getExtContainer() != null) {
+                                me.stepExtAudio();
+                            } else {
+                                me.initExtAudio(pmfExtAudioPath);
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Ignore.
+                    }
+                } else if (useMpegCodec && mpegCodec.readAudioFrame(buffer_addr, audioFrameCount)) {
 	            	mpegAtracCurrentTimestamp = mpegCodec.getMpegAtracCurrentTimestamp();
 	            } else {
 	            	mem.memset(buffer_addr, (byte) 0, 8192);
