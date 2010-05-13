@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
@@ -32,14 +33,12 @@ import javax.swing.JFrame;
 import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.Image;
@@ -448,10 +447,6 @@ public class sceUtility implements HLEModule {
                     setText("");
                     setIcon((Icon) obj);
                     return this;
-                } else if (obj instanceof String) {
-                	JTextArea textArea = new JTextArea((String) obj);
-                	textArea.setFont(new Font("SansSerif", Font.PLAIN, 8));
-                	return textArea;
                 } else {
                 	setIcon(null);
                 	return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
@@ -522,7 +517,7 @@ public class sceUtility implements HLEModule {
 				            ScePspDateTime pspTime = sfoStat.mtime;
 				            cal.set(pspTime.year, pspTime.month, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
 
-				            descriptions[i] = String.format("%1$s\n%4$tF %4$tR\n%2$s\n%3$s", title, savedataTitle, detail, cal);
+				            descriptions[i] = String.format("%1$s - %4$tF %4$tR - %2$s - %3$s", title, savedataTitle, detail, cal);
 						} catch (IOException e) {
 						}
 	                }
@@ -573,7 +568,6 @@ public class sceUtility implements HLEModule {
         final JDialog mainDisplay = new JDialog();
         mainDisplay.setTitle("Savedata List");
         mainDisplay.setSize(400, 401);
-        mainDisplay.setResizable(false);
         int pos[] = Settings.getInstance().readWindowPos("savedata");
         mainDisplay.setLocation(pos[0], pos[1]);
         mainDisplay.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -583,12 +577,22 @@ public class sceUtility implements HLEModule {
         table.setRowSelectionAllowed(true);
         table.setColumnSelectionAllowed(false);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setFont(new Font("SansSerif", Font.PLAIN, 12));
         JScrollPane listScroll = new JScrollPane(table);
         JButton selectButton = new JButton("Select");
 
-        mainDisplay.setLayout(new BorderLayout(5,5));
-        mainDisplay.getContentPane().add(listScroll, BorderLayout.CENTER);
-        mainDisplay.getContentPane().add(selectButton, BorderLayout.SOUTH);
+        GroupLayout layout = new GroupLayout(mainDisplay.getRootPane());
+		layout.setAutoCreateGaps(true);
+		layout.setAutoCreateContainerGaps(true);
+
+        layout.setHorizontalGroup(layout.createParallelGroup(
+				GroupLayout.Alignment.TRAILING).addComponent(listScroll)
+				.addComponent(selectButton));
+
+		layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
+				listScroll).addComponent(selectButton));
+
+		mainDisplay.getRootPane().setLayout(layout);
         mainDisplay.setVisible(true);
 
         saveListSelected = false;
@@ -609,7 +613,7 @@ public class sceUtility implements HLEModule {
                 }
             });
         }
-        
+
         Settings.getInstance().writeWindowPos("savedata", mainDisplay.getLocation());
     }
 
