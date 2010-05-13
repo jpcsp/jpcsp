@@ -88,15 +88,25 @@ public class scePsmfPlayer implements HLEModule {
     protected byte[] pmfFileData;
     protected String pmfTmpPath;
 
+    protected int currentStream;
+    protected int streamCount;
+
+    private boolean checkMediaEngineState() {
+        return sceMpeg.isEnableMediaEngine();
+    }
+
     public void scePsmfPlayerCreate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int psmf = cpu.gpr[4];   //PSMF Struct?
-        int unk = cpu.gpr[5];   //Seems to be an output address.
+        int psmf = cpu.gpr[4];
+        int mpeg = cpu.gpr[5];
 
-        Modules.log.warn("IGNORING: scePsmfPlayerCreate psmf=" + Integer.toHexString(psmf)
-                + " unk=" + Integer.toHexString(unk));
+        Modules.log.warn("PARTIAL: scePsmfPlayerCreate psmf=" + Integer.toHexString(psmf)
+                + " mpeg=" + Integer.toHexString(mpeg));
+
+        currentStream = 0;
+        streamCount = 0;
 
         cpu.gpr[2] = 0;
     }
@@ -106,9 +116,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayerDelete psmf=" + Integer.toHexString(psmf));
+        Modules.log.warn("IGNORING: scePsmfPlayerDelete psmf=" + Integer.toHexString(psmf));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerSetPsmf(Processor processor) {
@@ -130,13 +140,12 @@ public class scePsmfPlayer implements HLEModule {
         pmfTmpPath = "tmp/" + State.discId + "/PSMF/PSMFMovie.pmf";
 
         //Get the file and read it to a buffer.
-        //TODO: Parse and interpret the file's data.
         try{
             SeekableDataInput psmfFile = fileManager.getFile(pmfFilePath, 0);
             pmfFileData = new byte[(int)psmfFile.length()];
             psmfFile.readFully(pmfFileData);
 
-            if(Modules.sceMpegModule.isEnableMediaEngine()) {
+            if(checkMediaEngineState()) {
                 // Write the .pmf file.
                 FileOutputStream fos = new FileOutputStream(pmfTmpPath);
                 fos.write(pmfFileData);
@@ -146,7 +155,7 @@ public class scePsmfPlayer implements HLEModule {
             //TODO
         }
 
-        Modules.log.warn("IGNORING: scePsmfPlayerSetPsmf psmf=" + Integer.toHexString(psmf)
+        Modules.log.warn("PARTIAL: scePsmfPlayerSetPsmf psmf=" + Integer.toHexString(psmf)
                 + " file=" + pmfFilePath);
 
         cpu.gpr[2] = 0;
@@ -158,9 +167,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayerReleasePsmf psmf=" + Integer.toHexString(psmf));
+        Modules.log.warn("IGNORING: scePsmfPlayerReleasePsmf psmf=" + Integer.toHexString(psmf));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerStart(Processor processor) {
@@ -168,13 +177,13 @@ public class scePsmfPlayer implements HLEModule {
         Memory mem = Processor.memory;
 
         int psmf = cpu.gpr[4];
-        int unk1 = cpu.gpr[5];  //Another output address?
-        int unk2 = cpu.gpr[6];  //MPEG stream to be used?
+        int unk1 = cpu.gpr[5];  // Another output address?
+        int unk2 = cpu.gpr[6];  // MPEG stream to be used?
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayerStart psmf=" + Integer.toHexString(psmf)
+        Modules.log.warn("PARTIAL: scePsmfPlayerStart psmf=" + Integer.toHexString(psmf)
                 + " unk1=" + Integer.toHexString(unk1) + " unk2=" + Integer.toHexString(unk2));
 
-        if(Modules.sceMpegModule.isEnableMediaEngine()) {
+        if(checkMediaEngineState()) {
             MediaEngine me = new MediaEngine();
             me.decodeAndPlay(pmfTmpPath);
         }
@@ -186,10 +195,11 @@ public class scePsmfPlayer implements HLEModule {
         CpuState cpu = processor.cpu;
 
         int psmf = cpu.gpr[4];
-        int unk = cpu.gpr[5];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayer_3EA82A4B psmf=" + Integer.toHexString(psmf)
-                + " unk=" + Integer.toHexString(unk));
+        // Seems to check a portion of the PSMF struct.
+        // v0 can be any value.
+
+        Modules.log.warn("IGNORING: scePsmfPlayer_3EA82A4B psmf=" + Integer.toHexString(psmf));
 
         cpu.gpr[2] = 0;
     }
@@ -199,9 +209,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayerStop psmf=" + Integer.toHexString(psmf));
+        Modules.log.warn("IGNORING: scePsmfPlayerStop psmf=" + Integer.toHexString(psmf));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
 
@@ -210,22 +220,23 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayerUpdate psmf=" + Integer.toHexString(psmf));
+        Modules.log.warn("IGNORING: scePsmfPlayerUpdate psmf=" + Integer.toHexString(psmf));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
 
     public void scePsmfPlayer_46F61F8B(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
         int psmf = cpu.gpr[4];
         int unk = cpu.gpr[5];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayer_46F61F8B psmf=" + Integer.toHexString(psmf)
+        Modules.log.warn("IGNORING: scePsmfPlayer_46F61F8B psmf=" + Integer.toHexString(psmf)
                 + " unk=" + Integer.toHexString(unk));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayer_B9848A74(Processor processor) {
@@ -233,51 +244,52 @@ public class scePsmfPlayer implements HLEModule {
         Memory mem = Processor.memory;
 
         int psmf = cpu.gpr[4];
-        int unk = cpu.gpr[5];    //Value read from psmf + 16.
+        int unk = cpu.gpr[5];
 
         Modules.log.warn("IGNORING: scePsmfPlayer_B9848A74 psmf=" + Integer.toHexString(psmf)
-                + " unk=" + unk);
-
-        //Seems to be only called if scePsmfPlayer_F8EF08A6 fails.
+                + " unk=" + Integer.toHexString(unk));
 
         cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayer_F8EF08A6(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: scePsmfPlayer_F8EF08A6 psmf=" + Integer.toHexString(psmf));
+        Modules.log.warn("PARTIAL: scePsmfPlayer_F8EF08A6 psmf=" + Integer.toHexString(psmf));
 
-        //Seems to read a parameter from a possible PSMF struct.
-        //Some games expect to find either 2 or 512 in v0.
+        // Returns the current number of streams.
 
-        cpu.gpr[2] = 2;
+        cpu.gpr[2] = streamCount;
     }
 
     public void scePsmfPlayer_DF089680(Processor processor) {
-        CpuState cpu = processor.cpu; 
+        CpuState cpu = processor.cpu;
 
         int psmf = cpu.gpr[4];
+        int unk = cpu.gpr[5];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayer_DF089680 psmf=" + Integer.toHexString(psmf));
+        Modules.log.warn("IGNORING: scePsmfPlayer_DF089680 psmf=" + Integer.toHexString(psmf)
+                + " unk=" + Integer.toHexString(unk));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
+        cpu.gpr[2] = 0;
     }
 
 
     public void scePsmfPlayer_1E57A8E7(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
         int psmf = cpu.gpr[4];
-        int unk1 = cpu.gpr[5];
-        int unk2 = cpu.gpr[6];
+        int stream_type = cpu.gpr[5];
+        int ch = cpu.gpr[6];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayer_1E57A8E7 psmf=" + Integer.toHexString(psmf)
-                + " unk1=" + Integer.toHexString(unk1) + " unk2=" + Integer.toHexString(unk2));
+        Modules.log.warn("PARTIAL: scePsmfPlayer_1E57A8E7 psmf=" + Integer.toHexString(psmf)
+                + " stream_type=" + stream_type + " ch=" + ch);
+
+        streamCount++;
+        currentStream = ch;
 
         cpu.gpr[2] = 0;
     }
@@ -287,9 +299,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("UNIMPLEMENTED: scePsmfPlayer_2BEB1569 psmf=" + Integer.toHexString(psmf));
+        Modules.log.warn("IGNORING: scePsmfPlayer_2BEB1569 psmf=" + Integer.toHexString(psmf));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
 

@@ -38,6 +38,8 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.media.MediaEngine;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -374,42 +376,30 @@ public class sceMpeg implements HLEModule {
         }
     }
 
-    private void writeVideoImage(int dest_addr, int frameWidth){
-        Memory mem = Memory.getInstance();
-
-        final int pixelSize = 1; // Reduced granularity.
+    private void writeVideoImage(int dest_addr, int frameWidth) {
         final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
         final int width = Math.min(480, frameWidth);
 
         // Get the current generated image, convert it to pixels and write it
         // to memory.
         if(me != null && me.getCurrentImg() != null) {
-            for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
+            for (int y = 0; y < 272; y++) {
                 int address = dest_addr + y * frameWidth * bytesPerPixel;
+                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
 
-                for (int x = 0; x < width; x += pixelSize) {
-                    int color = me.getCurrentImg().getRGB(x, y);
+                for (int x = 0; x < width; x++) {
+                    int colorARGB = me.getCurrentImg().getRGB(x, y);
                     // Convert from ARGB to ABGR.
-                    int a = (color >>> 24) & 0xFF;
-                    int r = (color >>> 16) & 0xFF;
-                    int g = (color >>> 8) & 0xFF;
-                    int b = color & 0xFF;
-                    int pixelColor = a << 24 | b << 16 | g << 8 | r;
+                    int a = (colorARGB >>> 24) & 0xFF;
+                    int r = (colorARGB >>> 16) & 0xFF;
+                    int g = (colorARGB >>> 8) & 0xFF;
+                    int b = colorARGB & 0xFF;
+                    int colorABGR = a << 24 | b << 16 | g << 8 | r;
 
-                    if (bytesPerPixel == 4) {
-                        for (int i = 0; i < pixelSize; i++) {
-                            for (int j = 0; j < pixelSize; j++) {
-                                mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
-                            }
-                        }
-                    } else if (bytesPerPixel == 2) {
-                        for (int i = 0; i < pixelSize; i++) {
-                            for (int j = 0; j < pixelSize; j++) {
-                                mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
-                            }
-                        }
-                    }
-                    address += pixelSize * bytesPerPixel;
+                    int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
+                    memoryWriter.writeNext(pixelColor);
+
+                    address += bytesPerPixel;
                 }
             }
         }
