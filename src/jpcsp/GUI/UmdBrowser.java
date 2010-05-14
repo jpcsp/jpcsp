@@ -182,6 +182,8 @@ public class UmdBrowser extends JDialog {
 
 		@Override
 		public int getRowCount() {
+			if(programs == null)
+				return 0;
 			return programs.length;
 		}
 
