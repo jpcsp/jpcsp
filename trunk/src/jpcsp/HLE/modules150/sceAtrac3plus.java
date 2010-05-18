@@ -231,8 +231,12 @@ public class sceAtrac3plus implements HLEModule {
 
     	if (mem.isAddressGood(unk1Addr)) {
     		// Address of an unknown structure of size 32
+            mem.write32(unk1Addr     , 0);
     		mem.write32(unk1Addr +  4, 0);
     		mem.write32(unk1Addr + 20, 0);
+            mem.write32(unk1Addr + 24, 0);
+    		mem.write32(unk1Addr + 28, 0);
+            mem.write32(unk1Addr + 32, 0);
     	}
     }
 

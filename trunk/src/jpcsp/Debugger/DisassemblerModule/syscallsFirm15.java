@@ -1103,6 +1103,11 @@ public class syscallsFirm15 {
                 sceHttpSaveSystemCookie(0x3105, 0x76D1363B), // 2.00+
                 sceHttpLoadSystemCookie(0x3106, 0xF1657B22), // 2.00+
 
+                scePsmfVerifyPsmf(0x3107, 0x2673646B),
+                scePsmfSetPsmf(0x3108, 0xC22C8327),
+                scePsmfGetNumberOfSpecificStreams(0x3109, 0x68D42328),
+                scePsmfQueryStreamOffset(0x310a, 0x5B70FCC1),
+
                 // We choose to start HLEModuleManager at 0x4000
 
                 // CFW, we choose to start at 0x5000
