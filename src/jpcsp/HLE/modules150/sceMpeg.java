@@ -822,17 +822,29 @@ public class sceMpeg implements HLEModule {
     public void sceMpegChangeGetAvcAuMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        System.out.println("Unimplemented NID function sceMpegChangeGetAvcAuMode [0x234586AE]");
+        int mpeg = cpu.gpr[4];
+        int stream_addr = cpu.gpr[5];
+        int mode = cpu.gpr[6];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn("UNIMPLEMENTED: sceMpegChangeGetAvcAuMode(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",stream_addr=0x" + Integer.toHexString(stream_addr)
+            + ",mode=0x" + mode + ")");
+
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegChangeGetAuMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        System.out.println("Unimplemented NID function sceMpegChangeGetAuMode [0x9DCFB7EA]");
+        int mpeg = cpu.gpr[4];
+        int stream_addr = cpu.gpr[5];
+        int mode = cpu.gpr[6];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn("UNIMPLEMENTED: sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",stream_addr=0x" + Integer.toHexString(stream_addr)
+            + ",mode=0x" + mode + ")");
+
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegGetAvcAu(Processor processor) {
