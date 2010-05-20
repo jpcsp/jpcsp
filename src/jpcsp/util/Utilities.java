@@ -91,6 +91,9 @@ public class Utilities {
         return (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
     }
 
+    public static void skipUnknown(ByteBuffer buf, int lenght) throws IOException {
+        buf.position(buf.position() + lenght);
+    }
     public static void readBytesToBuffer(
         SeekableDataInput f, ByteBuffer buf,
         int offset, int size) throws IOException
@@ -131,6 +134,16 @@ public class Utilities {
             if (b == 0)
                 break;
             sb.append((char)b);
+        }
+        return sb.toString();
+    }
+    public static String readStringNZ(ByteBuffer buf, int n) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        byte b;
+        for (; n > 0; n--) {
+              b = (byte)readUByte(buf);
+            if (b != 0)
+                sb.append((char)b);
         }
         return sb.toString();
     }

@@ -18,7 +18,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.util.HashMap;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 
+import jpcsp.Emulator;
+import jpcsp.format.PGF;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -26,6 +31,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.ThreadMan;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
@@ -96,6 +102,7 @@ public class sceFont implements HLEModule {
 	private int currentFontHandle;
     private int dummyExternalFontHandle = 0x11223344;
 	public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
+    public static final String fontDirPath = "flash0/font";
 
     public int makeFakeLibHandle() {
         return 0xF8F80000 | (fontLibCount++ & 0xFFFF);
@@ -115,6 +122,7 @@ public class sceFont implements HLEModule {
         private int ioFinishFuncAddr;
 
         private int[] fonts;
+        private int libBufAddr;
 
         public FontLib(int params) {
             read(params);
@@ -122,6 +130,35 @@ public class sceFont implements HLEModule {
 
             for(int i = 0; i < numFonts; i++) {
                 fonts[i] = makeFakeFontHandle(i);
+            }
+
+            if(allocFuncAddr != 0) {
+                libBufAddr = triggerAllocCallback(unk1, 512);
+                Modules.log.info("FontLib's allocation callback (size=512) returned 0x"
+                        + Integer.toHexString(libBufAddr));
+            }
+
+            loadFontFiles();
+        }
+
+        public void loadFontFiles() {
+            File f = new File(fontDirPath);
+            String[] files = f.list();
+
+            for(int i = 0; i < files.length; i++) {
+                try {
+                    String currentFile = (fontDirPath + "/" + files[i]);
+                    RandomAccessFile fontFile = new RandomAccessFile(currentFile, "r");
+                    byte[] pgfBuf = new byte[(int)fontFile.length()];
+                    fontFile.read(pgfBuf);
+                    ByteBuffer finalBuf = ByteBuffer.wrap(pgfBuf);
+
+                    PGF pgfFile = new PGF(finalBuf);
+                    Modules.log.info("Found font file '" + files[i] + "'. Font='"
+                            + pgfFile.getFontName() + "' Type='" + pgfFile.getFontType() + "'");
+                } catch (Exception e) {
+                    // Can't open file.
+                }
             }
         }
 
@@ -131,6 +168,32 @@ public class sceFont implements HLEModule {
 
         public int getFakeFontHandle(int i) {
             return fonts[i];
+        }
+
+        public int getAllocBufferAddr() {
+            return libBufAddr;
+        }
+
+        private int triggerAllocCallback(int a0, int a1) {
+            CpuState cpu = Emulator.getProcessor().cpu;
+            ThreadMan threadMan = ThreadMan.getInstance();
+
+            cpu.gpr[4] = a0;
+            cpu.gpr[5] = a1;
+
+            threadMan.executeCallback(allocFuncAddr, null);
+
+            return (cpu.gpr[2]);
+        }
+
+        private void triggerFreeCallback(int a0, int a1) {
+            CpuState cpu = Emulator.getProcessor().cpu;
+            ThreadMan threadMan = ThreadMan.getInstance();
+
+            cpu.gpr[4] = a0;
+            cpu.gpr[5] = a1;
+
+            threadMan.executeCallback(freeFuncAddr, null);
         }
 
         private void read(int paramsAddr) {
@@ -240,7 +303,7 @@ public class sceFont implements HLEModule {
 		Memory mem = Processor.memory;
 
 		int fontAddr = cpu.gpr[4];
-		int fontInfoAddr = cpu.gpr[6];
+		int fontInfoAddr = cpu.gpr[5];
 		Modules.log.warn(String.format("Unimplemented sceFontGetFontInfo fontAddr=0x%08X, fontInfoAddr=0x%08X"
                 , fontAddr, fontInfoAddr));
 
@@ -252,13 +315,59 @@ public class sceFont implements HLEModule {
 				// Maximal structure length is 264, but might be shorter.
 				float unknownFloatValue = 1234.f;
 				short unknownShortValue = 1234;
-				mem.write32(fontInfoAddr + 48, Float.floatToRawIntBits(unknownFloatValue));
-				mem.write32(fontInfoAddr + 56, Float.floatToRawIntBits(unknownFloatValue));
-				mem.write32(fontInfoAddr + 60, Float.floatToRawIntBits(unknownFloatValue));
-				mem.write32(fontInfoAddr + 64, Float.floatToRawIntBits(unknownFloatValue));
-				mem.write32(fontInfoAddr + 68, Float.floatToRawIntBits(unknownFloatValue));
-				mem.write16(fontInfoAddr + 80, unknownShortValue);
-				mem.write16(fontInfoAddr + 82, unknownShortValue);
+                int unknownIntValue = 1234;
+
+                // Glyph metrics.
+                mem.write32(fontInfoAddr + 0, unknownIntValue);
+                mem.write32(fontInfoAddr + 4, unknownIntValue);
+                mem.write32(fontInfoAddr + 8, unknownIntValue);
+                mem.write32(fontInfoAddr + 12, unknownIntValue);
+                mem.write32(fontInfoAddr + 16, unknownIntValue);
+                mem.write32(fontInfoAddr + 20, unknownIntValue);
+                mem.write32(fontInfoAddr + 24, unknownIntValue);
+                mem.write32(fontInfoAddr + 28, unknownIntValue);
+                mem.write32(fontInfoAddr + 32, unknownIntValue);
+                mem.write32(fontInfoAddr + 36, unknownIntValue);
+
+                // Glyph metrics (replicated as float?)
+                mem.write32(fontInfoAddr + 40, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 44, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 48, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 52, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 56, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 60, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 64, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 68, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 72, Float.floatToRawIntBits(unknownFloatValue));
+                mem.write32(fontInfoAddr + 76, Float.floatToRawIntBits(unknownFloatValue));
+
+                // Bitmap dimensions.
+                mem.write16(fontInfoAddr + 80, unknownShortValue);
+                mem.write16(fontInfoAddr + 82, unknownShortValue);
+
+                mem.write32(fontInfoAddr + 84, 200); // Number of elements in the font's charmap (set to random value).
+                mem.write32(fontInfoAddr + 88, 200);   // Number of elements in the font's shadow charmap (set to random value).
+
+                // Unknown. Seem to be font size related (float).
+                mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));
+                mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));
+                mem.write32(fontInfoAddr + 100, Float.floatToRawIntBits(0.0f));
+                mem.write32(fontInfoAddr + 104, Float.floatToRawIntBits(0.0f));
+                mem.write32(fontInfoAddr + 108, Float.floatToRawIntBits(0.0f));
+
+                mem.write16(fontInfoAddr + 112, (short)0); // Unknown.
+                mem.write16(fontInfoAddr + 114, (short)0);  // Font style as in the font file (0 = default/system).
+                mem.write16(fontInfoAddr + 116, (short)0);  // Unknown.
+                mem.write16(fontInfoAddr + 118, (short)0);  // Unknown.
+                mem.write16(fontInfoAddr + 120, (short)0);  // Unknown.
+                mem.write16(fontInfoAddr + 122, (short)0);  // Unknown.
+
+                Utilities.writeStringNZ(mem, fontInfoAddr + 124, 64, "Dummy Font");  // Font name (maximum size is 64).
+                Utilities.writeStringNZ(mem, fontInfoAddr + 188, 64, "dfont.pgf");   // File name (maximum size is 64).
+
+                mem.write32(fontInfoAddr + 252, 0); // Unknown.
+                mem.write32(fontInfoAddr + 256, 0); // Unknown.
+                mem.write32(fontInfoAddr + 260, 0); // Unknown.
 			}
 			cpu.gpr[2] = 0;
 		}
