@@ -1086,6 +1086,16 @@ public class sceMpeg implements HLEModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",init=0x" + Integer.toHexString(init_addr) + ")");
 
+        // Some games send a frameWidth of 0 on purpose.
+        // This happens when the game is using sceDisplaySetFrameBuf with
+        // main memory instead of VRAM. We need to retrieve the bufferWidthFb
+        // from pspdisplay and use it as the final frameWidth.
+        if(frameWidth == 0) {
+            frameWidth = pspdisplay.getInstance().getBufferWidthFb();
+            Modules.log.warn("sceMpegAvcDecode: Uninitialized frameWidth. Setting to bufferWidthFb=" +
+                     frameWidth);
+        }
+
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
@@ -1473,6 +1483,12 @@ public class sceMpeg implements HLEModule {
             + ",range_addr=0x" + Integer.toHexString(range_addr)
             + ",frameWidth=" + frameWidth
             + ",dest=0x" + Integer.toHexString(dest_addr) + ")");
+
+        if(frameWidth == 0) {
+            frameWidth = pspdisplay.getInstance().getBufferWidthFb();
+            Modules.log.warn("sceMpegAvcCsc: Uninitialized frameWidth. Setting to bufferWidthFb=" +
+                     frameWidth);
+        }
 
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);

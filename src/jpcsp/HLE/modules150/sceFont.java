@@ -498,7 +498,7 @@ public class sceFont implements HLEModule {
 
 		Modules.log.warn(String.format("Unimplemented sceFontGetNumFontList libHandle=0x%08X, errorCodeAddr=0x%08X", libHandle, errorCodeAddr));
 
-		if (fontLibMap.containsKey(libHandle)) {
+		if (!fontLibMap.containsKey(libHandle)) {
 			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
@@ -526,7 +526,7 @@ public class sceFont implements HLEModule {
 
 		Modules.log.warn(String.format("Unimplemented sceFontGetFontList libHandle=0x%08X, fontListAddr=0x%08X, numFonts=%d", libHandle, fontListAddr, numFonts));
 
-		if (fontLibMap.containsKey(libHandle)) {
+		if (!fontLibMap.containsKey(libHandle)) {
 			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
