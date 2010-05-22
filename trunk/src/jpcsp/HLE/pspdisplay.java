@@ -918,12 +918,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         int topaddr, int bufferwidth, int pixelformat, int sync)
     {
         topaddr &= Memory.addressMask;
-        if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
-            bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
+        if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
-            sync < 0 || sync > 1)
-        {
-            // TODO allow main memory as well as vram when we find an app that does that
+            sync < 0 || sync > 1) {
             Modules.log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ",bufferwidth=" + bufferwidth +
@@ -932,6 +929,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gotBadFbBufParams = true;
             Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
+            // The Monster Hunter series use main memory to process videos.
+            // The process is identical as if it was using VRAM.
+            if(topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM) {
+                Modules.log.warn("sceDisplaySetFrameBuf (topaddr=0x" + Integer.toHexString(topaddr) + ")"
+                        + " is using main memory.");
+            }
+
             if (gotBadFbBufParams) {
                 gotBadFbBufParams = false;
                 Modules.log.info(
