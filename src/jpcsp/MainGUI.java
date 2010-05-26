@@ -58,6 +58,7 @@ import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.DisassemblerModule.VfpuFrame;
+import jpcsp.GUI.CheatsGUI;
 import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.RecentElement;
 import jpcsp.GUI.SettingsGUI;
@@ -192,6 +193,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ToggleDebugLog = new javax.swing.JMenuItem();
         DumpIso = new javax.swing.JMenuItem();
         ResetProfiler = new javax.swing.JMenuItem();
+        CheatsMenu = new javax.swing.JMenu();
+        cwcheat = new javax.swing.JMenuItem();
         LanguageMenu = new javax.swing.JMenu();
         English = new javax.swing.JMenuItem();
         French = new javax.swing.JMenuItem();
@@ -484,6 +487,18 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         DebugMenu.add(ResetProfiler);
 
         MenuBar.add(DebugMenu);
+
+        CheatsMenu.setText(Resource.get("cheatsmenu"));
+
+        cwcheat.setText("CWCheat");
+        cwcheat.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cwcheatActionPerformed(evt);
+            }
+        });
+        CheatsMenu.add(cwcheat);
+
+        MenuBar.add(CheatsMenu);
 
         LanguageMenu.setText(Resource.get("language"));
 
@@ -1360,6 +1375,11 @@ private void PortugueseBRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 changeLanguage("pt_BR");
 }//GEN-LAST:event_PortugueseBRActionPerformed
 
+private void cwcheatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cwcheatActionPerformed
+CheatsGUI cwCheats = new CheatsGUI("CWCheat");
+cwCheats.setVisible(true);
+}//GEN-LAST:event_cwcheatActionPerformed
+
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1505,6 +1525,7 @@ private void processArgs(String[] args) {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem About;
     private javax.swing.JMenuItem Catalan;
+    private javax.swing.JMenu CheatsMenu;
     private javax.swing.JMenu DebugMenu;
     private javax.swing.JMenuItem DumpIso;
     private javax.swing.JMenuItem ElfHeaderViewer;
@@ -1545,6 +1566,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JMenuItem ToggleDebugLog;
     private javax.swing.JMenuItem VfpuRegisters;
+    private javax.swing.JMenuItem cwcheat;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem openUmd;
     // End of variables declaration//GEN-END:variables

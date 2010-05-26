@@ -59,8 +59,8 @@ public class PGF {
     private int[][] dimensionTable;
     private int[][] xAdjustTable;
     private int[][] yAdjustTable;
-    private int[][] advanceTable;
-    private int[][] charmapCompressionTable;
+    private int[] charmapCompressionTable;
+    private int[] advanceTable;
     private int[] shadowCharMap;
     private int[] charMap;
     private int[] charPointerTable;
@@ -68,6 +68,8 @@ public class PGF {
     private int[] fontData;
     private int fontDataOffset;
     private int fontDataLenght;
+
+    private String fileNamez;
 
     public PGF(ByteBuffer f) throws IOException {
         read(f);
@@ -77,7 +79,7 @@ public class PGF {
         if (f.capacity() == 0)
             return;
 
-        // PGF Header
+        // PGF Header.
         headerOffset = readUHalf(f);
         headerLenght = readUHalf(f);
         PGFMagic = readStringNZ(f, 4);
@@ -126,7 +128,7 @@ public class PGF {
             skipUnknown(f, 6);
         }
 
-        // PGF Tables
+        // PGF Tables.
         dimensionTable = new int[2][dimTableLenght * 8];
         for(int i = 0; i < dimTableLenght * 8; i++) {
             dimensionTable[0][i] = readWord(f);
@@ -145,10 +147,9 @@ public class PGF {
             yAdjustTable[1][i] = readWord(f);
         }
 
-        advanceTable = new int[2][advanceTableLenght * 8];
-        for(int i = 0; i < advanceTableLenght * 8; i++) {
-            advanceTable[0][i] = readWord(f);
-            advanceTable[1][i] = readWord(f);
+        advanceTable = new int[advanceTableLenght * 8 * 2];
+        for(int i = 0; i < advanceTableLenght * 8 * 2; i++) {
+            advanceTable[i] = readWord(f);
         }
 
         shadowCharMap = new int[shadowMapLenght * 2];
@@ -157,10 +158,9 @@ public class PGF {
         }
 
          if(revision == 3) {
-             charmapCompressionTable = new int[2][compCharMapLenght1 * 4 + compCharMapLenght2 * 4];
-             for(int i = 0; i < compCharMapLenght1 * 4 + compCharMapLenght2 * 4; i++) {
-                 charmapCompressionTable[0][i] = readUHalf(f);
-                 charmapCompressionTable[1][i] = readUHalf(f);
+             charmapCompressionTable = new int[(compCharMapLenght1 * 4 + compCharMapLenght2 * 4) * 2];
+             for(int i = 0; i < (compCharMapLenght1 * 4 + compCharMapLenght2 * 4) * 2; i++) {
+                 charmapCompressionTable[i] = readUHalf(f);
              }
          }
 
@@ -174,7 +174,7 @@ public class PGF {
             charPointerTable[i] = readUByte(f);
         }
 
-        // PGF Fontdata
+        // PGF Fontdata.
         fontDataOffset = f.position();
         fontDataLenght = f.capacity() - fontDataOffset;
         fontData = new int[fontDataLenght];
@@ -183,14 +183,20 @@ public class PGF {
         }
     }
 
+    public void setFileNamez(String fileName) {
+        fileNamez = fileName;
+    }
+    public String getFileNamez() {
+        return fileNamez;
+    }
+    public String getPGFMagic() {
+        return PGFMagic;
+    }
     public int getHeaderOffset() {
         return headerOffset;
     }
     public int getHeaderLenght() {
         return headerLenght;
-    }
-    public String getPGFMagic() {
-        return PGFMagic;
     }
     public int getRevision() {
         return revision;
@@ -203,5 +209,47 @@ public class PGF {
     }
     public String getFontType() {
         return fontType;
+    }
+    public int getCharMapLenght () {
+        return charMapLenght;
+    }
+    public int getCharPointerLenght() {
+        return charPointerLenght;
+    }
+    public int getShadowMapLenght () {
+        return shadowMapLenght;
+    }
+    public int getCompCharMapLenght () {
+        return compCharMapLenght1 + compCharMapLenght2;
+    }
+    public int getCharMapBpe () {
+        return charMapBpe;
+    }
+    public int getCharPointerBpe () {
+        return charPointerBpe;
+    }
+    public int getShadowMapBpe () {
+        return shadowMapBpe;
+    }
+    public int[] getMaxAdvance () {
+        return maxAdvance;
+    }
+    public int[] getAdvanceTable() {
+        return advanceTable;
+    }
+    public int[] getCharMap() {
+        return charMap;
+    }
+    public int[] getCharPointerTable() {
+        return charPointerTable;
+    }
+    public int[] getShadowCharMap() {
+        return shadowCharMap;
+    }
+    public int[] getShadowScale() {
+        return shadowScale;
+    }
+    public int[] getFontdata() {
+        return fontData;
     }
 }

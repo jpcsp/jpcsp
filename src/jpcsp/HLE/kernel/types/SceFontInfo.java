@@ -1,0 +1,188 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package jpcsp.HLE.kernel.types;
+
+import jpcsp.format.PGF;
+
+/*
+ * SceFontInfo struct based on BenHur's intraFont application.
+ * This struct is used to give an easy and organized access to the PGF data.
+ *
+ * TODO: Generate the respective textures for each glyph.
+ */
+
+public class SceFontInfo {
+    // PGF file.
+    private String fileName;  // The PGF file name.
+    private String fileType;  // The file type (only PGF support for now).
+    private int[] fontdata;   // Fontdata extracted from the PGF.
+
+    // Texture (generated from glyph).
+    private int[] texture;
+    private int texWidth;
+    private int texHeight;
+    private int texX;
+    private int texY;
+    private int texYSize;
+
+    // Characters properties and glyphs.
+    private int n_chars;
+    private int advancex;
+    private int advancey;
+    private int charmap_compr_len;
+    private int[] charmap_compr;
+    private int[] charmap;
+    private Glyph glyph;
+
+    // Shadow characters properties and glyphs.
+    private int n_shadows;
+    private int shadowscale;
+    private Glyph shadowGlyph;
+    private float size;
+    private int color;
+    private int shadowColor;
+
+    // Tables from PGF.
+    private int[] advanceMap;
+    private int[] shadowCharMap;
+    private int[] charPointerTable;
+
+    public SceFontInfo(PGF fontFile) {
+        // Parse the file and fill the structs parameters
+        // in a similar way as the one used in intraFont.
+
+        // PGF.
+        fileName = fontFile.getFileNamez();
+        fileType = fontFile.getPGFMagic();
+
+        // Characters/Shadow characters' variables.
+        n_chars = fontFile.getCharPointerLenght();
+        charmap_compr_len = (fontFile.getRevision() == 3) ? 7 : 1;
+        texYSize = 0;
+        advancex = fontFile.getMaxAdvance()[0]/16;
+        advancey = fontFile.getMaxAdvance()[1]/16;
+        n_shadows = fontFile.getShadowMapLenght();
+        shadowscale = fontFile.getShadowScale()[0];
+        glyph = new Glyph();
+        shadowGlyph = new Glyph();
+        charmap_compr = new int[fontFile.getCompCharMapLenght()];
+        charmap = new int[fontFile.getCharMapLenght()];
+
+        // Texture's variables (using 512 as default size for now).
+        texWidth = 512;
+        texHeight = 512;
+        texX = 1;
+        texY = 1;
+        size = 1.0f;
+        color = 0xFFFFFFFF;
+        shadowColor = 0xFF000000;
+        texture = new int[texWidth*texHeight];
+
+        // Convert and retrieve the necessary tables.
+        advanceMap = fontFile.getAdvanceTable();
+        shadowCharMap = getTable(fontFile.getShadowCharMap(), fontFile.getShadowMapLenght(), fontFile.getShadowMapBpe());
+        if(fontFile.getCharMapBpe() == 16) {
+            charmap = fontFile.getCharMap();
+        }
+        else {
+            charmap = getTable(fontFile.getCharMap(), fontFile.getCharMapLenght(), fontFile.getCharMapBpe());
+        }
+        charPointerTable = getTable(fontFile.getCharPointerTable(), fontFile.getCharPointerLenght(), fontFile.getCharPointerBpe());
+
+        // Get the font data.
+        fontdata = fontFile.getFontdata();
+    }
+
+    // Retrieve bits from a byte buffer based on bpe.
+    public int getBits(int bpe, int[] buf, int pos) {
+        int v = 0;
+        for(int i = 0; i < bpe; i++) {
+            v += (((buf[(pos)/8] >> ((pos)%8) ) & 1) << i);
+            pos++;
+        }
+        return v;
+    }
+
+    // Convert raw table into the correct bpe sized result.
+    public int[] getTable(int[] rawTable, int tableLenght, int tableBpe) {
+        int[] newTable = new int[tableLenght];
+        for(int i = 0; i < tableLenght; i++) {
+            newTable[i] = getBits(tableBpe, rawTable, i);
+        }
+        return newTable;
+    }
+
+    // Create and retrieve a glyph from the font data.
+    private Glyph getGlyph(int[] fontdata, int charPtr, int glyphType, int[] advancemap) {
+        Glyph out = new Glyph();
+        if (glyphType == 0x20) {
+            charPtr += 14;
+        } else {
+            charPtr += getBits(14, fontdata, charPtr) * 8 + 14;
+        }
+        out.w = getBits(7, fontdata, charPtr);
+        out.h = getBits(7, fontdata, charPtr);
+        out.left = getBits(7, fontdata, charPtr);
+        if (out.left >= 64)
+            out.left -= 128;
+        out.top = getBits(7, fontdata, charPtr);
+        if (out.top >= 64)
+            out.top -= 128;
+
+        out.flags = getBits(6, fontdata, charPtr);
+
+        if (out.flags == 0x20) {
+            charPtr += 7;
+            out.shadowID = getBits(9, fontdata, charPtr);
+            charPtr += 24 + ((out.flags == 0x04) ? 0 : 56) + ((out.flags == 0x08)? 0 : 56) + ((out.flags == 0x10)? 0 : 56);
+            out.advance = advancemap[getBits(8, fontdata, charPtr) * 2] / 16;
+        } else {
+            out.shadowID = 65535;
+            out.advance = 0;
+        }
+        out.ptr = charPtr / 8;
+
+        return out;
+    }
+
+    // Glyph class.
+    private class Glyph {
+        private int x;
+        private int y;
+        private int w;
+        private int h;
+        private int left;
+        private int top;
+        private int flags;
+        private int shadowID;
+        private int advance;
+        private long ptr;
+
+        private Glyph() {
+            x = 0;
+            y = 0;
+            w = 0;
+            h = 0;
+            left = 0;
+            top = 0;
+            flags = 0;
+            shadowID = 0;
+            advance = 0;
+            ptr = 0;
+        }
+    }
+}
