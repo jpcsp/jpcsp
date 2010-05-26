@@ -1103,10 +1103,28 @@ public class syscallsFirm15 {
                 sceHttpSaveSystemCookie(0x3105, 0x76D1363B), // 2.00+
                 sceHttpLoadSystemCookie(0x3106, 0xF1657B22), // 2.00+
 
-                scePsmfVerifyPsmf(0x3107, 0x2673646B),
-                scePsmfSetPsmf(0x3108, 0xC22C8327),
-                scePsmfGetNumberOfSpecificStreams(0x3109, 0x68D42328),
-                scePsmfQueryStreamOffset(0x310a, 0x5B70FCC1),
+                scePsmfSetPsmf(0x3107, 0xC22C8327),
+                scePsmfGetCurrentStreamType(0x3108, 0xC7DB3A5B),
+                scePsmfGetCurrentStreamNumber(0x3109, 0x28240568),
+                scePsmfSpecifyStreamWithStreamType(0x310a, 0x1E6D9013),
+                scePsmfSpecifyStream(0x310b, 0x4BC9BDE0),
+                scePsmfGetPresentationStartTime(0x310c, 0x76D3AEBA),
+                scePsmfGetPresentationEndTime(0x310d, 0xBD8AE0D8),
+                scePsmfGetNumberOfStreams(0x310e, 0xEAED89CD),
+                scePsmfGetNumberOfEPentries(0x310f, 0x7491C438),
+                scePsmfGetVideoInfo(0x3110, 0x0BA514E5),
+                scePsmfGetAudioInfo(0x3111, 0xA83F7113),
+                scePsmfCheckEPmap(0x3112, 0x971A3A90),
+                scePsmfGetEPWithId(0x3113, 0x4E624A34),
+                scePsmfGetEPWithTimestamp(0x3114, 0x7C0E7AC3),
+                scePsmfGetEPidWithTimestamp(0x3115, 0x5F457515),
+                scePsmfQueryStreamOffset(0x3116, 0x5B70FCC1),
+                scePsmfQueryStreamSize(0x3117, 0x9553CC91),
+                scePsmfGetNumberOfSpecificStreams(0x3118, 0x68D42328),
+                scePsmfSpecifyStreamWithStreamTypeNumber(0x3119, 0x0C120E1D),
+                scePsmfVerifyPsmf(0x311a, 0x2673646B),
+                scePsmfGetHeaderSize(0x311b, 0xB78EB9E9),
+                scePsmfGetStreamSize(0x311c, 0xA5EBFE81),
 
                 // We choose to start HLEModuleManager at 0x4000
 

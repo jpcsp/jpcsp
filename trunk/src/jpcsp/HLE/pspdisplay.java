@@ -914,11 +914,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
     }
 
-    public void sceDisplaySetFrameBuf(
-        int topaddr, int bufferwidth, int pixelformat, int sync)
-    {
+    public void sceDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int sync) {
         topaddr &= Memory.addressMask;
-        if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
+        // Sonic Rivals attempts to use 0 as a main memory address.
+        // Check if the address is valid.
+        if (!Memory.getInstance().isAddressGood(topaddr) ||
+            bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
             sync < 0 || sync > 1) {
             Modules.log.warn(
