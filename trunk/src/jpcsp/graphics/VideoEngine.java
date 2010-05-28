@@ -5000,13 +5000,14 @@ public class VideoEngine {
 	            	if (isLogDebugEnabled) {
 	            		log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", numberMipmaps, texture_width[0], texture_height[0], maxLevel));
 	            	}
+	            	int textureByteSize = textureByteAlignment * texture_width[numberMipmaps] * texture_height[numberMipmaps];
 		            // Build the other mipmaps level
 		            glu.gluBuild2DMipmapLevels(GL.GL_TEXTURE_2D,
 		            		texture_format,
 		            		texture_width[numberMipmaps], texture_height[numberMipmaps],
 		            		texture_format,
 		            		texture_type,
-		            		numberMipmaps, numberMipmaps + 1, maxLevel, final_buffer);
+		            		numberMipmaps, numberMipmaps + 1, maxLevel, final_buffer.limit(textureByteSize));
 		            if (isLogDebugEnabled) {
 			            for(int i = 0; i <= maxLevel; ++i) {
 			            	float[] size = new float[2];
