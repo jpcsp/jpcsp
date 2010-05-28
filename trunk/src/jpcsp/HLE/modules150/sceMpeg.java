@@ -119,11 +119,13 @@ public class sceMpeg implements HLEModule {
         mpegAvcCurrentTimestamp = 0;
         avcAuAddr = 0;
         atracAuAddr = 0;
-        if (useMpegCodec || isEnableMediaEngine()) {
-            setEnableMpeg(true);
+        if (useMpegCodec) {
         	mpegCodec = new MpegCodec();
         }
-        me = new MediaEngine();
+        if (isEnableMediaEngine()) {
+        	setEnableMpeg(true);
+        	me = new MediaEngine();
+        }
     }
 
     @Override
@@ -214,6 +216,7 @@ public class sceMpeg implements HLEModule {
     protected int videoPixelMode;
     protected int avcDetailFrameWidth;
     protected int avcDetailFrameHeight;
+    protected int defaultFrameWidth;
 
     public static final int MPEG_VERSION_0012 = 0;
     public static final int MPEG_VERSION_0013 = 1;
@@ -382,7 +385,7 @@ public class sceMpeg implements HLEModule {
 
         // Get the current generated image, convert it to pixels and write it
         // to memory.
-        if(me != null && me.getCurrentImg() != null) {
+        if (me != null && me.getCurrentImg() != null) {
             for (int y = 0; y < 272; y++) {
                 int address = dest_addr + y * frameWidth * bytesPerPixel;
                 IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
@@ -398,8 +401,6 @@ public class sceMpeg implements HLEModule {
 
                     int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
                     memoryWriter.writeNext(pixelColor);
-
-                    address += bytesPerPixel;
                 }
             }
         }
@@ -588,6 +589,7 @@ public class sceMpeg implements HLEModule {
             videoFrameCount = 0;
             audioFrameCount = 0;
             videoPixelMode = PSP_DISPLAY_PIXEL_FORMAT_8888;
+            defaultFrameWidth = frameWidth;
 
             cpu.gpr[2] = 0;
         } else {
@@ -1086,14 +1088,9 @@ public class sceMpeg implements HLEModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",init=0x" + Integer.toHexString(init_addr) + ")");
 
-        // Some games send a frameWidth of 0 on purpose.
-        // This happens when the game is using sceDisplaySetFrameBuf with
-        // main memory instead of VRAM. We need to retrieve the bufferWidthFb
-        // from pspdisplay and use it as the final frameWidth.
-        if(frameWidth == 0) {
-            frameWidth = pspdisplay.getInstance().getBufferWidthFb();
-            Modules.log.warn("sceMpegAvcDecode: Uninitialized frameWidth. Setting to bufferWidthFb=" +
-                     frameWidth);
+        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate
+        if (frameWidth == 0) {
+            frameWidth = defaultFrameWidth;
         }
 
         if (mpegRingbuffer != null) {
@@ -1484,10 +1481,9 @@ public class sceMpeg implements HLEModule {
             + ",frameWidth=" + frameWidth
             + ",dest=0x" + Integer.toHexString(dest_addr) + ")");
 
-        if(frameWidth == 0) {
-            frameWidth = pspdisplay.getInstance().getBufferWidthFb();
-            Modules.log.warn("sceMpegAvcCsc: Uninitialized frameWidth. Setting to bufferWidthFb=" +
-                     frameWidth);
+        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate
+        if (frameWidth == 0) {
+            frameWidth = defaultFrameWidth;
         }
 
         if (mpegRingbuffer != null) {
