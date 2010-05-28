@@ -28,7 +28,7 @@ import java.util.Arrays;
 public class VfpuState extends FpuState {
 
     public float[][][] vpr; // mtx, fsl, idx
-    private static final float floatConstants[] = {
+    public static final float floatConstants[] = {
         0.0f,
         Float.MAX_VALUE,
         (float) Math.sqrt(2.0f),

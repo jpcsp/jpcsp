@@ -83,7 +83,9 @@ public class FpuState extends BcuState {
     }
     
     public void doMFC1(int rt, int c1dr) {
-        gpr[rt] = Float.floatToRawIntBits(fpr[c1dr]);
+    	if (rt != 0) {
+    		gpr[rt] = Float.floatToRawIntBits(fpr[c1dr]);
+    	}
     }
     
     public void doCFC1(int rt, int c1cr) {
