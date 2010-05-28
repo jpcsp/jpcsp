@@ -114,7 +114,7 @@ public class Emulator implements Runnable {
 
         initNewPsp();
 
-        module = jpcsp.Loader.getInstance().LoadModule(pspfilename, f, 0x08800000);
+        module = jpcsp.Loader.getInstance().LoadModule(pspfilename, f, MemoryMap.START_USERSPACE + 0x4000);
 
         //if (module.fileFormat == Loader.FORMAT_UNKNOWN ||
         //    (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {

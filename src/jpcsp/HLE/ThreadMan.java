@@ -165,7 +165,7 @@ public class ThreadMan {
         install_async_loop_handler();
 
         // Create a thread the program will run inside
-        current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x4000, attr);
+        current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
         current_thread.moduleid = moduleid;
         threadMap.put(current_thread.uid, current_thread);
 
@@ -212,8 +212,8 @@ public class ThreadMan {
             | (AllegrexOpcodes.SYSCALL & 0x3f)
             | ((syscallsFirm15.calls.sceKernelDelayThread.getSyscall() & 0x000fffff) << 6);
 
-        // TODO
-        //pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
+        // This memory is always reserved on a real PSP
+        int reservedMem = pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
 
         mem.write32(IDLE_THREAD_ADDRESS + 0,  instruction_addiu);
         mem.write32(IDLE_THREAD_ADDRESS + 4,  instruction_lui);
@@ -221,13 +221,20 @@ public class ThreadMan {
         mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
 
         // lowest allowed priority is 0x77, so we are ok at 0x7f
-        // Allocate a small stack because interrupts can be processed by the
+        // Allocate a stack because interrupts can be processed by the
         // idle thread, using its stack.
-        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x200, PSP_THREAD_ATTR_KERNEL);
+        // The stack is allocated into the reservedMem area.
+        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
+        idle0.stackSize = 0x2000;
+        idle0.stack_addr = reservedMem;
+        idle0.reset();
         threadMap.put(idle0.uid, idle0);
         changeThreadState(idle0, PSP_THREAD_READY);
 
-        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x200, PSP_THREAD_ATTR_KERNEL);
+        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
+        idle1.stackSize = 0x2000;
+        idle1.stack_addr = reservedMem + 0x2000;
+        idle1.reset();
         threadMap.put(idle1.uid, idle1);
         changeThreadState(idle1, PSP_THREAD_READY);
 
@@ -1019,6 +1026,13 @@ public class ThreadMan {
         Modules.log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
         SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
 
+        if (thread.stackSize > 0 && thread.stack_addr == 0) {
+            Modules.log.warn("sceKernelCreateThread not enough memory to create the stack");
+        	deleteThread(thread);
+        	Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_NO_MEMORY;
+        	return;
+        }
+
         // TODO user thread trying to create kernel thread should be disallowed with ERROR_ILLEGAL_ATTR
 
         // Inherit kernel mode if user mode bit is not set
@@ -1220,14 +1234,15 @@ public class ThreadMan {
 
     /** exit the current thread, then delete it */
     public void ThreadMan_sceKernelExitDeleteThread(int exitStatus) {
-        SceKernelThreadInfo thread = current_thread; // save a reference for post context switch operations
-        Modules.log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(current_thread.uid)
-            + " name:'" + current_thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
+    	SceKernelThreadInfo thread = current_thread; // save a reference for post context switch operations
+        Modules.log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid)
+            + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
 
         // Exit
-        current_thread.exitStatus = exitStatus;
+        thread.exitStatus = exitStatus;
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        changeThreadState(current_thread, PSP_THREAD_STOPPED);
+        changeThreadState(thread, PSP_THREAD_STOPPED);
+        RuntimeContext.onThreadExit(thread);
 
         // Mark thread for deletion
         setToBeDeletedThread(thread);
