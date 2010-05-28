@@ -180,7 +180,7 @@ public class EventFlagManager {
             }
         }
 
-        if (yield) {
+        if (yield && !threadMan.isInsideCallback()) {
             Modules.log.debug("onEventFlagModified yielding to thread with higher priority");
             threadMan.yieldCurrentThread();
         }
