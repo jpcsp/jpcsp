@@ -211,7 +211,23 @@ public class sceAudio implements HLEModule, HLEThread {
     		}
     	}
 
-        @Override
+    	public int getRestLength() {
+    		int length = 0;
+
+    		check();
+
+    		if (outputDataLine != null) {
+    			length += outputDataLine.getBufferSize() - outputDataLine.available();
+    		}
+
+    		for (byte[] buffer : waitingBuffers) {
+    			length += buffer.length;
+    		}
+
+    		return length;
+    	}
+
+    	@Override
 		public String toString() {
         	StringBuilder result = new StringBuilder();
 
@@ -965,43 +981,10 @@ public class sceAudio implements HLEModule, HLEThread {
     protected int hleAudioGetChannelRestLen(int channel) {
         int len = 0;
 
-        if (pspchannels[channel].outputDataLine != null)
-        {
-            /* the number of samples left to be consumed by the java sound library's own internal buffers
-            int bytespersample = 4;
+        len = pspchannels[channel].getRestLength();
 
-            if ((pspchannels[channel].format & 0x10) == 0x10)
-                bytespersample = 2;
-
-            len = pspchannels[channel].outputDataLine.available() / bytespersample;
-            */
-
-            // the number of samples left to play in real time, not the number left to be consumed
-            // TODO this is really messed up with overflows and underflows but at least len eventually reaches 0 :)
-            long framesPlayed = pspchannels[channel].outputDataLine.getLongFramePosition()
-                - pspchannels[channel].referenceFramePosition;
-
-            //if (framesPlayed < 0)
-            //    Modules.log.debug("hleAudioGetChannelRestLen(channel=" + channel + ") framesPlayed=" + framesPlayed);
-
-            len = pspchannels[channel].allocatedSamples - (int)framesPlayed;
-            /*
-            if (len > 0 || pspchannels[channel].waitingThreadId >= 0) {
-                Modules.log.debug("hleAudioGetChannelRestLen(channel=" + channel + ") len=" + len);
-            }
-            */
-
-            if (len < 0) {
-                //Modules.log.error("hleAudioGetChannelRestLen(channel=" + channel
-                //    + ") clamping len=" + len + " to 0");
-
-                len = 0;
-            } else if (len > pspchannels[channel].allocatedSamples) {
-                //Modules.log.error("hleAudioGetChannelRestLen(channel=" + channel
-                //    + ") clamping len=" + len + " to " + pspchannels[channel].allocatedSamples);
-
-                len = pspchannels[channel].allocatedSamples;
-            }
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("hleAudioGetChannelRestLen(%d) = %d", channel, len));
         }
 
         return len;
