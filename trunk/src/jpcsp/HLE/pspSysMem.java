@@ -35,36 +35,22 @@ import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.managers.*;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 public class pspSysMem {
     private static pspSysMem instance;
     private static Logger stdout = Logger.getLogger("stdout");
     private static HashMap<Integer, SysMemInfo> blockList;
     private static MemoryChunkList freeMemoryChunks;
-    private int firmwareVersion = PSP_FIRMWARE_150;
+    private int firmwareVersion = 150;
     private boolean disableReservedThreadMemory = false;
+    private static final int defaultSizeAlignment = 256;
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
     public static final int PSP_SMEM_High = 1;
     public static final int PSP_SMEM_Addr = 2;
     public static final int PSP_SMEM_LowAligned = 3;
     public static final int PSP_SMEM_HighAligned = 4;
-    // Firmware versions
-    public static final int PSP_FIRMWARE_100 = 0x01000300;
-    public static final int PSP_FIRMWARE_150 = 0x01050001;
-    public static final int PSP_FIRMWARE_151 = 0x01050100;
-    public static final int PSP_FIRMWARE_152 = 0x01050200;
-    public static final int PSP_FIRMWARE_200 = 0x02000010;
-    public static final int PSP_FIRMWARE_201 = 0x02000010; // Same as 2.00
-    public static final int PSP_FIRMWARE_250 = 0x02050010;
-    public static final int PSP_FIRMWARE_260 = 0x02060010;
-    public static final int PSP_FIRMWARE_270 = 0x02070010;
-    public static final int PSP_FIRMWARE_271 = 0x02070110;
-    public final static int PSP_ERROR_ILLEGAL_PARTITION_ID = 0x800200d6;
-    public final static int PSP_ERROR_PARTITION_IN_USE = 0x800200d7;
-    public final static int PSP_ERROR_ILLEGAL_MEMORY_BLOCK_ALLOCATION_TYPE = 0x800200d8;
-    public final static int PSP_ERROR_FAILED_TO_ALLOCATE_MEMORY_BLOCK = 0x800200d9;
-    public final static int PSP_ERROR_ILLEGAL_CHUNK_ID = 0x800200de; // may not be for pspsysmem...
 
     private pspSysMem() {
     }
@@ -88,17 +74,22 @@ public class pspSysMem {
         setFirmwareVersion(firmwareVersion);
     }
 
+    // This compatibility settings should now be obsolete
+    // TODO Delete the "DisableReservedThreadMemory" compatibility setting
     public void setDisableReservedThreadMemory(boolean disableReservedThreadMemory) {
         this.disableReservedThreadMemory = disableReservedThreadMemory;
-        Modules.log.info("Reserving thread memory: " + !disableReservedThreadMemory);
+        Modules.log.info("Disable reserved thread memory: " + disableReservedThreadMemory);
+        if (!disableReservedThreadMemory) {
+        	Modules.log.info("Please inform us if this application is really running better when unchecking the option 'Disable reserved thread memory' (all other settings unchanged)");
+        }
     }
 
-    // Allocates to 64-byte alignment
+    // Allocates to 256-byte alignment
     // TODO use the partitionid
     public int malloc(int partitionid, int type, int size, int addr) {
         int allocatedAddress = 0;
 
-        int alignment = 63;
+        int alignment = defaultSizeAlignment - 1;
         if (type == PSP_SMEM_LowAligned || type == PSP_SMEM_HighAligned) {
             // Use the alignment provided in the addr parameter
             alignment = addr - 1;
@@ -275,14 +266,14 @@ public class pspSysMem {
         }
 
         if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned) {
-            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_MEMORY_BLOCK_ALLOCATION_TYPE;
+            Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
         } else {
             addr = malloc(partitionid, type, size, addr);
             if (addr != 0) {
                 SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
                 Emulator.getProcessor().cpu.gpr[2] = info.uid;
             } else {
-                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FAILED_TO_ALLOCATE_MEMORY_BLOCK;
+                Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_FAILED_ALLOC_MEMBLOCK;
             }
         }
     }
@@ -292,7 +283,7 @@ public class pspSysMem {
         SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
+            Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_CHUNK_ID;
         } else {
         	if (Modules.log.isDebugEnabled()) {
         		Modules.log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
@@ -307,7 +298,7 @@ public class pspSysMem {
         SysMemInfo info = blockList.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
+            Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_CHUNK_ID;
         } else {
         	if (Modules.log.isDebugEnabled()) {
         		Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
@@ -342,7 +333,7 @@ public class pspSysMem {
             Emulator.getProcessor().cpu.gpr[2] = info.uid;
         } else {
             Modules.log.warn(msg + " failed");
-            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FAILED_TO_ALLOCATE_MEMORY_BLOCK;
+            Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_FAILED_ALLOC_MEMBLOCK;
         }
     }
 
@@ -409,23 +400,25 @@ public class pspSysMem {
 
     /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
     public void setFirmwareVersion(int firmwareVersion) {
-        int major = firmwareVersion / 100;
-        int minor = (firmwareVersion / 10) % 10;
-        int revision = firmwareVersion % 10;
-        this.firmwareVersion = (major << 24) | (minor << 16) | (revision << 8) | 0x10;
-        //Modules.log.debug(String.format("pspSysMem firmware version 0x%08X", this.firmwareVersion));
+    	this.firmwareVersion = firmwareVersion;
     }
 
     public void sceKernelDevkitVersion() {
-        Modules.log.debug("sceKernelDevkitVersion return:0x" + Integer.toHexString(firmwareVersion));
-        Emulator.getProcessor().cpu.gpr[2] = firmwareVersion;
+        int major = firmwareVersion / 100;
+        int minor = (firmwareVersion / 10) % 10;
+        int revision = firmwareVersion % 10;
+        int devkitVersion = (major << 24) | (minor << 16) | (revision << 8) | 0x10;
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelDevkitVersion return:0x%08X", devkitVersion));
+        }
+        Emulator.getProcessor().cpu.gpr[2] = devkitVersion;
     }
 
     /** 3.52+ */
     public void sceKernelGetModel() {
         int result = 0; // <= 0 original, 1 slim
 
-        if (firmwareVersion < 0x03050210) {
+        if (firmwareVersion < 352) {
             Modules.log.debug("sceKernelGetModel called with fw less than 3.52 loaded");
         } else {
             Modules.log.debug("sceKernelGetModel ret:" + result);

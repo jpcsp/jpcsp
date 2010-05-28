@@ -19,7 +19,6 @@ package jpcsp.HLE.modules271;
 
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.Processor;
 
 public class Sample extends jpcsp.HLE.modules150.Sample {
@@ -38,7 +37,7 @@ public class Sample extends jpcsp.HLE.modules150.Sample {
 
         // If the requested firmware version is lower than this class,
         // try the parent version.
-        if (version < pspSysMem.PSP_FIRMWARE_271) {
+        if (version < 271) {
             super.installModule(mm, version);
             return;
         }
@@ -51,7 +50,7 @@ public class Sample extends jpcsp.HLE.modules150.Sample {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
 
-        if (version < pspSysMem.PSP_FIRMWARE_271) {
+        if (version < 271) {
             super.uninstallModule(mm, version);
             return;
         }

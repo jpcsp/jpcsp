@@ -87,8 +87,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int attr;
     public int status; // it's a bitfield but I don't think we ever use more than 1 bit at once
     public final int entry_addr;
-    public final int stack_addr; // using low address, no need to add stackSize to the pointer returned by malloc
-    public final int stackSize;
+    public int stack_addr; // using low address, no need to add stackSize to the pointer returned by malloc
+    public int stackSize;
     public int gpReg_addr;
     public final int initPriority; // lower numbers mean higher priority
     public int currentPriority;
