@@ -22,6 +22,8 @@ import java.awt.event.KeyListener;
 import java.awt.Point;
 import javax.swing.JOptionPane;
 
+import jpcsp.HLE.ThreadMan;
+
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     private javax.swing.JButton jButtonInsert;
     private javax.swing.JButton jButtonRemove;
@@ -30,10 +32,14 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     private javax.swing.JTextArea jTextArea1;
 
     private String code = "";
+    private String codeType = "";
+    private static CheatsGUI instance;
 
     public CheatsGUI(String type) {
         initComponents();
         setTitle("Cheats - " + type);
+        codeType = type;
+        instance = this;
     }
 
     @Override
@@ -125,10 +131,25 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         pack();
     }
 
+    public static CheatsGUI getInstance() {
+        return instance;
+    }
+
+    public String getCodeType() {
+        return codeType;
+    }
+
     public boolean checkCWCheatFormat(String text) {
         return(text.charAt(0) == '0' && text.charAt(1) == 'x' &&
                 text.charAt(11) == '0' && text.charAt(12) == 'x' &&
                 text.length() == 21);
+    }
+
+    public String[] getCheats() {
+        String text = jTextArea1.getText();
+        String[] codes = text.split("\n");
+
+        return codes;
     }
 
     private void jButtonRemoveActionPerformed(java.awt.event.ActionEvent evt) {
@@ -153,7 +174,9 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }
 
     private void jRadioONOFFActionPerformed(java.awt.event.ActionEvent evt) {
-        // TODO
+        if(!jTextArea1.getText().equals("")) {
+            ThreadMan.getInstance().try_hook_cheat_thread();
+        }
     }
 
     private void jTextArea1MouseClicked(java.awt.event.MouseEvent evt) {

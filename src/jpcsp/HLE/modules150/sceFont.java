@@ -338,20 +338,19 @@ public class sceFont implements HLEModule {
                 PGF currentPGF = PGFFilesMap.get(fontAddr);
 				// Maximal structure length is 264, but might be shorter.
 				float unknownFloatValue = 100.f;
-				short unknownShortValue = 100;
-                float unknownSffValue = 100 / 64.0f;
+                int unknown26SfpValue = (100 << 6) * 64;
 
-                // Glyph metrics (in 26.6 signed fixed float).
-                mem.write32(fontInfoAddr + 0, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 4, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 8, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 12, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 16, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 20, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 24, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 28, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 32, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(fontInfoAddr + 36, Float.floatToRawIntBits(unknownSffValue));
+                // Glyph metrics (in 26.6 signed fixed-point).
+                mem.write32(fontInfoAddr + 0, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 4, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 8, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 12, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 16, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 20, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 24, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 28, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 32, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 36, unknown26SfpValue);
 
                 // Glyph metrics (replicated as float?).
                 mem.write32(fontInfoAddr + 40, Float.floatToRawIntBits(unknownFloatValue));
@@ -366,8 +365,8 @@ public class sceFont implements HLEModule {
                 mem.write32(fontInfoAddr + 76, Float.floatToRawIntBits(unknownFloatValue));
 
                 // Bitmap dimensions.
-                mem.write16(fontInfoAddr + 80, unknownShortValue);
-                mem.write16(fontInfoAddr + 82, unknownShortValue);
+                mem.write16(fontInfoAddr + 80, (short)512);
+                mem.write16(fontInfoAddr + 82, (short)512);
 
                 mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLenght()); // Number of elements in the font's charmap.
                 mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLenght());   // Number of elements in the font's shadow charmap.
@@ -416,24 +415,38 @@ public class sceFont implements HLEModule {
 			cpu.gpr[2] = -1;
 		} else {
 			if (mem.isAddressGood(charInfoAddr)) {
-                float unknownSffValue = 100 / 64.0f;
-				// Write dummy charInfo data
+                // Write dummy charInfo data
+                int sfp26Width =     (Debug.Font.charWidth << 6) * 64;
+                int sfp26Height =    (Debug.Font.charHeight << 6) * 64;
+                int sfp26Ascender =  (1 << 6) * 64;
+                int sfp26Descender = (1 << 6) * 64;
+                int sfp26BearingHX = (1 << 6) * 64;
+                int sfp26BearingHY = (1 << 6) * 64;
+                int sfp26BearingVX = (1 << 6) * 64;
+                int sfp26BearingVY = (1 << 6) * 64;
+                int sfp26AdvanceH =  (1 << 6) * 64;
+                int sfp26AdvanceV =  (1 << 6) * 64;
+
+                // Bitmap dimensions.
 				mem.write32(charInfoAddr +  0, Debug.Font.charWidth);	// bitmapWidth
 				mem.write32(charInfoAddr +  4, Debug.Font.charHeight);	// bitmapHeight
-				mem.write32(charInfoAddr +  8, 0);	// bitmapLeft
-				mem.write32(charInfoAddr + 12, 0);	// bitmapRight
+                // Upper-left pixel position.
+                mem.write32(charInfoAddr +  8, 0);	// bitmapLeft
+				mem.write32(charInfoAddr + 12, 0);	// bitmapTop
 
-                // Glyph metrics (in 26.6 signed fixed float).
-                mem.write32(charInfoAddr + 0, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 4, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 8, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 12, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 16, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 20, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 24, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 28, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 32, Float.floatToRawIntBits(unknownSffValue));
-                mem.write32(charInfoAddr + 36, Float.floatToRawIntBits(unknownSffValue));
+                // Glyph metrics (in 26.6 signed fixed-point).
+                // These values are used by sceFontGetCharGlyphImage.
+                // TODO: Get each char's dimensions from the PGF file.
+                mem.write32(charInfoAddr + 16, sfp26Width);     // Width
+                mem.write32(charInfoAddr + 20, sfp26Height);    // Height
+                mem.write32(charInfoAddr + 24, sfp26Ascender);  // Ascender
+                mem.write32(charInfoAddr + 28, sfp26Descender); // Descender
+                mem.write32(charInfoAddr + 32, sfp26BearingHX); // X horizontal bearing
+                mem.write32(charInfoAddr + 36, sfp26BearingHY); // Y horizontal bearing
+                mem.write32(charInfoAddr + 40, sfp26BearingVX); // X vertical bearing
+                mem.write32(charInfoAddr + 44, sfp26BearingVY); // Y vertical bearing
+                mem.write32(charInfoAddr + 48, sfp26AdvanceH);  // Horizontal advance
+                mem.write32(charInfoAddr + 52, sfp26AdvanceV);  // Vertical advance
 
                 // Unknown.
                 mem.write8(charInfoAddr + 56, (byte)0);
@@ -461,22 +474,42 @@ public class sceFont implements HLEModule {
 			cpu.gpr[2] = -1;
 		} else {
 			if (mem.isAddressGood(glyphImageAddr)) {
-                // sceFontGetCharGlyphImage is supposed to write the glyph's
+                // sceFontGetCharGlyphImage is supposed to read and write the glyph's
                 // data. It uses the PGF file for this.
 
-				// Write GlyphImage data
-                mem.write32(glyphImageAddr, 0);      // Pixel format
-                mem.write32(glyphImageAddr + 4, 0);  // xPos64
-                mem.write32(glyphImageAddr + 8, 0);  // yPos64
-                mem.write16(glyphImageAddr + 12, (short)0); // Buffer's width
-                mem.write16(glyphImageAddr + 14, (short)0); // Buffer's height
-                mem.write16(glyphImageAddr + 16, (short)0); // Bytes per line
-                mem.write16(glyphImageAddr + 18, (short)0); // Padding?
-                mem.write32(glyphImageAddr + 20, 0); // Buffer's address
-            }
+                // Read GlyphImage data
+                int pixelFormat  = mem.read32(glyphImageAddr +  0);
+                int xPos64       = mem.read32(glyphImageAddr +  4);
+                int yPos64       = mem.read32(glyphImageAddr +  8);
+                int bufWidth     = mem.read16(glyphImageAddr + 12);
+                int bufHeight    = mem.read16(glyphImageAddr + 14);
+                int bytesPerLine = mem.read16(glyphImageAddr + 16);
+                int buffer       = mem.read32(glyphImageAddr + 20);
 
-            // Faking.
-            // TODO: PGF file parsing.
+                // 26.6 fixed-point.
+                int xPosI = (xPos64 >> 6) / 64;
+                int yPosI = (yPos64 >> 6) / 64;
+
+                Modules.log.info("sceFontGetCharGlyphImage c=" + ((char) charCode)
+                        + ", xPos=" + xPosI + ", yPos=" + yPosI
+                        + ", buffer=0x" + Integer.toHexString(buffer)
+                        + ", bufWidth=" + bufWidth
+                        + ", bufHeight=" + bufHeight
+                        + ", bytesPerLine=" + bytesPerLine
+                        + ", pixelFormat=" + pixelFormat);
+
+
+                // Output static.
+                int pixelAddr = buffer;
+                int pixelValue = 0xF;
+
+                for (int h = 0; h < bufHeight - 1; h++, buffer += bytesPerLine) {
+                    for (int w = 0; w < bufWidth; w++) {
+                        pixelAddr = buffer + w;
+                        mem.write8(pixelAddr, (byte)pixelValue);
+                    }
+                }
+            }
 
 			cpu.gpr[2] = 0;
 		}
@@ -509,11 +542,11 @@ public class sceFont implements HLEModule {
 
         int libHandle = cpu.gpr[4];
         int index = cpu.gpr[5];
-        int unk = cpu.gpr[6];  // Mode (file/memory)?
+        int mode = cpu.gpr[6];
         int errorCodeAddr = cpu.gpr[7];
 
         Modules.log.warn(String.format("PARTIAL: sceFontOpen libHandle=0x%08X, index=%d, unk=%d, errorCodeAddr=0x%08X"
-                , libHandle, index, unk, errorCodeAddr));
+                , libHandle, index, mode, errorCodeAddr));
 
         FontLib fLib = fontLibMap.get(libHandle);
         if(fLib != null) {
