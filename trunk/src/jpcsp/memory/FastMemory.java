@@ -94,7 +94,7 @@ public class FastMemory extends Memory {
 	public int read8(int address) {
 		try {
 			address &= addressMask;
-			int data = all[address / 4];
+			int data = all[address >> 2];
 			switch (address & 0x03) {
 				case 1: data >>=  8; break;
 				case 2: data >>= 16; break;
@@ -116,7 +116,7 @@ public class FastMemory extends Memory {
 	public int read16(int address) {
 		try {
 			address &= addressMask;
-			int data = all[address / 4];
+			int data = all[address >> 2];
 			if ((address & 0x02) != 0) {
 				data >>= 16;
 			}
@@ -141,7 +141,7 @@ public class FastMemory extends Memory {
 				log.trace("read32(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(all[address / 4]).toUpperCase() + " (" + Float.intBitsToFloat(all[address / 4]) + ")");
 			}
 
-			return all[address / 4];
+			return all[address >> 2];
 		} catch (Exception e) {
 			if (read32AllowedInvalidAddress(address)) {
 				return 0;
@@ -173,7 +173,7 @@ public class FastMemory extends Memory {
 	public void write8(int address, byte data) {
 		try {
 			address &= addressMask;
-			int memData = all[address / 4];
+			int memData = all[address >> 2];
 			switch (address & 0x03) {
 			case 0: memData = (memData & 0xFFFFFF00) | ((data & 0xFF)      ); break;
 			case 1: memData = (memData & 0xFFFF00FF) | ((data & 0xFF) <<  8); break;
@@ -185,7 +185,7 @@ public class FastMemory extends Memory {
 				log.trace("write8(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFF).toUpperCase() + ")");
 			}
 
-			all[address / 4] = memData;
+			all[address >> 2] = memData;
             pspdisplay.getInstance().write8(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
@@ -196,7 +196,7 @@ public class FastMemory extends Memory {
 	public void write16(int address, short data) {
 		try {
 			address &= addressMask;
-			int memData = all[address / 4];
+			int memData = all[address >> 2];
 			if ((address & 0x02) == 0) {
 				memData = (memData & 0xFFFF0000) | (data & 0xFFFF);
 			} else {
@@ -207,7 +207,7 @@ public class FastMemory extends Memory {
 				log.trace("write16(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFFFF).toUpperCase() + ")");
 			}
 
-			all[address / 4] = memData;
+			all[address >> 2] = memData;
             pspdisplay.getInstance().write16(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
@@ -218,7 +218,7 @@ public class FastMemory extends Memory {
 	public void write32(int address, int data) {
 		try {
 			address &= addressMask;
-			all[address / 4] = data;
+			all[address >> 2] = data;
 
 			if (traceWrite && log.isTraceEnabled()) {
 				log.trace("write32(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data).toUpperCase() + " (" + Float.intBitsToFloat(data) + "))");

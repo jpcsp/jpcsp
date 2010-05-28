@@ -98,7 +98,10 @@ public class MemoryReader {
 		}
 	}
 
-	private static class MemoryReaderGeneric implements IMemoryReader {
+	// The Java JIT compiler is producing slightly faster code for "final" methods.
+	// Added "final" here only for performance reasons. Can be removed if inheritance
+	// of these classes is required.
+	private final static class MemoryReaderGeneric implements IMemoryReader {
 		private Memory mem;
 		private int address;
 		private int length;
@@ -112,7 +115,7 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			int n;
 
 			if (length <= 0) {
@@ -133,7 +136,7 @@ public class MemoryReader {
 		}
 	}
 
-	private static class MemoryReaderIntArray8 implements IMemoryReader {
+	private final static class MemoryReaderIntArray8 implements IMemoryReader {
 		private int index;
 		private int offset;
 		private int value;
@@ -147,7 +150,7 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			int n;
 
 			if (index == 4) {
@@ -163,7 +166,7 @@ public class MemoryReader {
 		}
 	}
 
-	private static class MemoryReaderIntArray16 implements IMemoryReader {
+	private final static class MemoryReaderIntArray16 implements IMemoryReader {
 		private int index;
 		private int offset;
 		private int value;
@@ -179,7 +182,7 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			int n;
 
 			if (index == 0) {
@@ -195,7 +198,7 @@ public class MemoryReader {
 		}
 	}
 
-	private static class MemoryReaderIntArray32 implements IMemoryReader {
+	private final static class MemoryReaderIntArray32 implements IMemoryReader {
 		private int offset;
 		private int[] buffer;
 
@@ -205,12 +208,12 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			return buffer[offset++];
 		}
 	}
 
-	private static class MemoryReaderInt8 implements IMemoryReader {
+	private final static class MemoryReaderInt8 implements IMemoryReader {
 		private int index;
 		private int value;
 		private IntBuffer buffer;
@@ -224,7 +227,7 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			int n;
 
 			if (index == 4) {
@@ -239,7 +242,7 @@ public class MemoryReader {
 		}
 	}
 
-	private static class MemoryReaderInt16 implements IMemoryReader {
+	private final static class MemoryReaderInt16 implements IMemoryReader {
 		private int index;
 		private int value;
 		private IntBuffer buffer;
@@ -253,7 +256,7 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			int n;
 
 			if (index == 0) {
@@ -269,7 +272,7 @@ public class MemoryReader {
 		}
 	}
 
-	private static class MemoryReaderInt32 implements IMemoryReader {
+	private final static class MemoryReaderInt32 implements IMemoryReader {
 		private IntBuffer buffer;
 
 		public MemoryReaderInt32(IntBuffer buffer) {
@@ -277,12 +280,12 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			return buffer.get();
 		}
 	}
 
-	private static class MemoryReaderByte8 implements IMemoryReader {
+	private final static class MemoryReaderByte8 implements IMemoryReader {
 		private ByteBuffer buffer;
 
 		public MemoryReaderByte8(ByteBuffer buffer) {
@@ -290,12 +293,12 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			return ((int) buffer.get()) & 0xFF;
 		}
 	}
 
-	private static class MemoryReaderByte16 implements IMemoryReader {
+	private final static class MemoryReaderByte16 implements IMemoryReader {
 		private ByteBuffer buffer;
 
 		public MemoryReaderByte16(ByteBuffer buffer) {
@@ -303,12 +306,12 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			return ((int) buffer.getShort()) & 0xFFFF;
 		}
 	}
 
-	private static class MemoryReaderByte32 implements IMemoryReader {
+	private final static class MemoryReaderByte32 implements IMemoryReader {
 		private ByteBuffer buffer;
 
 		public MemoryReaderByte32(ByteBuffer buffer) {
@@ -316,7 +319,7 @@ public class MemoryReader {
 		}
 
 		@Override
-		public int readNext() {
+		public final int readNext() {
 			return buffer.getInt();
 		}
 	}
