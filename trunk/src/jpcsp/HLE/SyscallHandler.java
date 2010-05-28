@@ -1077,6 +1077,9 @@ public class SyscallHandler {
                 case 0x6f002:
                     ThreadMan.getInstance().hleKernelAsyncLoop();
                     break;
+                case 0x6f003:
+                    ThreadMan.getInstance().hleKernelCheatExecute();
+                    break;
 
                 case 0xfffff: { // special code for unmapped imports
                     CpuState cpu = Emulator.getProcessor().cpu;
