@@ -64,7 +64,7 @@ public class Hash {
 	/**
 	 * Generate a hashCode on a memory range using a rather simple but fast method.
 	 * The hashCode will be independent of the address, i.e. the same hashCode will
-	 * be generated for the same data but at different memory adresses.
+	 * be generated for the same data at different memory addresses.
 	 * 
 	 * @param hashCode		current hashCode value
 	 * @param addr			start of the memory range to be hashed

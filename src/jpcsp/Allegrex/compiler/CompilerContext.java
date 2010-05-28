@@ -28,6 +28,8 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.Allegrex.VfpuState.Vcr;
+import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
+import jpcsp.Allegrex.VfpuState.Vcr.PfxSrc;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.Allegrex.compiler.nativeCode.Nop;
@@ -61,9 +63,10 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_GPR = 4;
     private static final int LOCAL_INSTRUCTION_COUNT = 5;
     private static final int LOCAL_CPU = 6;
-    private static final int LOCAL_TMP = 7;
-    private static final int LOCAL_MAX = 8;
-    private static final int STACK_MAX = 10;
+    private static final int LOCAL_TMP1 = 7;
+    private static final int LOCAL_TMP2 = 8;
+    private static final int LOCAL_MAX = 9;
+    private static final int STACK_MAX = 11;
     private static final int spRegisterIndex = 29;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
     public Stack<Integer> blocksToBeAnalysed = new Stack<Integer>();
@@ -133,16 +136,105 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
+    private void loadFpr() {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "fpr", "[F");
+    }
+
+    private void loadVpr() {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vpr", "[[[F");
+    }
+
     public void loadRegister(int reg) {
     	loadGpr();
-        mv.visitLdcInsn(reg);
+    	loadImm(reg);
         mv.visitInsn(Opcodes.IALOAD);
+    }
+
+    public void loadFRegister(int reg) {
+    	loadFpr();
+    	loadImm(reg);
+        mv.visitInsn(Opcodes.FALOAD);
+    }
+
+    public void loadVRegister(int vsize, int reg, int n) {
+    	loadVpr();
+    	int m = (reg >> 2) & 7;
+    	int i = (reg >> 0) & 3;
+    	int s;
+    	switch (vsize) {
+    		case 1: {
+    			s = (reg >> 5) & 3;
+    			loadImm(m);
+    			mv.visitInsn(Opcodes.AALOAD);
+    			loadImm(i);
+    			mv.visitInsn(Opcodes.AALOAD);
+    			loadImm(s);
+    			mv.visitInsn(Opcodes.FALOAD);
+    			break;
+    		}
+    		case 2: {
+                s = (reg & 64) >> 5;
+                if ((reg & 32) != 0) {
+                	loadImm(m);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(s + n);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(i);
+        			mv.visitInsn(Opcodes.FALOAD);
+                } else {
+                	loadImm(m);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(i);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(s + n);
+        			mv.visitInsn(Opcodes.FALOAD);
+                }
+                break;
+    		}
+            case 3: {
+                s = (reg & 64) >> 6;
+                if ((reg & 32) != 0) {
+                	loadImm(m);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(s + n);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(i);
+        			mv.visitInsn(Opcodes.FALOAD);
+                } else {
+                	loadImm(m);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(i);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(s + n);
+        			mv.visitInsn(Opcodes.FALOAD);
+                }
+                break;
+    		}
+            case 4: {
+                if ((reg & 32) != 0) {
+                	loadImm(m);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(n);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(i);
+        			mv.visitInsn(Opcodes.FALOAD);
+                } else {
+                	loadImm(m);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(i);
+        			mv.visitInsn(Opcodes.AALOAD);
+                	loadImm(n);
+        			mv.visitInsn(Opcodes.FALOAD);
+                }
+            	break;
+            }
+    	}
     }
 
     public void prepareRegisterForStore(int reg) {
     	if (preparedRegisterForStore < 0) {
         	loadGpr();
-            mv.visitLdcInsn(reg);
+        	loadImm(reg);
     		preparedRegisterForStore = reg;
     	}
     }
@@ -154,7 +246,7 @@ public class CompilerContext implements ICompilerContext {
     	} else {
 	    	loadGpr();
 	        mv.visitInsn(Opcodes.SWAP);
-	        mv.visitLdcInsn(reg);
+	        loadImm(reg);
 	        mv.visitInsn(Opcodes.SWAP);
 	        mv.visitInsn(Opcodes.IASTORE);
     	}
@@ -162,9 +254,110 @@ public class CompilerContext implements ICompilerContext {
 
     public void storeRegister(int reg, int constantValue) {
     	loadGpr();
-        mv.visitLdcInsn(reg);
-        mv.visitLdcInsn(constantValue);
+    	loadImm(reg);
+    	loadImm(constantValue);
         mv.visitInsn(Opcodes.IASTORE);
+    }
+
+    public void prepareFRegisterForStore(int reg) {
+    	if (preparedRegisterForStore < 0) {
+        	loadFpr();
+        	loadImm(reg);
+    		preparedRegisterForStore = reg;
+    	}
+    }
+
+    public void storeFRegister(int reg) {
+    	if (preparedRegisterForStore == reg) {
+	        mv.visitInsn(Opcodes.FASTORE);
+	        preparedRegisterForStore = -1;
+    	} else {
+	    	loadFpr();
+	        mv.visitInsn(Opcodes.SWAP);
+	        loadImm(reg);
+	        mv.visitInsn(Opcodes.SWAP);
+	        mv.visitInsn(Opcodes.FASTORE);
+    	}
+    }
+
+    public void prepareVRegisterForStore(int vsize, int reg, int n) {
+    	if (preparedRegisterForStore < 0) {
+    		loadVpr();
+        	int m = (reg >> 2) & 7;
+        	int i = (reg >> 0) & 3;
+        	int s;
+        	switch (vsize) {
+        		case 1: {
+        			s = (reg >> 5) & 3;
+        			loadImm(m);
+        			mv.visitInsn(Opcodes.AALOAD);
+        			loadImm(i);
+        			mv.visitInsn(Opcodes.AALOAD);
+        			loadImm(s);
+        			break;
+        		}
+        		case 2: {
+                    s = (reg & 64) >> 5;
+                    if ((reg & 32) != 0) {
+                    	loadImm(m);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(s + n);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(i);
+                    } else {
+                    	loadImm(m);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(i);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(s + n);
+                    }
+                    break;
+        		}
+                case 3: {
+                    s = (reg & 64) >> 6;
+                    if ((reg & 32) != 0) {
+                    	loadImm(m);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(s + n);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(i);
+                    } else {
+                    	loadImm(m);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(i);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(s + n);
+                    }
+                    break;
+        		}
+                case 4: {
+                    if ((reg & 32) != 0) {
+                    	loadImm(m);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(n);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(i);
+                    } else {
+                    	loadImm(m);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(i);
+            			mv.visitInsn(Opcodes.AALOAD);
+                    	loadImm(n);
+                    }
+                	break;
+                }
+        	}
+    		preparedRegisterForStore = reg;
+    	}
+    }
+
+    public void storeVRegister(int vsize, int reg, int n) {
+    	if (preparedRegisterForStore == reg) {
+	        mv.visitInsn(Opcodes.FASTORE);
+	        preparedRegisterForStore = -1;
+    	} else {
+    		Compiler.log.error("storeVRegister with non-prepared register is not supported");
+    	}
     }
 
     public void loadFcr31() {
@@ -201,10 +394,21 @@ public class CompilerContext implements ICompilerContext {
         hiloPrepared = false;
 	}
 
+	@Override
 	public void loadFcr31c() {
     	loadFcr31();
         mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Fcr31.class), "c", "Z");
     }
+
+	@Override
+	public void prepareFcr31cForStore() {
+		loadFcr31();
+	}
+
+	@Override
+	public void storeFcr31c() {
+        mv.visitFieldInsn(Opcodes.PUTFIELD, Type.getInternalName(Fcr31.class), "c", "Z");
+	}
 
 	public void loadVcrCc() {
 		loadVcrCc((codeInstruction.getOpcode() >> 18) & 7);
@@ -304,7 +508,7 @@ public class CompilerContext implements ICompilerContext {
 		            storeRegister(returnRegister);
 		        }
 	    	} else {
-		        mv.visitLdcInsn(returnAddress);
+	    		loadImm(returnAddress);
 		        if (returnRegister != 0) {
 		        	prepareRegisterForStore(returnRegister);
 		    		loadImm(returnAddress);
@@ -334,7 +538,7 @@ public class CompilerContext implements ICompilerContext {
         if (returnRegister != 0) {
             storeRegister(returnRegister, returnAddress);
         }
-        mv.visitLdcInsn(returnAddress);
+        loadImm(returnAddress);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "call", "(II)V");
     }
 
@@ -346,7 +550,7 @@ public class CompilerContext implements ICompilerContext {
     public void visitIntepreterCall(int opcode, Instruction insn) {
     	loadInstruction(insn);
         loadProcessor();
-        mv.visitLdcInsn(opcode);
+        loadImm(opcode);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, instructionInternalName, "interpret", "(" + processorDescriptor + "I)V");
     }
 
@@ -354,7 +558,7 @@ public class CompilerContext implements ICompilerContext {
     	flushInstructionCount(false, false);
 
     	int code = (opcode >> 6) & 0x000FFFFF;
-    	mv.visitLdcInsn(code);
+    	loadImm(code);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
 
         if (storeGprLocal) {
@@ -415,12 +619,12 @@ public class CompilerContext implements ICompilerContext {
 
     private void startInternalMethod() {
     	if (Profiler.enableProfiler) {
-    		mv.visitLdcInsn(getCodeBlock().getStartAddress());
+    		loadImm(getCodeBlock().getStartAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addCall", "(I)V");
     	}
 
     	if (RuntimeContext.debugCodeBlockCalls) {
-        	mv.visitLdcInsn(getCodeBlock().getStartAddress());
+        	loadImm(getCodeBlock().getStartAddress());
         	loadLocalVar(LOCAL_RETURN_ADDRESS);
         	loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
         	loadLocalVar(LOCAL_IS_JUMP);
@@ -445,12 +649,12 @@ public class CompilerContext implements ICompilerContext {
 		        mv.visitFieldInsn(Opcodes.GETFIELD, sceKernalThreadInfoInternalName, "runClocks", "J");
 		        mv.visitVarInsn(Opcodes.ILOAD, LOCAL_INSTRUCTION_COUNT);
 		        if (currentInstructionCount > 0) {
-		        	mv.visitLdcInsn(currentInstructionCount);
+		        	loadImm(currentInstructionCount);
 			        mv.visitInsn(Opcodes.IADD);
 		        }
 		        if (Profiler.enableProfiler) {
 			        mv.visitInsn(Opcodes.DUP);
-		    		mv.visitLdcInsn(getCodeBlock().getStartAddress());
+		    		loadImm(getCodeBlock().getStartAddress());
 		            mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addInstructionCount", "(II)V");
 		        }
 		        mv.visitInsn(Opcodes.I2L);
@@ -468,7 +672,7 @@ public class CompilerContext implements ICompilerContext {
     private void endInternalMethod() {
         if (RuntimeContext.debugCodeBlockCalls) {
             mv.visitInsn(Opcodes.DUP);
-        	mv.visitLdcInsn(getCodeBlock().getStartAddress());
+        	loadImm(getCodeBlock().getStartAddress());
             mv.visitInsn(Opcodes.SWAP);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockEnd, "(II)V");
         }
@@ -503,8 +707,8 @@ public class CompilerContext implements ICompilerContext {
     	}
 
     	if (RuntimeContext.debugCodeInstruction) {
-        	mv.visitLdcInsn(codeInstruction.getAddress());
-        	mv.visitLdcInsn(codeInstruction.getOpcode());
+        	loadImm(codeInstruction.getAddress());
+        	loadImm(codeInstruction.getOpcode());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeInstructionName, "(II)V");
 	    }
 
@@ -516,7 +720,7 @@ public class CompilerContext implements ICompilerContext {
 	    }
 
 	    if (RuntimeContext.enableDebugger) {
-	    	mv.visitLdcInsn(codeInstruction.getAddress());
+	    	loadImm(codeInstruction.getAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debuggerName, "(I)V");
 	    }
 
@@ -529,7 +733,7 @@ public class CompilerContext implements ICompilerContext {
         	checkSync();
 
         	if (Profiler.enableProfiler) {
-        		mv.visitLdcInsn(getCodeInstruction().getAddress());
+        		loadImm(getCodeInstruction().getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addBackBranch", "(I)V");
         	}
         }
@@ -544,7 +748,7 @@ public class CompilerContext implements ICompilerContext {
     public void visitJump(int opcode, int address) {
         flushInstructionCount(true, false);
         if (opcode == Opcodes.GOTO) {
-            mv.visitLdcInsn(address);
+            loadImm(address);
             visitJump();
         } else {
             Compiler.log.error("Not implemented: branching to an unknown address");
@@ -560,7 +764,7 @@ public class CompilerContext implements ICompilerContext {
                 mv.visitInsn(Opcodes.POP);
             }
             mv.visitInsn(Opcodes.POP);
-            mv.visitLdcInsn(address);
+            loadImm(address);
             visitJump();
         }
     }
@@ -608,7 +812,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void visitPauseEmuWithStatus(MethodVisitor mv, int status) {
-    	mv.visitLdcInsn(status);
+    	loadImm(status);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.pauseEmuWithStatus, "(I)V");
     }
 
@@ -675,7 +879,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void loadRegisterIndex(int registerIndex) {
-    	mv.visitLdcInsn(registerIndex);
+    	loadImm(registerIndex);
     }
 
     public void loadRsIndex() {
@@ -699,6 +903,16 @@ public class CompilerContext implements ICompilerContext {
 
     	return imm16;
     }
+
+	@Override
+	public int getImm14(boolean signedImm) {
+    	int imm14 = codeInstruction.getOpcode() & 0xFFFC;
+    	if (signedImm) {
+    		imm14 = (int)(short) imm14;
+    	}
+
+    	return imm14;
+	}
 
 	@Override
     public void loadImm16(boolean signedImm) {
@@ -811,7 +1025,7 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.debugMemoryRead && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex)) {
 			mv.visitInsn(Opcodes.DUP);
 			loadImm(0);
-            mv.visitLdcInsn(codeInstruction.getAddress());
+            loadImm(codeInstruction.getAddress());
 			loadImm(1);
 			loadImm(32);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
@@ -825,7 +1039,7 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(2);
     			mv.visitInsn(Opcodes.IUSHR);
 			} else if (checkMemoryAccess()) {
-                mv.visitLdcInsn(codeInstruction.getAddress());
+                loadImm(codeInstruction.getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead32", "(II)I");
                 loadImm(2);
                 mv.visitInsn(Opcodes.IUSHR);
@@ -857,7 +1071,7 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.debugMemoryRead) {
 			mv.visitInsn(Opcodes.DUP);
 			loadImm(0);
-            mv.visitLdcInsn(codeInstruction.getAddress());
+            loadImm(codeInstruction.getAddress());
 			loadImm(1);
 			loadImm(16);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
@@ -867,7 +1081,7 @@ public class CompilerContext implements ICompilerContext {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read16", "(I)I");
 		} else {
             if (checkMemoryAccess()) {
-                mv.visitLdcInsn(codeInstruction.getAddress());
+                loadImm(codeInstruction.getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead16", "(II)I");
                 loadImm(1);
                 mv.visitInsn(Opcodes.IUSHR);
@@ -883,11 +1097,11 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IAND);
 			loadImm(4);
 			mv.visitInsn(Opcodes.ISHL);
-			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP);
+			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
 			loadImm(1);
 			mv.visitInsn(Opcodes.IUSHR);
 			mv.visitInsn(Opcodes.IALOAD);
-			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP);
+			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP1);
 			mv.visitInsn(Opcodes.IUSHR);
 			loadImm(0xFFFF);
 			mv.visitInsn(Opcodes.IAND);
@@ -911,7 +1125,7 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.debugMemoryRead) {
 			mv.visitInsn(Opcodes.DUP);
 			loadImm(0);
-            mv.visitLdcInsn(codeInstruction.getAddress());
+            loadImm(codeInstruction.getAddress());
 			loadImm(1);
 			loadImm(8);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
@@ -921,7 +1135,7 @@ public class CompilerContext implements ICompilerContext {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read8", "(I)I");
 		} else {
             if (checkMemoryAccess()) {
-                mv.visitLdcInsn(codeInstruction.getAddress());
+                loadImm(codeInstruction.getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead8", "(II)I");
             } else {
     			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
@@ -935,11 +1149,11 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IAND);
 			loadImm(3);
 			mv.visitInsn(Opcodes.ISHL);
-			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP);
+			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
 			loadImm(2);
 			mv.visitInsn(Opcodes.IUSHR);
 			mv.visitInsn(Opcodes.IALOAD);
-			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP);
+			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP1);
 			mv.visitInsn(Opcodes.IUSHR);
 			loadImm(0xFF);
 			mv.visitInsn(Opcodes.IAND);
@@ -966,7 +1180,7 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(2);
     			mv.visitInsn(Opcodes.IUSHR);
 			} else if (checkMemoryAccess()) {
-	            mv.visitLdcInsn(codeInstruction.getAddress());
+	            loadImm(codeInstruction.getAddress());
 	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)I");
                 loadImm(2);
                 mv.visitInsn(Opcodes.IUSHR);
@@ -998,7 +1212,7 @@ public class CompilerContext implements ICompilerContext {
 				mv.visitInsn(Opcodes.IADD);
 			}
             if (checkMemoryAccess()) {
-                mv.visitLdcInsn(codeInstruction.getAddress());
+                loadImm(codeInstruction.getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)I");
             }
 			mv.visitInsn(Opcodes.SWAP);
@@ -1010,7 +1224,7 @@ public class CompilerContext implements ICompilerContext {
 			loadImm(2);
 			mv.visitInsn(Opcodes.ISHL);
 			mv.visitInsn(Opcodes.SWAP);
-            mv.visitLdcInsn(codeInstruction.getAddress());
+            loadImm(codeInstruction.getAddress());
 			loadImm(0);
 			loadImm(32);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
@@ -1162,5 +1376,267 @@ public class CompilerContext implements ICompilerContext {
 	public void skipInstructions(int numberInstructionsToBeSkipped, boolean skipDelaySlot) {
 		this.numberInstructionsToBeSkipped = numberInstructionsToBeSkipped;
 		this.skipDelaySlot = skipDelaySlot;
+	}
+
+	@Override
+	public int getFdRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 6) & 31;
+	}
+
+	@Override
+	public int getFsRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 11) & 31;
+	}
+
+	@Override
+	public int getFtRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 16) & 31;
+	}
+
+	@Override
+	public void loadFd() {
+		loadFRegister(getFdRegisterIndex());
+	}
+
+	@Override
+	public void loadFs() {
+		loadFRegister(getFsRegisterIndex());
+	}
+
+	@Override
+	public void loadFt() {
+		loadFRegister(getFtRegisterIndex());
+	}
+
+	@Override
+	public void prepareFdForStore() {
+		prepareFRegisterForStore(getFdRegisterIndex());
+	}
+
+	@Override
+	public void prepareFtForStore() {
+		prepareFRegisterForStore(getFtRegisterIndex());
+	}
+
+	@Override
+	public void storeFd() {
+		storeFRegister(getFdRegisterIndex());
+	}
+
+	@Override
+	public void storeFt() {
+		storeFRegister(getFtRegisterIndex());
+	}
+
+	@Override
+	public void loadFCr() {
+		loadFRegister(getCrValue());
+	}
+
+	@Override
+	public void prepareFCrForStore() {
+		prepareFRegisterForStore(getCrValue());
+	}
+
+	@Override
+	public int getCrValue() {
+        return (codeInstruction.getOpcode() >> 11) & 31;
+	}
+
+	@Override
+	public void storeFCr() {
+		storeFRegister(getCrValue());
+	}
+
+	@Override
+	public int getVdRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 0) & 127;
+	}
+
+	@Override
+	public int getVsRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 8) & 127;
+	}
+
+	@Override
+	public int getVtRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 16) & 127;
+	}
+
+	@Override
+	public int getVsize() {
+		int one = (codeInstruction.getOpcode() >>  7) & 1;
+		int two = (codeInstruction.getOpcode() >> 15) & 1;
+
+		return 1 + one + (two << 1);
+	}
+
+	@Override
+	public void loadVd(int n) {
+		loadVRegister(getVsize(), getVdRegisterIndex(), n);
+	}
+
+	@Override
+	public void loadVs(int n) {
+		loadVRegister(getVsize(), getVsRegisterIndex(), n);
+	}
+
+	@Override
+	public void loadVt(int n) {
+		loadVRegister(getVsize(), getVtRegisterIndex(), n);
+	}
+
+	@Override
+	public void loadVt(int vsize, int n) {
+		loadVRegister(vsize, getVtRegisterIndex(), n);
+	}
+
+	@Override
+	public void loadVt(int vsize, int vt, int n) {
+		loadVRegister(vsize, vt, n);
+	}
+
+	@Override
+	public void prepareVdForStore(int n) {
+		prepareVRegisterForStore(getVsize(), getVdRegisterIndex(), n);
+	}
+
+	@Override
+	public void prepareVdForStore(int vsize, int n) {
+		prepareVRegisterForStore(vsize, getVdRegisterIndex(), n);
+	}
+
+	@Override
+	public void prepareVdForStore(int vsize, int vd, int n) {
+		prepareVRegisterForStore(vsize, vd, n);
+	}
+
+	@Override
+	public void prepareVtForStore(int n) {
+		prepareVRegisterForStore(getVsize(), getVtRegisterIndex(), n);
+	}
+
+	@Override
+	public void prepareVtForStore(int vsize, int n) {
+		prepareVRegisterForStore(vsize, getVtRegisterIndex(), n);
+	}
+
+	@Override
+	public void storeVd(int n) {
+		storeVRegister(getVsize(), getVdRegisterIndex(), n);
+	}
+
+	@Override
+	public void storeVd(int vsize, int n) {
+		storeVRegister(vsize, getVdRegisterIndex(), n);
+	}
+
+	@Override
+	public void storeVd(int vsize, int vd, int n) {
+		storeVRegister(vsize, vd, n);
+	}
+
+	@Override
+	public void storeVt(int n) {
+		storeVRegister(getVsize(), getVtRegisterIndex(), n);
+	}
+
+	@Override
+	public void storeVt(int vsize, int n) {
+		storeVRegister(vsize, getVtRegisterIndex(), n);
+	}
+
+	@Override
+	public void storeVt(int vsize, int vt, int n) {
+		storeVRegister(vsize, vt, n);
+	}
+
+	@Override
+	public void prepareVtForStore(int vsize, int vt, int n) {
+		prepareVRegisterForStore(vsize, vt, n);
+	}
+
+	@Override
+	public void ifPfxEnabled(Label label) {
+		ifPfxsEnabled(label);
+		ifPfxtEnabled(label);
+		ifPfxdEnabled(label);
+	}
+
+	private void compileIfPfxEnabled(String name, String descriptor, String internalName, Label label) {
+		loadVcr();
+        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Vcr.class), name, descriptor);
+        mv.visitFieldInsn(Opcodes.GETFIELD, internalName, "enabled", "Z");
+        mv.visitJumpInsn(Opcodes.IFNE, label);
+	}
+
+	@Override
+	public void ifPfxdEnabled(Label label) {
+		compileIfPfxEnabled("pfxd", Type.getDescriptor(PfxDst.class), Type.getInternalName(PfxDst.class), label);
+	}
+
+	@Override
+	public void ifPfxsEnabled(Label label) {
+		compileIfPfxEnabled("pfxs", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), label);
+	}
+
+	@Override
+	public void ifPfxtEnabled(Label label) {
+		compileIfPfxEnabled("pfxt", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), label);
+	}
+
+	@Override
+	public int getImm5() {
+        return (codeInstruction.getOpcode() >> 16) & 31;
+	}
+
+	@Override
+	public void loadVs(int vsize, int n) {
+		loadVRegister(vsize, getVsRegisterIndex(), n);
+	}
+
+	@Override
+	public void loadVs(int vsize, int vs, int n) {
+		loadVRegister(vsize, vs, n);
+	}
+
+	@Override
+	public void loadTmp1() {
+		loadLocalVar(LOCAL_TMP1);
+	}
+
+	@Override
+	public void loadTmp2() {
+		loadLocalVar(LOCAL_TMP2);
+	}
+
+	@Override
+	public void loadFTmp1() {
+        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP1);
+	}
+
+	@Override
+	public void loadFTmp2() {
+        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP2);
+	}
+
+	@Override
+	public void storeTmp1() {
+		mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
+	}
+
+	@Override
+	public void storeTmp2() {
+		mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP2);
+	}
+
+	@Override
+	public void storeFTmp1() {
+		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP1);
+	}
+
+	@Override
+	public void storeFTmp2() {
+		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP2);
 	}
 }

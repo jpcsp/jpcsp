@@ -54,11 +54,13 @@ import jpcsp.util.DurationStatistics;
 public class RuntimeContext {
     public  static Logger log = Logger.getLogger("runtime");
 	public  static boolean isActive = true;
-	public  static volatile int gpr[];
-	public  static volatile int memoryInt[];
-	public  static volatile Processor processor;
-	public  static volatile CpuState cpu;
-	public  static volatile Memory memory;
+	public  static int gpr[];
+	public  static float fpr[];
+	public  static float vpr[][][];
+	public  static int memoryInt[];
+	public  static Processor processor;
+	public  static CpuState cpu;
+	public  static Memory memory;
 	public  static final boolean enableIntructionCounting = true;
 	public  static       boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
@@ -326,6 +328,8 @@ public class RuntimeContext {
 		cpu = processor.cpu;
 		if (cpu != null) {
 		    gpr = processor.cpu.gpr;
+		    fpr = processor.cpu.fpr;
+		    vpr = processor.cpu.vpr;
 		}
     }
 
@@ -637,16 +641,13 @@ public class RuntimeContext {
 		toBeDeletedThreads.remove(threadInfo);
 
 		if (!reset) {
-			// Go out of the idle state before really ending this thread
-			// otherwise, no thread will break the idle state...
+			// Switch to the currently active thread
 			try {
-				if (isIdle) {
-			    	if (log.isDebugEnabled()) {
-			    		log.debug("End of Thread " + threadInfo.name + " - syncThread");
-			    	}
+		    	if (log.isDebugEnabled()) {
+		    		log.debug("End of Thread " + threadInfo.name + " - syncThread");
+		    	}
 
-					syncThread();
-				}
+				syncThread();
 			} catch (StopThreadException e) {
 			}
 		}
@@ -833,6 +834,12 @@ public class RuntimeContext {
             log.info(idleDuration.toString());
 
             if (enableInstructionTypeCounting) {
+            	long totalCount = 0;
+            	for (Instruction insn : instructionTypeCounts.keySet()) {
+            		int count = instructionTypeCounts.get(insn);
+            		totalCount += count;
+            	}
+
             	while (!instructionTypeCounts.isEmpty()) {
             		Instruction highestCountInsn = null;
             		int highestCount = -1;
@@ -844,7 +851,7 @@ public class RuntimeContext {
                 		}
                 	}
                 	instructionTypeCounts.remove(highestCountInsn);
-            		log.info(String.format("  %10s %s %d", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount));
+            		log.info(String.format("  %10s %s %d (%2.2f%%)", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount, highestCount * 100.0 / totalCount));
             	}
             }
         }
