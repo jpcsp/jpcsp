@@ -1066,6 +1066,9 @@ public class SyscallHandler {
                 case 0x30de:
                     pspSysMem.getInstance().SysMemUserForUser_DB83A952(gpr[4], gpr[5]);
                     break;
+                case 0x311e:
+                    pspSysMem.getInstance().sceKernelMemset(gpr[4], gpr[5], gpr[5]);
+                    break;
 
                 // special codes for HLE syscalls
                 case 0x6f000:
@@ -1076,9 +1079,6 @@ public class SyscallHandler {
                     break;
                 case 0x6f002:
                     ThreadMan.getInstance().hleKernelAsyncLoop();
-                    break;
-                case 0x6f003:
-                    ThreadMan.getInstance().hleKernelCheatExecute();
                     break;
 
                 case 0xfffff: { // special code for unmapped imports

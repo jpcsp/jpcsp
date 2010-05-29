@@ -183,14 +183,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         SaveSnap = new javax.swing.JMenuItem();
         LoadSnap = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
+        ToolsSubMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
         VfpuRegisters = new javax.swing.JMenuItem();
-        ToggleConsole = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
-        InstructionCounter = new javax.swing.JMenuItem();
         FileLog = new javax.swing.JMenuItem();
-        ToggleDebugLog = new javax.swing.JMenuItem();
+        InstructionCounter = new javax.swing.JMenuItem();
+        ToggleConsole = new javax.swing.JMenuItem();
         DumpIso = new javax.swing.JMenuItem();
         ResetProfiler = new javax.swing.JMenuItem();
         CheatsMenu = new javax.swing.JMenu();
@@ -406,13 +406,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         DebugMenu.setText(Resource.get("debug"));
 
+        ToolsSubMenu.setText(Resource.get("toolsmenu"));
+
         EnterDebugger.setText(Resource.get("enterdebugger"));
         EnterDebugger.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EnterDebuggerActionPerformed(evt);
             }
         });
-        DebugMenu.add(EnterDebugger);
+        ToolsSubMenu.add(EnterDebugger);
 
         EnterMemoryViewer.setText(Resource.get("memoryviewer"));
         EnterMemoryViewer.addActionListener(new java.awt.event.ActionListener() {
@@ -420,7 +422,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 EnterMemoryViewerActionPerformed(evt);
             }
         });
-        DebugMenu.add(EnterMemoryViewer);
+        ToolsSubMenu.add(EnterMemoryViewer);
 
         VfpuRegisters.setText(Resource.get("vfpuregisters"));
         VfpuRegisters.addActionListener(new java.awt.event.ActionListener() {
@@ -428,7 +430,33 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 VfpuRegistersActionPerformed(evt);
             }
         });
-        DebugMenu.add(VfpuRegisters);
+        ToolsSubMenu.add(VfpuRegisters);
+
+        ElfHeaderViewer.setText(Resource.get("elfheaderinfo"));
+        ElfHeaderViewer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ElfHeaderViewerActionPerformed(evt);
+            }
+        });
+        ToolsSubMenu.add(ElfHeaderViewer);
+
+        FileLog.setText(Resource.get("filelog"));
+        FileLog.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                FileLogActionPerformed(evt);
+            }
+        });
+        ToolsSubMenu.add(FileLog);
+
+        InstructionCounter.setText(Resource.get("instructioncounter"));
+        InstructionCounter.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                InstructionCounterActionPerformed(evt);
+            }
+        });
+        ToolsSubMenu.add(InstructionCounter);
+
+        DebugMenu.add(ToolsSubMenu);
 
         ToggleConsole.setText(Resource.get("toggleconsole"));
         ToggleConsole.addActionListener(new java.awt.event.ActionListener() {
@@ -437,38 +465,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(ToggleConsole);
-
-        ElfHeaderViewer.setText(Resource.get("elfheaderinfo"));
-        ElfHeaderViewer.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ElfHeaderViewerActionPerformed(evt);
-            }
-        });
-        DebugMenu.add(ElfHeaderViewer);
-
-        InstructionCounter.setText(Resource.get("instructioncounter"));
-        InstructionCounter.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                InstructionCounterActionPerformed(evt);
-            }
-        });
-        DebugMenu.add(InstructionCounter);
-
-        FileLog.setText(Resource.get("filelog"));
-        FileLog.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                FileLogActionPerformed(evt);
-            }
-        });
-        DebugMenu.add(FileLog);
-
-        ToggleDebugLog.setText(Resource.get("toggledebuglogging"));
-        ToggleDebugLog.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ToggleDebugLogActionPerformed(evt);
-            }
-        });
-        DebugMenu.add(ToggleDebugLog);
 
         DumpIso.setText(Resource.get("dumpisotoisoindex"));
         DumpIso.addActionListener(new java.awt.event.ActionListener() {
@@ -861,22 +857,6 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
         State.memoryViewer.setVisible(true);
     }
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
-
-private void ToggleDebugLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleDebugLogActionPerformed
-	Logger rootLogger = Logger.getRootLogger();
-	if (rootLogLevel == null)
-	{
-		// Enable DEBUG logging
-		rootLogLevel = rootLogger.getLevel();
-		rootLogger.setLevel(Level.DEBUG);
-	}
-	else
-	{
-		// Reset logging level to previous level
-		rootLogger.setLevel(rootLogLevel);
-		rootLogLevel = null;
-	}
-}//GEN-LAST:event_ToggleDebugLogActionPerformed
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
   StringBuilder message = new StringBuilder();
@@ -1564,7 +1544,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem Spanish;
     private javax.swing.JMenuItem ToggleConsole;
-    private javax.swing.JMenuItem ToggleDebugLog;
+    private javax.swing.JMenu ToolsSubMenu;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JMenuItem cwcheat;
     private javax.swing.JToolBar jToolBar1;

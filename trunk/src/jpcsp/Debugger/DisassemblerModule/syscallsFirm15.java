@@ -1126,6 +1126,9 @@ public class syscallsFirm15 {
                 scePsmfGetHeaderSize(0x311b, 0xB78EB9E9),
                 scePsmfGetStreamSize(0x311c, 0xA5EBFE81),
 
+                SysMemUserForUser_35669D4C(0x311d, 0x35669D4C), // 6.00+ sceKernelSetCompiledSdkVersionXXX
+                sceKernelMemset(0x311e, 0xA089ECA4),
+
                 // We choose to start HLEModuleManager at 0x4000
 
                 // CFW, we choose to start at 0x5000

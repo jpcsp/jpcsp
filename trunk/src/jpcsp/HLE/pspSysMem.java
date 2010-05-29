@@ -366,6 +366,18 @@ public class pspSysMem {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
+    //Memset
+    public void sceKernelMemset(int dest_addr, int data, int size) {
+        Memory mem = Memory.getInstance();
+
+        mem.memset(dest_addr, (byte)data, size);
+
+        Modules.log.debug("sceKernelMemset addr=0x" + Integer.toHexString(dest_addr)
+                + " data=" + data + " size=" + size);
+
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
     /** TODO implement format string parsing and reading variable number of parameters */
     public void sceKernelPrintf(int string_addr) {
         String msg = readStringNZ(string_addr, 256);

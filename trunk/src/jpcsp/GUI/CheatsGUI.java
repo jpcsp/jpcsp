@@ -22,9 +22,57 @@ import java.awt.event.KeyListener;
 import java.awt.Point;
 import javax.swing.JOptionPane;
 
-import jpcsp.HLE.ThreadMan;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
 
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
+
+    private class CheatsThread extends Thread {
+        public CheatsThread () {
+        }
+
+        @Override
+        public void run() {
+            Memory mem = Memory.getInstance();
+            CheatsGUI cheats = CheatsGUI.getInstance();
+
+            while(cheats.isON()) {
+                if(cheats.getCodeType().equals("CWCheat")) {
+                    // Currently only supporting jokers 0, 1 and 2 (byte, short and int).
+                    String[] codes = cheats.getCodesList();
+                    int addr = 0;
+                    int data = 0;
+                    int joker = 0;
+
+                    for(int i = 0; i < codes.length; i++) {
+                        addr = Integer.parseInt(codes[i].split(" ")[0].substring(2), 16);
+                        joker = (addr >> 28);
+                        addr -= (joker << 28);
+                        addr += MemoryMap.START_USERSPACE;
+
+                        data = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+
+                        switch(joker) {
+                            case 0:
+                                if(mem.isAddressGood(addr))
+                                    mem.write8(addr, (byte)data);
+                                break;
+                            case 1:
+                                if(mem.isAddressGood(addr))
+                                    mem.write16(addr, (short)data);
+                                break;
+                            case 2:
+                                if(mem.isAddressGood(addr))
+                                    mem.write32(addr, data);
+                                break;
+                            default: break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private javax.swing.JButton jButtonInsert;
     private javax.swing.JButton jButtonRemove;
     private javax.swing.JRadioButton jRadioONOFF;
@@ -33,7 +81,9 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 
     private String code = "";
     private String codeType = "";
+    private boolean toggle = false;
     private static CheatsGUI instance;
+    private Thread cheatsThread = null;
 
     public CheatsGUI(String type) {
         initComponents();
@@ -139,13 +189,17 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         return codeType;
     }
 
+    public boolean isON() {
+        return toggle;
+    }
+
     public boolean checkCWCheatFormat(String text) {
         return(text.charAt(0) == '0' && text.charAt(1) == 'x' &&
                 text.charAt(11) == '0' && text.charAt(12) == 'x' &&
                 text.length() == 21);
     }
 
-    public String[] getCheats() {
+    public String[] getCodesList() {
         String text = jTextArea1.getText();
         String[] codes = text.split("\n");
 
@@ -174,8 +228,18 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }
 
     private void jRadioONOFFActionPerformed(java.awt.event.ActionEvent evt) {
-        if(!jTextArea1.getText().equals("")) {
-            ThreadMan.getInstance().try_hook_cheat_thread();
+        if(cheatsThread == null && !jTextArea1.getText().equals("")) {
+            cheatsThread = new CheatsThread();
+            cheatsThread.setPriority(Thread.MIN_PRIORITY);
+            cheatsThread.setName("HLECheatThread");
+            cheatsThread.start();
+        }
+        if(!toggle) {
+            cheatsThread.run();
+            toggle = true;
+        } else {
+            cheatsThread.yield();
+            toggle = false;
         }
     }
 
