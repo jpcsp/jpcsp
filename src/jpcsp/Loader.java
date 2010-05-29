@@ -334,9 +334,9 @@ public class Loader {
             LoadELFReserveMemory(module);
 
             // Save imports
-            LoadELFImports(module, baseAddress, elf);
+            LoadELFImports(module);
             // Save exports
-            LoadELFExports(module, baseAddress, elf);
+            LoadELFExports(module);
 
             // Try to fixup imports for ALL modules
             Managers.modules.addModule(module);
@@ -578,7 +578,7 @@ public class Loader {
             + " for module '" + module.pspfilename + "'");
 
         pspSysMem SysMemUserForUserModule = pspSysMem.getInstance();
-        int address = module.loadAddressLow & ~0x3F; // round down to nearest 64-bytes to match sysmem allocations
+        int address = module.loadAddressLow & ~0xFF; // round down to nearest 256-bytes to match sysmem allocations
         int size = module.loadAddressHigh - address;
 
         int allocatedAddress = SysMemUserForUserModule.malloc(2, pspSysMem.PSP_SMEM_Addr, size, address);
@@ -960,45 +960,25 @@ public class Loader {
     }
 
     /* Loads from memory */
-    private void LoadELFImports(SceModule module, int baseAddress, Elf32 elf) throws IOException {
-
+    private void LoadELFImports(SceModule module) throws IOException {
         Memory mem = Memory.getInstance();
-        int stubHeadersAddress;
-        int stubHeadersCount;
-
-        if (false) {
-            // Old: from file, from sections
-            Elf32SectionHeader shdr = elf.getSectionHeader(".lib.stub");
-            if (shdr == null) {
-                Emulator.log.warn("Failed to find .lib.stub section");
-                return;
-            }
-            stubHeadersAddress = (int)(baseAddress + shdr.getSh_addr());
-            stubHeadersCount = (int)(shdr.getSh_size() / Elf32StubHeader.sizeof());
-            //System.out.println(shdr.getSh_namez() + ":" + stubsCount + " module entries");
-        } else {
-            // New: from memory, from module info
-            stubHeadersAddress = module.stub_top;
-            stubHeadersCount = module.stub_size / Elf32StubHeader.sizeof();
-        }
+        int stubHeadersAddress = module.stub_top;
+        int stubHeadersCount = module.stub_size / Elf32StubHeader.sizeof();
 
         // n modules to import, 1 stub header per module to import
-        for (int i = 0; i < stubHeadersCount; i++)
-        {
+        for (int i = 0; i < stubHeadersCount; i++) {
             Elf32StubHeader stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
             stubHeader.setModuleNamez(Utilities.readStringNZ((int)stubHeader.getOffsetModuleName(), 64));
 
             if(stubHeader.getSize() > 5) {
                 stubHeadersAddress += stubHeader.getSize() * 4;
                 Emulator.log.warn("'" + stubHeader.getModuleNamez() + "' has size " + stubHeader.getSize());
-            }
-            
-            else
+            } else {
                 stubHeadersAddress += Elf32StubHeader.sizeof();
+            }
 
             // n stubs per module to import
-            for (int j = 0; j < stubHeader.getImports(); j++)
-            {
+            for (int j = 0; j < stubHeader.getImports(); j++) {
                 int nid = mem.read32((int)(stubHeader.getOffsetNid() + j * 4));
                 int importAddress = (int)(stubHeader.getOffsetText() + j * 8);
                 DeferredStub deferredStub = new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid);
@@ -1018,35 +998,18 @@ public class Loader {
     }
 
     /* Loads from memory */
-    private void LoadELFExports(SceModule module, int baseAddress, Elf32 elf) throws IOException {
-
+    private void LoadELFExports(SceModule module) throws IOException {
         NIDMapper nidMapper = NIDMapper.getInstance();
         Memory mem = Memory.getInstance();
-        int entHeadersAddress;
-        int entHeadersCount;
+        int entHeadersAddress = module.ent_top;
+        int entHeadersCount = module.ent_size / Elf32EntHeader.sizeof();
         int entCount = 0;
-
-        if (false) {
-            // Old: from file, from sections
-            Elf32SectionHeader shdr = elf.getSectionHeader(".lib.ent");
-            if (shdr == null) {
-                Emulator.log.warn("Failed to find .lib.ent section");
-                return;
-            }
-            entHeadersAddress = (int)(baseAddress + shdr.getSh_addr());
-            entHeadersCount = (int)(shdr.getSh_size() / Elf32EntHeader.sizeof());
-            //System.out.println(shdr.getSh_namez() + ":" + stubsCount + " module entries");
-        } else {
-            // New: from memory, from module info
-            entHeadersAddress = module.ent_top;
-            entHeadersCount = module.ent_size / Elf32EntHeader.sizeof();
-        }
 
         // n modules to export, 1 ent header per module to import
         String moduleName;
-        for (int i = 0; i < entHeadersCount; i++)
-        {
+        for (int i = 0; i < entHeadersCount; i++) {
             Elf32EntHeader entHeader = new Elf32EntHeader(mem, entHeadersAddress);
+
             if (entHeader.getOffsetModuleName() != 0) {
                 moduleName = Utilities.readStringNZ((int) entHeader.getOffsetModuleName(), 64);
             } else {
@@ -1055,12 +1018,10 @@ public class Loader {
             }
             entHeader.setModuleNamez(moduleName);
             entHeadersAddress += Elf32EntHeader.sizeof(); //entHeader.size * 4;
-            //System.out.println(entHeader.toString());
 
             // n ents per module to export
             int functionCount = entHeader.getFunctionCount();
-            for (int j = 0; j < functionCount; j++)
-            {
+            for (int j = 0; j < functionCount; j++) {
                 int nid           = mem.read32((int)(entHeader.getOffsetResident() + j * 4));
                 int exportAddress = mem.read32((int)(entHeader.getOffsetResident() + (j + functionCount) * 4));
 
@@ -1080,7 +1041,6 @@ public class Loader {
                     nidMapper.addModuleNid(moduleName, nid, exportAddress);
                     break;
                 }
-
                 entCount++;
                 Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
             }

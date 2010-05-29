@@ -106,7 +106,7 @@ public class SceModule {
         // which is kernel mode only, anyone see an official game call those functions?
         // usermode version is SceKernelModuleInfo
 
-        sceModuleAddressOffset -= (size + 64) & ~63;
+        sceModuleAddressOffset -= (size + 256) & ~255;
         address = sceModuleAddressOffset;
 
         // Link SceModule structs together

@@ -59,8 +59,6 @@ import jpcsp.HLE.modules.HLECallback;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
-import jpcsp.GUI.CheatsGUI;
-
 public class ThreadMan {
 
     private static ThreadMan instance;
@@ -71,7 +69,6 @@ public class ThreadMan {
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo real_current_thread; // for use with callbacks
     private SceKernelThreadInfo idle0, idle1;
-    private SceKernelThreadInfo cheat_thread = new SceKernelThreadInfo("HLECheatThread", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
     public Statistics statistics;
@@ -286,79 +283,6 @@ public class ThreadMan {
 
         mem.write32(ASYNC_LOOP_ADDRESS + 0, instruction_syscall);
         mem.write32(ASYNC_LOOP_ADDRESS + 4, instruction_jr);
-    }
-
-    /*
-     * Sample cheat execution (experimental).
-     *
-     * Most cheat devices use the kernel to keep the memory
-     * changes updated. This also allows a much more better performance.
-     *
-     * To better mimic this behaviour, instead of adding another thread,
-     * hook our idle threads and have them call hleKernelCheatExecute().
-     */
-    public void try_hook_cheat_thread() {
-        Memory mem = Memory.getInstance();
-
-        if(cheat_thread.status == PSP_THREAD_READY) {
-            int instruction_syscall = // syscall 0x0201c [sceKernelDelayThread]
-                    ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-                    | (AllegrexOpcodes.SYSCALL & 0x3f)
-                    | ((syscallsFirm15.calls.sceKernelDelayThread.getSyscall() & 0x000fffff) << 6);
-
-            mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
-
-            threadMap.remove(cheat_thread);
-            changeThreadState(cheat_thread, PSP_THREAD_STOPPED);
-        } else {
-            int instruction_syscall = // syscall 0x6f003 [hleKernelCheatThread]
-                    ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-                    | (AllegrexOpcodes.SYSCALL & 0x3f)
-                    | ((syscallsFirm15.calls.hleKernelCheatExecute.getSyscall() & 0x000fffff) << 6);
-
-            mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
-
-            threadMap.put(cheat_thread.uid, cheat_thread);
-            changeThreadState(cheat_thread, PSP_THREAD_READY);
-        }
-    }
-
-    public void hleKernelCheatExecute() {
-        CheatsGUI cheats = CheatsGUI.getInstance();
-        Memory mem = Memory.getInstance();
-
-        if(cheats.getCodeType().equals("CWCheat")) {
-            // Currently only supporting jokers 0, 1 and 2 (byte, short and int).
-            String[] codes = cheats.getCheats();
-            int addr = 0;
-            int data = 0;
-            int joker = 0;
-
-            for(int i = 0; i < codes.length; i++) {
-                addr = Integer.parseInt(codes[i].split(" ")[0].substring(2), 16);
-                joker = (addr >> 28);
-                addr -= (joker << 28);
-                addr += MemoryMap.START_USERSPACE;
-
-                data = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
-
-                switch(joker) {
-                    case 0:
-                        if(mem.isAddressGood(addr))
-                            mem.write8(addr, (byte)data);
-                        break;
-                    case 1:
-                        if(mem.isAddressGood(addr))
-                            mem.write16(addr, (short)data);
-                        break;
-                    case 2:
-                        if(mem.isAddressGood(addr))
-                            mem.write32(addr, data);
-                        break;
-                    default: break;
-                }
-            }
-        }
     }
 
     /** to be called when exiting the emulation */
@@ -1927,7 +1851,7 @@ public class ThreadMan {
                 }
             }
         }
-        
+
     	if (!contextSwitched) {
     		// Check if pending async IOs can be completed...
             pspiofilemgr.getInstance().onContextSwitch();

@@ -1738,12 +1738,12 @@
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strlen</Class>
 		<IsReturning>true</IsReturning>
 		<CodeInstructions><![CDATA[
-0x896C72C - addiu      $v0, $a0, 1
-0x896C730 - lbu        $v1, 0($a0)
-0x896C734 - bne        $v1, $zr, 0x0896C730
-0x896C738 - addiu      $a0, $a0, 1
-0x896C73C - jr         $ra
-0x896C740 - subu       $v0, $a0, $v0
+0896C72C:[24820001]: addiu      $v0, $a0, 1
+0896C730:[90830000]: lbu        $v1, 0($a0)
+0896C734:[1460FFFE]: bne        $v1, $zr, 0x0896C730
+0896C738:[24840001]: addiu      $a0, $a0, 1
+0896C73C:[03E00008]: jr         $ra
+0896C740:[00821023]: subu       $v0, $a0, $v0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="strncpy">
