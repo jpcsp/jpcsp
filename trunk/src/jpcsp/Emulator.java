@@ -111,6 +111,10 @@ public class Emulator implements Runnable {
     }
 
     public SceModule load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
+    	return load(pspfilename, f, false);
+    }
+
+    public SceModule load(String pspfilename, ByteBuffer f, boolean fromSyscall) throws IOException, GeneralJpcspException {
 
         initNewPsp();
 
@@ -123,7 +127,7 @@ public class Emulator implements Runnable {
         }
 
         moduleLoaded = true;
-        initCpu();
+        initCpu(fromSyscall);
 
         // Delete breakpoints and reset to PC
         if (State.debugger != null) {
@@ -138,7 +142,7 @@ public class Emulator implements Runnable {
         return module;
     }
 
-    private void initCpu() {
+    private void initCpu(boolean fromSyscall) {
         RuntimeContext.update();
         //set the default values for registers not sure if they are correct and UNTESTED!!
         //some settings from soywiz/pspemulator
@@ -156,7 +160,7 @@ public class Emulator implements Runnable {
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid);
+        ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
         psputils.getInstance().Initialise();
         pspge.getInstance().Initialise();
         pspdisplay.getInstance().Initialise();
