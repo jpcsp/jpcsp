@@ -31,7 +31,14 @@ int allocPartitionMemory(int size)
 	SceUID uid = sceKernelAllocPartitionMemory(2, "Test", PSP_SMEM_Low, size, NULL);
 	if (uid < 0)
 	{
-		pspDebugScreenPrintf("sceKernelAllocPartitionMemory(0x%08X) = 0x%08X - error\n", size, uid);
+		if (size == 0)
+		{
+			pspDebugScreenPrintf("sceKernelAllocPartitionMemory(0x%08X) = 0x%08X - end Test\n", size, uid);
+		}
+		else
+		{
+			pspDebugScreenPrintf("sceKernelAllocPartitionMemory(0x%08X) = 0x%08X - error\n", size, uid);
+		}
 		return 0;
 	}
 	void *addr = sceKernelGetBlockHeadAddr(uid);
@@ -82,6 +89,7 @@ int main(int argc, char *argv[])
 	pspDebugScreenInit();
 	pspDebugScreenPrintf("Press Cross to start the Memory Test\n");
 	pspDebugScreenPrintf("Press Circle to Start a new thread\n");
+	pspDebugScreenPrintf("Press Rect to restart with sceKernelLoadExec (requires FW 1.5)\n");
 	pspDebugScreenPrintf("Press Triangle to Exit\n");
 
 	while(!done)
@@ -187,6 +195,16 @@ int main(int argc, char *argv[])
 			{
 				pspDebugScreenPrintf("sceKernelCreateThread() = 0x%08X - error\n", thid);
 			}
+		}
+
+		if (buttonDown & PSP_CTRL_SQUARE)
+		{
+			struct SceKernelLoadExecParam loadExecParam;
+			memset(&loadExecParam, sizeof(loadExecParam), 0);
+			loadExecParam.size = sizeof(loadExecParam);
+
+			int result = sceKernelLoadExec("ms0:/PSP/GAME/memory/EBOOT.PBP", &loadExecParam);
+			pspDebugScreenPrintf("sceKernelLoadExec() = 0x%08X\n", result);
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
