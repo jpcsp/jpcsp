@@ -142,7 +142,7 @@ public class ThreadMan {
     /** call this when resetting the emulator
      * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
-    public void Initialise(int entry_addr, int attr, String pspfilename, int moduleid) {
+    public void Initialise(int entry_addr, int attr, String pspfilename, int moduleid, boolean fromSyscall) {
         //Modules.log.debug("ThreadMan: Initialise entry:0x" + Integer.toHexString(entry_addr));
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
@@ -165,7 +165,12 @@ public class ThreadMan {
         install_async_loop_handler();
 
         // Create a thread the program will run inside
-        current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
+
+        // The stack size seems to be 0x40000 when starting the application from the VSH
+        // and smaller when starting the application with sceKernelLoadExec() - guess: 0x4000.
+        // This could not be reproduced on a PSP.
+        int rootStackSize = (fromSyscall ? 0x4000 : 0x40000);
+        current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, rootStackSize, attr);
         current_thread.moduleid = moduleid;
         threadMap.put(current_thread.uid, current_thread);
 
@@ -1619,6 +1624,9 @@ public class ThreadMan {
 
     /** Get the current thread Id */
     public void ThreadMan_sceKernelGetThreadId() {
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("ThreadMan_sceKernelGetThreadId returning uid=0x" + Integer.toHexString(current_thread.uid));
+    	}
         Emulator.getProcessor().cpu.gpr[2] = current_thread.uid;
     }
 

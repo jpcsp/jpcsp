@@ -78,7 +78,7 @@ public class LoadExec {
                 moduleInput.readFully(moduleBytes);
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-                SceModule module = Emulator.getInstance().load(name, moduleBuffer);
+                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
                 Emulator.getClock().resume();
 
                 if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
