@@ -52,7 +52,8 @@ public class ModuleMgrForUser implements HLEModule {
         libatrac3plus,
         videocodec,
         mpegbase,
-        mpeg
+        mpeg,
+        psmf
     }
 	@Override
 	public String getName() { return "ModuleMgrForUser"; }

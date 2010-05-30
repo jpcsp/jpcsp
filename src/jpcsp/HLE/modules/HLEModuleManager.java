@@ -88,7 +88,7 @@ public class HLEModuleManager {
         sceFont(Modules.sceFontModule, new String[] { "libfont" }),
         TimerManager(Modules.TimerManager),
         scePsmfPlayer(Modules.scePsmfPlayerModule),
-        scePsmf(Modules.scePsmfModule),
+        scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
         // For testing purposes
     	SampleModule(Modules.SampleModule);
 
