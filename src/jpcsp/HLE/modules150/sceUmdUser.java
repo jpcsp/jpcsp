@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -407,20 +406,24 @@ public class sceUmdUser implements HLEModule {
     }
 
     public void sceUmdGetDiscInfo(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int pspUmdInfoAddr = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceUmdGetDiscInfo pspUmdInfoAddr=0x%08X", pspUmdInfoAddr));
+        }
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        if (mem.isAddressGood(pspUmdInfoAddr)) {
+        	pspUmdInfo umdInfo = new pspUmdInfo();
+        	umdInfo.read(mem, pspUmdInfoAddr);
+        	umdInfo.type = pspUmdInfo.PSP_UMD_TYPE_GAME;
+        	umdInfo.write(mem);
 
-        System.out.println("Unimplemented NID function sceUmdGetDiscInfo [0x340B7686]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        	cpu.gpr[2] = 0;
+        } else {
+        	cpu.gpr[2] = -1;
+        }
     }
 
     // TODO not fully implemented yet
