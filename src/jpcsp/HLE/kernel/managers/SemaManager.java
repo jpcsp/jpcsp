@@ -18,25 +18,13 @@ package jpcsp.HLE.kernel.managers;
 
 import java.util.HashMap;
 
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
-import jpcsp.Allegrex.CpuState;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
-import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
@@ -103,7 +91,17 @@ public class SemaManager {
     	} else {
     		name = readStringNZ(name_addr, 32);
     	}
-        Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
+    	}
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelCreateSema called insided an interrupt");
+        	}
+        	Emulator.getProcessor().cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        	return;
+        }
 
         if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));
 
@@ -128,7 +126,17 @@ public class SemaManager {
 
     public void sceKernelDeleteSema(int semaid)
     {
-        Modules.log.debug("sceKernelDeleteSema id=0x" + Integer.toHexString(semaid));
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceKernelDeleteSema id=0x" + Integer.toHexString(semaid));
+    	}
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelDeleteSema called insided an interrupt");
+        	}
+        	Emulator.getProcessor().cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        	return;
+        }
 
         if (semaid <= 0) {
             Modules.log.warn("sceKernelDeleteSema bad id=0x" + Integer.toHexString(semaid));
@@ -184,10 +192,20 @@ public class SemaManager {
 
     private void hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean do_callbacks)
     {
-        Modules.log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid)
-            + ",signal=" + signal
-            + ",timeout=0x" + Integer.toHexString(timeout_addr)
-            + ") callbacks=" + do_callbacks);
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid)
+    				+ ",signal=" + signal
+    				+ ",timeout=0x" + Integer.toHexString(timeout_addr)
+    				+ ") callbacks=" + do_callbacks);
+    	}
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("hleKernelWaitSema called insided an interrupt");
+        	}
+        	Emulator.getProcessor().cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        	return;
+        }
 
         if (signal <= 0) {
             Modules.log.warn("hleKernelWaitSema - bad signal " + signal);
@@ -375,10 +393,14 @@ public class SemaManager {
             Modules.log.warn(msg + " unknown uid");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         } else if (sema.currentCount - signal < 0) {
-            Modules.log.debug(msg + " '" + sema.name + "'");
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug(msg + " '" + sema.name + "'");
+        	}
             Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_ZERO;
         } else {
-            Modules.log.debug(msg + " '" + sema.name + "'");
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug(msg + " '" + sema.name + "'");
+        	}
             sema.currentCount -= signal;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
@@ -386,7 +408,9 @@ public class SemaManager {
 
     public void sceKernelCancelSema(int semaid)
     {
-        Modules.log.debug("sceKernelCancelSema id= 0x" + Integer.toHexString(semaid));
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceKernelCancelSema id= 0x" + Integer.toHexString(semaid));
+    	}
 
         if (semaid <= 0) {
             Modules.log.warn("sceKernelCancelSema bad id=0x" + Integer.toHexString(semaid));
