@@ -819,7 +819,7 @@ public class syscallsFirm15 {
                 sceParseHttpResponseHeader(0x230d, 0xAD7BFDEF), // 1.00+
 
                  /* FAKE MAPPING!! for Final Fantasy checks*/
-                 ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52 or less?
+                 sceKernelStopUnloadSelfModuleWithStatus(0x3000,0x8f2df740), // fw 3.52 or less?
                  sceKernelSetCompiledSdkVersion(0x3001,0x7591c7db), // fw 2.5
                  sceKernelSetCompilerVersion(0x3002,0xf77d77cb), // fw 2.5
                  sceAtracIsSecondBufferNeeded(0x3003,0xeca32a99), // fw 2.5

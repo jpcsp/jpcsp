@@ -210,28 +210,49 @@ public class PGF {
     public String getFontType() {
         return fontType;
     }
-    public int getCharMapLenght () {
+    public int getMaxGlyphWidth() {
+        return maxGlyphWidth;
+    }
+    public int getMaxGlyphHeight() {
+        return maxGlyphHeight;
+    }
+    public int[] getMaxSize() {
+        return maxSize;
+    }
+    public int getMaxLeftXAdjust() {
+        return maxLeftXAdjust;
+    }
+    public int getMinCenterXAdjust() {
+        return minCenterXAdjust;
+    }
+    public int getMaxBaseYAdjust() {
+        return maxBaseYAdjust;
+    }
+    public int getMaxTopYAdjust() {
+        return maxTopYAdjust;
+    }
+    public int getCharMapLenght() {
         return charMapLenght;
     }
     public int getCharPointerLenght() {
         return charPointerLenght;
     }
-    public int getShadowMapLenght () {
+    public int getShadowMapLenght() {
         return shadowMapLenght;
     }
-    public int getCompCharMapLenght () {
+    public int getCompCharMapLenght() {
         return compCharMapLenght1 + compCharMapLenght2;
     }
-    public int getCharMapBpe () {
+    public int getCharMapBpe() {
         return charMapBpe;
     }
-    public int getCharPointerBpe () {
+    public int getCharPointerBpe() {
         return charPointerBpe;
     }
-    public int getShadowMapBpe () {
+    public int getShadowMapBpe() {
         return shadowMapBpe;
     }
-    public int[] getMaxAdvance () {
+    public int[] getMaxAdvance() {
         return maxAdvance;
     }
     public int[] getAdvanceTable() {
