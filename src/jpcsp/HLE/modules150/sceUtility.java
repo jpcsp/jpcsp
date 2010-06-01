@@ -51,6 +51,7 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
+import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -116,7 +117,7 @@ public class sceUtility implements HLEModule {
 
             gameSharingState    = new NotImplementedUtilityDialogState("sceUtilityGameSharing");
             netplayDialogState  = new NotImplementedUtilityDialogState("sceNetplayDialog");
-            netconfState        = new NotImplementedUtilityDialogState("sceUtilityNetconf");
+            netconfState        = new UtilityDialogState("sceUtilityNetconf");
 			savedataState       = new UtilityDialogState("sceUtilitySavedata");
 			msgDialogState      = new UtilityDialogState("sceUtilityMsgDialog");
 			oskState            = new UtilityDialogState("sceUtilityOsk");
@@ -208,6 +209,7 @@ public class sceUtility implements HLEModule {
     protected UtilityDialogState gameSharingState;
     protected UtilityDialogState netplayDialogState;
     protected UtilityDialogState netconfState;
+    protected SceUtilityNetconfParams netconfParams;
     protected UtilityDialogState savedataState;
     protected SceUtilitySavedataParam savedataParams;
     protected UtilityDialogState msgDialogState;
@@ -653,8 +655,9 @@ public class sceUtility implements HLEModule {
 		netplayDialogState.executeGetStatus(processor);
 	}
 
-	public void sceUtilityNetconfInitStart(Processor processor) {
-		netconfState.executeInitStart(processor, null);
+    public void sceUtilityNetconfInitStart(Processor processor) {
+        netconfParams = new SceUtilityNetconfParams();
+		netconfState.executeInitStart(processor, netconfParams);
 	}
 
 	public void sceUtilityNetconfShutdownStart(Processor processor) {

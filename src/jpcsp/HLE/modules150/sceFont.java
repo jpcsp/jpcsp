@@ -336,61 +336,78 @@ public class sceFont implements HLEModule {
 		} else {
 			if (mem.isAddressGood(fontInfoAddr)) {
                 PGF currentPGF = PGFFilesMap.get(fontAddr);
-				// Maximal structure length is 264, but might be shorter.
-				float unknownFloatValue = 100.f;
-                int unknown26SfpValue = (100 << 6) * 64;
+
+                int maxGlyphWidthI = currentPGF.getMaxSize()[0];
+                int maxGlyphHeightI = currentPGF.getMaxSize()[1];
+                int maxGlyphAscenderI = currentPGF.getMaxBaseYAdjust();
+                int maxGlyphDescenderI = (currentPGF.getMaxBaseYAdjust() - currentPGF.getMaxSize()[1]);
+                int maxGlyphLeftXI = currentPGF.getMaxLeftXAdjust();
+                int maxGlyphBaseYI = currentPGF.getMaxBaseYAdjust();
+                int minGlyphCenterXI = currentPGF.getMinCenterXAdjust();
+                int maxGlyphTopYI = currentPGF.getMaxTopYAdjust();
+                int maxGlyphAdvanceXI = currentPGF.getMaxAdvance()[0];
+                int maxGlyphAdvanceYI = currentPGF.getMaxAdvance()[1];
+
+                float maxGlyphWidthF = Float.intBitsToFloat(maxGlyphWidthI);
+                float maxGlyphHeightF = Float.intBitsToFloat(maxGlyphHeightI);
+                float maxGlyphAscenderF = Float.intBitsToFloat(maxGlyphAscenderI);
+                float maxGlyphDescenderF = Float.intBitsToFloat(maxGlyphDescenderI);
+                float maxGlyphLeftXF = Float.intBitsToFloat(maxGlyphLeftXI);
+                float maxGlyphBaseYF = Float.intBitsToFloat(maxGlyphBaseYI);
+                float minGlyphCenterXF = Float.intBitsToFloat(minGlyphCenterXI);
+                float maxGlyphTopYF = Float.intBitsToFloat(maxGlyphTopYI);
+                float maxGlyphAdvanceXF = Float.intBitsToFloat(maxGlyphAdvanceXI);
+                float maxGlyphAdvanceYF = Float.intBitsToFloat(maxGlyphAdvanceYI);
 
                 // Glyph metrics (in 26.6 signed fixed-point).
-                mem.write32(fontInfoAddr + 0, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 4, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 8, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 12, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 16, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 20, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 24, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 28, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 32, unknown26SfpValue);
-                mem.write32(fontInfoAddr + 36, unknown26SfpValue);
+                mem.write32(fontInfoAddr + 0, maxGlyphWidthI);
+                mem.write32(fontInfoAddr + 4, maxGlyphHeightI);
+                mem.write32(fontInfoAddr + 8, maxGlyphAscenderI);
+                mem.write32(fontInfoAddr + 12, maxGlyphDescenderI);
+                mem.write32(fontInfoAddr + 16, maxGlyphLeftXI);
+                mem.write32(fontInfoAddr + 20, maxGlyphBaseYI);
+                mem.write32(fontInfoAddr + 24, minGlyphCenterXI);
+                mem.write32(fontInfoAddr + 28, maxGlyphTopYI);
+                mem.write32(fontInfoAddr + 32, maxGlyphAdvanceXI);
+                mem.write32(fontInfoAddr + 36, maxGlyphAdvanceYI);
 
-                // Glyph metrics (replicated as float?).
-                mem.write32(fontInfoAddr + 40, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 44, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 48, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 52, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 56, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 60, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 64, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 68, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 72, Float.floatToRawIntBits(unknownFloatValue));
-                mem.write32(fontInfoAddr + 76, Float.floatToRawIntBits(unknownFloatValue));
+                // Glyph metrics (replicated as float).
+                mem.write32(fontInfoAddr + 40, Float.floatToRawIntBits(maxGlyphWidthF));
+                mem.write32(fontInfoAddr + 44, Float.floatToRawIntBits(maxGlyphHeightF));
+                mem.write32(fontInfoAddr + 48, Float.floatToRawIntBits(maxGlyphAscenderF));
+                mem.write32(fontInfoAddr + 52, Float.floatToRawIntBits(maxGlyphDescenderF));
+                mem.write32(fontInfoAddr + 56, Float.floatToRawIntBits(maxGlyphLeftXF));
+                mem.write32(fontInfoAddr + 60, Float.floatToRawIntBits(maxGlyphBaseYF));
+                mem.write32(fontInfoAddr + 64, Float.floatToRawIntBits(minGlyphCenterXF));
+                mem.write32(fontInfoAddr + 68, Float.floatToRawIntBits(maxGlyphTopYF));
+                mem.write32(fontInfoAddr + 72, Float.floatToRawIntBits(maxGlyphAdvanceXF));
+                mem.write32(fontInfoAddr + 76, Float.floatToRawIntBits(maxGlyphAdvanceYF));
 
                 // Bitmap dimensions.
-                mem.write16(fontInfoAddr + 80, (short)512);
-                mem.write16(fontInfoAddr + 82, (short)512);
+                mem.write16(fontInfoAddr + 80, (short)currentPGF.getMaxGlyphWidth());
+                mem.write16(fontInfoAddr + 82, (short)currentPGF.getMaxGlyphHeight());
 
                 mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLenght()); // Number of elements in the font's charmap.
                 mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLenght());   // Number of elements in the font's shadow charmap.
 
-                // Unknown. Seem to be font size related (float).
-                mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));
-                mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));
-                mem.write32(fontInfoAddr + 100, Float.floatToRawIntBits(0.0f));
-                mem.write32(fontInfoAddr + 104, Float.floatToRawIntBits(0.0f));
-                mem.write32(fontInfoAddr + 108, Float.floatToRawIntBits(0.0f));
-
-                mem.write16(fontInfoAddr + 112, (short)0); // Unknown.
-                mem.write16(fontInfoAddr + 114, (short)0);  // Font style as in the font file (0 = default/system).
-                mem.write16(fontInfoAddr + 116, (short)0);  // Unknown.
-                mem.write16(fontInfoAddr + 118, (short)0);  // Unknown.
-                mem.write16(fontInfoAddr + 120, (short)0);  // Unknown.
-                mem.write16(fontInfoAddr + 122, (short)0);  // Unknown.
-
+                // Font style (used by font comparison functions).
+                mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));   // Horizontal size.
+                mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));   // Vertical size.
+                mem.write32(fontInfoAddr + 100, Float.floatToRawIntBits(0.0f));  // Horizontal resolution.
+                mem.write32(fontInfoAddr + 104, Float.floatToRawIntBits(0.0f));  // Vertical resolution.
+                mem.write32(fontInfoAddr + 108, Float.floatToRawIntBits(0.0f));  // Font weight.
+                mem.write16(fontInfoAddr + 112, (short)0);  // Font family (SYSTEM = 0, probably more).
+                mem.write16(fontInfoAddr + 114, (short)0);  // Style (SYSTEM = 0, STANDARD = 1, probably more).
+                mem.write16(fontInfoAddr + 116, (short)0);  // Subset of style (only used in Asian fonts, unknown values).
+                mem.write16(fontInfoAddr + 118, (short)0);  // Language code (UNK = 0, JAPANESE = 1, ENGLISH = 2, probably more).
+                mem.write16(fontInfoAddr + 120, (short)0);  // Region code (UNK = 0, JAPAN = 1, probably more).
+                mem.write16(fontInfoAddr + 122, (short)0);  // Country code (UNK = 0, JAPAN = 1, US = 2, probably more).
                 Utilities.writeStringNZ(mem, fontInfoAddr + 124, 64, currentPGF.getFontName());  // Font name (maximum size is 64).
                 Utilities.writeStringNZ(mem, fontInfoAddr + 188, 64, currentPGF.getFileNamez());   // File name (maximum size is 64).
-
                 mem.write32(fontInfoAddr + 252, 0); // Unknown.
-                mem.write32(fontInfoAddr + 256, 0); // Unknown.
-                mem.write8(fontInfoAddr + 260, (byte)4); // Font's BPP.
+                mem.write32(fontInfoAddr + 256, 0); // Unknown (some sort of timestamp?).
+
+                mem.write8(fontInfoAddr + 260, (byte)1); // Font's BPP.
                 mem.write8(fontInfoAddr + 261, (byte)0); // Unknown.
                 mem.write8(fontInfoAddr + 262, (byte)0); // Unknown.
                 mem.write8(fontInfoAddr + 263, (byte)0); // Unknown.
