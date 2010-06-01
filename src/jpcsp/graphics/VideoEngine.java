@@ -2075,9 +2075,9 @@ public class VideoEngine {
             	int old_tex_mag_filter = tex_mag_filter;
             	int old_tex_min_filter = tex_min_filter;
 
-            	log ("sceGuTexFilter(min=" + (normalArgument & 0xFF) + ", mag=" + ((normalArgument >> 8) & 0xFF) + ") (mm#" + texture_num_mip_maps + ")");
+            	log ("sceGuTexFilter(min=" + (normalArgument & 0x7) + ", mag=" + ((normalArgument >> 8) & 0x1) + ") (mm#" + texture_num_mip_maps + ")");
 
-            	switch ((normalArgument>>8) & 0xFF)
+            	switch ((normalArgument>>8) & 0x1)
             	{
 	            	case TFLT_NEAREST: {
 	            		tex_mag_filter = GL.GL_NEAREST;
@@ -2087,14 +2087,9 @@ public class VideoEngine {
 	            		tex_mag_filter = GL.GL_LINEAR;
 	            		break;
 	            	}
-
-	            	default: {
-	            		log.warn("Unknown magnifiying filter " + ((normalArgument>>8) & 0xFF));
-	            		break;
-	            	}
             	}
 
-            	switch (normalArgument & 0xFF)
+            	switch (normalArgument & 0x7)
             	{
 	            	case TFLT_NEAREST: {
 	            		tex_min_filter = GL.GL_NEAREST;
@@ -4987,37 +4982,6 @@ public class VideoEngine {
             }
 
             checkTextureMinFilter(compressedTexture, numberMipmaps);
-
-            // OpenGL cannot build mipmaps on compressed textures
-            if (numberMipmaps != 0 && final_buffer != null && !compressedTexture) {
-				if (isLogDebugEnabled) {
-	            	for(int level = 0; level <= numberMipmaps; ++level)
-	            		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
-				}
-	            int maxLevel = (int) (Math.log(Math.max(texture_width[numberMipmaps], texture_height[numberMipmaps]) * (1 << numberMipmaps))/Math.log(2));
-
-	            if(maxLevel != numberMipmaps) {
-	            	if (isLogDebugEnabled) {
-	            		log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", numberMipmaps, texture_width[0], texture_height[0], maxLevel));
-	            	}
-	            	int textureByteSize = textureByteAlignment * texture_width[numberMipmaps] * texture_height[numberMipmaps];
-		            // Build the other mipmaps level
-		            glu.gluBuild2DMipmapLevels(GL.GL_TEXTURE_2D,
-		            		texture_format,
-		            		texture_width[numberMipmaps], texture_height[numberMipmaps],
-		            		texture_format,
-		            		texture_type,
-		            		numberMipmaps, numberMipmaps + 1, maxLevel, final_buffer.limit(textureByteSize));
-		            if (isLogDebugEnabled) {
-			            for(int i = 0; i <= maxLevel; ++i) {
-			            	float[] size = new float[2];
-			            	gl.glGetTexLevelParameterfv(GL.GL_TEXTURE_2D, i, GL.GL_TEXTURE_WIDTH, size, 0);
-			            	gl.glGetTexLevelParameterfv(GL.GL_TEXTURE_2D, i, GL.GL_TEXTURE_HEIGHT, size, 1);
-			            	log(String.format("OGL Texture level %d size %dx%d", i, (int)size[0], (int)size[1]));
-			            }
-		            }
-	            }
-            }
         } else {
         	boolean compressedTexture = (texture_storage >= TPSM_PIXEL_STORAGE_MODE_DXT1 && texture_storage <= TPSM_PIXEL_STORAGE_MODE_DXT5);
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
@@ -5035,8 +4999,7 @@ public class VideoEngine {
 	private void checkTextureMinFilter(boolean compressedTexture, int numberMipmaps) {
 		// OpenGL/Hardware cannot interpolate between compressed textures;
 		// this restriction has been checked on NVIDIA GeForce 8500 GT and 9800 GT
-		if (compressedTexture ||
-		    (numberMipmaps == 0 && !(tex_min_filter == GL.GL_LINEAR || tex_min_filter == GL.GL_NEAREST))) {
+		if (compressedTexture) {
 			int nex_tex_min_filter;
 			if(tex_min_filter == GL.GL_NEAREST_MIPMAP_LINEAR || tex_min_filter == GL.GL_NEAREST_MIPMAP_NEAREST)
 				nex_tex_min_filter = GL.GL_NEAREST;
@@ -5387,6 +5350,7 @@ public class VideoEngine {
 
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, tex_wrap_s);
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, tex_wrap_t);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, texture_num_mip_maps);
 
         return useVertexColor;
     }
