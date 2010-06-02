@@ -142,7 +142,20 @@ public class VideoEngine {
 	private boolean isLogInfoEnabled;
 	private boolean isLogWarnEnabled;
 
-	private int base;
+	// We have problems displaying mipmap textures with the following 
+	// minimizing filters:
+	// - TFLT_NEAREST_MIPMAP_NEAREST
+	// - TFLT_NEAREST_MIPMAP_LINEAR
+	// - TFLT_LINEAR_MIPMAP_NEAREST
+	// - TFLT_LINEAR_MIPMAP_LINEAR
+	// No texture at all is displayed when using these filters.
+	// For now, disable these filters and used instead
+	// - TFLT_NEAREST
+	// - TFLT_LINEAR
+	// TODO investigate why these minimizing filters are not working properly
+    private static final boolean useMultiMipmapMinimizingFilter = false;
+
+    private int base;
     // The value of baseOffset has to be added (not ORed) to the base value.
     // baseOffset is updated by the ORIGIN_ADDR and OFFSET_ADDR commands,
     // and both commands share the same value field.
@@ -434,7 +447,7 @@ public class VideoEngine {
         if(arraySize > 0) {
             PspGeList[] array = drawListQueue.toArray(new PspGeList[arraySize]);
 
-            ConcurrentLinkedQueue newQueue = new ConcurrentLinkedQueue<PspGeList>();
+            ConcurrentLinkedQueue<PspGeList> newQueue = new ConcurrentLinkedQueue<PspGeList>();
             PspGeList[] newArray = new PspGeList[arraySize+1];
 
             newArray[0] = list;
@@ -1318,7 +1331,9 @@ public class VideoEngine {
 
         int command = command(instruction);
         currentCMDValues.put(command, normalArgument);
-        commandStatistics[command].start();
+        if (isLogInfoEnabled) {
+        	commandStatistics[command].start();
+        }
         switch (command) {
             case END:
     			currentList.pauseList();
@@ -2075,7 +2090,9 @@ public class VideoEngine {
             	int old_tex_mag_filter = tex_mag_filter;
             	int old_tex_min_filter = tex_min_filter;
 
-            	log ("sceGuTexFilter(min=" + (normalArgument & 0x7) + ", mag=" + ((normalArgument >> 8) & 0x1) + ") (mm#" + texture_num_mip_maps + ")");
+            	if (isLogDebugEnabled) {
+            		log("sceGuTexFilter(min=" + (normalArgument & 0x7) + ", mag=" + ((normalArgument >> 8) & 0x1) + ") (mm#" + texture_num_mip_maps + ")");
+            	}
 
             	switch ((normalArgument>>8) & 0x1)
             	{
@@ -2100,19 +2117,35 @@ public class VideoEngine {
 	            		break;
 	            	}
 	            	case TFLT_NEAREST_MIPMAP_NEAREST: {
-	            		tex_min_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
+	            		if (useMultiMipmapMinimizingFilter) {
+	            			tex_min_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
+	            		} else {
+	            			tex_min_filter = GL.GL_NEAREST;
+	            		}
 	            		break;
 	            	}
 	            	case TFLT_NEAREST_MIPMAP_LINEAR: {
-	            		tex_min_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
+	            		if (useMultiMipmapMinimizingFilter) {
+	            			tex_min_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
+	            		} else {
+	            			tex_min_filter = GL.GL_NEAREST;
+	            		}
 	            		break;
 	            	}
 	            	case TFLT_LINEAR_MIPMAP_NEAREST: {
-	            		tex_min_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
+	            		if (useMultiMipmapMinimizingFilter) {
+	            			tex_min_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
+	            		} else {
+	            			tex_min_filter = GL.GL_LINEAR;
+	            		}
 	            		break;
 	            	}
 	            	case TFLT_LINEAR_MIPMAP_LINEAR: {
-	            		tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
+	            		if (useMultiMipmapMinimizingFilter) {
+	            			tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
+	            		} else {
+	            			tex_min_filter = GL.GL_LINEAR;
+	            		}
 	            		break;
 	            	}
 
@@ -3274,7 +3307,9 @@ public class VideoEngine {
             		log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
             	}
         }
-        commandStatistics[command].end();
+        if (isLogInfoEnabled) {
+        	commandStatistics[command].end();
+        }
     }
 
     private void executeCommandCLEAR(int normalArgument) {
@@ -5000,13 +5035,15 @@ public class VideoEngine {
 		// OpenGL/Hardware cannot interpolate between compressed textures;
 		// this restriction has been checked on NVIDIA GeForce 8500 GT and 9800 GT
 		if (compressedTexture) {
-			int nex_tex_min_filter;
+			int new_tex_min_filter;
 			if(tex_min_filter == GL.GL_NEAREST_MIPMAP_LINEAR || tex_min_filter == GL.GL_NEAREST_MIPMAP_NEAREST)
-				nex_tex_min_filter = GL.GL_NEAREST;
+				new_tex_min_filter = GL.GL_NEAREST;
 			else
-				nex_tex_min_filter = GL.GL_LINEAR;
-			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, nex_tex_min_filter);
-			log("Overwriting texture min filter, no mipmap was generated but filter was set to use mipmap");
+				new_tex_min_filter = GL.GL_LINEAR;
+			gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, new_tex_min_filter);
+			if (isLogDebugEnabled) {
+				log("Overwriting texture min filter, no mipmap was generated but filter was set to use mipmap");
+			}
 		}
 	}
 
