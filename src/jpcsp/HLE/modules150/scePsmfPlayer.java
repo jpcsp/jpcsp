@@ -17,20 +17,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
-import java.io.File;
-import java.io.FileOutputStream;
-
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.media.MediaEngine;
+import jpcsp.media.PacketChannel;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
-import jpcsp.State;
 import jpcsp.util.Utilities;
 
 import jpcsp.Allegrex.CpuState;
@@ -86,7 +83,8 @@ public class scePsmfPlayer implements HLEModule {
 
     protected String pmfFilePath;
     protected byte[] pmfFileData;
-    protected String pmfTmpPath;
+    protected PacketChannel pmfFileChannel;
+    protected MediaEngine me;
 
     protected int currentStream;
     protected int streamCount;
@@ -116,6 +114,11 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmf = cpu.gpr[4];
 
+        if(checkMediaEngineState()) {
+            me.finish();
+            pmfFileChannel.flush();
+        }
+
         Modules.log.warn("IGNORING: scePsmfPlayerDelete psmf=" + Integer.toHexString(psmf));
 
         cpu.gpr[2] = 0;
@@ -130,27 +133,13 @@ public class scePsmfPlayer implements HLEModule {
 
         pmfFilePath = Utilities.readStringZ(file_addr);
         pspiofilemgr fileManager = pspiofilemgr.getInstance();
-
-        // Make PSMF's output directories and set the final path;
-        File f = new File("tmp/" + State.discId);
-        f.mkdir();
-        f = new File("tmp/" + State.discId + "/PSMF");
-        f.mkdir();
-
-        pmfTmpPath = "tmp/" + State.discId + "/PSMF/PSMFMovie.pmf";
-
+        pmfFileChannel = new PacketChannel();
         //Get the file and read it to a buffer.
         try{
             SeekableDataInput psmfFile = fileManager.getFile(pmfFilePath, 0);
             pmfFileData = new byte[(int)psmfFile.length()];
             psmfFile.readFully(pmfFileData);
-
-            if(checkMediaEngineState()) {
-                // Write the .pmf file.
-                FileOutputStream fos = new FileOutputStream(pmfTmpPath);
-                fos.write(pmfFileData);
-                fos.close();
-            }
+            pmfFileChannel.writeFile(pmfFileData);
         }catch (Exception e) {
             //TODO
         }
@@ -184,8 +173,8 @@ public class scePsmfPlayer implements HLEModule {
                 + " unk1=" + Integer.toHexString(unk1) + " unk2=" + Integer.toHexString(unk2));
 
         if(checkMediaEngineState()) {
-            MediaEngine me = new MediaEngine();
-            me.decodeAndPlay(pmfTmpPath);
+            me = new MediaEngine();
+            me.decodeAndPlay(pmfFileChannel.getFilePath());
         }
 
         cpu.gpr[2] = 0;
