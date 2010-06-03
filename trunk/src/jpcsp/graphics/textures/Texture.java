@@ -41,6 +41,7 @@ public class Texture {
 	private int glId = -1;	// id created by glGenTextures
 	private boolean loaded = false;	// is the texture already loaded?
 	private TextureCache textureCache;
+	private final static int hashStride = 64 + 8;
 
 	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut) {
 		this.textureCache = textureCache;
@@ -101,7 +102,7 @@ public class Texture {
 				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
 			}
 
-			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes);
+			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes, hashStride);
 		}
 
 		if (clutAddr != 0) {

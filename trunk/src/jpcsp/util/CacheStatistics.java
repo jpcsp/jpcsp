@@ -39,6 +39,15 @@ public class CacheStatistics {
 		return percentage(hits, totalHits);
 	}
 
+	public void reset() {
+		totalHits = 0;
+		successfulHits = 0;
+		notPresentHits = 0;
+		changedHits = 0;
+		entriesRemoved = 0;
+		maxSizeUsed = 0;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
