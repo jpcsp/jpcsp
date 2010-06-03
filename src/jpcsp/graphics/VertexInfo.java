@@ -89,6 +89,7 @@ public class VertexInfo {
     };
 
     // cache data
+    private final static int hashStride = 0; // Currently no stride on vertex hashes. This is producing incorrect vertex matches.
 	private int glId = -1;	// id created by glGenBuffers
 	private boolean hashCodeComputed = false;
 	private int hashCode;
@@ -656,7 +657,7 @@ public class VertexInfo {
     	}
 
     	if (vertexInfo.ptr_vertex != 0) {
-    		hashCode = Hash.getHashCodeComplex(hashCode, vertexInfo.ptr_vertex, vertexArraySize);
+    		hashCode = Hash.getHashCodeComplex(hashCode, vertexInfo.ptr_vertex, vertexArraySize, hashStride);
     	}
 
     	return hashCode;

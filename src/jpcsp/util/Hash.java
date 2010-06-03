@@ -41,6 +41,36 @@ public class Hash {
 	}
 
 	/**
+	 * Generate a hashCode on a memory range using a rather simple but fast method
+	 * and a stride.
+	 * 
+	 * @param hashCode		current hashCode value
+	 * @param addr			start of the memory range to be hashed
+	 * @param lengthInBytes	length of the memory range
+	 * @param strideInBytes stride (hash only 4 bytes every stride bytes)
+	 * @return updated hashCode value
+	 */
+	public static int getHashCode(int hashCode, int addr, int lengthInBytes, int strideInBytes) {
+		if (strideInBytes <= 4) {
+			// There is no stride...
+			return getHashCode(hashCode, addr, lengthInBytes);
+		}
+
+		int skip = (strideInBytes / 4) - 1;
+
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 4);
+		int step = (skip + 1) * 4;
+		for (int i = 0; i < lengthInBytes; i += step) {
+			int value = memoryReader.readNext();
+			memoryReader.skip(skip);
+			hashCode ^= value + i + addr;
+			hashCode += i + addr;
+		}
+
+		return hashCode;
+	}
+
+	/**
 	 * Generate a hashCode on a memory range using a more complex but slower method.
 	 * 
 	 * @param hashCode		current hashCode value
@@ -53,6 +83,37 @@ public class Hash {
 		int n = lengthInBytes / 4;
 		for (int i = 0; i < n; i++) {
 			int value = memoryReader.readNext();
+			value = Integer.rotateLeft(value, i & 31);
+			hashCode ^= value + i + addr;
+			hashCode += i + addr;
+		}
+
+		return hashCode;
+	}
+
+	/**
+	 * Generate a hashCode on a memory range using a more complex but slower method.
+	 * This method also uses a stride to scan only parts of the memory range.
+	 * 
+	 * @param hashCode		current hashCode value
+	 * @param addr			start of the memory range to be hashed
+	 * @param lengthInBytes	length of the memory range
+	 * @param strideInBytes stride (hash only 4 bytes every stride bytes)
+	 * @return updated hashCode value
+	 */
+	public static int getHashCodeComplex(int hashCode, int addr, int lengthInBytes, int strideInBytes) {
+		if (strideInBytes <= 4) {
+			// There is no stride...
+			return getHashCodeComplex(hashCode, addr, lengthInBytes);
+		}
+
+		int skip = (strideInBytes / 4) - 1;
+
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 4);
+		int n = lengthInBytes / strideInBytes;
+		for (int i = 0; i < n; i++) {
+			int value = memoryReader.readNext();
+			memoryReader.skip(skip);
 			value = Integer.rotateLeft(value, i & 31);
 			hashCode ^= value + i + addr;
 			hashCode += i + addr;

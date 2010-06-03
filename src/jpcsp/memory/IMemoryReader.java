@@ -22,4 +22,5 @@ package jpcsp.memory;
  */
 public interface IMemoryReader {
 	public int readNext();
+	public void skip(int n);
 }

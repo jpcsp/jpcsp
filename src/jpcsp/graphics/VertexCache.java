@@ -27,7 +27,7 @@ import javax.media.opengl.GL;
 import jpcsp.util.CacheStatistics;
 
 public class VertexCache {
-	public static final int cacheMaxSize = 10000;
+	public static final int cacheMaxSize = 30000;
 	public static final float cacheLoadFactor = 0.75f;
 	private static VertexCache instance = null;
 	private LinkedHashMap<Integer, VertexInfo> cache;

@@ -134,6 +134,12 @@ public class MemoryReader {
 
 			return n;
 		}
+
+		@Override
+		public final void skip(int n) {
+			address += n * step;
+			length -= n * step;
+		}
 	}
 
 	private final static class MemoryReaderIntArray8 implements IMemoryReader {
@@ -163,6 +169,14 @@ public class MemoryReader {
 			index++;
 
 			return n;
+		}
+
+		@Override
+		public final void skip(int n) {
+			index += n;
+			offset += index / 4;
+			index &= 3;
+			value = buffer[offset] >> (8 * index);
 		}
 	}
 
@@ -196,6 +210,16 @@ public class MemoryReader {
 
 			return n;
 		}
+
+		@Override
+		public final void skip(int n) {
+			index += n;
+			offset += index / 2;
+			index &= 1;
+			if (index != 0) {
+				value = buffer[offset++];
+			}
+		}
 	}
 
 	private final static class MemoryReaderIntArray32 implements IMemoryReader {
@@ -210,6 +234,11 @@ public class MemoryReader {
 		@Override
 		public final int readNext() {
 			return buffer[offset++];
+		}
+
+		@Override
+		public final void skip(int n) {
+			offset += n;
 		}
 	}
 
@@ -239,6 +268,14 @@ public class MemoryReader {
 			index++;
 
 			return n;
+		}
+
+		@Override
+		public final void skip(int n) {
+			index += n;
+			buffer.position(buffer.position() + (index / 4));
+			index &= 3;
+			value = buffer.get() >> (8 * index);
 		}
 	}
 
@@ -270,6 +307,16 @@ public class MemoryReader {
 
 			return n;
 		}
+
+		@Override
+		public final void skip(int n) {
+			index += n;
+			buffer.position(buffer.position() + (index / 2));
+			index &= 1;
+			if (index != 0) {
+				value = buffer.get();
+			}
+		}
 	}
 
 	private final static class MemoryReaderInt32 implements IMemoryReader {
@@ -282,6 +329,11 @@ public class MemoryReader {
 		@Override
 		public final int readNext() {
 			return buffer.get();
+		}
+
+		@Override
+		public final void skip(int n) {
+			buffer.position(buffer.position() + n);
 		}
 	}
 
@@ -296,6 +348,11 @@ public class MemoryReader {
 		public final int readNext() {
 			return ((int) buffer.get()) & 0xFF;
 		}
+
+		@Override
+		public final void skip(int n) {
+			buffer.position(buffer.position() + n);
+		}
 	}
 
 	private final static class MemoryReaderByte16 implements IMemoryReader {
@@ -309,6 +366,11 @@ public class MemoryReader {
 		public final int readNext() {
 			return ((int) buffer.getShort()) & 0xFFFF;
 		}
+
+		@Override
+		public final void skip(int n) {
+			buffer.position(buffer.position() + n * 2);
+		}
 	}
 
 	private final static class MemoryReaderByte32 implements IMemoryReader {
@@ -321,6 +383,11 @@ public class MemoryReader {
 		@Override
 		public final int readNext() {
 			return buffer.getInt();
+		}
+
+		@Override
+		public final void skip(int n) {
+			buffer.position(buffer.position() + n * 4);
 		}
 	}
 }

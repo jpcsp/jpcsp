@@ -40,6 +40,7 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	public int fbp, fbw;
     public int zbp, zbw;
     public int psm;
+    public int flags;
 
     public int region_x1, region_y1, region_x2, region_y2;
     public int region_width, region_height;
@@ -62,7 +63,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
     public int[] light_enabled = new int[NUM_LIGHTS];
     public int[] light_type = new int[NUM_LIGHTS];
     public int[] light_kind = new int[NUM_LIGHTS];
-    public boolean lighting;
     public float[] spotLightExponent = new float[NUM_LIGHTS];
     public float[] spotLightCutoff = new float[NUM_LIGHTS];
 
@@ -123,8 +123,7 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
     public boolean clearMode;
     public int depthFuncClearMode;
 
-    public int depthFunc2D;
-    public int depthFunc3D;
+    public int depthFunc;
 
     public int tex_map_mode;
     public int tex_proj_map_mode;
@@ -132,22 +131,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	public boolean[] glColorMask = new boolean[4];
 
     // OpenGL flags (enable/disable)
-	private boolean glTexture2D;
-	private boolean glLight0;
-	private boolean glLight1;
-	private boolean glLight2;
-	private boolean glLight3;
-	private boolean glLighting;
-	private boolean glDither;
-	private boolean glCullFace;
-	private boolean glFog;
-	private boolean glBlend;
-	private boolean glAlphaTest;
-	private boolean glDepthTest;
-	private boolean glStencilTest;
-	private boolean glLineSmooth;
-	private boolean glColorLogicOp;
-	private boolean glScissorTest;
 	private boolean glTextureGenS;
 	private boolean glTextureGenT;
 	private boolean glColorMaterial;
@@ -213,6 +196,7 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		zbp = read32();
 		zbw = read32();
 		psm = read32();
+		flags = read32();
 
 		region_x1 = read32();
 		region_y1 = read32();
@@ -249,7 +233,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		read32Array(light_enabled);
 		read32Array(light_type);
 		read32Array(light_kind);
-		lighting = readBoolean();
 		readFloatArray(spotLightExponent);
 		readFloatArray(spotLightCutoff);
 
@@ -321,28 +304,11 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		clearMode = readBoolean();
 		depthFuncClearMode = read32();
 
-		depthFunc2D = read32();
-		depthFunc3D = read32();
+		depthFunc = read32();
 
 		tex_map_mode = read32();
 		tex_proj_map_mode = read32();
 
-		glTexture2D = readBoolean();
-		glLight0 = readBoolean();
-		glLight1 = readBoolean();
-		glLight2 = readBoolean();
-		glLight3 = readBoolean();
-		glLighting = readBoolean();
-		glDither = readBoolean();
-		glCullFace = readBoolean();
-		glFog = readBoolean();
-		glBlend = readBoolean();
-		glAlphaTest = readBoolean();
-		glDepthTest = readBoolean();
-		glStencilTest = readBoolean();
-		glLineSmooth = readBoolean();
-		glColorLogicOp = readBoolean();
-		glScissorTest = readBoolean();
 		glTextureGenS = readBoolean();
 		glTextureGenT = readBoolean();
 		glColorMaterial = readBoolean();
@@ -403,6 +369,7 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		write32(zbp);
 		write32(zbw);
 		write32(psm);
+		write32(flags);
 
 		write32(region_x1);
 		write32(region_y1);
@@ -439,7 +406,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		write32Array(light_enabled);
 		write32Array(light_type);
 		write32Array(light_kind);
-		writeBoolean(lighting);
 		writeFloatArray(spotLightExponent);
 		writeFloatArray(spotLightCutoff);
 
@@ -511,28 +477,11 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		writeBoolean(clearMode);
 		write32(depthFuncClearMode);
 
-		write32(depthFunc2D);
-		write32(depthFunc3D);
+		write32(depthFunc);
 
 		write32(tex_map_mode);
 		write32(tex_proj_map_mode);
 
-		writeBoolean(glTexture2D);
-		writeBoolean(glLight0);
-		writeBoolean(glLight1);
-		writeBoolean(glLight2);
-		writeBoolean(glLight3);
-		writeBoolean(glLighting);
-		writeBoolean(glDither);
-		writeBoolean(glCullFace);
-		writeBoolean(glFog);
-		writeBoolean(glBlend);
-		writeBoolean(glAlphaTest);
-		writeBoolean(glDepthTest);
-		writeBoolean(glStencilTest);
-		writeBoolean(glLineSmooth);
-		writeBoolean(glColorLogicOp);
-		writeBoolean(glScissorTest);
 		writeBoolean(glTextureGenS);
 		writeBoolean(glTextureGenT);
 		writeBoolean(glColorMaterial);
@@ -600,22 +549,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	 * We have to retrieve these information into the pspGeContext as well.
 	 */
 	public void copyGLToContext(GL gl) {
-		glTexture2D = gl.glIsEnabled(GL.GL_TEXTURE_2D);
-		glLight0 = gl.glIsEnabled(GL.GL_LIGHT0);
-		glLight1 = gl.glIsEnabled(GL.GL_LIGHT1);
-		glLight2 = gl.glIsEnabled(GL.GL_LIGHT2);
-		glLight3 = gl.glIsEnabled(GL.GL_LIGHT3);
-		glLighting = gl.glIsEnabled(GL.GL_LIGHTING);
-		glDither = gl.glIsEnabled(GL.GL_DITHER);
-		glCullFace = gl.glIsEnabled(GL.GL_CULL_FACE);
-		glFog = gl.glIsEnabled(GL.GL_FOG);
-		glBlend = gl.glIsEnabled(GL.GL_BLEND);
-		glAlphaTest = gl.glIsEnabled(GL.GL_ALPHA_TEST);
-		glDepthTest = gl.glIsEnabled(GL.GL_DEPTH_TEST);
-		glStencilTest = gl.glIsEnabled(GL.GL_STENCIL_TEST);
-		glLineSmooth = gl.glIsEnabled(GL.GL_LINE_SMOOTH);
-		glColorLogicOp = gl.glIsEnabled(GL.GL_COLOR_LOGIC_OP);
-		glScissorTest = gl.glIsEnabled(GL.GL_SCISSOR_TEST);
 		glTextureGenS = gl.glIsEnabled(GL.GL_TEXTURE_GEN_S);
 		glTextureGenT = gl.glIsEnabled(GL.GL_TEXTURE_GEN_T);
 		glColorMaterial = gl.glIsEnabled(GL.GL_COLOR_MATERIAL);
@@ -679,22 +612,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void copyContextToGL(GL gl) {
-		setGlFlag(gl, GL.GL_TEXTURE_2D, glTexture2D);
-		setGlFlag(gl, GL.GL_LIGHT0, glLight0);
-		setGlFlag(gl, GL.GL_LIGHT1, glLight1);
-		setGlFlag(gl, GL.GL_LIGHT2, glLight2);
-		setGlFlag(gl, GL.GL_LIGHT3, glLight3);
-		setGlFlag(gl, GL.GL_LIGHTING, glLighting);
-		setGlFlag(gl, GL.GL_DITHER, glDither);
-		setGlFlag(gl, GL.GL_CULL_FACE, glCullFace);
-		setGlFlag(gl, GL.GL_FOG, glFog);
-		setGlFlag(gl, GL.GL_BLEND, glBlend);
-		setGlFlag(gl, GL.GL_ALPHA_TEST, glAlphaTest);
-		setGlFlag(gl, GL.GL_DEPTH_TEST, glDepthTest);
-		setGlFlag(gl, GL.GL_STENCIL_TEST, glStencilTest);
-		setGlFlag(gl, GL.GL_LINE_SMOOTH, glLineSmooth);
-		setGlFlag(gl, GL.GL_COLOR_LOGIC_OP, glColorLogicOp);
-		setGlFlag(gl, GL.GL_SCISSOR_TEST, glScissorTest);
 		setGlFlag(gl, GL.GL_TEXTURE_GEN_S, glTextureGenS);
 		setGlFlag(gl, GL.GL_TEXTURE_GEN_T, glTextureGenT);
 		setGlFlag(gl, GL.GL_COLOR_MATERIAL, glColorMaterial);
