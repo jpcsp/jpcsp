@@ -70,6 +70,7 @@ import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.sceMpeg;
+import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
@@ -205,6 +206,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         PortugueseBR = new javax.swing.JMenuItem();
         Portuguese = new javax.swing.JMenuItem();
         Japanese = new javax.swing.JMenuItem();
+        Russian = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -578,6 +580,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         LanguageMenu.add(Japanese);
+
+        Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU.png"))); // NOI18N
+        Russian.setText(Resource.get("russian"));
+        LanguageMenu.add(Russian);
 
         MenuBar.add(LanguageMenu);
 
@@ -1058,8 +1064,9 @@ private void installCompatibilitySettings()
     boolean useViewport = Settings.getInstance().readBool("emu.useViewport");
     VideoEngine.getInstance().setUseViewport(useViewport);
 
-    boolean enableMpeg = Settings.getInstance().readBool("emu.enableMpeg");
-    sceMpeg.setEnableMpeg(enableMpeg);
+    boolean useConnector = Settings.getInstance().readBool("emu.useConnector");
+    sceMpeg.setEnableConnector(useConnector);
+    sceAtrac3plus.setEnableConnector(useConnector);
 
     boolean useMediaEngine = Settings.getInstance().readBool("emu.useMediaEngine");
     sceMpeg.setEnableMediaEngine(useMediaEngine);
@@ -1119,9 +1126,11 @@ public boolean installCompatibilityPatches(String filename)
         if (useViewport != null)
             VideoEngine.getInstance().setUseViewport(Integer.parseInt(useViewport) != 0);
 
-        String enableMpeg = patchSettings.getProperty("emu.enableMpeg");
-        if (enableMpeg != null)
-            sceMpeg.setEnableMpeg(Integer.parseInt(enableMpeg) != 0);
+        String useConnector = patchSettings.getProperty("emu.useConnector");
+        if (useConnector != null) {
+            sceMpeg.setEnableConnector(Integer.parseInt(useConnector) != 0);
+            sceAtrac3plus.setEnableConnector(Integer.parseInt(useConnector) != 0);
+        }
 
         String useMediaEngine = patchSettings.getProperty("emu.useMediaEngine");
         if (useMediaEngine != null)
@@ -1539,6 +1548,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem RunEmu;
+    private javax.swing.JMenuItem Russian;
     private javax.swing.JMenuItem SaveSnap;
     private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ShotItem;

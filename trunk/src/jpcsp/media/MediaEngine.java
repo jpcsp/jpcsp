@@ -17,10 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.media;
 
-import jpcsp.Controller;
-import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.Settings;
+
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
@@ -322,17 +321,11 @@ public class MediaEngine {
         clockStartTime = 0;
 
         while(container.readNextPacket(packet) >= 0) {
-            // Break the loop if the "START" key was pressed.
-            if(checkSkip())
-                break;
 
-            // If the emulator is paused, waste time and let the
-            // thread sleep to compensate possible video speedups.
-            do{
-                try {
-                    Thread.sleep(10);
-                } catch(Exception e) {}
-            } while(checkPause());
+            if(movieFrame != null) {
+                 if(!movieFrame.isVisible())
+                     break;
+            }
 
             if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
 
@@ -457,13 +450,11 @@ public class MediaEngine {
      */
     private void displayImage(BufferedImage img) {
         if(movieFrame == null) {
-            movieFrame = new JFrame("JPCSP - Movie Playback");
-            movieFrame.setUndecorated(true);
+            movieFrame = new JFrame("JPCSP - PSMF Player");
             movieFrame.setSize(img.getWidth(), img.getHeight());
             int pos[] = Settings.getInstance().readWindowPos("mainwindow");
             movieFrame.setLocation(pos[0] + 4, pos[1] + 76);
             movieFrame.setResizable(false);
-            movieFrame.setAlwaysOnTop(true);
             movieFrame.setVisible(true);
         }
 
@@ -487,23 +478,5 @@ public class MediaEngine {
     private static void playSound(IAudioSamples aSamples) {
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
         audioLine.write(rawBytes, 0, aSamples.getSize());
-    }
-
-    private boolean checkSkip() {
-        Controller control = Controller.getInstance();
-
-        if(control.isKeyPressed(jpcsp.Controller.keyCode.START))
-            return true;
-
-        return false;
-    }
-
-    private boolean checkPause() {
-        Emulator emu = Emulator.getInstance();
-
-        if(emu.pause)
-            return true;
-
-        return false;
     }
 }
