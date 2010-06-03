@@ -448,12 +448,16 @@ public class UmdIsoReader {
     		if ((info == null || (info.getProperties() & 2) == 2) &&
                     !file.equals(".") && !file.equals("\01"))
             {
-                String[] childFiles = listDirectory(filePath);
-                String fileName = getFileNameRecursive(fileStartSector, filePath, childFiles);
-                if (fileName != null)
-                {
-                	return fileName;
-                }
+    			try {
+	                String[] childFiles = listDirectory(filePath);
+	                String fileName = getFileNameRecursive(fileStartSector, filePath, childFiles);
+	                if (fileName != null)
+	                {
+	                	return fileName;
+	                }
+    			} catch (FileNotFoundException e) {
+    				// Continue
+    			}
             }
     	}
 
