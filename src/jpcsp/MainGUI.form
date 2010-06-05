@@ -494,6 +494,9 @@
                   <Connection code="Resource.get(&quot;russian&quot;)" type="code"/>
                 </Property>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="RussianActionPerformed"/>
+              </Events>
             </MenuItem>
           </SubComponents>
         </Menu>

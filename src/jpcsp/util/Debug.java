@@ -28,6 +28,44 @@ import jpcsp.HLE.pspdisplay;
  *
  */
 public class Debug {
+
+    // For sceFont.
+    // Use this function to print a char using the font buffer's dimensions.
+    public static void printFontbuffer(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, char c) {
+        int fontBaseIndex = c * 8;
+
+        if(fontBaseIndex > Font.font.length)
+            fontBaseIndex = '?' * 8;
+
+        for (int i = 0; i < Font.charHeight; i++) {
+            for (int j = 0; j < Font.charWidth; j++) {
+                int pixel = Font.font[fontBaseIndex + i] & (128 >> j);
+                if (pixel != 0)
+                    setFontPixel(base, bpl, bufWidth, bufHeight, x + j, y + i, 0xFFFFFFFF, pixelformat);
+                else
+                    setFontPixel(base, bpl, bufWidth, bufHeight, x + j, y + i, 0x00000000, pixelformat);
+            }
+        }
+    }
+
+    // For sceFont.
+    private static void setFontPixel(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int color, int pixelformat) {
+		Memory mem = Memory.getInstance();
+		int pixelBytes = pspdisplay.getPixelFormatBytes(pixelformat);
+		int framebufferAddr = base + (y * bpl + x) * pixelBytes;
+		int pixelColor = getPixelColor(color, pixelformat);
+        int nextPos = 0;
+
+        for(int i = 0; i < bufWidth/bufHeight; i++) {
+            if (pixelBytes == 4) {
+                mem.write32(framebufferAddr + nextPos, pixelColor);
+            } else if (pixelBytes == 2) {
+                mem.write16(framebufferAddr + nextPos, (short)pixelColor);
+            }
+            nextPos += bpl;
+        }
+	}
+
 	public static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int pixelformat, String s) {
 		printFramebuffer(base, bufferwidth, x, y, colorFg, colorBg, pixelformat, 1, s);
 	}

@@ -583,6 +583,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU.png"))); // NOI18N
         Russian.setText(Resource.get("russian"));
+        Russian.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RussianActionPerformed(evt);
+            }
+        });
         LanguageMenu.add(Russian);
 
         MenuBar.add(LanguageMenu);
@@ -1368,6 +1373,10 @@ private void cwcheatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 CheatsGUI cwCheats = new CheatsGUI("CWCheat");
 cwCheats.setVisible(true);
 }//GEN-LAST:event_cwcheatActionPerformed
+
+private void RussianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RussianActionPerformed
+changeLanguage("ru_RU");
+}//GEN-LAST:event_RussianActionPerformed
 
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))

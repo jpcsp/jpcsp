@@ -167,9 +167,6 @@ public class pspge {
 	    		list.init(list_addr, stall_addr, cbid, arg_addr);
 	    		startGeList(list);
 	            cpu.gpr[2] = list.id;
-
-                if (peekAutoListSync(cbid))
-                    blockCurrentThreadOnList(list, null);
 	    	}
     	}
 
@@ -206,9 +203,6 @@ public class pspge {
 	    		list.init(list_addr, stall_addr, cbid, arg_addr);
 	    		startGeListHead(list);
 	            cpu.gpr[2] = list.id;
-
-                if (peekAutoListSync(cbid))
-                    blockCurrentThreadOnList(list, null);
 	    	}
     	}
 
@@ -311,20 +305,6 @@ public class pspge {
     	// Send the list to the VideoEngine at the head of the queue.
     	list.startListHead();
     	pspdisplay.getInstance().setGeDirty(true);
-    }
-
-    private boolean peekAutoListSync(int cbid) {
-        Memory mem = Memory.getInstance();
-        SceKernelCallbackInfo autoSyncCallback = finishCallbacks.get(cbid);
-        boolean res = false;
-        // Some games seem to attempt using an automatic
-        // list sync system using the "sync" Allegrex opcode.
-
-        if((autoSyncCallback != null)   // Check if we have a finish callback set.
-                && (mem.read8(autoSyncCallback.callback_addr) == 0x0F))
-            res = true;
-
-        return res;
     }
 
     public synchronized void sceGeListSync(int id, int mode) {
