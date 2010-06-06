@@ -33,7 +33,7 @@ public class SceKernelSystemStatus extends pspAbstractMemoryMappedStructure {
 	@Override
 	protected void read() {
 		size = read32();
-		//setMaxSize(size);
+		setMaxSize(size);
 		status = read32();
 		idleClocks = read64();
 		comesOutOfIdleCount = read32();

@@ -79,20 +79,11 @@ public class psputils {
         }
 
         if (mem.isAddressGood(tz)) {
-            int tz_minuteswest = 0;
-            int tz_dsttime = 0;
+            int tz_minuteswest = 0; // TODO
+            int tz_dsttime = 0; // TODO
             mem.write32(tz, tz_minuteswest);
             mem.write32(tz + 4, tz_dsttime);
         }
-        /*
-         * TODO Replace sceKernelLibcGettimeofday by this, better ?
-         */
-        /*
-    	ScePspDateTime pspTime = new ScePspDateTime(tz);
-    	pspTime.write(mem, addr);
-    	
-    	Modules.log.debug("sceKernelLibcGettimeofday addr=" + Integer.toHexString(addr) + " time zone=" + tz);
-    	*/
     	
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
