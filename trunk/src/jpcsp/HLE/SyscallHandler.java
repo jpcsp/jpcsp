@@ -1070,6 +1070,10 @@ public class SyscallHandler {
                     pspSysMem.getInstance().sceKernelMemset(gpr[4], gpr[5], gpr[5]);
                     break;
 
+                case 0x311f:
+                    pspdisplay.getInstance().sceDisplayWaitVblankStartMulti();
+                    break;
+
                 // special codes for HLE syscalls
                 case 0x6f000:
                 	ThreadMan.getInstance().hleKernelExitThread();

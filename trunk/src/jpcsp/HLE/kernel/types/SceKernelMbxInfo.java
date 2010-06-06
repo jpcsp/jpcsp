@@ -21,8 +21,6 @@ import jpcsp.Memory;
 import jpcsp.util.Utilities;
 
 public class SceKernelMbxInfo {
-
-    // PSP info
     //Mbx info
     public int size;
     public String name;
@@ -32,14 +30,12 @@ public class SceKernelMbxInfo {
     public int firstMessage_addr;
 
     //Mbx message info
-    //Header
-    public int nextmsg_addr;
-    public String msgPriority;
-    public String msgDummy;
+    //Header (SceKernelMsgPacket in pspsdk seems to be wrong)
+    public int unk;
+    public int msgTextAddr;
 
     //Message
     public String msgText;
-
 
     // Internal info
     public final int uid;
@@ -74,11 +70,13 @@ public class SceKernelMbxInfo {
     }
 
     public void storeMsg(Memory mem, int address) {
-        //Offsets mostly guessed from tests.
-        nextmsg_addr    = mem.read32(address);
-        msgPriority     = Utilities.readStringNZ(mem, address + 4, 25);
-        msgDummy        = Utilities.readStringNZ(mem, address + 29, 3);
-        msgText         = Utilities.readStringNZ(mem, address + 32, 32);
+        unk             = mem.read32(address);
+        msgTextAddr     = mem.read32(address + 4);
+
+        if(msgTextAddr != 0)
+            msgText         = Utilities.readStringNZ(msgTextAddr, 32);
+        else
+            msgText = "";
     }
 
 }

@@ -57,10 +57,6 @@ public class scePsmfPlayer implements HLEModule {
             mm.addFunction(scePsmfPlayer_1E57A8E7Function, 0x1E57A8E7);
             mm.addFunction(scePsmfPlayer_2BEB1569Function, 0x2BEB1569);
 
-            if(checkMediaEngineState()) {
-                me = new MediaEngine();
-                pmfFileChannel = new PacketChannel();
-            }
         }
     }
 
@@ -145,6 +141,7 @@ public class scePsmfPlayer implements HLEModule {
             psmfFile.readFully(pmfFileData);
 
             if(checkMediaEngineState()) {
+                pmfFileChannel = new PacketChannel();
                 pmfFileChannel.writeFile(pmfFileData);
             }
         }catch (Exception e) {
@@ -180,6 +177,7 @@ public class scePsmfPlayer implements HLEModule {
                 + " unk1=" + Integer.toHexString(unk1) + " unk2=" + Integer.toHexString(unk2));
 
         if(checkMediaEngineState()) {
+            me = new MediaEngine();
             me.decodeAndPlay(pmfFileChannel.getFilePath());
         }
 
