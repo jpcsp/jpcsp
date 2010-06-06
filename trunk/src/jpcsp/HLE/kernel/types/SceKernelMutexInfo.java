@@ -24,7 +24,7 @@ import jpcsp.util.Utilities;
 public class SceKernelMutexInfo {
 
     // PSP info
-    public int size = 56;
+    public int size = 52;
     public String name;
     public int attr;
     public int numWaitThreads;

@@ -65,7 +65,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
 
     protected void read() {
         size = read32();
-        //setMaxSize(size);
+        setMaxSize(size);
 
         nsegment        = (byte)(read8() & 0xFF);
         reserved[0]     = (byte)(read8() & 0xFF);

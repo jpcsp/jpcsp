@@ -73,7 +73,7 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 	@Override
 	protected void read() {
 		size = read32();
-		//setMaxSize(size);
+		setMaxSize(size);
 		name = readStringNZ(32);
 		active = read32();
 		base = read64();
