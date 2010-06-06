@@ -20,7 +20,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
-import jpcsp.Memory;
 import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
@@ -47,22 +46,21 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
 
     /** based on __sceSasSetVoice, but it may have different parameters/behaviour (unchecked) */
     public void __sceSasSetVoicePCM(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        Memory mem = Processor.memory;
-
+        CpuState cpu = processor.cpu;
+        //Memory mem = Memory.getInstance();
+        
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int pcmAddr = cpu.gpr[6]; // may have uncached bit set
+        int vagAddr = cpu.gpr[6];
         int size = cpu.gpr[7];
         int loopmode = cpu.gpr[8];
 
         Modules.log.warn("UNIMPLEMENTED __sceSasSetVoicePCM "
-            + String.format("sasCore=0x%08x voice=%d pcmAddr=0x%08x size=0x%08x loopmode=%d",
-            sasCore, voice, pcmAddr, size, loopmode));
+            + String.format("sasCore=0x%08x voice=%d vagAddr=0x%08x size=0x%08x loopmode=%d",
+            sasCore, voice, vagAddr, size, loopmode));
 
         if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
-            // TODO
-            //voices[voice].samples = decodeSamples(processor, vagAddr, size);
+            voices[voice].samples = decodeSamples(processor, vagAddr, size);
             voices[voice].loopMode = loopmode;
 
             cpu.gpr[2] = 0;

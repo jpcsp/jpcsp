@@ -66,35 +66,34 @@ public class psputils {
         Emulator.getProcessor().cpu.gpr[2] = (int) SystemTimeManager.getSystemTime();
     }
 
-    /* from man pages:
-    struct timeval {
-        time_t tv_sec; // seconds since Jan. 1, 1970
-        suseconds_t tv_usec; // and microseconds
-    };
-
-    struct timezone {
-        int tz_minuteswest; // of Greenwich
-        int tz_dsttime; // type of dst correction to apply
-    };
-    */
-    public void sceKernelLibcGettimeofday(int tp, int tzp) {
+    public void sceKernelLibcGettimeofday(int addr, int tz) {
+    	
         Memory mem = Memory.getInstance();
-
-        if (mem.isAddressGood(tp)) {
+        
+        if (mem.isAddressGood(addr)) {
         	Clock.TimeNanos currentTimeNano = Emulator.getClock().currentTimeNanos();
             int tv_sec = currentTimeNano.seconds;
             int tv_usec = currentTimeNano.millis * 1000 + currentTimeNano.micros;
-            mem.write32(tp, tv_sec);
-            mem.write32(tp + 4, tv_usec);
+            mem.write32(addr, tv_sec);
+            mem.write32(addr + 4, tv_usec);
         }
 
-        if (mem.isAddressGood(tzp)) {
-            int tz_minuteswest = 0; // TODO
-            int tz_dsttime = 0; // TODO
-            mem.write32(tzp, tz_minuteswest);
-            mem.write32(tzp + 4, tz_dsttime);
+        if (mem.isAddressGood(tz)) {
+            int tz_minuteswest = 0;
+            int tz_dsttime = 0;
+            mem.write32(tz, tz_minuteswest);
+            mem.write32(tz + 4, tz_dsttime);
         }
-
+        /*
+         * TODO Replace sceKernelLibcGettimeofday by this, better ?
+         */
+        /*
+    	ScePspDateTime pspTime = new ScePspDateTime(tz);
+    	pspTime.write(mem, addr);
+    	
+    	Modules.log.debug("sceKernelLibcGettimeofday addr=" + Integer.toHexString(addr) + " time zone=" + tz);
+    	*/
+    	
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 

@@ -45,6 +45,7 @@ public class SceKernelMbxInfo {
     public final int uid;
 
     public SceKernelMbxInfo(String name, int attr) {
+    	this.size = 56;
         this.name = name;
         this.attr = attr;
 

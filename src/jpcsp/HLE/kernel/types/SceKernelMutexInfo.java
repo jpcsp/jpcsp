@@ -24,7 +24,7 @@ import jpcsp.util.Utilities;
 public class SceKernelMutexInfo {
 
     // PSP info
-    public static final int size = 52;
+    public int size = 56;
     public String name;
     public int attr;
     public int numWaitThreads;
@@ -45,7 +45,7 @@ public class SceKernelMutexInfo {
     }
 
     public void read(Memory mem, int address) {
-        int size        = mem.read32(address);
+        size  	        = mem.read32(address);
         name            = Utilities.readStringNZ(mem, address + 4, 31);
         attr            = mem.read32(address + 36);
         numWaitThreads  = mem.read32(address + 40);
