@@ -22,30 +22,26 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
-import jpcsp.connector.PGDFileConnector;
-import jpcsp.filesystems.*;
-import jpcsp.filesystems.umdiso.*;
-import jpcsp.hardware.MemoryStick;
-import jpcsp.util.Utilities;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.regex.Pattern;
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.HLE.modules150.sceMpeg;
+import jpcsp.connector.PGDFileConnector;
+import jpcsp.filesystems.*;
+import jpcsp.filesystems.umdiso.*;
+import jpcsp.hardware.MemoryStick;
+import jpcsp.util.Utilities;
 import static jpcsp.util.Utilities.*;
-
 import jpcsp.HLE.kernel.types.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.HLE.kernel.managers.*;
@@ -72,10 +68,10 @@ public class pspiofilemgr {
     public final static int PSP_O_CREAT    = 0x0200;
     public final static int PSP_O_TRUNC    = 0x0400;
     public final static int PSP_O_EXCL     = 0x0800;
-    public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
+    public final static int PSP_O_NBUF     = 0x4000; // Special mode only valid for media files.
     public final static int PSP_O_NOWAIT   = 0x8000;
-    public final static int PSP_O_UNKNOWN2 = 0x2000000; // seen on Puzzle Guzzle, Hammerin' Hero
-    public final static int PSP_O_UNKNOWN3 = 0x40000000; // From "Kingdom Hearts: Birth by Sleep".
+    public final static int PSP_O_UNKNOWN1 = 0x2000000; // seen on Puzzle Guzzle, Hammerin' Hero
+    public final static int PSP_O_UNKNOWN2 = 0x40000000; // From "Kingdom Hearts: Birth by Sleep".
 
     //Every flag seems to be ORed with a retry count.
     //In Activision Hits Remixed, an error is produced after
@@ -649,7 +645,16 @@ public class pspiofilemgr {
         }
         if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
         if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
-        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
+
+        // PSP_O_NBUF (actual name unknown).
+        // This mode seems to be associated only with media files.
+        // These files, when using sceMpegRingbufferPut
+        // fail to properly execute the ringbuffer callback (also happens on PSP, if forced).
+        // TODO: Investigate how they have to be processed.
+        if ((flags & PSP_O_NBUF) == PSP_O_NBUF) {
+            Modules.log.warn("PSP_O_NBUF - " + filename + " doesn't use media buffer!");
+            sceMpeg.setRingBufStatus(false);
+        }
 
         String mode = getMode(flags);
 
@@ -896,7 +901,7 @@ public class pspiofilemgr {
         } else {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         }
-        
+
         if(currentAsyncThread != null)
             ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(currentAsyncThread.uid);
     }
@@ -2045,14 +2050,14 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = -1;	// TODO Check error code
             } else {
                 File file = new File(pcfilename);
-                
+
                 SceIoStat stat = new SceIoStat();
                 stat.read(Memory.getInstance(), stat_addr);
 
                 int mode = stat.mode;
                 boolean successful = true;
 
-                if ((bits & 0x0001) != 0) {	// Others execute permission 
+                if ((bits & 0x0001) != 0) {	// Others execute permission
                 	if (!file.setExecutable((mode & 0x0001) != 0)) {
                 		successful = false;
                 	}
@@ -2068,7 +2073,7 @@ public class pspiofilemgr {
                 	}
                 }
 
-                if ((bits & 0x0040) != 0) {	// User execute permission 
+                if ((bits & 0x0040) != 0) {	// User execute permission
                 	if (!file.setExecutable((mode & 0x0040) != 0, true)) {
                 		successful = false;
                 	}

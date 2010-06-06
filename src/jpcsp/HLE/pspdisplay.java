@@ -1090,6 +1090,30 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     	}
     }
 
+    public void sceDisplayWaitVblankStartMulti() {
+        // Same as sceDisplayWaitVblankStart().
+        // May be different on the PSP, because it suggests multiple graphics'
+        // chips interaction (GE and ME, probably).
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceDisplayWaitVblankStartMulti");
+        }
+
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+
+        // Block the current thread
+        ThreadMan threadMan = ThreadMan.getInstance();
+        if (threadMan.isInsideCallback()) {
+        	Modules.log.warn("sceDisplayWaitVblankStartMulti inside callback currently not supported");
+        } else {
+	        int threadId = threadMan.getCurrentThreadID();
+	        threadMan.blockCurrentThread();
+
+	        // Add a Vblank action to unblock the thread
+	        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+	        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+        }
+    }
+
     public void sceDisplayWaitVblankCB() {
         if (Modules.log.isDebugEnabled()) {
         	Modules.log.debug("sceDisplayWaitVblankCB");

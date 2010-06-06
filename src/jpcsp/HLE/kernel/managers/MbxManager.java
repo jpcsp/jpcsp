@@ -24,7 +24,6 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.types.SceKernelMbxInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -65,12 +64,9 @@ public class MbxManager {
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
         // Untrack
         if (removeWaitingThread(thread)) {
-            // Return WAIT_TIMEOUT
             thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
         } else {
             Modules.log.warn("Mbx deleted while we were waiting for it! (timeout expired)");
-
-            // Return WAIT_DELETE
             thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
         }
     }
@@ -81,9 +77,6 @@ public class MbxManager {
 
     // TODO check if we should yield when waking higher priority threads
     private void updateWaitingMbxReceive(SceKernelMbxInfo info) {
-        Memory mem = Memory.getInstance();
-
-        // Find threads waiting on this XXX and wake them up
         ThreadMan threadMan = ThreadMan.getInstance();
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -91,27 +84,36 @@ public class MbxManager {
             if (thread.wait.waitingOnMbxReceive &&
                 thread.wait.Mbx_id == info.uid &&
                 checkMbx(info)) {
-                // Untrack
                 thread.wait.waitingOnMbxReceive = false;
-
-                // Return success
                 thread.cpuContext.gpr[2] = 0;
-
-                // Wakeup
                 threadMan.changeThreadState(thread, PSP_THREAD_READY);
             }
         }
     }
 
+    private void cancelWaitingMbxReceive(SceKernelMbxInfo info) {
+        ThreadMan threadMan = ThreadMan.getInstance();
+        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
+            SceKernelThreadInfo thread = it.next();
+
+            if ((thread.wait.waitingOnMbxReceive &&
+                    thread.wait.Mbx_id == info.uid)) {
+                    thread.wait.waitingOnMbxReceive = false;
+                    thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
+                    threadMan.changeThreadState(thread, PSP_THREAD_READY);
+            }
+        }
+        info.numWaitThreads = 0;
+    }
 
     /** @return true on success */
     private boolean trySendMbx(Memory mem, SceKernelMbxInfo info, int addr) {
         if (mem.isAddressGood(addr)) {
             info.firstMessage_addr = addr;
             info.storeMsg(mem, addr);
+            info.numMessages++;
             return true;
         }
-
         return false;
     }
 
@@ -119,7 +121,7 @@ public class MbxManager {
     private boolean checkMbx(SceKernelMbxInfo info) {
         boolean hasMsg = false;
 
-        if (info.firstMessage_addr != 0)
+        if (info.numMessages > 0)
             hasMsg = true;
 
         return hasMsg;
@@ -127,7 +129,7 @@ public class MbxManager {
 
     public void sceKernelCreateMbx(int name_addr, int attr, int opt_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
-        Memory mem = Processor.memory;
+        Memory mem = Memory.getInstance();
 
         String name = Utilities.readStringZ(name_addr);
         Modules.log.warn("PARTIAL:sceKernelCreateMbx(name=" + name
@@ -168,10 +170,10 @@ public class MbxManager {
 
     public void sceKernelSendMbx(int uid, int msg_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
-        Memory mem = Processor.memory;
+        Memory mem = Memory.getInstance();
 
         Modules.log.info("sceKernelSendMbx(uid=0x" + Integer.toHexString(uid)
-            + ",msg=0x" + Integer.toHexString(msg_addr));
+            + ",msg=0x" + Integer.toHexString(msg_addr) + ")");
 
         SceKernelMbxInfo info = mbxMap.get(uid);
         if (info == null) {
@@ -179,14 +181,14 @@ public class MbxManager {
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
         } else {
             trySendMbx(mem, info, msg_addr);
-            Modules.log.info("sceKernelSendMbx sending (message= '" + info.msgText
-            + "', nextmsg_addr= " + info.nextmsg_addr);
+            Modules.log.info("sceKernelSendMbx sending (message= '" + info.msgText + "')");
             cpu.gpr[2] = 0;
         }
     }
 
     private void hleKernelReceiveMbx(int uid, int addr_msg_addr, int timeout_addr,
         boolean do_callbacks, boolean poll) {
+
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
@@ -213,49 +215,37 @@ public class MbxManager {
         } else {
             if (!checkMbx(info)) {
                 if (!poll) {
-                    // Failed, but it's ok, just wait a little
                     Modules.log.info("hleKernelReceiveMbx - '" + info.name + "(waiting)");
                     info.numWaitThreads++;
 
                     ThreadMan threadMan = ThreadMan.getInstance();
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
-                    // Do callbacks?
                     currentThread.do_callbacks = do_callbacks;
-
-                    // wait type
-                    currentThread.waitType = PSP_WAIT_5;  //Mbx? Check this.
+                    currentThread.waitType = PSP_WAIT_MBX;
                     currentThread.waitId = uid;
 
-                    // Go to wait state
                     threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
 
-                    // Wait on a specific XXX
                     currentThread.wait.waitingOnMbxReceive = true;
                     currentThread.wait.Mbx_id = uid;
 
                     threadMan.changeThreadState(currentThread, PSP_THREAD_WAITING);
-
                     threadMan.contextSwitch(threadMan.nextThread());
                 } else {
                     Modules.log.warn("hleKernelReceiveMbx has no messages.");
                     cpu.gpr[2] = ERROR_MESSAGEBOX_NO_MESSAGE;
 
-                    // not sure about this
                     if (do_callbacks) {
                         ThreadMan.getInstance().yieldCurrentThreadCB();
                     }
                 }
             } else {
-                // success
                 cpu.gpr[2] = 0;
                 mem.write32(addr_msg_addr, info.firstMessage_addr);
-
-                // not sure about this
                 if (do_callbacks) {
                     ThreadMan.getInstance().yieldCurrentThreadCB();
                 }
-
                 updateWaitingMbxReceive(info);
             }
         }
@@ -271,9 +261,9 @@ public class MbxManager {
 
     public void sceKernelCancelReceiveMbx(int uid, int pnum_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
-        Memory mem = cpu.memory;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.debug("sceKernelCancelReceiveMbx(uid=0x" + Integer.toHexString(uid));
+        Modules.log.debug("sceKernelCancelReceiveMbx(uid=0x" + Integer.toHexString(uid) + ")");
 
         SceKernelMbxInfo info = mbxMap.get(uid);
         if (info == null) {
@@ -283,34 +273,14 @@ public class MbxManager {
             if (mem.isAddressGood(pnum_addr)) {
                 mem.write32(pnum_addr, info.numWaitThreads);
             }
-
-            info.numWaitThreads = 0;
-
-            // Find threads waiting on this XXX and wake them up
-            ThreadMan threadMan = ThreadMan.getInstance();
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
-                SceKernelThreadInfo thread = it.next();
-
-                if ((thread.wait.waitingOnMbxReceive &&
-                    thread.wait.Mbx_id == uid)) {
-                    // Untrack
-                    thread.wait.waitingOnMbxReceive = false;
-
-                    // Return WAIT_CANCELLED
-                    thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
-
-                    // Wakeup
-                    threadMan.changeThreadState(thread, PSP_THREAD_READY);
-                }
-            }
-
+            cancelWaitingMbxReceive(info);
             cpu.gpr[2] = 0;
         }
     }
 
     public void sceKernelReferMbxStatus(int uid, int info_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
-        Memory mem = Processor.memory;
+        Memory mem = Memory.getInstance();
 
         Modules.log.debug("sceKernelReferMbxStatus(uid=0x" + Integer.toHexString(uid)
             + ",info=0x" + Integer.toHexString(info_addr) + ")");
@@ -327,8 +297,10 @@ public class MbxManager {
 
 	public void sceKernelPollMbx(int uid, int addr_msg_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.warn("sceKernelPollMbx(" + uid + ", 0x" + Integer.toHexString(addr_msg_addr) + ")");
+        Modules.log.info("sceKernelPollMbx(uid=0x" + Integer.toHexString(uid)
+                + ", addr_msg_addr=0x" + Integer.toHexString(addr_msg_addr) + ")");
 
         SceKernelMbxInfo info = mbxMap.get(uid);
         if (info == null) {
@@ -338,7 +310,8 @@ public class MbxManager {
             if (!checkMbx(info)) {
                 Emulator.getProcessor().cpu.gpr[2] = ERROR_MESSAGEBOX_NO_MESSAGE;
             } else {
-                Emulator.getProcessor().cpu.gpr[2] = 0;
+                mem.write32(addr_msg_addr, info.firstMessage_addr);
+                cpu.gpr[2] = 0;
             }
         }
 	}

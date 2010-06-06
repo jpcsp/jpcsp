@@ -243,6 +243,16 @@ public class sceMpeg implements HLEModule {
     protected MediaEngine me;
     protected PacketChannel meChannel;
 
+    protected static boolean isRingBufOn = true;
+
+    public static void setRingBufStatus(boolean status) {
+        isRingBufOn = status;
+    }
+
+    public static boolean getRingBufStatus() {
+        return isRingBufOn;
+    }
+
     public static boolean isEnableConnector() {
 		return useMpegCodec;
 	}
@@ -333,6 +343,14 @@ public class sceMpeg implements HLEModule {
         mpegAvcCurrentTimestamp = 0;
         videoFrameCount = 0;
         audioFrameCount = 0;
+
+        if(!getRingBufStatus()) {
+            // Faking.
+            // TODO: Something else must happen to allow playing media files
+            // that don't use the ringbuffer. Check this.
+            Modules.log.warn("MPEG ringbuffer is turned off! Setting mpegStreamSize to -1.");
+            mpegStreamSize = -1;
+        }
 
         if(mpegStreamSize > 0) {
             if(isEnableMediaEngine()) {
@@ -509,6 +527,9 @@ public class sceMpeg implements HLEModule {
         }else if (isEnableConnector()) {
         	mpegCodec.finish();
         }
+
+        if(!getRingBufStatus())
+            setRingBufStatus(true); // Reset the ringbuffer status.
 
         mpegHandle = 0;
         cpu.gpr[2] = 0;
