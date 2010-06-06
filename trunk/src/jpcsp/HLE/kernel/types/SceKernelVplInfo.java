@@ -26,7 +26,7 @@ import jpcsp.util.Utilities;
 public class SceKernelVplInfo {
 
     // PSP info
-    public static final int size = 52;
+    public int size = 56;
     public String name;
     public int attr;
     public int poolSize;
@@ -107,7 +107,7 @@ public class SceKernelVplInfo {
     }
 
     public void read(Memory mem, int address) {
-        int size        = mem.read32(address);
+        size  	        = mem.read32(address);
         name            = Utilities.readStringNZ(mem, address + 4, 32);
         attr            = mem.read32(address + 36);
         poolSize        = mem.read32(address + 40);

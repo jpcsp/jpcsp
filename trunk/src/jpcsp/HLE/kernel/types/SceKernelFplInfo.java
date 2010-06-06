@@ -25,7 +25,7 @@ import jpcsp.util.Utilities;
 public class SceKernelFplInfo {
 
     // PSP info
-    public static final int size = 56;
+    public int size = 56;
     public String name;
     public int attr;
     public int blockSize;
@@ -100,7 +100,7 @@ public class SceKernelFplInfo {
 
     public void read(Memory mem, int address) {
         address &= 0x3FFFFFFF;
-        int size        = mem.read32(address);
+        size 	        = mem.read32(address);
         name            = Utilities.readStringNZ(address + 4, 31);
         attr            = mem.read32(address + 36);
         blockSize       = mem.read32(address + 40);

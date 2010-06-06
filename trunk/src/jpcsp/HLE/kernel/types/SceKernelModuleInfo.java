@@ -22,7 +22,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
 
     // PSP info
     // http://psp.jim.sh/pspsdk-doc/structSceKernelModuleInfo.html
-    public final int size = 96;
+    public int size = 96;
     public byte nsegment;
     public byte[] reserved = new byte[3]; // these never get touched, nsegment is not 32-bit in this struct
     public int[] segmentaddr = new int[4];
@@ -64,8 +64,8 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
     }
 
     protected void read() {
-        int size = read32();
-        setMaxSize(size);
+        size = read32();
+        //setMaxSize(size);
 
         nsegment        = (byte)(read8() & 0xFF);
         reserved[0]     = (byte)(read8() & 0xFF);
@@ -92,9 +92,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
     }
 
     protected void write() {
-        // TODO read size, but override so min is enough for everything up to and including bss_size
         setMaxSize(size);
-
         write32(size);
         write8(nsegment);
         writeSkip(3);
