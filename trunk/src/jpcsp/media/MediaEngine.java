@@ -448,10 +448,10 @@ public class MediaEngine {
     /*
      * Main interaction functions.
      */
-    private void displayImage(BufferedImage img) {
+private void displayImage(BufferedImage img) {
         if(movieFrame == null) {
             movieFrame = new JFrame("JPCSP - PSMF Player");
-            movieFrame.setSize(img.getWidth(), img.getHeight());
+            movieFrame.setSize(img.getWidth(), img.getHeight() + 28);
             int pos[] = Settings.getInstance().readWindowPos("mainwindow");
             movieFrame.setLocation(pos[0] + 4, pos[1] + 76);
             movieFrame.setResizable(false);
@@ -459,7 +459,7 @@ public class MediaEngine {
         }
 
         Graphics g = movieFrame.getGraphics();
-        g.drawImage(img, 0, 0, null);
+        g.drawImage(img, 0, 28, null);
     }
 
     // Sound sampling functions also based on Xuggler's demos.

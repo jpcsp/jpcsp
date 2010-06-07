@@ -1097,11 +1097,6 @@ public class sceMpeg implements HLEModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",init=0x" + Integer.toHexString(init_addr) + ")");
 
-        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate
-        if (frameWidth == 0) {
-            frameWidth = defaultFrameWidth;
-        }
-
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
@@ -1473,11 +1468,6 @@ public class sceMpeg implements HLEModule {
             + ",range_addr=0x" + Integer.toHexString(range_addr)
             + ",frameWidth=" + frameWidth
             + ",dest=0x" + Integer.toHexString(dest_addr) + ")");
-
-        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate
-        if (frameWidth == 0) {
-            frameWidth = defaultFrameWidth;
-        }
 
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
