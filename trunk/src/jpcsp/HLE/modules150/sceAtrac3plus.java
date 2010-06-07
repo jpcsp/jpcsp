@@ -123,6 +123,7 @@ public class sceAtrac3plus implements HLEModule {
     protected int inputBufferOffset;
     protected int inputFileSize;
     protected int inputFileOffset;
+    protected int currentLoop;
     public static int maxSamples;
     public static final int remainFrames = -1;
     public static boolean useAtracCodec = false;
@@ -178,10 +179,12 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
 
-        Modules.log.warn("Skipping:sceAtracReleaseAtracID: atracID = " + atID);
+        Modules.log.warn("IGNORING: sceAtracReleaseAtracID: atracID = " + atID);
         AtracCodec atracCodec = getAtracCodec(atID);
-        if(atracCodec != null)
-        atracCodec.finish();
+
+        if(atracCodec != null) {
+            atracCodec.finish();
+        }
         atracCodecs.remove(atID);
         SceUidManager.releaseUid(atID, uidPurpose);
 
@@ -358,9 +361,10 @@ public class sceAtrac3plus implements HLEModule {
             int fakedSamples = maxSamples;
             if (inputBufferOffset >= inputBufferSize) {
             	fakedSamples = 0; // No more data in input buffer
+                result = -1;  // Must output an error. Most games check for $v0 < 0 when there's no more Atrac3plus samples to load.
             }
 
-            Modules.log.warn(String.format("Unimplemented sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X, returning samples=%d",
+            Modules.log.warn(String.format("PARTIAL: sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X, returning samples=%d",
                     atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr, fakedSamples));
 
             // Assume consuming as many ATRAC3 input bytes as samples
@@ -408,7 +412,10 @@ public class sceAtrac3plus implements HLEModule {
         }
         }
         cpu.gpr[2] = result;
-        ThreadMan.getInstance().hleKernelDelayThread(10000, false);// for the spamming warn.
+
+        // Delaying here is dangerous.
+        // "Ikki Tousen: Eloquent Fist" was falling into a loop due to this.
+        //ThreadMan.getInstance().hleKernelDelayThread(10000, false);// for the spamming warn.
     }
 
     public void sceAtracGetRemainFrame(Processor processor) {
@@ -418,7 +425,7 @@ public class sceAtrac3plus implements HLEModule {
         int atID = cpu.gpr[4];
         int remainFramesAddr = cpu.gpr[5];
 
-        Modules.log.warn(String.format("Unimplemented sceAtracGetRemainFrame: atracID = %d, remainFramesAddr = 0x%08X", atID, remainFramesAddr));
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetRemainFrame: atracID = %d, remainFramesAddr = 0x%08X", atID, remainFramesAddr));
 
         if (mem.isAddressGood(remainFramesAddr)) {
         	mem.write32(remainFramesAddr, getRemainFrames(atID));
@@ -444,7 +451,7 @@ public class sceAtrac3plus implements HLEModule {
     		availableBytes = inputFileSize - inputFileOffset;
     	}
 
-        Modules.log.warn(String.format("Partial sceAtracGetStreamDataInfo: atID=0x%08x, writeAddr=0x%08x, availableBytesAddr=0x%08x, readOffsetAddr=0x%08x, returning availableBytes=%d",
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetStreamDataInfo: atID=0x%08x, writeAddr=0x%08x, availableBytesAddr=0x%08x, readOffsetAddr=0x%08x, returning availableBytes=%d",
                 atID, writeAddr, availableBytesAddr, readOffsetAddr, availableBytes));
 
         Memory mem = Memory.getInstance();
@@ -467,7 +474,7 @@ public class sceAtrac3plus implements HLEModule {
         int atID = cpu.gpr[4];
         int bytesToAdd = cpu.gpr[5];
 
-        Modules.log.warn(String.format("Partial sceAtracAddStreamData: atracID=%d, bytesToAdd=0x%x", atID, bytesToAdd));
+        Modules.log.warn(String.format("PARTIAL: sceAtracAddStreamData: atracID=%d, bytesToAdd=0x%x", atID, bytesToAdd));
 
         hleAtracAddStreamData(atID, bytesToAdd);
         cpu.gpr[2] = 0;
@@ -480,7 +487,7 @@ public class sceAtrac3plus implements HLEModule {
         int outPosition = cpu.gpr[5];
         int outBytes = cpu.gpr[6];
 
-        Modules.log.warn("Ignoring sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition)
+        Modules.log.warn("IGNORING: sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition)
                 + ", outBytes=0x" + Integer.toHexString(outBytes));
 
         cpu.gpr[2] = 0x80630022; // No second buffer used?
@@ -489,7 +496,7 @@ public class sceAtrac3plus implements HLEModule {
     public void sceAtracSetSecondBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Skipping:sceAtracSetSecondBuffer");
+        Modules.log.warn("IGNORING :sceAtracSetSecondBuffer");
 
         cpu.gpr[2] = 0;
     }
@@ -511,7 +518,7 @@ public class sceAtrac3plus implements HLEModule {
         int loopStartSampleAddr = cpu.gpr[6];
         int loopEndSampleAddr = cpu.gpr[7];
 
-        Modules.log.warn(String.format("Skipping:sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, , loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atId, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
+        Modules.log.warn(String.format("IGNORING: sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, , loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atId, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
 
         int endSample = getAtracCodec(atId).getAtracEndSample();
         if (endSample < 0) {
@@ -562,7 +569,7 @@ public class sceAtrac3plus implements HLEModule {
     		samples = 0; // No more data available in input buffer
     	}
 
-    	Modules.log.warn(String.format("Partial sceAtracGetNextSample: atracID=%d, nbrSamplesAddr=0x%08x, returning nbrSamples=%d", atID, nbrSamplesAddr, samples));
+    	Modules.log.warn(String.format("PARTIAL: sceAtracGetNextSample: atracID=%d, nbrSamplesAddr=0x%08x, returning nbrSamples=%d", atID, nbrSamplesAddr, samples));
 
         if (mem.isAddressGood(nbrSamplesAddr)) {
         	mem.write32(nbrSamplesAddr, samples);
@@ -587,16 +594,16 @@ public class sceAtrac3plus implements HLEModule {
         Memory mem = Memory.getInstance();
 
         int atID = cpu.gpr[4];
-        int unk1Addr = cpu.gpr[5];
-        int unk2Addr = cpu.gpr[6];
+        int loopNbr = cpu.gpr[5];
+        int resultAddr = cpu.gpr[6];
 
-        Modules.log.warn(String.format("Unimplemented sceAtracGetLoopStatus atracID=%d, unk1Addr=0x%08x, unk2Addr=0x%08X", atID, unk1Addr, unk2Addr));
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetLoopStatus atracID=%d, loopNbr=0x%08x, resultAddr=0x%08X", atID, loopNbr, resultAddr));
 
-        if (mem.isAddressGood(unk1Addr)) {
-        	mem.write32(unk1Addr, 0);
+        if (mem.isAddressGood(loopNbr)) {
+        	mem.write32(loopNbr, currentLoop);
         }
-        if (mem.isAddressGood(unk2Addr)) {
-        	mem.write32(unk2Addr, 0);
+        if (mem.isAddressGood(resultAddr)) {
+        	mem.write32(resultAddr, 0);
         }
 
         cpu.gpr[2] = 0;
@@ -608,7 +615,9 @@ public class sceAtrac3plus implements HLEModule {
         int atID = cpu.gpr[4];
         int loopNbr = cpu.gpr[5];
 
-        Modules.log.warn("Unimplemented sceAtracSetLoopNum: atracID = " + atID + ", loopNbr= " + loopNbr);
+        Modules.log.warn("PARTIAL: sceAtracSetLoopNum: atracID = " + atID + ", loopNbr= " + loopNbr);
+
+        currentLoop = loopNbr;
 
         cpu.gpr[2] = 0;
     }
@@ -620,7 +629,7 @@ public class sceAtrac3plus implements HLEModule {
         int sample = cpu.gpr[5];
         int unk1Addr = cpu.gpr[6];
 
-        Modules.log.warn(String.format("Partial sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, unk1Addr));
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, unk1Addr));
         hleAtracGetBufferInfoForReseting(atID, sample, unk1Addr);
 
         cpu.gpr[2] = 0;
@@ -633,7 +642,8 @@ public class sceAtrac3plus implements HLEModule {
         int sample = cpu.gpr[5];
         int unknown1 = cpu.gpr[6];
         int unknown2 = cpu.gpr[7];
-        Modules.log.warn(String.format("Partial sceAtracResetPlayPosition atracId=%d, sample=%d, %08X, %08X", atID, sample, unknown1, unknown2));
+
+        Modules.log.warn(String.format("PARTIAL: sceAtracResetPlayPosition atracId=%d, sample=%d, %08X, %08X", atID, sample, unknown1, unknown2));
 
         inputBufferOffset = sample * 4;
         inputFileSize = inputBufferSize;

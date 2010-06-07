@@ -144,6 +144,10 @@ public class sceSasCore implements HLEModule {
     	public int bufferIndex;
         public boolean paused;
         public final int BASE_ENVELOPE_HEIGHT = 0x10000000;  // Faking for now. Each voice has it's own envelope.
+        public int ADSREnvAttack;
+        public int ADSREnvDecay;
+        public int ADSREnvSustain;
+        public int ADSREnvRelease;
 
     	public pspVoice() {
     		outputDataLine = null;
@@ -352,13 +356,20 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // 8, 0xf
-        //int unk3 = cpu.gpr[7]; // 0, 0x40000000
-        //int unk4 = cpu.gpr[8]; // 0x64
-        //int unk5 = cpu.gpr[9]; // 0x64
-        //int unk6 = cpu.gpr[10]; // 0x10000000
+        int unk     = cpu.gpr[6];   // 8, 0xf
+        int attack  = cpu.gpr[7];   // ADSR Envelope's attack.
+        int decay   = cpu.gpr[8];   // ADSR Envelope's decay.
+        int sustain = cpu.gpr[9];   // ADSR Envelope's sustain.
+        int release = cpu.gpr[10];  // ADSR Envelope's release.
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] "
+        // TODO: Apply this envelope when processing this voice.
+        // This should also allow calculating the real final envelope height.
+        voices[voice].ADSREnvAttack  = attack;
+        voices[voice].ADSREnvDecay   = decay;
+        voices[voice].ADSREnvSustain = sustain;
+        voices[voice].ADSREnvRelease = release;
+
+        Modules.log.warn("IGNORING: __sceSasSetADSR "
             + String.format("sasCore=%08x, voice=%d %08x %08x %08x %08x %08x",
             sasCore, voice, cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9], cpu.gpr[10]));
 
@@ -369,16 +380,12 @@ public class sceSasCore implements HLEModule {
 
     public void __sceSasRevParam(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
 
         int sasCore = cpu.gpr[4];
         int unk1 = cpu.gpr[5]; // 0, 64
         int unk2 = cpu.gpr[6]; // 0, 64
-        // 99% sure there are no more parameters
 
         Modules.log.warn("IGNORING:__sceSasRevParam("+ String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
-        // TODO This is a fake param
 
         if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
             cpu.gpr[2] = -1;
@@ -388,13 +395,10 @@ public class sceSasCore implements HLEModule {
         }
     }
 
-    // we could do some trickery in here too
-    // 2C8E6AB3
     public void __sceSasGetPauseFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        // It does match __sceSasGetEndFlag.
 
         if (isSasHandleGood(sasCore, "__sceSasGetPauseFlag", cpu)) {
         	int pauseFlag = 0;
@@ -437,11 +441,10 @@ public class sceSasCore implements HLEModule {
         Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
-        // int unk1 = cpu.gpr[5]; // 0x00000100
-        // int unk2 = cpu.gpr[6]; // 0x00000020
-        // int unk3 = cpu.gpr[7]; // 0x00000000
-        int sampleRate = cpu.gpr[8]; // 0x0000AC44 (44100 Hz)
-        // 100% sure there are no more parameters
+        int unk1 = cpu.gpr[5]; // 0x00000100
+        int unk2 = cpu.gpr[6]; // 0x00000020
+        int unk3 = cpu.gpr[7]; // 0x00000000
+        int sasSampleRate = cpu.gpr[8]; // 0x0000AC44 (44100 Hz)
 
         Modules.log.info("PARTIAL __sceSasInit: "
                 + String.format("sasCore=0x%08x, unk1=0x%08x, unk2=0x%08x, unk3=0x%08x, sampleRate=%d",
@@ -458,7 +461,7 @@ public class sceSasCore implements HLEModule {
             mem.write32(sasCore, sasCoreUid);
         }
 
-        this.sampleRate = sampleRate;
+        this.sampleRate = sasSampleRate;
         cpu.gpr[2] = 0;
     }
 
@@ -478,19 +481,20 @@ public class sceSasCore implements HLEModule {
         }
     }
 
-    // 50A14DFC
     public void __sceSasCoreWithMix(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // looks like a heap address
-        //int unk2 = cpu.gpr[6]; // looks like a bitfield
+        int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
+        int sasMix = cpu.gpr[6]; // Bitfield?
 
-        Modules.log.debug("IGNORING:__sceSasCoreWithMix " + makeLogParams(cpu));
+         Modules.log.debug("IGNORING:__sceSasCoreWithMix " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
-            // nothing to do ... ?
+            // Variation of __sceSasCore.
+            // This one sends an encoded mix in the 3rd parameter.
             cpu.gpr[2] = 0;
+        	ThreadMan.getInstance().hleKernelDelayThread(1000000, false);
         }
     }
 
@@ -507,7 +511,6 @@ public class sceSasCore implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    // 68A46B95
     public void __sceSasGetEndFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -534,7 +537,6 @@ public class sceSasCore implements HLEModule {
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
         int unk1 = cpu.gpr[6]; // set to 1
-        // 99% sure there are no more parameters
 
         Modules.log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
 
@@ -655,8 +657,7 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetVoice(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
@@ -682,15 +683,23 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // 8/0xf
-        //int unk3 = cpu.gpr[7]; // 0
-        // may be more parameters
+        int unk          = cpu.gpr[6];    // 8/0xf
+        int attackFlag   = cpu.gpr[7];   // Sets attack on or off.
+        int decayFlag    = cpu.gpr[8];   // Sets decay on or off.
+        int sustainFlag  = cpu.gpr[9];   // Sets sustain on or off.
+        int releaseFlag  = cpu.gpr[10];  // Sets release on or off.
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] "
-            + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        // The parameters seem to follow a bit shift pattern.
+        // Attack:  0 - Off / 1 - On (0001)
+        // Decay:   0 - Off / 2 - On (0010)
+        // Sustain: 0 - Off / 4 - On (0100)
+        // Release: 0 - Off / 8 - On (1000)
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn("IGNORING: __sceSasSetADSRmode"
+            + String.format("%08x %08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9], cpu.gpr[10]));
+
+        cpu.gpr[2] = 0;
     }
 
     public void __sceSasSetKeyOff(Processor processor) {
@@ -718,25 +727,26 @@ public class sceSasCore implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    // A3589D81
     public void __sceSasCore(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // looks like a heap address, bss, 0x40 aligned
-        // 99% sure there are no more parameters
+        int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
 
-        //unk1 matches the buffer address referenced by sceAudioOutput2xxx functions (Hykem)
-
+        // The data outputted to sasOut is used by several audio functions, like
+        // an overlaying sound envelope. -1 for instance, produces static over
+        // any audio sample the application uses.
         Modules.log.debug("IGNORING:__sceSasCore " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
             // noxa/pspplayer blocks in __sceSasCore
             // some games protect __sceSasCore with locks, suggesting it may context switch.
         	// Games seems to run better when delaying the thread instead of just yielding.
+
+            // This may be related to the time the output needs.
+            // It seems to be constantly refreshed.
             cpu.gpr[2] = 0;
         	ThreadMan.getInstance().hleKernelDelayThread(1000000, false);
-        	// ThreadMan.getInstance().yieldCurrentThread();
         }
     }
 
@@ -768,7 +778,6 @@ public class sceSasCore implements HLEModule {
             + String.format("sasCore=%08x, voice=%d, freq=0x%04x",
             sasCore, voice, freq));
 
-        //Faking
         if (isSasHandleGood(sasCore, "__sceSasSetNoise", cpu) && isVoiceNumberGood(voice, "__sceSasSetNoise", cpu)) {
         	voices[voice].noise = freq;
         	cpu.gpr[2] = 0;
@@ -793,9 +802,8 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk1 = cpu.gpr[6]; // 0xff
-        //int unk2 = cpu.gpr[7]; // 0x1fc6
-        // doesn't look like any more parameters, they look like error codes
+        int ADSREnv1  = cpu.gpr[6]; // 4-byte representation of an ADSR envelope.
+        int ADSREnv2 = cpu.gpr[7];  // Follows the same pattern. Another envelope?
 
         Modules.log.warn("IGNORING:__sceSasSetSimpleADSR " + makeLogParams(cpu));
 
@@ -847,7 +855,6 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int mode = cpu.gpr[5]; // 0, 1 (most common), 0x1f
-        // 99% sure there are no more parameters
 
         // Similar to sceAudio (STEREO/MONO)?
         if (Modules.log.isDebugEnabled()) {
@@ -877,13 +884,11 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasRevVON(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int unk1 = cpu.gpr[5]; // set to 1
         int unk2 = cpu.gpr[6]; // 0 or 1
-        // 99% sure there are no more parameters
 
         Modules.log.debug("IGNORING:__sceSasRevVON("
             + String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));

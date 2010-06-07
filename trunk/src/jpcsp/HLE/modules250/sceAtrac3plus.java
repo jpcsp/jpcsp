@@ -72,11 +72,14 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     public void sceAtracIsSecondBufferNeeded(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented function sceAtracIsSecondBufferNeeded "
-    			+ String.format("%08x %08x %08x %08x %08x %08x",
-    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        int atID = cpu.gpr[4];
 
-        cpu.gpr[2] = 0;	// 0 means not needed
+        Modules.log.warn(String.format("IGNORING: sceAtracIsSecondBufferNeeded atracId=%d", atID));
+
+        // -1 -> Error.
+        // 0 - > Second buffer isn't needed.
+        // 1 -> Second buffer is needed.
+        cpu.gpr[2] = 0;
     }
 
     public void sceAtracReinit(Processor processor) {
