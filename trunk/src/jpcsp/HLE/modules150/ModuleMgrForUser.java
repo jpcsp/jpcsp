@@ -115,8 +115,8 @@ public class ModuleMgrForUser implements HLEModule {
 	//
     private String extractHLEModuleName(String path) {
         String result = "UNKNOWN";
-        String sectorString = path.substring(path.indexOf("0x"), path.indexOf("_size"));
-        int PRXStartSector = Integer.parseInt(sectorString.substring(2), 16);
+        String sectorString = path.substring(path.indexOf("sce_lbn") + 7, path.indexOf("_size"));
+        int PRXStartSector = (int) Utilities.parseHexLong(sectorString);
 
         try {
             byte[] buffer = pspiofilemgr.getInstance().getIsoReader().readSector(PRXStartSector);
