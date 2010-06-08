@@ -22,7 +22,6 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -249,20 +248,20 @@ public class sceSasCore implements HLEModule {
 
     	private byte[] encodeSamples() {
         	int numSamples = samples.length;
-            byte[] buffer = new byte[numSamples * 4];
+            byte[] samplesBuffer = new byte[numSamples * 4];
             int leftVol  = (audioMuted ? 0 : leftVolume );
             int rightVol = (audioMuted ? 0 : rightVolume);
             for (int i = 0; i < numSamples; i++) {
             	short sample = samples[i];
             	short lval = (short) ((sample * leftVol ) >> 16);
             	short rval = (short) ((sample * rightVol) >> 16);
-            	buffer[i*4+0] = (byte) (lval);
-            	buffer[i*4+1] = (byte) (lval >> 8);
-            	buffer[i*4+2] = (byte) (rval);
-            	buffer[i*4+3] = (byte) (rval >> 8);
+            	samplesBuffer[i*4+0] = (byte) (lval);
+            	samplesBuffer[i*4+1] = (byte) (lval >> 8);
+            	samplesBuffer[i*4+2] = (byte) (rval);
+            	samplesBuffer[i*4+3] = (byte) (rval >> 8);
             }
 
-            return buffer;
+            return samplesBuffer;
         }
 
     	public synchronized void check() {
@@ -491,10 +490,14 @@ public class sceSasCore implements HLEModule {
          Modules.log.debug("IGNORING:__sceSasCoreWithMix " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
+            // Tested on PSP:
+            // There's no evidence that a context switch can occur here,
+            // also, not delaying here showed some speed increase in several
+            // applications and promoted the correct context switch between audio threads.
+
             // Variation of __sceSasCore.
             // This one sends an encoded mix in the 3rd parameter.
             cpu.gpr[2] = 0;
-        	ThreadMan.getInstance().hleKernelDelayThread(1000000, false);
         }
     }
 
@@ -739,14 +742,12 @@ public class sceSasCore implements HLEModule {
         Modules.log.debug("IGNORING:__sceSasCore " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-            // noxa/pspplayer blocks in __sceSasCore
-            // some games protect __sceSasCore with locks, suggesting it may context switch.
-        	// Games seems to run better when delaying the thread instead of just yielding.
+            // Tested on PSP:
+            // There's no evidence that a context switch can occur here,
+            // also, not delaying here showed some speed increase in several
+            // applications and promoted the correct context switch between audio threads.
 
-            // This may be related to the time the output needs.
-            // It seems to be constantly refreshed.
             cpu.gpr[2] = 0;
-        	ThreadMan.getInstance().hleKernelDelayThread(1000000, false);
         }
     }
 
