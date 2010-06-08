@@ -128,7 +128,7 @@ public class AtracCodec {
 		}
 	}
 
-	public void atracSetData(int address, int length, int atracFileSize) {
+	public void atracSetData(int address, int length, int atracFileSize, boolean extract) {
 		id = generateID(address, length, atracFileSize);
 
 		closeStreams();
@@ -146,7 +146,7 @@ public class AtracCodec {
 			}
 		} else if (atracFile.canRead() && atracFile.length() == atracFileSize) {
 			// Atrac file is already written, no need to write it again
-		} else {
+		} else if (extract) {
 			commandFileDirty = true;
 			displayInstructions();
 			try {
@@ -161,9 +161,8 @@ public class AtracCodec {
 			} catch (FileNotFoundException e) {
 			} catch (IOException e) {
 			}
-		}
-
-		generateCommandFile();
+            generateCommandFile();
+        }
 	}
 
 	public void atracAddStreamData(int address, int length) {

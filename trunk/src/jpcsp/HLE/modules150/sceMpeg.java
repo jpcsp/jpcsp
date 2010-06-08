@@ -524,7 +524,7 @@ public class sceMpeg implements HLEModule {
 
         if(isEnableMediaEngine()) {
             me.finish();
-        }else if (isEnableConnector()) {
+        } else if (isEnableConnector()) {
         	mpegCodec.finish();
         }
 
@@ -1620,15 +1620,24 @@ public class sceMpeg implements HLEModule {
             }
 
             if(isEnableMediaEngine()) {
-                String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.wav";
+                String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.";
+                String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac"};
+                boolean found = false;
                 File f = null;
                 try {
-                    f = new File(pmfExtAudioPath);
-                    if(f.exists()) {
+                    for(int i = 0; i < supportedFormats.length; i++) {
+                        f = new File(pmfExtAudioPath + supportedFormats[i]);
+                        if(f.exists()) {
+                            pmfExtAudioPath += supportedFormats[i];
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(found) {
                         if(me.getExtContainer() != null) {
                             me.stepExtAudio();
                         } else {
-                           me.initExtAudio(pmfExtAudioPath);
+                            me.initExtAudio(pmfExtAudioPath);
                         }
                     }
                 } catch (Exception e) {

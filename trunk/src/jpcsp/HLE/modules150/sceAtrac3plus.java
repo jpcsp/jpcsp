@@ -23,12 +23,11 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.ThreadMan;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
 
-import jpcsp.Allegrex.CpuState; // New-Style Processor
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.connector.AtracCodec;
 
@@ -210,8 +209,11 @@ public class sceAtrac3plus implements HLEModule {
 
         Modules.log.info(String.format("hleAtracSetData atracID=%d, bufferSize=0x%x, fileSize=%x", atracID, inputBufferSize, inputFileSize));
 
-        if(isEnableConnector())
-            getAtracCodec(atracID).atracSetData(buffer, bufferSize, inputFileSize);
+        if(isEnableConnector()) {
+            getAtracCodec(atracID).atracSetData(buffer, bufferSize, inputFileSize, true);
+        } else if(sceMpeg.isEnableMediaEngine()) {
+            getAtracCodec(atracID).atracSetData(buffer, bufferSize, inputFileSize, false);
+        }
     }
 
     protected void hleAtracAddStreamData(int atracID, int length) {
@@ -355,67 +357,71 @@ public class sceAtrac3plus implements HLEModule {
 
         int result = 0;
         AtracCodec atracCodec = getAtracCodec(atID);
+
         if(atracCodec != null) {
-        int samples = atracCodec.atracDecodeData(samplesAddr);
-        if (samples < 0) {
-            int fakedSamples = maxSamples;
-            if (inputBufferOffset >= inputBufferSize) {
-            	fakedSamples = 0; // No more data in input buffer
-                result = -1;  // Must output an error. Most games check for $v0 < 0 when there's no more Atrac3plus samples to load.
-            }
+            int samples = atracCodec.atracDecodeData(samplesAddr);
 
-            Modules.log.warn(String.format("PARTIAL: sceAtracDecodeData: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X, returning samples=%d",
-                    atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr, fakedSamples));
+            if (samples < 0) {
+                // Not using decoded data.
+                int fakedSamples = maxSamples;
+                int consumedInputBytes = fakedSamples;
 
-            // Assume consuming as many ATRAC3 input bytes as samples
-            // (this is faked because it would mean ATRAC3 does not compress audio at all)
-            int consumedInputBytes = fakedSamples;
-            if (inputBufferOffset + consumedInputBytes > inputBufferSize) {
-            	consumedInputBytes = inputBufferSize - inputBufferOffset;
-            }
+                // Avoid log spamming (instead of delaying the thread).
+                if (Modules.log.isDebugEnabled()) {
+                    Modules.log.debug(String.format("sceAtracDecodeData not using AtracCodec: atracID=%d, samplesAddr=0x%08X, samplesNbrAddr=0x%08X, outEndAddr=0x%08X, remainFramesAddr=0x%08X, returning samples=%d",
+                        atID, samplesAddr, samplesNbrAddr, outEndAddr, remainFramesAddr, fakedSamples));
+                }
 
-        	inputBufferOffset += consumedInputBytes;
+                if (inputBufferOffset >= inputBufferSize) {
+                    fakedSamples = 0; // No more data in input buffer
+                    result = -1;  // Must output an error. Most games check for $v0 < 0 when there's no more Atrac3plus samples to load.
+                } else {
+                    // Assume consuming as many ATRAC3 input bytes as samples
+                    // (this is faked because it would mean ATRAC3 does not compress audio at all)
+                    consumedInputBytes = fakedSamples;
+                    if (inputBufferOffset + consumedInputBytes > inputBufferSize) {
+                        consumedInputBytes = inputBufferSize - inputBufferOffset;
+                    }
+                    inputBufferOffset += consumedInputBytes;
+                    if (consumedInputBytes == 0 && inputFileOffset < inputFileSize) {
+                        result = 0x80630023; // No more data in input buffer
+                    }
+                }
 
-            // AtracCodec cannot decode it, return dummy values
-            if (mem.isAddressGood(samplesAddr)) {
-            	// Simulate empty audio
-            	mem.memset(samplesAddr, (byte) 0, fakedSamples * 4); // 4 bytes per sample
-            }
-            if (mem.isAddressGood(samplesNbrAddr)) {
-                mem.write32(samplesNbrAddr, fakedSamples); // Write dummy ammount of samples. If it's 0, some games will fall into a loop.
-            }
-            if (mem.isAddressGood(outEndAddr)) {
-            	int end = inputFileOffset >= inputFileSize ? 1 : 0;
-                mem.write32(outEndAddr, end); // end of samples?
-            }
-            if (mem.isAddressGood(remainFramesAddr)) {
-                mem.write32(remainFramesAddr, getRemainFrames(atID));
-            }
+                if (mem.isAddressGood(samplesAddr)) {
+                    mem.memset(samplesAddr, (byte) 0, fakedSamples * 4); // 4 bytes per sample (empty).
+                }
+                if (mem.isAddressGood(samplesNbrAddr)) {
+                    mem.write32(samplesNbrAddr, fakedSamples); // Write dummy ammount of samples. If it's 0, some games will fall into a loop.
+                }
+                if (mem.isAddressGood(outEndAddr)) {
+                    int end = inputFileOffset >= inputFileSize ? 1 : 0;
+                    mem.write32(outEndAddr, end); // end of samples?
+                }
+                if (mem.isAddressGood(remainFramesAddr)) {
+                    mem.write32(remainFramesAddr, getRemainFrames(atID));
+                }
+            } else {
+                // Using decoded data.
+                if (Modules.log.isDebugEnabled()) {
+                    Modules.log.debug(String.format("sceAtracDecodeData using AtracCodec: atracID=%d, samplesAddr=0x%08X, samplesNbr=%d, end=%d, remainFrames=%d", atID, samplesAddr, samples, atracCodec.getAtracEnd(), atracCodec.getAtracRemainFrames()));
+                }
+                // Must output an error if there aren't anymore samples.
+                if(samples == 0)
+                    result = -1;
 
-            if (consumedInputBytes == 0 && inputFileOffset < inputFileSize) {
-            	result = 0x80630023; // No more data in input buffer
+                if (mem.isAddressGood(samplesNbrAddr)) {
+                    mem.write32(samplesNbrAddr, samples);
+                }
+                if (mem.isAddressGood(outEndAddr)) {
+                    mem.write32(outEndAddr, atracCodec.getAtracEnd());
+                }
+                if (mem.isAddressGood(remainFramesAddr)) {
+                    mem.write32(remainFramesAddr, atracCodec.getAtracRemainFrames());
+                }
             }
-        } else {
-        	if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug(String.format("sceAtracDecodeData using AtracCodec: atracID=%d, samplesAddr=0x%08X, samplesNbr=%d, end=%d, remainFrames=%d", atID, samplesAddr, samples, atracCodec.getAtracEnd(), atracCodec.getAtracRemainFrames()));
-        	}
-
-            if (mem.isAddressGood(samplesNbrAddr)) {
-                mem.write32(samplesNbrAddr, samples);
-            }
-            if (mem.isAddressGood(outEndAddr)) {
-                mem.write32(outEndAddr, atracCodec.getAtracEnd());
-            }
-            if (mem.isAddressGood(remainFramesAddr)) {
-                mem.write32(remainFramesAddr, atracCodec.getAtracRemainFrames());
-            }
-        }
         }
         cpu.gpr[2] = result;
-
-        // Delaying here is dangerous.
-        // "Ikki Tousen: Eloquent Fist" was falling into a loop due to this.
-        //ThreadMan.getInstance().hleKernelDelayThread(10000, false);// for the spamming warn.
     }
 
     public void sceAtracGetRemainFrame(Processor processor) {
@@ -518,7 +524,7 @@ public class sceAtrac3plus implements HLEModule {
         int loopStartSampleAddr = cpu.gpr[6];
         int loopEndSampleAddr = cpu.gpr[7];
 
-        Modules.log.warn(String.format("IGNORING: sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, , loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atId, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
+        Modules.log.warn(String.format("IGNORING: sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atId, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
 
         int endSample = getAtracCodec(atId).getAtracEndSample();
         if (endSample < 0) {
