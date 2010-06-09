@@ -66,6 +66,7 @@ public class sceAtrac3plus implements HLEModule {
             mm.addFunction(sceAtracGetInternalErrorInfoFunction, 0xE88F759B);
 
             atracCodecs = new HashMap<Integer, AtracCodec>();
+            atracLoopMap = new HashMap<Integer, Integer>();
         }
     }
 
@@ -123,7 +124,9 @@ public class sceAtrac3plus implements HLEModule {
     protected int inputFileSize;
     protected int inputFileOffset;
     protected int currentLoop;
+    protected HashMap<Integer, Integer> atracLoopMap;
     public static int maxSamples;
+    public static int baseBitrate = 64;  // In kbps.
     public static final int remainFrames = -1;
     public static boolean useAtracCodec = false;
 
@@ -168,7 +171,7 @@ public class sceAtrac3plus implements HLEModule {
             maxSamples = 2048;
 
 
-        Modules.log.warn("PARTIAL:sceAtracGetAtracID: codecType = 0x" + Integer.toHexString(codecType));
+        Modules.log.warn("PARTIAL: sceAtracGetAtracID: codecType = 0x" + Integer.toHexString(codecType));
 
         cpu.gpr[2] = hleCreateAtracID(codecType);
     }
@@ -178,7 +181,7 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceAtracReleaseAtracID: atracID = " + atID);
+        Modules.log.warn("PARTIAL: sceAtracReleaseAtracID: atracID = " + atID);
         AtracCodec atracCodec = getAtracCodec(atID);
 
         if(atracCodec != null) {
@@ -244,17 +247,22 @@ public class sceAtrac3plus implements HLEModule {
     	}
     }
 
-    protected void hleAtracGetBufferInfoForReseting(int atracID, int sample, int unk1Addr) {
+    protected void hleAtracGetBufferInfoForReseting(int atracID, int sample, int bufferInfoAddr) {
     	Memory mem = Memory.getInstance();
 
-    	if (mem.isAddressGood(unk1Addr)) {
+    	if (mem.isAddressGood(bufferInfoAddr)) {
     		// Address of an unknown structure of size 32
-            mem.write32(unk1Addr     , 0);
-    		mem.write32(unk1Addr +  4, 0);
-    		mem.write32(unk1Addr + 20, 0);
-            mem.write32(unk1Addr + 24, 0);
-    		mem.write32(unk1Addr + 28, 0);
-            mem.write32(unk1Addr + 32, 0);
+            // Holds buffer related parameters.
+            // Main buffer.
+            mem.write32(bufferInfoAddr      , 0);  // Current writing position.
+    		mem.write32(bufferInfoAddr +   4, 0);  // Unknown.
+            mem.write32(bufferInfoAddr +   8, 0);  // Unknown.
+            mem.write32(bufferInfoAddr +  12, 0);  // Unknown.
+            // Secondary buffer? This data is ignored with only one buffer.
+            mem.write32(bufferInfoAddr +  16, 0);
+    		mem.write32(bufferInfoAddr +  20, 0);
+            mem.write32(bufferInfoAddr +  24, 0);
+    		mem.write32(bufferInfoAddr +  28, 0);
     	}
     }
 
@@ -284,9 +292,6 @@ public class sceAtrac3plus implements HLEModule {
                 maxSamples = 1024;
             else if (codecType == PSP_MODE_AT_3_PLUS)
                 maxSamples = 2048;
-
-            //atID = hleCreateAtracID(codecType);
-            //hleAtracSetData(atID, buffer, bufferSize);
         }
         hleAtracSetData(atID, buffer, bufferSize);
 
@@ -295,8 +300,36 @@ public class sceAtrac3plus implements HLEModule {
 
     public void sceAtracSetHalfwayBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function sceAtracSetHalfwayBuffer [0x3F6E26B5]");
+        int atID = cpu.gpr[4];
+        int halfBuffer = cpu.gpr[5];
+        int readSize = cpu.gpr[6];  // The portion of the buffer that should be really read.
+        int halfBufferSize = cpu.gpr[7];
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceAtracSetHalfwayBuffer: atID = %d, buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X"
+                    , atID, halfBuffer, readSize, halfBufferSize));
+        }
+        int codecType = 0;
+        int at3magic = 0;
+        if (mem.isAddressGood(halfBuffer)) {
+            at3magic = mem.read32(halfBuffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC)
+                codecType = PSP_MODE_AT_3;
+            else if (at3magic == AT3_PLUS_MAGIC)
+                codecType = PSP_MODE_AT_3_PLUS;
+
+            if (codecType == PSP_MODE_AT_3)
+                maxSamples = 1024;
+            else if (codecType == PSP_MODE_AT_3_PLUS)
+                maxSamples = 2048;
+        }
+        // For now send the full buffer (so it can output the full .at3 file).
+        // TODO: Parse the specified size and split the buffer into parts.
+        hleAtracSetData(atID, halfBuffer, halfBufferSize);
 
         cpu.gpr[2] = 0;
     }
@@ -339,10 +372,38 @@ public class sceAtrac3plus implements HLEModule {
 
     public void sceAtracSetHalfwayBufferAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function sceAtracSetHalfwayBufferAndGetID [0x0FAE370E]");
+        int halfBuffer = cpu.gpr[4];
+        int halfBufferSize = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        int codecType = 0;
+        int at3magic = 0;
+        int atID = 0;
+
+        if (mem.isAddressGood(halfBuffer)) {
+            at3magic = mem.read32(halfBuffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC)
+                codecType = PSP_MODE_AT_3;
+            else if (at3magic == AT3_PLUS_MAGIC)
+                codecType = PSP_MODE_AT_3_PLUS;
+
+            if (codecType == PSP_MODE_AT_3)
+                maxSamples = 1024;
+            else if (codecType == PSP_MODE_AT_3_PLUS)
+                maxSamples = 2048;
+
+            atID = hleCreateAtracID(codecType);
+            hleAtracSetData(atID, halfBuffer, halfBufferSize);
+        }
+
+        if (Modules.log.isDebugEnabled()) {
+                Modules.log.debug(String.format("sceAtracSetHalfwayBufferAndGetID buffer = 0x%08X, bufferSize = 0x%08X, codecType = 0x%04X", halfBuffer, halfBufferSize, codecType));
+            }
+
+        cpu.gpr[2] = atID;
     }
 
     public void sceAtracDecodeData(Processor processor) {
@@ -496,23 +557,59 @@ public class sceAtrac3plus implements HLEModule {
         Modules.log.warn("IGNORING: sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition)
                 + ", outBytes=0x" + Integer.toHexString(outBytes));
 
-        cpu.gpr[2] = 0x80630022; // No second buffer used?
+        // 0x80630022 - Second buffer isn't needed (set by default).
+        // 0x80630012 - Second buffer is needed.
+        cpu.gpr[2] = 0x80630022;
     }
 
     public void sceAtracSetSecondBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        Modules.log.warn("IGNORING :sceAtracSetSecondBuffer");
+        int atID = cpu.gpr[4];
+        int secondBuffer = cpu.gpr[5];
+        int secondBufferSize = cpu.gpr[6];
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceAtracSetSecondBuffer: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, secondBuffer, secondBufferSize));
+        }
+        // Identical to sceAtracSetData (only for a different buffer).
+        int codecType = 0;
+        int at3magic = 0;
+        if (mem.isAddressGood(secondBuffer)) {
+            at3magic = mem.read32(secondBuffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC)
+                codecType = PSP_MODE_AT_3;
+            else if (at3magic == AT3_PLUS_MAGIC)
+                codecType = PSP_MODE_AT_3_PLUS;
+
+            if (codecType == PSP_MODE_AT_3)
+                maxSamples = 1024;
+            else if (codecType == PSP_MODE_AT_3_PLUS)
+                maxSamples = 2048;
+        }
+        hleAtracSetData(atID, secondBuffer, secondBufferSize);
 
         cpu.gpr[2] = 0;
     }
 
     public void sceAtracGetNextDecodePosition(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.warn("Unimplemented NID function sceAtracGetNextDecodePosition [0xE23E3A35]");
+        int atId = cpu.gpr[4];
+        int posAddr = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn(String.format("IGNORING: sceAtracGetNextDecodePosition atracID = %d, posAddr = 0x%08X",
+                atId, posAddr));
+
+        // Writes the current position of the Atrac decoding buffer.
+        // TODO: Integrate this with AtracCodec.
+        mem.write32(atId, 0);
+
+        cpu.gpr[2] = 0;
     }
 
     public void sceAtracGetSoundSample(Processor processor) {
@@ -539,10 +636,16 @@ public class sceAtrac3plus implements HLEModule {
 
     public void sceAtracGetChannel(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-         //int atID = cpu.gpr[4]; // ??
-         //int channel = cpu.gpr[5]; // ??
-        Modules.log.warn("Unimplemented NID function sceAtracGetChannel [0x31668BAA]");
+        int atID = cpu.gpr[4];
+        int channelAddr = cpu.gpr[5];
+
+        Modules.log.warn("PARTIAL: sceAtracGetChannel: atracID = " + atID
+                + ", channelAddr =0x" + Integer.toHexString(channelAddr));
+
+        // Writes the current in use channel.
+        mem.write32(channelAddr, 0);
 
         cpu.gpr[2] = 0;
     }
@@ -554,7 +657,7 @@ public class sceAtrac3plus implements HLEModule {
         int atID = cpu.gpr[4];
         int maxSamplesAddr = cpu.gpr[5];
 
-        Modules.log.warn(String.format("Unimplemented sceAtracGetMaxSample: atracID = %d, maxSamplesAddr = 0x%08X", atID, maxSamplesAddr));
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetMaxSample: atracID = %d, maxSamplesAddr = 0x%08X", atID, maxSamplesAddr));
 
         if (mem.isAddressGood(maxSamplesAddr)) {
         	mem.write32(maxSamplesAddr, maxSamples);
@@ -586,11 +689,15 @@ public class sceAtrac3plus implements HLEModule {
 
     public void sceAtracGetBitrate(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
         int atID = cpu.gpr[4];
-        int bitrate = cpu.gpr[5];
+        int bitrateAddr = cpu.gpr[5];
 
-        Modules.log.warn("Unimplemented sceAtracGetBitrate: atracID = " + atID + ", bitrate = " + bitrate);
+        Modules.log.warn("PARTIAL: sceAtracGetBitrate: atracID = " + atID
+                + ", bitrateAddr =0x" + Integer.toHexString(bitrateAddr));
+
+        mem.write32(bitrateAddr, baseBitrate);
 
         cpu.gpr[2] = 0;
     }
@@ -601,15 +708,17 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
         int loopNbr = cpu.gpr[5];
-        int resultAddr = cpu.gpr[6];
+        int statusAddr = cpu.gpr[6];
 
-        Modules.log.warn(String.format("PARTIAL: sceAtracGetLoopStatus atracID=%d, loopNbr=0x%08x, resultAddr=0x%08X", atID, loopNbr, resultAddr));
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetLoopStatus atracID=%d, loopNbr=0x%08x, statusAddr=0x%08X", atID, loopNbr, statusAddr));
 
+        // TODO: Get the real current loop for the given atID.
         if (mem.isAddressGood(loopNbr)) {
         	mem.write32(loopNbr, currentLoop);
         }
-        if (mem.isAddressGood(resultAddr)) {
-        	mem.write32(resultAddr, 0);
+        // Status: 0 = finished, 1 = still playing.
+        if (mem.isAddressGood(statusAddr)) {
+        	mem.write32(statusAddr, 0);
         }
 
         cpu.gpr[2] = 0;
@@ -621,9 +730,11 @@ public class sceAtrac3plus implements HLEModule {
         int atID = cpu.gpr[4];
         int loopNbr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: sceAtracSetLoopNum: atracID = " + atID + ", loopNbr= " + loopNbr);
+        Modules.log.warn("PARTIAL: sceAtracSetLoopNum: atracID = " + atID + ", loopNbr = " + loopNbr);
 
-        currentLoop = loopNbr;
+        // Defines the amount of loops for this atID.
+        atracLoopMap.put(atID, loopNbr);
+        currentLoop = 0; // Faking.
 
         cpu.gpr[2] = 0;
     }
@@ -633,10 +744,10 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
         int sample = cpu.gpr[5];
-        int unk1Addr = cpu.gpr[6];
+        int bufferInfoAddr = cpu.gpr[6];
 
-        Modules.log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, unk1Addr));
-        hleAtracGetBufferInfoForReseting(atID, sample, unk1Addr);
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, bufferInfoAddr));
+        hleAtracGetBufferInfoForReseting(atID, sample, bufferInfoAddr);
 
         cpu.gpr[2] = 0;
     }
@@ -646,8 +757,8 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
         int sample = cpu.gpr[5];
-        int unknown1 = cpu.gpr[6];
-        int unknown2 = cpu.gpr[7];
+        int unknown1 = cpu.gpr[6];  // 2nd parameter from buffer info struct.
+        int unknown2 = cpu.gpr[7];  // 6th parameter from buffer info struct.
 
         Modules.log.warn(String.format("PARTIAL: sceAtracResetPlayPosition atracId=%d, sample=%d, %08X, %08X", atID, sample, unknown1, unknown2));
 
@@ -661,10 +772,16 @@ public class sceAtrac3plus implements HLEModule {
 
     public void sceAtracGetInternalErrorInfo(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.warn("Unimplemented NID function sceAtracGetInternalErrorInfo [0xE88F759B]");
+        int atID = cpu.gpr[4];
+        int errorAddr = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn(String.format("IGNORING: sceAtracGetInternalErrorInfo errorAddr=%d, sample=%d", atID, errorAddr));
+
+        mem.write32(errorAddr, 0);
+
+        cpu.gpr[2] = 0;
     }
 
     public final HLEModuleFunction sceAtracStartEntryFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracStartEntry") {

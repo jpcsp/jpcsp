@@ -41,6 +41,8 @@ public class SceKernelMppInfo {
     private int head; // relative to address
     private int tail; // relative to address
 
+    public static final int MSGPIPE_ATTR_ADDR_HIGH = 0x1100;
+
     private SceKernelMppInfo(String name, int partitionid, int attr, int size) {
         this.name = name;
         this.attr = attr;
@@ -51,9 +53,10 @@ public class SceKernelMppInfo {
         this.numReceiveWaitThreads = 0;
 
         int memType = pspSysMem.PSP_SMEM_Low;
-        // TODO probably based on attr
-        //if ((attr & MSGPIPE_ATTR_ADDR_HIGH) == MSGPIPE_ATTR_ADDR_HIGH)
-        //    memType = pspSysMem.PSP_SMEM_High;
+
+        // Checked. 0x1100 means PSP_SMEM_High.
+        if ((attr & MSGPIPE_ATTR_ADDR_HIGH) == MSGPIPE_ATTR_ADDR_HIGH)
+            memType = pspSysMem.PSP_SMEM_High;
 
         int alignedSize = (size + 0xFF) & ~0xFF; // 256 byte align (or is this stage done by pspsysmem? aren't we using 64-bytes in pspsysmem?)
         address = pspSysMem.getInstance().malloc(partitionid, memType, alignedSize, 0);

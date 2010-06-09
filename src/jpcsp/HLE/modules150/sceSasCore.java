@@ -83,7 +83,7 @@ public class sceSasCore implements HLEModule {
         }
 
         grainSamples = 0x100; // Normal base value for sound processing.
-        outputMode = 1; // Let's try starting with 1. Needs to be checked.
+        outputMode = 0; // Checked. 0 is default (STEREO).
 
         if (voicesCheckerThread == null) {
 	        voicesCheckerThread = new VoicesCheckerThread(500);
