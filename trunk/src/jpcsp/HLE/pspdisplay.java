@@ -916,9 +916,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void sceDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int sync) {
         topaddr &= Memory.addressMask;
-        if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
-            pixelformat < 0 || pixelformat > 3 ||
-            sync < 0 || sync > 1) {
+
+        if (!Memory.getInstance().isAddressGood(topaddr)
+                || bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0
+                ||pixelformat < 0 || pixelformat > 3 ||
+                sync < 0 || sync > 1) {
             Modules.log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ",bufferwidth=" + bufferwidth +
@@ -927,18 +929,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gotBadFbBufParams = true;
             Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
-            // An address of 0 is actually valid.
-            // Several games send 0 on purpose and then call sceGeEdramGetAddr,
-            // expecting the address to be relocated to START_VRAM (0 acts as a
-            // relative address, in this case).
-            if(topaddr == 0) {
-                 Modules.log.info("sceDisplaySetFrameBuf got correct params, but topaddr=0. Relocating" +
-                         " topaddr to 0x" + Integer.toHexString(MemoryMap.START_VRAM) + ".");
-                topaddr = MemoryMap.START_VRAM;
-            }
-
-            // The Monster Hunter series use main memory to process videos.
-            // The process is identical as if it was using VRAM.
             if(topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM) {
                 Modules.log.warn("sceDisplaySetFrameBuf (topaddr=0x" + Integer.toHexString(topaddr) + ")"
                         + " is using main memory.");
