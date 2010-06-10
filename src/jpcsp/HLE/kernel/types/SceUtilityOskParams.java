@@ -18,9 +18,10 @@ package jpcsp.HLE.kernel.types;
 
 public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 	public pspUtilityDialogCommon base;
-	public int unknown;
+	public int oskDataCount;  // Number of input fields (PSPSDK).
 	public int oskDataAddr;
 	public SceUtilityOskData oskData;
+    public int oskState;     // SceUtilityOskState (PSPSDK): internal status of this OSK.
 
 	public static class SceUtilityOskData extends pspAbstractMemoryMappedStructure {
 		public int language;
@@ -70,7 +71,7 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 			write32(result);
 			write32(outTextLimit);
 		}
-		
+
 		@Override
 		public int sizeof() {
 			return 13 * 4;
@@ -83,7 +84,7 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 		read(base);
 		setMaxSize(base.size);
 
-		unknown = read32();
+		oskDataCount = read32();
 		oskDataAddr = read32();
 		if (oskDataAddr != 0) {
 			oskData = new SceUtilityOskData();
@@ -91,7 +92,8 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 		} else {
 			oskData = null;
 		}
-		readUnknown(8);
+        oskState = read32();
+		readUnknown(4);
 	}
 
 	@Override
@@ -99,12 +101,13 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 		setMaxSize(base.size);
 		write(base);
 
-		write32(unknown);
+		write32(oskDataCount);
 		write32(oskDataAddr);
 		if (oskData != null && oskDataAddr != 0) {
 			oskData.write(mem, oskDataAddr);
 		}
-		writeUnknown(8);
+        write32(oskState);
+		writeUnknown(4);
 	}
 
 	@Override
