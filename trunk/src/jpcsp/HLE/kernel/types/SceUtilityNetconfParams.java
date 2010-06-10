@@ -18,40 +18,32 @@ package jpcsp.HLE.kernel.types;
 
 public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
     public pspUtilityDialogCommon base;
-    public int unknown;
+    public int netAction;           // The netconf action (PSPSDK): sets how to connect.
     public int netconfDataAddr;
     public SceUtilityNetconfData netconfData;
+    public int netHotspot;          // Flag to allow hotspot connections (PSPSDK).
+    public int netHotspotConnected; // Flag to check if a hotspot connection is active (PSPSDK).
+    public int netWifiSp;           // Flag to allow WIFI connections (PSPSDK).
 
     public static class SceUtilityNetconfData extends pspAbstractMemoryMappedStructure {
         public String confTitle;
-        public int unk1Addr;
-        public int unk2Addr;
-        public int unkSize1;
-        // Probably has more params.
+        public int timeout;
 
 		@Override
 		protected void read() {
-            confTitle = readStringNZ(16);  // Seems to represent a net profile name.
-            readUnknown(12);
-            unk1Addr = read32();           // Points to what seems to be a sceNetAdhoc struct.
-            unk2Addr = read32();           // Points to what seems to be a sceNetAdhocctl struct.
-            readUnknown(4);
-            unkSize1 = read32();           // 256.
+            confTitle = readStringNZ(8);   // Seems to represent a net profile name.
+            timeout = read32();
 		}
 
 		@Override
 		protected void write() {
-			writeStringNZ(16, confTitle);
-            writeUnknown(12);
-            write32(unk1Addr);
-            write32(unk2Addr);
-            writeUnknown(4);
-            write32(unkSize1);
+			writeStringNZ(8, confTitle);
+            write32(timeout);
 		}
 
 		@Override
 		public int sizeof() {
-			return 7 * 4;
+			return 3 * 4;
 		}
 	}
 
@@ -61,7 +53,7 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
         read(base);
         setMaxSize(base.size);
 
-        unknown         = read32();
+        netAction         = read32();
         netconfDataAddr = read32();
         if (netconfDataAddr != 0) {
 			netconfData = new SceUtilityNetconfData();
@@ -69,7 +61,9 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
 		} else {
 			netconfData = null;
 		}
-        readUnknown(8);
+        netHotspot = read32();
+        netHotspotConnected = read32();
+        netWifiSp = read32();
     }
 
     @Override
@@ -77,12 +71,14 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
         setMaxSize(base.size);
         write(base);
 
-        write32(unknown);
+        write32(netAction);
         write32(netconfDataAddr);
         if (netconfData != null && netconfDataAddr != 0) {
 			netconfData.write(mem, netconfDataAddr);
 		}
-        writeUnknown(8);
+        write32(netHotspot);
+        write32(netHotspotConnected);
+        write32(netWifiSp);
     }
 
     @Override
@@ -92,6 +88,6 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
 
     @Override
     public String toString() {
-        return String.format("title=%s", netconfData.confTitle);
+        return String.format("title=%s, timeout=%i", netconfData.confTitle, netconfData.timeout);
     }
 }

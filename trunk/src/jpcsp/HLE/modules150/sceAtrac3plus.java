@@ -304,7 +304,7 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
         int halfBuffer = cpu.gpr[5];
-        int readSize = cpu.gpr[6];  // The portion of the buffer that should be really read.
+        int readSize = cpu.gpr[6];
         int halfBufferSize = cpu.gpr[7];
 
         if (Modules.log.isDebugEnabled()) {
@@ -327,9 +327,7 @@ public class sceAtrac3plus implements HLEModule {
             else if (codecType == PSP_MODE_AT_3_PLUS)
                 maxSamples = 2048;
         }
-        // For now send the full buffer (so it can output the full .at3 file).
-        // TODO: Parse the specified size and split the buffer into parts.
-        hleAtracSetData(atID, halfBuffer, halfBufferSize);
+        hleAtracSetData(atID, halfBuffer, readSize);
 
         cpu.gpr[2] = 0;
     }

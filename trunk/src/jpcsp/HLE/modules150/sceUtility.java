@@ -52,6 +52,7 @@ import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
+import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -115,7 +116,7 @@ public class sceUtility implements HLEModule {
 			mm.addFunction(sceUtilityCheckNetParamFunction, 0x5EEE6548);
 			mm.addFunction(sceUtilityGetNetParamFunction, 0x434D4B3A);
 
-            gameSharingState    = new NotImplementedUtilityDialogState("sceUtilityGameSharing");
+            gameSharingState    = new UtilityDialogState("sceUtilityGameSharing");
             netplayDialogState  = new NotImplementedUtilityDialogState("sceNetplayDialog");
             netconfState        = new UtilityDialogState("sceUtilityNetconf");
 			savedataState       = new UtilityDialogState("sceUtilitySavedata");
@@ -207,6 +208,7 @@ public class sceUtility implements HLEModule {
     protected static final int maxLineLengthForDialog = 80;
 
     protected UtilityDialogState gameSharingState;
+    protected SceUtilityGameSharingParams gameSharingParams;
     protected UtilityDialogState netplayDialogState;
     protected UtilityDialogState netconfState;
     protected SceUtilityNetconfParams netconfParams;
@@ -620,7 +622,8 @@ public class sceUtility implements HLEModule {
     }
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
-		gameSharingState.executeInitStart(processor, null);
+        gameSharingParams = new SceUtilityGameSharingParams();
+		gameSharingState.executeInitStart(processor, gameSharingParams);
 	}
 
 	public void sceUtilityGameSharingShutdownStart(Processor processor) {
@@ -798,26 +801,26 @@ public class sceUtility implements HLEModule {
             	// ------ SIZES ------
             	// ---------- savedata result ----------
             	// result = 0x801103c7
-            	// 
+            	//
             	// bind : un used(0x0).
-            	// 
+            	//
             	// -- dir name --
             	// title id : ULUS10495
             	// user  id : METALSLUGXX
-            	// 
+            	//
             	// ms free size
             	//   cluster size(byte) : 32768 byte
             	//   free cluster num   : 32768
             	//   free size(KB)      : 1048576 KB
             	//   free size(string)  : "1 GB"
-            	// 
+            	//
             	// ms data size(titleId=ULUS10495, userId=METALSLUGXX)
             	//   cluster num        : 0
             	//   size (KB)          : 0 KB
             	//   size (string)      : "0 KB"
             	//   size (32KB)        : 0 KB
             	//   size (32KB string) : "0 KB"
-            	// 
+            	//
             	// utility data size
             	//   cluster num        : 13
             	//   size (KB)          : 416 KB
