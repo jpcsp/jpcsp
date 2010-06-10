@@ -1,8 +1,0 @@
-# TITLE = Ys –THE ARK OF NAPISHTIM-
-emu.disablesceAudio=0
-emu.ignoreaudiothreads=1
-emu.disableblockingaudio=1
-emu.onlyGEGraphics=0
-emu.ignoreInvalidMemoryAccess=1
-emu.enablewaitthreadendcb=1
-emu.enableMpeg=1
