@@ -39,6 +39,7 @@ public class SceKernelMbxInfo {
 
     // Internal info
     public final int uid;
+    public boolean hasNewMessage = false;
 
     public SceKernelMbxInfo(String name, int attr) {
         this.name = name;
@@ -77,6 +78,15 @@ public class SceKernelMbxInfo {
             msgText         = Utilities.readStringNZ(msgTextAddr, 32);
         else
             msgText = "";
+
+        hasNewMessage = true;
     }
 
+    public boolean checkMbxNewMessage() {
+        if(hasNewMessage) {
+            hasNewMessage = false;
+            return true;
+        }
+        return false;
+    }
 }

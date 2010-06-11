@@ -29,8 +29,6 @@ import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
 
-/** After initialising an instance please call .write() at least once.
- * Also call free() when unloading the module. */
 public class SceModule {
 
     // PSP info
@@ -40,15 +38,22 @@ public class SceModule {
     public byte[] version = new byte[2];
     public String modname; // 27 printable chars
     public final byte terminal = (byte)0;
-    public int unknown1;
-    public int unknown2;
-    public final int modid;
-    public int[] unknown3 = new int[4];
+    public int status;  // 2 bytes for status + 2 bytes of padding
+    public int unk1;
+    public int modid;
+    public int usermod_thid;
+    public int memid;
+    public int mpidtext;
+    public int mpiddata;
     public int ent_top;
     public int ent_size; // we'll use bytes (instead of number of entries)
     public int stub_top;
     public int stub_size; // we'll use bytes (instead of number of entries)
-    public int[] unknown4 = new int[4];
+    public int module_start_func;
+    public int module_stop_func;
+    public int module_bootstart_func;
+    public int module_reboot_before_func;
+    public int module_reboot_phase_func;
     public int entry_addr;
     public int gp_value;
     public int text_addr;
@@ -58,9 +63,18 @@ public class SceModule {
     public int nsegment; // usually just 1 segment
     public int[] segmentaddr = new int[4]; // static memory footprint of the module
     public int[] segmentsize = new int[4]; // static memory footprint of the module
+    public int module_start_thread_priority;
+    public int module_start_thread_stacksize;
+    public int module_start_thread_attr;
+    public int module_stop_thread_priority;
+    public int module_stop_thread_stacksize;
+    public int module_stop_thread_attr;
+    public int module_reboot_before_thread_priority;
+    public int module_reboot_before_thread_stacksize;
+    public int module_reboot_before_thread_attr;
 
     // internal info
-    public static final int size = 156;
+    public static final int size = 196;
     public final int address;
     public final boolean isFlashModule;
     private static SceModule previousModule; // The last module to be loaded, should be fixed up if that module gets unloaded
@@ -128,7 +142,7 @@ public class SceModule {
     public void free() {
         //TODO see constructor
         //pspSysMem.getInstance().free(sysMemInfoUID, address);
-        
+
         pspSysMem sysMem = pspSysMem.getInstance();
         for (int i = 0; i < nsegment; i++) {
             sysMem.free(-1, segmentaddr[i]);
@@ -138,42 +152,51 @@ public class SceModule {
     }
 
     public void write(Memory mem, int address) {
-        //Emulator.log.debug(String.format("Writing SceModule @ %08X modname:'%s'", address, modname));
         mem.write32(address, next);
         mem.write16(address + 4, attribute);
         mem.write8(address + 6, version[0]);
         mem.write8(address + 7, version[1]);
         Utilities.writeStringNZ(mem, address + 8, 28, modname);
-        mem.write32(address + 36, unknown1);
-        mem.write32(address + 40, unknown2);
+        mem.write32(address + 36, status);
+        mem.write32(address + 40, unk1);
         mem.write32(address + 44, modid);
-        mem.write32(address + 48, unknown3[0]);
-        mem.write32(address + 52, unknown3[1]);
-        mem.write32(address + 56, unknown3[2]);
-        mem.write32(address + 60, unknown3[3]);
+        mem.write32(address + 48, usermod_thid);
+        mem.write32(address + 52, memid);
+        mem.write32(address + 56, mpidtext);
+        mem.write32(address + 60, mpiddata);
         mem.write32(address + 64, ent_top);
         mem.write32(address + 68, ent_size);
         mem.write32(address + 72, stub_top);
         mem.write32(address + 76, stub_size);
-        mem.write32(address + 80, unknown4[0]);
-        mem.write32(address + 84, unknown4[1]);
-        mem.write32(address + 88, unknown4[2]);
-        mem.write32(address + 92, unknown4[3]);
-        mem.write32(address + 96, entry_addr);
-        mem.write32(address + 100, gp_value);
-        mem.write32(address + 104, text_addr);
-        mem.write32(address + 108, text_size);
-        mem.write32(address + 112, data_size);
-        mem.write32(address + 116, bss_size);
-        mem.write32(address + 120, nsegment);
-        mem.write32(address + 124, segmentaddr[0]);
-        mem.write32(address + 128, segmentaddr[1]);
-        mem.write32(address + 132, segmentaddr[2]);
-        mem.write32(address + 136, segmentaddr[3]);
-        mem.write32(address + 140, segmentsize[0]);
-        mem.write32(address + 144, segmentsize[1]);
-        mem.write32(address + 148, segmentsize[2]);
-        mem.write32(address + 152, segmentsize[3]);
+        mem.write32(address + 80, module_start_func);
+        mem.write32(address + 84, module_stop_func);
+        mem.write32(address + 88, module_bootstart_func);
+        mem.write32(address + 92, module_reboot_before_func);
+        mem.write32(address + 96, module_reboot_phase_func);
+        mem.write32(address + 100, entry_addr);
+        mem.write32(address + 104, gp_value);
+        mem.write32(address + 108, text_addr);
+        mem.write32(address + 112, text_size);
+        mem.write32(address + 116, data_size);
+        mem.write32(address + 120, bss_size);
+        mem.write32(address + 124, nsegment);
+        mem.write32(address + 128, segmentaddr[0]);
+        mem.write32(address + 132, segmentaddr[1]);
+        mem.write32(address + 136, segmentaddr[2]);
+        mem.write32(address + 140, segmentaddr[3]);
+        mem.write32(address + 144, segmentsize[0]);
+        mem.write32(address + 148, segmentsize[1]);
+        mem.write32(address + 152, segmentsize[2]);
+        mem.write32(address + 156, segmentsize[3]);
+        mem.write32(address + 160, module_start_thread_priority);
+        mem.write32(address + 164, module_start_thread_stacksize);
+        mem.write32(address + 168, module_start_thread_attr);
+        mem.write32(address + 172, module_stop_thread_priority);
+        mem.write32(address + 176, module_stop_thread_stacksize);
+        mem.write32(address + 180, module_stop_thread_attr);
+        mem.write32(address + 184, module_reboot_before_thread_priority);
+        mem.write32(address + 188, module_reboot_before_thread_stacksize);
+        mem.write32(address + 192, module_reboot_before_thread_attr);
     }
 
     public void read(Memory mem, int address) {
