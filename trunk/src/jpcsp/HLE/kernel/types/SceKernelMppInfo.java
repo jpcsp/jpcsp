@@ -143,7 +143,7 @@ public class SceKernelMppInfo {
             mem.memcpy(dst, address + head, copySize);
             dst += copySize;
             size -= copySize;
-            head = (tail + copySize) % bufSize;
+            head = (head + copySize) % bufSize;
         }
     }
 }
