@@ -605,7 +605,7 @@ public class sceAtrac3plus implements HLEModule {
 
         // Writes the current position of the Atrac decoding buffer.
         // TODO: Integrate this with AtracCodec.
-        mem.write32(atId, 0);
+        mem.write32(posAddr, 0);
 
         cpu.gpr[2] = 0;
     }

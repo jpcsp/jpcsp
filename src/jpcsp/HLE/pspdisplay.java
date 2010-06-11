@@ -927,7 +927,17 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 ",sync=" + sync + ") bad params");
             gotBadFbBufParams = true;
             Emulator.getProcessor().cpu.gpr[2] = -1;
-        } else {
+        } else if (topaddr == 0) {
+            // Got 0 as topaddr, but it's ok, it will be correctly set on the
+            // next call (tested and checked).
+            Modules.log.warn(
+                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
+                ",bufferwidth=" + bufferwidth +
+                ",pixelformat=" + pixelformat +
+                ",sync=" + sync + ") bad params (topaddr==0)");
+            gotBadFbBufParams = true;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        } else if (Memory.getInstance().isAddressGood(topaddr)){
             if(topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM) {
                 Modules.log.warn("sceDisplaySetFrameBuf (topaddr=0x" + Integer.toHexString(topaddr) + ")"
                         + " is using main memory.");
