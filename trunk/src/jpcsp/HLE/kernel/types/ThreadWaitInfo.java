@@ -20,6 +20,7 @@ public class ThreadWaitInfo {
     public boolean forever;
     public long microTimeTimeout; // when Clock.microTime() reaches microTimeTimeout the wait has expired
     public int micros; // time period specified by the game, just stored here for logging/debugging purposes
+    public IAction waitTimeoutAction; // execute this action when the timeout is reached
 
     // TODO change waitingOnThreadEnd, waitingOnEventFlag, etc to waitType,
     // since we can only wait on one type of event at a time.
@@ -58,8 +59,47 @@ public class ThreadWaitInfo {
     public int MsgPipe_id;
     public int MsgPipe_address;
     public int MsgPipe_size;
+    public int MsgPipe_waitMode;
+    public int MsgPipe_resultSize_addr;
 
      //Mbx
     public boolean waitingOnMbxReceive;
     public int Mbx_id;
+
+    public void copy(ThreadWaitInfo that) {
+    	this.forever = that.forever;
+    	this.microTimeTimeout = that.microTimeTimeout;
+    	this.micros = that.micros;
+    	this.waitTimeoutAction = that.waitTimeoutAction;
+
+    	this.waitingOnThreadEnd = that.waitingOnThreadEnd;
+    	this.ThreadEnd_id = that.ThreadEnd_id;
+
+    	this.waitingOnEventFlag = that.waitingOnEventFlag;
+    	this.EventFlag_id = that.EventFlag_id;
+    	this.EventFlag_bits = that.EventFlag_bits;
+    	this.EventFlag_wait = that.EventFlag_wait;
+    	this.EventFlag_outBits_addr = that.EventFlag_outBits_addr;
+
+    	this.waitingOnSemaphore = that.waitingOnSemaphore;
+    	this.Semaphore_id = that.Semaphore_id;
+    	this.Semaphore_signal = that.Semaphore_signal;
+
+    	this.waitingOnMutex = that.waitingOnMutex;
+    	this.Mutex_id = that.Mutex_id;
+
+    	this.waitingOnIo = that.waitingOnIo;
+    	this.Io_id = that.Io_id;
+
+    	this.waitingOnUmd = that.waitingOnUmd;
+    	this.wantedUmdStat = that.wantedUmdStat;
+
+    	this.waitingOnMsgPipeSend = that.waitingOnMsgPipeSend;
+    	this.waitingOnMsgPipeReceive = that.waitingOnMsgPipeReceive;
+    	this.MsgPipe_id = that.MsgPipe_id;
+    	this.MsgPipe_address = that.MsgPipe_address;
+    	this.MsgPipe_size = that.MsgPipe_size;
+    	this.MsgPipe_waitMode = that.MsgPipe_waitMode;
+    	this.MsgPipe_resultSize_addr = that.MsgPipe_resultSize_addr;
+    }
 }

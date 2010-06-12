@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.HashMap;
 
 import jpcsp.HLE.kernel.types.*;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
 public class ModuleManager {
 

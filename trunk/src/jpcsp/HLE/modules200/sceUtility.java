@@ -23,6 +23,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.ThreadMan;
 
 import jpcsp.Processor;
 
@@ -136,7 +137,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         }
 
         cpu.gpr[2] = 0;
-        jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
+        ThreadMan.getInstance().hleRescheduleCurrentThread();
     }
 
     public void sceUtilityUnloadNetModule(Processor processor) {
@@ -152,7 +153,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         }
 
         cpu.gpr[2] = 0;
-        jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
+        ThreadMan.getInstance().hleRescheduleCurrentThread();
     }
 
     public final HLEModuleFunction sceUtilityLoadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadNetModule") {

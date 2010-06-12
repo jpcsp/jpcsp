@@ -82,7 +82,7 @@ public class MbxManager {
                 checkMbx(info)) {
                 thread.wait.waitingOnMbxReceive = false;
                 thread.cpuContext.gpr[2] = 0;
-                threadMan.changeThreadState(thread, PSP_THREAD_READY);
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
             }
         }
     }
@@ -96,7 +96,7 @@ public class MbxManager {
                     thread.wait.Mbx_id == info.uid)) {
                     thread.wait.waitingOnMbxReceive = false;
                     thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
-                    threadMan.changeThreadState(thread, PSP_THREAD_READY);
+                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
             }
         }
         info.numWaitThreads = 0;
@@ -176,7 +176,7 @@ public class MbxManager {
     }
 
     private void hleKernelReceiveMbx(int uid, int addr_msg_addr, int timeout_addr,
-        boolean do_callbacks, boolean poll) {
+        boolean doCallbacks, boolean poll) {
 
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
@@ -190,7 +190,7 @@ public class MbxManager {
         if (poll) waitType = "poll";
         else if (timeout_addr == 0) waitType = "forever";
         else waitType = micros + " ms";
-        if (do_callbacks) waitType += " + CB";
+        if (doCallbacks) waitType += " + CB";
 
         Modules.log.info("hleKernelReceiveMbx(uid=0x" + Integer.toHexString(uid)
             + ",msg_pointer=0x" + Integer.toHexString(addr_msg_addr)
@@ -202,41 +202,34 @@ public class MbxManager {
             Modules.log.warn("hleKernelReceiveMbx unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
         } else {
+            ThreadMan threadMan = ThreadMan.getInstance();
             if (!checkMbx(info)) {
                 if (!poll) {
                     Modules.log.info("hleKernelReceiveMbx - '" + info.name + "' (waiting)");
                     info.numWaitThreads++;
 
-                    ThreadMan threadMan = ThreadMan.getInstance();
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
-                    currentThread.do_callbacks = do_callbacks;
                     currentThread.waitType = PSP_WAIT_MBX;
                     currentThread.waitId = uid;
 
-                    threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
+                    threadMan.hleKernelThreadWait(currentThread, currentThread.wait, micros, (timeout_addr == 0));
 
                     currentThread.wait.waitingOnMbxReceive = true;
                     currentThread.wait.Mbx_id = uid;
 
-                    threadMan.changeThreadState(currentThread, PSP_THREAD_WAITING);
-                    threadMan.contextSwitch(threadMan.nextThread());
+                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                 } else {
                     Modules.log.warn("hleKernelReceiveMbx has no messages.");
                     cpu.gpr[2] = ERROR_MESSAGEBOX_NO_MESSAGE;
-
-                    if (do_callbacks) {
-                        ThreadMan.getInstance().yieldCurrentThreadCB();
-                    }
                 }
             } else {
                 mem.write32(addr_msg_addr, info.firstMessage_addr);
                 cpu.gpr[2] = 0;
-                if (do_callbacks) {
-                    ThreadMan.getInstance().yieldCurrentThreadCB();
-                }
                 updateWaitingMbxReceive(info);
             }
+
+            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 

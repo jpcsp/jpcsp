@@ -81,7 +81,6 @@ public class SceKernelMbxInfo {
 
         hasNewMessage = true;
     }
-
     public boolean checkMbxNewMessage() {
         if(hasNewMessage) {
             hasNewMessage = false;

@@ -20,7 +20,6 @@ import java.util.HashMap;
 import jpcsp.HLE.kernel.types.SceKernelFplInfo;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
 import jpcsp.Memory;

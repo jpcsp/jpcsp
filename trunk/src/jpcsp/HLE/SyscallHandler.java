@@ -79,55 +79,55 @@ public class SyscallHandler {
 		//  case 0x200b: //sceKernelReleaseThreadEventHandler
 		//  case 0x200c: //sceKernelReferThreadEventHandlerStatus
                 case 0x200d:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
+                    ThreadMan.getInstance().sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x200e:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteCallback(gpr[4]);
+                    ThreadMan.getInstance().sceKernelDeleteCallback(gpr[4]);
                     break;
                // case 0x200f: //sceKernelNotifyCallback
               //  case 0x2010: //sceKernelCancelCallback
               //  case 0x2011: //sceKernelGetCallbackCount
                 case 0x2012:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCheckCallback();
+                    ThreadMan.getInstance().sceKernelCheckCallback();
                     break;
                 case 0x2013:
-                    ThreadMan.getInstance().ThreadMan_sceKernelReferCallbackStatus(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().sceKernelReferCallbackStatus(gpr[4], gpr[5]);
                     break;
                 case 0x2014:
-                    ThreadMan.getInstance().ThreadMan_sceKernelSleepThread();
+                    ThreadMan.getInstance().sceKernelSleepThread();
                     break;
                 case 0x2015:
-                    ThreadMan.getInstance().ThreadMan_sceKernelSleepThreadCB();
+                    ThreadMan.getInstance().sceKernelSleepThreadCB();
                     break;
                 case 0x2016:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWakeupThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelWakeupThread(gpr[4]);
                     break;
                 case 0x2017:
-                	ThreadMan.getInstance().ThreadMan_sceKernelCancelWakeupThread(gpr[4]);
+                	ThreadMan.getInstance().sceKernelCancelWakeupThread(gpr[4]);
                 	break;
                 case 0x2018:
-                    ThreadMan.getInstance().ThreadMan_sceKernelSuspendThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelSuspendThread(gpr[4]);
                     break;
                 case 0x2019:
-                    ThreadMan.getInstance().ThreadMan_sceKernelResumeThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelResumeThread(gpr[4]);
                     break;
                 case 0x201a:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEnd(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().sceKernelWaitThreadEnd(gpr[4], gpr[5]);
                     break;
                 case 0x201b:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEndCB(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().sceKernelWaitThreadEndCB(gpr[4], gpr[5]);
                     break;
                 case 0x201c:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDelayThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelDelayThread(gpr[4]);
                     break;
                 case 0x201d:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDelayThreadCB(gpr[4]);
+                    ThreadMan.getInstance().sceKernelDelayThreadCB(gpr[4]);
                     break;
                 case 0x201e:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDelaySysClockThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelDelaySysClockThread(gpr[4]);
                     break;
                 case 0x201f:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDelaySysClockThreadCB(gpr[4]);
+                    ThreadMan.getInstance().sceKernelDelaySysClockThreadCB(gpr[4]);
                     break;
                 case 0x2020:
                     Managers.semas.sceKernelCreateSema(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
@@ -324,69 +324,69 @@ public class SyscallHandler {
 		// sceKernelCancelVTimerHandler(0x206b),
 		// sceKernelReferVTimerStatus(0x206c),
                 case 0x206d:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCreateThread(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    ThreadMan.getInstance().sceKernelCreateThread(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
                     break;
                 case 0x206e:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelDeleteThread(gpr[4]);
                     break;
                 case 0x206f:
-                    ThreadMan.getInstance().ThreadMan_sceKernelStartThread(gpr[4], gpr[5], gpr[6]);
+                    ThreadMan.getInstance().sceKernelStartThread(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2070:
                 case 0x2071:
-                    ThreadMan.getInstance().ThreadMan_sceKernelExitThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelExitThread(gpr[4]);
                     break;
                 case 0x2072:
-                    ThreadMan.getInstance().ThreadMan_sceKernelExitDeleteThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelExitDeleteThread(gpr[4]);
                     break;
                 case 0x2073:
-                    ThreadMan.getInstance().ThreadMan_sceKernelTerminateThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelTerminateThread(gpr[4]);
                     break;
                 case 0x2074:
-                    ThreadMan.getInstance().ThreadMan_sceKernelTerminateDeleteThread(gpr[4]);
+                    ThreadMan.getInstance().sceKernelTerminateDeleteThread(gpr[4]);
                     break;
                 case 0x2075:
-                	ThreadMan.getInstance().ThreadMan_sceKernelSuspendDispatchThread();
+                	ThreadMan.getInstance().sceKernelSuspendDispatchThread();
                 	break;
                 case 0x2076:
-                	ThreadMan.getInstance().ThreadMan_sceKernelResumeDispatchThread(gpr[4]);
+                	ThreadMan.getInstance().sceKernelResumeDispatchThread(gpr[4]);
                 	break;
                 case 0x2077:
-                    ThreadMan.getInstance().ThreadMan_sceKernelChangeCurrentThreadAttr(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().sceKernelChangeCurrentThreadAttr(gpr[4], gpr[5]);
                     break;
                 case 0x2078:
-                    ThreadMan.getInstance().ThreadMan_sceKernelChangeThreadPriority(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().sceKernelChangeThreadPriority(gpr[4], gpr[5]);
                     break;
                 case 0x2079:
-                    ThreadMan.getInstance().ThreadMan_sceKernelRotateThreadReadyQueue(gpr[4]);
+                    ThreadMan.getInstance().sceKernelRotateThreadReadyQueue(gpr[4]);
                     break;
                 case 0x207a:
-                	ThreadMan.getInstance().ThreadMan_sceKernelReleaseWaitThread(gpr[4]);
+                	ThreadMan.getInstance().sceKernelReleaseWaitThread(gpr[4]);
                 	break;
                 case 0x207b:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadId();
+                    ThreadMan.getInstance().sceKernelGetThreadId();
                     break;
                 case 0x207c:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadCurrentPriority();
+                    ThreadMan.getInstance().sceKernelGetThreadCurrentPriority();
                     break;
                 case 0x207d:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadExitStatus(gpr[4]);
+                    ThreadMan.getInstance().sceKernelGetThreadExitStatus(gpr[4]);
                     break;
                 case 0x207e:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCheckThreadStack();
+                    ThreadMan.getInstance().sceKernelCheckThreadStack();
                     break;
                 case 0x207f:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadStackFreeSize(gpr[4]);
+                    ThreadMan.getInstance().sceKernelGetThreadStackFreeSize(gpr[4]);
                     break;
                 case 0x2080:
-                    ThreadMan.getInstance().ThreadMan_sceKernelReferThreadStatus(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().sceKernelReferThreadStatus(gpr[4], gpr[5]);
                     break;
                 // sceKernelReferThreadRunStatus(0x2081),
                 case 0x2082:
-                    ThreadMan.getInstance().ThreadMan_sceKernelReferSystemStatus(gpr[4]);
+                    ThreadMan.getInstance().sceKernelReferSystemStatus(gpr[4]);
                     break;
                 case 0x2083:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadmanIdList(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().sceKernelGetThreadmanIdList(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
 		// sceKernelGetThreadmanIdType(0x2084),
 		// sceKernelReferThreadProfiler(0x2085),

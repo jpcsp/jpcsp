@@ -22,7 +22,6 @@ import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Random;
 import java.util.TimeZone;
@@ -30,12 +29,11 @@ import java.util.TimeZone;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.modules.HLECallback;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
-import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
@@ -118,6 +116,7 @@ public class sceMpeg implements HLEModule {
         mpegAvcCurrentTimestamp = 0;
         avcAuAddr = 0;
         atracAuAddr = 0;
+        afterRingbufferPutCallback = new AfterRingbufferPutCallback();
         if (isEnableConnector()) {
         	mpegCodec = new MpegCodec();
         }
@@ -198,6 +197,7 @@ public class sceMpeg implements HLEModule {
     // for now we just support 1 instance of mpeg
     protected int mpegHandle; // it needs to be an address so a game can read from it (although it's probably not supposed to)
     protected SceMpegRingbuffer mpegRingbuffer;
+    protected AfterRingbufferPutCallback afterRingbufferPutCallback;
     protected int mpegRingbufferAddr;
     protected int mpegStreamSize;
     protected int mpegAtracCurrentTimestamp;
@@ -915,7 +915,7 @@ public class sceMpeg implements HLEModule {
             		Modules.log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcCurrentTimestamp + " - " + mpegAtracCurrentTimestamp);
             	}
                 cpu.gpr[2] = 0x80618001; // no video data in ring buffer (actual name unknown)
-                ThreadMan.getInstance().yieldCurrentThread();
+                ThreadMan.getInstance().hleRescheduleCurrentThread();
             } else {
                 // Update the timestamp.
                 mem.write32(au_addr, 0x00000001); // Looks like it just can't be -1.
@@ -1031,7 +1031,7 @@ public class sceMpeg implements HLEModule {
             		Modules.log.info("sceMpegGetAtracAu audio ahead of video: " + mpegAtracCurrentTimestamp + " - " + mpegAvcCurrentTimestamp);
             	}
                 cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
-                ThreadMan.getInstance().yieldCurrentThread();
+                ThreadMan.getInstance().hleRescheduleCurrentThread();
             } else {
                 // Update the timestamp.
                 mem.write32(au_addr, 0x00000001);
@@ -1735,8 +1735,15 @@ public class sceMpeg implements HLEModule {
     //protected boolean testChainedCallback = true; // testing
     protected boolean testChainedCallback = false;
 
-    public void hleMpegRingbufferPostPut(Processor processor) {
-        CpuState cpu = processor.cpu;
+    private class AfterRingbufferPutCallback implements IAction {
+		@Override
+		public void execute() {
+			hleMpegRingbufferPostPut();
+		}
+    }
+
+    protected void hleMpegRingbufferPostPut() {
+        CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
         SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbufferCallback_ringbuffer_addr);
@@ -1774,22 +1781,7 @@ public class sceMpeg implements HLEModule {
         // testing:
         if (testChainedCallback) {
             testChainedCallback = false;
-            ThreadMan threadMan = ThreadMan.getInstance();
-
-            int[] gpr = Arrays.copyOf(cpu.gpr, 32);
-            gpr[4] = ringbuffer.data;
-            gpr[5] = 32;
-            gpr[6] = ringbuffer.callback_args;
-
-            threadMan.executeCallback(
-                ringbuffer.callback_addr,
-                gpr,
-                new HLECallback() {
-					@Override
-                    public void execute(Processor processor, SceKernelThreadInfo thread) {
-                        sceMpeg.this.hleMpegRingbufferPostPut(processor);
-                    }
-                });
+			ThreadMan.getInstance().executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, 32, ringbuffer.callback_args);
         }
     }
 
@@ -1808,32 +1800,14 @@ public class sceMpeg implements HLEModule {
         if (numPackets < 0) {
             cpu.gpr[2] = 0;
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
             SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
-
             ringbufferCallback_ringbuffer_addr = ringbuffer_addr;
 
-            // HLE to PSP and back again magic bridge
-            int[] gpr = Arrays.copyOf(cpu.gpr, 32);
-            gpr[4] = ringbuffer.data; // we don't actually care about this data, so we always pass the same address instead of implementing a real ring buffer
-            gpr[5] = Math.min(available, numPackets);
-            gpr[6] = ringbuffer.callback_args;
-
-            // This should get overwritten when our HLE callback is executed
-            cpu.gpr[2] = 0xDEADC0DE;
-
-            threadMan.executeCallback(
-                    ringbuffer.callback_addr,
-                    gpr,
-                    new HLECallback() {
-                    	@Override
-                        public void execute(Processor processor, SceKernelThreadInfo thread) {
-                            sceMpeg.this.hleMpegRingbufferPostPut(processor);
-                        }
-                    });
-
-                // When using the compiler: the callback has been already executed
-                // (and hleMpegRingbufferPostPut() as well) when we return here
+            int numberPackets = Math.min(available, numPackets);
+            // we don't actually care about the first argument (data), so we always pass the same address instead of implementing a real ring buffer
+            ThreadMan.getInstance().executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, numberPackets, ringbuffer.callback_args);
+			// When using the compiler: the callback has been already executed
+			// (and hleMpegRingbufferPostPut() as well) when we return here
         }
     }
 
