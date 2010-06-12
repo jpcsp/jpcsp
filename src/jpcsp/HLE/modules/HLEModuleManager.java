@@ -89,6 +89,7 @@ public class HLEModuleManager {
         TimerManager(Modules.TimerManager),
         scePsmfPlayer(Modules.scePsmfPlayerModule),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
+        sceMp3(Modules.sceMp3Module),
         // For testing purposes
     	SampleModule(Modules.SampleModule);
 

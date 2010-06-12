@@ -619,15 +619,16 @@ public class sceAtrac3plus implements HLEModule {
         int loopStartSampleAddr = cpu.gpr[6];
         int loopEndSampleAddr = cpu.gpr[7];
 
-        Modules.log.warn(String.format("IGNORING: sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atId, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atId, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
 
         int endSample = getAtracCodec(atId).getAtracEndSample();
         if (endSample < 0) {
         	endSample = inputFileSize;
         }
         mem.write32(endSampleAddr, endSample);
-        mem.write32(loopStartSampleAddr, -1);
-        mem.write32(loopEndSampleAddr, -1);
+        // Make the loop be as big as the sample.
+        mem.write32(loopStartSampleAddr, 0);
+        mem.write32(loopEndSampleAddr, endSample);
 
         cpu.gpr[2] = 0;
     }
@@ -744,7 +745,7 @@ public class sceAtrac3plus implements HLEModule {
         int sample = cpu.gpr[5];
         int bufferInfoAddr = cpu.gpr[6];
 
-        Modules.log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, bufferInfoAddr));
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, bufferInfoAddr=0x%08x", atID, sample, bufferInfoAddr));
         hleAtracGetBufferInfoForReseting(atID, sample, bufferInfoAddr);
 
         cpu.gpr[2] = 0;
@@ -775,7 +776,7 @@ public class sceAtrac3plus implements HLEModule {
         int atID = cpu.gpr[4];
         int errorAddr = cpu.gpr[5];
 
-        Modules.log.warn(String.format("IGNORING: sceAtracGetInternalErrorInfo errorAddr=%d, sample=%d", atID, errorAddr));
+        Modules.log.warn(String.format("IGNORING: sceAtracGetInternalErrorInfo atracId=%d, errorAddr=0x%08x", atID, errorAddr));
 
         mem.write32(errorAddr, 0);
 
