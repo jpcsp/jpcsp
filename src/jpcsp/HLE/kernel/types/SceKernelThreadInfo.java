@@ -23,7 +23,7 @@ import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.modules.HLECallback;
+import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspSysMem;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.util.Utilities;
@@ -93,7 +93,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final int initPriority; // lower numbers mean higher priority
     public int currentPriority;
     public int waitType;
-    public int waitId;
+    public int waitId;  // the uid of the wait object
     public int wakeupCount; // number of sceKernelWakeupThread() calls pending
     public int exitStatus;
     public long runClocks;
@@ -106,8 +106,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final int uid;
     public int moduleid;
     public CpuState cpuContext;
-    public boolean do_delete;
-    public boolean do_callbacks;
+    public boolean doDelete;
+    public IAction doDeleteAction;
+    public boolean doCallbacks;
 
     public final ThreadWaitInfo wait;
     public IAction onUnblockAction;
@@ -115,21 +116,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     // callbacks, only 1 of each type can be registered per thread
     public final static int THREAD_CALLBACK_UMD         = 0;
     public final static int THREAD_CALLBACK_IO          = 1;
-    public final static int THREAD_CALLBACK_GE_SIGNAL   = 2;
-    public final static int THREAD_CALLBACK_GE_FINISH   = 3;
-    public final static int THREAD_CALLBACK_MEMORYSTICK = 4;
-    public final static int THREAD_CALLBACK_SIZE        = 5;
+    public final static int THREAD_CALLBACK_MEMORYSTICK = 2;
+    public final static int THREAD_CALLBACK_SIZE        = 3;
     public boolean[] callbackRegistered;
     public boolean[] callbackReady;
     public SceKernelCallbackInfo[] callbackInfo;
-
-    // make this information per thread instead of globals in ThreadMan,
-    // this way we should be able to allow context switching (wait sema, etc) while inside the callback.
-    public boolean insideCallback;
-    public int[] callbackSavedGpr = new int[32];
-    public int callbackSavedNPC; // hleCallbackSavedPC not required, only NPC
-    public int callbackSavedRA; // not really necessary but keeps things consistent
-    public HLECallback hleCallback;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         // Ignore 0 size from the idle threads (don't want them stealing space)
@@ -196,7 +187,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         currentPriority = initPriority;
         waitType = PSP_WAIT_NONE;
-        waitId = 0; // probably a uid to a wait struct, we're using custom ThreadWaitInfo class at the moment
+        waitId = 0;
         wakeupCount = 0;
         exitStatus = ERROR_THREAD_IS_NOT_DORMANT;
         runClocks = 0;
@@ -212,11 +203,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         cpuContext.gpr[29] = stack_addr + stackSize - 512;
         cpuContext.gpr[26] = k0;
 
-        // We'll hook "jr ra" where ra = 0 as the thread exiting
-        cpuContext.gpr[31] = 0; // ra
+        // We'll hook "jr $ra" where $ra == address of HLE syscall hleKernelExitThread
+        // when the thread is exiting
+        cpuContext.gpr[31] = ThreadMan.THREAD_EXIT_HANDLER_ADDRESS; // $ra
 
-        do_delete = false;
-        do_callbacks = false;
+        doDelete = false;
+        doCallbacks = false;
 
         callbackRegistered = new boolean[THREAD_CALLBACK_SIZE];
         callbackReady = new boolean[THREAD_CALLBACK_SIZE];
@@ -225,12 +217,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
             callbackRegistered[i] = false;
             callbackReady[i] = false;
             callbackInfo[i] = null;
-        }
-
-        insideCallback = false;
-        callbackSavedGpr = new int[32];
-        for (int i = 0; i < 32; i++) {
-            callbackSavedGpr[i] = 0;
         }
     }
 

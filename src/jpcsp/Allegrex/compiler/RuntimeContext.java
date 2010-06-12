@@ -95,7 +95,6 @@ public class RuntimeContext {
 	private static SceKernelThreadInfo pendingCallbackThread = null;
     private static SceKernelThreadInfo pendingCallbackReturnThread = null;
 	private static CpuState pendingCallbackCpuState = null;
-	private static boolean insideCallback = false;
 	public  static boolean enableDaemonThreadSync = true;
 	public  static final String syncName = "sync";
 	private static final long syncIntervalMillis = 1000 / 60;	// Sync at least every 1/60 Second
@@ -257,6 +256,7 @@ public class RuntimeContext {
 
     	CpuState callbackCpuState = Emulator.getProcessor().cpu;
         RuntimeThread callbackThread = threads.get(callbackThreadInfo);
+        boolean doSyncThread = true;
 
         // The callback has to be executed by its thread
     	if (Thread.currentThread() == callbackThread && currentThread == callbackThreadInfo) {
@@ -271,6 +271,14 @@ public class RuntimeContext {
             switchThread(callbackThreadInfo);
             executeCallbackImmediately(callbackCpuState);
             switchThread(previousThread);
+        } else if (ThreadMan.getInstance().isIdleThread(callbackThreadInfo)) {
+        	// We want to execute the callback in the idle thread.
+        	// Set the currentThread to a non-null value before executing the callback.
+            SceKernelThreadInfo previousThread = currentThread;
+        	currentThread = ThreadMan.getInstance().getCurrentThread();
+    	    executeCallbackImmediately(callbackCpuState);
+    	    currentThread = previousThread;
+    	    doSyncThread = false;
     	} else {
     	    // Switch to the callback thread so that it can execute the callback.
     	    pendingCallbackThread = callbackThreadInfo;
@@ -281,12 +289,14 @@ public class RuntimeContext {
             switchThread(callbackThreadInfo);
     	}
 
-    	try {
-            syncThread();
-        } catch (StopThreadException e) {
-            // This exception is not expected at this point...
-            log.warn(e);
-        }
+    	if (doSyncThread) {
+	    	try {
+	            syncThread();
+	        } catch (StopThreadException e) {
+	            // This exception is not expected at this point...
+	            log.warn(e);
+	        }
+    	}
     }
 
     private static void executeCallbackImmediately(CpuState cpu) {
@@ -294,7 +304,6 @@ public class RuntimeContext {
             return;
         }
 
-        insideCallback = true;
         Emulator.getProcessor().cpu = cpu;
     	update();
 
@@ -315,11 +324,11 @@ public class RuntimeContext {
 			log.error(e);
 		}
     	cpu.pc = newPc;
+    	cpu.npc = newPc; // npc is used when context switching
 
 		if (log.isDebugEnabled()) {
 			log.debug("End of Callback 0x" + Integer.toHexString(pc));
 		}
-		insideCallback = false;
     }
 
     private static void updateStaticVariables() {
@@ -341,7 +350,7 @@ public class RuntimeContext {
         updateStaticVariables();
 
         ThreadMan threadManager = ThreadMan.getInstance();
-        if (!insideCallback && !IntrManager.getInstance().isInsideInterrupt()) {
+        if (!IntrManager.getInstance().isInsideInterrupt()) {
             SceKernelThreadInfo newThread = threadManager.getCurrentThread();
             if (newThread != null && newThread != currentThread) {
                 switchThread(newThread);
@@ -413,9 +422,8 @@ public class RuntimeContext {
             	}
                 syncPause();
                 scheduler.step();
-                threadMan.step();
                 if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
-                    threadMan.contextSwitch(threadMan.nextThread());
+                	threadMan.hleRescheduleCurrentThread();
                 }
 
                 if (isIdle) {
@@ -429,7 +437,6 @@ public class RuntimeContext {
 
     private static void syncThread() throws StopThreadException {
     	Scheduler.getInstance().step();
-    	ThreadMan.getInstance().step();
 
         syncIdle();
 
@@ -544,6 +551,9 @@ public class RuntimeContext {
 
     public static void sync() throws StopThreadException {
     	if (!IntrManager.getInstance().isInsideInterrupt()) {
+    		if (wantSync && log.isDebugEnabled()) {
+    			log.debug("Forced sync()");
+    		}
 	    	syncPause();
 	        syncThread();
 	    	syncEmulator(false);
@@ -597,7 +607,7 @@ public class RuntimeContext {
 		thread.setInSyscall(false);
     	try {
     		updateStaticVariables();
-    		executable.exec(0, 0, false);
+    		executable.exec(ThreadMan.THREAD_EXIT_HANDLER_ADDRESS, 0, false);
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Exception e) {
@@ -612,7 +622,7 @@ public class RuntimeContext {
     		log.debug("End of Thread " + threadInfo.name + " - stopped");
     	}
 
-    	if (!thread.getThreadInfo().do_delete) {
+    	if (!thread.getThreadInfo().doDelete) {
     		thread.setInSyscall(true);
 
             log.info("Thread exit detected SceUID=" + Integer.toHexString(threadInfo.uid)
@@ -620,8 +630,8 @@ public class RuntimeContext {
 
 			ThreadMan threadManager = ThreadMan.getInstance();
 			threadInfo.exitStatus = gpr[2];
-			threadManager.changeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
-			threadManager.contextSwitch(threadManager.nextThread());
+			threadManager.hleChangeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
+			threadManager.hleRescheduleCurrentThread();
 
 			if (!reset) {
 				try {

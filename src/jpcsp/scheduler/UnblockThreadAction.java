@@ -28,6 +28,6 @@ public class UnblockThreadAction implements IAction {
 
 	@Override
 	public void execute() {
-		ThreadMan.getInstance().unblockThread(threadId);
+		ThreadMan.getInstance().hleUnblockThread(threadId);
 	}
 }

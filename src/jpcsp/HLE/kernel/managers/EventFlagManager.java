@@ -21,7 +21,6 @@ import java.util.Iterator;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Allegrex.CpuState;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.Modules;
@@ -36,7 +35,7 @@ public class EventFlagManager {
 
     private final static int PSP_EVENT_WAITMULTIPLE = 0x200;
 
-    private final static int PSP_EVENT_WAITAND = 0x00;
+    //private final static int PSP_EVENT_WAITAND = 0x00;
     private final static int PSP_EVENT_WAITOR = 0x01;
     private final static int PSP_EVENT_WAITCLEARALL = 0x10;
     private final static int PSP_EVENT_WAITCLEAR = 0x20;
@@ -93,8 +92,6 @@ public class EventFlagManager {
     /** May yield, so call last/after setting gpr[2] */
     private void onEventFlagDeletedCancelled(int evid, int result) {
         ThreadMan threadMan = ThreadMan.getInstance();
-        int currentPriority = threadMan.getCurrentThread().currentPriority;
-        boolean yield = false;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -112,19 +109,11 @@ public class EventFlagManager {
                 thread.cpuContext.gpr[2] = result;
 
                 // Wakeup
-                threadMan.changeThreadState(thread, PSP_THREAD_READY);
-
-                // switch in the target thread if it's now higher priority (check)
-                if (thread.currentPriority < currentPriority) {
-                    yield = true;
-                }
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
             }
         }
 
-        if (yield) {
-            Modules.log.debug("onEventFlagDeletedCancelled yielding to thread with higher priority");
-            threadMan.yieldCurrentThread();
-        }
+        threadMan.hleRescheduleCurrentThread();
     }
 
     /** May yield, so call last/after setting gpr[2] */
@@ -140,8 +129,6 @@ public class EventFlagManager {
     /** May yield, so call last/after setting gpr[2] */
     private void onEventFlagModified(SceKernelEventFlagInfo event) {
         ThreadMan threadMan = ThreadMan.getInstance();
-        int currentPriority = threadMan.getCurrentThread().currentPriority;
-        boolean yield = false;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -170,20 +157,12 @@ public class EventFlagManager {
                     thread.cpuContext.gpr[2] = 0;
 
                     // Wakeup
-                    threadMan.changeThreadState(thread, PSP_THREAD_READY);
-
-                    // switch in the target thread if it's now higher priority (check)
-                    if (thread.currentPriority < currentPriority) {
-                        yield = true;
-                    }
+                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 }
             }
         }
 
-        if (yield && !threadMan.isInsideCallback()) {
-            Modules.log.debug("onEventFlagModified yielding to thread with higher priority");
-            threadMan.yieldCurrentThread();
-        }
+        threadMan.hleRescheduleCurrentThread();
     }
 
 
@@ -292,14 +271,14 @@ public class EventFlagManager {
         return matched;
     }
 
-    public void hleKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr, boolean do_callbacks)
+    public void hleKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr, boolean doCallbacks)
     {
         Modules.log.debug("hleKernelWaitEventFlag uid=0x" + Integer.toHexString(uid)
             + " bits=0x" + Integer.toHexString(bits)
             + " wait=0x" + Integer.toHexString(wait)
             + " outBits=0x" + Integer.toHexString(outBits_addr)
             + " timeout=0x" + Integer.toHexString(timeout_addr)
-            + " callbacks=" + do_callbacks);
+            + " callbacks=" + doCallbacks);
 
         SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", true);
         SceKernelEventFlagInfo event = eventMap.get(uid);
@@ -326,12 +305,11 @@ public class EventFlagManager {
 
                 // Go to wait state
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                currentThread.do_callbacks = do_callbacks;
                 currentThread.waitType = PSP_WAIT_MISC;
                 currentThread.waitId = uid;
 
                 // Wait on a specific event flag
-                threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
+                threadMan.hleKernelThreadWait(currentThread, currentThread.wait, micros, (timeout_addr == 0));
 
                 currentThread.wait.waitingOnEventFlag = true;
                 currentThread.wait.EventFlag_id = uid;
@@ -339,24 +317,14 @@ public class EventFlagManager {
                 currentThread.wait.EventFlag_wait = wait;
                 currentThread.wait.EventFlag_outBits_addr = outBits_addr;
 
-                threadMan.changeThreadState(currentThread, PSP_THREAD_WAITING);
-                threadMan.contextSwitch(ThreadMan.getInstance().nextThread());
+                threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
             } else {
                 // Success
                 Modules.log.debug("hleKernelWaitEventFlag fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
-
-                if (!threadMan.isInsideCallback()) {
-	                // TODO yield anyway? probably yes, at least when do_callbacks is true
-	                if (do_callbacks) {
-	                	threadMan.yieldCurrentThreadCB();
-	                } else {
-	                	//threadMan.yieldCurrentThread();
-	                }
-                } else {
-                    Modules.log.warn("hleKernelWaitEventFlag called from inside callback!");
-                }
             }
+
+            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 

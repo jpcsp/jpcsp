@@ -28,6 +28,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -135,11 +136,8 @@ public class sceFont implements HLEModule {
                 fonts[i] = makeFakeFontHandle(i);
             }
 
-            if(allocFuncAddr != 0) {
-                libBufAddr = triggerAllocCallback(512);
-                Modules.log.info("FontLib's allocation callback (size=512, numFonts="
-                        + numFonts + ") returned 0x"
-                        + Integer.toHexString(libBufAddr));
+            if (allocFuncAddr != 0) {
+                triggerAllocCallback(512);
             }
 
             loadFontFiles();
@@ -193,26 +191,12 @@ public class sceFont implements HLEModule {
             return numFonts;
         }
 
-        private int triggerAllocCallback(int size) {
-            CpuState cpu = Emulator.getProcessor().cpu;
-            ThreadMan threadMan = ThreadMan.getInstance();
-
-            cpu.gpr[4] = unk1;
-            cpu.gpr[5] = size;
-
-            threadMan.executeCallback(allocFuncAddr, null);
-
-            return (cpu.gpr[2]);
+        private void triggerAllocCallback(int size) {
+        	ThreadMan.getInstance().executeCallback(null, allocFuncAddr, new AfterAllocCallback(), unk1, size);
         }
 
         private void triggerFreeCallback() {
-            CpuState cpu = Emulator.getProcessor().cpu;
-            ThreadMan threadMan = ThreadMan.getInstance();
-
-            cpu.gpr[4] = unk1;
-            cpu.gpr[5] = getAllocBufferAddr();
-
-            threadMan.executeCallback(freeFuncAddr, null);
+        	ThreadMan.getInstance().executeCallback(null, freeFuncAddr, null, unk1, getAllocBufferAddr());
         }
 
         private void read(int paramsAddr) {
@@ -229,6 +213,17 @@ public class sceFont implements HLEModule {
             seekFuncAddr        = mem.read32(paramsAddr + 32);
             errorFuncAddr       = mem.read32(paramsAddr + 36);
             ioFinishFuncAddr    = mem.read32(paramsAddr + 42);
+        }
+
+        private class AfterAllocCallback implements IAction {
+			@Override
+			public void execute() {
+				libBufAddr = Emulator.getProcessor().cpu.gpr[2];
+
+				Modules.log.info("FontLib's allocation callback (size=512, numFonts="
+                        + numFonts + ") returned 0x"
+                        + Integer.toHexString(libBufAddr));
+			}
         }
     }
 
@@ -579,7 +574,7 @@ public class sceFont implements HLEModule {
 
         int fontAddr = cpu.gpr[4];  // The font handle to close.
 
-		Modules.log.warn(String.format("PARTIAL: sceFontClose 0x%08X", cpu.gpr[4]));
+		Modules.log.warn(String.format("PARTIAL: sceFontClose 0x%08X", fontAddr));
 
         // Faking.
 		cpu.gpr[2] = 0;

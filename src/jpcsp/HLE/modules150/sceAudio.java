@@ -435,7 +435,7 @@ public class sceAudio implements HLEModule, HLEThread {
 	        	            int ret = doAudioOutput(channel, pspchannels[channel].waitingAudioDataAddr);
 	        	            waitingThread.cpuContext.gpr[2] = ret;
 	                	}
-	                	threadMan.unblockThread(waitingThreadId);
+	                	threadMan.hleUnblockThread(waitingThreadId);
                 	}
                     pspchannels[channel].waitingThreadId = -1;
                     pspchannels[channel].waitingAudioDataAddr = 0;
@@ -630,7 +630,7 @@ public class sceAudio implements HLEModule, HLEThread {
 	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
 	            pspchannels[channel].waitingVolumeLeft  = vol;
 	            pspchannels[channel].waitingVolumeRight = vol;
-	            threadMan.blockCurrentThread();
+	            threadMan.hleBlockCurrentThread();
             }
         }
     }
@@ -682,7 +682,7 @@ public class sceAudio implements HLEModule, HLEThread {
 	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
 	            pspchannels[channel].waitingVolumeLeft  = leftvol;
 	            pspchannels[channel].waitingVolumeRight = rightvol;
-	            threadMan.blockCurrentThread();
+	            threadMan.hleBlockCurrentThread();
             }
         }
     }
@@ -915,7 +915,7 @@ public class sceAudio implements HLEModule, HLEThread {
 	            }
             }
             if (blockThread) {
-            	threadMan.blockCurrentThread();
+            	threadMan.hleBlockCurrentThread();
             }
         }
 
@@ -927,7 +927,7 @@ public class sceAudio implements HLEModule, HLEThread {
         System.out.println("Unimplemented NID function sceAudioInputBlocking [0x086E5895]");
 
         cpu.gpr[2] = -1;
-        ThreadMan.getInstance().yieldCurrentThread();
+        ThreadMan.getInstance().hleRescheduleCurrentThread();
     }
 
     public void sceAudioInput(Processor processor) {

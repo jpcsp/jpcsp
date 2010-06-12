@@ -16,10 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.util.Utilities;
 
 import jpcsp.HLE.ThreadMan;
@@ -64,26 +61,18 @@ public class SceKernelCallbackInfo {
         mem.write32(address + 52, notifyArg);
     }
 
-    /** Call this to switch in the callback.
-     * Sets up a copy of the parent thread's context for the callback to run in.
-     * @param thread the thread this callback belongs to.
+    /** Call this to switch in the callback, in a given thread context.
      */
-    public void startContext(SceKernelThreadInfo thread) {
-        CpuState cpu = new CpuState(thread.cpuContext);
-
-        cpu.pc = cpu.npc = callback_addr;
-        cpu.gpr[4] = notifyCount;
-        cpu.gpr[5] = notifyArg;
-        cpu.gpr[6] = callback_arg_addr;
-        cpu.gpr[31] = 0; // ra
+    public void startContext(SceKernelThreadInfo thread, IAction afterAction) {
+        int registerA0 = notifyCount;
+        int registerA1 = notifyArg;
+        int registerA2 = callback_arg_addr;
 
         // clear the counter and the arg
         notifyCount = 0;
         notifyArg = 0;
 
-        Emulator.getProcessor().cpu = cpu;
-
-        RuntimeContext.executeCallback(thread);
+        ThreadMan.getInstance().executeCallback(thread, callback_addr, afterAction, registerA0, registerA1, registerA2);
     }
 
 	@Override

@@ -32,7 +32,6 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
-import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
@@ -125,7 +124,7 @@ public class pspge {
         	if (VideoEngine.log.isDebugEnabled()) {
         		VideoEngine.log.debug("really waking thread " + Integer.toHexString(thid) + "(" + ThreadMan.getInstance().getThreadName(thid) + ")");
         	}
-            threadMan.unblockThread(thid);
+            threadMan.hleUnblockThread(thid);
         }
     }
 
@@ -356,7 +355,7 @@ public class pspge {
 	    	if (VideoEngine.log.isDebugEnabled()) {
 	    		VideoEngine.log.debug("blockCurrentThreadOnList blocking thread " + Integer.toHexString(list.thid) + " on list " + list);
 	    	}
-    		threadMan.blockCurrentThreadCB(action);
+    		threadMan.hleBlockCurrentThreadCB(action);
 	        //threadMan.checkCallbacks();
     	}
     }
@@ -392,7 +391,7 @@ public class pspge {
 	    				VideoEngine.log.debug("sceGeDrawSync all lists completed, not waiting");
 	    			}
 	    			hleGeAfterDrawSyncAction();
-	    			ThreadMan.getInstance().rescheduleCurrentThread();
+	    			ThreadMan.getInstance().hleRescheduleCurrentThread();
 	    		}
         	}
     	} else if (mode == 1) {
@@ -444,21 +443,11 @@ public class pspge {
                               + ", result cbid=" + Integer.toHexString(cbid));
         }
 
-        // HACK using kernel callback mechanism to trigger the ge callback
-        // could be a bad idea since $a2 will get clobbered. ge callback has 2
-        // args, kernel callback has 3. setting the 3rd arg to 0x12121212 so we
-        // can detect errors caused by this more easily.
-
-        // update: restored use of 3rd arg, needs fixing properly, or
-        // checking on real psp (since it's possible pspsdk is wrong).
-
         ThreadMan threadMan = ThreadMan.getInstance();
         SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
         SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
         signalCallbacks.put(cbid, callbackSignal);
         finishCallbacks.put(cbid, callbackFinish);
-        threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
-        threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, callbackFinish.uid);
 
         Emulator.getProcessor().cpu.gpr[2] = cbid;
     }
@@ -467,15 +456,14 @@ public class pspge {
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceGeUnsetCallback cbid=" + Integer.toHexString(cbid));
     	}
-        ThreadMan threadMan = ThreadMan.getInstance();
+
+    	ThreadMan threadMan = ThreadMan.getInstance();
         SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
         SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
         if (callbackSignal != null) {
-            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
             threadMan.hleKernelDeleteCallback(callbackSignal.uid);
         }
         if (callbackFinish != null) {
-            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, callbackFinish.uid);
             threadMan.hleKernelDeleteCallback(callbackFinish.uid);
         }
         Emulator.getProcessor().cpu.gpr[2] = 0;

@@ -917,9 +917,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void sceDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int sync) {
         topaddr &= Memory.addressMask;
 
-        if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0
-                ||pixelformat < 0 || pixelformat > 3 ||
-                sync < 0 || sync > 1) {
+        if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
+            pixelformat < 0 || pixelformat > 3 ||
+            sync < 0 || sync > 1) {
             Modules.log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ",bufferwidth=" + bufferwidth +
@@ -1012,6 +1012,21 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         Emulator.getProcessor().cpu.gpr[2] = getVcount();
     }
 
+    private void blockCurrentThreadOnVblank(boolean doCallbacks) {
+        // Block the current thread
+        ThreadMan threadMan = ThreadMan.getInstance();
+        int threadId = threadMan.getCurrentThreadID();
+        if (doCallbacks) {
+        	threadMan.hleBlockCurrentThreadCB();
+        } else {
+        	threadMan.hleBlockCurrentThread();
+        }
+
+        // Add a Vblank action to unblock the thread
+        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+    }
+
     public void sceDisplayWaitVblankStart() {
         if (Modules.log.isDebugEnabled()) {
         	Modules.log.debug("sceDisplayWaitVblankStart");
@@ -1019,18 +1034,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
-        // Block the current thread
-        ThreadMan threadMan = ThreadMan.getInstance();
-        if (threadMan.isInsideCallback()) {
-        	Modules.log.warn("sceDisplayWaitVblankStart inside callback currently not supported");
-        } else {
-	        int threadId = threadMan.getCurrentThreadID();
-	        threadMan.blockCurrentThread();
-
-	        // Add a Vblank action to unblock the thread
-	        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
-	        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
-        }
+        blockCurrentThreadOnVblank(false);
     }
 
     public void sceDisplayWaitVblankStartCB() {
@@ -1040,18 +1044,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
-        // Block the current thread
-        ThreadMan threadMan = ThreadMan.getInstance();
-        if (threadMan.isInsideCallback()) {
-        	Modules.log.warn("sceDisplayWaitVblankStartCB inside callback currently not supported");
-        } else {
-	        int threadId = threadMan.getCurrentThreadID();
-	        threadMan.blockCurrentThreadCB();
-
-	        // Add a Vblank action to unblock the thread
-	        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
-	        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
-        }
+        blockCurrentThreadOnVblank(true);
     }
 
     private void hleVblankStart() {
@@ -1099,18 +1092,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
-        // Block the current thread
-        ThreadMan threadMan = ThreadMan.getInstance();
-        if (threadMan.isInsideCallback()) {
-        	Modules.log.warn("sceDisplayWaitVblankStartMulti inside callback currently not supported");
-        } else {
-	        int threadId = threadMan.getCurrentThreadID();
-	        threadMan.blockCurrentThread();
-
-	        // Add a Vblank action to unblock the thread
-	        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
-	        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
-        }
+        blockCurrentThreadOnVblank(false);
     }
 
     public void sceDisplayWaitVblankCB() {

@@ -35,16 +35,18 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.HLE.modules150.sceMpeg;
 import jpcsp.connector.PGDFileConnector;
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 import static jpcsp.util.Utilities.*;
+
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.types.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.HLE.kernel.managers.*;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.State;
 
 // TODO use file id's starting at around 0
@@ -161,8 +163,8 @@ public class pspiofilemgr {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
 
-    private HashMap<Integer, SceKernelThreadInfo> asyncThreadMap;
-    private SceKernelThreadInfo currentAsyncThread;
+    private int defaultAsyncPriority;
+    private final static int asyncThreadRegisterArgument = 16; // $s0 is preserved across calls
 
     private byte[] AES128Key = new byte[16];
     private PGDFileConnector pgdFileConnector;
@@ -193,65 +195,97 @@ public class pspiofilemgr {
         filelist = new HashMap<Integer, IoInfo>();
         dirlist = new HashMap<Integer, IoDirInfo>();
         MemoryStick.setState(MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED);
-        asyncThreadMap = new HashMap<Integer, SceKernelThreadInfo>();
+        defaultAsyncPriority = -1;
     }
 
-    /** To properly emulate async io we cannot allow async io operations to
-     * complete immediately. For example a call to sceIoPollAsync must be
-     * preceeded by at least one context switch to return success, otherwise it
-     * returns async busy.
-     * TODO could make async io succeed based on at least one context switch
-     * (as it currently does) PLUS a certain amount of time passed. */
-    public void onContextSwitch() {
-        IoInfo found = null;
-        int foundCount = 0;
+    private void doStepAsync(IoInfo info) {
+    	ThreadMan threadMan = ThreadMan.getInstance();
 
-        for (Iterator<IoInfo> it = filelist.values().iterator(); it.hasNext();) {
-            IoInfo info = it.next();
+    	if (info == null || !info.asyncPending) {
+    		return;
+    	}
 
-            if (info.asyncPending)
-                foundCount++;
+    	info.asyncPending = false;
 
-            if (info.asyncPending && found == null) {
-                found = info;
-                // This is based on the assumption only 1 IO op can be
-                // happening at a time, which is probably correct since the
-                // PSP_ERROR_ASYNC_BUSY error code exists.
-                //break;
-            }
-
+        if (info.cbid >= 0) {
+        	// Trigger Async callback
+        	threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, info.cbid, info.notifyArg);
         }
 
-        if (foundCount > 1)
-            Modules.log.warn("more than 1 io callback waiting to enter pending state!");
+        // Find threads waiting on this uid and wake them up
+        // TODO If the call was sceIoWaitAsyncCB we might need to make sure
+        // the callback is fully processed before waking the thread!
+        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
+            SceKernelThreadInfo thread = it.next();
 
-        if (found != null) {
-            found.asyncPending = false;
+            if (thread.wait.waitingOnIo && thread.wait.Io_id == info.uid) {
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
+            	}
 
-            if (found.cbid >= 0) {
-                ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, found.cbid, found.notifyArg);
+                // Untrack
+                thread.wait.waitingOnIo = false;
+
+                // Return success
+                thread.cpuContext.gpr[2] = 0;
+
+                // Wakeup
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
             }
+        }
+    }
 
-            // Find threads waiting on this uid and wake them up
-            // TODO If the call was sceIoWaitAsyncCB we might need to make sure
-            // the callback is fully processed before waking the thread!
-            for (Iterator<SceKernelThreadInfo> it = ThreadMan.getInstance().iterator(); it.hasNext(); ) {
-                SceKernelThreadInfo thread = it.next();
+    public void hleAsyncThread() {
+    	CpuState cpu = Emulator.getProcessor().cpu;
+    	ThreadMan threadMan = ThreadMan.getInstance();
 
-                if (thread.wait.waitingOnIo &&
-                    thread.wait.Io_id == found.uid) {
-                    Modules.log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
+        int uid = cpu.gpr[asyncThreadRegisterArgument];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("hleAsyncThread uid=" + Integer.toHexString(uid));
+        }
 
-                    // Untrack
-                    thread.wait.waitingOnIo = false;
+        IoInfo info = filelist.get(uid);
+        if (info == null) {
+        	cpu.gpr[2] = 0; // Exit status
+        	threadMan.hleKernelExitThread();
+        } else {
+        	doStepAsync(info);
+        	threadMan.hleKernelDelayThread(100000, false);
+        }
+    }
 
-                    // Return success
-                    thread.cpuContext.gpr[2] = 0;
+    /**
+     * Start the async IO thread if not yet started.
+     * 
+     * @param info   the file
+     * @param result the result the async IO should return
+     */
+    private void startIoAsync(IoInfo info, int result) {
+    	if (info == null) {
+    		return;
+    	}
 
-                    // Wakeup
-                    ThreadMan.getInstance().changeThreadState(thread, PSP_THREAD_READY);
-                }
-            }
+        info.asyncPending = true;
+        info.result = result;
+
+        if (info.asyncThread == null) {
+        	ThreadMan threadMan = ThreadMan.getInstance();
+
+	        // Inherit priority from current thread if no default priority set
+	        int asyncPriority = defaultAsyncPriority;
+	        if (asyncPriority < 0) {
+	        	asyncPriority = threadMan.getCurrentThread().currentPriority;
+	        }
+
+	        info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
+	                ThreadMan.ASYNC_LOOP_ADDRESS, asyncPriority, 0x2000,
+	                threadMan.getCurrentThread().attr, 0);
+
+	        // Copy uid to Async Thread argument register
+	        info.asyncThread.cpuContext.gpr[asyncThreadRegisterArgument] = info.uid;
+
+	        // This must be the last action of the hleIoXXX call because it can context-switch
+	        threadMan.hleKernelStartThread(info.asyncThread, 0, 0, 0);
         }
     }
 
@@ -393,7 +427,6 @@ public class pspiofilemgr {
      * if operation is done return 0, write to res and flush out the saved result. */
     public void hleIoGetAsyncStat(int uid, int res_addr, boolean wait, boolean callbacks) {
         if (debug) Modules.log.debug("hleIoGetAsyncStat(uid=" + Integer.toHexString(uid) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
-
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
@@ -420,12 +453,6 @@ public class pspiofilemgr {
                 filelist.remove(info.uid);
                 SceUidManager.releaseUid(info.uid, "IOFileManager-File");
                 wait = false;
-            }
-
-            // Hack: if we are in a callback, complete the Async IO immediately.
-            // This is required as long as we can't context switch inside a callback.
-            if (ThreadMan.getInstance().isInsideCallback()) {
-            	onContextSwitch();
             }
 
             // This case happens when the game switches thread before calling waitAsync,
@@ -457,32 +484,26 @@ public class pspiofilemgr {
             State.fileLogger.logIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
         }
 
+        ThreadMan threadMan = ThreadMan.getInstance();
         if (info != null && wait) {
-            ThreadMan threadMan = ThreadMan.getInstance();
-            SceKernelThreadInfo current_thread = threadMan.getCurrentThread();
-
-            // Do callbacks?
-            current_thread.do_callbacks = callbacks;
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
             // wait type
-            current_thread.waitType = PSP_WAIT_MISC;
+            currentThread.waitType = PSP_WAIT_MISC;
 
             // Go to wait state
             int timeout = 0;
             boolean forever = true;
-            //int timeout = 1000000;
-            //boolean forever = false;
-            threadMan.hleKernelThreadWait(current_thread.wait, timeout, forever);
+            threadMan.hleKernelThreadWait(currentThread, currentThread.wait, timeout, forever);
 
             // Wait on a specific file uid
-            current_thread.wait.waitingOnIo = true;
-            current_thread.wait.Io_id = info.uid;
+            currentThread.wait.waitingOnIo = true;
+            currentThread.wait.Io_id = info.uid;
 
-            threadMan.changeThreadState(current_thread, PSP_THREAD_WAITING);
-            threadMan.contextSwitch(threadMan.nextThread());
-        } else if (callbacks && !ThreadMan.getInstance().isInsideCallback()) {
-            ThreadMan.getInstance().yieldCurrentThreadCB();
+            threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
         }
+
+        threadMan.hleRescheduleCurrentThread(callbacks);
     }
 
     public void sceIoPollAsync(int uid, int res_addr) {
@@ -684,6 +705,7 @@ public class pspiofilemgr {
             Modules.log.warn("hleIoOpen - read and append flags both set!");
         }
 
+        IoInfo info = null;
         try {
             String pcfilename = getDeviceFilePath(filename);
             if (pcfilename != null) {
@@ -716,7 +738,7 @@ public class pspiofilemgr {
                             try {
                                 String trimmedFileName = trimUmdPrefix(pcfilename);
                                 UmdIsoFile file = iso.getFile(trimmedFileName);
-                                IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
+                                info = new IoInfo(filename, file, mode, flags, permissions);
                                 if (trimmedFileName != null && trimmedFileName.length() == 0) {
                                     // Opening "umd0:" is allowing to read the whole UMD per sectors.
                                     info.sectorBlockMode = true;
@@ -749,7 +771,7 @@ public class pspiofilemgr {
                         }
 
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
-                        IoInfo info = new IoInfo(filename, raf, mode, flags, permissions);
+                        info = new IoInfo(filename, raf, mode, flags, permissions);
                         //info.result = info.uid;
                         info.result = PSP_ERROR_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
@@ -766,28 +788,21 @@ public class pspiofilemgr {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
         }
 
-        if(async) {
-            // TODO make asyncPending a global? only allow 1 async op across all io operations regardless of the uid?
-            int uid = Emulator.getProcessor().cpu.gpr[2];
-            IoInfo info = filelist.get(uid);
-            if (info != null) {
-                info.asyncPending = true;
-                info.result = Emulator.getProcessor().cpu.gpr[2];
-            } else {
+        State.fileLogger.logIoOpen(Emulator.getProcessor().cpu.gpr[2],
+                filename_addr, filename, flags, permissions, mode);
+
+        if (async) {
+            int result = Emulator.getProcessor().cpu.gpr[2];
+            if (info == null) {
                 Modules.log.debug("sceIoOpenAsync - file not found (ok to ignore this message, debug purpose only)");
                 // For async we still need to make and return a file handle even if we couldn't open the file,
                 // this is so the game can query on the handle (wait/async stat/io callback).
                 info = new IoInfo(readStringZ(filename_addr), null, null, flags, permissions);
-                info.result = PSP_ERROR_FILE_NOT_FOUND & 0xffffffffL;
-                //info.asyncPending = true;
                 Emulator.getProcessor().cpu.gpr[2] = info.uid;
             }
-            if(currentAsyncThread != null)
-                asyncThreadMap.put(uid, currentAsyncThread);
-        }
 
-        State.fileLogger.logIoOpen(Emulator.getProcessor().cpu.gpr[2],
-                filename_addr, filename, flags, permissions, mode);
+            startIoAsync(info, result);
+        }
     }
 
      public void sceIoOpen(int filename_addr, int flags, int permissions) {
@@ -800,56 +815,46 @@ public class pspiofilemgr {
      * file could not be opened. */
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
         if (debug) Modules.log.debug("sceIoOpenAsync redirecting to hleIoOpen");
-
-        //Start async thread (only 1 at a time allowed)?
-        //The app should call sceIoCloseAsync to delete it.
-        ThreadMan threadMan = ThreadMan.getInstance();
-
-        //Inherit priority from current thread.
-        int asyncPriority = threadMan.getCurrentThread().currentPriority;
-
-        currentAsyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
-                ThreadMan.ASYNC_LOOP_ADDRESS, asyncPriority, 0x2000,
-                threadMan.getCurrentThread().attr, 0);
-
-        threadMan.ThreadMan_sceKernelStartThread(currentAsyncThread.uid, 4, ThreadMan.ASYNC_LOOP_ADDRESS);
-
         hleIoOpen(filename_addr, flags, permissions, true);
     }
 
     public void sceIoChangeAsyncPriority(int uid, int priority) {
+    	CpuState cpu = Emulator.getProcessor().cpu;
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
 
-        if(asyncThreadMap.get(uid) != null) {
-            SceKernelThreadInfo asyncThread = asyncThreadMap.get(uid);
-            asyncThread.currentPriority = priority;
-
-            Modules.log.info("sceIoChangeAsyncPriority changing priority of dummy async thread from fd=" +
-                uid + " to " + Integer.toHexString(priority));
+        if (priority < 0) {
+        	cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_PRIORITY;
+        } else if (uid == -1) {
+        	defaultAsyncPriority = priority;
+            cpu.gpr[2] = 0;
+        } else {
+            IoInfo info = filelist.get(uid);
+            if (info != null && info.asyncThread != null) {
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.info(String.format("sceIoChangeAsyncPriority changing priority of async thread from fd=%x to %d", info.uid, priority));
+            	}
+            	info.asyncThread.currentPriority = priority;
+                cpu.gpr[2] = 0;
+            	ThreadMan.getInstance().hleRescheduleCurrentThread();
+            } else {
+                Modules.log.warn("sceIoChangeAsyncPriority invalid fd=" + uid);
+                cpu.gpr[2] = -1;
+            }
         }
-        else {
-            //TODO
-            //Some games call sceIoChangeAsyncPriority without
-            //creating the thread first.
-            //Return an error?
-            Modules.log.warn("sceIoChangeAsyncPriority invalid fd=" + uid);
-        }
-
-        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoSetAsyncCallback(int uid, int cbid, int notifyArg) {
         if (debug) Modules.log.debug("sceIoSetAsyncCallback - uid " + Integer.toHexString(uid) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
-
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
             Modules.log.warn("sceIoSetAsyncCallback - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else {
-            if (ThreadMan.getInstance().setCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
+            if (ThreadMan.getInstance().hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
                 info.cbid = cbid;
                 info.notifyArg = notifyArg;
+                info.asyncPending = true;
                 Emulator.getProcessor().cpu.gpr[2] = 0;
             } else {
                 Modules.log.warn("sceIoSetAsyncCallback - not a callback uid " + Integer.toHexString(uid));
@@ -900,37 +905,30 @@ public class pspiofilemgr {
             }
         } else {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+            Emulator.getProcessor().cpu.gpr[2] = 0x80010009;
         }
-
-        if(currentAsyncThread != null)
-            ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(currentAsyncThread.uid);
     }
 
     // Handle returning/storing result for sync/async operations
     private int updateResult(IoInfo info, int result, boolean async) {
-        int newResult;
-
-        if (info == null) {
-            newResult = result;
-        } else if (async) {
-            if (info.asyncPending) {
-                // if result isn't PSP_ERROR_ASYNC_BUSY we probably continued
-                // with the function when we should have aborted early, this
-                // will be a programmer error.
-                if (result != PSP_ERROR_ASYNC_BUSY)
-                    throw new RuntimeException("oops HLE wasn't coded right");
-                newResult = result;
-            } else {
-                info.result = result;
-                info.asyncPending = true;
-                newResult = 0;
-            }
-        } else {
-            info.result = PSP_ERROR_NO_ASYNC_OP;
-            newResult = result;
+        if (info != null) {
+        	if (async) {
+	            if (info.asyncPending) {
+	                // if result isn't PSP_ERROR_ASYNC_BUSY we probably continued
+	                // with the function when we should have aborted early, this
+	                // will be a programmer error.
+	                if (result != PSP_ERROR_ASYNC_BUSY)
+	                    throw new RuntimeException("oops HLE wasn't coded right");
+	            } else {
+	            	startIoAsync(info, result);
+	                result = 0;
+	            }
+	        } else {
+	            info.result = PSP_ERROR_NO_ASYNC_OP;
+	        }
         }
 
-        return newResult;
+        return result;
     }
 
     private void hleIoWrite(int uid, int data_addr, int size, boolean async) {
@@ -1461,9 +1459,9 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
                 } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    if (threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
+                    if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
                         // Trigger callback immediately
-                        threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
+                        threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
                         Emulator.getProcessor().cpu.gpr[2] = 0; // Success
                     } else {
 
@@ -1485,7 +1483,7 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
                 } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    if (threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
+                    if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
                         Emulator.getProcessor().cpu.gpr[2] = 0; // Success
                     } else {
                         Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS; // No such callback
@@ -1542,9 +1540,9 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS;
                 } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
+                    threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     // Trigger callback immediately
-                    threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
+                    threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
                     Emulator.getProcessor().cpu.gpr[2] = 0;  // Success
                 } else {
                     Emulator.getProcessor().cpu.gpr[2] = -1; // Invalid parameters
@@ -1562,7 +1560,7 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS;
                 } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
-                    threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
+                    threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     Emulator.getProcessor().cpu.gpr[2] = 0;  // Success
                 } else {
                     Emulator.getProcessor().cpu.gpr[2] = -1; // Invalid parameters
@@ -2214,6 +2212,7 @@ public class pspiofilemgr {
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
         public boolean closePending = false; // sceIoCloseAsync has been called on this file
         public boolean asyncPending; // Thread has not switched since an async operation was called on this file
+        public SceKernelThreadInfo asyncThread;
 
         // Async callback
         public int cbid = -1;

@@ -300,7 +300,7 @@ public class sceCtrl implements HLEModule {
         	}
 
 			hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive);
-			ThreadMan.getInstance().unblockThread(wait.thread.uid);
+			ThreadMan.getInstance().hleUnblockThread(wait.thread.uid);
     	}
     }
 
@@ -419,7 +419,7 @@ public class sceCtrl implements HLEModule {
     		SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
     		ThreadWaitingForSampling threadWaitingForSampling = new ThreadWaitingForSampling(currentThread, addr, count, positive);
     		threadsWaitingForSampling.add(threadWaitingForSampling);
-    		threadMan.blockCurrentThread();
+    		threadMan.hleBlockCurrentThread();
     	}
     }
 

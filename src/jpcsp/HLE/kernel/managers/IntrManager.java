@@ -161,8 +161,7 @@ public class IntrManager {
 
 	public boolean canExecuteInterruptNow() {
 		return (!isInsideInterrupt() &&
-				Interrupts.isInterruptsEnabled() &&
-			    !ThreadMan.getInstance().isInsideCallback());
+				Interrupts.isInterruptsEnabled());
 	}
 
 	public void onInterruptsEnabled() {
@@ -221,7 +220,7 @@ public class IntrManager {
 		allegrexInterruptHandlers.clear();
 
 		// Schedule to a thread having a higher priority if one is ready to run
-		ThreadMan.getInstance().rescheduleCurrentThread();
+		ThreadMan.getInstance().hleRescheduleCurrentThread();
 		onInterruptsEnabled();
 	}
 

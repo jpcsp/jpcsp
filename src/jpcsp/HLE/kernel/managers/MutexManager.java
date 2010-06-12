@@ -24,7 +24,6 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
@@ -110,7 +109,9 @@ public class MutexManager {
         // both attr can be used at the same time
         // 0x100 - ?
         // 0x200 - allow same thread to lock multiple times (overflow without error)
-        if (attr != 0) Modules.log.warn("PARTIAL:sceKernelCreateMutex attr value 0x" + Integer.toHexString(attr));
+        if ((attr & ~PSP_MUTEX_ALLOW_SAME_THREAD) != 0) {
+        	Modules.log.warn("PARTIAL:sceKernelCreateMutex attr value 0x" + Integer.toHexString(attr));
+        }
 
         SceKernelMutexInfo info = new SceKernelMutexInfo(name, attr);
         mutexMap.put(info.uid, info);
@@ -149,7 +150,7 @@ public class MutexManager {
 
     /** TODO look for a timeout parameter, for now we assume infinite wait
      * @return true on success */
-    private void hleKernelLockMutex(int uid, int count, int timeout_addr, boolean wait, boolean do_callbacks) {
+    private void hleKernelLockMutex(int uid, int count, int timeout_addr, boolean wait, boolean doCallbacks) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Memory.getInstance();
 
@@ -157,7 +158,7 @@ public class MutexManager {
             + ",count=" + count
             + ",timeout_addr=0x" + Integer.toHexString(timeout_addr)
             + ") wait=" + wait
-            + ",cb=" + do_callbacks;
+            + ",cb=" + doCallbacks;
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
@@ -177,14 +178,11 @@ public class MutexManager {
                 Modules.log.info(message + " - '" + info.name + "' fast check failed");
 
                 if (wait) {
-                    //ThreadMan threadMan = ThreadMan.getInstance();
-                    //SceKernelThreadInfo current_thread = threadMan.getCurrentThread();
-
                     // Failed, but it's ok, just wait a little
                     info.numWaitThreads++;
 
                     // Do callbacks?
-                    currentThread.do_callbacks = do_callbacks;
+                    currentThread.doCallbacks = doCallbacks;
 
                     // wait type
                     currentThread.waitType = PSP_WAIT_MUTEX;
@@ -201,14 +199,13 @@ public class MutexManager {
                         }
                     }
 
-                    threadMan.hleKernelThreadWait(currentThread.wait, timeout, forever);
+                    threadMan.hleKernelThreadWait(currentThread, currentThread.wait, timeout, forever);
 
                     // Wait on a specific mutex
                     currentThread.wait.waitingOnMutex = true;
                     currentThread.wait.Mutex_id = uid;
 
-                    threadMan.changeThreadState(currentThread, PSP_THREAD_WAITING);
-                    threadMan.contextSwitch(threadMan.nextThread());
+                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
 
                     // doesn't really matter what we set this to, it's going to get changed before the thread will run again
                     cpu.gpr[2] = 0;
@@ -221,6 +218,8 @@ public class MutexManager {
                 info.threadid = currentThread.uid;
                 cpu.gpr[2] = 0;
             }
+
+            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 
@@ -271,7 +270,7 @@ public class MutexManager {
                 thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
 
                 // Wakeup
-                ThreadMan.getInstance().changeThreadState(thread, PSP_THREAD_READY);
+                ThreadMan.getInstance().hleChangeThreadState(thread, PSP_THREAD_READY);
 
                 Modules.log.info("wakeWaitMutexThreads(multiple=" + wakeMultiple + ") mutex:'" + info.name + "' waking thread:'" + thread.name + "'");
                 handled = true;
@@ -378,8 +377,9 @@ public class MutexManager {
             + ",count=0x" + Integer.toHexString(count)
             + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
 
-        //TODO: Attr 0x300.
-        if (attr != 0) Modules.log.warn("PARTIAL:sceKernelCreateLwMutex attr value 0x" + Integer.toHexString(attr));
+        if (attr != 0) {
+        	Modules.log.warn("PARTIAL:sceKernelCreateLwMutex attr value 0x" + Integer.toHexString(attr));
+        }
 
         SceKernelMutexInfo info = new SceKernelMutexInfo(name, attr);
         mutexMap.put(info.uid, info);
@@ -498,13 +498,11 @@ public class MutexManager {
 
        public void sceKernelReferLwMutexStatusByID() {
           CpuState cpu = Emulator.getProcessor().cpu;
-          Memory mem = Processor.memory;
 
           Modules.log.warn("Unimplemented sceKernelReferLwMutexStatusByID "
             + String.format("%08x %08x %08x %08x", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
           cpu.gpr[2] = 0xDEADC0DE;
-
        }
 
 
