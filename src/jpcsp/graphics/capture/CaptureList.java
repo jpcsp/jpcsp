@@ -41,7 +41,7 @@ public class CaptureList {
     	this.list.init(list.list_addr, list.getStallAddr(), list.cbid, list.arg_addr);
 
         if (list.getStallAddr() - list.list_addr == 0) {
-            throw new Exception("Command list is empty");
+        	VideoEngine.log.error("Capture: Command list is empty");
         }
 
         int listSize = 0;
