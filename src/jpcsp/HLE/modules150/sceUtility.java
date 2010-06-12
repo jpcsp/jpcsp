@@ -33,6 +33,7 @@ import javax.swing.JFrame;
 import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -206,6 +207,7 @@ public class sceUtility implements HLEModule {
     public static final int PSP_UTILITY_DIALOG_FINISHED = 4;
 
     protected static final int maxLineLengthForDialog = 80;
+    protected static final int[] fontHeightSavedataList = new int[] { 12, 12, 12, 12, 12, 12, 9, 8, 7, 6 };
 
     protected UtilityDialogState gameSharingState;
     protected SceUtilityGameSharingParams gameSharingParams;
@@ -439,6 +441,7 @@ public class sceUtility implements HLEModule {
 
     protected final class SavedataListTableColumnModel extends DefaultTableColumnModel {
 		private static final long serialVersionUID = -2460343777558549264L;
+		private int fontHeight = 12;
 
 		private final class CellRenderer extends DefaultTableCellRenderer {
 			private static final long serialVersionUID = 6230063075762638253L;
@@ -451,6 +454,10 @@ public class sceUtility implements HLEModule {
                     setText("");
                     setIcon((Icon) obj);
                     return this;
+                } else if (obj instanceof String) {
+                	JTextArea textArea = new JTextArea((String) obj);
+                	textArea.setFont(new Font("SansSerif", Font.PLAIN, fontHeight));
+                	return textArea;
                 } else {
                 	setIcon(null);
                 	return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
@@ -470,6 +477,29 @@ public class sceUtility implements HLEModule {
             addColumn(tableColumn);
             addColumn(tableColumn2);
 		}
+
+		public void setFontHeight(int fontHeight) {
+			this.fontHeight = fontHeight;
+		}
+    }
+
+    /**
+     * Count how many times a string "find" occurs in a string "s".
+     * @param s    the string where to count
+     * @param find count how many times this string occurs in string "s"
+     * @return     the number of times "find" occurs in "s"
+     */
+    private static int count(String s, String find) {
+    	int count = 0;
+    	for (int i = 0; i < s.length(); count++) {
+    		int index = s.indexOf(find, i);
+    		if (index < 0) {
+    			break;
+    		}
+    		i = index + find.length();
+    	}
+
+    	return count;
     }
 
     protected final class SavedataListTableModel extends AbstractTableModel {
@@ -477,6 +507,7 @@ public class sceUtility implements HLEModule {
 		private int numberRows;
 		private ImageIcon[] icons;
 		private String[] descriptions;
+		private int fontHeight = 12;
 
 		public SavedataListTableModel(String[] saveNames) {
 			numberRows = saveNames == null ? 0 : saveNames.length;
@@ -521,7 +552,13 @@ public class sceUtility implements HLEModule {
 				            ScePspDateTime pspTime = sfoStat.mtime;
 				            cal.set(pspTime.year, pspTime.month, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
 
-				            descriptions[i] = String.format("%1$s - %4$tF %4$tR - %2$s - %3$s", title, savedataTitle, detail, cal);
+				            descriptions[i] = String.format("%1$s\n%4$tF %4$tR\n%2$s\n%3$s", title, savedataTitle, detail, cal);
+				            int numberLines = 1 + count(descriptions[i], "\n");
+				            if (numberLines < fontHeightSavedataList.length) {
+				            	setFontHeight(fontHeightSavedataList[numberLines]);
+				            } else {
+				            	setFontHeight(fontHeightSavedataList[fontHeightSavedataList.length - 1]);
+				            }
 						} catch (IOException e) {
 						}
 	                }
@@ -566,6 +603,14 @@ public class sceUtility implements HLEModule {
 				return descriptions[rowIndex];
 			}
 		}
+
+		public int getFontHeight() {
+			return fontHeight;
+		}
+
+		public void setFontHeight(int fontHeight) {
+			this.fontHeight = fontHeight;
+		}
     }
 
     protected void showSavedataList(final String[] saveNames) {
@@ -576,12 +621,15 @@ public class sceUtility implements HLEModule {
         mainDisplay.setLocation(pos[0], pos[1]);
         mainDisplay.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        final JTable table = new JTable(new SavedataListTableModel(saveNames), new SavedataListTableColumnModel());
+        SavedataListTableModel savedataListTableModel = new SavedataListTableModel(saveNames);
+        SavedataListTableColumnModel savedataListTableColumnModel = new SavedataListTableColumnModel();
+        savedataListTableColumnModel.setFontHeight(savedataListTableModel.getFontHeight());
+        final JTable table = new JTable(savedataListTableModel, savedataListTableColumnModel);
         table.setRowHeight(80);
         table.setRowSelectionAllowed(true);
         table.setColumnSelectionAllowed(false);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        table.setFont(new Font("SansSerif", Font.PLAIN, fontHeightSavedataList[0]));
         JScrollPane listScroll = new JScrollPane(table);
         JButton selectButton = new JButton("Select");
 
