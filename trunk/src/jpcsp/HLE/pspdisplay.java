@@ -355,6 +355,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             		statisticsCopyGeToMemory.start();
             	}
 
+            	VideoEngine.getInstance().disableShaders();
+
             	// Set texFb as the current texture
                 gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
 
@@ -368,6 +370,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
                 copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
                 loadGEToScreen = true;
+
+            	VideoEngine.getInstance().enableShaders();
 
             	if (statisticsCopyGeToMemory != null) {
             		statisticsCopyGeToMemory.end();
@@ -413,6 +417,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             		statisticsCopyMemoryToGe.start();
             	}
 
+            	VideoEngine.getInstance().disableShaders();
+
             	// Set texFb as the current texture
             	gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
 
@@ -428,6 +434,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
 				// Draw the GE
 	            drawFrameBuffer(gl, false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+
+            	VideoEngine.getInstance().enableShaders();
 
             	if (statisticsCopyMemoryToGe != null) {
             		statisticsCopyMemoryToGe.end();

@@ -3452,18 +3452,7 @@ public class VideoEngine {
             gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale[0]);
             gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode[0]);
 
-            // TODO Remove this glClear
-    		// We should not use it at all but demos won't work at all without it and our current implementation
-    		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
-    		// without a fragment shader
-    		if(!useShaders) {
-    			// gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
-    		} else {
-    			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-    			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-    			gl.glUniform1i(Uniforms.texEnable.getId(), textureFlag.isEnabledInt());
-    			gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
-    		}
+			enableShaders();
     		log("clear mode end");
     	} else if((normalArgument & 1) != 0) {
     		clearMode = true;
@@ -3486,12 +3475,7 @@ public class VideoEngine {
     		gl.glDisable(GL.GL_CULL_FACE);
             // TODO disable: scissor?
 
-    		if(useShaders) {
-    			gl.glUniform1f(Uniforms.zPos.getId(), 0);
-    			gl.glUniform1f(Uniforms.zScale.getId(), 0);
-    			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
-    			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
-    		}
+    		disableShaders();
 
     		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
     		boolean color = false;
@@ -4181,6 +4165,25 @@ public class VideoEngine {
     	}
     }
 
+    public void disableShaders() {
+		if (useShaders) {
+			gl.glUniform1f(Uniforms.zPos.getId(), 0);
+			gl.glUniform1f(Uniforms.zScale.getId(), 0);
+			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
+			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
+			gl.glUniform1i(Uniforms.numberBones.getId(), 0);
+		}
+    }
+
+    public void enableShaders() {
+        if (useShaders) {
+			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
+			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
+			gl.glUniform1i(Uniforms.texEnable.getId(), textureFlag.isEnabledInt());
+			gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
+		}
+    }
+
     private void executeCommandBBOX(int normalArgument) {
         int numberOfVertexBoundingBox = normalArgument;
 
@@ -4215,13 +4218,7 @@ public class VideoEngine {
 		gl.glDisable(GL.GL_CULL_FACE);
         gl.glDisable(GL.GL_SCISSOR_TEST);
 
-		if (useShaders) {
-			gl.glUniform1f(Uniforms.zPos.getId(), 0);
-			gl.glUniform1f(Uniforms.zScale.getId(), 0);
-			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
-			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
-			gl.glUniform1i(Uniforms.numberBones.getId(), 0);
-		}
+        disableShaders();
 
 		gl.glBeginQuery(GL.GL_SAMPLES_PASSED, bboxQueryId);
         //
@@ -4309,12 +4306,7 @@ public class VideoEngine {
         gl.glEndQuery(GL.GL_SAMPLES_PASSED);
         gl.glPopAttrib();
 
-        if (useShaders) {
-			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-			gl.glUniform1i(Uniforms.texEnable.getId(), textureFlag.isEnabledInt());
-			gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
-		}
+        enableShaders();
 
         endRendering(useVertexColor, false);
     }
