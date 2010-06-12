@@ -260,7 +260,7 @@ public class pspiofilemgr {
      * @param info   the file
      * @param result the result the async IO should return
      */
-    private void startIoAsync(IoInfo info, int result) {
+    private void startIoAsync(IoInfo info, long result) {
     	if (info == null) {
     		return;
     	}
@@ -910,7 +910,7 @@ public class pspiofilemgr {
     }
 
     // Handle returning/storing result for sync/async operations
-    private int updateResult(IoInfo info, int result, boolean async) {
+    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit) {
         if (info != null) {
         	if (async) {
 	            if (info.asyncPending) {
@@ -928,7 +928,10 @@ public class pspiofilemgr {
 	        }
         }
 
-        return result;
+        cpu.gpr[2] = (int)(result & 0xFFFFFFFFL);
+        if (resultIs64bit) {
+            cpu.gpr[3] = (int) (result >> 32);
+        }
     }
 
     private void hleIoWrite(int uid, int data_addr, int size, boolean async) {
@@ -994,7 +997,7 @@ public class pspiofilemgr {
             }
         }
 
-        Emulator.getProcessor().cpu.gpr[2] = updateResult(info, result, async);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false);
 
         State.fileLogger.logIoWrite(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
     }
@@ -1071,7 +1074,7 @@ public class pspiofilemgr {
             }
         }
 
-        Emulator.getProcessor().cpu.gpr[2] = updateResult(info, result, async);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false);
 
         State.fileLogger.logIoRead(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
     }
@@ -1086,24 +1089,24 @@ public class pspiofilemgr {
 
     public void sceIoLseek(int uid, long offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, offset, whence, true, false);
+        hleIoLseek(uid, offset, whence, true, false);
     }
 
     public void sceIoLseekAsync(int uid, long offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseekAsync - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, offset, whence, true, true);
+        hleIoLseek(uid, offset, whence, true, true);
     }
 
     public void sceIoLseek32(int uid, int offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         //seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, false);
-        seek(uid, (long)offset, whence, false, false);
+        hleIoLseek(uid, (long)offset, whence, false, false);
     }
 
     public void sceIoLseek32Async(int uid, int offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         //seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, true);
-        seek(uid, (long)offset, whence, false, true);
+        hleIoLseek(uid, (long)offset, whence, false, true);
     }
 
     private String getWhenceName(int whence) {
@@ -1115,33 +1118,28 @@ public class pspiofilemgr {
         }
     }
 
-    // TODO refactor (no "return" midway) now we know better what to do
-    private void seek(int uid, long offset, int whence, boolean resultIs64bit, boolean async) {
+    private void hleIoLseek(int uid, long offset, int whence, boolean resultIs64bit, boolean async) {
         //if (debug) Modules.log.debug("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
+    	IoInfo info = null;
+    	long result = 0;
 
         if (uid == 1 || uid == 2 || uid == 3) { // stdio
             Modules.log.error("seek - can't seek on stdio uid " + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
-            if (resultIs64bit)
-                Emulator.getProcessor().cpu.gpr[3] = -1;
+            result = -1;
         } else {
             try {
                 SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-                IoInfo info = filelist.get(uid);
+                info = filelist.get(uid);
                 if (info == null) {
                     Modules.log.warn("seek - unknown uid " + Integer.toHexString(uid));
 
                     // TODO check
-                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
-                    if (resultIs64bit)
-                        Emulator.getProcessor().cpu.gpr[3] = -1;
+                    result = PSP_ERROR_BAD_FILE_DESCRIPTOR;
                 } else if (info.asyncPending) {
                     Modules.log.warn("seek - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
 
                     // TODO check
-                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ASYNC_BUSY;
-                    if (resultIs64bit)
-                        Emulator.getProcessor().cpu.gpr[3] = -1;
+                    result = PSP_ERROR_ASYNC_BUSY;
                 } else {
                 	if (info.sectorBlockMode) {
                 		// In sectorBlockMode, the offset is a sector number
@@ -1152,9 +1150,7 @@ public class pspiofilemgr {
                         case PSP_SEEK_SET:
                             if (offset < 0) {
                                 Modules.log.warn("SEEK_SET UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
-                                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_INVALID_ARGUMENT;
-                                if (resultIs64bit)
-                                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                                result = PSP_ERROR_INVALID_ARGUMENT;
                                 State.fileLogger.logIoSeek64(PSP_ERROR_INVALID_ARGUMENT, uid, offset, whence);
                                 return;
                             } else {
@@ -1167,9 +1163,7 @@ public class pspiofilemgr {
                         case PSP_SEEK_CUR:
                             if (info.position + offset < 0) {
                                 Modules.log.warn("SEEK_CUR UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
-                                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_INVALID_ARGUMENT;
-                                if (resultIs64bit)
-                                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                                result = PSP_ERROR_INVALID_ARGUMENT;
                                 State.fileLogger.logIoSeek64(PSP_ERROR_INVALID_ARGUMENT, uid, offset, whence);
                                 return;
                             } else {
@@ -1182,9 +1176,7 @@ public class pspiofilemgr {
                         case PSP_SEEK_END:
                             if (info.readOnlyFile.length() + offset < 0) {
                                 Modules.log.warn("SEEK_END UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
-                                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_INVALID_ARGUMENT;
-                                if (resultIs64bit)
-                                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                                result = PSP_ERROR_INVALID_ARGUMENT;
                                 State.fileLogger.logIoSeek64(PSP_ERROR_INVALID_ARGUMENT, uid, offset, whence);
                                 return;
                             } else {
@@ -1198,33 +1190,18 @@ public class pspiofilemgr {
                             Modules.log.error("seek - unhandled whence " + whence);
                             break;
                     }
-                    //long result = info.readOnlyFile.getFilePointer();
-                    long result = info.position;
+                    result = info.position;
                     if (info.sectorBlockMode) {
                     	result /= UmdIsoFile.sectorLength;
-                    }
-
-                    if (async) {
-                        info.result = result;
-                        info.asyncPending = true;
-
-                        // TODO check
-                        Emulator.getProcessor().cpu.gpr[2] = 0;
-                        if (resultIs64bit)
-                            Emulator.getProcessor().cpu.gpr[3] = 0;
-                    } else {
-                        Emulator.getProcessor().cpu.gpr[2] = (int)(result & 0xFFFFFFFFL);
-                        if (resultIs64bit)
-                            Emulator.getProcessor().cpu.gpr[3] = (int)(result >> 32);
                     }
                 }
             } catch(IOException e) {
                 e.printStackTrace();
-                Emulator.getProcessor().cpu.gpr[2] = -1;
-                if (resultIs64bit)
-                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                result = -1;
             }
         }
+
+        updateResult(Emulator.getProcessor().cpu, info, result, async, resultIs64bit);
 
         if (resultIs64bit) {
             State.fileLogger.logIoSeek64(
@@ -1853,7 +1830,7 @@ public class pspiofilemgr {
             }
         }
 
-        Emulator.getProcessor().cpu.gpr[2] = updateResult(info, result, async);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false);
 
         State.fileLogger.logIoIoctl(Emulator.getProcessor().cpu.gpr[2], uid, cmd, indata_addr, inlen, outdata_addr, outlen);
     }
