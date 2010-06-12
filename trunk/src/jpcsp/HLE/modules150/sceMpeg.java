@@ -1253,10 +1253,15 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn(String.format("sceMpegAvcDecodeDetail bad address 0x%08X", detailAddr));
         	cpu.gpr[2] = -1;
         } else {
-            mem.write32(detailAddr, avcDecodeResult); //Stores the result.
-        	// Other detailAddr structure members are unknown...
-        	mem.write32(detailAddr + 8, avcDetailFrameWidth);
-        	mem.write32(detailAddr + 12, avcDetailFrameHeight);
+            mem.write32(detailAddr, avcDecodeResult);             // Stores the result.
+        	mem.write32(detailAddr + 4, 0);                       // Unknown.
+        	mem.write32(detailAddr + 8, avcDetailFrameWidth);     // Frame width.
+        	mem.write32(detailAddr + 12, avcDetailFrameHeight);   // Frame height.
+            mem.write32(detailAddr + 16, 0);                      // Frame crop rect (left).
+            mem.write32(detailAddr + 20, 0);                      // Frame crop rect (right).
+            mem.write32(detailAddr + 24, 0);                      // Frame crop rect (top).
+            mem.write32(detailAddr + 28, 0);                      // Frame crop rect (bottom).
+            mem.write32(detailAddr + 32, 0);                      // Unknown.
             cpu.gpr[2] = 0;
         }
     }

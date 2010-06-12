@@ -97,10 +97,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
         int atID = cpu.gpr[4];
         int sample = cpu.gpr[5];
-        int unk1Addr = cpu.gpr[6];
+        int bufferInfoAddr = cpu.gpr[6];
 
-        Modules.log.warn(String.format("Partial sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, unk1Addr));
-        hleAtracGetBufferInfoForReseting(atID, sample, unk1Addr);
+        Modules.log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, bufferInfoAddr));
+        hleAtracGetBufferInfoForReseting(atID, sample, bufferInfoAddr);
 
         cpu.gpr[2] = 0;
     }
