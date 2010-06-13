@@ -181,9 +181,6 @@ public class MutexManager {
                     // Failed, but it's ok, just wait a little
                     info.numWaitThreads++;
 
-                    // Do callbacks?
-                    currentThread.doCallbacks = doCallbacks;
-
                     // wait type
                     currentThread.waitType = PSP_WAIT_MUTEX;
                     currentThread.waitId = uid;
@@ -199,7 +196,7 @@ public class MutexManager {
                         }
                     }
 
-                    threadMan.hleKernelThreadWait(currentThread, currentThread.wait, timeout, forever);
+                    threadMan.hleKernelThreadWait(currentThread, timeout, forever);
 
                     // Wait on a specific mutex
                     currentThread.wait.waitingOnMutex = true;

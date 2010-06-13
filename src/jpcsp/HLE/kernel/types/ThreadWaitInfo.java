@@ -65,6 +65,7 @@ public class ThreadWaitInfo {
      //Mbx
     public boolean waitingOnMbxReceive;
     public int Mbx_id;
+    public int Mbx_resultAddr;
 
     public void copy(ThreadWaitInfo that) {
     	this.forever = that.forever;
@@ -101,5 +102,9 @@ public class ThreadWaitInfo {
     	this.MsgPipe_size = that.MsgPipe_size;
     	this.MsgPipe_waitMode = that.MsgPipe_waitMode;
     	this.MsgPipe_resultSize_addr = that.MsgPipe_resultSize_addr;
+
+    	this.waitingOnMbxReceive = that.waitingOnMbxReceive;
+    	this.Mbx_id = that.Mbx_id;
+    	this.Mbx_resultAddr = that.Mbx_resultAddr;
     }
 }

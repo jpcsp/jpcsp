@@ -1281,7 +1281,7 @@ public class ThreadMan {
 	        currentThread.waitType = PSP_WAIT_SLEEP;
 
 	        // Wait forever (another thread will call sceKernelWakeupThread)
-	        hleKernelThreadWait(currentThread, currentThread.wait, 0, true);
+	        hleKernelThreadWait(currentThread, 0, true);
 
 	        hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
 
@@ -1406,7 +1406,7 @@ public class ThreadMan {
             currentThread.waitType = PSP_WAIT_THREAD_END;
 
             // Go to wait state
-            hleKernelThreadWait(currentThread, currentThread.wait, micros, forever);
+            hleKernelThreadWait(currentThread, micros, forever);
 
             // Wait on a specific thread end
             currentThread.wait.waitingOnThreadEnd = true;
@@ -1461,15 +1461,24 @@ public class ThreadMan {
         }
     }
 
-    public void hleKernelThreadWait(SceKernelThreadInfo thread, ThreadWaitInfo wait, int micros, boolean forever) {
-        wait.forever = forever;
-        wait.micros = micros; // for debugging
+    /**
+     * Set the wait timeout for a thread. The state of the thread is not changed.
+     * 
+     * @param thread  the thread
+     * @param wait    the same as thread.wait
+     * @param micros  the timeout in microseconds (this is an unsigned value: SceUInt32)
+     * @param forever true if the thread has to wait forever (micros in then ignored)
+     */
+    public void hleKernelThreadWait(SceKernelThreadInfo thread, int micros, boolean forever) {
+        thread.wait.forever = forever;
+        thread.wait.micros = micros; // for debugging
         if (forever) {
-            wait.microTimeTimeout = 0;
-        	wait.waitTimeoutAction = null;
+            thread.wait.microTimeTimeout = 0;
+        	thread.wait.waitTimeoutAction = null;
         } else {
-            wait.microTimeTimeout = Emulator.getClock().microTime() + micros;
-        	wait.waitTimeoutAction = new TimeoutThreadAction(thread);
+        	long longMicros = ((long) micros) & 0xFFFFFFFFL;
+            thread.wait.microTimeTimeout = Emulator.getClock().microTime() + longMicros;
+        	thread.wait.waitTimeoutAction = new TimeoutThreadAction(thread);
         }
 
         if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled() && !isIdleThread(thread)) {
@@ -1493,7 +1502,7 @@ public class ThreadMan {
         }
 
         // Wait on a timeout only
-        hleKernelThreadWait(currentThread, currentThread.wait, micros, false);
+        hleKernelThreadWait(currentThread, micros, false);
 
         hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
 
