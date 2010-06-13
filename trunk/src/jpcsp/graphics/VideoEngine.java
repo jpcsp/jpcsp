@@ -1574,8 +1574,10 @@ public class VideoEngine {
 
             case VTYPE: {
                 int old_transform_mode = transform_mode;
+                boolean old_vertex_hasColor = vinfo.color != 0;
                 vinfo.processType(normalArgument);
                 transform_mode = (normalArgument >> 23) & 0x1;
+                boolean vertex_hasColor = vinfo.color != 0;
 
                 //Switching from 2D to 3D or 3D to 2D?
                 if (old_transform_mode != transform_mode) {
@@ -1590,6 +1592,9 @@ public class VideoEngine {
                 	if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
                 		lightingChanged = true;
                 	}
+                } else if (old_vertex_hasColor != vertex_hasColor) {
+                	// Materials have to be reloaded when the vertex color presence is changing
+                	materialChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
