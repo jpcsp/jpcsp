@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Random;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Clock;
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -116,6 +117,19 @@ public class psputils {
 
     public void sceKernelDcacheInvalidateRange(int p_addr, int size) {
         Modules.log.trace("UNIMPLEMENTED:sceKernelDcacheInvalidateRange");
+    }
+
+    public void sceKernelIcacheInvalidateRange(int p_addr, int size) {
+        Modules.log.trace("UNIMPLEMENTED:sceKernelIcacheInvalidateRange");
+    }
+
+    public void sceKernelIcacheInvalidateAll() {
+        // Some games attempt to change compiled code at runtime
+        // by calling this function.
+        // Use the RuntimeContext to regenerate a compiling context
+        // and restart from there.
+        RuntimeContext.invalidateAll();
+        Modules.log.trace("sceKernelIcacheInvalidateAll");
     }
 
     public void sceKernelUtilsMt19937Init(int ctx_addr, int seed) {

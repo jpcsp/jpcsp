@@ -55,8 +55,7 @@ public class sceMp3 implements HLEModule {
             mm.addFunction(sceMp3GetMaxOutputSampleFunction, 0x87C263D1);
             mm.addFunction(sceMp3GetLoopNumFunction, 0xD8F54A51);
 
-            mp3HandleCount = 0;
-            mp3LoopMap = new HashMap<Integer, Integer>();
+            mp3Map = new HashMap<Integer, Mp3Stream>();
 
 		}
 	}
@@ -86,42 +85,143 @@ public class sceMp3 implements HLEModule {
 		}
 	}
 
-    protected int mp3StreamStart;
-    protected int mp3Unk1;
-    protected int mp3StreamEnd;
-    protected int mp3Unk2;
-    protected int mp3Buf;
-    protected int mp3BufSize;
-    protected int mp3PcmBuf;
-    protected int mp3PcmBufSize;
-
     protected int mp3HandleCount;
-    protected HashMap<Integer, Integer> mp3LoopMap;
+    protected HashMap<Integer, Mp3Stream> mp3Map;
 
     protected int makeFakeMp3StreamHandle() {
-        return 0xA3A30000 | (mp3HandleCount++ & 0xFFFF);
+        // The stream can't be negative.
+        return 0x0000A300 | (mp3HandleCount++ & 0xFFFF);
+    }
+
+    protected class Mp3Stream {
+        private int mp3StreamStart;
+        private int mp3Unk1;
+        private int mp3StreamEnd;
+        private int mp3Unk2;
+        private int mp3Buf;
+        private int mp3BufSize;
+        private int mp3PcmBuf;
+        private int mp3PcmBufSize;
+
+        private int mp3Handle;
+        private int mp3LoopNum;
+        private int mp3BufCurrentPos;
+        private int mp3SampleRate;
+        private int mp3BitRate;
+        private int mp3DecodedBytes;
+        private int mp3DecodedSamples;
+        private int mp3MaxSamples;
+        private int mp3Channels;
+
+        public Mp3Stream(int args) {
+            Memory mem = Memory.getInstance();
+
+            // SceMp3InitArg struct.
+            mp3StreamStart = mem.read32(args);
+            mp3Unk1        = mem.read32(args + 4);
+            mp3StreamEnd   = mem.read32(args + 8);
+            mp3Unk2        = mem.read32(args + 12);
+            mp3Buf         = mem.read32(args + 16);
+            mp3BufSize     = mem.read32(args + 20);
+            mp3PcmBuf      = mem.read32(args + 24);
+            mp3PcmBufSize  = mem.read32(args + 28);
+
+            mp3Handle = makeFakeMp3StreamHandle();
+            mp3BufCurrentPos = mp3StreamStart;
+
+            // Dummy values.
+            // TODO: Parse the real values from the stream.
+            mp3SampleRate = 44100;
+            mp3BitRate = 128;
+            mp3DecodedSamples = 0;
+            mp3MaxSamples = 0;
+            mp3Channels = 2;
+            mp3LoopNum = 0;
+            mp3DecodedBytes = 0;
+        }
+
+        public int decode() {
+            // Faking.
+            // Decode at 320 kbps.
+            mp3DecodedBytes += 320;
+            mp3DecodedSamples++;
+            mp3BufCurrentPos += mp3DecodedBytes;
+
+            return mp3DecodedBytes;
+        }
+
+        public int getMp3Handle() {
+            return mp3Handle;
+        }
+        public int getMp3LoopNum() {
+            return mp3LoopNum;
+        }
+        public int getMp3BufAddr() {
+            return mp3Buf;
+        }
+        public int getMp3PcmBufAddr() {
+            return mp3PcmBuf;
+        }
+        public int getMp3PcmBufSize() {
+            return mp3PcmBufSize;
+        }
+        public int getMp3BufCurrentPos() {
+            return mp3BufCurrentPos;
+        }
+        public int getMp3BufSize() {
+            return mp3BufSize;
+        }
+        public int getMp3RemainingBytes() {
+            return (mp3BufSize - mp3BufCurrentPos);
+        }
+        public int getMp3DecodedSamples() {
+            return mp3DecodedSamples;
+        }
+        public int getMp3MaxSamples() {
+            return mp3MaxSamples;
+        }
+        public int getMp3BitRate() {
+            return mp3BitRate;
+        }
+        public int getMp3ChannelNum() {
+            return mp3Channels;
+        }
+        public int getMp3SamplingRate() {
+            return mp3SampleRate;
+        }
+        public int getMp3DecodedBytes() {
+            return mp3DecodedBytes;
+        }
+
+        public void setMp3LoopNum(int n) {
+            mp3LoopNum = n;
+        }
+        public void setMp3BufCurrentPos(int pos) {
+            mp3BufCurrentPos = pos;
+        }
+
+        public int isStreamDataNeeded() {
+            return ((mp3BufSize < mp3StreamEnd) ? 1 : 0);
+        }
+
+        public void addMp3StreamData(int size) {
+            mp3BufSize += size;
+        }
     }
 
     public void sceMp3ReserveMp3Handle(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Memory.getInstance();
 
         int mp3args = cpu.gpr[4];
 
-        // SceMp3InitArg struct.
-        mp3StreamStart = mem.read32(mp3args);
-        mp3Unk1        = mem.read32(mp3args + 4);
-        mp3StreamEnd   = mem.read32(mp3args + 8);
-        mp3Unk2        = mem.read32(mp3args + 12);
-        mp3Buf         = mem.read32(mp3args + 16);
-        mp3BufSize     = mem.read32(mp3args + 20);
-        mp3PcmBuf      = mem.read32(mp3args + 24);
-        mp3PcmBufSize  = mem.read32(mp3args + 28);
+        Mp3Stream stream = new Mp3Stream(mp3args);
+        int streamHandle = stream.getMp3Handle();
+        mp3Map.put(streamHandle, stream);
 
         Modules.log.warn("PARTIAL: sceMp3ReserveMp3Handle "
     			+ String.format("mp3args=0x%08x", cpu.gpr[4]));
 
-        cpu.gpr[2] = makeFakeMp3StreamHandle();
+        cpu.gpr[2] = streamHandle;
     }
 
     public void sceMp3NotifyAddStreamData(Processor processor) {
@@ -130,10 +230,14 @@ public class sceMp3 implements HLEModule {
         int mp3handle = cpu.gpr[4];
         int size = cpu.gpr[5];
 
-        Modules.log.warn("UNIMPLEMENTED: sceMp3NotifyAddStreamData "
+        Modules.log.warn("PARTIAL: sceMp3NotifyAddStreamData "
     			+ String.format("mp3handle=0x%08x, size=%d", mp3handle, size));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        // New data has been written by the application.
+        if(mp3Map.containsKey(mp3handle))
+            mp3Map.get(mp3handle).addMp3StreamData(size);
+
+        cpu.gpr[2] = 0;
     }
 
     public void sceMp3ResetPlayPosition(Processor processor) {
@@ -141,8 +245,11 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3ResetPlayPosition "
+        Modules.log.warn("PARTIAL: sceMp3ResetPlayPosition "
     			+ String.format("mp3handle=0x%08x", mp3handle));
+
+        if(mp3Map.containsKey(mp3handle))
+            mp3Map.get(mp3handle).setMp3BufCurrentPos(0);
 
         cpu.gpr[2] = 0;
     }
@@ -150,7 +257,7 @@ public class sceMp3 implements HLEModule {
     public void sceMp3InitResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("UNIMPLEMENTED: sceMp3InitResource");
+        Modules.log.warn("IGNORING: sceMp3InitResource");
 
         cpu.gpr[2] = 0;
     }
@@ -158,7 +265,7 @@ public class sceMp3 implements HLEModule {
     public void sceMp3TermResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("UNIMPLEMENTED: sceMp3TermResource");
+        Modules.log.warn("IGNORING: sceMp3TermResource");
 
         cpu.gpr[2] = 0;
     }
@@ -172,8 +279,8 @@ public class sceMp3 implements HLEModule {
         Modules.log.warn("PARTIAL: sceMp3SetLoopNum "
     			+ String.format("mp3handle=0x%08x, loopNbr=%d", mp3handle, loopNbr));
 
-        // Associate each handle with it's max loop number.
-        mp3LoopMap.put(mp3handle, loopNbr);
+        if(mp3Map.containsKey(mp3handle))
+            mp3Map.get(mp3handle).setMp3LoopNum(loopNbr);
 
         cpu.gpr[2] = 0;
     }
@@ -194,10 +301,14 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3GetMp3ChannelNum "
+        Modules.log.warn("PARTIAL: sceMp3GetMp3ChannelNum "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
-        cpu.gpr[2] = 0;
+        int chNum = 0;
+        if(mp3Map.containsKey(mp3handle))
+            chNum = mp3Map.get(mp3handle).getMp3ChannelNum();
+
+        cpu.gpr[2] = chNum;
     }
 
     public void sceMp3GetSamplingRate(Processor processor) {
@@ -205,10 +316,14 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3GetSamplingRate "
+        Modules.log.warn("PARTIAL: sceMp3GetSamplingRate "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
-        cpu.gpr[2] = 0;
+        int sampleRate = 0;
+        if(mp3Map.containsKey(mp3handle))
+            sampleRate = mp3Map.get(mp3handle).getMp3SamplingRate();
+
+        cpu.gpr[2] = sampleRate;
     }
 
     public void sceMp3GetInfoToAddStreamData(Processor processor) {
@@ -217,30 +332,54 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
         int mp3BufAddr = cpu.gpr[5];
-        int mp3BufToWriteAddr = cpu.gpr[5];
-        int mp3PosAddr = cpu.gpr[5];
+        int mp3BufToWriteAddr = cpu.gpr[6];
+        int mp3PosAddr = cpu.gpr[7];
 
         Modules.log.warn("PARTIAL: sceMp3GetInfoToAddStreamData "
     			+ String.format("mp3handle=0x%08x, mp3BufAddr=0x%08x, mp3BufToWriteAddr=0x%08x, mp3PosAddr=0x%08x"
                 , mp3handle, mp3BufAddr, mp3BufToWriteAddr, mp3PosAddr));
 
-        mem.write32(mp3BufAddr, mp3Buf);
-        mem.write32(mp3BufToWriteAddr, mp3BufSize);
-        mem.write32(mp3PosAddr, mp3StreamStart);
+        int bufAddr = 0;
+        int bufToWrite = 0;
+        int bufPos = 0;
+        Mp3Stream stream = null;
+
+        if(mp3Map.containsKey(mp3handle)) {
+            stream = mp3Map.get(mp3handle);
+            bufAddr = stream.getMp3BufAddr();
+            bufToWrite = stream.getMp3RemainingBytes();
+            bufPos = stream.getMp3BufCurrentPos();
+        }
+
+        mem.write32(mp3BufAddr, bufAddr);
+        mem.write32(mp3BufToWriteAddr, bufToWrite);
+        mem.write32(mp3PosAddr, bufPos);
 
         cpu.gpr[2] = 0;
     }
 
     public void sceMp3Decode(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
         int mp3handle = cpu.gpr[4];
         int outPcmAddr = cpu.gpr[5];
 
-        Modules.log.warn("UNIMPLEMENTED: sceMp3Decode "
+        Modules.log.warn("PARTIAL: sceMp3Decode "
     			+ String.format("mp3handle=0x%08x, outPcmAddr=0x%08x", mp3handle, outPcmAddr));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        // Should decode a portion of this mp3 stream.
+        // TODO: Implement real mp3 to pcm decoding.
+        int pcmBytes = 0;
+        Mp3Stream stream = null;
+
+        if(mp3Map.containsKey(mp3handle)) {
+            stream =  mp3Map.get(mp3handle);
+            pcmBytes = stream.decode();
+            mem.write32(outPcmAddr, stream.getMp3PcmBufAddr());
+        }
+
+        cpu.gpr[2] = pcmBytes;
     }
 
     public void sceMp3CheckStreamDataNeeded(Processor processor) {
@@ -248,10 +387,16 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("UNIMPLEMENTED: sceMp3CheckStreamDataNeeded "
+        Modules.log.warn("PARTIAL: sceMp3CheckStreamDataNeeded "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        // 1 - Needs more data.
+        // 0 - Doesn't need more data.
+        int needsData = 0;
+        if(mp3Map.containsKey(mp3handle))
+            needsData = mp3Map.get(mp3handle).isStreamDataNeeded();
+
+        cpu.gpr[2] = needsData;
     }
 
     public void sceMp3ReleaseMp3Handle(Processor processor) {
@@ -270,10 +415,14 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3GetSumDecodedSample "
+        Modules.log.warn("PARTIAL: sceMp3GetSumDecodedSample "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
-        cpu.gpr[2] = 0;
+        int samples = 0;
+        if(mp3Map.containsKey(mp3handle))
+            samples = mp3Map.get(mp3handle).getMp3DecodedSamples();
+
+        cpu.gpr[2] = samples;
     }
 
     public void sceMp3GetBitRate(Processor processor) {
@@ -281,10 +430,14 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3GetBitRate "
+        Modules.log.warn("PARTIAL: sceMp3GetBitRate "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
-        cpu.gpr[2] = 0;
+        int bitRate = 0;
+        if(mp3Map.containsKey(mp3handle))
+            bitRate = mp3Map.get(mp3handle).getMp3BitRate();
+
+        cpu.gpr[2] = bitRate;
     }
 
     public void sceMp3GetMaxOutputSample(Processor processor) {
@@ -292,10 +445,14 @@ public class sceMp3 implements HLEModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3GetMaxOutputSample "
+        Modules.log.warn("PARTIAL: sceMp3GetMaxOutputSample "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
-        cpu.gpr[2] = 0;
+        int maxSamples = 0;
+        if(mp3Map.containsKey(mp3handle))
+            maxSamples = mp3Map.get(mp3handle).getMp3MaxSamples();
+
+        cpu.gpr[2] = maxSamples;
     }
 
     public void sceMp3GetLoopNum(Processor processor) {
@@ -307,9 +464,8 @@ public class sceMp3 implements HLEModule {
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         int loopNum = 0;
-        if(mp3LoopMap.containsKey(mp3handle)) {
-            loopNum = mp3LoopMap.get(mp3handle);
-        }
+        if(mp3Map.containsKey(mp3handle))
+            loopNum = mp3Map.get(mp3handle).getMp3LoopNum();
 
         cpu.gpr[2] = loopNum;
     }

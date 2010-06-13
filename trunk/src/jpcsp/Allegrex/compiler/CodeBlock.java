@@ -144,7 +144,18 @@ public class CodeBlock {
 
 	@SuppressWarnings("unchecked")
 	private Class<IExecutable> loadExecutable(CompilerContext context, String className, byte[] bytes) {
-    	return (Class<IExecutable>) context.getClassLoader().defineClass(className, bytes);
+        try {
+            // Try to define a new class for this executable.
+            return (Class<IExecutable>)context.getClassLoader().defineClass(className, bytes);
+        } catch (LinkageError le) {
+            // If the class already exists, try finding it in this context.
+            try {
+                return (Class<IExecutable>)context.getClassLoader().findClass(className);
+            } catch (ClassNotFoundException cnfe) {
+                // Return null if none of the above work.
+                return null;
+            }
+        }
 	}
 
 	private void addConstructor(ClassVisitor cv) {
