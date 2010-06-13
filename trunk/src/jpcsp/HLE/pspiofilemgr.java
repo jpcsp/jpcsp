@@ -494,7 +494,7 @@ public class pspiofilemgr {
             // Go to wait state
             int timeout = 0;
             boolean forever = true;
-            threadMan.hleKernelThreadWait(currentThread, currentThread.wait, timeout, forever);
+            threadMan.hleKernelThreadWait(currentThread, timeout, forever);
 
             // Wait on a specific file uid
             currentThread.wait.waitingOnIo = true;

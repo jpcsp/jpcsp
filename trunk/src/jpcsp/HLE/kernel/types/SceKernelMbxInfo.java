@@ -18,28 +18,19 @@ package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.Memory;
-import jpcsp.util.Utilities;
 
-public class SceKernelMbxInfo {
+public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
     //Mbx info
     public int size;
     public String name;
     public int attr;
     public int numWaitThreads;
-    public int numMessages;
-    public int firstMessage_addr;
-
-    //Mbx message info
-    //Header (SceKernelMsgPacket in pspsdk seems to be wrong)
-    public int unk;
-    public int msgTextAddr;
-
-    //Message
-    public String msgText;
+    private int numMessages;
+    private int firstMessage_addr;
 
     // Internal info
     public final int uid;
-    public boolean hasNewMessage = false;
+    public int lastMessage_addr;
 
     public SceKernelMbxInfo(String name, int attr) {
         this.name = name;
@@ -48,44 +39,80 @@ public class SceKernelMbxInfo {
         this.numWaitThreads = 0;
         this.numMessages = 0;
         this.firstMessage_addr = 0;
+        this.lastMessage_addr = 0;
 
         this.uid = SceUidManager.getNewUid("ThreadMan-Mbx");
     }
 
-    public void read(Memory mem, int address) {
-        size                    = mem.read32(address);
-        name                    = Utilities.readStringNZ(mem, address + 4, 32);
-        attr                    = mem.read32(address + 36);
-        numWaitThreads          = mem.read32(address + 40);
-        numMessages             = mem.read32(address + 44);
-        firstMessage_addr       = mem.read32(address + 48);
+	@Override
+	protected void read() {
+		size = read32();
+		setMaxSize(size);
+		name = readStringNZ(32);
+		attr = read32();
+		numWaitThreads = read32();
+		numMessages = read32();
+		firstMessage_addr = read32();
+	}
+
+	@Override
+	protected void write() {
+		setMaxSize(size);
+		write32(size);
+		writeStringNZ(32, name);
+		write32(attr);
+		write32(numWaitThreads);
+		write32(numMessages);
+		write32(firstMessage_addr);
+	}
+
+	@Override
+	public int sizeof() {
+		return size;
+	}
+
+    public int removeMsg(Memory mem) {
+    	int msgAddr = firstMessage_addr;
+
+    	if (msgAddr != 0) {
+    		SceKernelMsgPacket packet = new SceKernelMsgPacket();
+    		packet.read(mem, msgAddr);
+    		firstMessage_addr = packet.nextMsgPacketAddr;
+    		if (firstMessage_addr == 0) {
+    			lastMessage_addr = 0;
+    		}
+    		packet.nextMsgPacketAddr = 0;
+    		packet.write(mem);
+
+    		numMessages--;
+    	}
+
+    	return msgAddr;
     }
 
-    public void write(Memory mem, int address) {
-        mem.write32(address, size);
-        Utilities.writeStringNZ(mem, address + 4, 32, name);
-        mem.write32(address + 36, attr);
-        mem.write32(address + 40, numWaitThreads);
-        mem.write32(address + 44, numMessages);
-        mem.write32(address + 48, firstMessage_addr);
+    public void addMsg(Memory mem, int msgAddr) {
+    	if (msgAddr != 0) {
+    		SceKernelMsgPacket packet = new SceKernelMsgPacket();
+    		packet.read(mem, msgAddr);
+    		packet.nextMsgPacketAddr = 0;
+    		packet.write(mem);
+
+    		if (lastMessage_addr == 0) {
+    			firstMessage_addr = msgAddr;
+    			lastMessage_addr = msgAddr;
+    		} else {
+    			SceKernelMsgPacket lastPacket = new SceKernelMsgPacket();
+    			lastPacket.read(mem, lastMessage_addr);
+    			lastPacket.nextMsgPacketAddr = msgAddr;
+    			lastPacket.write(mem);
+    			lastMessage_addr = msgAddr;
+    		}
+
+    		numMessages++;
+    	}
     }
 
-    public void storeMsg(Memory mem, int address) {
-        unk             = mem.read32(address);
-        msgTextAddr     = mem.read32(address + 4);
-
-        if(msgTextAddr != 0)
-            msgText         = Utilities.readStringNZ(msgTextAddr, 32);
-        else
-            msgText = "";
-
-        hasNewMessage = true;
-    }
-    public boolean checkMbxNewMessage() {
-        if(hasNewMessage) {
-            hasNewMessage = false;
-            return true;
-        }
-        return false;
+    public boolean hasMessage() {
+    	return numMessages > 0;
     }
 }

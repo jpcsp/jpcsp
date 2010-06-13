@@ -247,7 +247,7 @@ public class SemaManager {
                 currentThread.waitId = semaid;
 
                 // Go to wait state
-                threadMan.hleKernelThreadWait(currentThread, currentThread.wait, micros, (timeout_addr == 0));
+                threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
 
                 // Wait on a specific semaphore
                 currentThread.wait.waitingOnSemaphore = true;

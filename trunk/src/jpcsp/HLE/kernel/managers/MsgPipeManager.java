@@ -286,7 +286,7 @@ public class MsgPipeManager {
                     currentThread.waitId = uid;
 
                     // Go to wait state
-                    threadMan.hleKernelThreadWait(currentThread, currentThread.wait, micros, (timeout_addr == 0));
+                    threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
 
                     // Wait on a specific XXX
                     currentThread.wait.waitingOnMsgPipeSend = true;
@@ -371,15 +371,12 @@ public class MsgPipeManager {
 
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
-                    // Do callbacks?
-                    currentThread.doCallbacks = doCallbacks;
-
                     // wait type
                     currentThread.waitType = PSP_WAIT_MSGPIPE;
                     currentThread.waitId = uid;
 
                     // Go to wait state
-                    threadMan.hleKernelThreadWait(currentThread, currentThread.wait, micros, (timeout_addr == 0));
+                    threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
 
                     // Wait on a specific XXX
                     currentThread.wait.waitingOnMsgPipeReceive = true;

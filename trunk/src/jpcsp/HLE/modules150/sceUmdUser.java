@@ -265,7 +265,7 @@ public class sceUmdUser implements HLEModule {
             currentThread.waitType = SceKernelThreadInfo.PSP_WAIT_MISC;
 
             // Go to wait state
-            threadMan.hleKernelThreadWait(currentThread, currentThread.wait, timeout, !doTimeout);
+            threadMan.hleKernelThreadWait(currentThread, timeout, !doTimeout);
 
             // Wait on a specific umdStat
             currentThread.wait.waitingOnUmd = true;

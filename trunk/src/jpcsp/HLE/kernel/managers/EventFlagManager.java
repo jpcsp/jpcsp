@@ -309,7 +309,7 @@ public class EventFlagManager {
                 currentThread.waitId = uid;
 
                 // Wait on a specific event flag
-                threadMan.hleKernelThreadWait(currentThread, currentThread.wait, micros, (timeout_addr == 0));
+                threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
 
                 currentThread.wait.waitingOnEventFlag = true;
                 currentThread.wait.EventFlag_id = uid;
