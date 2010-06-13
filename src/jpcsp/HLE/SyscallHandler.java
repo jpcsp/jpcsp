@@ -514,7 +514,9 @@ public class SyscallHandler {
                 case 0x20b5:
                     psputils.getInstance().sceKernelDcacheInvalidateRange(gpr[4], gpr[5]);
                     break;
-		// sceKernelIcacheInvalidateRange(0x20b6),
+                case 0x20b6:
+                    psputils.getInstance().sceKernelIcacheInvalidateRange(gpr[4], gpr[5]);
+                    break;
 		// sceKernelUtilsMd5Digest(0x20b7),
 		// sceKernelUtilsMd5BlockInit(0x20b8),
 		// sceKernelUtilsMd5BlockUpdate(0x20b9),
@@ -558,7 +560,9 @@ public class SyscallHandler {
                     break;
 		// sceKernelDcacheProbe(0x20ca),
 		// sceKernelDcacheReadTag(0x20cb),
-		// sceKernelIcacheInvalidateAll(0x20cc),
+                case 0x20cc:
+                    psputils.getInstance().sceKernelIcacheInvalidateAll();
+                    break;
 		// sceKernelIcacheProbe(0x20cd),
 		// sceKernelIcacheReadTag(0x20ce),
 		// sceKernelLoadModule(0x20cf),

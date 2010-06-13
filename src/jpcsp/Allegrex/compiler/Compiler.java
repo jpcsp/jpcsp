@@ -166,6 +166,11 @@ public class Compiler implements ICompiler {
 		nativeCodeManager.reset();
 	}
 
+    public void invalidateAll() {
+        // Simply generate a new class loader.
+        classLoader = new CompilerClassLoader(this);
+    }
+
 	private void Initialise() {
 		mem = Memory.getInstance();
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();

@@ -882,6 +882,14 @@ public class RuntimeContext {
     	}
     }
 
+    public static void invalidateAll() {
+        if (isActive) {
+    		log.debug("RuntimeContext.invalidateAll");
+            codeBlocks.clear();
+            Compiler.getInstance().invalidateAll();
+    	}
+    }
+
     public static void instructionTypeCount(Instruction insn) {
     	int count = 0;
     	if (instructionTypeCounts.containsKey(insn)) {
