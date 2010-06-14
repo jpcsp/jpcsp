@@ -146,9 +146,14 @@ public class CodeBlock {
 	private Class<IExecutable> loadExecutable(CompilerContext context, String className, byte[] bytes) {
         try {
             // Try to define a new class for this executable.
-            return (Class<IExecutable>)context.getClassLoader().defineClass(className, bytes);
+            return (Class<IExecutable>) context.getClassLoader().defineClass(className, bytes);
         } catch (LinkageError le) {
-            // If the class already exists, try finding it in this context.
+        	if (le instanceof ClassFormatError) {
+        		// This exception is catched by the Compiler
+        		throw le;
+        	}
+
+        	// If the class already exists, try finding it in this context.
             try {
                 return (Class<IExecutable>)context.getClassLoader().findClass(className);
             } catch (ClassNotFoundException cnfe) {
