@@ -128,6 +128,12 @@ public class psputils {
         // by calling this function.
         // Use the RuntimeContext to regenerate a compiling context
         // and restart from there.
+    	// This method only works for compiled code being called by
+    	//    JR   $rs
+    	// or
+    	//    JALR $rs, $rd
+    	// but not for compiled code being called by
+    	//    JAL xxxx
         RuntimeContext.invalidateAll();
         Modules.log.trace("sceKernelIcacheInvalidateAll");
     }
