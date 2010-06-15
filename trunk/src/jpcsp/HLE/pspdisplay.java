@@ -489,7 +489,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             prevFrameCount = frameCount;
             prevStatsTime = timeNow;
 
-            Emulator.setFpsTitle("averageFPS: " + String.format("%.1f", averageFPS) + " lastFPS: " + lastFPS);
+            Emulator.setFpsTitle(String.format("FPS: %d, averageFPS: %.1f", lastFPS, averageFPS));
         }
     }
 
