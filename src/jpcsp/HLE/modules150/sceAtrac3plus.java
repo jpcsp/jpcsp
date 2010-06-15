@@ -778,7 +778,9 @@ public class sceAtrac3plus implements HLEModule {
 
         Modules.log.warn(String.format("IGNORING: sceAtracGetInternalErrorInfo atracId=%d, errorAddr=0x%08x", atID, errorAddr));
 
-        mem.write32(errorAddr, 0);
+        // 0x80630024 - From sceAtracDecodeData. All ATRAC data is decoded.
+        // 0x80630009 - From sceAtracGetRemainFrame. All ATRAC data is loaded.
+        mem.write32(errorAddr, 0x80630009);
 
         cpu.gpr[2] = 0;
     }

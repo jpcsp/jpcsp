@@ -18,6 +18,7 @@ package jpcsp;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.io.File;
 
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
@@ -69,7 +70,7 @@ public abstract class Memory {
     			throw new OutOfMemoryError("Cannot allocate memory");
         	}
 
-        	if (useDebuggerMemory) {
+        	if (useDebuggerMemory || new File(DebuggerMemory.mBrkFilePath).exists()) {
         		DebuggerMemory.install();
         	}
 

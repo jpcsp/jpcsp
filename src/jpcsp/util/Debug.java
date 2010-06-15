@@ -34,7 +34,7 @@ public class Debug {
     public static void printFontbuffer(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, char c) {
         int fontBaseIndex = c * 8;
 
-        if(fontBaseIndex > Font.font.length)
+        if(fontBaseIndex >= Font.font.length)
             fontBaseIndex = '?' * 8;
 
         for (int i = 0; i < Font.charHeight; i++) {
