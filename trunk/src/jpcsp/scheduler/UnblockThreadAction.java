@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.scheduler;
 
-import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 
 public class UnblockThreadAction implements IAction {
@@ -28,6 +28,6 @@ public class UnblockThreadAction implements IAction {
 
 	@Override
 	public void execute() {
-		ThreadMan.getInstance().hleUnblockThread(threadId);
+		Modules.ThreadManForUserModule.hleUnblockThread(threadId);
 	}
 }

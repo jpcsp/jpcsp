@@ -43,6 +43,7 @@ import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.scheduler.UnblockThreadAction;
@@ -1022,7 +1023,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     private void blockCurrentThreadOnVblank(boolean doCallbacks) {
         // Block the current thread
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         int threadId = threadMan.getCurrentThreadID();
         if (doCallbacks) {
         	threadMan.hleBlockCurrentThreadCB();

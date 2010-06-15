@@ -23,7 +23,7 @@ import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.pspSysMem;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.util.Utilities;
@@ -205,7 +205,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         // We'll hook "jr $ra" where $ra == address of HLE syscall hleKernelExitThread
         // when the thread is exiting
-        cpuContext.gpr[31] = ThreadMan.THREAD_EXIT_HANDLER_ADDRESS; // $ra
+        cpuContext.gpr[31] = ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS; // $ra
 
         doDelete = false;
         doCallbacks = false;

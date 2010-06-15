@@ -19,7 +19,7 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.Memory;
 import jpcsp.util.Utilities;
 
-import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
 public class SceKernelCallbackInfo {
@@ -72,11 +72,11 @@ public class SceKernelCallbackInfo {
         notifyCount = 0;
         notifyArg = 0;
 
-        ThreadMan.getInstance().executeCallback(thread, callback_addr, afterAction, registerA0, registerA1, registerA2);
+        Modules.ThreadManForUserModule.executeCallback(thread, callback_addr, afterAction, registerA0, registerA1, registerA2);
     }
 
 	@Override
 	public String toString() {
-		return String.format("name:'%s', thread:'%s', PC:%08X, $a0:%08X, $a1: %08X, $a2: %08X", name, ThreadMan.getInstance().getThreadName(threadId), callback_addr, notifyCount, notifyArg, callback_arg_addr);
+		return String.format("name:'%s', thread:'%s', PC:%08X, $a0:%08X, $a1: %08X, $a2: %08X", name, Modules.ThreadManForUserModule.getThreadName(threadId), callback_addr, notifyCount, notifyArg, callback_arg_addr);
 	}
 }

@@ -29,7 +29,6 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
@@ -426,7 +425,7 @@ public class sceAudio implements HLEModule, HLEThread {
         for (int channel = 0; channel < pspchannels.length; channel++) {
             if (pspchannels[channel].waitingThreadId >= 0) {
                 if (!pspchannels[channel].isOutputBlocking()) {
-                	ThreadMan threadMan = ThreadMan.getInstance();
+                	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 	int waitingThreadId = pspchannels[channel].waitingThreadId;
                 	SceKernelThreadInfo waitingThread = threadMan.getThreadById(waitingThreadId);
                 	if (waitingThread != null) {
@@ -611,7 +610,7 @@ public class sceAudio implements HLEModule, HLEThread {
                 Modules.log.debug(String.format("sceAudioOutputBlocking 0x%08X", pvoid_buf));
             }
 
-        	ThreadMan threadMan = ThreadMan.getInstance();
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
             	if (Modules.log.isDebugEnabled()) {
             		Modules.log.debug("sceAudioOutputBlocking[not blocking] " + pspchannels[channel].toString());
@@ -672,7 +671,7 @@ public class sceAudio implements HLEModule, HLEThread {
                 Modules.log.debug(String.format("sceAudioOutputPannedBlocking 0x%08X", pvoid_buf));
             }
 
-        	ThreadMan threadMan = ThreadMan.getInstance();
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
 	            sceAudioChangeChannelVolume(channel, leftvol, rightvol);
 	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
@@ -882,7 +881,7 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioSRCOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-        ThreadMan threadMan = ThreadMan.getInstance();
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         int vol = cpu.gpr[4], buf = cpu.gpr[5];
 
@@ -927,7 +926,7 @@ public class sceAudio implements HLEModule, HLEThread {
         System.out.println("Unimplemented NID function sceAudioInputBlocking [0x086E5895]");
 
         cpu.gpr[2] = -1;
-        ThreadMan.getInstance().hleRescheduleCurrentThread();
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     }
 
     public void sceAudioInput(Processor processor) {

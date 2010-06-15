@@ -25,8 +25,8 @@ import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
 import jpcsp.HLE.pspiofilemgr;
@@ -75,13 +75,13 @@ public class Emulator implements Runnable {
         Compiler.exit();
         RuntimeContext.exit();
         Profiler.exit();
-        if (ThreadMan.getInstance().statistics != null && pspdisplay.getInstance().statistics != null) {
+        if (Modules.ThreadManForUserModule.statistics != null && pspdisplay.getInstance().statistics != null) {
             long totalMillis = getClock().milliTime();
             long displayMillis = pspdisplay.getInstance().statistics.cumulatedTimeMillis;
             long syscallMillis = SyscallHandler.durationStatistics.cumulatedTimeMillis;
             long idleMillis = RuntimeContext.idleDuration.cumulatedTimeMillis;
             long cpuMillis = totalMillis - displayMillis - syscallMillis - idleMillis;
-            long cpuCycles = ThreadMan.getInstance().statistics.allCycles;
+            long cpuCycles = Modules.ThreadManForUserModule.statistics.allCycles;
             double totalSecs = totalMillis / 1000.0;
             double displaySecs = displayMillis / 1000.0;
             double syscallSecs = syscallMillis / 1000.0;
@@ -160,7 +160,7 @@ public class Emulator implements Runnable {
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
+        Modules.ThreadManForUserModule.Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
         psputils.getInstance().Initialise();
         pspge.getInstance().Initialise();
         pspdisplay.getInstance().Initialise();
@@ -230,7 +230,7 @@ public class Emulator implements Runnable {
             } else {
                 processor.step();
                 pspge.getInstance().step();
-                ThreadMan.getInstance().step();
+                Modules.ThreadManForUserModule.step();
                 scheduler.step();
                 pspdisplay.getInstance().step();
                 HLEModuleManager.getInstance().step();
@@ -263,8 +263,8 @@ public class Emulator implements Runnable {
             mainThread.start();
         }
 
-        jpcsp.HLE.pspdisplay.getInstance().setGeDirty(true);
-        jpcsp.HLE.ThreadMan.getInstance().clearSyscallFreeCycles();
+        pspdisplay.getInstance().setGeDirty(true);
+        Modules.ThreadManForUserModule.clearSyscallFreeCycles();
 
         gui.RefreshButtons();
         if (State.debugger != null)

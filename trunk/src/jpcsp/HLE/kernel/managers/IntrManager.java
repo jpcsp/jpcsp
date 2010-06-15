@@ -23,7 +23,6 @@ import java.util.Vector;
 
 import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.interrupts.AbstractAllegrexInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.AbstractInterruptHandler;
@@ -220,7 +219,7 @@ public class IntrManager {
 		allegrexInterruptHandlers.clear();
 
 		// Schedule to a thread having a higher priority if one is ready to run
-		ThreadMan.getInstance().hleRescheduleCurrentThread();
+		Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
 		onInterruptsEnabled();
 	}
 
@@ -238,7 +237,7 @@ public class IntrManager {
 						Modules.log.debug("Calling InterruptHandler " + allegrexInterruptHandler.toString());
 					}
 					allegrexInterruptHandler.copyArgumentsToCpu(Emulator.getProcessor().cpu);
-					ThreadMan.getInstance().callAddress(allegrexInterruptHandler.getAddress(), continueAction);
+					Modules.ThreadManForUserModule.callAddress(allegrexInterruptHandler.getAddress(), continueAction);
 					somethingExecuted = true;
 				}
 			} else {

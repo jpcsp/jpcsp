@@ -4,6 +4,7 @@ import jpcsp.*;
 //import jpcsp.Allegrex.*;
 import jpcsp.HLE.*;
 import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.modules.ThreadManForUser;
 
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
@@ -107,7 +108,7 @@ public class DumpDebugState
 
     public static void dumpThreads()
     {
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();)
         {
@@ -133,7 +134,7 @@ public class DumpDebugState
     private static boolean isGameLoaded()
     {
         // HACK
-        return ThreadMan.getInstance().getCurrentThreadID() != -1;
+        return Modules.ThreadManForUserModule.getCurrentThreadID() != -1;
     }
 
     private static void log(String msg)

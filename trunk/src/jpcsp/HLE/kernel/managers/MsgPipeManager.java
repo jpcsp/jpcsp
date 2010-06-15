@@ -24,9 +24,9 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.util.Utilities;
@@ -107,7 +107,7 @@ public class MsgPipeManager {
         Memory mem = Memory.getInstance();
 
         // Find threads waiting on this XXX and wake them up
-        ThreadMan threadMan = ThreadMan.getInstance();
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
@@ -131,7 +131,7 @@ public class MsgPipeManager {
         Memory mem = Memory.getInstance();
 
         // Find threads waiting on this XXX and wake them up
-        ThreadMan threadMan = ThreadMan.getInstance();
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
@@ -272,7 +272,7 @@ public class MsgPipeManager {
                 + " max 0x" + Integer.toHexString(info.bufSize));
             cpu.gpr[2] = ERROR_ILLEGAL_SIZE;
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!trySendMsgPipe(mem, info, msg_addr, size)) {
                 if (!poll) {
                     // Failed, but it's ok, just wait a little
@@ -362,7 +362,7 @@ public class MsgPipeManager {
                 + " max 0x" + Integer.toHexString(info.bufSize));
             cpu.gpr[2] = ERROR_ILLEGAL_SIZE;
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!tryReceiveMsgPipe(mem, info, msg_addr, size, waitMode, resultSize_addr)) {
                 if (!poll) {
                     // Failed, but it's ok, just wait a little
@@ -438,7 +438,7 @@ public class MsgPipeManager {
             info.numReceiveWaitThreads = 0;
 
             // Find threads waiting on this XXX and wake them up
-            ThreadMan threadMan = ThreadMan.getInstance();
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
                 SceKernelThreadInfo thread = it.next();
 

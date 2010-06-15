@@ -27,7 +27,6 @@ import java.util.Random;
 import java.util.TimeZone;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -915,7 +914,7 @@ public class sceMpeg implements HLEModule {
             		Modules.log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcCurrentTimestamp + " - " + mpegAtracCurrentTimestamp);
             	}
                 cpu.gpr[2] = 0x80618001; // no video data in ring buffer (actual name unknown)
-                ThreadMan.getInstance().hleRescheduleCurrentThread();
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the timestamp.
                 mem.write32(au_addr, 0x00000001); // Looks like it just can't be -1.
@@ -1031,7 +1030,7 @@ public class sceMpeg implements HLEModule {
             		Modules.log.info("sceMpegGetAtracAu audio ahead of video: " + mpegAtracCurrentTimestamp + " - " + mpegAvcCurrentTimestamp);
             	}
                 cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
-                ThreadMan.getInstance().hleRescheduleCurrentThread();
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the timestamp.
                 mem.write32(au_addr, 0x00000001);
@@ -1131,7 +1130,7 @@ public class sceMpeg implements HLEModule {
                 if (Modules.log.isDebugEnabled()) {
                     Modules.log.debug("Delaying sceMpegAvcDecode for " + delayMillis + "ms");
                 }
-                ThreadMan.getInstance().hleKernelDelayThread(delayMillis * 1000, false);
+                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
                 lastAvcSystemTime = currentSystemTime + delayMillis;
             } else {
                 lastAvcSystemTime = currentSystemTime;
@@ -1514,7 +1513,7 @@ public class sceMpeg implements HLEModule {
             if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
                 int delayMillis = avcDecodeDelay - elapsedTime;
                 Modules.log.info("Delaying sceMpegAvcCsc for " + delayMillis + "ms");
-                ThreadMan.getInstance().hleKernelDelayThread(delayMillis * 1000, false);
+                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
                 lastAvcSystemTime = currentSystemTime + delayMillis;
             } else {
                 lastAvcSystemTime = currentSystemTime;
@@ -1628,7 +1627,7 @@ public class sceMpeg implements HLEModule {
                 if (Modules.log.isDebugEnabled()) {
                     Modules.log.debug("Delaying sceMpegAtracDecode for " + delayMillis + "ms");
                 }
-                ThreadMan.getInstance().hleKernelDelayThread(delayMillis * 1000, false);
+                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
                 lastAtracSystemTime = currentSystemTime + delayMillis;
             } else {
                 lastAtracSystemTime = currentSystemTime;
@@ -1786,7 +1785,7 @@ public class sceMpeg implements HLEModule {
         // testing:
         if (testChainedCallback) {
             testChainedCallback = false;
-			ThreadMan.getInstance().executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, 32, ringbuffer.callback_args);
+            Modules.ThreadManForUserModule.executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, 32, ringbuffer.callback_args);
         }
     }
 
@@ -1810,7 +1809,7 @@ public class sceMpeg implements HLEModule {
 
             int numberPackets = Math.min(available, numPackets);
             // we don't actually care about the first argument (data), so we always pass the same address instead of implementing a real ring buffer
-            ThreadMan.getInstance().executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, numberPackets, ringbuffer.callback_args);
+            Modules.ThreadManForUserModule.executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, numberPackets, ringbuffer.callback_args);
 			// When using the compiler: the callback has been already executed
 			// (and hleMpegRingbufferPostPut() as well) when we return here
         }

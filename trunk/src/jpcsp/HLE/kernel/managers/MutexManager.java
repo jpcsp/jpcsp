@@ -21,10 +21,10 @@ import java.util.Iterator;
 
 import jpcsp.HLE.kernel.types.SceKernelMutexInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -117,7 +117,7 @@ public class MutexManager {
         mutexMap.put(info.uid, info);
 
         info.locked = count;
-        info.threadid = jpcsp.HLE.ThreadMan.getInstance().getCurrentThreadID();
+        info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
 
         cpu.gpr[2] = info.uid;
     }
@@ -165,7 +165,7 @@ public class MutexManager {
             Modules.log.warn(message + " - unknown UID");
             cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
             boolean allowSameThread = false;
@@ -250,7 +250,7 @@ public class MutexManager {
             return;
         }
 
-        for (Iterator<SceKernelThreadInfo> it = ThreadMan.getInstance().iterator(); it.hasNext(); ) {
+        for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
             // We're assuming if waitingOnMutex is set then thread.status = waiting
@@ -267,7 +267,7 @@ public class MutexManager {
                 thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
 
                 // Wakeup
-                ThreadMan.getInstance().hleChangeThreadState(thread, PSP_THREAD_READY);
+                Modules.ThreadManForUserModule.hleChangeThreadState(thread, PSP_THREAD_READY);
 
                 Modules.log.info("wakeWaitMutexThreads(multiple=" + wakeMultiple + ") mutex:'" + info.name + "' waking thread:'" + thread.name + "'");
                 handled = true;
@@ -382,7 +382,7 @@ public class MutexManager {
         mutexMap.put(info.uid, info);
 
         info.locked = count;
-        info.threadid = jpcsp.HLE.ThreadMan.getInstance().getCurrentThreadID();
+        info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
 
         cpu.gpr[2] = info.uid;  //TODO: Check if this is still needed.
 

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.Managers;
@@ -347,7 +346,7 @@ public class ModuleMgrForUser implements HLEModule {
         	}
             cpu.gpr[2] = sceModule.modid; // return the module id
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (mem.isAddressGood(sceModule.entry_addr)) {
                 if (mem.isAddressGood(status_addr)) {
                     mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
@@ -433,7 +432,7 @@ public class ModuleMgrForUser implements HLEModule {
             + ",argp_addr=0x" + Integer.toHexString(argp_addr)
             + ",status_addr=0x" + Integer.toHexString(status_addr)
             + ",options_addr=0x" + Integer.toHexString(options_addr) +
-            ") current thread:'" + ThreadMan.getInstance().getCurrentThread().name + "'");
+            ") current thread:'" + Modules.ThreadManForUserModule.getCurrentThread().name + "'");
 
         // TODO see if the current thread belongs to the root module,
         // we can get root module from Emulator.getInstance().module.
@@ -461,7 +460,7 @@ public class ModuleMgrForUser implements HLEModule {
             + ",argp_addr=0x" + Integer.toHexString(argp_addr)
             + ",status_addr=0x" + Integer.toHexString(status_addr)
             + ",options_addr=0x" + Integer.toHexString(options_addr) +
-            ") current thread:'" + ThreadMan.getInstance().getCurrentThread().name + "'");
+            ") current thread:'" + Modules.ThreadManForUserModule.getCurrentThread().name + "'");
 
 
         Modules.log.info("Program exit detected (sceKernelStopUnloadSelfModuleWithStatus)");
@@ -534,12 +533,13 @@ public class ModuleMgrForUser implements HLEModule {
     }
 
     public void sceKernelGetModuleId(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
-        int moduleid = ThreadMan.getInstance().getCurrentThread().moduleid;
+        int moduleid = Modules.ThreadManForUserModule.getCurrentThread().moduleid;
 
-        Modules.log.debug("sceKernelGetModuleId returning 0x" + Integer.toHexString(moduleid));
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceKernelGetModuleId returning 0x" + Integer.toHexString(moduleid));
+        }
 
         cpu.gpr[2] = moduleid;
     }

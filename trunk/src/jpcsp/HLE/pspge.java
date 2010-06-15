@@ -37,6 +37,7 @@ import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.HLE.kernel.types.interrupts.GeCallbackInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.GeInterruptHandler;
+import jpcsp.HLE.modules.ThreadManForUser;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
@@ -118,11 +119,11 @@ public class pspge {
 
     /** call from main emulation thread */
     public void step() {
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         for (Integer thid = deferredThreadWakeupQueue.poll(); thid != null; thid = deferredThreadWakeupQueue.poll()) {
         	if (VideoEngine.log.isDebugEnabled()) {
-        		VideoEngine.log.debug("really waking thread " + Integer.toHexString(thid) + "(" + ThreadMan.getInstance().getThreadName(thid) + ")");
+        		VideoEngine.log.debug("really waking thread " + Integer.toHexString(thid) + "(" + threadMan.getThreadName(thid) + ")");
         	}
             threadMan.hleUnblockThread(thid);
         }
@@ -338,7 +339,7 @@ public class pspge {
     }
 
     private void blockCurrentThreadOnList(PspGeList list, IAction action) {
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         list.thid = threadMan.getCurrentThreadID();
 
         if (list.isDone()) {
@@ -393,7 +394,7 @@ public class pspge {
 	    				VideoEngine.log.debug("sceGeDrawSync all lists completed, not waiting");
 	    			}
 	    			hleGeAfterDrawSyncAction();
-	    			ThreadMan.getInstance().hleRescheduleCurrentThread();
+	    			Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
 	    		}
         	}
     	} else if (mode == 1) {
@@ -445,7 +446,7 @@ public class pspge {
                               + ", result cbid=" + Integer.toHexString(cbid));
         }
 
-        ThreadMan threadMan = ThreadMan.getInstance();
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
         SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
         signalCallbacks.put(cbid, callbackSignal);
@@ -459,7 +460,7 @@ public class pspge {
     		Modules.log.debug("sceGeUnsetCallback cbid=" + Integer.toHexString(cbid));
     	}
 
-    	ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
         SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
         if (callbackSignal != null) {
