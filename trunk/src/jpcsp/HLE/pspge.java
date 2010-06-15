@@ -361,7 +361,7 @@ public class pspge {
     }
 
     // sceGeDrawSync is resetting all the lists having status PSP_GE_LIST_DONE
-    private void hleGeAfterDrawSyncAction() {
+    private synchronized void hleGeAfterDrawSyncAction() {
     	for (int i = 0; i < NUMBER_GE_LISTS; i++) {
     		if (allGeLists[i].status == PSP_GE_LIST_DONE) {
     			allGeLists[i].reset();
@@ -369,7 +369,9 @@ public class pspge {
     	}
     }
 
-    public synchronized void sceGeDrawSync(int mode) {
+    // sceGeDrawSync cannot be synchronized because it can block the
+    // current thread and trigger callbacks while keeping the lock
+    public void sceGeDrawSync(int mode) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
     	if (VideoEngine.log.isDebugEnabled()) {
