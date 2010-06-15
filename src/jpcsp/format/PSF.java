@@ -18,8 +18,9 @@ package jpcsp.format;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.LinkedList;
+
+import jpcsp.util.Utilities;
 
 import static jpcsp.util.Utilities.*;
 
@@ -106,7 +107,7 @@ public class PSF {
                     byte[] s = new byte[pair.dataSize];
                     f.get(s);
                     // Strip trailing null character
-                    pair.data = new String(s, 0, s[s.length - 1] == '\0' ? s.length - 1 : s.length, "UTF-8");
+                    pair.data = new String(s, 0, s[s.length - 1] == '\0' ? s.length - 1 : s.length, Utilities.charset);
 
                     //System.out.println(String.format("offset=%08X key='%s' string '%s' [len=%d]",
                     //    keyTableOffset + pair.keyOffset, pair.key, pair.data, pair.dataSize));
@@ -169,7 +170,7 @@ public class PSF {
 
                 case PSF_DATA_TYPE_STRING:
                     String s = (String)pair.data;
-                    f.put(s.getBytes(Charset.forName("UTF-8")));
+                    f.put(s.getBytes(Utilities.charset));
                     writeByte(f, (byte)0);
                     break;
 
@@ -230,7 +231,7 @@ public class PSF {
     }
 
     public void put(String key, String data, int rawlen) {
-        byte[] b = (byte[])(data.getBytes(Charset.forName("UTF-8")));
+        byte[] b = (byte[])(data.getBytes(Utilities.charset));
 
         //if (b.length != data.length())
         //    System.out.println("put string '" + data + "' size mismatch. UTF-8=" + b.length + " regular=" + (data.length() + 1));
@@ -245,7 +246,7 @@ public class PSF {
     }
 
     public void put(String key, String data) {
-        byte[] b = (byte[])(data.getBytes(Charset.forName("UTF-8")));
+        byte[] b = (byte[])(data.getBytes(Utilities.charset));
         //int rawlen = data.length() + 1;
         int rawlen = b.length + 1;
 
