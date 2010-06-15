@@ -19,7 +19,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
@@ -531,7 +530,7 @@ public class LoadCoreForKernel implements HLEModule {
         }
 
         // we still execute the function normally, so user can click run again
-        if (!ThreadMan.getInstance().isKernelMode()) {
+        if (!Modules.ThreadManForUserModule.isKernelMode()) {
             Modules.log.error("kernel mode required (sceKernelFindModuleByName)");
             Emulator.PauseEmu();
         }
@@ -555,7 +554,7 @@ public class LoadCoreForKernel implements HLEModule {
         }
 
         // we still execute the function normally, so user can click run again
-        if (!ThreadMan.getInstance().isKernelMode()) {
+        if (!Modules.ThreadManForUserModule.isKernelMode()) {
             Modules.log.error("kernel mode required (sceKernelFindModuleByAddress)");
             Emulator.PauseEmu();
         }
@@ -579,7 +578,7 @@ public class LoadCoreForKernel implements HLEModule {
         }
 
         // we still execute the function normally, so user can click run again
-        if (!ThreadMan.getInstance().isKernelMode()) {
+        if (!Modules.ThreadManForUserModule.isKernelMode()) {
             Modules.log.error("kernel mode required (sceKernelFindModuleByUID)");
             Emulator.PauseEmu();
         }

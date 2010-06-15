@@ -19,7 +19,6 @@ package jpcsp.HLE.modules271;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 
 import jpcsp.Processor;
 
@@ -96,7 +95,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
 
         cpu.gpr[2] = 0;
-        ThreadMan.getInstance().hleRescheduleCurrentThread();
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     }
 
     public void sceUtilityUnloadAvModule(Processor processor) {
@@ -112,7 +111,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
 
         cpu.gpr[2] = 0;
-        ThreadMan.getInstance().hleRescheduleCurrentThread();
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     }
 
     public final HLEModuleFunction sceUtilityLoadAvModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadAvModule") {

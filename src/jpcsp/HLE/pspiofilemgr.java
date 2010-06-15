@@ -46,6 +46,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.types.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.HLE.kernel.managers.*;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.State;
 
@@ -199,7 +200,7 @@ public class pspiofilemgr {
     }
 
     private void doStepAsync(IoInfo info) {
-    	ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
     	if (info == null || !info.asyncPending) {
     		return;
@@ -237,7 +238,7 @@ public class pspiofilemgr {
 
     public void hleAsyncThread() {
     	CpuState cpu = Emulator.getProcessor().cpu;
-    	ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         int uid = cpu.gpr[asyncThreadRegisterArgument];
         if (Modules.log.isDebugEnabled()) {
@@ -269,7 +270,7 @@ public class pspiofilemgr {
         info.result = result;
 
         if (info.asyncThread == null) {
-        	ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
 	        // Inherit priority from current thread if no default priority set
 	        int asyncPriority = defaultAsyncPriority;
@@ -278,7 +279,7 @@ public class pspiofilemgr {
 	        }
 
 	        info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
-	                ThreadMan.ASYNC_LOOP_ADDRESS, asyncPriority, 0x2000,
+	                ThreadManForUser.ASYNC_LOOP_ADDRESS, asyncPriority, 0x2000,
 	                threadMan.getCurrentThread().attr, 0);
 
 	        // Copy uid to Async Thread argument register
@@ -484,7 +485,7 @@ public class pspiofilemgr {
             State.fileLogger.logIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
         }
 
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (info != null && wait) {
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
@@ -835,7 +836,7 @@ public class pspiofilemgr {
             	}
             	info.asyncThread.currentPriority = priority;
                 cpu.gpr[2] = 0;
-            	ThreadMan.getInstance().hleRescheduleCurrentThread();
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 Modules.log.warn("sceIoChangeAsyncPriority invalid fd=" + uid);
                 cpu.gpr[2] = -1;
@@ -851,7 +852,7 @@ public class pspiofilemgr {
             Modules.log.warn("sceIoSetAsyncCallback - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else {
-            if (ThreadMan.getInstance().hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
+            if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
                 info.cbid = cbid;
                 info.notifyArg = notifyArg;
                 info.asyncPending = true;
@@ -1430,7 +1431,7 @@ public class pspiofilemgr {
             {
                 Modules.log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
                 Memory mem = Memory.getInstance();
-                ThreadMan threadMan = ThreadMan.getInstance();
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
                 if (!device.equals("mscmhc0:")) {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
@@ -1454,7 +1455,7 @@ public class pspiofilemgr {
             {
                 Modules.log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
                 Memory mem = Memory.getInstance();
-                ThreadMan threadMan = ThreadMan.getInstance();
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
                 if (!device.equals("mscmhc0:")) {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
@@ -1511,7 +1512,7 @@ public class pspiofilemgr {
             {
                 Modules.log.debug("sceIoDevctl register memorystick insert/eject callback (fatms0)");
                 Memory mem = Memory.getInstance();
-                ThreadMan threadMan = ThreadMan.getInstance();
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
                 if (!device.equals("fatms0:")) {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS;
@@ -1531,7 +1532,7 @@ public class pspiofilemgr {
             {
                 Modules.log.debug("sceIoDevctl unregister memorystick insert/eject callback (fatms0)");
                 Memory mem = Memory.getInstance();
-                ThreadMan threadMan = ThreadMan.getInstance();
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
                 if (!device.equals("fatms0:")) {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS;

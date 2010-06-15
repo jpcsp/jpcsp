@@ -16,25 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules200;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 
-import jpcsp.Emulator;
-import jpcsp.MemoryMap;
-import jpcsp.Memory;
 import jpcsp.Processor;
-import static jpcsp.util.Utilities.*;
 
-import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.HLE.ThreadMan;
-import jpcsp.filesystems.umdiso.UmdIsoReader;
-
-import jpcsp.HLE.kernel.types.*;
-import jpcsp.HLE.kernel.managers.*;
+import jpcsp.Allegrex.CpuState;
 
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
 

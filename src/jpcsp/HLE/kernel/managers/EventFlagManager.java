@@ -24,8 +24,8 @@ import jpcsp.Memory;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
@@ -91,7 +91,7 @@ public class EventFlagManager {
 
     /** May yield, so call last/after setting gpr[2] */
     private void onEventFlagDeletedCancelled(int evid, int result) {
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -128,7 +128,7 @@ public class EventFlagManager {
 
     /** May yield, so call last/after setting gpr[2] */
     private void onEventFlagModified(SceKernelEventFlagInfo event) {
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -290,7 +290,7 @@ public class EventFlagManager {
             Modules.log.warn("hleKernelWaitEventFlag already another thread waiting on it");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_EVENT_FLAG_NO_MULTI_PERM;
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             Memory mem = Memory.getInstance();
             int micros = 0;
             if (mem.isAddressGood(timeout_addr)) {

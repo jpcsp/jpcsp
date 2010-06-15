@@ -24,9 +24,9 @@ import jpcsp.Memory;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
@@ -154,7 +154,7 @@ public class SemaManager {
                 Modules.log.warn("sceKernelDeleteSema numWaitThreads " + sema.numWaitThreads);
 
                 // Find threads waiting on this sema and wake them up
-                ThreadMan threadMan = ThreadMan.getInstance();
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
                     SceKernelThreadInfo thread = it.next();
 
@@ -225,7 +225,7 @@ public class SemaManager {
             Modules.log.warn("hleKernelWaitSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             Memory mem = Memory.getInstance();
             int micros = 0;
 
@@ -313,7 +313,7 @@ public class SemaManager {
             // and signal <= currentCount,
             // then wake up the thread and adjust currentCount.
             // repeat for all remaining threads or until currentCount = 0.
-            ThreadMan threadMan = ThreadMan.getInstance();
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext(); ) {
                 SceKernelThreadInfo thread = it.next();
 
@@ -407,7 +407,7 @@ public class SemaManager {
             sema.numWaitThreads = 0;
 
             // Find threads waiting on this sema and wake them up
-            ThreadMan threadMan = ThreadMan.getInstance();
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
                 SceKernelThreadInfo thread = it.next();
 

@@ -32,7 +32,6 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
@@ -192,11 +191,11 @@ public class sceFont implements HLEModule {
         }
 
         private void triggerAllocCallback(int size) {
-        	ThreadMan.getInstance().executeCallback(null, allocFuncAddr, new AfterAllocCallback(), unk1, size);
+        	Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterAllocCallback(), unk1, size);
         }
 
         private void triggerFreeCallback() {
-        	ThreadMan.getInstance().executeCallback(null, freeFuncAddr, null, unk1, getAllocBufferAddr());
+        	Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, unk1, getAllocBufferAddr());
         }
 
         private void read(int paramsAddr) {

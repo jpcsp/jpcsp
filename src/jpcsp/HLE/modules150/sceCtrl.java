@@ -25,7 +25,6 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -300,7 +299,7 @@ public class sceCtrl implements HLEModule {
         	}
 
 			hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive);
-			ThreadMan.getInstance().hleUnblockThread(wait.thread.uid);
+			Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
     	}
     }
 
@@ -415,7 +414,7 @@ public class sceCtrl implements HLEModule {
         	}
 
     		// No, wait for next sampling
-    		ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
     		SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
     		ThreadWaitingForSampling threadWaitingForSampling = new ThreadWaitingForSampling(currentThread, addr, count, positive);
     		threadsWaitingForSampling.add(threadWaitingForSampling);

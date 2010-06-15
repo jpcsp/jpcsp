@@ -68,6 +68,7 @@ public class HLEModuleManager {
      */
     private enum DefaultModule {
     	// Modules loaded by default in all firmware version...
+    	ThreadManForUser(Modules.ThreadManForUserModule),
         StdioForUser(Modules.StdioForUserModule),
         sceUmdUser(Modules.sceUmdUserModule),
         scePower(Modules.scePowerModule),

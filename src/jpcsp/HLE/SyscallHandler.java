@@ -45,7 +45,7 @@ public class SyscallHandler {
 	// Change this to return the number of cycles used?
     public static void syscall(int code) {
         int gpr[] = Emulator.getProcessor().cpu.gpr;
-        ThreadMan.getInstance().clearSyscallFreeCycles();
+        Modules.ThreadManForUserModule.clearSyscallFreeCycles();
 
         durationStatistics.start();
 
@@ -74,237 +74,6 @@ public class SyscallHandler {
 		//  case 0x2006: //sceKernelIsSubInterruptOccurred
 		//  case 0x2007: //QueryIntrHandlerInfo
 		//  case 0x2008: //sceKernelRegisterUserSpaceIntrStack
-		//  case 0x2009: //_sceKernelReturnFromCallback
-		//  case 0x200a: //sceKernelRegisterThreadEventHandler
-		//  case 0x200b: //sceKernelReleaseThreadEventHandler
-		//  case 0x200c: //sceKernelReferThreadEventHandlerStatus
-                case 0x200d:
-                    ThreadMan.getInstance().sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x200e:
-                    ThreadMan.getInstance().sceKernelDeleteCallback(gpr[4]);
-                    break;
-               // case 0x200f: //sceKernelNotifyCallback
-              //  case 0x2010: //sceKernelCancelCallback
-              //  case 0x2011: //sceKernelGetCallbackCount
-                case 0x2012:
-                    ThreadMan.getInstance().sceKernelCheckCallback();
-                    break;
-                case 0x2013:
-                    ThreadMan.getInstance().sceKernelReferCallbackStatus(gpr[4], gpr[5]);
-                    break;
-                case 0x2014:
-                    ThreadMan.getInstance().sceKernelSleepThread();
-                    break;
-                case 0x2015:
-                    ThreadMan.getInstance().sceKernelSleepThreadCB();
-                    break;
-                case 0x2016:
-                    ThreadMan.getInstance().sceKernelWakeupThread(gpr[4]);
-                    break;
-                case 0x2017:
-                	ThreadMan.getInstance().sceKernelCancelWakeupThread(gpr[4]);
-                	break;
-                case 0x2018:
-                    ThreadMan.getInstance().sceKernelSuspendThread(gpr[4]);
-                    break;
-                case 0x2019:
-                    ThreadMan.getInstance().sceKernelResumeThread(gpr[4]);
-                    break;
-                case 0x201a:
-                    ThreadMan.getInstance().sceKernelWaitThreadEnd(gpr[4], gpr[5]);
-                    break;
-                case 0x201b:
-                    ThreadMan.getInstance().sceKernelWaitThreadEndCB(gpr[4], gpr[5]);
-                    break;
-                case 0x201c:
-                    ThreadMan.getInstance().sceKernelDelayThread(gpr[4]);
-                    break;
-                case 0x201d:
-                    ThreadMan.getInstance().sceKernelDelayThreadCB(gpr[4]);
-                    break;
-                case 0x201e:
-                    ThreadMan.getInstance().sceKernelDelaySysClockThread(gpr[4]);
-                    break;
-                case 0x201f:
-                    ThreadMan.getInstance().sceKernelDelaySysClockThreadCB(gpr[4]);
-                    break;
-                case 0x2020:
-                    Managers.semas.sceKernelCreateSema(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-                    break;
-                case 0x2021:
-                    Managers.semas.sceKernelDeleteSema(gpr[4]);
-                    break;
-                case 0x2022:
-                    Managers.semas.sceKernelSignalSema(gpr[4], gpr[5]);
-                    break;
-                case 0x2023:
-                    Managers.semas.sceKernelWaitSema(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2024:
-                    Managers.semas.sceKernelWaitSemaCB(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2025:
-                    Managers.semas.sceKernelPollSema(gpr[4], gpr[5]);
-                    break;
-                case 0x2026:
-                    Managers.semas.sceKernelCancelSema(gpr[4]); // not in pspsdk, params guessed
-                    break;
-                case 0x2027:
-                    Managers.semas.sceKernelReferSemaStatus(gpr[4], gpr[5]);
-                    break;
-
-                case 0x2028:
-                    Managers.eventFlags.sceKernelCreateEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-                case 0x2029:
-                    Managers.eventFlags.sceKernelDeleteEventFlag(gpr[4]);
-                    break;
-                case 0x202a:
-                    Managers.eventFlags.sceKernelSetEventFlag(gpr[4], gpr[5]);
-                    break;
-                case 0x202b:
-                    Managers.eventFlags.sceKernelClearEventFlag(gpr[4], gpr[5]);
-                    break;
-                case 0x202c:
-                    Managers.eventFlags.sceKernelWaitEventFlag(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-                    break;
-                case 0x202d:
-                    Managers.eventFlags.sceKernelWaitEventFlagCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-                    break;
-                case 0x202e:
-                    Managers.eventFlags.sceKernelPollEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-                case 0x202f:
-                    Managers.eventFlags.sceKernelCancelEventFlag(gpr[4], gpr[5], gpr[6]); // not in pspsdk, params guessed
-                    break;
-                case 0x2030:
-                    Managers.eventFlags.sceKernelReferEventFlagStatus(gpr[4], gpr[5]);
-                    break;
-		        case 0x2031:
-                    Managers.mbx.sceKernelCreateMbx(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2032:
-                    Managers.mbx.sceKernelDeleteMbx(gpr[4]);
-                    break;
-                case 0x2033:
-                    Managers.mbx.sceKernelSendMbx(gpr[4], gpr[5]);
-                    break;
-                case 0x2034:
-                    Managers.mbx.sceKernelReceiveMbx(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2035:
-                    Managers.mbx.sceKernelReceiveMbxCB(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2036:
-                	Managers.mbx.sceKernelPollMbx(gpr[4], gpr[5]);
-                	break;
-                case 0x2037:
-                    Managers.mbx.sceKernelCancelReceiveMbx(gpr[4], gpr[5]);
-                    break;
-                case 0x2038:
-                    Managers.mbx.sceKernelReferMbxStatus(gpr[4], gpr[5]);
-                    break;
-                case 0x2039:
-                    Managers.msgPipes.sceKernelCreateMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-                    break;
-                case 0x203a:
-                    Managers.msgPipes.sceKernelDeleteMsgPipe(gpr[4]);
-                    break;
-                case 0x203b:
-                    Managers.msgPipes.sceKernelSendMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
-                    break;
-                case 0x203c:
-                    Managers.msgPipes.sceKernelSendMsgPipeCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
-                    break;
-                case 0x203d:
-                    Managers.msgPipes.sceKernelTrySendMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-                    break;
-                case 0x203e:
-                    Managers.msgPipes.sceKernelReceiveMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
-                    break;
-                case 0x203f:
-                    Managers.msgPipes.sceKernelReceiveMsgPipeCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
-                    break;
-                case 0x2040:
-                    Managers.msgPipes.sceKernelTryReceiveMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-                    break;
-                case 0x2041:
-                    Managers.msgPipes.sceKernelCancelMsgPipe(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2042:
-                    Managers.msgPipes.sceKernelReferMsgPipeStatus(gpr[4], gpr[5]);
-                    break;
-                case 0x2043:
-                    Managers.vpl.sceKernelCreateVpl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-                    break;
-                case 0x2044:
-                    Managers.vpl.sceKernelDeleteVpl(gpr[4]);
-                    break;
-                case 0x2045:
-                    Managers.vpl.sceKernelAllocateVpl(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-                case 0x2046:
-                    Managers.vpl.sceKernelAllocateVplCB(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-                case 0x2047:
-                    Managers.vpl.sceKernelTryAllocateVpl(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2048:
-                    Managers.vpl.sceKernelFreeVpl(gpr[4], gpr[5]);
-                    break;
-                case 0x2049:
-                    Managers.vpl.sceKernelCancelVpl(gpr[4], gpr[5]);
-                    break;
-                case 0x204a:
-                    Managers.vpl.sceKernelReferVplStatus(gpr[4], gpr[5]);
-                    break;
-                case 0x204b:
-                    Managers.fpl.sceKernelCreateFpl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
-                    break;
-                case 0x204c:
-                    Managers.fpl.sceKernelDeleteFpl(gpr[4]);
-                    break;
-                case 0x204d:
-                    Managers.fpl.sceKernelAllocateFpl(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x204e:
-                    Managers.fpl.sceKernelAllocateFplCB(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x204f:
-                    Managers.fpl.sceKernelTryAllocateFpl(gpr[4], gpr[5]);
-                    break;
-                case 0x2050:
-                    Managers.fpl.sceKernelFreeFpl(gpr[4], gpr[5]);
-                    break;
-                case 0x2051:
-                    Managers.fpl.sceKernelCancelFpl(gpr[4], gpr[5]);
-                    break;
-                case 0x2052:
-                    Managers.fpl.sceKernelReferFplStatus(gpr[4], gpr[5]);
-                    break;
-		// ThreadManForUser_0E927AED(0x2053),
-                case 0x2054:
-                    Managers.systime.sceKernelUSec2SysClock(gpr[4], gpr[5]);
-                    break;
-                case 0x2055:
-                    Managers.systime.sceKernelUSec2SysClockWide(gpr[4]);
-                    break;
-                case 0x2056:
-                    Managers.systime.sceKernelSysClock2USec(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2057:
-                    Managers.systime.sceKernelSysClock2USecWide(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-                case 0x2058:
-                    Managers.systime.sceKernelGetSystemTime(gpr[4]);
-                    break;
-                case 0x2059:
-                    Managers.systime.sceKernelGetSystemTimeWide();
-                    break;
-                case 0x205a:
-                    Managers.systime.sceKernelGetSystemTimeLow();
-                    break;
 		// sceKernelSetAlarm(0x205b),
 		// sceKernelSetSysClockAlarm(0x205c),
 		// sceKernelCancelAlarm(0x205d),
@@ -323,74 +92,6 @@ public class SyscallHandler {
 		// sceKernelSetVTimerHandlerWide(0x206a),
 		// sceKernelCancelVTimerHandler(0x206b),
 		// sceKernelReferVTimerStatus(0x206c),
-                case 0x206d:
-                    ThreadMan.getInstance().sceKernelCreateThread(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
-                    break;
-                case 0x206e:
-                    ThreadMan.getInstance().sceKernelDeleteThread(gpr[4]);
-                    break;
-                case 0x206f:
-                    ThreadMan.getInstance().sceKernelStartThread(gpr[4], gpr[5], gpr[6]);
-                    break;
-                case 0x2070:
-                case 0x2071:
-                    ThreadMan.getInstance().sceKernelExitThread(gpr[4]);
-                    break;
-                case 0x2072:
-                    ThreadMan.getInstance().sceKernelExitDeleteThread(gpr[4]);
-                    break;
-                case 0x2073:
-                    ThreadMan.getInstance().sceKernelTerminateThread(gpr[4]);
-                    break;
-                case 0x2074:
-                    ThreadMan.getInstance().sceKernelTerminateDeleteThread(gpr[4]);
-                    break;
-                case 0x2075:
-                	ThreadMan.getInstance().sceKernelSuspendDispatchThread();
-                	break;
-                case 0x2076:
-                	ThreadMan.getInstance().sceKernelResumeDispatchThread(gpr[4]);
-                	break;
-                case 0x2077:
-                    ThreadMan.getInstance().sceKernelChangeCurrentThreadAttr(gpr[4], gpr[5]);
-                    break;
-                case 0x2078:
-                    ThreadMan.getInstance().sceKernelChangeThreadPriority(gpr[4], gpr[5]);
-                    break;
-                case 0x2079:
-                    ThreadMan.getInstance().sceKernelRotateThreadReadyQueue(gpr[4]);
-                    break;
-                case 0x207a:
-                	ThreadMan.getInstance().sceKernelReleaseWaitThread(gpr[4]);
-                	break;
-                case 0x207b:
-                    ThreadMan.getInstance().sceKernelGetThreadId();
-                    break;
-                case 0x207c:
-                    ThreadMan.getInstance().sceKernelGetThreadCurrentPriority();
-                    break;
-                case 0x207d:
-                    ThreadMan.getInstance().sceKernelGetThreadExitStatus(gpr[4]);
-                    break;
-                case 0x207e:
-                    ThreadMan.getInstance().sceKernelCheckThreadStack();
-                    break;
-                case 0x207f:
-                    ThreadMan.getInstance().sceKernelGetThreadStackFreeSize(gpr[4]);
-                    break;
-                case 0x2080:
-                    ThreadMan.getInstance().sceKernelReferThreadStatus(gpr[4], gpr[5]);
-                    break;
-                // sceKernelReferThreadRunStatus(0x2081),
-                case 0x2082:
-                    ThreadMan.getInstance().sceKernelReferSystemStatus(gpr[4]);
-                    break;
-                case 0x2083:
-                    ThreadMan.getInstance().sceKernelGetThreadmanIdList(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-		// sceKernelGetThreadmanIdType(0x2084),
-		// sceKernelReferThreadProfiler(0x2085),
-		// sceKernelReferGlobalProfiler(0x2086),
                 case 0x2087:
                     pspiofilemgr.getInstance().sceIoPollAsync(gpr[4], gpr[5]);
                     break;
@@ -1080,13 +781,13 @@ public class SyscallHandler {
 
                 // special codes for HLE syscalls
                 case 0x6f000:
-                	ThreadMan.getInstance().hleKernelExitThread();
+                	Modules.ThreadManForUserModule.hleKernelExitThread();
                     break;
                 case 0x6f001:
-                	ThreadMan.getInstance().hleKernelExitCallback();
+                	Modules.ThreadManForUserModule.hleKernelExitCallback();
                     break;
                 case 0x6f002:
-                    ThreadMan.getInstance().hleKernelAsyncLoop();
+                	Modules.ThreadManForUserModule.hleKernelAsyncLoop();
                     break;
 
                 case 0xfffff: { // special code for unmapped imports

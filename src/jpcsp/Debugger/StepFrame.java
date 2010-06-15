@@ -16,10 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
+import jpcsp.Memory;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
-import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.Modules;
 
 public class StepFrame {
 
@@ -46,11 +47,12 @@ public class StepFrame {
         pc = cpu.pc;
         //gpr = Arrays.copyOf(cpu.gpr, 32); // this will allocate
         for (int i = 0; i < 32; i++) gpr[i] = cpu.gpr[i]; // this will copy
-        threadID = ThreadMan.getInstance().getCurrentThreadID();
-        threadName = ThreadMan.getInstance().getThreadName(threadID);
+        threadID = Modules.ThreadManForUserModule.getCurrentThreadID();
+        threadName = Modules.ThreadManForUserModule.getThreadName(threadID);
 
-        if (cpu.memory.isAddressGood(cpu.pc)) {
-            opcode = cpu.memory.read32(cpu.pc);
+        Memory mem = Memory.getInstance();
+        if (mem.isAddressGood(cpu.pc)) {
+            opcode = mem.read32(cpu.pc);
             Common.Instruction insn = Decoder.instruction(opcode);
             asm = insn.disasm(cpu.pc, opcode);
         } else {

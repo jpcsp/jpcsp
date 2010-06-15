@@ -65,7 +65,6 @@ import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -106,7 +105,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private boolean snapConsole = true;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
-    private Level rootLogLevel = null;
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -1090,7 +1088,7 @@ private void installCompatibilitySettings()
     Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
 
     boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-    ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
+    Modules.ThreadManForUserModule.setThreadBanningEnabled(ignoreAudioThreads);
 
     boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
     Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
@@ -1100,7 +1098,7 @@ private void installCompatibilitySettings()
     pspSysMem.getInstance().setDisableReservedThreadMemory(disableReservedThreadMemory);
 
     boolean enableWaitThreadEndCB = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
-    ThreadMan.getInstance().setEnableWaitThreadEndCB(enableWaitThreadEndCB);
+    Modules.ThreadManForUserModule.setEnableWaitThreadEndCB(enableWaitThreadEndCB);
 
     boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
     SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
@@ -1155,7 +1153,7 @@ public boolean installCompatibilityPatches(String filename)
 
         String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
         if (ignoreAudioThreads != null)
-            jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
+        	Modules.ThreadManForUserModule.setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
 
         String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
         if (ignoreInvalidMemoryAccess != null) {
@@ -1169,7 +1167,7 @@ public boolean installCompatibilityPatches(String filename)
 
         String enableWaitThreadEndCB = patchSettings.getProperty("emu.enablewaitthreadendcb");
         if (enableWaitThreadEndCB != null)
-        	ThreadMan.getInstance().setEnableWaitThreadEndCB(Integer.parseInt(enableWaitThreadEndCB) != 0);
+        	Modules.ThreadManForUserModule.setEnableWaitThreadEndCB(Integer.parseInt(enableWaitThreadEndCB) != 0);
 
         String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
         if (ignoreUnmappedImports != null)
@@ -1382,7 +1380,7 @@ private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
 
-    ThreadMan.getInstance().exit();
+    Modules.ThreadManForUserModule.exit();
     pspdisplay.getInstance().exit();
     VideoEngine.exit();
     Emulator.exit();

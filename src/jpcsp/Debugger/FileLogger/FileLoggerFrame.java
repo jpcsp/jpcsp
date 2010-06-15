@@ -28,7 +28,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
-import jpcsp.HLE.ThreadMan;
+
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.Resource;
 import jpcsp.Settings;
@@ -335,8 +336,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 int result, String parameters) {
             this.hasFd = hasFd;
 
-            this.threadId = ThreadMan.getInstance().getCurrentThreadID();
-            this.threadName = ThreadMan.getInstance().getThreadName(threadId);
+            this.threadId = Modules.ThreadManForUserModule.getCurrentThreadID();
+            this.threadName = Modules.ThreadManForUserModule.getThreadName(threadId);
             this.fd = fd;
             this.command = command;
             this.result = result;

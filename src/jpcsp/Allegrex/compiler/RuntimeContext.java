@@ -36,13 +36,14 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
@@ -244,7 +245,7 @@ public class RuntimeContext {
 
     	CpuState callbackCpuState = Emulator.getProcessor().cpu;
     	SceKernelThreadInfo previousCurrentThread = currentThread;
-    	currentThread = ThreadMan.getInstance().getCurrentThread();
+    	currentThread = Modules.ThreadManForUserModule.getCurrentThread();
 	    executeCallbackImmediately(callbackCpuState);
 	    currentThread = previousCurrentThread;
     }
@@ -271,11 +272,11 @@ public class RuntimeContext {
             switchThread(callbackThreadInfo);
             executeCallbackImmediately(callbackCpuState);
             switchThread(previousThread);
-        } else if (ThreadMan.getInstance().isIdleThread(callbackThreadInfo)) {
+        } else if (Modules.ThreadManForUserModule.isIdleThread(callbackThreadInfo)) {
         	// We want to execute the callback in the idle thread.
         	// Set the currentThread to a non-null value before executing the callback.
             SceKernelThreadInfo previousThread = currentThread;
-        	currentThread = ThreadMan.getInstance().getCurrentThread();
+        	currentThread = Modules.ThreadManForUserModule.getCurrentThread();
     	    executeCallbackImmediately(callbackCpuState);
     	    currentThread = previousThread;
     	    doSyncThread = false;
@@ -349,9 +350,9 @@ public class RuntimeContext {
 
         updateStaticVariables();
 
-        ThreadMan threadManager = ThreadMan.getInstance();
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (!IntrManager.getInstance().isInsideInterrupt()) {
-            SceKernelThreadInfo newThread = threadManager.getCurrentThread();
+            SceKernelThreadInfo newThread = threadMan.getCurrentThread();
             if (newThread != null && newThread != currentThread) {
                 switchThread(newThread);
             }
@@ -374,7 +375,7 @@ public class RuntimeContext {
     		}
     	}
 
-    	if (threadInfo == null || ThreadMan.getInstance().isIdleThread(threadInfo)) {
+    	if (threadInfo == null || Modules.ThreadManForUserModule.isIdleThread(threadInfo)) {
     	    isIdle = true;
     	    currentThread = null;
     	    currentRuntimeThread = null;
@@ -407,7 +408,7 @@ public class RuntimeContext {
 
     private static void syncIdle() throws StopThreadException {
         if (isIdle) {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             Scheduler scheduler = Emulator.getScheduler();
 
             log.debug("Starting Idle State...");
@@ -607,7 +608,7 @@ public class RuntimeContext {
 		thread.setInSyscall(false);
     	try {
     		updateStaticVariables();
-    		executable.exec(ThreadMan.THREAD_EXIT_HANDLER_ADDRESS, 0, false);
+    		executable.exec(ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS, 0, false);
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Exception e) {
@@ -628,10 +629,10 @@ public class RuntimeContext {
             log.info("Thread exit detected SceUID=" + Integer.toHexString(threadInfo.uid)
                 + " name:'" + threadInfo.name + "' return:0x" + Integer.toHexString(gpr[2]));
 
-			ThreadMan threadManager = ThreadMan.getInstance();
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 			threadInfo.exitStatus = gpr[2];
-			threadManager.hleChangeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
-			threadManager.hleRescheduleCurrentThread();
+			threadMan.hleChangeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
+			threadMan.hleRescheduleCurrentThread();
 
 			if (!reset) {
 				try {
@@ -703,7 +704,7 @@ public class RuntimeContext {
     }
 
     public static void run() {
-    	if (ThreadMan.getInstance().exitCalled) {
+    	if (Modules.ThreadManForUserModule.exitCalled) {
     		return;
     	}
 

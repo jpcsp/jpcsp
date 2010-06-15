@@ -24,9 +24,9 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.types.SceKernelMbxInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.util.Utilities;
@@ -73,7 +73,7 @@ public class MbxManager {
     }
 
     private void updateWaitingMbxReceive(SceKernelMbxInfo info) {
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
@@ -97,7 +97,7 @@ public class MbxManager {
     }
 
     private void cancelWaitingMbxReceive(SceKernelMbxInfo info) {
-        ThreadMan threadMan = ThreadMan.getInstance();
+    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
@@ -209,7 +209,7 @@ public class MbxManager {
             Modules.log.warn("hleKernelReceiveMbx unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
         } else {
-            ThreadMan threadMan = ThreadMan.getInstance();
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!info.hasMessage()) {
                 if (!poll) {
                 	if (Modules.log.isDebugEnabled()) {
