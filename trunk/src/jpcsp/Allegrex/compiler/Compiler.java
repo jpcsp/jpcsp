@@ -222,7 +222,7 @@ public class Compiler implements ICompiler {
         return executable;
 	}
 
-	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive) {
+	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive) throws ClassFormatError {
         if (log.isTraceEnabled()) {
             log.trace("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
         }

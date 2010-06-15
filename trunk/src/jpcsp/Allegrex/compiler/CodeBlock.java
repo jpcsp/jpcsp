@@ -143,16 +143,14 @@ public class CodeBlock {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Class<IExecutable> loadExecutable(CompilerContext context, String className, byte[] bytes) {
+	private Class<IExecutable> loadExecutable(CompilerContext context, String className, byte[] bytes) throws ClassFormatError {
         try {
             // Try to define a new class for this executable.
             return (Class<IExecutable>) context.getClassLoader().defineClass(className, bytes);
+        } catch (ClassFormatError e) {
+    		// This exception is catched by the Compiler
+    		throw e;
         } catch (LinkageError le) {
-        	if (le instanceof ClassFormatError) {
-        		// This exception is catched by the Compiler
-        		throw le;
-        	}
-
         	// If the class already exists, try finding it in this context.
             try {
                 return (Class<IExecutable>)context.getClassLoader().findClass(className);
@@ -360,7 +358,7 @@ public class CodeBlock {
     	return compiledClass;
     }
 
-    private Class<IExecutable> compile(CompilerContext context) {
+    private Class<IExecutable> compile(CompilerContext context) throws ClassFormatError {
 		Class<IExecutable> compiledClass = null;
 
 		context.setCodeBlock(this);
@@ -444,7 +442,7 @@ public class CodeBlock {
         return executable;
     }
 
-    public synchronized IExecutable getExecutable(CompilerContext context) {
+    public synchronized IExecutable getExecutable(CompilerContext context) throws ClassFormatError {
 	    if (executable == null) {
 	        Class<IExecutable> classExecutable = compile(context);
 	        if (classExecutable != null) {
