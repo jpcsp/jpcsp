@@ -28,6 +28,8 @@ import jpcsp.MemoryMap;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.filesystems.*;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -35,10 +37,12 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Utilities {
+	public static final Charset charset = Charset.forName("UTF-8");
 
     public static String formatString(String type, String oldstring) {
         int counter = 0;
@@ -100,31 +104,6 @@ public class Utilities {
     {
         f.readFully(buf.array(), offset + buf.arrayOffset(), size);
     }
-    public static String readStringZ(SeekableDataInput f) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        int b;
-        for (; f.getFilePointer() < f.length();) {
-            b = f.readUnsignedByte();
-            if (b == 0) {
-                break;
-            }
-            sb.append((char)b);
-        }
-        return sb.toString();
-    }
-
-    public static String readStringZ(byte[] mem, int offset) {
-        StringBuilder sb = new StringBuilder();
-        int b;
-        for (; offset < mem.length;) {
-            b = mem[offset++];
-            if (b == 0) {
-                break;
-            }
-            sb.append((char)b);
-        }
-        return sb.toString();
-    }
 
     public static String readStringZ(ByteBuffer buf) throws IOException {
         StringBuilder sb = new StringBuilder();
@@ -137,6 +116,7 @@ public class Utilities {
         }
         return sb.toString();
     }
+
     public static String readStringNZ(ByteBuffer buf, int n) throws IOException {
         StringBuilder sb = new StringBuilder();
         byte b;
@@ -147,54 +127,85 @@ public class Utilities {
         }
         return sb.toString();
     }
+
+    /**
+     * Read a string from memory.
+     * The string ends when the maximal length is reached or a '\0' byte is found.
+     * The memory bytes are interpreted as UTF-8 bytes to form the string.
+     * 
+     * @param mem     the memory
+     * @param address the address of the first byte of the string
+     * @param n       the maximal string length
+     * @return        the string converted to UTF-8
+     */
     public static String readStringNZ(Memory mem, int address, int n) {
-        StringBuilder sb = new StringBuilder();
     	address &= Memory.addressMask;
         if (address + n > MemoryMap.END_RAM) {
         	n = MemoryMap.END_RAM - address + 1;
         }
-        int b;
+
+        // Allocates a bytes array to store the bytes of the string.
+        // At first, allocate maximum 10000 in case we don't know
+        // the maximal string length. The array will be extended if required.
+        byte[] bytes = new byte[Math.min(n, 10000)];
+
+        int length = 0;
         for (; n > 0; n--) {
-            b = mem.read8(address++);
-            if (b == 0)
+            int b = mem.read8(address++);
+            if (b == 0) {
                 break;
-            sb.append((char)b);
+            }
+
+            if (length >= bytes.length) {
+            	// Extend the bytes array
+            	byte[] newBytes = new byte[bytes.length + 10000];
+            	System.arraycopy(bytes, 0, newBytes, 0, bytes.length);
+            	bytes = newBytes;
+            }
+        	bytes[length] = (byte) b;
+            length++;
         }
-        return sb.toString();
+
+    	// Convert the bytes to UTF-8
+		return new String(bytes, 0, length, charset);
     }
+
     public static String readStringZ(Memory mem, int address) {
     	address &= Memory.addressMask;
     	return readStringNZ(mem, address, MemoryMap.END_RAM - address + 1);
     }
+
     public static String readStringZ(int address) {
     	return readStringZ(Memory.getInstance(), address);
     }
+
     public static String readStringNZ(int address, int n) {
     	return readStringNZ(Memory.getInstance(), address, n);
     }
+
     public static void writeStringNZ(Memory mem, int address, int n, String s) {
+		byte[] bytes = s.getBytes(charset);
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
     	int offset = 0;
-    	while (offset < s.length() && offset < n) {
-    		mem.write8(address + offset, (byte) s.charAt(offset));
+    	while (offset < bytes.length && offset < n) {
+    		memoryWriter.writeNext(bytes[offset]);
     		offset++;
     	}
     	while (offset < n) {
-    		mem.write8(address + offset, (byte) 0);
+    		memoryWriter.writeNext(0);
     		offset++;
     	}
     }
+
     public static void writeStringZ(Memory mem, int address, String s) {
-    	int offset = 0;
-    	while (offset < s.length()) {
-    		mem.write8(address + offset, (byte) s.charAt(offset));
-    		offset++;
-    	}
-        mem.write8(address + offset, (byte) 0);
+    	writeStringNZ(mem, address, s.length(), s);
     }
+
     public static void writeStringZ(ByteBuffer buf, String s) {
 		buf.put(s.getBytes());
 		buf.put((byte) 0);
     }
+
     public static short getUnsignedByte (ByteBuffer bb) throws IOException
     {
        return ((short)(bb.get() & 0xff));
