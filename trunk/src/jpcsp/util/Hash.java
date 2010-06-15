@@ -60,6 +60,7 @@ public class Hash {
 
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 4);
 		int step = (skip + 1) * 4;
+		lengthInBytes -= lengthInBytes % strideInBytes;
 		for (int i = 0; i < lengthInBytes; i += step) {
 			int value = memoryReader.readNext();
 			memoryReader.skip(skip);
