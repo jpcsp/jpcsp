@@ -19,6 +19,7 @@ package jpcsp;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
+import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
 import jpcsp.memory.SafeFastMemory;
 import jpcsp.memory.StandardMemory;
@@ -29,6 +30,7 @@ public abstract class Memory {
     public static Logger log = Logger.getLogger("memory");
     private static Memory instance = null;
     public static boolean useSafeMemory = true;
+    public static boolean useDebuggerMemory = false;
 	public static final int addressMask = 0x3FFFFFFF;
 	private boolean ignoreInvalidMemoryAccess = false;
 
@@ -67,13 +69,21 @@ public abstract class Memory {
     			throw new OutOfMemoryError("Cannot allocate memory");
         	}
 
+        	if (useDebuggerMemory) {
+        		DebuggerMemory.install();
+        	}
+
         	log.debug("Using " + instance.getClass().getName());
         }
 
         return instance;
     }
 
-	public void invalidMemoryAddress(int address, String prefix, int status) {
+    public static void setInstance(Memory mem) {
+    	instance = mem;
+    }
+
+    public void invalidMemoryAddress(int address, String prefix, int status) {
 	    String message = String.format("%s - Invalid memory address : 0x%X PC=%08X",
 	                                   prefix,
 	                                   address,
