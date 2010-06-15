@@ -1429,7 +1429,7 @@ public void RefreshButtons()
 public void setMainTitle(String message)
 {
     String oldtitle = getTitle();
-    int sub = oldtitle.indexOf("average");
+    int sub = oldtitle.indexOf("FPS:");
     if(sub!=-1)
     {
         String newtitle= oldtitle.substring(0, sub-1);
