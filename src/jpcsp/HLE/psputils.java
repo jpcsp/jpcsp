@@ -135,7 +135,7 @@ public class psputils {
     	// but not for compiled code being called by
     	//    JAL xxxx
         RuntimeContext.invalidateAll();
-        Modules.log.trace("sceKernelIcacheInvalidateAll");
+        Modules.log.info("sceKernelIcacheInvalidateAll");
     }
 
     public void sceKernelUtilsMt19937Init(int ctx_addr, int seed) {
