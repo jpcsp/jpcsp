@@ -104,6 +104,8 @@ public class sceFont implements HLEModule {
 	private int fontLibCount;
 	private int currentFontHandle;
 	private int currentExternalFontHandle;
+    private float globalFontHRes = 0.0f;
+    private float globalFontVRes = 0.0f;
 	public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
     public static final String fontDirPath = "flash0/font";
 
@@ -392,8 +394,8 @@ public class sceFont implements HLEModule {
                 // Font style (used by font comparison functions).
                 mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));   // Horizontal size.
                 mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));   // Vertical size.
-                mem.write32(fontInfoAddr + 100, Float.floatToRawIntBits(0.0f));  // Horizontal resolution.
-                mem.write32(fontInfoAddr + 104, Float.floatToRawIntBits(0.0f));  // Vertical resolution.
+                mem.write32(fontInfoAddr + 100, Float.floatToRawIntBits(globalFontHRes));  // Horizontal resolution.
+                mem.write32(fontInfoAddr + 104, Float.floatToRawIntBits(globalFontVRes));  // Vertical resolution.
                 mem.write32(fontInfoAddr + 108, Float.floatToRawIntBits(0.0f));  // Font weight.
                 mem.write16(fontInfoAddr + 112, (short)0);  // Font family (SYSTEM = 0, probably more).
                 mem.write16(fontInfoAddr + 114, (short)0);  // Style (SYSTEM = 0, STANDARD = 1, probably more).
@@ -406,7 +408,7 @@ public class sceFont implements HLEModule {
                 mem.write32(fontInfoAddr + 252, 0); // Unknown.
                 mem.write32(fontInfoAddr + 256, 0); // Unknown (some sort of timestamp?).
 
-                mem.write8(fontInfoAddr + 260, (byte)1); // Font's BPP.
+                mem.write8(fontInfoAddr + 260, (byte)4); // Font's BPP.
                 mem.write8(fontInfoAddr + 261, (byte)0); // Unknown.
                 mem.write8(fontInfoAddr + 262, (byte)0); // Unknown.
                 mem.write8(fontInfoAddr + 263, (byte)0); // Unknown.
@@ -443,8 +445,8 @@ public class sceFont implements HLEModule {
                 int sfp26BearingHY = (0 << 6) * 64;
                 int sfp26BearingVX = (0 << 6) * 64;
                 int sfp26BearingVY = (0 << 6) * 64;
-                int sfp26AdvanceH =  (Debug.Font.charWidth << 6) * 64;
-                int sfp26AdvanceV =  (Debug.Font.charHeight << 6) * 64;
+                int sfp26AdvanceH =  (1 << 6) * 64;
+                int sfp26AdvanceV =  (1 << 6) * 64;
 
                 // Bitmap dimensions.
 				mem.write32(charInfoAddr +  0, bitmapWidth);	// bitmapWidth
@@ -697,8 +699,12 @@ public class sceFont implements HLEModule {
 	public void sceFontSetAltCharacterCode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn(String.format("Unimplemented sceFontSetAltCharacterCode 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+        int libHandle = cpu.gpr[4];
+        int charCode = cpu.gpr[5];
+
+		Modules.log.warn(String.format("IGNORING: sceFontSetAltCharacterCode libHandle=0x%08X, charCode=%04X", libHandle, charCode));
+
+        cpu.gpr[2] = 0;
 	}
 
 	public void sceFontGetCharImageRect(Processor processor) {
@@ -725,7 +731,18 @@ public class sceFont implements HLEModule {
 	public void sceFontSetResolution(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn(String.format("Unimplemented sceFontSetResolution 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+        int libHandle = cpu.gpr[4];
+        int hRes = cpu.gpr[5];
+        int vRes = cpu.gpr[6];
+
+        float hResf = (float)hRes;
+        float vResf = (float)vRes;
+
+		Modules.log.warn(String.format("PARTIAL: sceFontSetResolution libHandle=0x%08X, hResf=%f, vResf=%f", libHandle, hResf, vResf));
+
+        globalFontHRes = hResf;
+        globalFontHRes = vResf;
+
 		cpu.gpr[2] = 0;
 	}
 
@@ -738,9 +755,46 @@ public class sceFont implements HLEModule {
 
 	public void sceFontFindFont(Processor processor) {
 		CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-		Modules.log.warn(String.format("Unimplemented sceFontFindFont 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+        int libHandle = cpu.gpr[4];
+        int fontStyleAddr = cpu.gpr[5];
+        int errorCodeAddr = cpu.gpr[6];
+
+		Modules.log.warn(String.format("PARTIAL: sceFontFindFont 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+
+        int fontIndex = 0;
+
+        // Font style parameters (identical to sceFontFindOptimumFont?).
+        int fontH = mem.read32(fontStyleAddr);
+        int fontV = mem.read32(fontStyleAddr + 4);
+        int fontHRes = mem.read32(fontStyleAddr + 8);
+        int fontVRes = mem.read32(fontStyleAddr + 12);
+        int fontWeight = mem.read32(fontStyleAddr + 16);
+        int fontFamily = mem.read16(fontStyleAddr + 20);
+        int fontStyle = mem.read16(fontStyleAddr + 22);
+        int fontStyleSub = mem.read16(fontStyleAddr + 24);
+        int fontLanguage = mem.read16(fontStyleAddr + 26);
+        int fontRegion = mem.read16(fontStyleAddr + 28);
+        int fontCountry = mem.read16(fontStyleAddr + 30);
+        String fontName = Utilities.readStringNZ(fontStyleAddr + 32, 64);
+        String fontFileName = Utilities.readStringNZ(fontStyleAddr + 96, 64);
+        int fontUnk1 = mem.read16(fontStyleAddr + 160);
+        int fontUnk2 = mem.read16(fontStyleAddr + 164);
+
+        if (!fontLibMap.containsKey(libHandle)) {
+			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			cpu.gpr[2] = -1;
+		} else {
+            // Return the first index.
+            // TODO: Use an index based font list class to locate the best match.
+            fontIndex = 0;
+			if (mem.isAddressGood(errorCodeAddr)) {
+				mem.write32(errorCodeAddr, 0);
+			}
+
+			cpu.gpr[2] = fontIndex;
+		}
 	}
 
 

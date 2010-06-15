@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
@@ -31,6 +34,8 @@ public class DebuggerMemory extends Memory {
 	public static int[] readBreakpoints  = { 0x1234567, 0x7654321 };
 	// List of breakpoints for memory write
 	public static int[] writeBreakpoints = { 0x1234567, 0x7654321 };
+    // External breakpoints' list.
+    public static String mBrkFilePath = "Memory.mbrk";
 
 	private HashSet<Integer> memoryReadBreakpoint;
 	private HashSet<Integer> memoryWriteBreakpoint;
@@ -45,6 +50,49 @@ public class DebuggerMemory extends Memory {
 	private void initBreakpoints() {
 		memoryReadBreakpoint = new HashSet<Integer>();
 		memoryWriteBreakpoint = new HashSet<Integer>();
+
+        try {
+            File f = new File(mBrkFilePath);
+            BufferedReader in = new BufferedReader(new FileReader(f));
+
+            String nextBrk = in.readLine();
+            if(nextBrk.equals("READ")) {
+                traceMemoryRead = true;
+                traceMemoryWrite = false;
+                nextBrk = in.readLine();
+            } else if(nextBrk.equals("WRITE")) {
+                traceMemoryRead = false;
+                traceMemoryWrite = true;
+                nextBrk = in.readLine();
+            } else if(nextBrk.equals("READ|WRITE")) {
+                traceMemoryRead = true;
+                traceMemoryWrite = true;
+                nextBrk = in.readLine();
+            } else {
+                traceMemoryRead = false;
+                traceMemoryWrite = false;
+            }
+
+            int[] memBrkR = new int[(int)f.length()];
+            int r = 0;
+            int[] memBrkW = new int[(int)f.length()];
+            int w = 0;
+
+            while (nextBrk != null) {
+                if(nextBrk.charAt(0) == 'R') {
+                    memBrkR[r] = Integer.parseInt(nextBrk.substring(3), 16);
+                } else if (nextBrk.charAt(0) == 'W') {
+                    memBrkW[w] = Integer.parseInt(nextBrk.substring(3), 16);
+                }
+                nextBrk = in.readLine();
+            }
+
+            readBreakpoints = memBrkR;
+            writeBreakpoints = memBrkW;
+
+        } catch (Exception e) {
+            // Ignore.
+        }
 
 		for (int i = 0; readBreakpoints != null && i < readBreakpoints.length; i++) {
 			memoryReadBreakpoint.add(readBreakpoints[i]);
