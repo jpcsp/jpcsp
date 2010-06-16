@@ -55,6 +55,7 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelSystemStatus;
@@ -673,13 +674,15 @@ public class ThreadManForUser implements HLEModule {
      * Switch to the thread with status PSP_THREAD_READY and having the highest priority.
      * If the current thread is in status PSP_THREAD_READY and
      * still having the highest priority, nothing is changed.
+     * If the current thread is having the same priority as the highest priority,
+     * switch to the next thread having the highest priority (yield).
      */
     public void hleRescheduleCurrentThread() {
 		SceKernelThreadInfo newThread = nextThread();
 		if (newThread != null &&
 			(currentThread == null ||
 			 currentThread.status != PSP_THREAD_RUNNING ||
-			 currentThread.currentPriority > newThread.currentPriority)) {
+			 currentThread.currentPriority >= newThread.currentPriority)) {
 			if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
 				Modules.log.debug("Context switching to '" + newThread + "' after reschedule");
 			}
@@ -735,12 +738,7 @@ public class ThreadManForUser implements HLEModule {
     	hleBlockCurrentThread(null);
     }
 
-    public void hleBlockCurrentThreadCB() {
-    	hleBlockCurrentThreadCB(null);
-    }
-
-    public void hleBlockCurrentThread(IAction onUnblockAction)
-    {
+    public void hleBlockCurrentThread(IAction onUnblockAction) {
         if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
             Modules.log.debug("-------------------- block SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' caller:" + getCallingFunction());
         }
@@ -753,8 +751,7 @@ public class ThreadManForUser implements HLEModule {
         hleRescheduleCurrentThread();
     }
 
-    public void hleBlockCurrentThreadCB(IAction onUnblockAction)
-    {
+    public void hleBlockCurrentThreadCB(IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
         if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
             Modules.log.debug("-------------------- block SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' caller:" + getCallingFunction());
         }
@@ -762,6 +759,7 @@ public class ThreadManForUser implements HLEModule {
         if (currentThread.status != PSP_THREAD_SUSPEND) {
             currentThread.doCallbacks = true;
 	        currentThread.onUnblockAction = onUnblockAction;
+	        currentThread.wait.waitStateChecker = waitStateChecker;
 	        hleChangeThreadState(currentThread, PSP_THREAD_SUSPEND);
         }
 
@@ -1001,6 +999,7 @@ public class ThreadManForUser implements HLEModule {
             addToReadyThreads(thread);
             thread.waitType = PSP_WAIT_NONE;
             thread.wait.waitTimeoutAction = null;
+            thread.wait.waitStateChecker = null;
         } else if (thread.status == PSP_THREAD_RUNNING) {
             // debug
             if (thread.waitType != PSP_WAIT_NONE) {
@@ -1020,6 +1019,7 @@ public class ThreadManForUser implements HLEModule {
         thread.wait.waitingOnSemaphore = false;
         thread.wait.waitingOnThreadEnd = false;
         thread.wait.waitingOnUmd = false;
+        thread.wait.waitStateChecker = null;
         thread.waitType = PSP_WAIT_NONE;
         if (thread.wait.waitTimeoutAction != null) {
         	Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
@@ -1098,7 +1098,8 @@ public class ThreadManForUser implements HLEModule {
     		int status = thread.status;
     		int waitType = thread.waitType;
     		int waitId = thread.waitId;
-    		ThreadWaitInfo threadWaitInfo = thread.wait;
+    		ThreadWaitInfo threadWaitInfo = new ThreadWaitInfo();
+    		threadWaitInfo.copy(thread.wait);
     		boolean doCallbacks = thread.doCallbacks;
 
             // Context switch to the requested thread
@@ -2621,7 +2622,15 @@ public class ThreadManForUser implements HLEModule {
         int uid = cpu.gpr[4];
         int priority = cpu.gpr[5];
 
-        if (uid == 0) uid = currentThread.uid;
+        if (uid == 0) {
+        	uid = currentThread.uid;
+        }
+
+        // Priority 0 means priority of the calling thread
+        if (priority == 0) {
+        	priority = currentThread.currentPriority;
+        }
+
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
@@ -2635,14 +2644,6 @@ public class ThreadManForUser implements HLEModule {
                 + " oldPriority:0x" + Integer.toHexString(thread.currentPriority)
                 + " thread is stopped, ignoring");
             cpu.gpr[2] = ERROR_THREAD_ALREADY_DORMANT;
-
-        // Don't do anything when new priority is 0
-        } else if (priority == 0) {
-            Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
-                + " newPriority:0x" + Integer.toHexString(priority)
-                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority)
-                + " newPriority is 0, ignoring");
-            cpu.gpr[2] = 0;
 
         // TODO check whether it affects kernel threads (probably doesn't)
         } else if (priority < 0x08 || priority >= 0x78) {
@@ -2677,6 +2678,12 @@ public class ThreadManForUser implements HLEModule {
             	}
                 // yield if we moved ourself to lower priority
                 hleRescheduleCurrentThread();
+            } else if (priority == oldPriority) {
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("sceKernelChangeThreadPriority yielding to thread with same priority");
+            	}
+            	// yield to a thread having the same priority
+            	hleRescheduleCurrentThread();
             }
         }
     }
@@ -3092,20 +3099,49 @@ public class ThreadManForUser implements HLEModule {
 			this.status = status;
 			this.waitType = waitType;
 			this.waitId = waitId;
-			this.threadWaitInfo = new ThreadWaitInfo();
-			this.threadWaitInfo.copy(threadWaitInfo);
+			this.threadWaitInfo = threadWaitInfo;
 			this.doCallback = doCallback;
 			this.afterAction = afterAction;
 		}
 
 		@Override
 		public void execute() {
-			// Restore the wait state of the thread
-			thread.waitType = waitType;
-			thread.waitId = waitId;
-			thread.wait.copy(threadWaitInfo);
+			boolean restoreWaitState = true;
 
-			hleChangeThreadState(thread, status);
+			// After calling a callback, check if the waiting state of the thread
+			// is still valid, i.e. if the thread must continue to wait or if the
+			// wait condition has been reached.
+			if (threadWaitInfo.waitStateChecker != null) {
+				if (!threadWaitInfo.waitStateChecker.continueWaitState(thread, threadWaitInfo)) {
+					restoreWaitState = false;
+				}
+			}
+
+			if (restoreWaitState) {
+				if (Modules.log.isDebugEnabled()) {
+					Modules.log.debug("AfterCallAction: restoring wait state for thread: " + thread.toString());
+				}
+
+				// Restore the wait state of the thread
+				thread.waitType = waitType;
+				thread.waitId = waitId;
+				thread.wait.copy(threadWaitInfo);
+
+				hleChangeThreadState(thread, status);
+			} else if (thread.status != PSP_THREAD_READY) {
+				if (Modules.log.isDebugEnabled()) {
+					Modules.log.debug("AfterCallAction: set thread to READY state: " + thread.toString());
+				}
+
+				hleChangeThreadState(thread, PSP_THREAD_READY);
+				doCallback = false;
+			} else {
+				if (Modules.log.isDebugEnabled()) {
+					Modules.log.debug("AfterCallAction: leaving thread in READY state: " + thread.toString());
+				}
+				doCallback = false;
+			}
+
 			hleRescheduleCurrentThread(doCallback);
 
 			if (afterAction != null) {

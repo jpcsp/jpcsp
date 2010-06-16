@@ -24,8 +24,10 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
@@ -36,9 +38,13 @@ public class MsgPipeManager {
 	public static final int WAIT_MODE_PARTIAL = 1; // can receive a partial buffer
 
     private HashMap<Integer, SceKernelMppInfo> msgMap;
+    private MsgPipeSendWaitStateChecker msgPipeSendWaitStateChecker;
+    private MsgPipeReceiveWaitStateChecker msgPipeReceiveWaitStateChecker;
 
     public void reset() {
         msgMap = new HashMap<Integer, SceKernelMppInfo>();
+        msgPipeSendWaitStateChecker = new MsgPipeSendWaitStateChecker();
+        msgPipeReceiveWaitStateChecker = new MsgPipeReceiveWaitStateChecker();
     }
 
 
@@ -111,11 +117,15 @@ public class MsgPipeManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
-            if (thread.wait.waitingOnMsgPipeSend &&
+            if (thread.waitType == PSP_WAIT_MSGPIPE &&
+                thread.wait.waitingOnMsgPipeSend &&
                 thread.wait.MsgPipe_id == info.uid &&
                 trySendMsgPipe(mem, info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size)) {
                 // Untrack
                 thread.wait.waitingOnMsgPipeSend = false;
+
+                // Adjust waiting threads
+                info.numSendWaitThreads--;
 
                 // Return success
                 thread.cpuContext.gpr[2] = 0;
@@ -135,11 +145,15 @@ public class MsgPipeManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
-            if (thread.wait.waitingOnMsgPipeReceive &&
+            if (thread.waitType == PSP_WAIT_MSGPIPE &&
+                thread.wait.waitingOnMsgPipeReceive &&
                 thread.wait.MsgPipe_id == info.uid &&
                 tryReceiveMsgPipe(mem, info, thread.wait.MsgPipe_address, thread.wait.MsgPipe_size, thread.wait.MsgPipe_waitMode, thread.wait.MsgPipe_resultSize_addr)) {
                 // Untrack
                 thread.wait.waitingOnMsgPipeReceive = false;
+
+                // Adjust waiting threads
+                info.numReceiveWaitThreads--;
 
                 // Return success
                 thread.cpuContext.gpr[2] = 0;
@@ -293,6 +307,7 @@ public class MsgPipeManager {
                     currentThread.wait.MsgPipe_id = uid;
                     currentThread.wait.MsgPipe_address = msg_addr;
                     currentThread.wait.MsgPipe_size = size;
+                    currentThread.wait.waitStateChecker = msgPipeSendWaitStateChecker;
 
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                 } else {
@@ -384,6 +399,7 @@ public class MsgPipeManager {
                     currentThread.wait.MsgPipe_address = msg_addr;
                     currentThread.wait.MsgPipe_size = size;
                     currentThread.wait.MsgPipe_resultSize_addr = resultSize_addr;
+                    currentThread.wait.waitStateChecker = msgPipeReceiveWaitStateChecker;
 
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                 } else {
@@ -475,6 +491,52 @@ public class MsgPipeManager {
             info.write(mem, info_addr);
             cpu.gpr[2] = 0;
         }
+    }
+
+    private class MsgPipeSendWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Check if the thread has to continue its wait state or if the msgpipe
+			// has received a new message during the callback execution.
+			SceKernelMppInfo info = msgMap.get(wait.MsgPipe_id);
+			if (info == null) {
+	            thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+				return false;
+			}
+
+			Memory mem = Memory.getInstance();
+            if (trySendMsgPipe(mem, info, wait.MsgPipe_address, wait.MsgPipe_size)) {
+            	info.numSendWaitThreads--;
+	            thread.cpuContext.gpr[2] = 0;
+            	return false;
+            }
+
+            return true;
+		}
+    	
+    }
+
+    private class MsgPipeReceiveWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Check if the thread has to continue its wait state or if the msgpipe
+			// has been sent a new message during the callback execution.
+			SceKernelMppInfo info = msgMap.get(wait.MsgPipe_id);
+			if (info == null) {
+	            thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+				return false;
+			}
+
+			Memory mem = Memory.getInstance();
+            if (tryReceiveMsgPipe(mem, info, wait.MsgPipe_address, wait.MsgPipe_size, wait.MsgPipe_waitMode, wait.MsgPipe_resultSize_addr)) {
+            	info.numReceiveWaitThreads--;
+	            thread.cpuContext.gpr[2] = 0;
+            	return false;
+            }
+
+            return true;
+		}
+    	
     }
 
     public static final MsgPipeManager singleton;

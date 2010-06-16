@@ -19,8 +19,10 @@ package jpcsp.HLE.kernel.managers;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelMutexInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
@@ -40,6 +42,7 @@ import jpcsp.util.Utilities;
 public class MutexManager {
 
     private HashMap<Integer, SceKernelMutexInfo> mutexMap;
+    private MutexWaitStateChecker mutexWaitStateChecker;
 
     private final static int PSP_MUTEX_UNKNOWN_ATTR = 0x100; // TODO
     private final static int PSP_MUTEX_ALLOW_SAME_THREAD = 0x200;
@@ -47,6 +50,7 @@ public class MutexManager {
 
     public void reset() {
         mutexMap = new HashMap<Integer, SceKernelMutexInfo>();
+        mutexWaitStateChecker = new MutexWaitStateChecker();
     }
 
     /** Don't call this unless thread.wait.waitingOnMutex == true
@@ -148,6 +152,17 @@ public class MutexManager {
         }
     }
 
+    private boolean allowSameThread(SceKernelMutexInfo info, SceKernelThreadInfo thread) {
+        boolean allowSameThread = false;
+
+        if (info.threadid == thread.uid &&
+            (info.attr & PSP_MUTEX_ALLOW_SAME_THREAD) == PSP_MUTEX_ALLOW_SAME_THREAD) {
+            allowSameThread = true;
+        }
+
+        return allowSameThread;
+    }
+
     /** TODO look for a timeout parameter, for now we assume infinite wait
      * @return true on success */
     private void hleKernelLockMutex(int uid, int count, int timeout_addr, boolean wait, boolean doCallbacks) {
@@ -168,12 +183,7 @@ public class MutexManager {
         	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
-            boolean allowSameThread = false;
-            if (info.threadid == currentThread.uid &&
-                (info.attr & PSP_MUTEX_ALLOW_SAME_THREAD) == PSP_MUTEX_ALLOW_SAME_THREAD) {
-                allowSameThread = true;
-            }
-
+            boolean allowSameThread = allowSameThread(info, currentThread);
             if (!tryLockMutex(info, count, allowSameThread)) {
                 Modules.log.info(message + " - '" + info.name + "' fast check failed");
 
@@ -201,6 +211,8 @@ public class MutexManager {
                     // Wait on a specific mutex
                     currentThread.wait.waitingOnMutex = true;
                     currentThread.wait.Mutex_id = uid;
+                    currentThread.wait.Mutex_count = count;
+                    currentThread.wait.waitStateChecker = mutexWaitStateChecker;
 
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
 
@@ -236,8 +248,6 @@ public class MutexManager {
     }
 
     private void wakeWaitMutexThreads(SceKernelMutexInfo info, boolean wakeMultiple) {
-        boolean handled = false;
-
         if (info.numWaitThreads < 0) {
             Modules.log.error("info.numWaitThreads < 0 (" + info.numWaitThreads + ")");
             // TODO should probably think about adding a kernel or hle error code
@@ -246,16 +256,20 @@ public class MutexManager {
         }
 
         if (info.numWaitThreads == 0) {
-            Modules.log.debug("wakeWaitMutexThreads(multiple=" + wakeMultiple + ") mutex:'" + info.name + "' fast exit (numWaitThreads == 0)");
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("wakeWaitMutexThreads(multiple=" + wakeMultiple + ") mutex:'" + info.name + "' fast exit (numWaitThreads == 0)");
+        	}
             return;
         }
 
         for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
-            // We're assuming if waitingOnMutex is set then thread.status = waiting
-            if (thread.wait.waitingOnMutex &&
-                thread.wait.Mutex_id == info.uid) {
+            boolean allowSameThread = allowSameThread(info, thread);
+            if (thread.waitType == PSP_WAIT_MUTEX &&
+                thread.wait.waitingOnMutex &&
+                thread.wait.Mutex_id == info.uid &&
+                (wakeMultiple || tryLockMutex(info, thread.wait.Mutex_count, allowSameThread))) {
 
                 // Update numWaitThreads
                 info.numWaitThreads--;
@@ -263,22 +277,17 @@ public class MutexManager {
                 // Untrack
                 thread.wait.waitingOnMutex = false;
 
-                // Return failure
-                thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+                // Return success or failure
+                thread.cpuContext.gpr[2] = (wakeMultiple ? ERROR_WAIT_DELETE : 0);
 
                 // Wakeup
                 Modules.ThreadManForUserModule.hleChangeThreadState(thread, PSP_THREAD_READY);
 
-                Modules.log.info("wakeWaitMutexThreads(multiple=" + wakeMultiple + ") mutex:'" + info.name + "' waking thread:'" + thread.name + "'");
-                handled = true;
-
-                if (!wakeMultiple)
-                    break;
+                if (Modules.log.isDebugEnabled()) {
+                	Modules.log.debug("wakeWaitMutexThreads(multiple=" + wakeMultiple + ") mutex:'" + info.name + "' waking thread:'" + thread.name + "'");
+                }
             }
         }
-
-        if (!handled)
-            Modules.log.error("wakeWaitMutexThreads(multiple=" + wakeMultiple + ") mutex:'" + info.name + "' no threads to wake");
     }
 
     public void sceKernelUnlockMutex(int uid, int count) {
@@ -438,7 +447,7 @@ public class MutexManager {
         hleKernelLockMutex(uid, count, 0, false, false);
     }
 
-     public void sceKernelUnlockLwMutex(int uid_addr, int count) {
+    public void sceKernelUnlockLwMutex(int uid_addr, int count) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
@@ -466,9 +475,9 @@ public class MutexManager {
 
             cpu.gpr[2] = 0;
         }
-     }
+    }
 
-      public void sceKernelReferLwMutexStatus(int uid_addr, int addr) {
+    public void sceKernelReferLwMutexStatus(int uid_addr, int addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
@@ -491,17 +500,40 @@ public class MutexManager {
                 cpu.gpr[2] = -1;
             }
         }
-      }
+    }
 
-       public void sceKernelReferLwMutexStatusByID() {
-          CpuState cpu = Emulator.getProcessor().cpu;
+    public void sceKernelReferLwMutexStatusByID() {
+        CpuState cpu = Emulator.getProcessor().cpu;
 
-          Modules.log.warn("Unimplemented sceKernelReferLwMutexStatusByID "
+        Modules.log.warn("Unimplemented sceKernelReferLwMutexStatusByID "
             + String.format("%08x %08x %08x %08x", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
-          cpu.gpr[2] = 0xDEADC0DE;
-       }
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
 
+    private class MutexWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Check if the thread has to continue its wait state or if the mutex
+			// has been unlocked during the callback execution.
+			SceKernelMutexInfo info = mutexMap.get(wait.Mutex_id);
+			if (info == null) {
+	            thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_MUTEX;
+				return false;
+			}
+
+			// Check the mutex
+            boolean allowSameThread = allowSameThread(info, thread);
+            if (!tryLockMutex(info, wait.Mutex_count, allowSameThread)) {
+                info.numWaitThreads--;
+                thread.cpuContext.gpr[2] = 0;
+                return false;
+			}
+
+			return true;
+		}
+    	
+    }
 
     public static final MutexManager singleton;
 

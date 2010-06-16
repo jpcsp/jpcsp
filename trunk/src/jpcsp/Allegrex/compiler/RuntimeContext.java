@@ -292,7 +292,7 @@ public class RuntimeContext {
 
     	if (doSyncThread) {
 	    	try {
-	            syncThread();
+	            syncThreadImmediately();
 	        } catch (StopThreadException e) {
 	            // This exception is not expected at this point...
 	            log.warn(e);
@@ -436,19 +436,8 @@ public class RuntimeContext {
         }
     }
 
-    private static void syncThread() throws StopThreadException {
-    	Scheduler.getInstance().step();
-
-        syncIdle();
-
-        if (toBeDeletedThreads.containsValue(getRuntimeThread())) {
-        	return;
-        }
-
+    private static void syncThreadImmediately() throws StopThreadException {
         Thread currentThread = Thread.currentThread();
-    	if (log.isDebugEnabled()) {
-    		log.debug("syncThread currentThread=" + currentThread.getName() + ", currentRuntimeThread=" + currentRuntimeThread.getName());
-    	}
     	if (currentThread != currentRuntimeThread && !alreadySwitchedStoppedThreads.contains(currentThread)) {
     		currentRuntimeThread.continueRuntimeExecution();
 
@@ -473,6 +462,22 @@ public class RuntimeContext {
     			}
     		}
     	}
+    }
+
+    private static void syncThread() throws StopThreadException {
+    	Scheduler.getInstance().step();
+
+        syncIdle();
+
+        if (toBeDeletedThreads.containsValue(getRuntimeThread())) {
+        	return;
+        }
+
+        Thread currentThread = Thread.currentThread();
+    	if (log.isDebugEnabled()) {
+    		log.debug("syncThread currentThread=" + currentThread.getName() + ", currentRuntimeThread=" + currentRuntimeThread.getName());
+    	}
+    	syncThreadImmediately();
     }
 
     private static RuntimeThread getRuntimeThread() {

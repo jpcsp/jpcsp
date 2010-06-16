@@ -24,8 +24,10 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelMbxInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
@@ -34,9 +36,11 @@ import jpcsp.util.Utilities;
 public class MbxManager {
 
     private HashMap<Integer, SceKernelMbxInfo> mbxMap;
+    private MbxWaitStateChecker mbxWaitStateChecker;
 
 	public void reset() {
         mbxMap = new HashMap<Integer, SceKernelMbxInfo>();
+        mbxWaitStateChecker = new MbxWaitStateChecker();
 	}
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
@@ -77,7 +81,8 @@ public class MbxManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
-            if (thread.wait.waitingOnMbxReceive &&
+            if (thread.waitType == PSP_WAIT_MBX &&
+                thread.wait.waitingOnMbxReceive &&
                 thread.wait.Mbx_id == info.uid &&
                 info.hasMessage()) {
             	if (Modules.log.isDebugEnabled()) {
@@ -101,7 +106,8 @@ public class MbxManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
-            if ((thread.wait.waitingOnMbxReceive &&
+            if ((thread.waitType == PSP_WAIT_MBX &&
+                    thread.wait.waitingOnMbxReceive &&
                     thread.wait.Mbx_id == info.uid)) {
                     thread.wait.waitingOnMbxReceive = false;
                     thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
@@ -227,6 +233,7 @@ public class MbxManager {
                     currentThread.wait.waitingOnMbxReceive = true;
                     currentThread.wait.Mbx_id = uid;
                     currentThread.wait.Mbx_resultAddr = addr_msg_addr;
+                    currentThread.wait.waitStateChecker = mbxWaitStateChecker;
 
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                 } else {
@@ -295,6 +302,31 @@ public class MbxManager {
 
 	public void sceKernelPollMbx(int uid, int addr_msg_addr) {
         hleKernelReceiveMbx(uid, addr_msg_addr, 0, false, true);
+	}
+
+	private class MbxWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Check if the thread has to continue its wait state or if the mbx
+			// has received a new message during the callback execution.
+			SceKernelMbxInfo info = mbxMap.get(wait.Mbx_id);
+			if (info == null) {
+	            thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
+				return false;
+			}
+
+			// Check the mbx for a new message
+			if (info.hasMessage()) {
+                Memory mem = Memory.getInstance();
+                int msgAddr = info.removeMsg(mem);
+                mem.write32(wait.Mbx_resultAddr, msgAddr);
+                info.numWaitThreads--;
+	            thread.cpuContext.gpr[2] = 0;
+				return false;
+			}
+
+			return true;
+		}
 	}
 
 	public static final MbxManager singleton;

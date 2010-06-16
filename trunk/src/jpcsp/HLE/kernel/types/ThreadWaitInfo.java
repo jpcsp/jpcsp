@@ -21,6 +21,7 @@ public class ThreadWaitInfo {
     public long microTimeTimeout; // when Clock.microTime() reaches microTimeTimeout the wait has expired
     public int micros; // time period specified by the game, just stored here for logging/debugging purposes
     public IAction waitTimeoutAction; // execute this action when the timeout is reached
+    public IWaitStateChecker waitStateChecker; // checks if the wait condition still applies
 
     // TODO change waitingOnThreadEnd, waitingOnEventFlag, etc to waitType,
     // since we can only wait on one type of event at a time.
@@ -44,6 +45,7 @@ public class ThreadWaitInfo {
     // Mutex
     public boolean waitingOnMutex;
     public int Mutex_id;
+    public int Mutex_count;
 
     // IO
     public boolean waitingOnIo;
@@ -72,6 +74,7 @@ public class ThreadWaitInfo {
     	this.microTimeTimeout = that.microTimeTimeout;
     	this.micros = that.micros;
     	this.waitTimeoutAction = that.waitTimeoutAction;
+    	this.waitStateChecker = that.waitStateChecker;
 
     	this.waitingOnThreadEnd = that.waitingOnThreadEnd;
     	this.ThreadEnd_id = that.ThreadEnd_id;
@@ -88,6 +91,7 @@ public class ThreadWaitInfo {
 
     	this.waitingOnMutex = that.waitingOnMutex;
     	this.Mutex_id = that.Mutex_id;
+    	this.Mutex_count = that.Mutex_count;
 
     	this.waitingOnIo = that.waitingOnIo;
     	this.Io_id = that.Io_id;

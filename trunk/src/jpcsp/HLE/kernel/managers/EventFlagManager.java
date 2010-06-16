@@ -32,6 +32,7 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 public class EventFlagManager {
 
     private static HashMap<Integer, SceKernelEventFlagInfo> eventMap;
+    private EventFlagWaitStateChecker eventFlagWaitStateChecker;
 
     private final static int PSP_EVENT_WAITMULTIPLE = 0x200;
 
@@ -42,6 +43,7 @@ public class EventFlagManager {
 
     public void reset() {
         eventMap = new HashMap<Integer, SceKernelEventFlagInfo>();
+        eventFlagWaitStateChecker = new EventFlagWaitStateChecker();
     }
 
     /** Don't call this unless thread.wait.waitingOnEventFlag == true
@@ -96,8 +98,8 @@ public class EventFlagManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
-            // We're assuming if waitingOnEventFlag is set then thread.status = waiting
-            if (thread.wait.waitingOnEventFlag &&
+            if (thread.waitType == PSP_WAIT_MISC &&
+                thread.wait.waitingOnEventFlag &&
                 thread.wait.EventFlag_id == evid) {
                 // EventFlag was deleted
                 Modules.log.warn("EventFlag deleted while we were waiting for it! thread:" + Integer.toHexString(thread.uid) + "/'" + thread.name + "'");
@@ -134,7 +136,8 @@ public class EventFlagManager {
             SceKernelThreadInfo thread = it.next();
 
             // We're assuming if waitingOnEventFlag is set then thread.status = waiting
-            if (thread.wait.waitingOnEventFlag &&
+            if (thread.waitType == PSP_WAIT_MISC &&
+                thread.wait.waitingOnEventFlag &&
                 thread.wait.EventFlag_id == event.uid) {
 
                 int bits = thread.wait.EventFlag_bits;
@@ -316,6 +319,7 @@ public class EventFlagManager {
                 currentThread.wait.EventFlag_bits = bits;
                 currentThread.wait.EventFlag_wait = wait;
                 currentThread.wait.EventFlag_outBits_addr = outBits_addr;
+                currentThread.wait.waitStateChecker = eventFlagWaitStateChecker;
 
                 threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
             } else {
@@ -400,6 +404,28 @@ public class EventFlagManager {
             event.write(Memory.getInstance(), addr);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
+    }
+
+    private class EventFlagWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Check if the thread has to continue its wait state or if the event flag
+			// has been set during the callback execution.
+			SceKernelEventFlagInfo event = eventMap.get(wait.EventFlag_id);
+			if (event == null) {
+	            thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+				return false;
+			}
+
+            // Check EventFlag
+            if (checkEventFlag(event, wait.EventFlag_bits, wait.EventFlag_wait, wait.EventFlag_outBits_addr)) {
+				event.numWaitThreads--;
+	            thread.cpuContext.gpr[2] = 0;
+				return false;
+            }
+
+            return true;
+		}
     }
 
     public static final EventFlagManager singleton;

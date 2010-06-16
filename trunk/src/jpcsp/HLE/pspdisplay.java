@@ -43,6 +43,9 @@ import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.capture.CaptureManager;
@@ -1022,18 +1025,19 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     private void blockCurrentThreadOnVblank(boolean doCallbacks) {
-        // Block the current thread
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         int threadId = threadMan.getCurrentThreadID();
-        if (doCallbacks) {
-        	threadMan.hleBlockCurrentThreadCB();
-        } else {
-        	threadMan.hleBlockCurrentThread();
-        }
 
         // Add a Vblank action to unblock the thread
         UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
         IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+
+        // Block the current thread
+        if (doCallbacks) {
+        	threadMan.hleBlockCurrentThreadCB(null, new VblankWaitStateChecker(getVcount()));
+        } else {
+        	threadMan.hleBlockCurrentThread();
+        }
     }
 
     public void sceDisplayWaitVblankStart() {
@@ -1429,6 +1433,20 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 		@Override
 		public void execute() {
 			hleVblankStart();
+		}
+	}
+
+	private class VblankWaitStateChecker implements IWaitStateChecker {
+		private int vcount;
+
+		public VblankWaitStateChecker(int vcount) {
+			this.vcount = vcount;
+		}
+
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Continue the wait state until the vcount changes
+			return getVcount() == vcount;
 		}
 	}
 }
