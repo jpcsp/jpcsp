@@ -1,8 +1,4 @@
 /*
-Function:
-- HLE everything in http://psp.jim.sh/pspsdk-doc/pspge_8h.html
-
-
 This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
@@ -44,6 +40,11 @@ import jpcsp.HLE.modules.ThreadManForUser;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+
+/*
+ * TODO list:
+ * 1. Write a sample to test sceGeGetMtx().
+ */
 
 public class pspge {
 
@@ -549,12 +550,10 @@ public class pspge {
 
     public void sceGeGetMtx(int mtxtype, int mtx_addr) {
         VideoEngine ve = VideoEngine.getInstance();
-        float[] mtx = ve.getMatrix(mtxtype);  // Needs to be checked on PSP. Couldn't find any sample or game using this...
-
-        // TODO: Write the matrix's values to mtx_addr.
+        float[] mtx = ve.getMatrix(mtxtype);
 
         Modules.log.info("UNIMPLEMENTED: sceGeGetMtx mtxtype=" + mtxtype + " mtx_addr=0x" + Integer.toHexString(mtx_addr));
-        Emulator.getProcessor().cpu.gpr[2] = 0;  // Check?
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     private void triggerAsyncCallback(int cbid, int listId, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {

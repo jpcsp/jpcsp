@@ -1,8 +1,4 @@
 /*
-TODO
-- HLE everything in http://psp.jim.sh/pspsdk-doc/psputils_8h.html
-
-
 This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
@@ -30,6 +26,21 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
+
+/*
+ * TODO list:
+ * 1. Improve sceKernelLibcGettimeofday() result.
+ *  -> Info:
+ *       struct timeval {
+ *           time_t tv_sec; // seconds since Jan. 1, 1970
+ *           suseconds_t tv_usec; // and microseconds
+ *       };
+ *
+ *     struct timezone {
+ *          int tz_minuteswest; // of Greenwich
+ *           int tz_dsttime; // type of dst correction to apply
+ *      };
+ */
 
 public class psputils {
     private static psputils instance;
@@ -60,24 +71,13 @@ public class psputils {
         Emulator.getProcessor().cpu.gpr[2] = seconds;
     }
 
-    /** returns the number of clocks since the "process" started. 
+    /** returns the number of clocks since the "process" started.
      *  This is equivalent to the "System Time".
      */
     public void sceKernelLibcClock() {
         Emulator.getProcessor().cpu.gpr[2] = (int) SystemTimeManager.getSystemTime();
     }
 
-    /* from man pages:
-    struct timeval {
-        time_t tv_sec; // seconds since Jan. 1, 1970
-        suseconds_t tv_usec; // and microseconds
-    };
-
-    struct timezone {
-        int tz_minuteswest; // of Greenwich
-        int tz_dsttime; // type of dst correction to apply
-    };
-    */
     public void sceKernelLibcGettimeofday(int tp, int tzp) {
         Memory mem = Memory.getInstance();
 
@@ -90,8 +90,8 @@ public class psputils {
         }
 
         if (mem.isAddressGood(tzp)) {
-            int tz_minuteswest = 0; // TODO
-            int tz_dsttime = 0; // TODO
+            int tz_minuteswest = 0;
+            int tz_dsttime = 0;
             mem.write32(tzp, tz_minuteswest);
             mem.write32(tzp + 4, tz_dsttime);
         }
@@ -154,7 +154,6 @@ public class psputils {
         if (ctx != null) {
             Emulator.getProcessor().cpu.gpr[2] = ctx.r.nextInt();
         } else {
-            // TODO what happens if the ctx is bad?
             Modules.log.warn("sceKernelUtilsMt19937UInt uninitialised context " + Integer.toHexString(ctx_addr));
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }

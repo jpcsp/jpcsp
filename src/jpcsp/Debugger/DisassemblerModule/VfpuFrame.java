@@ -1,3 +1,19 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.Debugger.DisassemblerModule;
 
 import java.awt.event.WindowAdapter;
@@ -15,21 +31,21 @@ import jpcsp.Allegrex.CpuState;
 public class VfpuFrame extends JFrame {
 
 	private static final long serialVersionUID = -3354614570041807689L;
-	
+
 	JTextField registers[][][] = new JTextField[8][4][4];
 	JPanel panels[] = new JPanel[8];
-	static private VfpuFrame instance;  
-	
+	static private VfpuFrame instance;
+
 	static public VfpuFrame getInstance() {
 		if(instance == null)
 			instance = new VfpuFrame();
 		return instance;
 	}
-	
+
 	private VfpuFrame() {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setTitle("VFPU registers");
-		
+
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowDeactivated(WindowEvent e) {
@@ -41,21 +57,21 @@ public class VfpuFrame extends JFrame {
 							new int[] { getWidth(), getHeight()});
 				}
 			}});
-		
+
 		for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 4; ++j) {
                 for(int k = 0; k < 4; ++k)
                 	registers[i][j][k] = new JTextField();
             }
         }
-		
+
 		GroupLayout layout = new GroupLayout(getContentPane());
 		getContentPane().setLayout(layout);
-		
+
 		for(int i = 0; i < panels.length; ++i) {
 			JPanel panel = new JPanel();
 			panels[i] = panel;
-			
+
 			GroupLayout l = new GroupLayout(panel);
 			panel.setLayout(l);
 			panel.setBorder(BorderFactory.createCompoundBorder(
@@ -105,7 +121,7 @@ public class VfpuFrame extends JFrame {
 							.addComponent(registers[i][3][2])
 							.addComponent(registers[i][3][3])));
 		}
-		
+
 		layout.setHorizontalGroup(layout.createParallelGroup()
 					.addGroup(layout.createSequentialGroup()
 							.addComponent(panels[0])
@@ -130,14 +146,14 @@ public class VfpuFrame extends JFrame {
 						.addComponent(panels[1])
 						.addComponent(panels[3])
 						.addComponent(panels[5])
-						.addComponent(panels[7]))		
+						.addComponent(panels[7]))
 				);
 		int[] size = Settings.getInstance().readWindowSize("vfpuregisters");
 		setSize(size[0], size[1]);
 		size = Settings.getInstance().readWindowPos("vfpuregisters");
 		setLocation(size[0], size[1]);
 	}
-	
+
 	public void updateRegisters(CpuState cpu) {
 		for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 4; ++j) {

@@ -33,12 +33,18 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.util.Utilities;
 
-// http://forums.ps2dev.org/viewtopic.php?p=79708#79708
-// TODO find other codes:
-// - 0x800201c3 ERROR_NOT_FOUND_MUTEX
-// - 0x800201c4 mutex already locked (from try lock)
-// - 0x800201c8 overflow? (mutex already locked). set initial count > 0, don't use attr 0x200, then try and lock on the same thread
-// - ??? underflow/mutex already unlocked
+/*
+ * TODO list:
+ * 1. Find all error codes:
+ *  -> Info: http://forums.ps2dev.org/viewtopic.php?p=79708#79708
+ *      - 0x800201c3 ERROR_NOT_FOUND_MUTEX.
+ *      - 0x800201c4 mutex already locked (from try lock).
+ *      - 0x800201c8 overflow? (mutex already locked).
+ *
+ * 2. Figure out the meaning of PSP_MUTEX_UNKNOWN_ATTR and PSP_LW_MUTEX_UNKNOWN_ATTR.
+ *
+ * 3. Use timeout in hleKernelLockMutex().
+ */
 public class MutexManager {
 
     private HashMap<Integer, SceKernelMutexInfo> mutexMap;
@@ -109,10 +115,6 @@ public class MutexManager {
             + ",count=0x" + Integer.toHexString(count)
             + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
 
-        // TODO ERROR_ILLEGAL_ATTR
-        // both attr can be used at the same time
-        // 0x100 - ?
-        // 0x200 - allow same thread to lock multiple times (overflow without error)
         if ((attr & ~PSP_MUTEX_ALLOW_SAME_THREAD) != 0) {
         	Modules.log.warn("PARTIAL:sceKernelCreateMutex attr value 0x" + Integer.toHexString(attr));
         }
@@ -163,8 +165,9 @@ public class MutexManager {
         return allowSameThread;
     }
 
-    /** TODO look for a timeout parameter, for now we assume infinite wait
-     * @return true on success */
+    /**
+     * @return true on success
+     */
     private void hleKernelLockMutex(int uid, int count, int timeout_addr, boolean wait, boolean doCallbacks) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Memory.getInstance();
@@ -250,7 +253,6 @@ public class MutexManager {
     private void wakeWaitMutexThreads(SceKernelMutexInfo info, boolean wakeMultiple) {
         if (info.numWaitThreads < 0) {
             Modules.log.error("info.numWaitThreads < 0 (" + info.numWaitThreads + ")");
-            // TODO should probably think about adding a kernel or hle error code
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNKNOWN);
             return;
         }
@@ -332,7 +334,7 @@ public class MutexManager {
             Modules.log.warn("sceKernelCancelMutex UID " + Integer.toHexString(uid) + " not locked");
             cpu.gpr[2] = -1;
         } else {
-            info.locked = 0; // check
+            info.locked = 0;
 
             // wake all threads waiting on this mutex
             wakeWaitMutexThreads(info, true);
@@ -344,7 +346,6 @@ public class MutexManager {
     public void sceKernelReferMutexStatus(int uid, int addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        // the problem here is we don't know the layout of SceKernelMutexInfo so what we're writing is probably wrong
         Modules.log.warn("PARTIAL:sceKernelReferMutexStatus UID " + Integer.toHexString(uid)
             + "addr " + String.format("0x%08X", addr)
             + String.format(" %08X %08X %08X %08X", cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]));
@@ -393,7 +394,7 @@ public class MutexManager {
         info.locked = count;
         info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
 
-        cpu.gpr[2] = info.uid;  //TODO: Check if this is still needed.
+        cpu.gpr[2] = info.uid;
 
         mem.write32(out_addr, info.uid);
     }
@@ -416,9 +417,6 @@ public class MutexManager {
             mem.write32(uid_addr, 0); //Clear uid address.
         }
      }
-
-    //Currently redirecting the lock functions to hleKernelLockMutex.
-    //TODO: An hleKernelLockLwMutex or a new parameter for hleKernelLockMutex may be needed.
 
      public void sceKernelLockLwMutex(int uid_addr, int count, int timeout_addr) {
         Memory mem = Processor.memory;

@@ -20,12 +20,19 @@ import java.util.HashMap;
 import jpcsp.HLE.kernel.types.SceKernelVplInfo;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.util.Utilities;
+
+/*
+ * TODO list:
+ * 1. Check if writing result is needed in sceKernelAllocateVpl() and sceKernelTryAllocateVpl().
+ *
+ * 2. Implement a queue to receive blocks waiting for allocation and process
+ * memory events for them (onFreeVpl).
+ */
 
 public class VplManager {
 
@@ -35,7 +42,6 @@ public class VplManager {
         vplMap = new HashMap<Integer, SceKernelVplInfo>();
     }
 
-    // attr = alignment?
     public void sceKernelCreateVpl(int name_addr, int partitionid, int attr, int size, int opt_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
@@ -124,29 +130,10 @@ public class VplManager {
             int addr = tryAllocateVpl(info, size);
             if (addr == 0) {
                 // Alloc failed
-                mem.write32(data_addr, 0); // TODO still write on failure?
-                cpu.gpr[2] = ERROR_WAIT_TIMEOUT; // TODO if we wakeup and manage to allocate set v0 = 0
+                mem.write32(data_addr, 0);
+                cpu.gpr[2] = ERROR_WAIT_TIMEOUT;
 
                 Modules.log.warn("UNIMPLEMENTED:sceKernelAllocateVpl uid=0x" + Integer.toHexString(uid) + " wait");
-
-                /* TODO
-                // try allocate when something frees
-                if (info.freeBlocks == 0) {
-                    // no free blocks in this fpl
-                    info.waitAllocateQueue.add(Managers.ThreadManager.getCurrentThreadId());
-                } else {
-                    // some free blocks, but no free mem
-                    waitAllocateQueue.add(Managers.ThreadManager.getCurrentThreadId());
-                }
-
-                if (timeout_addr == 0) {
-                    Managers.ThreadManager.blockCurrentThread()
-                } else {
-                    // wakeup after timeout has expired
-                    int micros = mem.read32(timeout_addr);
-                    Managers.ThreadManager.delayCurrentThread(micros);
-                }
-                */
             } else {
                 // Alloc succeeded
                 mem.write32(data_addr, addr);
@@ -156,10 +143,8 @@ public class VplManager {
     }
 
     public void sceKernelAllocateVplCB(int uid, int size, int data_addr, int timeout_addr) {
-        // TODO there's no point even considering CB support until we've added timeout support
         Modules.log.warn("sceKernelAllocateVplCB redirecting to sceKernelAllocateVpl");
         sceKernelAllocateVpl(uid, size, data_addr, timeout_addr);
-        //ThreadMan.getInstance().checkCallbacks();
     }
 
     public void sceKernelTryAllocateVpl(int uid, int size, int data_addr) {
@@ -178,7 +163,6 @@ public class VplManager {
             int addr = tryAllocateVpl(info, size);
             if (addr == 0) {
                 // Alloc failed
-                //mem.write32(data_addr, 0); // don't write on failure, check
                 cpu.gpr[2] = ERROR_NO_MEMORY;
             } else {
                 // Alloc succeeded
@@ -199,10 +183,8 @@ public class VplManager {
             Modules.log.warn("sceKernelFreeVpl unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
-            // TODO might need to rework this to get better error codes out of it
             if (info.free(data_addr)) {
                 cpu.gpr[2] = 0;
-                // TODO onFreeVpl(info);
             } else {
                 cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK;
             }
@@ -220,10 +202,6 @@ public class VplManager {
             Modules.log.warn("sceKernelCancelVpl unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
-            // TODO
-            // - for each thread waiting to allocate on this fpl, wake it up
-            // - if pnum_addr is a valid pointer write the number of threads we woke up to it
-
             cpu.gpr[2] = -1;
         }
     }
@@ -244,65 +222,6 @@ public class VplManager {
             cpu.gpr[2] = 0;
         }
     }
-
-
-    /* TODO
-     * this will probably need hooking into pspsysmem free()
-    private void onFreeSysMem() {
-        for (Iterator<Integer> it = waitAllocateQueue.iterator(); it.hasNext(); ) {
-            int waitingThreadId = it.next();
-
-            SceKernelThreadInfo thread = Managers.ThreadMan.getThread(waitingThreadId);
-            if (thread == null) {
-                // Thread got deleted while waiting for free mem
-                it.remove();
-            } else {
-                // re-read syscall params
-                int uid = thread.cpuContext.gpr[4];
-                int data_addr = thread.cpuContext.gpr[5];
-
-                SceKernelVplInfo info = vplMap.get(uid);
-                if (info == null) {
-                    // Vpl got deleted while we were waiting
-                    it.remove();
-                } else {
-                    int addr = tryAllocateVpl(info);
-                    if (addr != 0) {
-                        mem.write32(data_addr, addr);
-                        thread.cpuContext.cpu.gpr[2] = 0;
-                        Managers.ThreadMan.resumeThread(waitingThreadId);
-                        it.remove();
-                        break;
-                    }
-                }
-            }
-
-        }
-    }
-    */
-
-    /* TODO
-    private void onFreeVpl(SceKernelVplInfo info) {
-        for (Iterator<Integer> it = info.waitAllocateQueue.iterator(); it.hasNext(); ) {
-            int waitingThreadId = it.next();
-            SceKernelThreadInfo thread = Managers.ThreadMan.getThread(waitingThreadId);
-            if (thread == null) {
-                // Thread got deleted
-                it.remove();
-            } else {
-                int addr = tryAllocateVpl(info);
-                if (addr != 0) {
-                    int data_addr = thread.cpuContext.gpr[5]; // re-read syscall param
-                    mem.write32(data_addr, addr);
-                    thread.cpuContext.cpu.gpr[2] = 0;
-                    Managers.ThreadMan.resumeThread(waitingThreadId);
-                    it.remove();
-                    break;
-                }
-            }
-        }
-    }
-    */
 
     public static final VplManager singleton;
 

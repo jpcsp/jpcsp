@@ -44,12 +44,9 @@ import jpcsp.util.Utilities;
  * @author spip2001
  */
 public class Settings {
-
 	private final static String SETTINGS_FILE_NAME = "Settings.properties";
 	private final static String DEFAULT_SETTINGS_FILE_NAME = "/jpcsp/DefaultSettings.properties";
-
 	private static Settings instance = null;
-
 	private Properties defaultSettings;
 	private SortedProperties loadedSettings;
 
@@ -101,11 +98,11 @@ public class Settings {
 			Utilities.close(out);
         }
 	}
-	
+
 	public String readLanguage() {
 		return loadedSettings.getProperty("emu.language");
 	}
-	
+
 	public void writeLanguage(String language) {
 		loadedSettings.setProperty("emu.language", language);
 		writeSettings();
@@ -386,12 +383,7 @@ public class Settings {
             System.out.println(e.getMessage());
         }
 
-        //Emulator.log.debug("font: " + font);
-        //Emulator.log.debug("font name: " + font.getName());
-        //Emulator.log.debug("font family: " + font.getFamily());
-
         loadedFont = font;
         return font;
     }
-
 }

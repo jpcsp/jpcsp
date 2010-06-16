@@ -45,7 +45,6 @@ public class StepFrame {
 
     public void make(CpuState cpu) {
         pc = cpu.pc;
-        //gpr = Arrays.copyOf(cpu.gpr, 32); // this will allocate
         for (int i = 0; i < 32; i++) gpr[i] = cpu.gpr[i]; // this will copy
         threadID = Modules.ThreadManForUserModule.getCurrentThreadID();
         threadName = Modules.ThreadManForUserModule.getThreadName(threadID);
@@ -87,13 +86,10 @@ public class StepFrame {
         String address = String.format("0x%08X", pc);
         String rawdata = String.format("0x%08X", opcode);
 
-        // 0x0895BD1C: 0x8CE60000 '....' - lw         $a2, 0($a3)
         message = getThreadInfo()
-            //+ getModuleInfo()
             + getRegistersInfo()
             + address
             + ": " + rawdata
-            //+ "'" + printabledata + "'"
             + " - " + asm;
     }
 

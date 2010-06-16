@@ -33,12 +33,7 @@ public class NIDMapper {
     public void Initialise() {
         moduleToNidTable = new HashMap<String, HashMap<Integer, Integer>>();
         nidToSyscall = new HashMap<Integer, Integer>();
-        /*for(int i=0; i<syscalls.length; i++)
-        {
-               int syscall = syscalls[i][0];
-               long nid = syscalls[i][1];
-                nidToSyscall.put((int)nid,syscall);
-         }*/
+
         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
               nidToSyscall.put(c.getNID(), c.getSyscall());
         }

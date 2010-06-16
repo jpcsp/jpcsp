@@ -23,24 +23,15 @@ import jpcsp.Debugger.StepLogger;
 
 import org.apache.log4j.Logger;
 
-public class Processor /* extends OldCpuState */ {
-
+public class Processor {
     public static boolean ENABLE_STEP_TRACE = false;
-
-    /** false=count how many times an insn appears in the code (static check).
-     * true=count how many times an insn is executed (dynamic check). */
     public static boolean ENABLE_INSN_EXECUTE_COUNT = false;
-
-    /** cache mem reads and insn decodes */
     private final static boolean ENABLE_INSN_CACHE = false;
-
-
     public CpuState cpu = new CpuState();
-
     public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();
     public static Logger log = Logger.getLogger("cpu");
 
-    Processor() {
+    public Processor() {
         insnCache = new CacheLine[INSN_CACHE_SIZE];
         for (int i = 0; i < INSN_CACHE_SIZE; i++)
             insnCache[i] = new CacheLine();
@@ -68,7 +59,6 @@ public class Processor /* extends OldCpuState */ {
             buffer.putInt(cpu.gpr[i]);
     }
 
-
     static class CacheLine {
         boolean valid;
         int address;
@@ -90,7 +80,6 @@ public class Processor /* extends OldCpuState */ {
         insnCacheHits = insnCacheMisses = insnCount = 0;
     }
 
-    /** replaces (BcuState)cpu.fetchOpcode()  */
     private CacheLine fetchDecodedInstruction() {
         CacheLine line = insnCache[cpu.pc & INSN_CACHE_MASK];
         if (!line.valid || line.address != cpu.pc) {
@@ -101,14 +90,12 @@ public class Processor /* extends OldCpuState */ {
             insnCacheMisses++;
         }
         else insnCacheHits++;
-        
+
         insnCount++;
-        // by default, the next instruction to emulate is at the next address
         cpu.pc = cpu.npc = cpu.pc + 4;
         return line;
     }
 
-    /** replaces (BcuState)cpu.nextOpcode()  */
     private CacheLine nextDecodedInstruction() {
         CacheLine line = insnCache[cpu.pc & INSN_CACHE_MASK];
         if (!line.valid || line.address != cpu.pc) {
@@ -121,48 +108,49 @@ public class Processor /* extends OldCpuState */ {
             insnCacheHits++;
         }
         insnCount++;
-        // by default, the next instruction to emulate is at the next address
         cpu.pc += 4;
         return line;
     }
 
     public void interpret() {
 
-        if (ENABLE_STEP_TRACE) StepLogger.append(cpu);
-
+        if (ENABLE_STEP_TRACE)
+            StepLogger.append(cpu);
         if (ENABLE_INSN_CACHE) {
             CacheLine line = fetchDecodedInstruction();
-
             line.insn.interpret(this, line.opcode);
-            if (ENABLE_INSN_EXECUTE_COUNT) line.insn.increaseCount();
+
+            if (ENABLE_INSN_EXECUTE_COUNT)
+                line.insn.increaseCount();
         } else {
             int opcode = cpu.fetchOpcode();
-
             Common.Instruction insn = Decoder.instruction(opcode);
-
             insn.interpret(this, opcode);
-            if (ENABLE_INSN_EXECUTE_COUNT) insn.increaseCount();
+
+            if (ENABLE_INSN_EXECUTE_COUNT)
+                insn.increaseCount();
         }
     }
 
     public void interpretDelayslot() {
 
-        if (ENABLE_STEP_TRACE) StepLogger.append(cpu);
+        if (ENABLE_STEP_TRACE)
+            StepLogger.append(cpu);
 
         if (ENABLE_INSN_CACHE) {
             CacheLine line = nextDecodedInstruction();
-
             line.insn.interpret(this, line.opcode);
-            if (ENABLE_INSN_EXECUTE_COUNT) line.insn.increaseCount();
+
+            if (ENABLE_INSN_EXECUTE_COUNT)
+                line.insn.increaseCount();
         } else {
             int opcode = cpu.nextOpcode();
-
             Common.Instruction insn = Decoder.instruction(opcode);
-
             insn.interpret(this, opcode);
-            if (ENABLE_INSN_EXECUTE_COUNT) insn.increaseCount();
-        }
 
+            if (ENABLE_INSN_EXECUTE_COUNT)
+                insn.increaseCount();
+        }
         cpu.nextPc();
     }
 

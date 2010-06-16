@@ -1,8 +1,23 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp;
 
 import java.util.Iterator;
 import java.util.LinkedList;
-//import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
@@ -15,30 +30,32 @@ public class Resource {
 
 	/**
 	 * Returns the bundles.
-	 * 
+	 *
 	 * @return Returns the bundles.
 	 */
-	public LinkedList<ResourceBundle> getBundles()
-	{
-		return bundles;
+	public LinkedList<ResourceBundle> getBundles() {
+        return bundles;
 	}
+
 	/**
 	 * Adds a resource bundle.
-	 * 
+	 *
 	 * @param basename
 	 *            The basename of the resource bundle to add.
 	 */
-	public static void add(String basename)
-	{
+	public static void add(String basename) {
 		bundles = new LinkedList<ResourceBundle>();
 		bundles.addFirst(PropertyResourceBundle.getBundle(basename));
 	}
 
 	/**
-	 * 
+	 * Gets a string from from the current resource bundle.
+	 *
+	 * @param key
+	 *            The key string to locate.
+     * @return The matching string.
 	 */
-	public static String get(String key)
-	{
+	public static String get(String key) {
 		return get(key, null);
 	}
 
@@ -91,8 +108,8 @@ public class Resource {
 		{
 			try
 			{ return it.next().getString(key); }
-			catch (MissingResourceException mrex)
-			{ /* continue */ }
+			catch (MissingResourceException mrex) {
+            }
 		}
 
 		return null;

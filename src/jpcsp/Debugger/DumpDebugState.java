@@ -1,7 +1,22 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.Debugger;
 
 import jpcsp.*;
-//import jpcsp.Allegrex.*;
 import jpcsp.HLE.*;
 import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.modules.ThreadManForUser;
@@ -10,33 +25,20 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
 import java.util.Iterator;
 
-public class DumpDebugState
-{
-    public static void dumpDebugState()
-    {
+public class DumpDebugState {
+    public static void dumpDebugState() {
         log("------------------------------------------------------------");
-
-        if (isGameLoaded())
-        {
-            // print registers, current instruction and current thread
+        if (isGameLoaded()) {
             dumpCurrentFrame();
-
-            // print all threads
             dumpThreads();
-
-            // print memory
             pspSysMem.getInstance().dumpSysMemInfo();
-        }
-        else
-        {
+        } else {
             log("No game loaded");
         }
-
         log("------------------------------------------------------------");
     }
 
-    private static String getThreadStatusName(int status)
-    {
+    private static String getThreadStatusName(int status) {
         String name = "";
 
         // A thread status is a bitfield so it could be in multiple states, but I don't think we use this "feature" in our HLE, handle it anyway
@@ -62,8 +64,7 @@ public class DumpDebugState
         return name;
     }
 
-    private static String getThreadWaitName(SceKernelThreadInfo thread)
-    {
+    private static String getThreadWaitName(SceKernelThreadInfo thread) {
         ThreadWaitInfo wait = thread.wait;
         String name = "";
 
@@ -106,8 +107,7 @@ public class DumpDebugState
         return name;
     }
 
-    public static void dumpThreads()
-    {
+    public static void dumpThreads() {
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();)
@@ -124,21 +124,17 @@ public class DumpDebugState
         }
     }
 
-    public static void dumpCurrentFrame()
-    {
+    public static void dumpCurrentFrame() {
         StepFrame frame = new StepFrame();
         frame.make(Emulator.getProcessor().cpu);
         log(frame.getMessage());
     }
 
-    private static boolean isGameLoaded()
-    {
-        // HACK
+    private static boolean isGameLoaded() {
         return Modules.ThreadManForUserModule.getCurrentThreadID() != -1;
     }
 
-    private static void log(String msg)
-    {
+    private static void log(String msg) {
         System.err.println(msg);
         Modules.log.error(msg);
     }

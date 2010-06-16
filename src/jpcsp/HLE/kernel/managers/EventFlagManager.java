@@ -29,6 +29,11 @@ import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
+/*
+ * TODO list:
+ * 1. Use CANNOT_CANCEL 0x80020261 in sceKernelCancelEventFlag().
+ */
+
 public class EventFlagManager {
 
     private static HashMap<Integer, SceKernelEventFlagInfo> eventMap;
@@ -36,7 +41,7 @@ public class EventFlagManager {
 
     private final static int PSP_EVENT_WAITMULTIPLE = 0x200;
 
-    //private final static int PSP_EVENT_WAITAND = 0x00;
+    private final static int PSP_EVENT_WAITAND = 0x00;
     private final static int PSP_EVENT_WAITOR = 0x01;
     private final static int PSP_EVENT_WAITCLEARALL = 0x10;
     private final static int PSP_EVENT_WAITCLEAR = 0x20;
@@ -89,7 +94,6 @@ public class EventFlagManager {
             removeWaitingThread(thread);
         }
     }
-
 
     /** May yield, so call last/after setting gpr[2] */
     private void onEventFlagDeletedCancelled(int evid, int result) {
@@ -242,13 +246,11 @@ public class EventFlagManager {
 
         if ((wait & PSP_EVENT_WAITOR) == PSP_EVENT_WAITOR &&
             (event.currentPattern & bits) != 0) {
-            //Modules.log.debug("checkEventFlag matched PSP_EVENT_WAITOR");
             matched = true;
         }
 
         // PSP_EVENT_WAITAND is 0x00, check last
         else if ((event.currentPattern & bits) == bits) {
-            //Modules.log.debug("checkEventFlag matched PSP_EVENT_WAITAND");
             matched = true;
         }
 
@@ -266,7 +268,6 @@ public class EventFlagManager {
             }
 
             if ((wait & PSP_EVENT_WAITCLEAR) == PSP_EVENT_WAITCLEAR) {
-                //Modules.log.debug("checkEventFlag matched PSP_EVENT_WAITCLEAR");
                 event.currentPattern &= ~bits;
             }
         }
@@ -298,7 +299,6 @@ public class EventFlagManager {
             int micros = 0;
             if (mem.isAddressGood(timeout_addr)) {
                 micros = mem.read32(timeout_addr);
-                //Modules.log.debug("sceKernelWaitEventFlag found timeout micros = " + micros);
             }
 
             if (!checkEventFlag(event, bits, wait, outBits_addr)) {
@@ -380,7 +380,6 @@ public class EventFlagManager {
             event.currentPattern = newPattern;
             event.numWaitThreads = 0;
 
-            // TODO CANNOT_CANCEL 0x80020261
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(result_addr))
             	mem.write32(result_addr, 0);

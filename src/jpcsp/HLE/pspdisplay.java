@@ -1,8 +1,4 @@
 /*
-Function:
-- HLE everything in http://psp.jim.sh/pspsdk-doc/pspdisplay_8h.html
-
-
 This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
@@ -58,6 +54,15 @@ import com.sun.opengl.util.Screenshot;
 /**
  * @author shadow, aisesal
  */
+
+/*
+ * TODO list:
+ * 1. Use texture rectangles (NPOT gives problems with ATI drivers) when using
+ * "disableGE".
+ *
+ * 2. Check sceDisplayGetCurrentHcount() on PSP.
+ */
+
 public final class pspdisplay extends GLCanvas implements GLEventListener {
 	private static final long serialVersionUID = 2267866365228834812L;
 	private static pspdisplay instance;
@@ -68,9 +73,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             GLCapabilities capabilities = new GLCapabilities();
             capabilities.setStencilBits(8);
             capabilities.setAlphaBits(8);
-
-            // Along with swapBuffers() seems to have no effect
-            //capabilities.setDoubleBuffered(true);
 
             instance = new pspdisplay(capabilities);
         }
@@ -775,17 +777,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
 
         if (disableGE) {
-            // TODO: Use texture rectangles, as NPOT give problems with ATI drivers (shash.clp)
             pixelsFb.clear();
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
             gl.glTexSubImage2D(
                 GL.GL_TEXTURE_2D, 0,
                 0, 0, bufferwidthFb, height,
                 GL.GL_RGBA, getPixelFormatGL(pixelformatFb), pixelsFb);
-
-            // Debug step, copy screen back into pixelsFb
-            //drawFrameBuffer(gl, false, false);
-            //copyScreenToPixels(gl, pixelsFb, bufferwidthFb, pixelformatFb);
 
             drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
         } else if (onlyGEGraphics) {
@@ -813,7 +810,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	                getFormatGL(pixelformatGe),
 	                pixelFormatGL, pixelsGe);
 
-                // why is 2nd param not set to "true" here? (fiveofhearts)
 	            drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
             }
 
@@ -849,8 +845,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 rotate(ang);
 
             drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
-
-            //swapBuffers();
         }
 
         reportFPSStats();
@@ -1120,7 +1114,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayGetCurrentHcount() {
-    	// TODO This is not matching the PSP
         Emulator.getProcessor().cpu.gpr[2] = (int) (getVcount() * 0.15f);
     }
 
@@ -1138,8 +1131,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayIsForeground() {
-    	// Return 1 if the framebuffer is displaying.
-        // TODO: Check when the framebuffer is not available?
     	Emulator.getProcessor().cpu.gpr[2] = 1;
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceDisplayIsForeground ret: " + Emulator.getProcessor().cpu.gpr[2]);
@@ -1153,6 +1144,18 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void sceDisplaySetResumeMode(int unk) {
         Modules.log.warn("IGNORING: sceDisplaySetResumeMode unk=" + unk);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    public void sceDisplayGetBrightness(int leveladdr, int unkaddr) {
+        Modules.log.warn("IGNORING: sceDisplayGetBrightness leveladdr=0x"
+                + Integer.toHexString(leveladdr) + ", unkaddr=0x"
+                + Integer.toHexString(unkaddr));
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    public void sceDisplay_A83EF139() {
+        Modules.log.warn("UNIMPLEMENTED: sceDisplay_A83EF139");
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
