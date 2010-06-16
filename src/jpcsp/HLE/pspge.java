@@ -142,7 +142,7 @@ public class pspge {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    public synchronized void sceGeListEnQueue(int list_addr, int stall_addr, int cbid, int arg_addr) {
+    public void sceGeListEnQueue(int list_addr, int stall_addr, int cbid, int arg_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (VideoEngine.log.isDebugEnabled()) {
@@ -159,15 +159,17 @@ public class pspge {
     		cpu.gpr[2] = 0x80000021;
     		VideoEngine.log.warn("sceGeListEnQueue can't enqueue duplicate list address");
     	} else {
-	    	PspGeList list = listFreeQueue.poll();
-	    	if (list == null) {
-	    		cpu.gpr[2] = 0x80000022;
-	    		VideoEngine.log.warn("sceGeListEnQueue no more free list available!");
-	    	} else {
-	    		list.init(list_addr, stall_addr, cbid, arg_addr);
-	    		startGeList(list);
-	            cpu.gpr[2] = list.id;
-	    	}
+    		synchronized (this) {
+    	    	PspGeList list = listFreeQueue.poll();
+    	    	if (list == null) {
+    	    		cpu.gpr[2] = 0x80000022;
+    	    		VideoEngine.log.warn("sceGeListEnQueue no more free list available!");
+    	    	} else {
+    	    		list.init(list_addr, stall_addr, cbid, arg_addr);
+    	    		startGeList(list);
+    	            cpu.gpr[2] = list.id;
+    	    	}
+			}
     	}
 
 		if (VideoEngine.log.isDebugEnabled()) {
@@ -175,7 +177,7 @@ public class pspge {
 		}
     }
 
-    public synchronized void sceGeListEnQueueHead(int list_addr, int stall_addr, int cbid, int arg_addr) {
+    public void sceGeListEnQueueHead(int list_addr, int stall_addr, int cbid, int arg_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         // Identical to sceGeListEnQueue, but places the list at the
@@ -195,15 +197,17 @@ public class pspge {
     		cpu.gpr[2] = 0x80000021;
     		VideoEngine.log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
     	} else {
-	    	PspGeList list = listFreeQueue.poll();
-	    	if (list == null) {
-	    		cpu.gpr[2] = 0x80000022;
-	    		VideoEngine.log.warn("sceGeListEnQueueHead no more free list available!");
-	    	} else {
-	    		list.init(list_addr, stall_addr, cbid, arg_addr);
-	    		startGeListHead(list);
-	            cpu.gpr[2] = list.id;
-	    	}
+    		synchronized (this) {
+    	    	PspGeList list = listFreeQueue.poll();
+    	    	if (list == null) {
+    	    		cpu.gpr[2] = 0x80000022;
+    	    		VideoEngine.log.warn("sceGeListEnQueueHead no more free list available!");
+    	    	} else {
+    	    		list.init(list_addr, stall_addr, cbid, arg_addr);
+    	    		startGeListHead(list);
+    	            cpu.gpr[2] = list.id;
+    	    	}
+			}
     	}
 
 		if (VideoEngine.log.isDebugEnabled()) {
@@ -211,7 +215,7 @@ public class pspge {
 		}
     }
 
-    public synchronized void sceGeListDeQueue(int id) {
+    public void sceGeListDeQueue(int id) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (VideoEngine.log.isDebugEnabled()) {
@@ -221,16 +225,18 @@ public class pspge {
         if (id < 0 || id >= NUMBER_GE_LISTS) {
         	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
         } else {
-        	PspGeList list = allGeLists[id];
-        	list.reset();
-        	if (!listFreeQueue.contains(list)) {
-        		listFreeQueue.add(list);
-        	}
+        	synchronized (this) {
+            	PspGeList list = allGeLists[id];
+            	list.reset();
+            	if (!listFreeQueue.contains(list)) {
+            		listFreeQueue.add(list);
+            	}
+			}
             cpu.gpr[2] = 0;
         }
     }
 
-    public synchronized void sceGeListUpdateStallAddr(int id, int stall_addr) {
+    public void sceGeListUpdateStallAddr(int id, int stall_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (VideoEngine.log.isDebugEnabled()) {
@@ -242,17 +248,19 @@ public class pspge {
         if (id < 0 || id >= NUMBER_GE_LISTS) {
         	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
         } else {
-        	PspGeList list = allGeLists[id];
-        	if (list.getStallAddr() != stall_addr) {
-        		list.setStallAddr(stall_addr);
-                pspdisplay.getInstance().setGeDirty(true);
-        	}
+        	synchronized (this) {
+            	PspGeList list = allGeLists[id];
+            	if (list.getStallAddr() != stall_addr) {
+            		list.setStallAddr(stall_addr);
+                    pspdisplay.getInstance().setGeDirty(true);
+            	}
+			}
             cpu.gpr[2] = 0;
         }
     }
 
     /** Called from VideoEngine */
-    public synchronized void hleGeListSyncDone(PspGeList list) {
+    public void hleGeListSyncDone(PspGeList list) {
         if (VideoEngine.log.isDebugEnabled()) {
             String msg = "hleGeListSyncDone list " + list;
 
@@ -269,14 +277,16 @@ public class pspge {
             VideoEngine.log.debug(msg);
         }
 
-        if (list.thid > 0 && list.status != PSP_GE_LIST_END_REACHED) {
-            // things might go wrong if the thread already exists in the queue
-            deferredThreadWakeupQueue.add(list.thid);
-        }
+        synchronized (this) {
+            if (list.thid > 0 && list.status != PSP_GE_LIST_END_REACHED) {
+                // things might go wrong if the thread already exists in the queue
+                deferredThreadWakeupQueue.add(list.thid);
+            }
 
-        if (list.isDone()) {
-        	listFreeQueue.add(list);
-        }
+            if (list.isDone()) {
+            	listFreeQueue.add(list);
+            }
+		}
     }
 
     public void hleGeOnAfterCallback(int listId, int behavior) {
@@ -307,7 +317,7 @@ public class pspge {
     	pspdisplay.getInstance().setGeDirty(true);
     }
 
-    public synchronized void sceGeListSync(int id, int mode) {
+    public void sceGeListSync(int id, int mode) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (VideoEngine.log.isDebugEnabled()) {
@@ -322,56 +332,79 @@ public class pspge {
     		VideoEngine.log.warn("sceGeListSync mode=0 called inside an Interrupt!");
     		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-        	PspGeList list = allGeLists[id];
-        	if (VideoEngine.log.isDebugEnabled()) {
-            	VideoEngine.log.debug("sceGeListSync on list: " + list);
-        	}
+        	PspGeList list = null;
+        	boolean blockCurrentThread = false;
 
-        	if (list.isReset()) {
-        		cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
-        	} else if (mode == 0 && !list.isDone()) {
-        		cpu.gpr[2] = 0;
+        	synchronized (this) {
+            	list = allGeLists[id];
+            	if (VideoEngine.log.isDebugEnabled()) {
+                	VideoEngine.log.debug("sceGeListSync on list: " + list);
+            	}
+
+            	if (list.isReset()) {
+            		cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
+            	} else if (mode == 0 && !list.isDone()) {
+            		cpu.gpr[2] = 0;
+            		blockCurrentThread = true;
+            	} else {
+            		cpu.gpr[2] = list.status;
+            	}
+			}
+
+        	// Block the current thread outside of the synchronized block
+        	if (blockCurrentThread) {
         		blockCurrentThreadOnList(list, null);
-        	} else {
-        		cpu.gpr[2] = list.status;
         	}
         }
     }
 
     private void blockCurrentThreadOnList(PspGeList list, IAction action) {
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        list.thid = threadMan.getCurrentThreadID();
 
-        if (list.isDone()) {
-    		// There has been some race condition: the list has just completed
-        	// do not block the thread
-	    	if (VideoEngine.log.isDebugEnabled()) {
-	    		VideoEngine.log.debug("blockCurrentThreadOnList not blocking thread " + Integer.toHexString(list.thid) + ", list completed " + list);
-	    	}
-    		list.thid = 0;
-    		if (action != null) {
-    			action.execute();
-    		}
-    	} else {
-	    	if (VideoEngine.log.isDebugEnabled()) {
-	    		VideoEngine.log.debug("blockCurrentThreadOnList blocking thread " + Integer.toHexString(list.thid) + " on list " + list);
-	    	}
+    	boolean blockCurrentThread = false;
+    	boolean executeAction = false;
+
+    	synchronized (this) {
+            list.thid = threadMan.getCurrentThreadID();
+
+            if (list.isDone()) {
+        		// There has been some race condition: the list has just completed
+            	// do not block the thread
+    	    	if (VideoEngine.log.isDebugEnabled()) {
+    	    		VideoEngine.log.debug("blockCurrentThreadOnList not blocking thread " + Integer.toHexString(list.thid) + ", list completed " + list);
+    	    	}
+        		list.thid = 0;
+        		executeAction = true;
+        	} else {
+    	    	if (VideoEngine.log.isDebugEnabled()) {
+    	    		VideoEngine.log.debug("blockCurrentThreadOnList blocking thread " + Integer.toHexString(list.thid) + " on list " + list);
+    	    	}
+    	    	blockCurrentThread = true;
+        	}
+		}
+
+    	// Execute the action outside of the synchronized block
+    	if (executeAction && action != null) {
+    		action.execute();
+    	}
+
+    	// Block the thread outside of the synchronized block
+    	if (blockCurrentThread) {
     		threadMan.hleBlockCurrentThreadCB(action);
-	        //threadMan.checkCallbacks();
     	}
     }
 
     // sceGeDrawSync is resetting all the lists having status PSP_GE_LIST_DONE
-    private synchronized void hleGeAfterDrawSyncAction() {
-    	for (int i = 0; i < NUMBER_GE_LISTS; i++) {
-    		if (allGeLists[i].status == PSP_GE_LIST_DONE) {
-    			allGeLists[i].reset();
-    		}
-    	}
+    private void hleGeAfterDrawSyncAction() {
+    	synchronized (this) {
+        	for (int i = 0; i < NUMBER_GE_LISTS; i++) {
+        		if (allGeLists[i].status == PSP_GE_LIST_DONE) {
+        			allGeLists[i].reset();
+        		}
+        	}
+		}
     }
 
-    // sceGeDrawSync cannot be synchronized because it can block the
-    // current thread and trigger callbacks while keeping the lock
     public void sceGeDrawSync(int mode) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
@@ -379,6 +412,8 @@ public class pspge {
     		VideoEngine.log.debug("sceGeDrawSync mode=" + mode);
     	}
 
+        // no synchronization on "this" required because we are not accessing
+    	// local data, only list information from the VideoEngine.
         if (mode == 0) {
             if (IntrManager.getInstance().isInsideInterrupt()) {
         		VideoEngine.log.warn("sceGeDrawSync mode=0 called inside an Interrupt!");
@@ -472,27 +507,29 @@ public class pspge {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    public synchronized void sceGeContinue() {
+    public void sceGeContinue() {
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceGeContinue()");
     	}
 
     	PspGeList list = VideoEngine.getInstance().getCurrentList();
     	if (list != null) {
-    		if (list.status == PSP_GE_LIST_END_REACHED) {
-            	Memory mem = Memory.getInstance();
-            	if (mem.read32(list.pc) == (GeCommands.FINISH << 24) &&
-            		mem.read32(list.pc + 4) == (GeCommands.END << 24)) {
-            		list.pc += 8;
-            	}
-            	list.restartList();
-    		}
+    		synchronized (this) {
+        		if (list.status == PSP_GE_LIST_END_REACHED) {
+                	Memory mem = Memory.getInstance();
+                	if (mem.read32(list.pc) == (GeCommands.FINISH << 24) &&
+                		mem.read32(list.pc + 4) == (GeCommands.END << 24)) {
+                		list.pc += 8;
+                	}
+                	list.restartList();
+        		}
+			}
     	}
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    public synchronized void sceGeBreak() {
+    public void sceGeBreak() {
     	Modules.log.warn("Unsupported sceGeBreak");
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
