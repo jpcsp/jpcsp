@@ -26,17 +26,24 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.util.Utilities;
 
+/*
+ * TODO list:
+ * 1. Use CANNOT_CANCEL 0x80020261 in sceKernelCancelEventFlag().
+ *
+ * 2. Implement a queue to receive blocks waiting for allocation and process
+ * memory events for them (onFreeFpl).
+ *
+ * 3. Find the correct error code sceKernelCreateFpl() when blocksize is 0.
+ */
+
 public class FplManager {
 
     private HashMap<Integer, SceKernelFplInfo> fplMap;
-    // TODO private List<Integer> waitAllocateQueue; // For use when there is no free mem
 
     public void reset() {
         fplMap = new HashMap<Integer, SceKernelFplInfo>();
-        // TODO waitAllocateQueue = new LinkedList<Integer>();
     }
 
-    // 8 byte opt, what is in it?
     public void sceKernelCreateFpl(int name_addr, int partitionid, int attr, int blocksize, int blocks, int opt_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
@@ -67,7 +74,7 @@ public class FplManager {
             cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
         } else if (blocksize == 0) {
             Modules.log.warn("sceKernelCreateFpl bad blocksize, cannot be 0");
-            cpu.gpr[2] = -1; // TODO find the correct error code, also check if we should perform this check in VPL manager too
+            cpu.gpr[2] = -1;
         } else {
             SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks);
             if (info != null) {
@@ -118,64 +125,6 @@ public class FplManager {
         return addr;
     }
 
-    /* TODO
-     * this will probably need hooking into pspsysmem free()
-    private void onFreeSysMem() {
-        for (Iterator<Integer> it = waitAllocateQueue.iterator(); it.hasNext(); ) {
-            int waitingThreadId = it.next();
-
-            SceKernelThreadInfo thread = Managers.ThreadMan.getThread(waitingThreadId);
-            if (thread == null) {
-                // Thread got deleted while waiting for free mem
-                it.remove();
-            } else {
-                // re-read syscall params
-                int uid = thread.cpuContext.gpr[4];
-                int data_addr = thread.cpuContext.gpr[5];
-
-                SceKernelFplInfo info = fplMap.get(uid);
-                if (info == null) {
-                    // Fpl got deleted while we were waiting
-                    it.remove();
-                } else {
-                    int addr = tryAllocateFpl(info);
-                    if (addr != 0) {
-                        mem.write32(data_addr, addr);
-                        thread.cpuContext.cpu.gpr[2] = 0;
-                        Managers.ThreadMan.resumeThread(waitingThreadId);
-                        it.remove();
-                        break;
-                    }
-                }
-            }
-
-        }
-    }
-    */
-
-    /* TODO
-    private void onFreeFpl(SceKernelFplInfo info) {
-        for (Iterator<Integer> it = info.waitAllocateQueue.iterator(); it.hasNext(); ) {
-            int waitingThreadId = it.next();
-            SceKernelThreadInfo thread = Managers.ThreadMan.getThread(waitingThreadId);
-            if (thread == null) {
-                // Thread got deleted
-                it.remove();
-            } else {
-                int addr = tryAllocateFpl(info);
-                if (addr != 0) {
-                    int data_addr = thread.cpuContext.gpr[5]; // re-read syscall param
-                    mem.write32(data_addr, addr);
-                    thread.cpuContext.cpu.gpr[2] = 0;
-                    Managers.ThreadMan.resumeThread(waitingThreadId);
-                    it.remove();
-                    break;
-                }
-            }
-        }
-    }
-    */
-
     public void sceKernelAllocateFpl(int uid, int data_addr, int timeout_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
@@ -192,28 +141,10 @@ public class FplManager {
             int addr = tryAllocateFpl(info);
             if (addr == 0) {
                 // Alloc failed - don't write to data_addr, yet
-                cpu.gpr[2] = ERROR_WAIT_TIMEOUT; // TODO if we wakeup and manage to allocate set v0 = 0
+                cpu.gpr[2] = ERROR_WAIT_TIMEOUT;
 
                 Modules.log.warn("UNIMPLEMENTED:sceKernelAllocateFpl uid=0x" + Integer.toHexString(uid) + " wait");
 
-                /* TODO
-                // try allocate when something frees
-                if (info.freeBlocks == 0) {
-                    // no free blocks in this fpl
-                    info.waitAllocateQueue.add(Managers.ThreadManager.getCurrentThreadId());
-                } else {
-                    // some free blocks, but no free mem
-                    waitAllocateQueue.add(Managers.ThreadManager.getCurrentThreadId());
-                }
-
-                if (timeout_addr == 0) {
-                    Managers.ThreadManager.blockCurrentThread()
-                } else {
-                    // wakeup after timeout has expired
-                    int micros = mem.read32(timeout_addr);
-                    Managers.ThreadManager.delayCurrentThread(micros);
-                }
-                */
             } else {
                 // Alloc succeeded
                 mem.write32(data_addr, addr);
@@ -223,10 +154,8 @@ public class FplManager {
     }
 
     public void sceKernelAllocateFplCB(int uid, int data_addr, int timeout_addr) {
-        // TODO there's no point even considering CB support until we've added timeout support
         Modules.log.warn("sceKernelAllocateFplCB redirecting to sceKernelAllocateFpl");
         sceKernelAllocateFpl(uid, data_addr, timeout_addr);
-        //ThreadMan.getInstance().checkCallbacks();
     }
 
     public void sceKernelTryAllocateFpl(int uid, int data_addr) {
@@ -273,7 +202,6 @@ public class FplManager {
                 Modules.log.debug(msg);
                 info.freeBlock(block);
                 cpu.gpr[2] = 0;
-                // TODO onFreeFpl(info);
             }
         }
     }
@@ -289,10 +217,6 @@ public class FplManager {
             Modules.log.warn("sceKernelCancelFpl unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
-            // TODO
-            // - for each thread waiting to allocate on this fpl, wake it up
-            // - if pnum_addr is a valid pointer write the number of threads we woke up to it
-
             cpu.gpr[2] = -1;
         }
     }

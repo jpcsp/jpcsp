@@ -1,8 +1,4 @@
 /*
-Function:
-- HLE everything in http://psp.jim.sh/pspsdk-doc/group__LoadExec.html
-
-
 This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
@@ -45,22 +41,17 @@ public class LoadExec {
     private LoadExec() {
     }
 
-    public void sceKernelRegisterExitCallback(int uid)
-    {
+    public void sceKernelRegisterExitCallback(int uid) {
         Modules.log.debug("IGNORING:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
-
-        // Fake successful return
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    public void sceKernelExitGame()
-    {
+    public void sceKernelExitGame() {
         Modules.log.info("Program exit detected (sceKernelExitGame)");
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
     }
 
-    public void sceKernelLoadExec(int filename_addr, int option_addr)
-    {
+    public void sceKernelLoadExec(int filename_addr, int option_addr) {
         Processor processor = Emulator.getProcessor();
         CpuState cpu = processor.cpu;
 

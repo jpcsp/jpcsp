@@ -1,8 +1,19 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+This file is part of jpcsp.
 
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.Allegrex;
 
 /**
@@ -39,7 +50,7 @@ public class MduState extends GprState {
     public void resetAll() {
         super.resetAll();
         hilo = 0;
-    }   
+    }
 
     public MduState() {
         hilo = 0;
@@ -54,7 +65,7 @@ public class MduState extends GprState {
         super(that);
         hilo = that.hilo;
     }
-    
+
     public static final long signedDivMod(int x, int y) {
         return (((long) (x % y)) << 32) | (((long) (x / y)) & 0xffffffffL);
     }
@@ -109,7 +120,7 @@ public class MduState extends GprState {
             long y = ((long) gpr[rt]) & 0xffffffffL;
             hilo = ((x % y) << 32) | ((x / y) & 0xffffffffL);
         }
-    }   
+    }
 
     public final void doMADD(int rs, int rt) {
         hilo += ((long) gpr[rs]) * ((long) gpr[rt]);
@@ -126,5 +137,4 @@ public class MduState extends GprState {
     public final void doMSUBU(int rs, int rt) {
         hilo -= (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
     }
-    
 }

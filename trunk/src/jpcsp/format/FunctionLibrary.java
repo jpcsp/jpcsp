@@ -1,6 +1,18 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
@@ -88,36 +100,5 @@ public class FunctionLibrary {
     }
 
     FunctionLibrary(String fw) throws Exception {
-        /*
-        m_moduleTable = new Hashtable();
-        
-        SAXBuilder builder = new SAXBuilder();
-        Document doc = builder.build(new File(fw + "/psplibdoc.xml"));
-        
-        XPath modules = XPath.newInstance("/PSPLIBDOC/PRXFILES/PRXFILE/LIBRARIES/LIBRARY");
-        
-        List LibList = modules.selectNodes(doc);
-        m_moduleList = modules.selectNodes(doc, "//NAME");
-        
-        Iterator i = LibList.iterator();
-        
-        int x = 0;
-        
-        while (i.hasNext()) {
-        Element curEl = (Element) i.next();
-        String modName = curEl.getChild("NAME").getText();
-        Module newMod = new Module(modName);
-        List FunctionList = curEl.getChild("FUNCTIONS").getChildren("FUNCTION");
-        Iterator j = FunctionList.iterator();
-        while (j.hasNext()) {
-        Element funcEl = (Element) j.next();
-        newMod.addFunction(funcEl.getChild("NID").getText(), funcEl.getChild("NAME").getText());
-        m_functionCount++;
-        }
-        m_moduleCount++;
-        m_moduleTable.put(modName, newMod);
-        }
-         */
     }
 }
-

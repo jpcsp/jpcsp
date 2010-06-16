@@ -1,11 +1,4 @@
 /*
-Function:
-- http://psp.jim.sh/pspsdk-doc/group__SysMem.html
-
-Notes:
-Current allocation scheme doesn't handle partitions, freeing blocks or the
-space consumed by the program image.
-
 This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
@@ -37,6 +30,21 @@ import static jpcsp.util.Utilities.*;
 import jpcsp.HLE.kernel.managers.*;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 
+/*
+ * TODO list:
+ * 1. Delete the "DisableReservedThreadMemory" compatibility setting.
+ *
+ * 2. Use the partitionid in functions that use it as a parameter.
+ *  -> Info:
+ *      1 = kernel, 2 = user, 3 = me, 4 = kernel mirror (from potemkin/dash)
+ *      http://forums.ps2dev.org/viewtopic.php?p=75341#75341
+ *      8 = slim, topaddr = 0x8A000000, size = 0x1C00000 (28 MB), attr = 0x0C
+ *      8 = slim, topaddr = 0x8BC00000, size = 0x400000 (4 MB), attr = 0x0C
+ *
+ * 3. Implement format string parsing and reading variable number of parameters
+ * in sceKernelPrintf.
+ */
+
 public class pspSysMem {
     private static pspSysMem instance;
     private static Logger stdout = Logger.getLogger("stdout");
@@ -45,6 +53,7 @@ public class pspSysMem {
     private int firmwareVersion = 150;
     private boolean disableReservedThreadMemory = false;
     private static final int defaultSizeAlignment = 256;
+
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
     public static final int PSP_SMEM_High = 1;
@@ -74,8 +83,6 @@ public class pspSysMem {
         setFirmwareVersion(firmwareVersion);
     }
 
-    // This compatibility settings should now be obsolete
-    // TODO Delete the "DisableReservedThreadMemory" compatibility setting
     public void setDisableReservedThreadMemory(boolean disableReservedThreadMemory) {
         this.disableReservedThreadMemory = disableReservedThreadMemory;
         Modules.log.info("Disable reserved thread memory: " + disableReservedThreadMemory);
@@ -85,7 +92,6 @@ public class pspSysMem {
     }
 
     // Allocates to 256-byte alignment
-    // TODO use the partitionid
     public int malloc(int partitionid, int type, int size, int addr) {
         int allocatedAddress = 0;
 
@@ -118,7 +124,6 @@ public class pspSysMem {
         	case PSP_SMEM_Addr:
         		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
         			if (memoryChunk.addr <= addr && addr < memoryChunk.addr + memoryChunk.size) {
-        				// The address is located in this MemoryChunk
         				allocatedAddress = freeMemoryChunks.allocInside(memoryChunk, addr, size);
         			}
         		}
@@ -192,10 +197,6 @@ public class pspSysMem {
     public int maxFreeMemSize() {
     	int maxFreeMemSize = 0;
     	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-        	// Since some apps try and allocate the value of sceKernelMaxFreeMemSize,
-            // which will leave no space for stacks we're going to reserve 0x09f00000
-            // to 0x09ffffff for stacks, but stacks are allowed to go below that
-            // (if there's free space of course).
     		if (!disableReservedThreadMemory) {
     			final int heapTopGuard = 0x09f00000;
     			if (memoryChunk.addr >= heapTopGuard) {
@@ -249,11 +250,7 @@ public class pspSysMem {
     }
 
     /**
-     * @param partitionid TODO probably user, kernel etc
-     * 1 = kernel, 2 = user, 3 = me, 4 = kernel mirror (from potemkin/dash)
-     * http://forums.ps2dev.org/viewtopic.php?p=75341#75341
-     * 8 = slim, topaddr = 0x8A000000, size = 0x1C00000 (28 MB), attr = 0x0C
-     * 8 = slim, topaddr = 0x8BC00000, size = 0x400000 (4 MB), attr = 0x0C
+     * @param partitionid probably user, kernel etc
      * @param type If type is PSP_SMEM_Addr, then addr specifies the lowest
      * address to allocate the block from.
      */
@@ -378,7 +375,6 @@ public class pspSysMem {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    /** TODO implement format string parsing and reading variable number of parameters */
     public void sceKernelPrintf(int string_addr) {
         String msg = readStringNZ(string_addr, 256);
         if (Modules.log.isDebugEnabled()) {
@@ -518,7 +514,6 @@ public class pspSysMem {
 
         @Override
         public int compareTo(SysMemInfo o) {
-            //there are no equal adresses. Or at least there shouldn't be...
             if (addr == o.addr) {
                 Modules.log.warn("Set invariant broken for SysMemInfo " + this);
                 return 0;
@@ -588,7 +583,7 @@ public class pspSysMem {
     	/**
     	 * Allocate a memory from the MemoryChunk, at its lowest address.
     	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
-    	 * 
+    	 *
     	 * @param memoryChunk the MemoryChunk where the memory should be allocated
     	 * @param size        the size of the memory to be allocated
     	 * @return            the base address of the allocated memory
@@ -609,7 +604,7 @@ public class pspSysMem {
     	/**
     	 * Allocate a memory from the MemoryChunk, at its highest address.
     	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
-    	 * 
+    	 *
     	 * @param memoryChunk the MemoryChunk where the memory should be allocated
     	 * @param size        the size of the memory to be allocated
     	 * @return            the base address of the allocated memory
@@ -633,7 +628,7 @@ public class pspSysMem {
     	 * The base address must be inside the MemoryChunk
     	 * The MemoryChunk is updated accordingly, is removed if it stays empty or
     	 * is split into 2 remaining free parts.
-    	 * 
+    	 *
     	 * @param memoryChunk the MemoryChunk where the memory should be allocated
     	 * @param addr        the base address of the memory to be allocated
     	 * @param size        the size of the memory to be allocated
@@ -669,7 +664,7 @@ public class pspSysMem {
     	/**
     	 * Add a new MemoryChunk after another one.
     	 * This method does not check if the addresses are kept ordered.
-    	 * 
+    	 *
     	 * @param memoryChunk the MemoryChunk to be added
     	 * @param reference   memoryChunk has to be added after this reference
     	 */
@@ -689,7 +684,7 @@ public class pspSysMem {
     	/**
     	 * Add a new MemoryChunk before another one.
     	 * This method does not check if the addresses are kept ordered.
-    	 * 
+    	 *
     	 * @param memoryChunk the MemoryChunk to be added
     	 * @param reference   memoryChunk has to be added before this reference
     	 */
@@ -710,7 +705,7 @@ public class pspSysMem {
     	 * Add a new MemoryChunk to the list. It is added in the list so that
     	 * the addresses are kept in increasing order.
     	 * The MemoryChunk might be merged into another adjacent MemoryChunk.
-    	 * 
+    	 *
     	 * @param memoryChunk the MemoryChunk to be added
     	 */
     	public void add(MemoryChunk memoryChunk) {

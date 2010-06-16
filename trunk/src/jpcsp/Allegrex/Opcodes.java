@@ -1,8 +1,19 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+This file is part of jpcsp.
 
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.Allegrex;
 
 /**
@@ -12,7 +23,7 @@ package jpcsp.Allegrex;
 public class Opcodes {
 
 // CPU: encoded by opcode field.
-// 
+//
 //     31---------26---------------------------------------------------0
 //     |  opcode   |                                                   |
 //     ------6----------------------------------------------------------
@@ -26,11 +37,11 @@ public class Opcodes {
 // 110 | LL    | LWC1  | LVS   | ---   | VFPU4 | ULVQ  | LVQ   | VFPU5 |
 // 111 | SC    | SWC1  | SVS   | ---   | VFPU6 | USVQ  | SVQ   | VFPU7 |
 //  hi |-------|-------|-------|-------|-------|-------|-------|-------|
-//  
+//
 //      *1 = SPECIAL, see SPECIAL list    *2 = REGIMM, see REGIMM list
-//      *3 = COP0                         *4 = COP1  
+//      *3 = COP0                         *4 = COP1
 //      *5 = SPECIAL2 , see SPECIAL2      *6 = SPECAIL3 , see SPECIAL 3
-//      *ULVQ is buggy on PSP1000 PSP 
+//      *ULVQ is buggy on PSP1000 PSP
 //      *VFPU0 check VFPU0 table
 //      *VFPU1 check VFPU1 table
 //      *VFPU2 check VFPU2 table
@@ -55,8 +66,8 @@ public class Opcodes {
     public static final byte ORI = 0xd; // OR Immediate
     public static final byte XORI = 0xe; // Exclusive OR Immediate
     public static final byte LUI = 0xf; // Load Upper Immediate
-    public static final byte COP0 = 0x10; // Coprocessor Operation 
-    public static final byte COP1 = 0x11; // Coprocessor Operation 
+    public static final byte COP0 = 0x10; // Coprocessor Operation
+    public static final byte COP1 = 0x11; // Coprocessor Operation
     public static final byte VFPU2 = 0x12;
     /*  0x13 reserved or unsupported */
     public static final byte BEQL = 0x14; // Branch on Equal Likely
@@ -104,7 +115,7 @@ public class Opcodes {
     public static final byte USVQ = 0x3d; // Store Quad VFPU Register (Unaligned)
     public static final byte SVQ = 0x3e; // Store Quad VFPU Register
     public static final byte VFPU7 = 0x3f;// SPECIAL: encoded by function field when opcode field = SPECIAL
-// 
+//
 //     31---------26------------------------------------------5--------0
 //     |=   SPECIAL|                                         | function|
 //     ------6----------------------------------------------------6-----
@@ -157,7 +168,7 @@ public class Opcodes {
     public static final byte AND = 0x24; // AND
     public static final byte OR = 0x25; // OR
     public static final byte XOR = 0x26; // Exclusive OR
-    public static final byte NOR = 0x27; // NOR   
+    public static final byte NOR = 0x27; // NOR
     /*  0x28 reserved or unsupported */
     /*  0x29 reserved or unsupported */
     public static final byte SLT = 0x2a; // Set on Less Than
@@ -168,7 +179,7 @@ public class Opcodes {
     public static final byte MSUBU = 0x2f; // Multiply And Substract
 
 // SPECIAL rs : encoded by rs field when opcode/func field = SPECIAL/SRLROR
-// 
+//
 //     31---------26-----21-----------------------------------5--------0
 //     |=   SPECIAL| rs  |                                    |= SRLROR|
 //     ------6--------5-------------------------------------------6-----
@@ -180,7 +191,7 @@ public class Opcodes {
 //  hi |-------|-------|-------|-------|-------|-------|-------|-------|
     public static final byte SRL = 0x0;
     public static final byte ROTR = 0x1;// SPECIAL sa : encoded by sa field when opcode/func field = SPECIAL/SRLRORV
-// 
+//
 //     31---------26------------------------------------10----5--------0
 //     |=   SPECIAL|                                    | sa  |=SRLRORV|
 //     ------6---------------------------------------------5------6-----
@@ -219,7 +230,7 @@ public class Opcodes {
     /*  0xe reserved or unsupported */
     /*  0xf reserved or unsupported */
     public static final byte BLTZAL = 0x10; // Branch on Less Than Zero And Link
-    public static final byte BGEZAL = 0x11; // Branch on Greater Than or Equal to Zero And Link    
+    public static final byte BGEZAL = 0x11; // Branch on Greater Than or Equal to Zero And Link
     public static final byte BLTZALL = 0x12; // Branch on Less Than Zero And Link Likely
     public static final byte BGEZALL = 0x13; // Branch on Greater Than or Equal to Zero And Link Likely
 //     COP0: encoded by the rs field when opcode field = COP0.
@@ -335,7 +346,7 @@ public class Opcodes {
     public static final byte BC1F = 0x00;
     public static final byte BC1T = 0x01;
     public static final byte BC1FL = 0x02;
-    public static final byte BC1TL = 0x03; //   
+    public static final byte BC1TL = 0x03; //
 //     COP1S: encoded by function field
 //     31---------21------------------------------------------5--------0
 //     |=  COP1S  |                                          | function|
@@ -349,7 +360,7 @@ public class Opcodes {
 // 101 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 // 110 |                            c.<*2>.s                           |
 // 110 |                            c.<*3>.s                           |
-//  hi |-------|-------|-------|-------|-------|-------|-------|-------|   
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
 //
 // *1 : round.w.s | trunc.w.s | ceil.w.s | floor.w.s
 // *2 : c.f.s | c.un.s | c.eq.s | c.ueq.s | c.olt.s | c.ult.s | c.ole.s | c.ule.s
@@ -398,7 +409,7 @@ public class Opcodes {
 // 101 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 // 110 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 // 110 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  hi |-------|-------|-------|-------|-------|-------|-------|-------|   
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
     public static final byte CVTSW = 0x20; //
 // VFPU2: /* known as COP2 */
     public static final byte MFVMFVC = 0x00;
@@ -409,7 +420,7 @@ public class Opcodes {
     public static final byte MTV = 0x0;
     public static final byte MTVC = 0x1;
 // VFPU0:
-// 
+//
 //     31---------26-----23--------------------------------------------0
 //     |=     VFPU0| VOP |                                             |
 //     ------6--------3-------------------------------------------------
@@ -421,7 +432,7 @@ public class Opcodes {
     public static final byte VSBN = 0x02; //
     public static final byte VDIV = 0x07; //
 // VFPU1:
-// 
+//
 //     31---------26-----23--------------------------------------------0
 //     |=     VFPU1| VOP |                                             |
 //     ------6--------3-------------------------------------------------
@@ -436,7 +447,7 @@ public class Opcodes {
     public static final byte VDET = 0x06; //
 
 // VFPU3:
-// 
+//
 //     31---------26-----23--------------------------------------------0
 //     |=     VFPU3| VOP |                                             |
 //     ------6--------3-------------------------------------------------
@@ -468,7 +479,7 @@ public class Opcodes {
 //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
 //     |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 //     |-------|-------|-------|-------|-------|-------|-------|-------|
-//  
+//
 
 // VFPU4_2:
 //     31---------26-----24--------------------------------------------0
@@ -496,7 +507,7 @@ public class Opcodes {
     public static final byte VCMOVT = 0x1; //
 
 // VFPU5:
-// 
+//
 //     31---------26----24---------------------------------------------0
 //     |=     VFPU5| VOP |                                             |
 //     ------6--------2-------------------------------------------------
@@ -512,25 +523,25 @@ public class Opcodes {
 //     ---------8-------------------------------------------------------
 //     |----------------0----------------|--------------1--------------|
 //     |              VIIM               |            VFIM             |
-//     |---------------------------------|-----------------------------|   
+//     |---------------------------------|-----------------------------|
     public static final byte VIIM = 0x0;
     public static final byte VFIM = 0x1;    // VFPU6:
-// 
+//
 //     31---------26-----23--------------------------------------------0
 //     |=     VFPU6| VOP |                                             |
 //     ------6--------3-------------------------------------------------
 //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
 //     |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 //     |-------|-------|-------|-------|-------|-------|-------|-------|
-//  
+//
 
 // VFPU7:
-// 
+//
 //     31---------26-----23--------------------------------------------0
 //     |=     VFPU6| VOP |                                             |
 //     ------6--------3-------------------------------------------------
 //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
 //     |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 //     |-------|-------|-------|-------|-------|-------|-------|-------|
-//  
+//
 }

@@ -33,6 +33,12 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.util.Utilities;
 
+/*
+ * TODO list:
+ * 1. Check if we should reschedule when waking higher priority threads in
+ * MsgPipe status' update functions.
+ */
+
 public class MsgPipeManager {
 	public static final int WAIT_MODE_COMPLETE = 0; // receive always a complete buffer
 	public static final int WAIT_MODE_PARTIAL = 1; // can receive a partial buffer
@@ -107,8 +113,6 @@ public class MsgPipeManager {
         removeWaitingThread(thread);
     }
 
-
-    // TODO check if we should yield when waking higher priority threads
     private void updateWaitingMsgPipeSend(SceKernelMppInfo info) {
         Memory mem = Memory.getInstance();
 
@@ -136,7 +140,6 @@ public class MsgPipeManager {
         }
     }
 
-    // TODO check if we should yield when waking higher priority threads
     private void updateWaitingMsgPipeReceive(SceKernelMppInfo info) {
         Memory mem = Memory.getInstance();
 
@@ -163,7 +166,6 @@ public class MsgPipeManager {
             }
         }
     }
-
 
     /** @return true on success */
     private boolean trySendMsgPipe(Memory mem, SceKernelMppInfo info, int addr, int size) {
@@ -204,7 +206,6 @@ public class MsgPipeManager {
 
         return true;
     }
-
 
     public void sceKernelCreateMsgPipe(int name_addr, int partitionid, int attr, int size, int opt_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;

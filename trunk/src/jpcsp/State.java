@@ -26,19 +26,14 @@ import jpcsp.Debugger.MemoryViewer;
  * @author hli
  */
 public class State extends jpcsp.HLE.Modules {
-
-    // re-enable this when we remove getInstance from all code
-    // also Emulator calls "new Processor()" too!
-    //public static final Processor processor = new Processor();
     public static final Memory memory;
     public static final Controller controller;
-
-    public static DisassemblerFrame debugger; // can be null
-    public static MemoryViewer memoryViewer; // can be null
+    public static DisassemblerFrame debugger;
+    public static MemoryViewer memoryViewer;
     public static final FileLoggerFrame fileLogger;
-
     public static String discId;
     public static String title;
+
     // make sure these are valid filenames because it gets used by the screenshot system
     public static final String DISCID_UNKNOWN_NOTHING_LOADED = "[unknown, nothing loaded]";
     public static final String DISCID_UNKNOWN_FILE = "[unknown, file]";
@@ -48,40 +43,28 @@ public class State extends jpcsp.HLE.Modules {
     public static boolean replayGeNextFrame;
 
     static {
-        //processor = new Processor();
         memory = Memory.getInstance();
         controller = new Controller();
-
-        //debugger = new DisassemblerFrame();
-        //memoryViewer = new MemoryViewer();
         fileLogger = new FileLoggerFrame();
-
         discId = DISCID_UNKNOWN_NOTHING_LOADED;
-
         captureGeNextFrame = false;
         replayGeNextFrame = false;
     }
 
     @Override
     public void step() {
-    	//processor.step();
-
         super.step();
     }
 
     @Override
     public void load(ByteBuffer buffer) {
-        //processor.load(buffer);
         memory.load(buffer);
-
         super.load(buffer);
     }
 
     @Override
     public void save(ByteBuffer buffer) {
-        //processor.save(buffer);
         memory.save(buffer);
-
         super.save(buffer);
     }
 }

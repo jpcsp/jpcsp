@@ -1,8 +1,19 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+This file is part of jpcsp.
 
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.filesystems.umdiso.iso9660;
 
 import java.io.*;
@@ -28,7 +39,7 @@ public class Iso9660File {
     {
         return ((int)b)&255;
     }
-    
+
     public Iso9660File(byte[] data, int length) throws IOException
     {
 
@@ -46,7 +57,7 @@ public class Iso9660File {
 34 to (33+LEN_FI)   File Identifier
 (34 + LEN_FI)   Padding Field
 
-*/        
+*/
 
         fileLBA = Ubyte(data[1]) | (Ubyte(data[2])<<8) | (Ubyte(data[3])<<16) | (data[4]<<24);
         fileSize = Ubyte(data[9]) | (Ubyte(data[10])<<8) | (Ubyte(data[11])<<16) | (data[12]<<24);
@@ -80,40 +91,40 @@ public class Iso9660File {
         timestamp = timestampCalendar.getTime();
 
         fileProperties = data[24];
-        
+
         if((fileLBA<0)||(fileSize<0))
         {
             throw new IOException("WTF?! Size or lba < 0?!");
         }
 
         int fileNameLength = data[31];
-        
+
         fileName="";
         for(int i=0;i<fileNameLength;i++)
         {
             char c =(char)(data[32+i]);
             if(c==0) c='.';
-                
+
             fileName += c;
         }
-        
+
     }
 
     public int getLBA()
     {
         return fileLBA;
     }
-    
+
     public int getSize()
     {
         return fileSize;
     }
-    
+
     public int getProperties()
     {
         return fileProperties;
     }
-    
+
     public String getFileName()
     {
         return fileName;

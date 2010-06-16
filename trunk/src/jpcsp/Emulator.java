@@ -42,6 +42,14 @@ import jpcsp.scheduler.Scheduler;
 
 import org.apache.log4j.Logger;
 
+/*
+ * TODO list:
+ * 1. Cleanup initialisation in initNewPsp():
+ *  - UMD: calls setFirmwareVersion before initNewPsp (PSF is read separate from BOOT.BIN).
+ *  - PBP: calls initNewPsp before setFirmwareVersion (PSF is embedded in PBP).
+ *  - ELF/PRX: only calls initNewPsp (doesn't have a PSF).
+ */
+
 public class Emulator implements Runnable {
     private static Emulator instance;
     private static Processor processor;
@@ -120,8 +128,6 @@ public class Emulator implements Runnable {
 
         module = jpcsp.Loader.getInstance().LoadModule(pspfilename, f, MemoryMap.START_USERSPACE + 0x4000);
 
-        //if (module.fileFormat == Loader.FORMAT_UNKNOWN ||
-        //    (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
         if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
             throw new GeneralJpcspException("File format not supported!");
         }
@@ -144,21 +150,13 @@ public class Emulator implements Runnable {
 
     private void initCpu(boolean fromSyscall) {
         RuntimeContext.update();
-        //set the default values for registers not sure if they are correct and UNTESTED!!
-        //some settings from soywiz/pspemulator
+
         CpuState cpu = processor.cpu;
 
-        cpu.pc = module.entry_addr; //set the pc register.
+        cpu.pc = module.entry_addr; //PC.
         cpu.npc = cpu.pc + 4;
-        // Gets set in ThreadMan cpu.gpr[4] = 0; //a0
-        // Gets set in ThreadMan cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
-        //cpu.gpr[6] = 0; //a2
-        // Gets set in ThreadMan cpu.gpr[26] = 0x09F00000; //k0
-        cpu.gpr[27] = 0; //k1 should probably be 0
-        cpu.gpr[28] = module.gp_value; //gp reg    gp register should get the GlobalPointer!!!
-        // Gets set in ThreadMan cpu.gpr[29] = 0x09F00000; //sp
-        // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
-        // All other registers are uninitialised/random values
+        cpu.gpr[27] = 0; //k1.
+        cpu.gpr[28] = module.gp_value; //gp_reg.
 
         Modules.ThreadManForUserModule.Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
         psputils.getInstance().Initialise();
@@ -182,20 +180,11 @@ public class Emulator implements Runnable {
         Memory.getInstance().Initialise();
         Battery.initialize();
         Interrupts.initialize();
-        jpcsp.HLE.kernel.types.SceModule.ResetAllocator(); // HACK, see SceModule for details
+        jpcsp.HLE.kernel.types.SceModule.ResetAllocator();
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();
         State.fileLogger.resetLogging();
-
-        // Firmware version can be changed by calling setFirmwareVersion, but
-        // you have to do it before the loader reaches the "process imports" stage.
-
-        // TODO cleanup initialisation
-        // - load UMD calls setFirmwareVersion before initNewPsp., because PSF is read separate from BIN
-        // - load PBP calls initNewPsp before setFirmwareVersion, because PSF is embedded in PBP
-        // - load ELF/PRX only calls initNewPsp, because it doesn't have a PSF
-        // this means some stuff is initialised twice (but with different parameters)
 
         jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise(firmwareVersion);
         jpcsp.HLE.kernel.Managers.reset();
@@ -238,7 +227,6 @@ public class Emulator implements Runnable {
 
                 if (State.debugger != null)
                     State.debugger.step();
-                //delay(cpu.numberCyclesDelay());
             }
         }
 
@@ -271,20 +259,18 @@ public class Emulator implements Runnable {
             State.debugger.RefreshButtons();
     }
 
-    // static so Memory can pause emu on invalid read/write
     public static synchronized void PauseEmu()
     {
         if (run && !pause)
         {
             pause = true;
 
-            // TODO execute this stuff in the gui thread
             {
                 gui.RefreshButtons();
 
                 if (State.debugger != null) {
                     State.debugger.RefreshButtons();
-                    State.debugger.SafeRefreshDebugger(true); // executes in GUI thread
+                    State.debugger.SafeRefreshDebugger(true);
                 }
 
                 if (State.memoryViewer != null)
@@ -295,7 +281,6 @@ public class Emulator implements Runnable {
         }
     }
 
-    // static so Memory can pause emu on invalid read/write
     public static final int EMU_STATUS_OK = 0x00;
     public static final int EMU_STATUS_UNKNOWN = 0xFFFFFFFF;
     public static final int EMU_STATUS_WDT_IDLE = 0x01;
@@ -313,13 +298,13 @@ public class Emulator implements Runnable {
         if (run && !pause)
         {
             pause = true;
-            // TODO execute this stuff in the gui thread
+
             {
                 gui.RefreshButtons();
 
                 if (State.debugger != null) {
                     State.debugger.RefreshButtons();
-                    State.debugger.SafeRefreshDebugger(true); // executes in GUI thread
+                    State.debugger.SafeRefreshDebugger(true);
                 }
 
                 if (State.memoryViewer != null)

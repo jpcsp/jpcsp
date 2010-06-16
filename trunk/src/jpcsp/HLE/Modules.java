@@ -53,17 +53,9 @@ public class Modules {
     public static scePsmf scePsmfModule = new scePsmf();
     public static sceMp3 sceMp3Module = new sceMp3();
 
-
     public static Logger log = Logger.getLogger("hle");
 
     public void step() {
-        // These three to be phased out:
-        //jpcsp.HLE.pspge.getInstance().step();
-        //jpcsp.HLE.ThreadMan.getInstance().step();
-        //jpcsp.HLE.pspdisplay.getInstance().step();
-
-        // This is the new design, and it can co-exist with the old design
-        //HLEModuleManager.getInstance().step();
     }
 
     public void load(ByteBuffer buffer) {

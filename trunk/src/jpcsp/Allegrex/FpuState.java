@@ -1,6 +1,18 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
@@ -63,8 +75,8 @@ public class FpuState extends BcuState {
         super.resetAll();
         Arrays.fill(fpr, 0.0f);
         fcr31.reset();
-    }          
-    
+    }
+
     public FpuState() {
         fpr = new float[32];
         fcr31 = new Fcr31();
@@ -81,13 +93,13 @@ public class FpuState extends BcuState {
         fpr = that.fpr.clone();
         fcr31 = new Fcr31(that.fcr31);
     }
-    
+
     public void doMFC1(int rt, int c1dr) {
     	if (rt != 0) {
     		gpr[rt] = Float.floatToRawIntBits(fpr[c1dr]);
     	}
     }
-    
+
     public void doCFC1(int rt, int c1cr) {
         if (rt != 0) {
             switch (c1cr) {
@@ -235,7 +247,7 @@ public class FpuState extends BcuState {
             fcr31.c = less || equal;
         }
     }
-    
+
     public void doLWC1(int ft, int rs, int simm16) {
         fpr[ft] = Float.intBitsToFloat(memory.read32(gpr[rs] + simm16));
     }

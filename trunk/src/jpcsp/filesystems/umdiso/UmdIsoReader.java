@@ -1,3 +1,19 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp.filesystems.umdiso;
 
 import java.io.*;
@@ -7,7 +23,6 @@ import java.util.HashMap;
 import jpcsp.filesystems.umdiso.iso9660.*;
 import jpcsp.util.Utilities;
 
-//import java.util.zip.*;
 import org.bolet.jgz.*;
 
 /**
@@ -143,7 +158,7 @@ public class UmdIsoReader {
 
     /**
      * Read sequential sectors into a byte array
-     * 
+     *
      * @param sectorNumber - the first sector to be read
      * @param numberSectors - the number of sectors to be read
      * @param buffer - the byte array where to write the sectors
@@ -172,7 +187,7 @@ public class UmdIsoReader {
 
     /**
      * Read one sector into a byte array
-     * 
+     *
      * @param sectorNumber - the sector number to be read
      * @param buffer - the byte array where to write
      * @param offset - offset into the byte array where to start writing
@@ -253,7 +268,7 @@ public class UmdIsoReader {
     private Iso9660File getFileEntry(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660File info;
-        
+
         info = fileCache.get(filePath);
         if (info != null) {
         	return info;
@@ -274,7 +289,7 @@ public class UmdIsoReader {
         }
 
         Iso9660Directory dir = new Iso9660Handler(this);
-        
+
         String[] path = filePath.split("[\\/]");
 
         // walk through path
@@ -296,9 +311,9 @@ public class UmdIsoReader {
             else
             {
                 int index = dir.getFileIndex(path[i]);
-                
+
                 info = dir.getEntryByIndex(index);
-                
+
                 if((info.getProperties()&2)==2) // if it's a directory
                 {
                     dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
@@ -311,7 +326,7 @@ public class UmdIsoReader {
                 i++;
             }
         }
-        
+
         if (info != null) {
         	fileCache.put(filePath, info);
         }
