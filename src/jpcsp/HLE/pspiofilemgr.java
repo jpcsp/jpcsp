@@ -502,9 +502,9 @@ public class pspiofilemgr {
             currentThread.wait.Io_id = info.uid;
 
             threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-        }
 
-        threadMan.hleRescheduleCurrentThread(callbacks);
+            threadMan.hleRescheduleCurrentThread(callbacks);
+        }
     }
 
     public void sceIoPollAsync(int uid, int res_addr) {
@@ -855,7 +855,7 @@ public class pspiofilemgr {
             if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
                 info.cbid = cbid;
                 info.notifyArg = notifyArg;
-                info.asyncPending = true;
+                //info.asyncPending = true;
                 Emulator.getProcessor().cpu.gpr[2] = 0;
             } else {
                 Modules.log.warn("sceIoSetAsyncCallback - not a callback uid " + Integer.toHexString(uid));
