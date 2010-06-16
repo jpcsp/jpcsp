@@ -28,7 +28,9 @@ import jpcsp.MemoryMap;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.filesystems.*;
+import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 
 import java.nio.Buffer;
@@ -345,11 +347,13 @@ public class Utilities {
     	Buffer buffer = Memory.getInstance().getBuffer(address, length);
     	if (buffer instanceof ByteBuffer) {
     		output.getChannel().write((ByteBuffer) buffer);
-    	} else {
-    		Memory mem = Memory.getInstance();
+    	} else if (length > 0) {
+    		byte[] bytes = new byte[length];
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, 1, length);
     		for (int i = 0; i < length; i++) {
-    			output.writeByte(mem.read8(address + i));
+    			bytes[i] = (byte) memoryReader.readNext();
     		}
+    		output.write(bytes);
     	}
     }
 
