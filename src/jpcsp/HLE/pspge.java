@@ -30,8 +30,11 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
@@ -390,7 +393,7 @@ public class pspge {
 
     	// Block the thread outside of the synchronized block
     	if (blockCurrentThread) {
-    		threadMan.hleBlockCurrentThreadCB(action);
+    		threadMan.hleBlockCurrentThreadCB(action, new ListSyncWaitStateChecker(list));
     	}
     }
 
@@ -603,6 +606,20 @@ public class pspge {
 		@Override
 		public void execute() {
 			hleGeAfterDrawSyncAction();
+		}
+    }
+
+    private class ListSyncWaitStateChecker implements IWaitStateChecker {
+    	private PspGeList list;
+
+    	public ListSyncWaitStateChecker(PspGeList list) {
+    		this.list = list;
+    	}
+
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+    		// Continue the wait state until the list is done
+    		return !list.isDone();
 		}
     }
 }

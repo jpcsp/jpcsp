@@ -24,8 +24,10 @@ import jpcsp.Memory;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
@@ -33,9 +35,11 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 public class SemaManager {
 
     private HashMap<Integer, SceKernelSemaInfo> semaMap;
+    private SemaWaitStateChecker semaWaitStateChecker;
 
     public void reset() {
         semaMap = new HashMap<Integer, SceKernelSemaInfo>();
+        semaWaitStateChecker = new SemaWaitStateChecker();
     }
 
     /** Don't call this unless thread.wait.waitingOnSemaphore == true
@@ -253,6 +257,7 @@ public class SemaManager {
                 currentThread.wait.waitingOnSemaphore = true;
                 currentThread.wait.Semaphore_id = semaid;
                 currentThread.wait.Semaphore_signal = signal;
+                currentThread.wait.waitStateChecker = semaWaitStateChecker;
 
                 threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
             } else {
@@ -317,9 +322,10 @@ public class SemaManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext(); ) {
                 SceKernelThreadInfo thread = it.next();
 
-                if (thread.wait.waitingOnSemaphore &&
+                if (thread.waitType == PSP_WAIT_SEMA &&
+                    thread.wait.waitingOnSemaphore &&
                     thread.wait.Semaphore_id == semaid &&
-                    thread.wait.Semaphore_signal <= sema.currentCount) {
+                    tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
 
                 	if (Modules.log.isDebugEnabled()) {
                 		Modules.log.debug("sceKernelSignalSema waking thread 0x" + Integer.toHexString(thread.uid)
@@ -336,7 +342,6 @@ public class SemaManager {
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
 
                     // Adjust sema
-                    sema.currentCount -= thread.wait.Semaphore_signal;
                     sema.numWaitThreads--;
                     if (sema.currentCount == 0) {
                         break;
@@ -447,6 +452,28 @@ public class SemaManager {
             sema.write(Memory.getInstance(), addr);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
+    }
+
+    private class SemaWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			// Check if the thread has to continue its wait state or if the sema
+			// has been signaled during the callback execution.
+			SceKernelSemaInfo sema = semaMap.get(wait.Semaphore_id);
+			if (sema == null) {
+	            thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+				return false;
+			}
+
+			// Check the sema
+			if (tryWaitSemaphore(sema, wait.Semaphore_signal)) {
+				sema.numWaitThreads--;
+	            thread.cpuContext.gpr[2] = 0;
+				return false;
+			}
+
+			return true;
+		}
     }
 
     public static final SemaManager singleton;
