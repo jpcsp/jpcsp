@@ -99,7 +99,13 @@ public class sceFont implements HLEModule {
 		}
 	}
 
-    private HashMap<Integer, FontLib> fontLibMap;
+	public static final int FONT_PIXELFORMAT_4     = 0; // 2 pixels packed in 1 byte (natural order)
+	public static final int FONT_PIXELFORMAT_4_REV = 1; // 2 pixels packed in 1 byte (reversed order)
+	public static final int FONT_PIXELFORMAT_8     = 2; // 1 pixel in 1 byte
+	public static final int FONT_PIXELFORMAT_24    = 3; // 1 pixel in 3 bytes (RGB)
+	public static final int FONT_PIXELFORMAT_32    = 4; // 1 pixel in 4 bytes (RGBA)
+
+	private HashMap<Integer, FontLib> fontLibMap;
     private HashMap<Integer, PGF> PGFFilesMap;
 	private int fontLibCount;
 	private int currentFontHandle;
@@ -432,21 +438,21 @@ public class sceFont implements HLEModule {
 			cpu.gpr[2] = -1;
 		} else {
 			if (mem.isAddressGood(charInfoAddr)) {
-                int bitmapWidth =  Debug.Font.charWidth;
-                int bitmapHeight = Debug.Font.charHeight;
+                int bitmapWidth =  Debug.Font.charWidth * Debug.fontPixelSize;
+                int bitmapHeight = Debug.Font.charHeight * Debug.fontPixelSize;
                 int bitmapLeft = 0;
                 int bitmapTop = 0;
 
-                int sfp26Width =     (Debug.Font.charWidth << 6) * 64;
-                int sfp26Height =    (Debug.Font.charHeight << 6) * 64;
-                int sfp26Ascender =  (0 << 6) * 64;
-                int sfp26Descender = (0 << 6) * 64;
-                int sfp26BearingHX = (0 << 6) * 64;
-                int sfp26BearingHY = (0 << 6) * 64;
-                int sfp26BearingVX = (0 << 6) * 64;
-                int sfp26BearingVY = (0 << 6) * 64;
-                int sfp26AdvanceH =  (1 << 6) * 64;
-                int sfp26AdvanceV =  (1 << 6) * 64;
+                int sfp26Width =     bitmapWidth << 6;
+                int sfp26Height =    bitmapHeight << 6;
+                int sfp26Ascender =  0 << 6;
+                int sfp26Descender = 0 << 6;
+                int sfp26BearingHX = -bitmapHeight << 6;
+                int sfp26BearingHY = 0 << 6;
+                int sfp26BearingVX = 0 << 6;
+                int sfp26BearingVY = 0 << 6;
+                int sfp26AdvanceH =  bitmapWidth << 6;
+                int sfp26AdvanceV =  bitmapHeight << 6;
 
                 // Bitmap dimensions.
 				mem.write32(charInfoAddr +  0, bitmapWidth);	// bitmapWidth
@@ -506,8 +512,8 @@ public class sceFont implements HLEModule {
                 int buffer       = mem.read32(glyphImageAddr + 20);
 
                 // 26.6 fixed-point.
-                int xPosI = (xPos64 >> 6) / 64;
-                int yPosI = (yPos64 >> 6) / 64;
+                int xPosI = xPos64 >> 6;
+                int yPosI = yPos64 >> 6;
 
                 Modules.log.info("sceFontGetCharGlyphImage c=" + ((char) charCode)
                         + ", xPos=" + xPosI + ", yPos=" + yPosI
@@ -517,6 +523,8 @@ public class sceFont implements HLEModule {
                         + ", bytesPerLine=" + bytesPerLine
                         + ", pixelFormat=" + pixelFormat);
 
+                PGF currentPGF = PGFFilesMap.get(fontAddr);
+                yPosI -= currentPGF.getMaxBaseYAdjust() >> 6;
                 // Use our Debug font just to show some text.
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
                         xPosI, yPosI, pixelFormat, (char)charCode);

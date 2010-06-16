@@ -21,49 +21,130 @@ import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_5551;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_4444;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspdisplay;
+import jpcsp.HLE.modules150.sceFont;
 
 /**
  * @author gid15
  *
  */
 public class Debug {
+	public static final int fontPixelSize = 2;
+
+	// Pixel sizes in bytes for the font:
+	// FONT_PIXELFORMAT_4 :    0 (means 2 pixels per byte)
+	// FONT_PIXELFORMAT_4_REV: 0 (means 2 pixels per byte)
+	// FONT_PIXELFORMAT_8 :    1 byte
+	// FONT_PIXELFORMAT_24:    3 bytes
+	// FONT_PIXELFORMAT_32:    4 bytes
+	private static final int[] fontPixelSizeInBytes = { 0, 0, 1, 3, 4 }; // 0 means 2 pixels per byte
 
     // For sceFont.
     // Use this function to print a char using the font buffer's dimensions.
     public static void printFontbuffer(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, char c) {
+        if (Modules.log.isInfoEnabled()) {
+        	Modules.log.info(String.format("printFontbuffer '%c' (%d, %d)", c, x, y));
+        }
+
         int fontBaseIndex = c * 8;
 
-        if(fontBaseIndex >= Font.font.length)
+        if (fontBaseIndex >= Font.font.length) {
             fontBaseIndex = '?' * 8;
+        }
 
+        int pixelColor0 = getFontPixelColor(0x00000000, pixelformat);
+		int pixelColor1 = getFontPixelColor(0xFFFFFFFF, pixelformat);
         for (int i = 0; i < Font.charHeight; i++) {
             for (int j = 0; j < Font.charWidth; j++) {
                 int pixel = Font.font[fontBaseIndex + i] & (128 >> j);
-                if (pixel != 0)
-                    setFontPixel(base, bpl, bufWidth, bufHeight, x + j, y + i, 0xFFFFFFFF, pixelformat);
-                else
-                    setFontPixel(base, bpl, bufWidth, bufHeight, x + j, y + i, 0x00000000, pixelformat);
+                int pixelColor = (pixel != 0) ? pixelColor1 : pixelColor0;
+                for (int pixelY = 0; pixelY < fontPixelSize; pixelY++) {
+                	for (int pixelX = 0; pixelX < fontPixelSize; pixelX++) {
+                        setFontPixel(base, bpl, bufWidth, bufHeight, x + j * fontPixelSize + pixelX, y + i * fontPixelSize + pixelY, pixelColor, pixelformat);
+                	}
+                }
             }
         }
     }
 
     // For sceFont.
-    private static void setFontPixel(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int color, int pixelformat) {
-		Memory mem = Memory.getInstance();
-		int pixelBytes = pspdisplay.getPixelFormatBytes(pixelformat);
-		int framebufferAddr = base + (y * bpl + x) * pixelBytes;
-		int pixelColor = getPixelColor(color, pixelformat);
-        int nextPos = 0;
+    private static void setFontPixel(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelColor, int pixelformat) {
+    	if (x < 0 || x >= bufWidth || y < 0 || y >= bufHeight) {
+    		return;
+    	}
 
-        for(int i = 0; i < bufWidth/bufHeight; i++) {
-            if (pixelBytes == 4) {
-                mem.write32(framebufferAddr + nextPos, pixelColor);
-            } else if (pixelBytes == 2) {
-                mem.write16(framebufferAddr + nextPos, (short)pixelColor);
-            }
-            nextPos += bpl;
+		int pixelBytes = getFontPixelBytes(pixelformat);
+		// pixelBytes == 0 means 2 pixels per byte
+		int bufMaxWidth = (pixelBytes == 0 ? bpl * 2 : bpl / pixelBytes);
+		if (x >= bufMaxWidth) {
+			return;
+		}
+
+		int framebufferAddr = base + (y * bpl) + (pixelBytes == 0 ? x / 2 : x * pixelBytes);
+
+    	Memory mem = Memory.getInstance();
+        switch (pixelformat) {
+        	case sceFont.FONT_PIXELFORMAT_4: 
+        	case sceFont.FONT_PIXELFORMAT_4_REV: {
+        		int oldColor = mem.read8(framebufferAddr);
+        		int newColor;
+        		if ((x & 1) != pixelformat) {
+        			newColor = (pixelColor << 4) | (oldColor & 0xF);
+        		} else {
+        			newColor = (oldColor & 0xF0) | pixelColor;
+        		}
+        		mem.write8(framebufferAddr, (byte) newColor);
+        		break;
+        	}
+        	case sceFont.FONT_PIXELFORMAT_8: {
+        		mem.write8(framebufferAddr, (byte) pixelColor);
+        		break;
+        	}
+        	case sceFont.FONT_PIXELFORMAT_24: {
+        		// TODO Check if this the correct byte order
+        		mem.write8(framebufferAddr + 0, (byte) (pixelColor >>  0));
+        		mem.write8(framebufferAddr + 1, (byte) (pixelColor >>  8));
+        		mem.write8(framebufferAddr + 2, (byte) (pixelColor >> 16));
+        		break;
+        	}
+        	case sceFont.FONT_PIXELFORMAT_32: {
+        		mem.write32(framebufferAddr, pixelColor);
+        		break;
+        	}
         }
+	}
+
+    private static int getFontPixelBytes(int pixelformat) {
+    	if (pixelformat >= 0 && pixelformat < fontPixelSizeInBytes.length) {
+    		return fontPixelSizeInBytes[pixelformat];
+    	}
+
+    	Modules.log.warn("Unknown pixel format for sceFont: " + pixelformat); 
+    	return 1;
+    }
+
+	public static int getFontPixelColor(int color, int pixelformat) {
+		switch (pixelformat) {
+			case sceFont.FONT_PIXELFORMAT_4:
+			case sceFont.FONT_PIXELFORMAT_4_REV:
+				// Use only 4-bit alpha
+				color = (color >> 28) & 0xF;
+				break;
+			case sceFont.FONT_PIXELFORMAT_8:
+				// Use only 8-bit alpha
+				color = (color >> 24) & 0xFF;
+				break;
+			case sceFont.FONT_PIXELFORMAT_24:
+				// Use RGB with 8-bit values
+				color = color & 0x00FFFFFF;
+				break;
+			case sceFont.FONT_PIXELFORMAT_32:
+				// Use RGBA with 8-bit values
+				break;
+		}
+
+		return color;
 	}
 
 	public static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int pixelformat, String s) {
