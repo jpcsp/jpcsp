@@ -28,29 +28,19 @@ import jpcsp.HLE.pspSysMem;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.util.Utilities;
 
-/** Don't forget to call ThreadMan.threadMap.put(thread.uid, thread) after instantiating one of these. */
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
-
-    /* Posted at http://forums.ps2dev.org/viewtopic.php?p=75691#75691 by Insert_witty_name
-     * http://forums.ps2dev.org/viewtopic.php?p=77135#77135 by phobox
-     * http://forums.ps2dev.org/viewtopic.php?t=8917 by SilverSpring
     public static final int PSP_MODULE_USER                 = 0;
-
     public static final int PSP_MODULE_NO_STOP              = 0x00000001;
     public static final int PSP_MODULE_SINGLE_LOAD          = 0x00000002;
     public static final int PSP_MODULE_SINGLE_START         = 0x00000004;
-
     public static final int PSP_MODULE_POPS                 = 0x00000200;
     public static final int PSP_MODULE_DEMO                 = 0x00000200; // same as PSP_MODULE_POPS
     public static final int PSP_MODULE_GAMESHARING          = 0x00000400;
     public static final int PSP_MODULE_VSH                  = 0x00000800; // can only be loaded from kernel mode?
-
     public static final int PSP_MODULE_KERNEL               = 0x00001000;
     public static final int PSP_MODULE_USE_MEMLMD_LIB       = 0x00002000;
     public static final int PSP_MODULE_USE_SEMAPHORE_LIB    = 0x00004000; // not kernel semaphores, but a fake name (actually security stuff)
-    */
 
-    // TODO are module/thread attr interchangeable? (probably yes)
     public static final int PSP_THREAD_ATTR_USER = 0x80000000; // module attr 0, thread attr: 0x800000FF?
     public static final int PSP_THREAD_ATTR_USBWLAN = 0xa0000000;
     public static final int PSP_THREAD_ATTR_VSH = 0xc0000000;
@@ -153,7 +143,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         }
 
 
-        gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
+        gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg
         // internal state
 
         // Inherit context
@@ -222,31 +212,15 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
     public void saveContext() {
         cpuContext = Emulator.getProcessor().cpu;
-        //cpuContext.copy(Emulator.getProcessor().cpu);
-
-        // ignore PSP_THREAD_ATTR_VFPU flag
     }
 
     public void restoreContext() {
         // Assuming context switching only happens on syscall,
         // we always execute npc after a syscall,
         // so we can set pc = npc regardless of cop0.status.bd.
-        //if (!cpu.cop0_status_bd)
-            cpuContext.pc = cpuContext.npc;
+        cpuContext.pc = cpuContext.npc;
 
         Emulator.getProcessor().cpu = cpuContext;
-        //Emulator.getProcessor().cpu.copy(cpuContext);
-
-        // ignore PSP_THREAD_ATTR_VFPU flag
-
-        /*
-        if (this != idle0 && this != idle1) {
-            Modules.log.debug("restoreContext SceUID=" + Integer.toHexString(uid)
-                + " name:" + name
-                + " PC:" + Integer.toHexString(cpuContext.pc)
-                + " NPC:" + Integer.toHexString(cpuContext.npc));
-        }
-        */
         RuntimeContext.update();
     }
 

@@ -205,6 +205,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Portuguese = new javax.swing.JMenuItem();
         Japanese = new javax.swing.JMenuItem();
         Russian = new javax.swing.JMenuItem();
+        Polish = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -587,6 +588,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         LanguageMenu.add(Russian);
+
+        Polish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pl_PL.PNG"))); // NOI18N
+        Polish.setText(Resource.get("polish"));
+        LanguageMenu.add(Polish);
 
         MenuBar.add(LanguageMenu);
 
@@ -1546,6 +1551,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu OptionsMenu;
     private javax.swing.JToggleButton PauseButton;
     private javax.swing.JMenuItem PauseEmu;
+    private javax.swing.JMenuItem Polish;
     private javax.swing.JMenuItem Portuguese;
     private javax.swing.JMenuItem PortugueseBR;
     private javax.swing.JMenu RecentMenu;

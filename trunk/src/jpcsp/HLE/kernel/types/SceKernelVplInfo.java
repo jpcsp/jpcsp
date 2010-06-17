@@ -23,6 +23,14 @@ import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.util.Utilities;
 
+/*
+ * TODO list:
+ * 1. Implement a queue to receive blocks waiting for allocation and process
+ * memory events for them (onFreeVpl).
+ *
+ * 2. Implement proper malloc in tryAllocate.
+ */
+
 public class SceKernelVplInfo {
 
     // PSP info
@@ -37,7 +45,6 @@ public class SceKernelVplInfo {
     // Internal info
     public final int uid;
     public final int partitionid;
-    // TODO need a proper malloc implementation, for now free will fail
     public final int allocAddress;
     public int freeLowAddress;
     public int freeHighAddress;
@@ -128,9 +135,7 @@ public class SceKernelVplInfo {
     public int tryAllocate(int size) {
         int addr = 0;
         int alignedSize = (size + 7) & ~7; // 8-byte align
-        // TODO proper malloc implementation
         if (alignedSize + 8 <= freeSize || alignedSize + 8 <= freeSize + 4) {
-
             // Some games (e.g.: Cho Aniki Zero) send a block size already counting with part
             // of the header.
             if(alignedSize + 8 <= freeSize + 4) {

@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import java.util.HashMap;
@@ -64,6 +63,9 @@ public class sceFont implements HLEModule {
 			mm.addFunction(sceFontFlushFunction, 0x02D7F94B);
 			mm.addFunction(sceFontOpenUserFileFunction, 0x57FCB733);
 			mm.addFunction(sceFontFindFontFunction, 0x681E61A7);
+            mm.addFunction(sceFontPointToPixelVFunction, 0x3C4B7E82);
+            mm.addFunction(sceFontPixelToPointHFunction, 0x74B21701);
+            mm.addFunction(sceFontPixelToPointVFunction, 0xF8F0752E);
 
             fontLibMap = new HashMap<Integer, FontLib>();
             PGFFilesMap = new HashMap<Integer, PGF>();
@@ -96,6 +98,9 @@ public class sceFont implements HLEModule {
 			mm.removeFunction(sceFontFlushFunction);
 			mm.removeFunction(sceFontOpenUserFileFunction);
 			mm.removeFunction(sceFontFindFontFunction);
+            mm.removeFunction(sceFontPointToPixelVFunction);
+            mm.removeFunction(sceFontPixelToPointHFunction);
+            mm.removeFunction(sceFontPixelToPointVFunction);
 		}
 	}
 
@@ -443,11 +448,31 @@ public class sceFont implements HLEModule {
                 int bitmapLeft = 0;
                 int bitmapTop = 0;
 
+                /*
+                 * Char's metrics:
+                 *
+                 *           Width / Horizontal Advance
+                 *           <---------->
+                 *      |           000 |
+                 *      |           000 |  Ascender
+                 *      |           000 |
+                 *      |     000   000 |
+                 *      | -----000--000-------- Baseline
+                 *      |        00000  |  Descender
+                 * Height /
+                 * Vertical Advance
+                 *
+                 * The char's bearings represent the difference between the
+                 * width and the horizontal advance and/or the difference
+                 * between the height and the vertical advance.
+                 * In our debug font, these measures are the same (block pixels),
+                 * but in real PGF fonts they can vary (italic fonts, for example).
+                 */
                 int sfp26Width =     bitmapWidth << 6;
                 int sfp26Height =    bitmapHeight << 6;
                 int sfp26Ascender =  0 << 6;
                 int sfp26Descender = 0 << 6;
-                int sfp26BearingHX = -bitmapHeight << 6;
+                int sfp26BearingHX = 0 << 6;
                 int sfp26BearingHY = 0 << 6;
                 int sfp26BearingVX = 0 << 6;
                 int sfp26BearingVY = 0 << 6;
@@ -524,8 +549,14 @@ public class sceFont implements HLEModule {
                         + ", pixelFormat=" + pixelFormat);
 
                 PGF currentPGF = PGFFilesMap.get(fontAddr);
-                yPosI -= currentPGF.getMaxBaseYAdjust() >> 6;
-                // Use our Debug font just to show some text.
+
+                // Font adjustment.
+                // TODO: Instead of using the loaded PGF, figure out
+                // the proper values for the Debug font.
+                yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
+                yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+
+                // Use our Debug font.
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
                         xPosI, yPosI, pixelFormat, (char)charCode);
             }
@@ -542,7 +573,8 @@ public class sceFont implements HLEModule {
         int fontStyleAddr = cpu.gpr[5];
         int errorCodeAddr = cpu.gpr[6];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontFindOptimumFont 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+		Modules.log.warn(String.format("PARTIAL: sceFontFindOptimumFont libHandle=0x%08X, fontStyleAddr=0x%08X, errorCodeAddr=0x%08X"
+                , libHandle, fontStyleAddr, errorCodeAddr));
 
         int optimumFontIndex = 0;
 
@@ -583,7 +615,7 @@ public class sceFont implements HLEModule {
 
         int fontAddr = cpu.gpr[4];  // The font handle to close.
 
-		Modules.log.warn(String.format("PARTIAL: sceFontClose 0x%08X", fontAddr));
+		Modules.log.warn(String.format("PARTIAL: sceFontClose fontAddr=0x%08X", fontAddr));
 
         // Faking.
 		cpu.gpr[2] = 0;
@@ -594,7 +626,7 @@ public class sceFont implements HLEModule {
 
         int libHandle = cpu.gpr[4];
 
-        Modules.log.warn(String.format("PARTIAL: sceFontDoneLib 0x%08X", cpu.gpr[4]));
+        Modules.log.warn(String.format("PARTIAL: sceFontDoneLib libHandle=0x%08X", libHandle));
 
         if (!fontLibMap.containsKey(libHandle)) {
 			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
@@ -637,9 +669,64 @@ public class sceFont implements HLEModule {
 
 	public void sceFontGetCharGlyphImage_Clip(Processor processor) {
 		CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-		Modules.log.warn(String.format("Unimplemented sceFontGetCharGlyphImage_Clip 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+		int fontAddr = cpu.gpr[4];
+		int charCode = cpu.gpr[5];
+		int glyphImageAddr = cpu.gpr[6];
+        int clipXPos = cpu.gpr[7];
+        int clipYPos = cpu.gpr[8];
+        int clipWidth = cpu.gpr[9];
+        int clipHeight = cpu.gpr[10];
+
+		Modules.log.warn(String.format("PARTIAL: sceFontGetCharGlyphImage_Clip fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X" +
+                ", clipXPos=%i, clipYPos=%i, clipWidth=%i, clipHeight=%i,"
+                , fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr
+                , clipXPos, clipYPos, clipWidth, clipHeight));
+
+        // Identical to sceFontGetCharGlyphImage, but uses a clipping
+        // rectangle over the char.
+		if (fontAddr != currentFontHandle && fontAddr != 0) {
+			Modules.log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
+			cpu.gpr[2] = -1;
+		} else {
+			if (mem.isAddressGood(glyphImageAddr)) {
+                // Read GlyphImage data
+                int pixelFormat  = mem.read32(glyphImageAddr +  0);
+                int xPos64       = mem.read32(glyphImageAddr +  4);
+                int yPos64       = mem.read32(glyphImageAddr +  8);
+                int bufWidth     = mem.read16(glyphImageAddr + 12);
+                int bufHeight    = mem.read16(glyphImageAddr + 14);
+                int bytesPerLine = mem.read16(glyphImageAddr + 16);
+                int buffer       = mem.read32(glyphImageAddr + 20);
+
+                // 26.6 fixed-point.
+                int xPosI = xPos64 >> 6;
+                int yPosI = yPos64 >> 6;
+
+                Modules.log.info("sceFontGetCharGlyphImage_Clip c=" + ((char) charCode)
+                        + ", xPos=" + xPosI + ", yPos=" + yPosI
+                        + ", buffer=0x" + Integer.toHexString(buffer)
+                        + ", bufWidth=" + bufWidth
+                        + ", bufHeight=" + bufHeight
+                        + ", bytesPerLine=" + bytesPerLine
+                        + ", pixelFormat=" + pixelFormat);
+
+                PGF currentPGF = PGFFilesMap.get(fontAddr);
+
+                // Font adjustment.
+                // TODO: Instead of using the loaded PGF, figure out
+                // the proper values for the Debug font.
+                yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
+                yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+
+                // Use our Debug font.
+                Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
+                        xPosI, yPosI, pixelFormat, (char)charCode);
+            }
+
+			cpu.gpr[2] = 0;
+		}
 	}
 
 	public void sceFontGetNumFontList(Processor processor) {
@@ -649,7 +736,8 @@ public class sceFont implements HLEModule {
 		int libHandle = cpu.gpr[4];
 		int errorCodeAddr = cpu.gpr[5];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontGetNumFontList libHandle=0x%08X, errorCodeAddr=0x%08X", libHandle, errorCodeAddr));
+		Modules.log.warn(String.format("PARTIAL: sceFontGetNumFontList libHandle=0x%08X, errorCodeAddr=0x%08X"
+                , libHandle, errorCodeAddr));
 
         int numFonts = 0;
 
@@ -675,7 +763,8 @@ public class sceFont implements HLEModule {
 		int fontStyleAddr = cpu.gpr[5];
 		int numFonts = cpu.gpr[6];
 
-        Modules.log.warn(String.format("PARTIAL: sceFontGetFontList libHandle=0x%08X, fontListAddr=0x%08X, numFonts=%d", libHandle, fontStyleAddr, numFonts));
+        Modules.log.warn(String.format("PARTIAL: sceFontGetFontList libHandle=0x%08X, fontListAddr=0x%08X, numFonts=%d"
+                , libHandle, fontStyleAddr, numFonts));
 
         // Font style parameters.
         // TODO: Make a class to store a font list and use numFonts to locate
@@ -710,30 +799,149 @@ public class sceFont implements HLEModule {
         int libHandle = cpu.gpr[4];
         int charCode = cpu.gpr[5];
 
-		Modules.log.warn(String.format("IGNORING: sceFontSetAltCharacterCode libHandle=0x%08X, charCode=%04X", libHandle, charCode));
+		Modules.log.warn(String.format("IGNORING: sceFontSetAltCharacterCode libHandle=0x%08X, charCode=%04X"
+                , libHandle, charCode));
 
         cpu.gpr[2] = 0;
 	}
 
 	public void sceFontGetCharImageRect(Processor processor) {
 		CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-		Modules.log.warn(String.format("Unimplemented sceFontGetCharImageRect 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+        int fontAddr = cpu.gpr[4];
+		int charCode = cpu.gpr[5];
+		int charRectAddr = cpu.gpr[6];
+
+		Modules.log.warn(String.format("IGNORING: sceFontGetCharImageRect fontAddr=0x%08X, charCode=%04X , charRectAddr=0x%08X"
+                , fontAddr, charCode, charRectAddr));
+
+        // This function retrieves the dimensions of a specific char.
+        // Faking.
+        mem.write16(charRectAddr, (short)1);  // Width.
+        mem.write16(charRectAddr, (short)1);  // Height.
+
 		cpu.gpr[2] = 0;
 	}
 
 	public void sceFontPointToPixelH(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn(String.format("Unimplemented sceFontPointToPixelH 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+        int libHandle = cpu.gpr[4];
+        int fontPointsH = cpu.gpr[5];
+        int errorCodeAddr = cpu.gpr[6];
+
+        float fontPointsHF = (float)fontPointsH;
+		Modules.log.warn(String.format("PARTIAL: sceFontPointToPixelH libHandle=0x%08X, fontPointsHF=%f , errorCodeAddr=0x%08X"
+                , libHandle, fontPointsHF, errorCodeAddr));
+
+        // Convert horizontal floating points to pixels (Points Per Inch to Pixels Per Inch).
+        // points = (pixels / dpiX) * 72.
+
+        // Faking.
+        // Assume dpiX = 100 and dpiY = 100.
+        int pixels = Float.floatToRawIntBits((fontPointsHF / 72) * 100);
+
+		cpu.gpr[2] = pixels;
 	}
 
 	public void sceFontGetFontInfoByIndexNumber(Processor processor) {
 		CpuState cpu = processor.cpu;
+		Memory mem = Processor.memory;
 
-		Modules.log.warn(String.format("Unimplemented sceFontGetFontInfoByIndexNumber 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+		int libHandle = cpu.gpr[4];
+		int fontInfoAddr = cpu.gpr[5];
+        int fontIndex = cpu.gpr[7];
+
+		Modules.log.warn(String.format("PARTIAL: sceFontGetFontInfoByIndexNumber libHandle=0x%08X, fontInfoAddr=0x%08X, fontIndex=%i"
+                , libHandle, fontInfoAddr, fontIndex));
+
+		if (!fontLibMap.containsKey(libHandle)) {
+			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			cpu.gpr[2] = -1;
+		} else {
+            FontLib currentFontLib = fontLibMap.get(libHandle);
+
+			if (mem.isAddressGood(fontInfoAddr) && currentFontLib.getNumFonts() > fontIndex) {
+                PGF currentPGF = PGFFilesMap.get(currentFontLib.getFakeFontHandle(fontIndex));
+
+                int maxGlyphWidthI = currentPGF.getMaxSize()[0];
+                int maxGlyphHeightI = currentPGF.getMaxSize()[1];
+                int maxGlyphAscenderI = currentPGF.getMaxBaseYAdjust();
+                int maxGlyphDescenderI = (currentPGF.getMaxBaseYAdjust() - currentPGF.getMaxSize()[1]);
+                int maxGlyphLeftXI = currentPGF.getMaxLeftXAdjust();
+                int maxGlyphBaseYI = currentPGF.getMaxBaseYAdjust();
+                int minGlyphCenterXI = currentPGF.getMinCenterXAdjust();
+                int maxGlyphTopYI = currentPGF.getMaxTopYAdjust();
+                int maxGlyphAdvanceXI = currentPGF.getMaxAdvance()[0];
+                int maxGlyphAdvanceYI = currentPGF.getMaxAdvance()[1];
+
+                float maxGlyphWidthF = Float.intBitsToFloat(maxGlyphWidthI);
+                float maxGlyphHeightF = Float.intBitsToFloat(maxGlyphHeightI);
+                float maxGlyphAscenderF = Float.intBitsToFloat(maxGlyphAscenderI);
+                float maxGlyphDescenderF = Float.intBitsToFloat(maxGlyphDescenderI);
+                float maxGlyphLeftXF = Float.intBitsToFloat(maxGlyphLeftXI);
+                float maxGlyphBaseYF = Float.intBitsToFloat(maxGlyphBaseYI);
+                float minGlyphCenterXF = Float.intBitsToFloat(minGlyphCenterXI);
+                float maxGlyphTopYF = Float.intBitsToFloat(maxGlyphTopYI);
+                float maxGlyphAdvanceXF = Float.intBitsToFloat(maxGlyphAdvanceXI);
+                float maxGlyphAdvanceYF = Float.intBitsToFloat(maxGlyphAdvanceYI);
+
+                // Glyph metrics (in 26.6 signed fixed-point).
+                mem.write32(fontInfoAddr + 0, maxGlyphWidthI);
+                mem.write32(fontInfoAddr + 4, maxGlyphHeightI);
+                mem.write32(fontInfoAddr + 8, maxGlyphAscenderI);
+                mem.write32(fontInfoAddr + 12, maxGlyphDescenderI);
+                mem.write32(fontInfoAddr + 16, maxGlyphLeftXI);
+                mem.write32(fontInfoAddr + 20, maxGlyphBaseYI);
+                mem.write32(fontInfoAddr + 24, minGlyphCenterXI);
+                mem.write32(fontInfoAddr + 28, maxGlyphTopYI);
+                mem.write32(fontInfoAddr + 32, maxGlyphAdvanceXI);
+                mem.write32(fontInfoAddr + 36, maxGlyphAdvanceYI);
+
+                // Glyph metrics (replicated as float).
+                mem.write32(fontInfoAddr + 40, Float.floatToRawIntBits(maxGlyphWidthF));
+                mem.write32(fontInfoAddr + 44, Float.floatToRawIntBits(maxGlyphHeightF));
+                mem.write32(fontInfoAddr + 48, Float.floatToRawIntBits(maxGlyphAscenderF));
+                mem.write32(fontInfoAddr + 52, Float.floatToRawIntBits(maxGlyphDescenderF));
+                mem.write32(fontInfoAddr + 56, Float.floatToRawIntBits(maxGlyphLeftXF));
+                mem.write32(fontInfoAddr + 60, Float.floatToRawIntBits(maxGlyphBaseYF));
+                mem.write32(fontInfoAddr + 64, Float.floatToRawIntBits(minGlyphCenterXF));
+                mem.write32(fontInfoAddr + 68, Float.floatToRawIntBits(maxGlyphTopYF));
+                mem.write32(fontInfoAddr + 72, Float.floatToRawIntBits(maxGlyphAdvanceXF));
+                mem.write32(fontInfoAddr + 76, Float.floatToRawIntBits(maxGlyphAdvanceYF));
+
+                // Bitmap dimensions.
+                mem.write16(fontInfoAddr + 80, (short)currentPGF.getMaxGlyphWidth());
+                mem.write16(fontInfoAddr + 82, (short)currentPGF.getMaxGlyphHeight());
+
+                mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLenght()); // Number of elements in the font's charmap.
+                mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLenght());   // Number of elements in the font's shadow charmap.
+
+                // Font style (used by font comparison functions).
+                mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));   // Horizontal size.
+                mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));   // Vertical size.
+                mem.write32(fontInfoAddr + 100, Float.floatToRawIntBits(globalFontHRes));  // Horizontal resolution.
+                mem.write32(fontInfoAddr + 104, Float.floatToRawIntBits(globalFontVRes));  // Vertical resolution.
+                mem.write32(fontInfoAddr + 108, Float.floatToRawIntBits(0.0f));  // Font weight.
+                mem.write16(fontInfoAddr + 112, (short)0);  // Font family (SYSTEM = 0, probably more).
+                mem.write16(fontInfoAddr + 114, (short)0);  // Style (SYSTEM = 0, STANDARD = 1, probably more).
+                mem.write16(fontInfoAddr + 116, (short)0);  // Subset of style (only used in Asian fonts, unknown values).
+                mem.write16(fontInfoAddr + 118, (short)0);  // Language code (UNK = 0, JAPANESE = 1, ENGLISH = 2, probably more).
+                mem.write16(fontInfoAddr + 120, (short)0);  // Region code (UNK = 0, JAPAN = 1, probably more).
+                mem.write16(fontInfoAddr + 122, (short)0);  // Country code (UNK = 0, JAPAN = 1, US = 2, probably more).
+                Utilities.writeStringNZ(mem, fontInfoAddr + 124, 64, currentPGF.getFontName());  // Font name (maximum size is 64).
+                Utilities.writeStringNZ(mem, fontInfoAddr + 188, 64, currentPGF.getFileNamez());   // File name (maximum size is 64).
+                mem.write32(fontInfoAddr + 252, 0); // Unknown.
+                mem.write32(fontInfoAddr + 256, 0); // Unknown (some sort of timestamp?).
+
+                mem.write8(fontInfoAddr + 260, (byte)4); // Font's BPP.
+                mem.write8(fontInfoAddr + 261, (byte)0); // Unknown.
+                mem.write8(fontInfoAddr + 262, (byte)0); // Unknown.
+                mem.write8(fontInfoAddr + 263, (byte)0); // Unknown.
+			}
+			cpu.gpr[2] = 0;
+		}
 	}
 
 	public void sceFontSetResolution(Processor processor) {
@@ -746,7 +954,8 @@ public class sceFont implements HLEModule {
         float hResf = (float)hRes;
         float vResf = (float)vRes;
 
-		Modules.log.warn(String.format("PARTIAL: sceFontSetResolution libHandle=0x%08X, hResf=%f, vResf=%f", libHandle, hResf, vResf));
+		Modules.log.warn(String.format("PARTIAL: sceFontSetResolution libHandle=0x%08X, hResf=%f, vResf=%f"
+                , libHandle, hResf, vResf));
 
         globalFontHRes = hResf;
         globalFontHRes = vResf;
@@ -769,7 +978,8 @@ public class sceFont implements HLEModule {
         int fontStyleAddr = cpu.gpr[5];
         int errorCodeAddr = cpu.gpr[6];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontFindFont 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+		Modules.log.warn(String.format("PARTIAL: sceFontFindFont libHandle=0x%08X, fontStyleAddr=0x%08X, errorCodeAddr=0x%08X"
+                , libHandle, fontStyleAddr, errorCodeAddr));
 
         int fontIndex = 0;
 
@@ -805,6 +1015,68 @@ public class sceFont implements HLEModule {
 		}
 	}
 
+    public void sceFontPointToPixelV(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int libHandle = cpu.gpr[4];
+        int fontPointsV = cpu.gpr[5];
+        int errorCodeAddr = cpu.gpr[6];
+
+        float fontPointsVF = (float)fontPointsV;
+		Modules.log.warn(String.format("PARTIAL: sceFontPointToPixelV libHandle=0x%08X, fontPointsVF=%f , errorCodeAddr=0x%08X"
+                , libHandle, fontPointsVF, errorCodeAddr));
+
+        // Convert vertical floating points to pixels (Points Per Inch to Pixels Per Inch).
+        // points = (pixels / dpiX) * 72.
+
+        // Faking.
+        // Assume dpiX = 100 and dpiY = 100.
+        int pixels = Float.floatToRawIntBits((fontPointsVF / 72) * 100);
+
+		cpu.gpr[2] = pixels;
+	}
+
+    public void sceFontPixelToPointH(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int libHandle = cpu.gpr[4];
+        int fontPixelsH = cpu.gpr[5];
+        int errorCodeAddr = cpu.gpr[6];
+
+        float fontPixelsHF = (float)fontPixelsH;
+		Modules.log.warn(String.format("PARTIAL: sceFontPixelToPointH libHandle=0x%08X, fontPixelsHF=%f , errorCodeAddr=0x%08X"
+                , libHandle, fontPixelsHF, errorCodeAddr));
+
+        // Convert horizontal pixels to floating points (Pixels Per Inch to Points Per Inch).
+        // points = (pixels / dpiX) * 72.
+
+        // Faking.
+        // Assume dpiX = 100 and dpiY = 100.
+        int points = Float.floatToRawIntBits((fontPixelsHF / 100) * 72);
+
+		cpu.gpr[2] = points;
+	}
+
+    public void sceFontPixelToPointV(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int libHandle = cpu.gpr[4];
+        int fontPixelsV = cpu.gpr[5];
+        int errorCodeAddr = cpu.gpr[6];
+
+        float fontPixelsVF = (float)fontPixelsV;
+		Modules.log.warn(String.format("PARTIAL: sceFontPixelToPointV libHandle=0x%08X, fontPixelsVF=%f , errorCodeAddr=0x%08X"
+                , libHandle, fontPixelsVF, errorCodeAddr));
+
+        // Convert vertical pixels to floating points (Pixels Per Inch to Points Per Inch).
+        // points = (pixels / dpiX) * 72.
+
+        // Faking.
+        // Assume dpiX = 100 and dpiY = 100.
+        int points = Float.floatToRawIntBits((fontPixelsVF / 100) * 72);
+
+		cpu.gpr[2] = points;
+	}
 
 	public final HLEModuleFunction sceFontFindOptimumFontFunction = new HLEModuleFunction("sceFont", "sceFontFindOptimumFont") {
 		@Override
@@ -1004,6 +1276,36 @@ public class sceFont implements HLEModule {
 		@Override
 		public final String compiledString() {
 			return "jpcsp.HLE.Modules.sceFontModule.sceFontFindFont(Processor);";
+		}
+	};
+    public final HLEModuleFunction sceFontPointToPixelVFunction = new HLEModuleFunction("sceFont", "sceFontPointToPixelV") {
+		@Override
+		public final void execute(Processor processor) {
+			sceFontPointToPixelV(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceFontModule.sceFontPointToPixelV(Processor);";
+		}
+	};
+    public final HLEModuleFunction sceFontPixelToPointHFunction = new HLEModuleFunction("sceFont", "sceFontPixelToPointH") {
+		@Override
+		public final void execute(Processor processor) {
+			sceFontPixelToPointH(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceFontModule.sceFontPixelToPointH(Processor);";
+		}
+	};
+    public final HLEModuleFunction sceFontPixelToPointVFunction = new HLEModuleFunction("sceFont", "sceFontPixelToPointV") {
+		@Override
+		public final void execute(Processor processor) {
+			sceFontPixelToPointV(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceFontModule.sceFontPixelToPointV(Processor);";
 		}
 	};
 }
