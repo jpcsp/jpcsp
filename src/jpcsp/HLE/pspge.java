@@ -160,13 +160,13 @@ public class pspge {
     	stall_addr &= Memory.addressMask;
 
     	if (VideoEngine.getInstance().hasDrawList(list_addr)) {
-    		cpu.gpr[2] = 0x80000021;
+    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_BUSY;
     		VideoEngine.log.warn("sceGeListEnQueue can't enqueue duplicate list address");
     	} else {
     		synchronized (this) {
     	    	PspGeList list = listFreeQueue.poll();
     	    	if (list == null) {
-    	    		cpu.gpr[2] = 0x80000022;
+    	    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_OUT_OF_MEMORY;
     	    		VideoEngine.log.warn("sceGeListEnQueue no more free list available!");
     	    	} else {
     	    		list.init(list_addr, stall_addr, cbid, arg_addr);
@@ -198,13 +198,13 @@ public class pspge {
     	stall_addr &= Memory.addressMask;
 
     	if (VideoEngine.getInstance().hasDrawList(list_addr)) {
-    		cpu.gpr[2] = 0x80000021;
+    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_BUSY;
     		VideoEngine.log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
     	} else {
     		synchronized (this) {
     	    	PspGeList list = listFreeQueue.poll();
     	    	if (list == null) {
-    	    		cpu.gpr[2] = 0x80000022;
+    	    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_OUT_OF_MEMORY;
     	    		VideoEngine.log.warn("sceGeListEnQueueHead no more free list available!");
     	    	} else {
     	    		list.init(list_addr, stall_addr, cbid, arg_addr);

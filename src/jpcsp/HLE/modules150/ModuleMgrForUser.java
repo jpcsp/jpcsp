@@ -42,9 +42,8 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.Allegrex.CpuState;
 
 public class ModuleMgrForUser implements HLEModule {
-   // String[] bannedModulesList = {};
     enum bannedModulesList {
-        LIBFONT,  /*ace combat */
+        LIBFONT,
         sc_sascore,
         audiocodec,
         libatrac3plus,
@@ -74,7 +73,6 @@ public class ModuleMgrForUser implements HLEModule {
 			mm.addFunction(sceKernelGetModuleIdFunction, 0xF0A26395);
 			mm.addFunction(sceKernelGetModuleIdByAddressFunction, 0xD8B73127);
             mm.addFunction(sceKernelStopUnloadSelfModuleWithStatusFunction, 0x8f2df740);
-
 		}
 	}
 
@@ -96,7 +94,6 @@ public class ModuleMgrForUser implements HLEModule {
 			mm.removeFunction(sceKernelGetModuleIdFunction);
 			mm.removeFunction(sceKernelGetModuleIdByAddressFunction);
             mm.removeFunction(sceKernelStopUnloadSelfModuleWithStatusFunction);
-
 		}
 	}
 
@@ -244,7 +241,7 @@ public class ModuleMgrForUser implements HLEModule {
                 moduleInput.close();
             } else {
                 Modules.log.warn("hleKernelLoadModule(path='" + name + "') can't find file");
-                cpu.gpr[2] = pspiofilemgr.PSP_ERROR_FILE_NOT_FOUND;
+                cpu.gpr[2] = ERROR_FILE_NOT_FOUND;
             }
         } catch (IOException e) {
             Modules.log.error("hleKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
@@ -281,42 +278,23 @@ public class ModuleMgrForUser implements HLEModule {
     }
 
 	public void sceKernelLoadModuleMs(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+		CpuState cpu = processor.cpu;
 
 		System.out.println("Unimplemented NID function sceKernelLoadModuleMs [0x710F61B5]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
 	public void sceKernelLoadModuleBufferUsbWlan(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+		CpuState cpu = processor.cpu;
 
 		System.out.println("Unimplemented NID function sceKernelLoadModuleBufferUsbWlan [0xF9275D98]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
     public void sceKernelStartModule(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int uid = cpu.gpr[4];
@@ -369,8 +347,7 @@ public class ModuleMgrForUser implements HLEModule {
     }
 
     public void sceKernelStopModule(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int uid = cpu.gpr[4];
@@ -402,9 +379,7 @@ public class ModuleMgrForUser implements HLEModule {
     }
 
     public void sceKernelUnloadModule(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int uid = cpu.gpr[4];
 
@@ -473,42 +448,23 @@ public class ModuleMgrForUser implements HLEModule {
     }
 
 	public void sceKernelStopUnloadSelfModule(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+		CpuState cpu = processor.cpu;
 
 		System.out.println("Unimplemented NID function sceKernelStopUnloadSelfModule [0xCC1D3699]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
 	public void sceKernelGetModuleIdList(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+		CpuState cpu = processor.cpu;
 
 		System.out.println("Unimplemented NID function sceKernelGetModuleIdList [0x644395E2]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
     public void sceKernelQueryModuleInfo(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int uid = cpu.gpr[4];
@@ -545,7 +501,7 @@ public class ModuleMgrForUser implements HLEModule {
     }
 
 	public void sceKernelGetModuleIdByAddress(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
         int addr = cpu.gpr[4];
 

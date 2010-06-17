@@ -16,15 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+/*
+ * TODO list:
+ * 1. Change waitingOnThreadEnd, waitingOnEventFlag, etc to waitType
+ * (can only wait on one type of event at a time).
+ */
+
 public class ThreadWaitInfo {
     public boolean forever;
     public long microTimeTimeout; // when Clock.microTime() reaches microTimeTimeout the wait has expired
     public int micros; // time period specified by the game, just stored here for logging/debugging purposes
     public IAction waitTimeoutAction; // execute this action when the timeout is reached
     public IWaitStateChecker waitStateChecker; // checks if the wait condition still applies
-
-    // TODO change waitingOnThreadEnd, waitingOnEventFlag, etc to waitType,
-    // since we can only wait on one type of event at a time.
 
     // Thread End
     public boolean waitingOnThreadEnd;

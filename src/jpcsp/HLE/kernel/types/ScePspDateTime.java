@@ -21,9 +21,6 @@ import java.util.Date;
 import java.util.TimeZone;
 import jpcsp.Memory;
 
-/**
- * http://psp.jim.sh/pspsdk-doc/structScePspDateTime.html
- * http://psp.jim.sh/pspsdk-doc/structpspTime.html */
 public class ScePspDateTime {
     public int year;
     public int month;
@@ -31,14 +28,14 @@ public class ScePspDateTime {
     public int hour;
     public int minute;
     public int second;
-    public int microsecond; // TODO fractional part or absolute?
+    public int microsecond;
 
     /** All fields will be initialised to the time the object was created. */
     public ScePspDateTime() {
         Calendar cal = Calendar.getInstance();
 
         this.year = cal.get(Calendar.YEAR);
-        this.month = 1 + cal.get(Calendar.MONTH); // check
+        this.month = 1 + cal.get(Calendar.MONTH);
         this.day = cal.get(Calendar.DAY_OF_MONTH);
         this.hour = cal.get(Calendar.HOUR_OF_DAY);
         this.minute = cal.get(Calendar.MINUTE);
@@ -60,7 +57,7 @@ public class ScePspDateTime {
         cal.setTimeZone(tz);
 
         this.year = cal.get(Calendar.YEAR);
-        this.month = 1 + cal.get(Calendar.MONTH); // check
+        this.month = 1 + cal.get(Calendar.MONTH);
         this.day = cal.get(Calendar.DAY_OF_MONTH);
         this.hour = cal.get(Calendar.HOUR_OF_DAY);
         this.minute = cal.get(Calendar.MINUTE);
@@ -86,7 +83,7 @@ public class ScePspDateTime {
         cal.setTime(date);
 
         int year = cal.get(Calendar.YEAR);
-        int month = 1 + cal.get(Calendar.MONTH); // check
+        int month = 1 + cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
         int hour = cal.get(Calendar.HOUR_OF_DAY);
         int minute = cal.get(Calendar.MINUTE);
@@ -103,7 +100,7 @@ public class ScePspDateTime {
         cal.setTime(date);
 
         int year = cal.get(Calendar.YEAR);
-        int month = 1 + cal.get(Calendar.MONTH); // check
+        int month = 1 + cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
         int hour = cal.get(Calendar.HOUR_OF_DAY);
         int minute = cal.get(Calendar.MINUTE);

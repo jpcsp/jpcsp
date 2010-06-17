@@ -29,10 +29,13 @@ import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
 
-public class SceModule {
+/*
+ * TODO list:
+ * 1. Implement SceModule read operation.
+ */
 
+public class SceModule {
     // PSP info
-    // http://psp.jim.sh/pspsdk-doc/structSceModule.html
     public int next; // should be handled by a manager
     public short attribute;
     public byte[] version = new byte[2];
@@ -108,18 +111,6 @@ public class SceModule {
 
         modid = SceUidManager.getNewUid("SceModule");
 
-        // This struct must exist in PSP mem for old homebrew that uses pspSdkInstallNoDeviceCheckPatch,
-        // actually that function is error tolerant so we may not need to save this into psp memory at all.
-
-        // TODO This messes with loader "base address" since the loader has new SceModule() right at the start, and we'd rather not use smem_high since it will make stack allocations "non-pretty"
-        //address = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, size, 0);
-        //pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, size, address);
-
-        // update: allocate down into kernel area, otherwise we interfere with the volatile mem area,
-        // also you can only get a pointer to this struct from LoadCoreForKernel,
-        // which is kernel mode only, anyone see an official game call those functions?
-        // usermode version is SceKernelModuleInfo
-
         sceModuleAddressOffset -= (size + 256) & ~255;
         address = sceModuleAddressOffset;
 
@@ -140,15 +131,10 @@ public class SceModule {
 
     /** For use when unloading modules. */
     public void free() {
-        //TODO see constructor
-        //pspSysMem.getInstance().free(sysMemInfoUID, address);
-
         pspSysMem sysMem = pspSysMem.getInstance();
         for (int i = 0; i < nsegment; i++) {
             sysMem.free(-1, segmentaddr[i]);
         }
-
-        // TODO fixup "next" field/linked list
     }
 
     public void write(Memory mem, int address) {
@@ -200,7 +186,6 @@ public class SceModule {
     }
 
     public void read(Memory mem, int address) {
-        // TODO
         Emulator.log.error("UNIMPLEMENTED SceModule read");
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     }

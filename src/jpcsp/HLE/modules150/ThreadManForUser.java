@@ -1773,11 +1773,28 @@ public class ThreadManForUser implements HLEModule {
         }
     }
 
+    /**
+     * Manually notifies a callback. Mostly used for exit callbacks,
+     * and shouldn't be used at all (only some old homebrews use this, anyway).
+     */
     public void sceKernelNotifyCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented sceKernelNotifyCallback");
+        int uid = cpu.gpr[4];
+        int arg = cpu.gpr[5];
 
+        if (Modules.log.isDebugEnabled()) {
+              Modules.log.debug("sceKernelNotifyCallback uid=0x" + Integer.toHexString(uid)
+                      + ", arg=0x" + Integer.toHexString(arg));
+        }
+        SceKernelCallbackInfo callback = callbackMap.get(uid);
+        int callbackType = 0;  // Only seen in UMD callbacks (E.g.: "Exit_Game").
+        if(callback != null) {
+            if(!getCurrentThread().callbackRegistered[callbackType]) {
+                hleKernelRegisterCallback(callbackType, uid);
+            }
+            hleKernelNotifyCallback(callbackType, uid, arg);
+        }
         cpu.gpr[2] = 0;
     }
 

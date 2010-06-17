@@ -1080,6 +1080,9 @@ public class syscallsFirm15 {
          SysMemUserForUser_35669D4C(0x311d, 0x35669D4C), // 6.00+ sceKernelSetCompiledSdkVersionXXX
          sceKernelMemset(0x311e, 0xA089ECA4),
          sceDisplayWaitVblankStartMulti(0x311f, 0x40F1469C),
+         sceFontPointToPixelV(0x3120, 0x3C4B7E82),
+         sceFontPixelToPointH(0x3121, 0x74B21701),
+         sceFontPixelToPointV(0x3122, 0xF8F0752E),
 
          // CFW
          kuKernelLoadModule(0x5000, 0x4C25EA72),

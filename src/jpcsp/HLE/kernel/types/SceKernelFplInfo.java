@@ -22,8 +22,13 @@ import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.util.Utilities;
 
-public class SceKernelFplInfo {
+/*
+ * TODO list:
+ * 1. Implement a queue to receive blocks waiting for allocation and process
+ * memory events for them (onFreeFpl).
+ */
 
+public class SceKernelFplInfo {
     // PSP info
     public int size = 56;
     public String name;
@@ -39,7 +44,6 @@ public class SceKernelFplInfo {
     public final int partitionid;
     public int[] blockAddress;
     public boolean[] blockAllocated;
-    // TODO public List<Integer> waitAllocateQueue; // For use when there are no free blocks
 
     public static final int FPL_ATTR_MASK = 0x41FF; // anything outside this mask is an illegal attr
     public static final int FPL_ATTR_UNKNOWN = 0x100;
@@ -63,7 +67,6 @@ public class SceKernelFplInfo {
         for (int i = 0; i < numBlocks; i++) {
             blockAllocated[i] = false;
         }
-        // TODO waitAllocateQueue = new LinkedList<Integer>();
 
         int memType = pspSysMem.PSP_SMEM_Low;
         if ((attr & FPL_ATTR_ADDR_HIGH) == FPL_ATTR_ADDR_HIGH)

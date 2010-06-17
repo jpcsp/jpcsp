@@ -28,12 +28,10 @@ import jpcsp.util.Utilities;
 
 /*
  * TODO list:
- * 1. Use CANNOT_CANCEL 0x80020261 in sceKernelCancelEventFlag().
- *
- * 2. Implement a queue to receive blocks waiting for allocation and process
+ * 1. Implement a queue to receive blocks waiting for allocation and process
  * memory events for them (onFreeFpl).
  *
- * 3. Find the correct error code sceKernelCreateFpl() when blocksize is 0.
+ * 2. Find the correct error code sceKernelCreateFpl() when blocksize is 0.
  */
 
 public class FplManager {
