@@ -273,7 +273,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
     private void safeLoad(Memory mem, pspiofilemgr fileManager, String filename, PspUtilitySavedataFileData fileData) throws IOException {
-		String path = savedataPath + gameName + saveName + "/";
+		String path = getBasePath();
 
         try {
             fileData.size = loadFile(mem, fileManager, path, filename, fileData.buf, fileData.bufSize);
@@ -283,7 +283,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     }
 
 	public boolean test(Memory mem, pspiofilemgr fileManager) throws IOException {
-		String path = savedataPath + gameName + saveName + "/";
+		String path = getBasePath();
 
 		boolean result = testFile(mem, fileManager, path, fileName);
 
@@ -291,7 +291,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void load(Memory mem, pspiofilemgr fileManager) throws IOException {
-		String path = savedataPath + gameName + saveName + "/";
+		String path = getBasePath();
 
 		// Firmware 1.5 stores data file non-encrypted.
 		// From Firmware 2.0, the data file is encrypted using the kirk chip.
@@ -305,8 +305,21 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		loadPsf(mem, fileManager, path, paramSfoFileName, sfoParam);
 	}
 
+    private String getBasePath() {
+        return getBasePath(saveName);
+    }
+
+    private String getBasePath(String saveName) {
+        String path = savedataPath + gameName;
+        if (!saveName.equals("<>")) {
+            path += saveName;
+        }
+        path += "/";
+        return path;
+    }
+
 	public String getFileName(String saveName, String fileName) {
-		return savedataPath + gameName + saveName + "/" + fileName;
+		return getBasePath(saveName) + fileName;
 	}
 
 	public boolean isPresent(pspiofilemgr fileManager, String gameName, String saveName) {
@@ -314,7 +327,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	        return false;
 	    }
 
-	    String path = savedataPath + gameName + saveName + "/";
+	    String path = getBasePath();
 	    try {
             SeekableDataInput fileInput = getDataInput(fileManager, path, fileName);
             if (fileInput != null) {
@@ -331,12 +344,11 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return isPresent(fileManager, gameName, saveName);
 	}
 
-	static private int getFileSize(pspiofilemgr fileManager, String gameName, String saveName, String fileName) {
+	private int getFileSize(pspiofilemgr fileManager, String fileName) {
 		int size = 0;
 
 		if (fileName != null && fileName.length() > 0) {
-		    String path = savedataPath + gameName + saveName + "/";
-		    SceIoStat fileStat = fileManager.statFile(path + fileName);
+		    SceIoStat fileStat = fileManager.statFile(getFileName(saveName, fileName));
 		    if (fileStat != null) {
 		    	size = (int) fileStat.size;
 		    }
@@ -348,12 +360,12 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public int getSize(pspiofilemgr fileManager, String gameName, String saveName) {
 		int size;
 
-		size  = getFileSize(fileManager, gameName, saveName, fileName);
-		size += getFileSize(fileManager, gameName, saveName, icon0FileName);
-		size += getFileSize(fileManager, gameName, saveName, icon1FileName);
-		size += getFileSize(fileManager, gameName, saveName, pic1FileName);
-		size += getFileSize(fileManager, gameName, saveName, snd0FileName);
-		size += getFileSize(fileManager, gameName, saveName, paramSfoFileName);
+		size  = getFileSize(fileManager, fileName);
+		size += getFileSize(fileManager, icon0FileName);
+		size += getFileSize(fileManager, icon1FileName);
+		size += getFileSize(fileManager, pic1FileName);
+		size += getFileSize(fileManager, snd0FileName);
+		size += getFileSize(fileManager, paramSfoFileName);
 
         return size;
 	}
@@ -428,7 +440,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
 	public void save(Memory mem, pspiofilemgr fileManager) throws IOException {
-		String path = savedataPath + gameName + saveName + "/";
+		String path = getBasePath();
 
 		fileManager.mkdirs(path);
 		writeFile(mem, fileManager, path, fileName,      dataBuf,           dataSize);
