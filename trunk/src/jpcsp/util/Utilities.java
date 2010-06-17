@@ -349,7 +349,7 @@ public class Utilities {
     		output.getChannel().write((ByteBuffer) buffer);
     	} else if (length > 0) {
     		byte[] bytes = new byte[length];
-    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, 1, length);
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
     		for (int i = 0; i < length; i++) {
     			bytes[i] = (byte) memoryReader.readNext();
     		}
