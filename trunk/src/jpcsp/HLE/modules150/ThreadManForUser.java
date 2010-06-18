@@ -1386,7 +1386,7 @@ public class ThreadManForUser implements HLEModule {
         }
     }
 
-    private void hleKernelSleepThread(boolean doCallbacks) {
+    public void hleKernelSleepThread(boolean doCallbacks) {
     	if (currentThread.wakeupCount > 0) {
     		// sceKernelWakeupThread() has been called before, do not sleep
     		currentThread.wakeupCount--;
@@ -1404,6 +1404,28 @@ public class ThreadManForUser implements HLEModule {
 	        Emulator.getProcessor().cpu.gpr[2] = 0;
 	        hleRescheduleCurrentThread(doCallbacks);
     	}
+    }
+
+    public void hleKernelWakeupThread(SceKernelThreadInfo thread) {
+        if (thread.status != PSP_THREAD_WAITING) {
+	        Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount");
+	        thread.wakeupCount++;
+	    } else if (isBannedThread(thread)) {
+	        Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not waking up");
+	    } else {
+	    	if (Modules.log.isDebugEnabled()) {
+	    		Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+	    	}
+	        hleChangeThreadState(thread, PSP_THREAD_READY);
+	
+	        // switch in the target thread if it's now higher priority
+	        if (thread.currentPriority < currentThread.currentPriority) {
+	        	if (Modules.log.isDebugEnabled()) {
+	        		Modules.log.debug("sceKernelWakeupThread yielding to thread with higher priority");
+	        	}
+	            hleRescheduleCurrentThread();
+	        }
+	    }
     }
 
     private void hleKernelWaitThreadEnd(int uid, int micros, boolean forever, boolean callbacks) {
@@ -1894,28 +1916,9 @@ public class ThreadManForUser implements HLEModule {
         if (thread == null) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else if (thread.status != PSP_THREAD_WAITING) {
-            Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount");
-            thread.wakeupCount++;
-            cpu.gpr[2] = 0;
-        } else if (isBannedThread(thread)) {
-            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
-            cpu.gpr[2] = 0;
         } else {
-        	if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
-        	}
-            hleChangeThreadState(thread, PSP_THREAD_READY);
-
-            cpu.gpr[2] = 0;
-
-            // switch in the target thread if it's now higher priority
-            if (thread.currentPriority < currentThread.currentPriority) {
-            	if (Modules.log.isDebugEnabled()) {
-            		Modules.log.debug("sceKernelWakeupThread yielding to thread with higher priority");
-            	}
-                hleRescheduleCurrentThread();
-            }
+	        cpu.gpr[2] = 0;
+        	hleKernelWakeupThread(thread);
         }
     }
 
