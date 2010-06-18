@@ -134,7 +134,7 @@ public class Utilities {
      * Read a string from memory.
      * The string ends when the maximal length is reached or a '\0' byte is found.
      * The memory bytes are interpreted as UTF-8 bytes to form the string.
-     * 
+     *
      * @param mem     the memory
      * @param address the address of the first byte of the string
      * @param n       the maximal string length
@@ -186,17 +186,32 @@ public class Utilities {
     }
 
     public static void writeStringNZ(Memory mem, int address, int n, String s) {
-		byte[] bytes = s.getBytes(charset);
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
-    	int offset = 0;
-    	while (offset < bytes.length && offset < n) {
-    		memoryWriter.writeNext(bytes[offset]);
-    		offset++;
-    	}
-    	while (offset < n) {
-    		memoryWriter.writeNext(0);
-    		offset++;
-    	}
+        int offset = 0;
+        while (offset < s.length() && offset < n) {
+            mem.write8(address + offset, (byte) s.charAt(offset));
+            offset++;
+        }
+        while (offset < n) {
+            mem.write8(address + offset, (byte) 0);
+            offset++;
+        }
+
+        // This method is causing the output result to be written in the wrong
+        // byte order.
+        // FIXME: Check MemoryWriter -> MemoryWriterIntArray8.
+        /*
+         byte[] bytes = s.getBytes(charset);
+         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
+         int offset = 0;
+         while (offset < bytes.length && offset < n) {
+         memoryWriter.writeNext(bytes[offset]);
+         offset++;
+         }
+         while (offset < n) {
+         memoryWriter.writeNext(0);
+         offset++;
+         }
+    	} */
     }
 
     public static void writeStringZ(Memory mem, int address, String s) {
@@ -276,7 +291,7 @@ public class Utilities {
      * Parse the string as a number and returns its value.
      * If the string starts with "0x", the number is parsed
      * in base 16, otherwise base 10.
-     * 
+     *
      * @param s the string to be parsed
      * @return the numeric value represented by the string.
      */
@@ -301,7 +316,7 @@ public class Utilities {
      * Parse the string as a number and returns its value.
      * The number is always parsed in base 16.
      * The string can start as an option with "0x".
-     * 
+     *
      * @param s the string to be parsed in base 16
      * @return the numeric value represented by the string.
      */
