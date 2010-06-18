@@ -304,8 +304,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
     }
 
+    public void hleDisplaySetGeBuf(GL gl, int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory) {
+    	hleDisplaySetGeBuf(gl, topaddr, bufferwidth, pixelformat, copyGEToMemory, widthGe, heightGe);
+    }
+
     public void hleDisplaySetGeBuf(GL gl,
-        int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory)
+        int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory,
+        int width, int height)
     {
         topaddr &= Memory.addressMask;
         // We can get the address relative to 0 or already relative to START_VRAM
@@ -313,7 +318,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         	topaddr += MemoryMap.START_VRAM;
         }
 
-        if (topaddr == topaddrGe && bufferwidth == bufferwidthGe && pixelformat == pixelformatGe) {
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("hleDisplaySetGeBuf topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, copyGE=%b, with=%d, height=%d", topaddr, bufferwidth, pixelformat, copyGEToMemory, width, height));
+        }
+
+        if (topaddr == topaddrGe && bufferwidth == bufferwidthGe &&
+            pixelformat == pixelformatGe &&
+            width == widthGe && height == heightGe) {
         	// Nothing changed
         	return;
         }
@@ -387,6 +398,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             this.topaddrGe     = topaddr;
             this.bufferwidthGe = bufferwidth;
             this.pixelformatGe = pixelformat;
+            this.widthGe       = width;
+            this.heightGe      = height;
 
             bottomaddrGe =
                 topaddr + bufferwidthGe * heightGe *

@@ -155,7 +155,7 @@ public class MemoryWriter {
 				value = n;
 				index = 1;
 			} else {
-				value = (value << 8) | n;
+				value |= (n << (index << 3));
 				index++;
 			}
 		}
@@ -242,7 +242,7 @@ public class MemoryWriter {
 				value = n;
 				index = 1;
 			} else {
-				value = (value << 8) | n;
+				value |= (n << (index << 3));
 				index++;
 			}
 		}

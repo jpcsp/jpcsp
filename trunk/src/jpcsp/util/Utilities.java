@@ -186,32 +186,18 @@ public class Utilities {
     }
 
     public static void writeStringNZ(Memory mem, int address, int n, String s) {
+        byte[] bytes = s.getBytes(charset);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
         int offset = 0;
-        while (offset < s.length() && offset < n) {
-            mem.write8(address + offset, (byte) s.charAt(offset));
+        while (offset < bytes.length && offset < n) {
+            memoryWriter.writeNext(bytes[offset]);
             offset++;
         }
         while (offset < n) {
-            mem.write8(address + offset, (byte) 0);
+            memoryWriter.writeNext(0);
             offset++;
         }
-
-        // This method is causing the output result to be written in the wrong
-        // byte order.
-        // FIXME: Check MemoryWriter -> MemoryWriterIntArray8.
-        /*
-         byte[] bytes = s.getBytes(charset);
-         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
-         int offset = 0;
-         while (offset < bytes.length && offset < n) {
-         memoryWriter.writeNext(bytes[offset]);
-         offset++;
-         }
-         while (offset < n) {
-         memoryWriter.writeNext(0);
-         offset++;
-         }
-    	} */
+    	memoryWriter.flush();
     }
 
     public static void writeStringZ(Memory mem, int address, String s) {
