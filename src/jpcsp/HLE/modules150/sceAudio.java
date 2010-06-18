@@ -673,10 +673,16 @@ public class sceAudio implements HLEModule, HLEThread {
 
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("sceAudioOutputPannedBlocking[not blocking] " + pspchannels[channel].toString());
+            	}
 	            sceAudioChangeChannelVolume(channel, leftvol, rightvol);
 	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
 	            //threadMan.yieldCurrentThread();
             } else {
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("sceAudioOutputPannedBlocking[blocking] " + pspchannels[channel].toString());
+            	}
 	            pspchannels[channel].waitingThreadId = threadMan.getCurrentThreadID();
 	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
 	            pspchannels[channel].waitingVolumeLeft  = leftvol;
