@@ -3992,16 +3992,7 @@ public class VideoEngine {
             display.captureGeImage(gl);
         }
 
-        // VADDR/IADDR are updated after vertex rendering
-        // (IADDR when indexed and VADDR when not).
-        // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM calls.
-        if (vinfo.index == 0) {
-        	vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
-        } else {
-        	vinfo.ptr_index += numberOfVertex * vinfo.index;
-        }
-
-        endRendering(useVertexColor, useTexture);
+        endRendering(useVertexColor, useTexture, numberOfVertex);
     }
 
     private void executeCommandTRXKICK(int normalArgument) {
@@ -4313,7 +4304,7 @@ public class VideoEngine {
 
         enableShaders();
 
-        endRendering(useVertexColor, false);
+        endRendering(useVertexColor, false, numberOfVertexBoundingBox);
     }
 
     private void executeCommandBJUMP(int normalArgument) {
@@ -5578,7 +5569,18 @@ public class VideoEngine {
         return useVertexColor;
     }
 
-    private void endRendering(boolean useVertexColor, boolean useTexture) {
+    private void endRendering(boolean useVertexColor, boolean useTexture, int numberOfVertex) {
+    	Memory mem = Memory.getInstance();
+
+    	// VADDR/IADDR are updated after vertex rendering
+        // (IADDR when indexed and VADDR when not).
+        // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM/BBOX calls.
+        if (vinfo.index == 0) {
+        	vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
+        } else {
+        	vinfo.ptr_index += numberOfVertex * vinfo.index;
+        }
+
         switch (tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
                 gl.glDisable (GL.GL_TEXTURE_GEN_S);
@@ -5715,7 +5717,7 @@ public class VideoEngine {
             pyold = py;
         }
 
-        endRendering(useVertexColor, useTexture);
+        endRendering(useVertexColor, useTexture, ucount * vcount);
     }
 
     private void pointAdd(VertexState result, VertexState p, VertexState q) {
