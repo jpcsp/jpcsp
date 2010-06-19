@@ -499,10 +499,7 @@
                 <DimensionLayout dim="0">
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" attributes="0">
-                          <Group type="103" groupAlignment="0" attributes="0">
-                              <Component id="invalidMemoryCheck" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="disableReservedThreadMemoryCheck" alignment="0" min="-2" max="-2" attributes="0"/>
-                          </Group>
+                          <Component id="invalidMemoryCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace pref="194" max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -511,9 +508,7 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
                           <Component id="invalidMemoryCheck" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Component id="disableReservedThreadMemoryCheck" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace max="32767" attributes="0"/>
+                          <EmptySpace pref="30" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -523,13 +518,6 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="Resource.get(&quot;ignoreinvalidmemory&quot;)" type="code"/>
-                    </Property>
-                  </Properties>
-                </Component>
-                <Component class="javax.swing.JCheckBox" name="disableReservedThreadMemoryCheck">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                      <Connection code="Resource.get(&quot;disablereservedthread&quot;)" type="code"/>
                     </Property>
                   </Properties>
                 </Component>

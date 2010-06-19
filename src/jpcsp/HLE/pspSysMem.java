@@ -32,16 +32,14 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 
 /*
  * TODO list:
- * 1. Delete the "DisableReservedThreadMemory" compatibility setting.
- *
- * 2. Use the partitionid in functions that use it as a parameter.
+ * 1. Use the partitionid in functions that use it as a parameter.
  *  -> Info:
  *      1 = kernel, 2 = user, 3 = me, 4 = kernel mirror (from potemkin/dash)
  *      http://forums.ps2dev.org/viewtopic.php?p=75341#75341
  *      8 = slim, topaddr = 0x8A000000, size = 0x1C00000 (28 MB), attr = 0x0C
  *      8 = slim, topaddr = 0x8BC00000, size = 0x400000 (4 MB), attr = 0x0C
  *
- * 3. Implement format string parsing and reading variable number of parameters
+ * 2. Implement format string parsing and reading variable number of parameters
  * in sceKernelPrintf.
  */
 
@@ -51,7 +49,6 @@ public class pspSysMem {
     private static HashMap<Integer, SysMemInfo> blockList;
     private static MemoryChunkList freeMemoryChunks;
     private int firmwareVersion = 150;
-    private boolean disableReservedThreadMemory = false;
     private static final int defaultSizeAlignment = 256;
 
     // PspSysMemBlockTypes
@@ -81,14 +78,6 @@ public class pspSysMem {
         freeMemoryChunks = new MemoryChunkList(initialMemory);
 
         setFirmwareVersion(firmwareVersion);
-    }
-
-    public void setDisableReservedThreadMemory(boolean disableReservedThreadMemory) {
-        this.disableReservedThreadMemory = disableReservedThreadMemory;
-        Modules.log.info("Disable reserved thread memory: " + disableReservedThreadMemory);
-        if (!disableReservedThreadMemory) {
-        	Modules.log.info("Please inform us if this application is really running better when unchecking the option 'Disable reserved thread memory' (all other settings unchanged)");
-        }
     }
 
     // Allocates to 256-byte alignment
@@ -196,25 +185,21 @@ public class pspSysMem {
 
     public int maxFreeMemSize() {
     	int maxFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-    		if (!disableReservedThreadMemory) {
-    			final int heapTopGuard = 0x09f00000;
-    			if (memoryChunk.addr >= heapTopGuard) {
-    				break;
-    			} else if (memoryChunk.addr + memoryChunk.size > heapTopGuard) {
-    				int sizeToTopGuard = heapTopGuard - memoryChunk.addr;
-    				if (sizeToTopGuard > maxFreeMemSize) {
-    					maxFreeMemSize = sizeToTopGuard;
-    				}
-    				break;
-    			}
-    		}
-
+    	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {            
+            final int heapTopGuard = 0x09f00000;
+            if (memoryChunk.addr >= heapTopGuard) {
+                break;
+            } else if (memoryChunk.addr + memoryChunk.size > heapTopGuard) {
+                int sizeToTopGuard = heapTopGuard - memoryChunk.addr;
+                if (sizeToTopGuard > maxFreeMemSize) {
+                    maxFreeMemSize = sizeToTopGuard;
+                }
+                break;
+            }
     		if (memoryChunk.size > maxFreeMemSize) {
     			maxFreeMemSize = memoryChunk.size;
     		}
     	}
-
 		return maxFreeMemSize;
     }
 

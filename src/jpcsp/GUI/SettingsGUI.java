@@ -92,9 +92,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         enabled = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
         invalidMemoryCheck.setSelected(enabled);
-
-        enabled = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
-        disableReservedThreadMemoryCheck.setSelected(enabled);
         
         enabled = Settings.getInstance().readBool("emu.disablesceAudio");
         DisableSceAudioCheck.setSelected(enabled);
@@ -286,7 +283,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         useVertexCache = new javax.swing.JCheckBox();
         jPanel3 = new javax.swing.JPanel();
         invalidMemoryCheck = new javax.swing.JCheckBox();
-        disableReservedThreadMemoryCheck = new javax.swing.JCheckBox();
         jPanel4 = new javax.swing.JPanel();
         enableWaitThreadEndCB = new javax.swing.JCheckBox();
         ignoreUnmappedImports = new javax.swing.JCheckBox();
@@ -519,25 +515,19 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         invalidMemoryCheck.setText(Resource.get("ignoreinvalidmemory"));
 
-        disableReservedThreadMemoryCheck.setText(Resource.get("disablereservedthread"));
-
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(invalidMemoryCheck)
-                    .addComponent(disableReservedThreadMemoryCheck))
+                .addComponent(invalidMemoryCheck)
                 .addContainerGap(194, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addComponent(invalidMemoryCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(disableReservedThreadMemoryCheck)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(30, Short.MAX_VALUE))
         );
 
         jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder("Misc"));
@@ -1080,9 +1070,6 @@ public void RefreshWindow()
 	enabled = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
 	invalidMemoryCheck.setSelected(enabled);
 	
-	enabled = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
-	disableReservedThreadMemoryCheck.setSelected(enabled);
-	
 	enabled = Settings.getInstance().readBool("emu.disablesceAudio");
 	DisableSceAudioCheck.setSelected(enabled);
 	
@@ -1131,7 +1118,6 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.useMediaEngine",useMediaEngine.isSelected());
    Settings.getInstance().writeBool("emu.useVertexCache",useVertexCache.isSelected());
    Settings.getInstance().writeBool("emu.ignoreInvalidMemoryAccess", invalidMemoryCheck.isSelected());
-   Settings.getInstance().writeBool("emu.disablereservedthreadmemory", disableReservedThreadMemoryCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablesceAudio", DisableSceAudioCheck.isSelected());
    Settings.getInstance().writeBool("emu.ignoreaudiothreads",IgnoreAudioThreadsCheck.isSelected());
    Settings.getInstance().writeBool("emu.mutesound",disableSoundCheck.isSelected());
@@ -1258,7 +1244,6 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox compilerCheck;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableGECheck;
-    private javax.swing.JCheckBox disableReservedThreadMemoryCheck;
     private javax.swing.JCheckBox disableSoundCheck;
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox enableWaitThreadEndCB;
