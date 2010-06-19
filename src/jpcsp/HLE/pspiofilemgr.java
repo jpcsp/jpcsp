@@ -629,7 +629,8 @@ public class pspiofilemgr {
 	        info.asyncThread.cpuContext.gpr[asyncThreadRegisterArgument] = info.uid;
 
 	        // This must be the last action of the hleIoXXX call because it can context-switch
-	        threadMan.hleKernelStartThread(info.asyncThread, 0, 0, 0);
+	        // Inherit $gp from this process ($gp can be used by interrupts)
+	        threadMan.hleKernelStartThread(info.asyncThread, 0, 0, info.asyncThread.gpReg_addr);
         } else {
         	triggerAsyncThread(info);
         }
