@@ -186,16 +186,6 @@ public class pspSysMem {
     public int maxFreeMemSize() {
     	int maxFreeMemSize = 0;
     	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {            
-            final int heapTopGuard = 0x09f00000;
-            if (memoryChunk.addr >= heapTopGuard) {
-                break;
-            } else if (memoryChunk.addr + memoryChunk.size > heapTopGuard) {
-                int sizeToTopGuard = heapTopGuard - memoryChunk.addr;
-                if (sizeToTopGuard > maxFreeMemSize) {
-                    maxFreeMemSize = sizeToTopGuard;
-                }
-                break;
-            }
     		if (memoryChunk.size > maxFreeMemSize) {
     			maxFreeMemSize = memoryChunk.size;
     		}
