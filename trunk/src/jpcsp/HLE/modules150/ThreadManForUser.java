@@ -59,6 +59,7 @@ import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelSystemStatus;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -383,7 +384,7 @@ public class ThreadManForUser implements HLEModule {
     /** call this when resetting the emulator
      * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
-    public void Initialise(int entry_addr, int attr, String pspfilename, int moduleid, boolean fromSyscall) {
+    public void Initialise(SceModule module, int entry_addr, int attr, String pspfilename, int moduleid, boolean fromSyscall) {
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         readyThreads = new LinkedList<SceKernelThreadInfo>();
         statistics = new Statistics();
@@ -402,7 +403,17 @@ public class ThreadManForUser implements HLEModule {
         // and smaller when starting the application with sceKernelLoadExec() - guess: 0x4000.
         // This could not be reproduced on a PSP.
         int rootStackSize = (fromSyscall ? 0x4000 : 0x40000);
-        currentThread = new SceKernelThreadInfo("root", entry_addr, 0x20, rootStackSize, attr);
+        // Use the module_start_thread_stacksize when this information was present in the ELF file
+        if (module != null && module.module_start_thread_stacksize > 0) {
+        	rootStackSize = module.module_start_thread_stacksize;
+        }
+
+        int rootInitPriority = 0x20;
+        // Use the module_start_thread_priority when this information was present in the ELF file
+        if (module != null && module.module_start_thread_priority > 0) {
+        	rootInitPriority = module.module_start_thread_priority;
+        }
+        currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr);
         currentThread.moduleid = moduleid;
         threadMap.put(currentThread.uid, currentThread);
 

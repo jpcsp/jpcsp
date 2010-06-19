@@ -158,7 +158,7 @@ public class Emulator implements Runnable {
         cpu.gpr[27] = 0; //k1.
         cpu.gpr[28] = module.gp_value; //gp_reg.
 
-        Modules.ThreadManForUserModule.Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
+        Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
         psputils.getInstance().Initialise();
         pspge.getInstance().Initialise();
         pspdisplay.getInstance().Initialise();
