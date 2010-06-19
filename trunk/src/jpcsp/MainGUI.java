@@ -499,7 +499,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         LanguageMenu.setText(Resource.get("language"));
 
-        English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN.png"))); // NOI18N
+        English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN_Icon.png"))); // NOI18N
         English.setText(Resource.get("english"));
         English.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -508,7 +508,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(English);
 
-        French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR.png"))); // NOI18N
+        French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR_Icon.png"))); // NOI18N
         French.setText(Resource.get("french"));
         French.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -517,7 +517,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(French);
 
-        German.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/de_DE.png"))); // NOI18N
+        German.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/de_DE_Icon.png"))); // NOI18N
         German.setText(Resource.get("german"));
         German.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -526,7 +526,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(German);
 
-        Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT.png"))); // NOI18N
+        Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT_Icon.png"))); // NOI18N
         Lithuanian.setText(Resource.get("lithuanian"));
         Lithuanian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -535,7 +535,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Lithuanian);
 
-        Spanish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_ES.png"))); // NOI18N
+        Spanish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_ES_Icon.png"))); // NOI18N
         Spanish.setText(Resource.get("spanish"));
         Spanish.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -544,7 +544,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Spanish);
 
-        Catalan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_CA.png"))); // NOI18N
+        Catalan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_CA_Icon.png"))); // NOI18N
         Catalan.setText(Resource.get("catalan"));
         Catalan.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -553,7 +553,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Catalan);
 
-        PortugueseBR.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_BR.png"))); // NOI18N
+        PortugueseBR.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_BR_Icon.png"))); // NOI18N
         PortugueseBR.setText(Resource.get("portuguesebr"));
         PortugueseBR.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -562,7 +562,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(PortugueseBR);
 
-        Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT.png"))); // NOI18N
+        Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT_Icon.png"))); // NOI18N
         Portuguese.setText(Resource.get("portuguese"));
         Portuguese.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -571,7 +571,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Portuguese);
 
-        Japanese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/jp_JP.png"))); // NOI18N
+        Japanese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/jp_JP_Icon.png"))); // NOI18N
         Japanese.setText(Resource.get("japanese"));
         Japanese.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -580,7 +580,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Japanese);
 
-        Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU.png"))); // NOI18N
+        Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU_Icon.png"))); // NOI18N
         Russian.setText(Resource.get("russian"));
         Russian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -589,8 +589,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Russian);
 
-        Polish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pl_PL.PNG"))); // NOI18N
+        Polish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pl_PL_Icon.png"))); // NOI18N
         Polish.setText(Resource.get("polish"));
+        Polish.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PolishActionPerformed(evt);
+            }
+        });
         LanguageMenu.add(Polish);
 
         MenuBar.add(LanguageMenu);
@@ -1099,9 +1104,6 @@ private void installCompatibilitySettings()
     Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
     Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
 
-    boolean disableReservedThreadMemory = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
-    pspSysMem.getInstance().setDisableReservedThreadMemory(disableReservedThreadMemory);
-
     boolean enableWaitThreadEndCB = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
     Modules.ThreadManForUserModule.setEnableWaitThreadEndCB(enableWaitThreadEndCB);
 
@@ -1165,10 +1167,6 @@ public boolean installCompatibilityPatches(String filename)
             Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
             Compiler.setIgnoreInvalidMemory(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
         }
-
-        String disableReservedThreadMemory = patchSettings.getProperty("emu.disablereservedthreadmemory");
-        if (disableReservedThreadMemory != null)
-            pspSysMem.getInstance().setDisableReservedThreadMemory(Integer.parseInt(disableReservedThreadMemory) != 0);
 
         String enableWaitThreadEndCB = patchSettings.getProperty("emu.enablewaitthreadendcb");
         if (enableWaitThreadEndCB != null)
@@ -1380,6 +1378,10 @@ cwCheats.setVisible(true);
 private void RussianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RussianActionPerformed
 changeLanguage("ru_RU");
 }//GEN-LAST:event_RussianActionPerformed
+
+private void PolishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PolishActionPerformed
+changeLanguage("pl_PL");
+}//GEN-LAST:event_PolishActionPerformed
 
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))

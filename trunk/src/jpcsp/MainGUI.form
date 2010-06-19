@@ -371,7 +371,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="English">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/en_EN.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/en_EN_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;english&quot;)" type="code"/>
@@ -384,7 +384,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="French">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/fr_FR.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/fr_FR_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;french&quot;)" type="code"/>
@@ -397,7 +397,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="German">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/de_DE.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/de_DE_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;german&quot;)" type="code"/>
@@ -410,7 +410,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="Lithuanian">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/lt_LT.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/lt_LT_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;lithuanian&quot;)" type="code"/>
@@ -423,7 +423,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="Spanish">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/es_ES.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/es_ES_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;spanish&quot;)" type="code"/>
@@ -436,7 +436,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="Catalan">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/es_CA.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/es_CA_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;catalan&quot;)" type="code"/>
@@ -449,7 +449,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="PortugueseBR">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/pt_BR.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/pt_BR_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;portuguesebr&quot;)" type="code"/>
@@ -462,7 +462,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="Portuguese">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/pt_PT.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/pt_PT_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;portuguese&quot;)" type="code"/>
@@ -475,7 +475,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="Japanese">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/jp_JP.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/jp_JP_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;japanese&quot;)" type="code"/>
@@ -488,7 +488,7 @@
             <MenuItem class="javax.swing.JMenuItem" name="Russian">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/ru_RU.png"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/ru_RU_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;russian&quot;)" type="code"/>
@@ -501,12 +501,15 @@
             <MenuItem class="javax.swing.JMenuItem" name="Polish">
               <Properties>
                 <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                  <Image iconType="3" name="/jpcsp/icons/flags/pl_PL.PNG"/>
+                  <Image iconType="3" name="/jpcsp/icons/flags/pl_PL_Icon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                   <Connection code="Resource.get(&quot;polish&quot;)" type="code"/>
                 </Property>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="PolishActionPerformed"/>
+              </Events>
             </MenuItem>
           </SubComponents>
         </Menu>
