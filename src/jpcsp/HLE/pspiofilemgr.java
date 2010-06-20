@@ -778,6 +778,10 @@ public class pspiofilemgr {
         if ((flags & PSP_O_NBUF) == PSP_O_NBUF) {
             Modules.log.warn("PSP_O_NBUF - " + filename + " doesn't use media buffer!");
             sceMpeg.setRingBufStatus(false);
+        } else {
+            // Always set to true (a valid file may be loaded after
+            // an invalid one).
+            sceMpeg.setRingBufStatus(true);
         }
 
         String mode = getMode(flags);

@@ -680,7 +680,7 @@ public class sceFont implements HLEModule {
         int clipHeight = cpu.gpr[10];
 
 		Modules.log.warn(String.format("PARTIAL: sceFontGetCharGlyphImage_Clip fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X" +
-                ", clipXPos=%i, clipYPos=%i, clipWidth=%i, clipHeight=%i,"
+                ", clipXPos=%d, clipYPos=%d, clipWidth=%d, clipHeight=%d,"
                 , fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr
                 , clipXPos, clipYPos, clipWidth, clipHeight));
 
@@ -853,7 +853,7 @@ public class sceFont implements HLEModule {
 		int fontInfoAddr = cpu.gpr[5];
         int fontIndex = cpu.gpr[7];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontGetFontInfoByIndexNumber libHandle=0x%08X, fontInfoAddr=0x%08X, fontIndex=%i"
+		Modules.log.warn(String.format("PARTIAL: sceFontGetFontInfoByIndexNumber libHandle=0x%08X, fontInfoAddr=0x%08X, fontIndex=%d"
                 , libHandle, fontInfoAddr, fontIndex));
 
 		if (!fontLibMap.containsKey(libHandle)) {

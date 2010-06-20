@@ -338,7 +338,24 @@ public class ModuleMgrForUser implements HLEModule {
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
             } else if (sceModule.entry_addr == -1) {
                 Modules.log.info("sceKernelStartModule - module has no entry point");
-                cpu.gpr[2] = 0;
+                // Try using the start_func parameters.
+                if (mem.isAddressGood(sceModule.module_start_func)) {
+                    Modules.log.info("sceKernelStartModule - using start_func parameters");
+                    if (mem.isAddressGood(status_addr)) {
+                        mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+                    }
+
+                    SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart",
+                            sceModule.module_start_func, sceModule.module_start_thread_priority,
+                            sceModule.module_start_thread_stacksize, sceModule.module_start_thread_attr
+                            , option_addr);
+
+                    thread.moduleid = sceModule.modid;
+                    cpu.gpr[2] = sceModule.modid; // return the module id
+                    threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+                } else {
+                    cpu.gpr[2] = -1;
+                }
             } else {
                 Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(sceModule.entry_addr));
                 cpu.gpr[2] = -1;
@@ -356,26 +373,48 @@ public class ModuleMgrForUser implements HLEModule {
         int status_addr = cpu.gpr[7]; // TODO
         int option_addr = cpu.gpr[8]; // SceKernelSMOption
 
-        Modules.log.warn("UNIMPLEMENTED:sceKernelStopModule(uid=0x" + Integer.toHexString(uid)
+        Modules.log.warn("sceKernelStopModule(uid=0x" + Integer.toHexString(uid)
             + ",argsize=" + argsize
             + ",argp=0x" + Integer.toHexString(argp_addr)
             + ",status=0x" + Integer.toHexString(status_addr)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-        // TODO check if module_stop export exists in this module, if so:
-        // - create a thread called SceKernelModmgrStop, stack 0x40000, pri 0x20, entry = module_stop
-        // - start the thread using the parameters supplied to this function
+        SceModule sceModule = Managers.modules.getModuleByUID(uid);
 
-        // TODO only write this if module_stop exists
-        if (mem.isAddressGood(status_addr)) {
-            mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+        if (sceModule == null) {
+            Modules.log.warn("sceKernelStopModule - unknown module UID 0x" + Integer.toHexString(uid));
+            cpu.gpr[2] = ERROR_UNKNOWN_MODULE;
+        } else  if (sceModule.isFlashModule) {
+            // Trying to stop a module loaded from flash0:
+            // Shouldn't get here...
+        	if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
+        		Modules.log.info("IGNORING:sceKernelStopModule HLE module '" + sceModule.modname + "'");
+        	} else {
+        		Modules.log.warn("IGNORING:sceKernelStopModule flash module '" + sceModule.modname + "'");
+        	}
+            cpu.gpr[2] = 0; // Fake success.
+        } else {
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            if (mem.isAddressGood(sceModule.module_stop_func)) {
+                if (mem.isAddressGood(status_addr)) {
+                    mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+                }
+
+                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+                        sceModule.module_stop_func, sceModule.module_stop_thread_priority,
+                        sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr
+                        , option_addr);
+
+                thread.moduleid = sceModule.modid;
+                cpu.gpr[2] = 0;
+                threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+            } else {
+                // TODO: 0x80020135 module already stopped.
+                // May be related to the SceModule status or with the thread exit status.
+                Modules.log.warn("sceKernelStopModule - no stop function found");
+                cpu.gpr[2] = -1;
+            }
         }
-
-        // TODO
-        // return 0 regardless of module_stop existing
-        // 80020135 module already stopped
-        // 8002012E not found module, ERROR_UNKNOWN_MODULE
-        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceKernelUnloadModule(Processor processor) {
@@ -408,12 +447,6 @@ public class ModuleMgrForUser implements HLEModule {
             + ",status_addr=0x" + Integer.toHexString(status_addr)
             + ",options_addr=0x" + Integer.toHexString(options_addr) +
             ") current thread:'" + Modules.ThreadManForUserModule.getCurrentThread().name + "'");
-
-        // TODO see if the current thread belongs to the root module,
-        // we can get root module from Emulator.getInstance().module.
-        // If it is not the from root module do not pause the emulator!
-        // compare ThreadMan.getInstance().getCurrentThread().modid
-        // terminate delete thread?
 
         Modules.log.info("Program exit detected (sceKernelSelfStopUnloadModule)");
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
@@ -668,4 +701,4 @@ public class ModuleMgrForUser implements HLEModule {
 			return "jpcsp.HLE.Modules.ModuleMgrForUserModule.sceKernelStopUnloadSelfModuleWithStatus(processor);";
 		}
 	};
-};
+}
