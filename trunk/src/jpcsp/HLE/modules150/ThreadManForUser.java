@@ -23,6 +23,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_ALREADY_DORMAN
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_KERNEL;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_USER;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
@@ -59,6 +60,7 @@ import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelSystemStatus;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
@@ -72,7 +74,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
 
-import jpcsp.Allegrex.CpuState; // New-Style Processor
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
@@ -318,6 +320,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
+    private HashMap<Integer, SceKernelThreadEventHandlerInfo> threadEventHandlerMap;
+    private HashMap<Integer, Integer> threadEventMap;
     private LinkedList<SceKernelThreadInfo> readyThreads;
     private SceKernelThreadInfo currentThread;
     private SceKernelThreadInfo idle0, idle1;
@@ -386,6 +390,8 @@ public class ThreadManForUser implements HLEModule {
      * @param attr from sceModuleInfo ELF section header */
     public void Initialise(SceModule module, int entry_addr, int attr, String pspfilename, int moduleid, boolean fromSyscall) {
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
+        threadEventMap = new HashMap<Integer, Integer>();
+        threadEventHandlerMap = new HashMap<Integer, SceKernelThreadEventHandlerInfo>();
         readyThreads = new LinkedList<SceKernelThreadInfo>();
         statistics = new Statistics();
 
@@ -1094,7 +1100,7 @@ public class ThreadManForUser implements HLEModule {
 	 * This call can return before the completion of the code. Use the
 	 * "afterAction" parameter to trigger some actions that need to be executed
 	 * after the code (e.g. to evaluate a return value in $v0).
-	 * 
+	 *
 	 * @param address     the address to be called
 	 * @param afterAction the action to be executed after the completion of the code
 	 */
@@ -1153,7 +1159,7 @@ public class ThreadManForUser implements HLEModule {
 	 * This call can return before the completion of the callback. Use the
 	 * "afterAction" parameter to trigger some actions that need to be executed
 	 * after the callback (e.g. to evaluate a return value in $v0).
-	 * 
+	 *
 	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
 	 * @param address     address of the callback
 	 * @param afterAction action to be executed after the completion of the callback
@@ -1171,7 +1177,7 @@ public class ThreadManForUser implements HLEModule {
 	 * This call can return before the completion of the callback. Use the
 	 * "afterAction" parameter to trigger some actions that need to be executed
 	 * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
-	 * 
+	 *
 	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
 	 * @param address     address of the callback
 	 * @param afterAction action to be executed after the completion of the callback
@@ -1190,7 +1196,7 @@ public class ThreadManForUser implements HLEModule {
 	 * This call can return before the completion of the callback. Use the
 	 * "afterAction" parameter to trigger some actions that need to be executed
 	 * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
-	 * 
+	 *
 	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
 	 * @param address     address of the callback
 	 * @param afterAction action to be executed after the completion of the callback
@@ -1210,7 +1216,7 @@ public class ThreadManForUser implements HLEModule {
 	 * This call can return before the completion of the callback. Use the
 	 * "afterAction" parameter to trigger some actions that need to be executed
 	 * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
-	 * 
+	 *
 	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
 	 * @param address     address of the callback
 	 * @param afterAction action to be executed after the completion of the callback
@@ -1428,7 +1434,7 @@ public class ThreadManForUser implements HLEModule {
 	    		Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 	    	}
 	        hleChangeThreadState(thread, PSP_THREAD_READY);
-	
+
 	        // switch in the target thread if it's now higher priority
 	        if (thread.currentPriority < currentThread.currentPriority) {
 	        	if (Modules.log.isDebugEnabled()) {
@@ -1484,7 +1490,7 @@ public class ThreadManForUser implements HLEModule {
 
     /**
      * Set the wait timeout for a thread. The state of the thread is not changed.
-     * 
+     *
      * @param thread  the thread
      * @param wait    the same as thread.wait
      * @param micros  the timeout in microseconds (this is an unsigned value: SceUInt32)
@@ -1758,25 +1764,61 @@ public class ThreadManForUser implements HLEModule {
     public void sceKernelRegisterThreadEventHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented sceKernelRegisterThreadEventHandler");
+        int name_addr = cpu.gpr[4];
+        int thid = cpu.gpr[5];
+        int mask = cpu.gpr[6];
+        int handler_func = cpu.gpr[7];
+        int common_addr = cpu.gpr[8];
 
-        cpu.gpr[2] = 0;
+        String name = readStringNZ(name_addr, 32);
+
+        Modules.log.info("sceKernelRegisterThreadEventHandler name=" + name
+                + ", thid=0x" + Integer.toHexString(thid)
+                + ", mask=0x" + Integer.toHexString(mask)
+                + ", handler_func=0x" + Integer.toHexString(handler_func)
+                + ", common_addr=0x" + Integer.toHexString(common_addr));
+
+        if(threadMap.containsKey(thid)) {
+            SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
+            threadEventHandlerMap.put(handler.uid, handler);
+            threadEventMap.put(thid, handler.uid);
+            cpu.gpr[2] = handler.uid;
+        } else {
+            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        }
     }
 
     public void sceKernelReleaseThreadEventHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented sceKernelReleaseThreadEventHandler");
+        int uid = cpu.gpr[4];
 
-        cpu.gpr[2] = 0;
+        Modules.log.info("sceKernelReleaseThreadEventHandler uid=0x" + Integer.toHexString(uid));
+
+        if(threadEventHandlerMap.containsKey(uid)) {
+            threadEventHandlerMap.remove(uid);
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
+        }
     }
 
     public void sceKernelReferThreadEventHandlerStatus(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.warn("Unimplemented sceKernelReferThreadEventHandlerStatus");
+        int uid = cpu.gpr[4];
+        int status_addr = cpu.gpr[5];
 
-        cpu.gpr[2] = 0;
+        Modules.log.info("sceKernelReferThreadEventHandlerStatus uid=0x" + Integer.toHexString(uid)
+                + ", status_addr=0x" + Integer.toHexString(status_addr));
+
+        if(threadEventHandlerMap.containsKey(uid)) {
+            threadEventHandlerMap.get(uid).write(mem, status_addr);
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
+        }
     }
 
     public void sceKernelCreateCallback(Processor processor) {
@@ -2430,25 +2472,33 @@ public class ThreadManForUser implements HLEModule {
         	hleDeleteThread(thread);
         	cpu.gpr[2] = SceKernelErrors.ERROR_NO_MEMORY;
         } else {
-        	// TODO user thread trying to create kernel thread should be disallowed with ERROR_ILLEGAL_ATTR
+            // Check if there's a registered event handler for this thread.
+            if(threadEventMap.containsKey(thread.uid)) {
+                int handlerUid = threadEventMap.get(thread.uid);
+                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
 
-	        // Inherit kernel mode if user mode bit is not set
-	        if ((currentThread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL &&
-	            (attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
-	            Modules.log.debug("sceKernelCreateThread inheriting kernel mode");
-	            thread.attr |= PSP_THREAD_ATTR_KERNEL;
-	        }
-
-	        // Inherit user mode
-	        if ((currentThread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
-	            if ((thread.attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER)
-	                Modules.log.debug("sceKernelCreateThread inheriting user mode");
-	            thread.attr |= PSP_THREAD_ATTR_USER;
-	            // Always remove kernel mode bit
-	            thread.attr &= ~PSP_THREAD_ATTR_KERNEL;
-	        }
-
-	        cpu.gpr[2] = thread.uid;
+                // Check if this handler's mask matches the function.
+                if(handler.checkCreateMask()) {
+                    handler.triggerThreadEventHandler();
+                    cpu.gpr[2] = handler.result;
+                }
+            } else {
+                // Inherit kernel mode if user mode bit is not set
+                if ((currentThread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL &&
+                        (attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
+                    Modules.log.debug("sceKernelCreateThread inheriting kernel mode");
+                    thread.attr |= PSP_THREAD_ATTR_KERNEL;
+                }
+                // Inherit user mode
+                if ((currentThread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
+                    if ((thread.attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER)
+                        Modules.log.debug("sceKernelCreateThread inheriting user mode");
+                    thread.attr |= PSP_THREAD_ATTR_USER;
+                    // Always remove kernel mode bit
+                    thread.attr &= ~PSP_THREAD_ATTR_KERNEL;
+                }
+                cpu.gpr[2] = thread.uid;
+            }
         }
     }
 
@@ -2465,14 +2515,24 @@ public class ThreadManForUser implements HLEModule {
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
             Modules.log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+            // Check if there's a registered event handler for this thread.
+            if(threadEventMap.containsKey(thread.uid)) {
+                int handlerUid = threadEventMap.get(thread.uid);
+                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
 
-            // Mark thread for deletion
-            setToBeDeletedThread(thread);
-
-            if (thread.status != PSP_THREAD_STOPPED) {
-                cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
+                // Check if this handler's mask matches the function.
+                if(handler.checkDeleteMask()) {
+                    handler.triggerThreadEventHandler();
+                    cpu.gpr[2] = handler.result;
+                }
             } else {
-                cpu.gpr[2] = 0;
+                // Mark thread for deletion
+                setToBeDeletedThread(thread);
+                if (thread.status != PSP_THREAD_STOPPED) {
+                    cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
+                } else {
+                    cpu.gpr[2] = 0;
+                }
             }
         }
     }
@@ -2494,9 +2554,21 @@ public class ThreadManForUser implements HLEModule {
             cpu.gpr[2] = 0;
             hleRescheduleCurrentThread();
         } else {
-            Modules.log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
-            cpu.gpr[2] = 0;
-            hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
+            // Check if there's a registered event handler for this thread.
+            if(threadEventMap.containsKey(thread.uid)) {
+                int handlerUid = threadEventMap.get(thread.uid);
+                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+
+                // Check if this handler's mask matches the function.
+                if(handler.checkStartMask()) {
+                    handler.triggerThreadEventHandler();
+                    cpu.gpr[2] = handler.result;
+                }
+            } else {
+                Modules.log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
+                cpu.gpr[2] = 0;
+                hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
+            }
         }
     }
 
@@ -2517,13 +2589,22 @@ public class ThreadManForUser implements HLEModule {
     		Modules.log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(thread.uid)
     				+ " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
     	}
-
-    	thread.exitStatus = exitStatus;
-        cpu.gpr[2] = 0;
-        hleChangeThreadState(thread, PSP_THREAD_STOPPED);
-        RuntimeContext.onThreadExit(thread);
-
-        hleRescheduleCurrentThread();
+        // Check if there's a registered event handler for this thread.
+        if(threadEventMap.containsKey(thread.uid)) {
+            int handlerUid = threadEventMap.get(thread.uid);
+            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+            // Check if this handler's mask matches the function.
+            if(handler.checkExitMask()) {
+                handler.triggerThreadEventHandler();
+                cpu.gpr[2] = handler.result;
+            }
+        } else {
+            thread.exitStatus = exitStatus;
+            cpu.gpr[2] = 0;
+            hleChangeThreadState(thread, PSP_THREAD_STOPPED);
+            RuntimeContext.onThreadExit(thread);
+            hleRescheduleCurrentThread();
+        }
     }
 
     /** exit the current thread, then delete it */
@@ -4511,4 +4592,4 @@ public class ThreadManForUser implements HLEModule {
             return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferGlobalProfiler(processor);";
         }
     };
-};
+}
