@@ -549,12 +549,13 @@ public class sceFont implements HLEModule {
                         + ", pixelFormat=" + pixelFormat);
 
                 PGF currentPGF = PGFFilesMap.get(fontAddr);
-
-                // Font adjustment.
-                // TODO: Instead of using the loaded PGF, figure out
-                // the proper values for the Debug font.
-                yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
-                yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+                if(currentPGF != null) {
+                    // Font adjustment.
+                    // TODO: Instead of using the loaded PGF, figure out
+                    // the proper values for the Debug font.
+                    yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
+                    yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+                }
 
                 // Use our Debug font.
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
@@ -712,13 +713,14 @@ public class sceFont implements HLEModule {
                         + ", bytesPerLine=" + bytesPerLine
                         + ", pixelFormat=" + pixelFormat);
 
-                PGF currentPGF = PGFFilesMap.get(fontAddr);
-
-                // Font adjustment.
-                // TODO: Instead of using the loaded PGF, figure out
-                // the proper values for the Debug font.
-                yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
-                yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+                PGF currentPGF = PGFFilesMap.get(fontAddr);               
+                if(currentPGF != null) {
+                    // Font adjustment.
+                    // TODO: Instead of using the loaded PGF, figure out
+                    // the proper values for the Debug font.
+                    yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
+                    yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+                }
 
                 // Use our Debug font.
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
