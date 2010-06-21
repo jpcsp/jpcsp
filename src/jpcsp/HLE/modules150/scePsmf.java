@@ -109,18 +109,20 @@ public class scePsmf implements HLEModule {
                 + " buffer_addr=0x" + Integer.toHexString(buffer_addr) + ")");
 
 
+        int PSMFVersion = mem.read32(buffer_addr + 4);
+
         // Reads several parameters from the PMF file header and stores them in
         // a 36 byte struct.
-        mem.write32(psmf, 0);
-        mem.write32(psmf + 4, 0);
-        mem.write32(psmf + 8, 0);
-        mem.write32(psmf + 12, 0);
-        mem.write32(psmf + 16, 0);
-        mem.write32(psmf + 20, 0);
-        mem.write32(psmf + 24, 0);
-        mem.write32(psmf + 28, 0);
-        mem.write32(psmf + 32, 0);
-        mem.write32(psmf + 36, 0);
+        mem.write32(psmf, PSMFVersion);        // PMSF type (holds the version).
+        mem.write32(psmf + 4, 0);              // Unknown.
+        mem.write32(psmf + 8, 0);              // Unknown.
+        mem.write32(psmf + 12, 0);             // Unknown.
+        mem.write32(psmf + 16, 2);             // Number of PSMF streams (set to 2).
+        mem.write32(psmf + 20, 0);             // Unknown.
+        mem.write32(psmf + 24, 0);             // Unknown.
+        mem.write32(psmf + 28, 0);             // Unknown.
+        mem.write32(psmf + 32, 0);             // Unknown.
+        mem.write32(psmf + 36, 0);             // Unknown.
 
 		cpu.gpr[2] = 0;
 	}
@@ -183,9 +185,13 @@ public class scePsmf implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function scePsmfGetNumberOfStreams [0xEAED89CD]");
+        int psmf = cpu.gpr[4];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn("PARTIAL: scePsmfGetNumberOfStreams psmf=0x" + Integer.toHexString(psmf));
+
+        int streams = mem.read32(psmf + 12);  // This should be set by scePsmfSetPsmf().
+
+        cpu.gpr[2] = streams;
     }
 
     public void scePsmfGetNumberOfEPentries(Processor processor) {

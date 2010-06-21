@@ -436,7 +436,7 @@ public class sceUtility implements HLEModule {
 			}
 		}
 
-		return formattedMessage.toString();
+		return Utilities.convertStringCharset(formattedMessage.toString());
 	}
 
     protected final class SavedataListTableColumnModel extends DefaultTableColumnModel {
@@ -542,9 +542,9 @@ public class sceUtility implements HLEModule {
 
 							PSF psf = new PSF();
 				            psf.read(ByteBuffer.wrap(sfoBuffer));
-				            String title = psf.getString("TITLE");
-				            String detail = psf.getString("SAVEDATA_DETAIL");
-				            String savedataTitle = psf.getString("SAVEDATA_TITLE");
+				            String title = Utilities.convertStringCharset(psf.getString("TITLE"));
+				            String detail = Utilities.convertStringCharset(psf.getString("SAVEDATA_DETAIL"));
+				            String savedataTitle = Utilities.convertStringCharset(psf.getString("SAVEDATA_TITLE"));
 
 				            // Get Modification time of SFO file
 				            SceIoStat sfoStat = pspiofilemgr.getInstance().statFile(sfoFileName);
@@ -1657,5 +1657,4 @@ public class sceUtility implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetNetParam(processor);";
 		}
 	};
-
-};
+}
