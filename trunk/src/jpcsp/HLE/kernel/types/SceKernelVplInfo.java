@@ -101,7 +101,7 @@ public class SceKernelVplInfo {
         int maxFreeSize = pspSysMem.getInstance().maxFreeMemSize();
 
         if (totalVplSize <= maxFreeSize) {
-            info = new SceKernelVplInfo(name, partitionid, attr, size);
+            info = new SceKernelVplInfo(name, partitionid, attr, totalVplSize);
         } else {
             Modules.log.warn("tryCreateVpl not enough free mem (want=" + totalVplSize + ",free=" + maxFreeSize + ",diff=" + (totalVplSize - maxFreeSize) + ")");
         }
@@ -135,13 +135,7 @@ public class SceKernelVplInfo {
     public int tryAllocate(int size) {
         int addr = 0;
         int alignedSize = (size + 7) & ~7; // 8-byte align
-        if (alignedSize + 8 <= freeSize || alignedSize + 8 <= freeSize + 4) {
-            // Some games (e.g.: Cho Aniki Zero) send a block size already counting with part
-            // of the header.
-            if(alignedSize + 8 <= freeSize + 4) {
-                Modules.log.warn("tryAllocate VPL is already considering reserved header space (diff=4)");
-            }
-
+        if (alignedSize + 8 <= freeSize) {
             if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH) {
                 addr = freeHighAddress - alignedSize;
                 freeHighAddress -= alignedSize + 8;
