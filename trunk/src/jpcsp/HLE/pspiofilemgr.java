@@ -1430,7 +1430,9 @@ public class pspiofilemgr {
                     Modules.log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
                 Emulator.getProcessor().cpu.gpr[2] = ERROR_BAD_FILE_DESCRIPTOR;
             } else {
-                info.readOnlyFile.close();
+            	if (info.readOnlyFile != null) {
+            		info.readOnlyFile.close();
+            	}
                 SceUidManager.releaseUid(info.uid, "IOFileManager-File");
                 triggerAsyncThread(info);
                 info.result = 0;
