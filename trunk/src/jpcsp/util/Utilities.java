@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.filesystems.*;
@@ -44,7 +45,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Utilities {
-	public static final Charset charset = Charset.forName("UTF-8");
+    public static final Charset charset = Charset.forName("UTF-8");
+
+    public static Charset getRegionCharset() {
+        if(State.discId.contains("ULJS") || State.discId.contains("ULJM")) {
+            return Charset.forName("Shift-JIS");
+        } else {
+            return Charset.forName("UTF-8");
+        }
+    }
+
+    public static String convertStringCharset(String s) {
+        return new String(s.getBytes(charset), getRegionCharset());
+    }
 
     public static String formatString(String type, String oldstring) {
         int counter = 0;
@@ -100,18 +113,12 @@ public class Utilities {
     public static void skipUnknown(ByteBuffer buf, int lenght) throws IOException {
         buf.position(buf.position() + lenght);
     }
-    public static void readBytesToBuffer(
-        SeekableDataInput f, ByteBuffer buf,
-        int offset, int size) throws IOException
-    {
-        f.readFully(buf.array(), offset + buf.arrayOffset(), size);
-    }
 
     public static String readStringZ(ByteBuffer buf) throws IOException {
         StringBuilder sb = new StringBuilder();
         byte b;
         for (; buf.position() < buf.limit();) {
-              b = (byte)readUByte(buf);
+            b = (byte)readUByte(buf);
             if (b == 0)
                 break;
             sb.append((char)b);
@@ -119,78 +126,58 @@ public class Utilities {
         return sb.toString();
     }
 
-    public static String readStringNZ(ByteBuffer buf, int n) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        byte b;
-        for (; n > 0; n--) {
-              b = (byte)readUByte(buf);
-            if (b != 0)
-                sb.append((char)b);
-        }
-        return sb.toString();
-    }
+     public static String readStringNZ(ByteBuffer buf, int n) throws IOException {
+         StringBuilder sb = new StringBuilder();
+         byte b;
+         for (; n > 0; n--) {
+               b = (byte)readUByte(buf);
+             if (b != 0)
+                 sb.append((char)b);
+         }
+         return sb.toString();
+     }
 
-    /**
-     * Read a string from memory.
-     * The string ends when the maximal length is reached or a '\0' byte is found.
-     * The memory bytes are interpreted as UTF-8 bytes to form the string.
-     *
-     * @param mem     the memory
-     * @param address the address of the first byte of the string
-     * @param n       the maximal string length
-     * @return        the string converted to UTF-8
-     */
-    public static String readStringNZ(Memory mem, int address, int n) {
-    	address &= Memory.addressMask;
-        if (address + n > MemoryMap.END_RAM) {
-        	n = MemoryMap.END_RAM - address + 1;
-        }
+     /**
+      * Read a string from memory.
+      * The string ends when a '\0' byte is found.
+      *
+      * @param mem     the memory
+      * @param address the address of the first byte of the string
+      * @param n       the maximal string length
+      * @return        the string
+      */
+     public static String readStringNZ(Memory mem, int address, int n) {
+         StringBuilder sb = new StringBuilder();
+         address &= Memory.addressMask;
+         if (address + n > MemoryMap.END_RAM) {
+                 n = MemoryMap.END_RAM - address + 1;
+         }
+         int b;
+         for (; n > 0; n--) {
+             b = mem.read8(address++);
+             if (b == 0)
+                 break;
+             sb.append((char)b);
+         }
+         return sb.toString();
+     }
 
-        // Allocates a bytes array to store the bytes of the string.
-        // At first, allocate maximum 10000 in case we don't know
-        // the maximal string length. The array will be extended if required.
-        byte[] bytes = new byte[Math.min(n, 10000)];
+     public static String readStringZ(Memory mem, int address) {
+         address &= Memory.addressMask;
+         return readStringNZ(mem, address, MemoryMap.END_RAM - address + 1);
+     }
+     public static String readStringZ(int address) {
+         return readStringZ(Memory.getInstance(), address);
+     }
+     public static String readStringNZ(int address, int n) {
+         return readStringNZ(Memory.getInstance(), address, n);
+     }
 
-        int length = 0;
-        for (; n > 0; n--) {
-            int b = mem.read8(address++);
-            if (b == 0) {
-                break;
-            }
-
-            if (length >= bytes.length) {
-            	// Extend the bytes array
-            	byte[] newBytes = new byte[bytes.length + 10000];
-            	System.arraycopy(bytes, 0, newBytes, 0, bytes.length);
-            	bytes = newBytes;
-            }
-        	bytes[length] = (byte) b;
-            length++;
-        }
-
-    	// Convert the bytes to UTF-8
-		return new String(bytes, 0, length, charset);
-    }
-
-    public static String readStringZ(Memory mem, int address) {
-    	address &= Memory.addressMask;
-    	return readStringNZ(mem, address, MemoryMap.END_RAM - address + 1);
-    }
-
-    public static String readStringZ(int address) {
-    	return readStringZ(Memory.getInstance(), address);
-    }
-
-    public static String readStringNZ(int address, int n) {
-    	return readStringNZ(Memory.getInstance(), address, n);
-    }
-
-    public static void writeStringNZ(Memory mem, int address, int n, String s) {
-        byte[] bytes = s.getBytes(charset);
-        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
+     public static void writeStringNZ(Memory mem, int address, int n, String s) {
         int offset = 0;
-        while (offset < bytes.length && offset < n) {
-            memoryWriter.writeNext(bytes[offset]);
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
+        while (offset < s.length() && offset < n) {
+            memoryWriter.writeNext(s.charAt(offset));
             offset++;
         }
         while (offset < n) {
@@ -200,77 +187,64 @@ public class Utilities {
     	memoryWriter.flush();
     }
 
-    public static void writeStringZ(Memory mem, int address, String s) {
-    	writeStringNZ(mem, address, s.length(), s);
-    }
+     public static void writeStringZ(Memory mem, int address, String s) {
+         writeStringNZ(mem, address, s.length(), s);
+     }
+     public static void writeStringZ(ByteBuffer buf, String s) {
+         buf.put(s.getBytes());
+         buf.put((byte) 0);
+     }
 
-    public static void writeStringZ(ByteBuffer buf, String s) {
-		buf.put(s.getBytes());
-		buf.put((byte) 0);
-    }
+     public static short getUnsignedByte (ByteBuffer bb) throws IOException {
+         return ((short)(bb.get() & 0xff));
+     }
+     public static void putUnsignedByte(ByteBuffer bb, int value) {
+         bb.put((byte) (value & 0xFF));
+     }
+     public static short readUByte(ByteBuffer buf) throws IOException {
+         return getUnsignedByte(buf);
+     }
+     public static int readUHalf(ByteBuffer buf) throws IOException {
+         return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8);
+     }
+     public static long readUWord(ByteBuffer buf) throws IOException {
+         long l = (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
+         return (l & 0xFFFFFFFFL);
+     }
+     public static int readWord(ByteBuffer buf) throws IOException {
+         return (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
+     }
+     public static void writeWord(ByteBuffer buf, long value) {
+         putUnsignedByte(buf, (int) (value >>  0));
+         putUnsignedByte(buf, (int) (value >>  8));
+         putUnsignedByte(buf, (int) (value >> 16));
+         putUnsignedByte(buf, (int) (value >> 24));
+     }
+     public static void writeHalf(ByteBuffer buf, int value) {
+         putUnsignedByte(buf, value >> 0);
+         putUnsignedByte(buf, value >> 8);
+     }
+     public static void writeByte(ByteBuffer buf, int value) {
+         putUnsignedByte(buf, value);
+     }
 
-    public static short getUnsignedByte (ByteBuffer bb) throws IOException
-    {
-       return ((short)(bb.get() & 0xff));
-    }
-    public static void putUnsignedByte(ByteBuffer bb, int value)
-    {
-    	bb.put((byte) (value & 0xFF));
-    }
-    public static short readUByte(ByteBuffer buf) throws IOException
-    {
-    	return getUnsignedByte(buf);
-    }
-    public static int readUHalf(ByteBuffer buf) throws IOException
-    {
-    	return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8);
-    }
-    public static long readUWord(ByteBuffer buf) throws IOException
-    {
-        long l = (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
-        return (l & 0xFFFFFFFFL);
+     public static int parseAddress(String value) {
+         int address = 0;
+         if (value == null) {
+             return address;
+         }
 
-    }
-    public static int readWord(ByteBuffer buf) throws IOException
-    {
-        return (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
-    }
-    public static void writeWord(ByteBuffer buf, long value)
-    {
-    	putUnsignedByte(buf, (int) (value >>  0));
-    	putUnsignedByte(buf, (int) (value >>  8));
-    	putUnsignedByte(buf, (int) (value >> 16));
-    	putUnsignedByte(buf, (int) (value >> 24));
-    }
-    public static void writeHalf(ByteBuffer buf, int value)
-    {
-    	putUnsignedByte(buf, value >> 0);
-    	putUnsignedByte(buf, value >> 8);
-    }
-    public static void writeByte(ByteBuffer buf, int value)
-    {
-    	putUnsignedByte(buf, value);
-    }
+         if (value.startsWith("0x"))
+             value = value.substring(2);
 
-    public static int parseAddress(String value)
-    {
-    	int address = 0;
+         if (Integer.SIZE == 32 && value.length() == 8 && value.charAt(0) >= '8') {
+             address = (int) Long.parseLong(value, 16);
+         } else {
+             address = Integer.parseInt(value, 16);
+         }
 
-    	if (value == null) {
-    		return address;
-    	}
-
-        if (value.startsWith("0x"))
-            value = value.substring(2);
-
-    	if (Integer.SIZE == 32 && value.length() == 8 && value.charAt(0) >= '8') {
-    		address = (int) Long.parseLong(value, 16);
-    	} else {
-    		address = Integer.parseInt(value, 16);
-    	}
-
-    	return address;
-    }
+         return address;
+     }
 
 
     /**
@@ -281,22 +255,20 @@ public class Utilities {
      * @param s the string to be parsed
      * @return the numeric value represented by the string.
      */
-    public static long parseLong(String s)
-    {
-    	long value = 0;
+     public static long parseLong(String s) {
+         long value = 0;
 
-    	if (s == null) {
-    		return value;
-    	}
+         if (s == null) {
+             return value;
+         }
 
-    	if (s.startsWith("0x")) {
-    		value = Long.parseLong(s.substring(2), 16);
-    	} else {
-    		value = Long.parseLong(s);
-    	}
-
-    	return value;
-    }
+         if (s.startsWith("0x")) {
+             value = Long.parseLong(s.substring(2), 16);
+         } else {
+             value = Long.parseLong(s);
+         }
+         return value;
+     }
 
     /**
      * Parse the string as a number and returns its value.
@@ -306,65 +278,63 @@ public class Utilities {
      * @param s the string to be parsed in base 16
      * @return the numeric value represented by the string.
      */
-    public static long parseHexLong(String s)
-    {
-        long value = 0;
+     public static long parseHexLong(String s) {
+         long value = 0;
 
-        if (s == null) {
-            return value;
-        }
+         if (s == null) {
+             return value;
+         }
 
-        if (s.startsWith("0x")) {
-            s = s.substring(2);
-        }
-        value = Long.parseLong(s, 16);
+         if (s.startsWith("0x")) {
+             s = s.substring(2);
+         }
+         value = Long.parseLong(s, 16);
+         return value;
+     }
 
-        return value;
-    }
+     public static int makePow2(int n) {
+         --n;
+         n = (n >>  1) | n;
+         n = (n >>  2) | n;
+         n = (n >>  4) | n;
+         n = (n >>  8) | n;
+         n = (n >> 16) | n;
+         return ++n;
+     }
 
-    public static int makePow2(int n) {
-        --n;
-        n = (n >>  1) | n;
-        n = (n >>  2) | n;
-        n = (n >>  4) | n;
-        n = (n >>  8) | n;
-        n = (n >> 16) | n;
-        return ++n;
-    }
+     public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
+         final int blockSize = 1024 * 1024;  // 1Mb
+         while (length > 0) {
+             int size = Math.min(length, blockSize);
+             byte[] buffer = new byte[size];
+             input.readFully(buffer);
+             Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(buffer), size);
+             address += size;
+             length -= size;
+         }
+     }
 
-    public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
-        final int blockSize = 1024 * 1024;  // 1Mb
-        while (length > 0) {
-            int size = Math.min(length, blockSize);
-            byte[] buffer = new byte[size];
-            input.readFully(buffer);
-            Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(buffer), size);
-            address += size;
-            length -= size;
-        }
-    }
+     public static void write(SeekableRandomFile output, int address, int length) throws IOException {
+         Buffer buffer = Memory.getInstance().getBuffer(address, length);
+         if (buffer instanceof ByteBuffer) {
+             output.getChannel().write((ByteBuffer) buffer);
+         } else if (length > 0) {
+             byte[] bytes = new byte[length];
+             IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
+             for (int i = 0; i < length; i++) {
+                 bytes[i] = (byte) memoryReader.readNext();
+             }
+             output.write(bytes);
+         }
+     }
 
-    public static void write(SeekableRandomFile output, int address, int length) throws IOException {
-    	Buffer buffer = Memory.getInstance().getBuffer(address, length);
-    	if (buffer instanceof ByteBuffer) {
-    		output.getChannel().write((ByteBuffer) buffer);
-    	} else if (length > 0) {
-    		byte[] bytes = new byte[length];
-    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
-    		for (int i = 0; i < length; i++) {
-    			bytes[i] = (byte) memoryReader.readNext();
-    		}
-    		output.write(bytes);
-    	}
-    }
+     public static void bytePositionBuffer(Buffer buffer, int bytePosition) {
+         buffer.position(bytePosition / bufferElementSize(buffer));
+     }
 
-    public static void bytePositionBuffer(Buffer buffer, int bytePosition) {
-    	buffer.position(bytePosition / bufferElementSize(buffer));
-    }
-
-    public static int bufferElementSize(Buffer buffer) {
-    	if (buffer instanceof IntBuffer) {
-    		return 4;
+     public static int bufferElementSize(Buffer buffer) {
+         if (buffer instanceof IntBuffer) {
+             return 4;
     	}
 
     	return 1;
@@ -379,7 +349,7 @@ public class Utilities {
     }
 
     public static void putBuffer(ByteBuffer destination, Buffer source, ByteOrder sourceByteOrder) {
-		// Set the destination to the desired ByteOrder
+        // Set the destination to the desired ByteOrder
 		ByteOrder order = destination.order();
 		destination.order(sourceByteOrder);
 

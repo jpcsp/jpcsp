@@ -394,12 +394,17 @@ public class sceMpeg implements HLEModule {
 
     private void writeVideoImage(int dest_addr, int frameWidth) {
         final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
-        final int width = Math.min(480, frameWidth);
+        int width = Math.min(480, frameWidth);
+        int height = 272;
 
         // Get the current generated image, convert it to pixels and write it
         // to memory.
         if (me != null && me.getCurrentImg() != null) {
-            for (int y = 0; y < 272; y++) {
+            // Override the base dimensions with the image's real dimensions.
+            width = me.getCurrentImg().getWidth();
+            height = me.getCurrentImg().getHeight();
+
+            for (int y = 0; y < height; y++) {
                 int address = dest_addr + y * frameWidth * bytesPerPixel;
                 IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
 
@@ -686,6 +691,19 @@ public class sceMpeg implements HLEModule {
             cpu.gpr[2] = -1;
         } else if (isFakeStreamHandle(stream_addr)) {
             Modules.log.debug("sceMpegUnRegistStream got fake stream ID " + getFakeStreamID(stream_addr));
+             // UnRegist the respective stream.
+            switch(stream_addr - 0x34340000) {
+                case MPEG_AVC_STREAM:
+                    isAvcRegistered = false;
+                    break;
+                case MPEG_ATRAC_STREAM:
+                    isAtracRegistered = false;
+                    break;
+                case MPEG_PCM_STREAM:
+                    isPcmRegistered = false;
+                    break;
+                default: break;
+            }
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = 0;
@@ -908,7 +926,8 @@ public class sceMpeg implements HLEModule {
             cpu.gpr[2] = 0;
         } else if (isFakeStreamHandle(stream_addr)) {
             Modules.log.debug("sceMpegGetAvcAu got fake stream ID " + getFakeStreamID(stream_addr));
-            if (mpegAvcCurrentTimestamp > mpegAtracCurrentTimestamp + maxAheadTimestamp) {
+            if ((mpegAvcCurrentTimestamp > mpegAtracCurrentTimestamp + maxAheadTimestamp)
+                    && isAtracRegistered) {
             	// Video is ahead of audio, deliver no video data to wait for audio
             	if (Modules.log.isDebugEnabled()) {
             		Modules.log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcCurrentTimestamp + " - " + mpegAtracCurrentTimestamp);
@@ -1024,7 +1043,8 @@ public class sceMpeg implements HLEModule {
             cpu.gpr[2] = 0;
         } else if (isFakeStreamHandle(stream_addr)) {
             Modules.log.debug("sceMpegGetAtracAu got fake stream ID " + getFakeStreamID(stream_addr));
-            if (mpegAtracCurrentTimestamp > mpegAvcCurrentTimestamp + maxAheadTimestamp) {
+            if ((mpegAtracCurrentTimestamp > mpegAvcCurrentTimestamp + maxAheadTimestamp)
+                    && isAvcRegistered) {
             	// Audio is ahead of video, deliver no audio data to wait for video
             	if (Modules.log.isDebugEnabled()) {
             		Modules.log.info("sceMpegGetAtracAu audio ahead of video: " + mpegAtracCurrentTimestamp + " - " + mpegAvcCurrentTimestamp);
@@ -1096,9 +1116,14 @@ public class sceMpeg implements HLEModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",init=0x" + Integer.toHexString(init_addr) + ")");
 
-        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate
+        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
-            frameWidth = defaultFrameWidth;
+            // If sceMpegCreate sent a frameWidth of 0, use the frame buffer's value.
+            if(defaultFrameWidth == 0) {
+                frameWidth = pspdisplay.getInstance().getBufferWidthFb();
+            } else {
+                frameWidth = defaultFrameWidth;
+            }
         }
 
         if (mpegRingbuffer != null) {
@@ -1174,6 +1199,7 @@ public class sceMpeg implements HLEModule {
 
             if(isEnableMediaEngine()) {
                 if(me.getContainer() != null) {
+                    mpegLastTimestamp = me.getVideoLenght();
                     me.step();
                     writeVideoImage(buffer, frameWidth);
                 } else {
@@ -1478,9 +1504,14 @@ public class sceMpeg implements HLEModule {
             + ",frameWidth=" + frameWidth
             + ",dest=0x" + Integer.toHexString(dest_addr) + ")");
 
-        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate
+        // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
-            frameWidth = defaultFrameWidth;
+            // If sceMpegCreate sent a frameWidth of 0, use the frame buffer's value.
+            if(defaultFrameWidth == 0) {
+                frameWidth = pspdisplay.getInstance().getBufferWidthFb();
+            } else {
+                frameWidth = defaultFrameWidth;
+            }
         }
 
         if (mpegRingbuffer != null) {
@@ -1543,6 +1574,7 @@ public class sceMpeg implements HLEModule {
 
             if(isEnableMediaEngine()) {
                 if(me.getContainer() != null) {
+                    mpegLastTimestamp = me.getVideoLenght();
                     me.step();
                     writeVideoImage(dest_addr, frameWidth);
                 } else {

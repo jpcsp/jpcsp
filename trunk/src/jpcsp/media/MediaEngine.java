@@ -111,6 +111,10 @@ public class MediaEngine {
         return currentImg;
     }
 
+    public long getVideoLenght() {
+        return container.getDuration();
+    }
+
     /*
      * Split version of decodeAndPlay.
      *

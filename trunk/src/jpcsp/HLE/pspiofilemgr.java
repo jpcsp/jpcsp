@@ -588,7 +588,7 @@ public class pspiofilemgr {
 
     /**
      * Trigger the activation of the async thread if one is defined.
-     * 
+     *
      * @param info the file info
      */
     private void triggerAsyncThread(IoInfo info) {
@@ -905,12 +905,12 @@ public class pspiofilemgr {
         if (uid == 1) {
             // stdout
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
-            stdout.info(message);
+            stdout.info(Utilities.convertStringCharset(message));
             result = size;
         } else if (uid == 2) {
             // stderr
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
-            stderr.info(message);
+            stderr.info(Utilities.convertStringCharset(message));
             result = size;
         } else {
             if (debug) Modules.log.debug("hleIoWrite(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
@@ -1430,9 +1430,11 @@ public class pspiofilemgr {
                     Modules.log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
                 Emulator.getProcessor().cpu.gpr[2] = ERROR_BAD_FILE_DESCRIPTOR;
             } else {
-            	if (info.readOnlyFile != null) {
-            		info.readOnlyFile.close();
-            	}
+                if(info.readOnlyFile != null) {
+                    // Can be just closing an empty handle, because this is called
+                    // from hleIoGetAsyncStat() after sceIoCloseAsync().
+                    info.readOnlyFile.close();
+                }
                 SceUidManager.releaseUid(info.uid, "IOFileManager-File");
                 triggerAsyncThread(info);
                 info.result = 0;
