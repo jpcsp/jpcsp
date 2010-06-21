@@ -35,6 +35,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEThread;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 public class sceAudio implements HLEModule, HLEThread {
     protected class pspChannelInfo {
@@ -460,12 +462,12 @@ public class sceAudio implements HLEModule, HLEThread {
             int nsamples = pspchannels[channel].allocatedSamples;
             int leftVolume = (audioMuted ? 0 : pspchannels[channel].leftVolume);
             int rightVolume = (audioMuted ? 0 : pspchannels[channel].rightVolume);
-            Memory mem = Memory.getInstance();
             if(channels == 1)
             {
-                for(int i=0;i<nsamples;i++)
+            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nsamples * 2, 2);
+                for (int i = 0; i < nsamples; i++)
                 {
-                    short lval = (short)mem.read16(pvoid_buf+i*2);
+                    short lval = (short) memoryReader.readNext();
                     short rval = lval;
 
                     lval = (short)((((int)lval) * leftVolume ) >> 16);
@@ -479,10 +481,11 @@ public class sceAudio implements HLEModule, HLEThread {
             }
             else
             {
-                for(int i=0;i<nsamples;i++)
+            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nsamples * 4, 2);
+                for (int i = 0; i < nsamples; i++)
                 {
-                    short lval = (short)mem.read16(pvoid_buf+i*4);
-                    short rval = (short)mem.read16(pvoid_buf+i*4+2);
+                    short lval = (short) memoryReader.readNext();
+                    short rval = (short) memoryReader.readNext();
 
                     lval = (short)((((int)lval) * leftVolume ) >> 16);
                     rval = (short)((((int)rval) * rightVolume) >> 16);
