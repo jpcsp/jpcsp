@@ -957,6 +957,11 @@ public class ThreadManForUser implements HLEModule {
             return;
         }
 
+        if (thread.status == newStatus) {
+        	// Thread status not changed, nothing to do
+        	return;
+        }
+
         if (!dispatchThreadEnabled && thread == currentThread && newStatus != PSP_THREAD_RUNNING) {
             Modules.log.info("DispatchThread disabled, not changing thread state of " + thread + " to " + newStatus);
             return;
@@ -2553,6 +2558,8 @@ public class ThreadManForUser implements HLEModule {
             // Banned, fake start
             cpu.gpr[2] = 0;
             hleRescheduleCurrentThread();
+        } else if (thread.status != PSP_THREAD_STOPPED) {
+        	cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
         } else {
             // Check if there's a registered event handler for this thread.
             if(threadEventMap.containsKey(thread.uid)) {
