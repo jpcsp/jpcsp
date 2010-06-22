@@ -251,7 +251,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         buttonGroup1 = new javax.swing.ButtonGroup();
         jButtonOK = new javax.swing.JButton();
-        jButtonCancel = new javax.swing.JButton();
+        jButtonCancel = new CancelButton(this);
         jTabbedPane1 = new javax.swing.JTabbedPane();
         generalPanel = new javax.swing.JPanel();
         pbpunpackcheck = new javax.swing.JCheckBox();
@@ -319,13 +319,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOKActionPerformed(evt);
-            }
-        });
-
-        jButtonCancel.setText(Resource.get("cancel"));
-        jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonCancelActionPerformed(evt);
             }
         });
 
@@ -1096,10 +1089,6 @@ public void RefreshWindow()
 	
 	umdpath.setText(Settings.getInstance().readString("emu.umdpath"));
 }
-private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-	RefreshWindow();
-   dispose();
-}//GEN-LAST:event_jButtonCancelActionPerformed
 
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
    Settings.getInstance().writeBool("emu.pbpunpack", pbpunpackcheck.isSelected());
