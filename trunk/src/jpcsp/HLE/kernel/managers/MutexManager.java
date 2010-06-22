@@ -110,10 +110,12 @@ public class MutexManager {
 
         String name = Utilities.readStringNZ(mem, name_addr, 32);
 
-        Modules.log.info("sceKernelCreateMutex(name='" + name
-            + "',attr=0x" + Integer.toHexString(attr)
-            + ",count=0x" + Integer.toHexString(count)
-            + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
+        if (Modules.log.isDebugEnabled()) {
+	        Modules.log.debug("sceKernelCreateMutex(name='" + name
+	            + "',attr=0x" + Integer.toHexString(attr)
+	            + ",count=0x" + Integer.toHexString(count)
+	            + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
+        }
 
         if ((attr & ~PSP_MUTEX_ALLOW_SAME_THREAD) != 0) {
         	Modules.log.warn("PARTIAL:sceKernelCreateMutex attr value 0x" + Integer.toHexString(attr));
@@ -188,7 +190,9 @@ public class MutexManager {
 
             boolean allowSameThread = allowSameThread(info, currentThread);
             if (!tryLockMutex(info, count, allowSameThread)) {
-                Modules.log.info(message + " - '" + info.name + "' fast check failed");
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug(message + " - '" + info.name + "' fast check failed");
+            	}
 
                 if (wait) {
                     // Failed, but it's ok, just wait a little
@@ -379,10 +383,12 @@ public class MutexManager {
 
         String name = Utilities.readStringNZ(mem, name_addr, 32);
 
-        Modules.log.info("sceKernelCreateLwMutex (uid addr='" + Integer.toHexString(out_addr) + "',name='" + name
-            + "',attr=0x" + Integer.toHexString(attr)
-            + ",count=0x" + Integer.toHexString(count)
-            + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
+        if (Modules.log.isDebugEnabled()) {
+	        Modules.log.debug("sceKernelCreateLwMutex (uid addr='" + Integer.toHexString(out_addr) + "',name='" + name
+	            + "',attr=0x" + Integer.toHexString(attr)
+	            + ",count=0x" + Integer.toHexString(count)
+	            + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
+        }
 
         if (attr != 0) {
         	Modules.log.warn("PARTIAL:sceKernelCreateLwMutex attr value 0x" + Integer.toHexString(attr));
