@@ -174,9 +174,9 @@ public class TimerManager implements HLEModule {
 	}
 
 	protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
-		if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
-			sceKernelVTimerInfo.schedule = schedule;
+		sceKernelVTimerInfo.schedule = schedule;
 
+		if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
 			Scheduler scheduler = Scheduler.getInstance();
 			scheduler.addAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
 		}
@@ -196,7 +196,7 @@ public class TimerManager implements HLEModule {
 
 		sceKernelVTimerInfo.schedule += delay;
 
-		scheduleVTimer(sceKernelVTimerInfo, delay);
+		scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
 
 		if (Modules.log.isDebugEnabled()) {
 			Modules.log.debug(String.format("New Schedule for VTimer uid=%x: %d", sceKernelVTimerInfo.uid, sceKernelVTimerInfo.schedule));
@@ -611,7 +611,10 @@ public class TimerManager implements HLEModule {
         int scheduleAddr = cpu.gpr[5];
         int handlerAddress = cpu.gpr[6];
         int handlerArgument = cpu.gpr[7];
-    	Modules.log.warn(String.format("NOT TESTED: sceKernelSetVTimerHandler(uid=0x%x,scheduleAddr=0x%08X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.warn(String.format("sceKernelSetVTimerHandler(uid=0x%x,scheduleAddr=0x%08X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
+        }
 
     	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
@@ -648,7 +651,10 @@ public class TimerManager implements HLEModule {
         long schedule = Utilities.getRegister64(cpu, 6);
         int handlerAddress = cpu.gpr[8];
         int handlerArgument = cpu.gpr[9];
-    	Modules.log.debug(String.format("NOT TESTED: sceKernelSetVTimerHandlerWide(uid=0x%x,schedule=0x%016X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, schedule, handlerAddress, handlerArgument));
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelSetVTimerHandlerWide(uid=0x%x,schedule=0x%016X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, schedule, handlerAddress, handlerArgument));
+        }
 
     	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
