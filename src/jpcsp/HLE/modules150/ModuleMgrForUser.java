@@ -50,7 +50,20 @@ public class ModuleMgrForUser implements HLEModule {
         videocodec,
         mpegbase,
         mpeg,
-        psmf
+        psmf,
+        pspnet,
+        pspnet_adhoc,
+        pspnet_adhocctl,
+        pspnet_inet,
+        pspnet_adhoc_matching,
+        pspnet_adhoc_download,
+        pspnet_apctl,
+        pspnet_resolver,
+        pspnet_ap_dialog_dummy,
+        libparse_uri,
+        libparse_http,
+        libhttp_rfc,
+        libssl
     }
 	@Override
 	public String getName() { return "ModuleMgrForUser"; }
@@ -330,8 +343,16 @@ public class ModuleMgrForUser implements HLEModule {
                     mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
                 }
 
+                int priority = 0x20;
+                if (sceModule.module_start_thread_priority > 0) {
+                	priority = sceModule.module_start_thread_priority;
+                }
+                int stackSize = 0x40000;
+                if (sceModule.module_start_thread_stacksize > 0) {
+                	stackSize = sceModule.module_start_thread_stacksize;
+                }
                 SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart",
-                        sceModule.entry_addr, 0x20, 0x40000, sceModule.attribute, option_addr);
+                        sceModule.entry_addr, priority, stackSize, sceModule.attribute, option_addr);
                 // override inherited module id with the new module we are starting
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = sceModule.modid; // return the module id
