@@ -274,17 +274,20 @@ public class pspge {
                 msg += ", NOT done";
             }
 
-            if (list.thid > 0 && list.status != PSP_GE_LIST_END_REACHED) {
-                msg += ", waking thread " + Integer.toHexString(list.thid);
+            if (list.blockedThreadIds.size() > 0 && list.status != PSP_GE_LIST_END_REACHED) {
+                msg += ", waking thread";
+                for (int threadId : list.blockedThreadIds) {
+                	msg += " " + Integer.toHexString(threadId);
+                }
             }
 
             VideoEngine.log.debug(msg);
         }
 
         synchronized (this) {
-            if (list.thid > 0 && list.status != PSP_GE_LIST_END_REACHED) {
+            if (list.blockedThreadIds.size() > 0 && list.status != PSP_GE_LIST_END_REACHED) {
                 // things might go wrong if the thread already exists in the queue
-                deferredThreadWakeupQueue.add(list.thid);
+                deferredThreadWakeupQueue.addAll(list.blockedThreadIds);
             }
 
             if (list.isDone()) {
@@ -369,20 +372,19 @@ public class pspge {
     	boolean executeAction = false;
 
     	synchronized (this) {
-            list.thid = threadMan.getCurrentThreadID();
-
+    		int currentThreadId = threadMan.getCurrentThreadID();
             if (list.isDone()) {
         		// There has been some race condition: the list has just completed
             	// do not block the thread
     	    	if (VideoEngine.log.isDebugEnabled()) {
-    	    		VideoEngine.log.debug("blockCurrentThreadOnList not blocking thread " + Integer.toHexString(list.thid) + ", list completed " + list);
+    	    		VideoEngine.log.debug("blockCurrentThreadOnList not blocking thread " + Integer.toHexString(currentThreadId) + ", list completed " + list);
     	    	}
-        		list.thid = 0;
         		executeAction = true;
         	} else {
     	    	if (VideoEngine.log.isDebugEnabled()) {
-    	    		VideoEngine.log.debug("blockCurrentThreadOnList blocking thread " + Integer.toHexString(list.thid) + " on list " + list);
+    	    		VideoEngine.log.debug("blockCurrentThreadOnList blocking thread " + Integer.toHexString(currentThreadId) + " on list " + list);
     	    	}
+        		list.blockedThreadIds.add(currentThreadId);
     	    	blockCurrentThread = true;
         	}
 		}

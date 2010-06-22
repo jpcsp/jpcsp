@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +43,7 @@ public class PspGeList
     public int status;
     public int id;
 
-    public int thid; // the thread we are blocking
+    public List<Integer> blockedThreadIds; // the threads we are blocking
     private boolean finished;
     private boolean paused;
     private boolean reset;
@@ -50,12 +52,13 @@ public class PspGeList
     public PspGeList(int id) {
     	videoEngine = VideoEngine.getInstance();
     	this.id = id;
+    	blockedThreadIds = new LinkedList<Integer>();
     	reset();
     }
 
     private void init() {
     	stackIndex = 0;
-    	thid = 0;
+    	blockedThreadIds.clear();
     	finished = true;
     	paused = false;
     	reset = true;

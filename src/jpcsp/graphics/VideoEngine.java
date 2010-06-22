@@ -306,7 +306,7 @@ public class VideoEngine {
 
     private boolean useVBO = true;
     private int[] vboBufferId = new int[1];
-    private static final int vboBufferSize = 1024 * 1024 * BufferUtil.SIZEOF_FLOAT;
+    private static final int vboBufferSize = 2 * 1024 * 1024 * BufferUtil.SIZEOF_FLOAT;
     private ByteBuffer vboBuffer = ByteBuffer.allocateDirect(vboBufferSize).order(ByteOrder.nativeOrder());
     private FloatBuffer vboFloatBuffer = vboBuffer.asFloatBuffer();
     private static final int nativeBufferSize = vboBufferSize;
@@ -867,7 +867,8 @@ public class VideoEngine {
             // TODO this is assuming there is only 1 list in drawListQueue at this point, only the last list is the replay list
             PspGeList replayList = drawListQueue.poll();
             replayList.id = list.id;
-        	replayList.thid = list.thid;
+            replayList.blockedThreadIds.clear();
+        	replayList.blockedThreadIds.addAll(list.blockedThreadIds);
             list = replayList;
         }
 
