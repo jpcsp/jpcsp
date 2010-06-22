@@ -465,8 +465,6 @@ public class RuntimeContext {
     }
 
     private static void syncThread() throws StopThreadException {
-    	Scheduler.getInstance().step();
-
         syncIdle();
 
         if (toBeDeletedThreads.containsValue(getRuntimeThread())) {
@@ -558,9 +556,12 @@ public class RuntimeContext {
     public static void sync() throws StopThreadException {
     	if (!IntrManager.getInstance().isInsideInterrupt()) {
     		if (wantSync && log.isDebugEnabled()) {
-    			log.debug("Forced sync()");
+    			if (currentRuntimeThread != null && !currentRuntimeThread.isInSyscall()) {
+    				log.debug("Forced sync()");
+    			}
     		}
 	    	syncPause();
+			Scheduler.getInstance().step();
 	        syncThread();
 	    	syncEmulator(false);
 	        syncDebugger();
@@ -628,28 +629,16 @@ public class RuntimeContext {
     		log.debug("End of Thread " + threadInfo.name + " - stopped");
     	}
 
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
     	if (!thread.getThreadInfo().doDelete) {
     		thread.setInSyscall(true);
 
             log.info("Thread exit detected SceUID=" + Integer.toHexString(threadInfo.uid)
                 + " name:'" + threadInfo.name + "' return:0x" + Integer.toHexString(gpr[2]));
 
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 			threadInfo.exitStatus = gpr[2];
 			threadMan.hleChangeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
 			threadMan.hleRescheduleCurrentThread();
-
-			if (!reset) {
-				try {
-			    	if (log.isDebugEnabled()) {
-			    		log.debug("End of Thread " + threadInfo.name + " - sync");
-			    	}
-
-					sync();
-				} catch (StopThreadException e) {
-		    		// Ignore Exception
-				}
-			}
     	}
 
 		threads.remove(threadInfo);
@@ -660,10 +649,11 @@ public class RuntimeContext {
 			// Switch to the currently active thread
 			try {
 		    	if (log.isDebugEnabled()) {
-		    		log.debug("End of Thread " + threadInfo.name + " - syncThread");
+		    		log.debug("End of Thread " + threadInfo.name + " - sync");
 		    	}
 
-				syncThread();
+	    		syncIdle();
+	    		syncThreadImmediately();
 			} catch (StopThreadException e) {
 			}
 		}
