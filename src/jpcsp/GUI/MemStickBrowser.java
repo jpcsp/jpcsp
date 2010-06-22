@@ -352,14 +352,8 @@ public class MemStickBrowser extends JDialog {
         layout.setAutoCreateGaps(true);
         layout.setAutoCreateContainerGaps(true);
 
-        JButton cancelButton = new JButton(Resource.get("cancel"));
-        cancelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                MemStickBrowser.this.setVisible(false);
-                MemStickBrowser.this.dispose();
-            }
-        });
+        JButton cancelButton = new CancelButton(this);
+
         loadButton = new JButton(Resource.get("load"));
         loadButton.setEnabled(false);
         loadButton.addActionListener(new ActionListener() {

@@ -35,6 +35,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableColumnModel;
@@ -47,6 +49,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import jpcsp.Settings;
+import jpcsp.GUI.CancelButton;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
@@ -451,17 +454,22 @@ public class sceUtility implements HLEModule {
                     Object obj, boolean isSelected, boolean hasFocus,
                     int row, int column) {
                 if (obj instanceof Icon) {
-                    setText("");
                     setIcon((Icon) obj);
-                    return this;
                 } else if (obj instanceof String) {
                 	JTextArea textArea = new JTextArea((String) obj);
                 	textArea.setFont(new Font("SansSerif", Font.PLAIN, fontHeight));
+                	if (isSelected) {
+                		textArea.setForeground(table.getSelectionForeground());
+                		textArea.setBackground(table.getSelectionBackground());
+                	} else {
+                		textArea.setForeground(table.getForeground());
+                		textArea.setBackground(table.getBackground());
+                	}
                 	return textArea;
                 } else {
                 	setIcon(null);
-                	return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
                 }
+            	return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
             }
         }
 
@@ -621,6 +629,11 @@ public class sceUtility implements HLEModule {
         mainDisplay.setLocation(pos[0], pos[1]);
         mainDisplay.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+        final JButton selectButton = new JButton("Select");
+        mainDisplay.getRootPane().setDefaultButton(selectButton);
+
+        final JButton cancelButton = new CancelButton(mainDisplay);
+
         SavedataListTableModel savedataListTableModel = new SavedataListTableModel(saveNames);
         SavedataListTableColumnModel savedataListTableColumnModel = new SavedataListTableColumnModel();
         savedataListTableColumnModel.setFontHeight(savedataListTableModel.getFontHeight());
@@ -629,41 +642,49 @@ public class sceUtility implements HLEModule {
         table.setRowSelectionAllowed(true);
         table.setColumnSelectionAllowed(false);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+            	selectButton.setEnabled(!((ListSelectionModel)e.getSource()).isSelectionEmpty());
+            }});
         table.setFont(new Font("SansSerif", Font.PLAIN, fontHeightSavedataList[0]));
         JScrollPane listScroll = new JScrollPane(table);
-        JButton selectButton = new JButton("Select");
 
         GroupLayout layout = new GroupLayout(mainDisplay.getRootPane());
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
 
         layout.setHorizontalGroup(layout.createParallelGroup(
-				GroupLayout.Alignment.TRAILING).addComponent(listScroll)
-				.addComponent(selectButton));
+                GroupLayout.Alignment.TRAILING).addComponent(listScroll)
+                .addGroup(
+                layout.createSequentialGroup().addComponent(selectButton)
+                        .addComponent(cancelButton)));
 
-		layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
-				listScroll).addComponent(selectButton));
+        layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
+        		listScroll).addGroup(
+                layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                        .addComponent(selectButton).addComponent(cancelButton)));
 
 		mainDisplay.getRootPane().setLayout(layout);
         mainDisplay.setVisible(true);
 
         saveListSelected = false;
 
-        //Wait for user selection.
+        selectButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent evt) {
+                if(table.getSelectedRow() != -1) {
+                    saveListSelection = saveNames[table.getSelectedRow()];
+                    mainDisplay.dispose();
+                    saveListSelected = true;
+                }
+            }
+        });
+
+        // Wait for user selection.
         while(!saveListSelected) {
             if(!mainDisplay.isVisible())
                 break;
-
-            selectButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent evt) {
-                    if(table.getSelectedRow() != -1) {
-                        saveListSelection = saveNames[table.getSelectedRow()];
-                        mainDisplay.dispose();
-                        saveListSelected = true;
-                    }
-                }
-            });
         }
 
         Settings.getInstance().writeWindowPos("savedata", mainDisplay.getLocation());

@@ -304,14 +304,8 @@ public class UmdBrowser extends JDialog {
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
 
-		JButton cancelButton = new JButton(Resource.get("cancel"));
-		cancelButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				UmdBrowser.this.setVisible(false);
-				UmdBrowser.this.dispose();
-			}
-		});
+		JButton cancelButton = new CancelButton(this);
+
 		loadButton = new JButton(Resource.get("load"));
 		loadButton.setEnabled(false);
 		loadButton.addActionListener(new ActionListener() {
