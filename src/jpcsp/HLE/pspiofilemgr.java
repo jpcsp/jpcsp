@@ -67,7 +67,6 @@ import jpcsp.State;
 
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
-    private final boolean debug = true;
     private static Logger stdout = Logger.getLogger("stdout");
     private static Logger stderr = Logger.getLogger("stderr");
 
@@ -400,7 +399,7 @@ public class pspiofilemgr {
                         UmdIsoFile file = iso.getFile(trimUmdPrefix(pcfilename));
                         resultFile = file;
                     } catch(FileNotFoundException e) {
-                        if (debug) Modules.log.debug("getFile - umd file not found '" + pcfilename + "' (ok to ignore this message, debug purpose only)");
+                        if (Modules.log.isDebugEnabled()) Modules.log.debug("getFile - umd file not found '" + pcfilename + "' (ok to ignore this message, debug purpose only)");
                     } catch(IOException e) {
                         Modules.log.error("getFile - error opening umd media: " + e.getMessage());
                     }
@@ -411,11 +410,11 @@ public class pspiofilemgr {
                 if (file.exists() &&
                     (flags & PSP_O_CREAT) == PSP_O_CREAT &&
                     (flags & PSP_O_EXCL) == PSP_O_EXCL) {
-                    if (debug) Modules.log.debug("getFile - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
+                    if (Modules.log.isDebugEnabled()) Modules.log.debug("getFile - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                 } else {
                     if (file.exists() &&
                         (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                        if (debug) Modules.log.warn("getFile - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                        Modules.log.warn("getFile - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
                     }
                     String mode = getMode(flags);
 
@@ -423,7 +422,7 @@ public class pspiofilemgr {
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         resultFile = raf;
                     } catch (FileNotFoundException e) {
-                        if (debug) Modules.log.debug("getFile - file not found '" + pcfilename + "' (ok to ignore this message, debug purpose only)");
+                        if (Modules.log.isDebugEnabled()) Modules.log.debug("getFile - file not found '" + pcfilename + "' (ok to ignore this message, debug purpose only)");
                     }
                 }
             }
@@ -674,7 +673,7 @@ public class pspiofilemgr {
      * HLE functions.
      */
     public void hleIoGetAsyncStat(int uid, int res_addr, boolean wait, boolean callbacks) {
-        if (debug) Modules.log.debug("hleIoGetAsyncStat(uid=" + Integer.toHexString(uid) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoGetAsyncStat(uid=" + Integer.toHexString(uid) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
@@ -755,9 +754,9 @@ public class pspiofilemgr {
 
     public void hleIoOpen(int filename_addr, int flags, int permissions, boolean async) {
         String filename = readStringZ(filename_addr);
-        if (debug) Modules.log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
+        if (Modules.log.isDebugEnabled()) Modules.log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
 
-        if (debug) {
+        if (Modules.log.isDebugEnabled()) {
             if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) Modules.log.debug("PSP_O_RDONLY");
             if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY) Modules.log.debug("PSP_O_WRONLY");
             if ((flags & PSP_O_NBLOCK) == PSP_O_NBLOCK) Modules.log.debug("PSP_O_NBLOCK");
@@ -809,7 +808,7 @@ public class pspiofilemgr {
         try {
             String pcfilename = getDeviceFilePath(filename);
             if (pcfilename != null) {
-                if (debug) Modules.log.debug("hleIoOpen - opening file " + pcfilename);
+                if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoOpen - opening file " + pcfilename);
 
                 if (isUmdPath(pcfilename)) {
                     // check umd is mounted
@@ -844,9 +843,9 @@ public class pspiofilemgr {
                                 }
                                 info.result = ERROR_NO_ASYNC_OP;
                                 Emulator.getProcessor().cpu.gpr[2] = info.uid;
-                                if (debug) Modules.log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
+                                if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
                             } catch(FileNotFoundException e) {
-                                if (debug) Modules.log.warn("hleIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
+                                if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
                                 Emulator.getProcessor().cpu.gpr[2] = ERROR_FILE_NOT_FOUND;
                             } catch(IOException e) {
                                 Modules.log.error("hleIoOpen - error opening umd media: " + e.getMessage());
@@ -859,17 +858,17 @@ public class pspiofilemgr {
                     File file = new File(pcfilename);
                     if (file.exists() && (flags & PSP_O_CREAT) == PSP_O_CREAT &&
                         (flags & PSP_O_EXCL) == PSP_O_EXCL) {
-                        if (debug) Modules.log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
+                        if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                         Emulator.getProcessor().cpu.gpr[2] = ERROR_FILE_ALREADY_EXISTS;
                     } else {
                         if (file.exists() && (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                            if (debug) Modules.log.warn("hleIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                            Modules.log.warn("hleIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
                         }
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         info = new IoInfo(filename, raf, mode, flags, permissions);
                         info.result = ERROR_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
-                        if (debug) Modules.log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
+                        if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
                     }
                 }
             } else {
@@ -877,7 +876,7 @@ public class pspiofilemgr {
             }
         } catch(FileNotFoundException e) {
             // To be expected under mode="r" and file doesn't exist
-            if (debug) Modules.log.warn("hleIoOpen - file not found (ok to ignore this message, debug purpose only)");
+            if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoOpen - file not found (ok to ignore this message, debug purpose only)");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_FILE_NOT_FOUND;
         }
 
@@ -913,7 +912,7 @@ public class pspiofilemgr {
             stderr.info(Utilities.convertStringCharset(message));
             result = size;
         } else {
-            if (debug) Modules.log.debug("hleIoWrite(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
+            if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoWrite(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
 
             try {
                 SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
@@ -964,7 +963,7 @@ public class pspiofilemgr {
     }
 
     public void hleIoRead(int uid, int data_addr, int size, boolean async) {
-        if (debug) Modules.log.debug("hleIoRead(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoRead(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
         IoInfo info = null;
         int result;
 
@@ -1118,7 +1117,7 @@ public class pspiofilemgr {
         int result = -1;
         Memory mem = Memory.getInstance();
 
-        if (debug) {
+        if (Modules.log.isDebugEnabled()) {
             Modules.log.debug("hleIoIoctl(uid=" + Integer.toHexString(uid)
                 + ",cmd=0x" + Integer.toHexString(cmd)
                 + ",indata=0x" + Integer.toHexString(indata_addr)
@@ -1339,38 +1338,38 @@ public class pspiofilemgr {
      */
     public void sceIoSync(int device_addr, int unknown) {
         String device = readStringZ(device_addr);
-        if (debug) Modules.log.debug("IGNORING:sceIoSync(device='" + device + "',unknown=0x" + Integer.toHexString(unknown) + ")");
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("IGNORING:sceIoSync(device='" + device + "',unknown=0x" + Integer.toHexString(unknown) + ")");
         State.fileLogger.logIoSync(0, device_addr, device, unknown);
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoPollAsync(int uid, int res_addr) {
-        if (debug) Modules.log.debug("sceIoPollAsync redirecting to hleIoGetAsyncStat");
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoPollAsync redirecting to hleIoGetAsyncStat");
         hleIoGetAsyncStat(uid, res_addr, false, false);
     }
 
     public void sceIoGetAsyncStat(int uid, int poll, int res_addr) {
-        if (debug) Modules.log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoGetAsyncStat");
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoGetAsyncStat");
         hleIoGetAsyncStat(uid, res_addr, (poll == 0), false);
     }
 
     public void sceIoWaitAsync(int uid, int res_addr) {
-        if (debug) Modules.log.debug("sceIoWaitAsync redirecting to hleIoGetAsyncStat");
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoWaitAsync redirecting to hleIoGetAsyncStat");
         hleIoGetAsyncStat(uid, res_addr, true, false);
     }
 
     public void sceIoWaitAsyncCB(int uid, int res_addr) {
-        if (debug) Modules.log.debug("sceIoWaitAsyncCB redirecting to hleIoGetAsyncStat");
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoWaitAsyncCB redirecting to hleIoGetAsyncStat");
         hleIoGetAsyncStat(uid, res_addr, true, true);
     }
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
-        if (debug) Modules.log.debug("sceIoOpen redirecting to hleIoOpen");
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoOpen redirecting to hleIoOpen");
         hleIoOpen(filename_addr, flags, permissions, false);
     }
 
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
-        if (debug) Modules.log.debug("sceIoOpenAsync redirecting to hleIoOpen");
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoOpenAsync redirecting to hleIoOpen");
         hleIoOpen(filename_addr, flags, permissions, true);
     }
 
@@ -1400,7 +1399,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoSetAsyncCallback(int uid, int cbid, int notifyArg) {
-        if (debug) Modules.log.debug("sceIoSetAsyncCallback - uid " + Integer.toHexString(uid) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoSetAsyncCallback - uid " + Integer.toHexString(uid) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
@@ -1420,7 +1419,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoClose(int uid) {
-        if (debug) Modules.log.debug("sceIoClose - uid " + Integer.toHexString(uid));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoClose - uid " + Integer.toHexString(uid));
 
         try {
             SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
@@ -1430,7 +1429,7 @@ public class pspiofilemgr {
                     Modules.log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
                 Emulator.getProcessor().cpu.gpr[2] = ERROR_BAD_FILE_DESCRIPTOR;
             } else {
-                if( info.readOnlyFile != null) {
+                if (info.readOnlyFile != null) {
                     // Can be just closing an empty handle, because hleIoOpen(async==true)
                     // generates a dummy IoInfo when the file could not be opened.
                     info.readOnlyFile.close();
@@ -1451,7 +1450,7 @@ public class pspiofilemgr {
 
     public void sceIoCloseAsync(int uid) {
     	CpuState cpu = Emulator.getProcessor().cpu;
-        if (debug) Modules.log.debug("sceIoCloseAsync - uid " + Integer.toHexString(uid));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoCloseAsync - uid " + Integer.toHexString(uid));
 
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
@@ -1485,28 +1484,28 @@ public class pspiofilemgr {
     }
 
     public void sceIoLseek(int uid, long offset, int whence) {
-        if (debug) Modules.log.debug("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         hleIoLseek(uid, offset, whence, true, false);
     }
 
     public void sceIoLseekAsync(int uid, long offset, int whence) {
-        if (debug) Modules.log.debug("sceIoLseekAsync - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoLseekAsync - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         hleIoLseek(uid, offset, whence, true, true);
     }
 
     public void sceIoLseek32(int uid, int offset, int whence) {
-        if (debug) Modules.log.debug("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         hleIoLseek(uid, (long)offset, whence, false, false);
     }
 
     public void sceIoLseek32Async(int uid, int offset, int whence) {
-        if (debug) Modules.log.debug("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         hleIoLseek(uid, (long)offset, whence, false, true);
     }
 
     public void sceIoMkdir(int dir_addr, int permissions) {
         String dir = readStringZ(dir_addr);
-        if (debug) Modules.log.debug("sceIoMkdir dir = " + dir);
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoMkdir dir = " + dir);
 
         String pcfilename = getDeviceFilePath(dir);
         if (pcfilename != null) {
@@ -1522,7 +1521,7 @@ public class pspiofilemgr {
 
     public void sceIoChdir(int path_addr) {
         String path = readStringZ(path_addr);
-        if (debug) Modules.log.debug("sceIoChdir path = " + path);
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoChdir path = " + path);
 
         if (path.equals("..")) {
             int index = filepath.lastIndexOf("/");
@@ -1546,7 +1545,7 @@ public class pspiofilemgr {
 
     public void sceIoDopen(int dirname_addr) {
         String dirname = readStringZ(dirname_addr);
-        if (debug) Modules.log.debug("sceIoDopen dirname = " + dirname);
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoDopen dirname = " + dirname);
 
         String pcfilename = getDeviceFilePath(dirname);
         if (pcfilename != null) {
@@ -1554,7 +1553,7 @@ public class pspiofilemgr {
             if (isUmdPath(pcfilename)) {
                 // Files in our iso virtual file system
                 String isofilename = trimUmdPrefix(pcfilename);
-                if (debug) Modules.log.debug("sceIoDopen - isofilename = " + isofilename);
+                if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoDopen - isofilename = " + isofilename);
                 // check umd is mounted
                 if (iso == null) {
                     Modules.log.error("sceIoDopen - no umd mounted");
@@ -1570,7 +1569,7 @@ public class pspiofilemgr {
                             IoDirInfo info = new IoDirInfo(pcfilename, filenames);
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
                         } else {
-                            if (debug) Modules.log.warn("sceIoDopen '" + isofilename + "' not a umd directory!");
+                            Modules.log.warn("sceIoDopen '" + isofilename + "' not a umd directory!");
                             Emulator.getProcessor().cpu.gpr[2] = -1;
                         }
                     } catch(FileNotFoundException e) {
@@ -1586,13 +1585,13 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
                 // Regular apps run from inside mstick dir or absolute path given
-                if (debug) Modules.log.debug("sceIoDopen - pcfilename = " + pcfilename);
+                if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoDopen - pcfilename = " + pcfilename);
                 File f = new File(pcfilename);
                 if (f.isDirectory()) {
                     IoDirInfo info = new IoDirInfo(pcfilename, f.list());
                     Emulator.getProcessor().cpu.gpr[2] = info.uid;
                 } else {
-                    if (debug) Modules.log.warn("sceIoDopen '" + pcfilename + "' not a directory! (could be missing)");
+                    Modules.log.warn("sceIoDopen '" + pcfilename + "' not a directory! (could be missing)");
                     Emulator.getProcessor().cpu.gpr[2] = ERROR_FILE_NOT_FOUND;
                 }
             }
@@ -1641,7 +1640,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoDclose(int uid) {
-        if (debug) Modules.log.debug("sceIoDclose - uid = " + Integer.toHexString(uid));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoDclose - uid = " + Integer.toHexString(uid));
 
         SceUidManager.checkUidPurpose(uid, "IOFileManager-Directory", true);
         IoDirInfo info = dirlist.remove(uid);
@@ -1658,7 +1657,7 @@ public class pspiofilemgr {
 
     public void sceIoDevctl(int device_addr, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
         String device = readStringZ(device_addr);
-        if (debug) {
+        if (Modules.log.isDebugEnabled()) {
             Modules.log.debug("sceIoDevctl(device='" + device
                 + "',cmd=0x" + Integer.toHexString(cmd)
                 + ",indata=0x" + Integer.toHexString(indata_addr)
@@ -1919,7 +1918,7 @@ public class pspiofilemgr {
 
     public void sceIoGetstat(int file_addr, int stat_addr) {
         String filename = readStringZ(file_addr);
-        if (debug) Modules.log.debug("sceIoGetstat - file = " + filename + " stat = " + Integer.toHexString(stat_addr));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoGetstat - file = " + filename + " stat = " + Integer.toHexString(stat_addr));
 
         String pcfilename = getDeviceFilePath(filename);
         SceIoStat stat = stat(pcfilename);
@@ -1936,7 +1935,7 @@ public class pspiofilemgr {
 
     public void sceIoRemove(int file_addr) {
         String filename = readStringZ(file_addr);
-        if (debug) Modules.log.debug("sceIoRemove - file = " + filename);
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoRemove - file = " + filename);
 
         String pcfilename = getDeviceFilePath(filename);
 
@@ -1960,7 +1959,7 @@ public class pspiofilemgr {
 
     public void sceIoChstat(int file_addr, int stat_addr, int bits) {
         String filename = readStringZ(file_addr);
-        if (debug) Modules.log.debug("sceIoChstat - file = " + filename + ", bits=0x" + Integer.toHexString(bits));
+        if (Modules.log.isDebugEnabled()) Modules.log.debug("sceIoChstat - file = " + filename + ", bits=0x" + Integer.toHexString(bits));
 
         String pcfilename = getDeviceFilePath(filename);
 
