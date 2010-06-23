@@ -18,11 +18,11 @@ int done = 0;
 int cpuFreq = 222;
 int startSystemTime;
 
-float pspDurationMillis[] = { 0, 910, 1138, 1215, 1024, 989, 1229, 962, 1007, 1066, 1365, 682, 682, 819, 819, 819, 819, 1214, 1229 };
+float pspDurationMillis[] = { 0, 910, 1138, 1215, 1024, 989, 1229, 962, 1007, 1066, 1365, 682, 682, 819, 819, 819, 819, 682, 1214, 1229 };
 char *testNames[] = { "", "Empty loop", "Simple loop", "read32", "read16", "read8", "write32", "write16", "write8",
                       "Function call no params", "Function call with params",
 					  "FPU add.s", "FPU mul.s",
-					  "VFPU vadd.s", "VFPU vadd.p", "VFPU vadd.t", "VFPU vadd.q",
+					  "VFPU vadd.s", "VFPU vadd.p", "VFPU vadd.t", "VFPU vadd.q", "VFPU vadd.q sequence",
 					  "LWC1", "SWC1"
                     };
 
@@ -33,6 +33,8 @@ char *testNames[] = { "", "Empty loop", "Simple loop", "read32", "read16", "read
 char buffer[BUFFER_SIZE];
 int dummy;
 
+SceUID logFd;
+
 
 void startTest()
 {
@@ -42,12 +44,16 @@ void startTest()
 
 void endTest(int testNumber)
 {
+	char s[1000];
+
 	int endSystemTime = sceKernelGetSystemTimeLow();
 	int durationMicros = endSystemTime - startSystemTime;
 	int durationMillis = (durationMicros + 500) / 1000;
 	float pspReference = pspDurationMillis[testNumber] / durationMillis;
 
-	pspDebugScreenPrintf("%-25s: %4d ms (%3.0f%%) @ %d MHz\n", testNames[testNumber], durationMillis, pspReference * 100, scePowerGetCpuClockFrequencyInt());
+	sprintf(s, "%-25s: %4d ms (%3.0f%%) @ %d MHz\n", testNames[testNumber], durationMillis, pspReference * 100, scePowerGetCpuClockFrequencyInt());
+	pspDebugScreenPrintf("%s", s);
+	sceIoWrite(logFd, s, strlen(s));
 }
 
 
@@ -368,7 +374,32 @@ void runTest16()
 }
 
 
-float runTest17()
+void runTest17()
+{
+	startTest();
+	int i;
+	int j;
+	for (j = 0; j < 10; j++)
+	{
+		for (i = 1000000; i > 0; i--)
+		{
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+			asm("vadd.q C000, C100, C200\n");
+		}
+	}
+	endTest(17);
+}
+
+
+float runTest18()
 {
 	startTest();
 	int i;
@@ -382,13 +413,13 @@ float runTest17()
 			sum += *address++;
 		}
 	}
-	endTest(17);
+	endTest(18);
 
 	return sum;
 }
 
 
-void runTest18()
+void runTest19()
 {
 	startTest();
 	int i;
@@ -401,7 +432,7 @@ void runTest18()
 			*address++ = 1.f;
 		}
 	}
-	endTest(18);
+	endTest(19);
 }
 
 
@@ -425,6 +456,7 @@ void runTest()
 	runTest16();
 	runTest17();
 	runTest18();
+	runTest19();
 	pspDebugScreenPrintf("--- End of Tests ---\n");
 }
 
@@ -443,6 +475,8 @@ int main(int argc, char *argv[])
 	repeatStart.tv_usec = 0;
 	repeatDelay.tv_sec = 0;
 	repeatDelay.tv_usec = 0;
+
+	logFd = sceIoOpen("compilerPerf.log", PSP_O_WRONLY | PSP_O_CREAT, 0777);
 
 	pspDebugScreenInit();
 	pspDebugScreenPrintf("Press Cross to start the Performance Test\n");
@@ -527,6 +561,8 @@ int main(int argc, char *argv[])
 	}
 
 	sceGuTerm();
+
+	sceIoClose(logFd);
 
 	sceKernelExitGame();
 	return 0;
