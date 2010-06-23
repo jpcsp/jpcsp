@@ -1,5 +1,5 @@
 @echo off
-set PATH=%PATH%;lib\windows-x86\
+set PATH=%PATH%;lib\;lib\windows-x86\
 if "%programfiles(x86)%XXX"=="XXX" goto JAVA32
 if not exist "%programfiles(x86)%\Java\jre6\bin" goto JAVAMISSING
 echo Running Jpcsp 32bit...
