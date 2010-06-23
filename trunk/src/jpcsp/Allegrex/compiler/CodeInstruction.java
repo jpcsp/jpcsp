@@ -156,7 +156,9 @@ public class CodeInstruction {
 	    } else {
 		    insn.compile(context, getOpcode());
 	    }
-	}
+
+        context.endInstruction();
+    }
 
     private void compileJr(CompilerContext context, MethodVisitor mv) {
         compileDelaySlot(context, mv);

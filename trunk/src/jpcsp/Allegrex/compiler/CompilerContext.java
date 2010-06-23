@@ -25,6 +25,7 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Instructions;
+import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.Allegrex.VfpuState.Vcr;
@@ -54,7 +55,7 @@ public class CompilerContext implements ICompilerContext {
 	private MethodVisitor mv;
 	private CodeInstruction codeInstruction;
 	private static final boolean storeGprLocal = true;
-	private static final boolean storeProcessorLocal = true;
+	private static final boolean storeProcessorLocal = false;
 	private static final boolean storeCpuLocal = false;
 	private static final int LOCAL_RETURN_ADDRESS = 0;
 	private static final int LOCAL_ALTERVATIVE_RETURN_ADDRESS = 1;
@@ -65,18 +66,26 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_CPU = 6;
     private static final int LOCAL_TMP1 = 7;
     private static final int LOCAL_TMP2 = 8;
-    private static final int LOCAL_MAX = 9;
+    private static final int LOCAL_TMP_VD0 = 9;
+    private static final int LOCAL_TMP_VD1 = 10;
+    private static final int LOCAL_TMP_VD2 = 11;
+    private static final int LOCAL_MAX = 12;
     private static final int STACK_MAX = 11;
     private static final int spRegisterIndex = 29;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
     public Stack<Integer> blocksToBeAnalysed = new Stack<Integer>();
     private int currentInstructionCount;
     private int preparedRegisterForStore = -1;
-    private boolean memWrite32prepared = false;
+    private boolean memWritePrepared = false;
     private boolean hiloPrepared = false;
     private int methodMaxInstructions = 3000;
     private NativeCodeManager nativeCodeManager;
     private NativeCodeSequence nativeCodeSequence = null;
+    private final VfpuPfxSrcState vfpuPfxsState = new VfpuPfxSrcState();
+    private final VfpuPfxSrcState vfpuPfxtState = new VfpuPfxSrcState();
+    private final VfpuPfxDstState vfpuPfxdState = new VfpuPfxDstState();
+    private Label interpretPfxLabel = null;
+    private boolean pfxVdOverlap = false;
     private static final String runtimeContextInternalName = Type.getInternalName(RuntimeContext.class);
     private static final String processorDescriptor = Type.getDescriptor(Processor.class);
     private static final String cpuDescriptor = Type.getDescriptor(CpuState.class);
@@ -141,7 +150,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void loadVpr() {
-		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vpr", "[[[F");
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "vpr", "[F");
     }
 
     public void loadRegister(int reg) {
@@ -156,75 +165,146 @@ public class CompilerContext implements ICompilerContext {
         mv.visitInsn(Opcodes.FALOAD);
     }
 
-    public void loadVRegister(int vsize, int reg, int n) {
-    	loadVpr();
-    	int m = (reg >> 2) & 7;
+    private Float getPfxSrcCstValue(VfpuPfxSrcState pfxSrcState, int n) {
+    	if (pfxSrcState == null ||
+    	    pfxSrcState.isUnknown() ||
+    	    !pfxSrcState.pfxSrc.enabled ||
+    	    !pfxSrcState.pfxSrc.cst[n]) {
+    		return null;
+    	}
+
+    	float value = 0.0f;
+		switch (pfxSrcState.pfxSrc.swz[n]) {
+			case 0:
+				value = pfxSrcState.pfxSrc.abs[n] ? 3.0f : 0.0f;
+				break;
+			case 1:
+				value = pfxSrcState.pfxSrc.abs[n] ? (1.0f / 3.0f) : 1.0f;
+				break;
+			case 2:
+				value = pfxSrcState.pfxSrc.abs[n] ? (1.0f / 4.0f) : 2.0f;
+				break;
+			case 3:
+				value = pfxSrcState.pfxSrc.abs[n] ? (1.0f / 6.0f) : 0.5f;
+				break;
+		}
+
+		if (pfxSrcState.pfxSrc.neg[n]) {
+			value = 0.0f - value;
+		}
+
+		if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+			Compiler.log.trace(String.format("PFX    %08X - getPfxSrcCstValue %d -> %f", getCodeInstruction().getAddress(), n, value));
+		}
+
+		return new Float(value);
+    }
+
+    private void applyPfxSrcPostfix(VfpuPfxSrcState pfxSrcState, int n) {
+    	if (pfxSrcState == null ||
+    	    pfxSrcState.isUnknown() ||
+    	    !pfxSrcState.pfxSrc.enabled) {
+    		return;
+    	}
+
+    	if (pfxSrcState.pfxSrc.abs[n]) {
+			if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+				Compiler.log.trace(String.format("PFX    %08X - applyPfxSrcPostfix abs(%d)", getCodeInstruction().getAddress(), n));
+			}
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "abs", "(F)F");
+    	}
+    	if (pfxSrcState.pfxSrc.neg[n]) {
+			if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+				Compiler.log.trace(String.format("PFX    %08X - applyPfxSrcPostfix neg(%d)", getCodeInstruction().getAddress(), n));
+			}
+    		mv.visitInsn(Opcodes.FNEG);
+    	}
+    }
+
+    private int getPfxSrcIndex(VfpuPfxSrcState pfxSrcState, int n) {
+    	if (pfxSrcState == null ||
+    	    pfxSrcState.isUnknown() ||
+    	    !pfxSrcState.pfxSrc.enabled ||
+    	    pfxSrcState.pfxSrc.cst[n]) {
+    		return n;
+    	}
+
+		if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+			Compiler.log.trace(String.format("PFX    %08X - getPfxSrcIndex %d -> %d", getCodeInstruction().getAddress(), n, pfxSrcState.pfxSrc.swz[n]));
+		}
+    	return pfxSrcState.pfxSrc.swz[n];
+    }
+
+    private void loadVRegister(int m, int c, int r) {
+        loadVpr();
+        loadImm(VfpuState.getVprIndex(m, c, r));
+        mv.visitInsn(Opcodes.FALOAD);
+    }
+
+    public void loadVRegister(int vsize, int reg, int n, VfpuPfxSrcState pfxSrcState) {
+		if (Compiler.log.isTraceEnabled() && pfxSrcState.isKnown() && pfxSrcState.pfxSrc.enabled) {
+			Compiler.log.trace(String.format("PFX    %08X - loadVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
+		}
+
+		int m = (reg >> 2) & 7;
     	int i = (reg >> 0) & 3;
     	int s;
     	switch (vsize) {
     		case 1: {
     			s = (reg >> 5) & 3;
-    			loadImm(m);
-    			mv.visitInsn(Opcodes.AALOAD);
-    			loadImm(i);
-    			mv.visitInsn(Opcodes.AALOAD);
-    			loadImm(s);
-    			mv.visitInsn(Opcodes.FALOAD);
+    			Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
+    			if (cstValue != null) {
+    				mv.visitLdcInsn(cstValue.floatValue());
+    			} else {
+    			    loadVRegister(m, i, s);
+	    			applyPfxSrcPostfix(pfxSrcState, n);
+    			}
     			break;
     		}
     		case 2: {
                 s = (reg & 64) >> 5;
-                if ((reg & 32) != 0) {
-                	loadImm(m);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(s + n);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(i);
-        			mv.visitInsn(Opcodes.FALOAD);
+                Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
+                if (cstValue != null) {
+                	mv.visitLdcInsn(cstValue.floatValue());
                 } else {
-                	loadImm(m);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(i);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(s + n);
-        			mv.visitInsn(Opcodes.FALOAD);
+                	int index = getPfxSrcIndex(pfxSrcState, n);
+	                if ((reg & 32) != 0) {
+	                    loadVRegister(m, s + index, i);
+	                } else {
+	                    loadVRegister(m, i, s + index);
+	                }
+	                applyPfxSrcPostfix(pfxSrcState, n);
                 }
                 break;
     		}
             case 3: {
                 s = (reg & 64) >> 6;
-                if ((reg & 32) != 0) {
-                	loadImm(m);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(s + n);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(i);
-        			mv.visitInsn(Opcodes.FALOAD);
+                Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
+                if (cstValue != null) {
+                	mv.visitLdcInsn(cstValue.floatValue());
                 } else {
-                	loadImm(m);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(i);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(s + n);
-        			mv.visitInsn(Opcodes.FALOAD);
+                	int index = getPfxSrcIndex(pfxSrcState, n);
+	                if ((reg & 32) != 0) {
+	                    loadVRegister(m, s + index, i);
+	                } else {
+	                    loadVRegister(m, i, s + index);
+	                }
+	                applyPfxSrcPostfix(pfxSrcState, n);
                 }
                 break;
     		}
             case 4: {
-                if ((reg & 32) != 0) {
-                	loadImm(m);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(n);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(i);
-        			mv.visitInsn(Opcodes.FALOAD);
+                Float cstValue = getPfxSrcCstValue(pfxSrcState, n);
+                if (cstValue != null) {
+                	mv.visitLdcInsn(cstValue.floatValue());
                 } else {
-                	loadImm(m);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(i);
-        			mv.visitInsn(Opcodes.AALOAD);
-                	loadImm(n);
-        			mv.visitInsn(Opcodes.FALOAD);
+                	int index = getPfxSrcIndex(pfxSrcState, n);
+	                if ((reg & 32) != 0) {
+	                    loadVRegister(m, index, i);
+	                } else {
+	                    loadVRegister(m, i, index);
+	                }
+	                applyPfxSrcPostfix(pfxSrcState, n);
                 }
             	break;
             }
@@ -280,80 +360,110 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
-    public void prepareVRegisterForStore(int vsize, int reg, int n) {
+    private boolean isPfxDstMasked(VfpuPfxDstState pfxDstState, int n) {
+    	if (pfxDstState == null ||
+    		pfxDstState.isUnknown() ||
+    		!pfxDstState.pfxDst.enabled) {
+    		return false;
+    	}
+
+    	return pfxDstState.pfxDst.msk[n];
+    }
+
+    private void applyPfxDstPostfix(VfpuPfxDstState pfxDstState, int n) {
+    	if (pfxDstState == null ||
+    		pfxDstState.isUnknown() ||
+    	    !pfxDstState.pfxDst.enabled) {
+    		return;
+    	}
+
+    	switch (pfxDstState.pfxDst.sat[n]) {
+    		case 1:
+				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+					Compiler.log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [0:1]", getCodeInstruction().getAddress(), n));
+				}
+    			mv.visitLdcInsn(1.0f);
+        		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "min", "(FF)F");
+    			mv.visitLdcInsn(0.0f);
+        		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "max", "(FF)F");
+        		break;
+    		case 3:
+				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+					Compiler.log.trace(String.format("PFX    %08X - applyPfxDstPostfix %d [-1:1]", getCodeInstruction().getAddress(), n));
+				}
+    			mv.visitLdcInsn(1.0f);
+        		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "min", "(FF)F");
+    			mv.visitLdcInsn(-1.0f);
+        		mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "max", "(FF)F");
+        		break;
+    	}
+    }
+
+    private void prepareVRegisterForStore(int m, int c, int r) {
+        loadVpr();
+        loadImm(VfpuState.getVprIndex(m, c, r));
+    }
+
+    public void prepareVRegisterForStore(int vsize, int reg, int n, VfpuPfxDstState pfxDstState) {
     	if (preparedRegisterForStore < 0) {
-    		loadVpr();
-        	int m = (reg >> 2) & 7;
-        	int i = (reg >> 0) & 3;
-        	int s;
-        	switch (vsize) {
-        		case 1: {
-        			s = (reg >> 5) & 3;
-        			loadImm(m);
-        			mv.visitInsn(Opcodes.AALOAD);
-        			loadImm(i);
-        			mv.visitInsn(Opcodes.AALOAD);
-        			loadImm(s);
-        			break;
-        		}
-        		case 2: {
-                    s = (reg & 64) >> 5;
-                    if ((reg & 32) != 0) {
-                    	loadImm(m);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(s + n);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(i);
-                    } else {
-                    	loadImm(m);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(i);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(s + n);
+            if (!isPfxDstMasked(pfxDstState, n)) {
+            	int m = (reg >> 2) & 7;
+            	int i = (reg >> 0) & 3;
+            	int s;
+            	switch (vsize) {
+            		case 1: {
+                        s = (reg >> 5) & 3;
+                        prepareVRegisterForStore(m, i, s);
+            			break;
+            		}
+            		case 2: {
+                        s = (reg & 64) >> 5;
+                        if ((reg & 32) != 0) {
+                            prepareVRegisterForStore(m, s + n, i);
+                        } else {
+                            prepareVRegisterForStore(m, i, s + n);
+                        }
+                        break;
+            		}
+                    case 3: {
+                        s = (reg & 64) >> 6;
+                        if ((reg & 32) != 0) {
+                            prepareVRegisterForStore(m, s + n, i);
+                        } else {
+                            prepareVRegisterForStore(m, i, s + n);
+                        }
+                        break;
+            		}
+                    case 4: {
+                        if ((reg & 32) != 0) {
+                            prepareVRegisterForStore(m, n, i);
+                        } else {
+                            prepareVRegisterForStore(m, i, n);
+                        }
+                    	break;
                     }
-                    break;
-        		}
-                case 3: {
-                    s = (reg & 64) >> 6;
-                    if ((reg & 32) != 0) {
-                    	loadImm(m);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(s + n);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(i);
-                    } else {
-                    	loadImm(m);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(i);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(s + n);
-                    }
-                    break;
-        		}
-                case 4: {
-                    if ((reg & 32) != 0) {
-                    	loadImm(m);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(n);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(i);
-                    } else {
-                    	loadImm(m);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(i);
-            			mv.visitInsn(Opcodes.AALOAD);
-                    	loadImm(n);
-                    }
-                	break;
-                }
-        	}
+            	}
+            }
     		preparedRegisterForStore = reg;
     	}
     }
 
-    public void storeVRegister(int vsize, int reg, int n) {
+    public void storeVRegister(int vsize, int reg, int n, VfpuPfxDstState pfxDstState) {
+		if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+			Compiler.log.trace(String.format("PFX    %08X - storeVRegister %d, %d, %d", getCodeInstruction().getAddress(), vsize, reg, n));
+		}
+
     	if (preparedRegisterForStore == reg) {
-	        mv.visitInsn(Opcodes.FASTORE);
+            if (isPfxDstMasked(pfxDstState, n)) {
+				if (Compiler.log.isTraceEnabled() && pfxDstState != null && pfxDstState.isKnown() && pfxDstState.pfxDst.enabled) {
+					Compiler.log.trace(String.format("PFX    %08X - storeVRegister %d masked", getCodeInstruction().getAddress(), n));
+				}
+
+                mv.visitInsn(Opcodes.POP);
+            } else {
+                applyPfxDstPostfix(pfxDstState, n);
+                mv.visitInsn(Opcodes.FASTORE);
+            }
 	        preparedRegisterForStore = -1;
     	} else {
     		Compiler.log.error("storeVRegister with non-prepared register is not supported");
@@ -601,6 +711,8 @@ public class CompilerContext implements ICompilerContext {
             mv.visitInsn(Opcodes.ICONST_0);
             mv.visitVarInsn(Opcodes.ISTORE, LOCAL_INSTRUCTION_COUNT);
         }
+
+        startNonBranchingCodeSequence();
     }
 
     public void endSequenceMethod() {
@@ -697,6 +809,16 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
+    private void startNonBranchingCodeSequence() {
+    	vfpuPfxsState.reset();
+    	vfpuPfxtState.reset();
+    	vfpuPfxdState.reset();
+    }
+
+    private boolean isNonBranchingCodeSequence(CodeInstruction codeInstruction) {
+        return !codeInstruction.isBranchTarget() && !codeInstruction.isBranching();
+    }
+
     public void startInstruction(CodeInstruction codeInstruction) {
     	if (RuntimeContext.enableLineNumbers) {
     		int lineNumber = codeInstruction.getAddress() - getCodeBlock().getLowestAddress();
@@ -715,7 +837,8 @@ public class CompilerContext implements ICompilerContext {
 	    if (RuntimeContext.enableInstructionTypeCounting) {
 	    	if (codeInstruction.getInsn() != null) {
 		    	loadInstruction(codeInstruction.getInsn());
-	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.instructionTypeCount, "(" + instructionDescriptor + ")V");
+		    	loadImm(codeInstruction.getOpcode());
+	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.instructionTypeCount, "(" + instructionDescriptor + "I)V");
 	    	}
 	    }
 
@@ -725,6 +848,36 @@ public class CompilerContext implements ICompilerContext {
 	    }
 
 	    nativeCodeSequence = nativeCodeManager.getNativeCodeSequence(getCodeInstruction(), getCodeBlock());
+
+	    if (!isNonBranchingCodeSequence(codeInstruction)) {
+	    	startNonBranchingCodeSequence();
+	    }
+    }
+
+    private void disablePfxSrc(VfpuPfxSrcState pfxSrcState) {
+        pfxSrcState.pfxSrc.enabled = false;
+        pfxSrcState.setKnown(true);
+    }
+
+    private void disablePfxDst(VfpuPfxDstState pfxDstState) {
+        pfxDstState.pfxDst.enabled = false;
+        pfxDstState.setKnown(true);
+    }
+
+    public void endInstruction() {
+        if (codeInstruction != null) {
+            if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXS)) {
+                disablePfxSrc(vfpuPfxsState);
+            }
+
+            if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXT)) {
+                disablePfxSrc(vfpuPfxtState);
+            }
+
+            if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXD)) {
+                disablePfxDst(vfpuPfxdState);
+            }
+        }
     }
 
     public void visitJump(int opcode, CodeInstruction target) {
@@ -1097,11 +1250,11 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IAND);
 			loadImm(4);
 			mv.visitInsn(Opcodes.ISHL);
-			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
+			storeTmp1();
 			loadImm(1);
 			mv.visitInsn(Opcodes.IUSHR);
 			mv.visitInsn(Opcodes.IALOAD);
-			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP1);
+			loadTmp1();
 			mv.visitInsn(Opcodes.IUSHR);
 			loadImm(0xFFFF);
 			mv.visitInsn(Opcodes.IAND);
@@ -1149,11 +1302,11 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IAND);
 			loadImm(3);
 			mv.visitInsn(Opcodes.ISHL);
-			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
+			storeTmp1();
 			loadImm(2);
 			mv.visitInsn(Opcodes.IUSHR);
 			mv.visitInsn(Opcodes.IALOAD);
-			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP1);
+			loadTmp1();
 			mv.visitInsn(Opcodes.IUSHR);
 			loadImm(0xFF);
 			mv.visitInsn(Opcodes.IAND);
@@ -1193,12 +1346,12 @@ public class CompilerContext implements ICompilerContext {
 	        }
 		}
 
-		memWrite32prepared = true;
+		memWritePrepared = true;
 	}
 
 	@Override
 	public void memWrite32(int registerIndex, int offset) {
-		if (!memWrite32prepared) {
+		if (!memWritePrepared) {
 			if (RuntimeContext.memoryInt == null) {
 	    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
 			} else {
@@ -1236,7 +1389,69 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IASTORE);
 		}
 
-		memWrite32prepared = false;
+		memWritePrepared = false;
+	}
+
+	@Override
+	public void prepareMemWrite16(int registerIndex, int offset) {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+
+		loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+
+		memWritePrepared = true;
+	}
+
+	@Override
+	public void memWrite16(int registerIndex, int offset) {
+		if (!memWritePrepared) {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+
+			loadRegister(registerIndex);
+			if (offset != 0) {
+				loadImm(offset);
+				mv.visitInsn(Opcodes.IADD);
+			}
+			mv.visitInsn(Opcodes.SWAP);
+		}
+
+		mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write16", "(IS)V");
+
+		memWritePrepared = false;
+	}
+
+	@Override
+	public void prepareMemWrite8(int registerIndex, int offset) {
+		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+
+		loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+
+		memWritePrepared = true;
+	}
+
+	@Override
+	public void memWrite8(int registerIndex, int offset) {
+		if (!memWritePrepared) {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+
+			loadRegister(registerIndex);
+			if (offset != 0) {
+				loadImm(offset);
+				mv.visitInsn(Opcodes.IADD);
+			}
+			mv.visitInsn(Opcodes.SWAP);
+		}
+
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write8", "(IB)V");
+
+		memWritePrepared = false;
 	}
 
 	@Override
@@ -1349,7 +1564,7 @@ public class CompilerContext implements ICompilerContext {
 
         	// Be more verbose when Debug enabled
 	        if (Compiler.log.isDebugEnabled()) {
-	        	Compiler.log.info(String.format("Replacing CodeBlock at 0x%08X (%08X-0x%08X, length %d) by %s", getCodeBlock().getStartAddress(), getCodeBlock().getLowestAddress(), codeBlock.getHighestAddress(), codeBlock.getLength(), nativeCodeSequence));
+	        	Compiler.log.debug(String.format("Replacing CodeBlock at 0x%08X (%08X-0x%08X, length %d) by %s", getCodeBlock().getStartAddress(), getCodeBlock().getLowestAddress(), codeBlock.getHighestAddress(), codeBlock.getLength(), nativeCodeSequence));
 	        } else if (Compiler.log.isInfoEnabled()) {
 	        	Compiler.log.info(String.format("Replacing CodeBlock at 0x%08X by Native Code '%s'", getCodeBlock().getStartAddress(), nativeCodeSequence.getName()));
 	        }
@@ -1472,117 +1687,91 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	@Override
-	public void loadVd(int n) {
-		loadVRegister(getVsize(), getVdRegisterIndex(), n);
-	}
-
-	@Override
 	public void loadVs(int n) {
-		loadVRegister(getVsize(), getVsRegisterIndex(), n);
+		loadVRegister(getVsize(), getVsRegisterIndex(), n, vfpuPfxsState);
 	}
 
 	@Override
 	public void loadVt(int n) {
-		loadVRegister(getVsize(), getVtRegisterIndex(), n);
+		loadVRegister(getVsize(), getVtRegisterIndex(), n, vfpuPfxtState);
 	}
 
 	@Override
 	public void loadVt(int vsize, int n) {
-		loadVRegister(vsize, getVtRegisterIndex(), n);
+		loadVRegister(vsize, getVtRegisterIndex(), n, vfpuPfxtState);
 	}
 
 	@Override
 	public void loadVt(int vsize, int vt, int n) {
-		loadVRegister(vsize, vt, n);
+		loadVRegister(vsize, vt, n, vfpuPfxtState);
 	}
 
 	@Override
 	public void prepareVdForStore(int n) {
-		prepareVRegisterForStore(getVsize(), getVdRegisterIndex(), n);
+		prepareVdForStore(getVsize(), n);
 	}
 
 	@Override
 	public void prepareVdForStore(int vsize, int n) {
-		prepareVRegisterForStore(vsize, getVdRegisterIndex(), n);
+		prepareVdForStore(vsize, getVdRegisterIndex(), n);
 	}
 
 	@Override
 	public void prepareVdForStore(int vsize, int vd, int n) {
-		prepareVRegisterForStore(vsize, vd, n);
+		if (pfxVdOverlap && n < vsize - 1) {
+			// Do nothing, value will be store in tmp local variable
+		} else {
+			prepareVRegisterForStore(vsize, vd, n, vfpuPfxdState);
+		}
 	}
 
 	@Override
 	public void prepareVtForStore(int n) {
-		prepareVRegisterForStore(getVsize(), getVtRegisterIndex(), n);
+		prepareVRegisterForStore(getVsize(), getVtRegisterIndex(), n, null);
 	}
 
 	@Override
 	public void prepareVtForStore(int vsize, int n) {
-		prepareVRegisterForStore(vsize, getVtRegisterIndex(), n);
+		prepareVRegisterForStore(vsize, getVtRegisterIndex(), n, null);
 	}
 
 	@Override
 	public void storeVd(int n) {
-		storeVRegister(getVsize(), getVdRegisterIndex(), n);
+		storeVd(getVsize(), n);
 	}
 
 	@Override
 	public void storeVd(int vsize, int n) {
-		storeVRegister(vsize, getVdRegisterIndex(), n);
+		storeVd(vsize, getVdRegisterIndex(), n);
 	}
 
 	@Override
 	public void storeVd(int vsize, int vd, int n) {
-		storeVRegister(vsize, vd, n);
+		if (pfxVdOverlap && n < vsize - 1) {
+			storeFTmpVd(n);
+		} else {
+			storeVRegister(vsize, vd, n, vfpuPfxdState);
+		}
 	}
 
 	@Override
 	public void storeVt(int n) {
-		storeVRegister(getVsize(), getVtRegisterIndex(), n);
+		storeVRegister(getVsize(), getVtRegisterIndex(), n, null);
 	}
 
 	@Override
 	public void storeVt(int vsize, int n) {
-		storeVRegister(vsize, getVtRegisterIndex(), n);
+		storeVRegister(vsize, getVtRegisterIndex(), n, null);
 	}
 
 	@Override
 	public void storeVt(int vsize, int vt, int n) {
-		storeVRegister(vsize, vt, n);
+		storeVRegister(vsize, vt, n, null);
 	}
 
 	@Override
 	public void prepareVtForStore(int vsize, int vt, int n) {
-		prepareVRegisterForStore(vsize, vt, n);
-	}
-
-	@Override
-	public void ifPfxEnabled(Label label) {
-		ifPfxsEnabled(label);
-		ifPfxtEnabled(label);
-		ifPfxdEnabled(label);
-	}
-
-	private void compileIfPfxEnabled(String name, String descriptor, String internalName, Label label) {
-		loadVcr();
-        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Vcr.class), name, descriptor);
-        mv.visitFieldInsn(Opcodes.GETFIELD, internalName, "enabled", "Z");
-        mv.visitJumpInsn(Opcodes.IFNE, label);
-	}
-
-	@Override
-	public void ifPfxdEnabled(Label label) {
-		compileIfPfxEnabled("pfxd", Type.getDescriptor(PfxDst.class), Type.getInternalName(PfxDst.class), label);
-	}
-
-	@Override
-	public void ifPfxsEnabled(Label label) {
-		compileIfPfxEnabled("pfxs", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), label);
-	}
-
-	@Override
-	public void ifPfxtEnabled(Label label) {
-		compileIfPfxEnabled("pfxt", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class), label);
+		prepareVRegisterForStore(vsize, vt, n, null);
 	}
 
 	@Override
@@ -1592,12 +1781,12 @@ public class CompilerContext implements ICompilerContext {
 
 	@Override
 	public void loadVs(int vsize, int n) {
-		loadVRegister(vsize, getVsRegisterIndex(), n);
+		loadVRegister(vsize, getVsRegisterIndex(), n, vfpuPfxsState);
 	}
 
 	@Override
 	public void loadVs(int vsize, int vs, int n) {
-		loadVRegister(vsize, vs, n);
+		loadVRegister(vsize, vs, n, vfpuPfxsState);
 	}
 
 	@Override
@@ -1620,6 +1809,16 @@ public class CompilerContext implements ICompilerContext {
         mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP2);
 	}
 
+	private void loadFTmpVd(int n) {
+		if (n == 0) {
+	        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP_VD0);
+		} else if (n == 1) {
+	        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP_VD1);
+		} else {
+	        mv.visitVarInsn(Opcodes.FLOAD, LOCAL_TMP_VD2);
+		}
+	}
+
 	@Override
 	public void storeTmp1() {
 		mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP1);
@@ -1638,5 +1837,183 @@ public class CompilerContext implements ICompilerContext {
 	@Override
 	public void storeFTmp2() {
 		mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP2);
+	}
+
+	private void storeFTmpVd(int n) {
+		if (n == 0) {
+			mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP_VD0);
+		} else if (n == 1) {
+			mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP_VD1);
+		} else {
+			mv.visitVarInsn(Opcodes.FSTORE, LOCAL_TMP_VD2);
+		}
+	}
+
+	@Override
+	public VfpuPfxDstState getPfxdState() {
+		return vfpuPfxdState;
+	}
+
+	@Override
+	public VfpuPfxSrcState getPfxsState() {
+		return vfpuPfxsState;
+	}
+
+	@Override
+	public VfpuPfxSrcState getPfxtState() {
+		return vfpuPfxtState;
+	}
+
+    private void startPfxCompiled(VfpuPfxState vfpuPfxState, String name, String descriptor, String internalName) {
+        if (vfpuPfxState.isUnknown()) {
+            if (interpretPfxLabel == null) {
+                interpretPfxLabel = new Label();
+            }
+
+            loadVcr();
+            mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Vcr.class), name, descriptor);
+            mv.visitFieldInsn(Opcodes.GETFIELD, internalName, "enabled", "Z");
+            mv.visitJumpInsn(Opcodes.IFNE, interpretPfxLabel);
+        }
+    }
+
+    @Override
+    public void startPfxCompiled() {
+        interpretPfxLabel = null;
+
+        if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXS)) {
+            startPfxCompiled(vfpuPfxsState, "pfxs", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class));
+        }
+
+        if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXT)) {
+            startPfxCompiled(vfpuPfxtState, "pfxt", Type.getDescriptor(PfxSrc.class), Type.getInternalName(PfxSrc.class));
+        }
+
+        if (codeInstruction.hasFlags(Instruction.FLAG_USE_VFPU_PFXD)) {
+            startPfxCompiled(vfpuPfxdState, "pfxd", Type.getDescriptor(PfxDst.class), Type.getInternalName(PfxDst.class));
+        }
+
+        pfxVdOverlap = false;
+		if (getCodeInstruction().hasFlags(Instruction.FLAG_USE_VFPU_PFXS | Instruction.FLAG_USE_VFPU_PFXD)) {
+			pfxVdOverlap |= isVsVdOverlap();
+		}
+		if (getCodeInstruction().hasFlags(Instruction.FLAG_USE_VFPU_PFXT | Instruction.FLAG_USE_VFPU_PFXD)) {
+			pfxVdOverlap |= isVtVdOverlap();
+		}
+    }
+
+    @Override
+    public void endPfxCompiled() {
+    	endPfxCompiled(getVsize());
+    }
+
+    @Override
+    public void endPfxCompiled(int vsize) {
+		if (pfxVdOverlap) {
+			pfxVdOverlap = false;
+			for (int n = 0; n < vsize - 1; n++) {
+				prepareVdForStore(n);
+				loadFTmpVd(n);
+				storeVd(n);
+			}
+		}
+
+		if (interpretPfxLabel != null) {
+            Label continueLabel = new Label();
+            mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+            mv.visitLabel(interpretPfxLabel);
+            compileInterpreterInstruction();
+            mv.visitLabel(continueLabel);
+
+            interpretPfxLabel = null;
+        }
+
+        pfxVdOverlap = false;
+    }
+
+    @Override
+    public boolean isPfxConsumed(int flag) {
+        if (Compiler.log.isTraceEnabled()) {
+        	Compiler.log.trace(String.format("PFX -> %08X: %s", getCodeInstruction().getAddress(), getCodeInstruction().getInsn().disasm(getCodeInstruction().getAddress(), getCodeInstruction().getOpcode())));
+        }
+
+        int address = getCodeInstruction().getAddress();
+        while (true) {
+            address += 4;
+            CodeInstruction codeInstruction = getCodeBlock().getCodeInstruction(address);
+
+            if (Compiler.log.isTraceEnabled()) {
+            	Compiler.log.trace(String.format("PFX    %08X: %s", codeInstruction.getAddress(), codeInstruction.getInsn().disasm(codeInstruction.getAddress(), codeInstruction.getOpcode())));
+            }
+
+            if (codeInstruction == null || !isNonBranchingCodeSequence(codeInstruction)) {
+                return false;
+            }
+            if (codeInstruction.hasFlags(flag)) {
+            	return codeInstruction.hasFlags(Instruction.FLAG_COMPILED_PFX);
+            }
+        }
+    }
+
+    private boolean isVxVdOverlap(VfpuPfxSrcState pfxSrcState, int registerIndex) {
+		if (!pfxSrcState.isKnown() ||
+		    !pfxSrcState.pfxSrc.enabled ||
+		    registerIndex != getVdRegisterIndex()) {
+			return false;
+		}
+
+		int vsize = getVsize();
+		for (int n = 0; n < vsize; n++) {
+			if (!pfxSrcState.pfxSrc.cst[n] && pfxSrcState.pfxSrc.swz[n] != n) {
+				return true;
+			}
+		}
+
+		return false;
+    }
+
+    @Override
+	public boolean isVsVdOverlap() {
+    	return isVxVdOverlap(vfpuPfxsState, getVsRegisterIndex());
+	}
+
+	@Override
+	public boolean isVtVdOverlap() {
+    	return isVxVdOverlap(vfpuPfxtState, getVtRegisterIndex());
+	}
+
+	@Override
+	public void compileVFPUInstr(Object cstBefore, int opcode, String mathFunction) {
+		startPfxCompiled();
+		int vsize = getVsize();
+		boolean useVt = getCodeInstruction().hasFlags(Instruction.FLAG_USE_VFPU_PFXT);
+
+		for (int n = 0; n < vsize; n++) {
+			prepareVdForStore(n);
+			if (cstBefore != null) {
+				mv.visitLdcInsn(cstBefore);
+			}
+			loadVs(n);
+			if (useVt) {
+				loadVt(n);
+			}
+			if (mathFunction != null) {
+				if ("abs".equals(mathFunction)) {
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), mathFunction, "(F)F");
+				} else if ("max".equals(mathFunction) || "min".equals(mathFunction)) {
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), mathFunction, "(FF)F");
+				} else {
+					mv.visitInsn(Opcodes.F2D);
+					mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), mathFunction, "(D)D");
+					mv.visitInsn(Opcodes.D2F);
+				}
+			}
+			if (opcode != Opcodes.NOP) {
+				mv.visitInsn(opcode);
+			}
+			storeVd(n);
+		}
+
+		endPfxCompiled(vsize);
 	}
 }

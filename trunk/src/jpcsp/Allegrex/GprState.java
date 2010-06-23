@@ -26,7 +26,7 @@ import java.util.Arrays;
  */
 public class GprState {
 
-    public int[] gpr;
+    public final int[] gpr = new int[32];
 
     public void reset() {
         Arrays.fill(gpr, 0);
@@ -37,7 +37,6 @@ public class GprState {
     }
 
     public GprState() {
-        gpr = new int[32];
     }
 
     public void copy(GprState that) {
@@ -45,7 +44,7 @@ public class GprState {
     }
 
     public GprState(GprState that) {
-        gpr = that.gpr.clone();
+    	System.arraycopy(that.gpr, 0, gpr, 0, gpr.length);
     }
 
     public void doUNK(String reason) {

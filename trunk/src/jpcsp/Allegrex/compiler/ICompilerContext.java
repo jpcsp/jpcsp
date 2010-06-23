@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
 /**
@@ -43,7 +42,6 @@ public interface ICompilerContext {
     public void loadVt(int n);
     public void loadVt(int vsize, int n);
     public void loadVt(int vsize, int vt, int n);
-    public void loadVd(int n);
     public void loadHilo();
     public void loadSaValue();
     public void loadFCr();
@@ -99,12 +97,16 @@ public interface ICompilerContext {
     public void memRead16(int registerIndex, int offset);
     public void memRead8(int registerIndex, int offset);
     public void memWrite32(int registerIndex, int offset);
+    public void memWrite16(int registerIndex, int offset);
+    public void memWrite8(int registerIndex, int offset);
     public void prepareMemWrite32(int registerIndex, int offset);
+    public void prepareMemWrite16(int registerIndex, int offset);
+    public void prepareMemWrite8(int registerIndex, int offset);
     public void convertUnsignedIntToLong();
-    public void ifPfxsEnabled(Label label);
-    public void ifPfxtEnabled(Label label);
-    public void ifPfxdEnabled(Label label);
-    public void ifPfxEnabled(Label label);
+    public void startPfxCompiled();
+    public void endPfxCompiled();
+    public void endPfxCompiled(int vsize);
+    public boolean isPfxConsumed(int flag);
     public void loadTmp1();
     public void loadTmp2();
     public void loadFTmp1();
@@ -113,4 +115,10 @@ public interface ICompilerContext {
     public void storeTmp2();
     public void storeFTmp1();
     public void storeFTmp2();
+    public VfpuPfxSrcState getPfxsState();
+    public VfpuPfxSrcState getPfxtState();
+    public VfpuPfxDstState getPfxdState();
+    public boolean isVsVdOverlap();
+    public boolean isVtVdOverlap();
+    public void compileVFPUInstr(Object cstBefore, int opcode, String mathFunction);
 }
