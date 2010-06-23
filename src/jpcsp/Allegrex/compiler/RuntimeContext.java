@@ -57,7 +57,7 @@ public class RuntimeContext {
 	public  static boolean isActive = true;
 	public  static int gpr[];
 	public  static float fpr[];
-	public  static float vpr[][][];
+	public  static float vpr[];
 	public  static int memoryInt[];
 	public  static Processor processor;
 	public  static CpuState cpu;
@@ -886,7 +886,7 @@ public class RuntimeContext {
     	}
     }
 
-    public static void instructionTypeCount(Instruction insn) {
+    public static void instructionTypeCount(Instruction insn, int opcode) {
     	int count = 0;
     	if (instructionTypeCounts.containsKey(insn)) {
     		count = instructionTypeCounts.get(insn);
