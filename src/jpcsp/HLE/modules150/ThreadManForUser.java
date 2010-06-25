@@ -1245,6 +1245,14 @@ public class ThreadManForUser implements HLEModule {
 		sceKernelExitThread(Emulator.getProcessor());
 	}
 
+	public void hleKernelExitDeleteThread() {
+		if (Modules.log.isDebugEnabled()) {
+			Modules.log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, Emulator.getProcessor().cpu.gpr[2]));
+		}
+
+		sceKernelExitDeleteThread(Emulator.getProcessor());
+	}
+
     public void hleKernelAsyncLoop() {
         pspiofilemgr.getInstance().hleAsyncThread();
     }
