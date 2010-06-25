@@ -150,6 +150,7 @@ public class MemoryWriter {
 
 		@Override
 		public void writeNext(int n) {
+			n &= 0xFF;
 			if (index == 4) {
 				buffer[offset++] = value;
 				value = n;
@@ -186,7 +187,7 @@ public class MemoryWriter {
 		@Override
 		public void writeNext(int n) {
 			if (index == 0) {
-				value = n;
+				value = n & 0xFFFF;
 				index = 1;
 			} else {
 				buffer[offset++] = (n << 16) | value;
@@ -237,6 +238,7 @@ public class MemoryWriter {
 
 		@Override
 		public void writeNext(int n) {
+			n &= 0xFF;
 			if (index == 4) {
 				buffer.put(value);
 				value = n;
@@ -271,7 +273,7 @@ public class MemoryWriter {
 		@Override
 		public void writeNext(int n) {
 			if (index == 0) {
-				value = n;
+				value = n & 0xFFFF;
 				index = 1;
 			} else {
 				buffer.put((n << 16) | value);
@@ -313,7 +315,7 @@ public class MemoryWriter {
 
 		@Override
 		public void writeNext(int value) {
-			buffer.putInt(value);
+			buffer.put((byte) value);
 		}
 
 		@Override
@@ -347,7 +349,7 @@ public class MemoryWriter {
 
 		@Override
 		public void writeNext(int value) {
-			buffer.put((byte) value);
+			buffer.putInt(value);
 		}
 
 		@Override
