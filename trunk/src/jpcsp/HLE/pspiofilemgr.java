@@ -905,12 +905,12 @@ public class pspiofilemgr {
         if (uid == 1) {
             // stdout
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
-            stdout.info(Utilities.convertStringCharset(message));
+            stdout.info(message);
             result = size;
         } else if (uid == 2) {
             // stderr
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
-            stderr.info(Utilities.convertStringCharset(message));
+            stderr.info(message);
             result = size;
         } else {
             if (Modules.log.isDebugEnabled()) Modules.log.debug("hleIoWrite(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);

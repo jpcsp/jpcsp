@@ -25,7 +25,6 @@ import java.io.InputStreamReader;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.filesystems.*;
@@ -46,18 +45,6 @@ import java.util.logging.Logger;
 
 public class Utilities {
     public static final Charset charset = Charset.forName("UTF-8");
-
-    public static Charset getRegionCharset() {
-        if(State.discId.contains("ULJS") || State.discId.contains("ULJM")) {
-            return Charset.forName("Shift-JIS");
-        } else {
-            return Charset.forName("UTF-8");
-        }
-    }
-
-    public static String convertStringCharset(String s) {
-        return new String(s.getBytes(charset), getRegionCharset());
-    }
 
     public static String formatString(String type, String oldstring) {
         int counter = 0;
@@ -147,19 +134,20 @@ public class Utilities {
       * @return        the string
       */
      public static String readStringNZ(Memory mem, int address, int n) {
-         StringBuilder sb = new StringBuilder();
          address &= Memory.addressMask;
          if (address + n > MemoryMap.END_RAM) {
                  n = MemoryMap.END_RAM - address + 1;
          }
          int b;
+         byte[] bytes = new byte[n];
+         int i = 0;
          for (; n > 0; n--) {
              b = mem.read8(address++);
              if (b == 0)
                  break;
-             sb.append((char)b);
+             bytes[i++] = (byte) b;
          }
-         return sb.toString();
+         return new String(bytes, 0, i, charset);
      }
 
      public static String readStringZ(Memory mem, int address) {
@@ -176,8 +164,9 @@ public class Utilities {
      public static void writeStringNZ(Memory mem, int address, int n, String s) {
         int offset = 0;
         IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, n, 1);
-        while (offset < s.length() && offset < n) {
-            memoryWriter.writeNext(s.charAt(offset));
+        byte[] bytes = s.getBytes(charset);
+        while (offset < bytes.length && offset < n) {
+            memoryWriter.writeNext(bytes[offset]);
             offset++;
         }
         while (offset < n) {
