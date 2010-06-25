@@ -575,7 +575,8 @@ public class pspiofilemgr {
         IoInfo info = filelist.get(uid);
         if (info == null) {
         	cpu.gpr[2] = 0; // Exit status
-        	threadMan.hleKernelExitThread();
+        	// Exit and delete the thread to free its resources (e.g. its stack)
+        	threadMan.hleKernelExitDeleteThread();
         } else {
         	doStepAsync(info);
         	if (threadMan.getCurrentThread() == info.asyncThread) {
@@ -754,7 +755,7 @@ public class pspiofilemgr {
 
     public void hleIoOpen(int filename_addr, int flags, int permissions, boolean async) {
         String filename = readStringZ(filename_addr);
-        if (Modules.log.isDebugEnabled()) Modules.log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
+        if (Modules.log.isInfoEnabled()) Modules.log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
 
         if (Modules.log.isDebugEnabled()) {
             if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) Modules.log.debug("PSP_O_RDONLY");
