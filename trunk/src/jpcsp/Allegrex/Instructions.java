@@ -8193,10 +8193,10 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	context.startPfxCompiled();
-	context.prepareVdForStore(1, 0);
-	context.loadImm16(false);
-	context.getMethodVisitor().visitInsn(Opcodes.I2F);
-	context.storeVd(1, 0);
+	context.prepareVdForStore(1, context.getVtRegisterIndex(), 0);
+	int imm16 = context.getImm16(false);
+	context.getMethodVisitor().visitLdcInsn((float) imm16);
+	context.storeVd(1, context.getVtRegisterIndex(), 0);
 	context.endPfxCompiled();
 }
 @Override
