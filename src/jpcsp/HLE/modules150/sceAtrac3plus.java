@@ -626,9 +626,10 @@ public class sceAtrac3plus implements HLEModule {
         	endSample = inputFileSize;
         }
         mem.write32(endSampleAddr, endSample);
-        // Make the loop be as big as the sample.
-        mem.write32(loopStartSampleAddr, 0);
-        mem.write32(loopEndSampleAddr, endSample);
+        // Write an invalid loop size (-1 == no looping for this sample).
+        // TODO: Get the real loop size (from file?).
+        mem.write32(loopStartSampleAddr, -1);
+        mem.write32(loopEndSampleAddr, -1);
 
         cpu.gpr[2] = 0;
     }

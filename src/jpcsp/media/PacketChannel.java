@@ -43,7 +43,6 @@ public class PacketChannel {
 
     public void writePacket(int address, int length) {
         if (length > 0 && Memory.getInstance().isAddressGood(address)) {
-
             try {
                 if(pcRaf == null)
                     pcRaf = new RandomAccessFile(pcRafPath, "rw");
@@ -75,9 +74,11 @@ public class PacketChannel {
 
     public void flush() {
         try {
-            pcRaf.close();
             new File(pcRafPath).delete();
-            pcRaf = null;
+            if(pcRaf != null) {
+                pcRaf.close();
+                pcRaf = null;
+            }
         } catch (Exception e) {
             // Ignore.
         }
