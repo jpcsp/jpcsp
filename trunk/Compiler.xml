@@ -2324,6 +2324,106 @@
 088AAD94:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="MatrixOperation1">
+		<!-- ULUS10336: CRISIS CORE -FINAL FANTASY VII- -->
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MatrixOperation1</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+    088FC0EC:[27BDFFC0]: addiu      $sp, $sp, -64
+    088FC0F0:[C4AE0030]: lwc1       $f14, 48($a1)
+    088FC0F4:[C4AD0034]: lwc1       $f13, 52($a1)
+    088FC0F8:[C4AC0038]: lwc1       $f12, 56($a1)
+    088FC0FC:[340B0000]: ori        $t3, $zr, 0 <=> li $t3, 0
+    088FC100:[34090000]: ori        $t1, $zr, 0 <=> li $t1, 0
+    088FC104:[03A03825]: or         $a3, $sp, $zr <=> move $a3, $sp
+    088FC108:[340A0000]: ori        $t2, $zr, 0 <=> li $t2, 0
+    088FC10C:[00A94021]: addu       $t0, $a1, $t1
+    088FC110:[00E03025]: or         $a2, $a3, $zr <=> move $a2, $a3
+    088FC114:[C50F0000]: lwc1       $f15, 0($t0)
+    088FC118:[254A0001]: addiu      $t2, $t2, 1
+    088FC11C:[E4CF0000]: swc1       $f15, 0($a2)
+    088FC120:[25080010]: addiu      $t0, $t0, 16
+    088FC124:[29420004]: slti       $v0, $t2, 4
+    088FC128:[1440FFFA]: bne        $v0, $zr, 0x088FC114
+    088FC12C:[24C60004]: addiu      $a2, $a2, 4
+    088FC130:[256B0001]: addiu      $t3, $t3, 1
+    088FC134:[25290004]: addiu      $t1, $t1, 4
+    088FC138:[29660004]: slti       $a2, $t3, 4
+    088FC13C:[14C0FFF2]: bne        $a2, $zr, 0x088FC108
+    088FC140:[24E70010]: addiu      $a3, $a3, 16
+    088FC144:[C7AF0000]: lwc1       $f15, 0($sp)
+    088FC148:[C7B00010]: lwc1       $f16, 16($sp)
+    088FC14C:[C7B10020]: lwc1       $f17, 32($sp)
+    088FC150:[460F73C2]: mul.s      $f15, $f14, $f15
+    088FC154:[C7B20004]: lwc1       $f18, 4($sp)
+    088FC158:[46106C02]: mul.s      $f16, $f13, $f16
+    088FC15C:[C7B30014]: lwc1       $f19, 20($sp)
+    088FC160:[46116442]: mul.s      $f17, $f12, $f17
+    088FC164:[46127482]: mul.s      $f18, $f14, $f18
+    088FC168:[C7A00024]: lwc1       $f0, 36($sp)
+    088FC16C:[46136CC2]: mul.s      $f19, $f13, $f19
+    088FC170:[C7A20008]: lwc1       $f2, 8($sp)
+    088FC174:[46107BC0]: add.s      $f15, $f15, $f16
+    088FC178:[C7A10018]: lwc1       $f1, 24($sp)
+    088FC17C:[46006002]: mul.s      $f0, $f12, $f0
+    088FC180:[C7A30028]: lwc1       $f3, 40($sp)
+    088FC184:[46027382]: mul.s      $f14, $f14, $f2
+    088FC188:[46139480]: add.s      $f18, $f18, $f19
+    088FC18C:[46016B42]: mul.s      $f13, $f13, $f1
+    088FC190:[46117BC0]: add.s      $f15, $f15, $f17
+    088FC194:[46036302]: mul.s      $f12, $f12, $f3
+    088FC198:[46009400]: add.s      $f16, $f18, $f0
+    088FC19C:[460D7340]: add.s      $f13, $f14, $f13
+    088FC1A0:[46007BC7]: neg.s      $f15, $f15
+    088FC1A4:[3C053F80]: lui        $a1, 0x3F80 <=> li $a1, 0x3F800000
+    088FC1A8:[E7AF0030]: swc1       $f15, 48($sp)
+    088FC1AC:[44858800]: mtc1       $a1, $f17
+    088FC1B0:[460083C7]: neg.s      $f15, $f16
+    088FC1B4:[E7AF0034]: swc1       $f15, 52($sp)
+    088FC1B8:[460C6B00]: add.s      $f12, $f13, $f12
+    088FC1BC:[44807800]: mtc1       $zr, $f15
+    088FC1C0:[8FA60000]: lw         $a2, 0($sp)
+    088FC1C4:[E7AF002C]: swc1       $f15, 44($sp)
+    088FC1C8:[E7AF001C]: swc1       $f15, 28($sp)
+    088FC1CC:[46006307]: neg.s      $f12, $f12
+    088FC1D0:[E7AF000C]: swc1       $f15, 12($sp)
+    088FC1D4:[E7AC0038]: swc1       $f12, 56($sp)
+    088FC1D8:[E7B1003C]: swc1       $f17, 60($sp)
+    088FC1DC:[8FA50004]: lw         $a1, 4($sp)
+    088FC1E0:[8FA70008]: lw         $a3, 8($sp)
+    088FC1E4:[AC860000]: sw         $a2, 0($a0)
+    088FC1E8:[8FA6000C]: lw         $a2, 12($sp)
+    088FC1EC:[AC850004]: sw         $a1, 4($a0)
+    088FC1F0:[8FA50010]: lw         $a1, 16($sp)
+    088FC1F4:[AC870008]: sw         $a3, 8($a0)
+    088FC1F8:[8FA70014]: lw         $a3, 20($sp)
+    088FC1FC:[AC86000C]: sw         $a2, 12($a0)
+    088FC200:[8FA60018]: lw         $a2, 24($sp)
+    088FC204:[AC850010]: sw         $a1, 16($a0)
+    088FC208:[8FA5001C]: lw         $a1, 28($sp)
+    088FC20C:[AC870014]: sw         $a3, 20($a0)
+    088FC210:[8FA70020]: lw         $a3, 32($sp)
+    088FC214:[AC860018]: sw         $a2, 24($a0)
+    088FC218:[8FA60024]: lw         $a2, 36($sp)
+    088FC21C:[AC85001C]: sw         $a1, 28($a0)
+    088FC220:[8FA50028]: lw         $a1, 40($sp)
+    088FC224:[AC870020]: sw         $a3, 32($a0)
+    088FC228:[8FA7002C]: lw         $a3, 44($sp)
+    088FC22C:[AC860024]: sw         $a2, 36($a0)
+    088FC230:[8FA60030]: lw         $a2, 48($sp)
+    088FC234:[AC850028]: sw         $a1, 40($a0)
+    088FC238:[8FA50034]: lw         $a1, 52($sp)
+    088FC23C:[AC87002C]: sw         $a3, 44($a0)
+    088FC240:[8FA70038]: lw         $a3, 56($sp)
+    088FC244:[AC860030]: sw         $a2, 48($a0)
+    088FC248:[8FA6003C]: lw         $a2, 60($sp)
+    088FC24C:[AC850034]: sw         $a1, 52($a0)
+    088FC250:[AC870038]: sw         $a3, 56($a0)
+    088FC254:[AC86003C]: sw         $a2, 60($a0)
+    088FC258:[03E00008]: jr         $ra
+    088FC25C:[27BD0040]: addiu      $sp, $sp, 64
+]]></CodeInstructions>
+	</NativeCodeSequence>
 </NativeCodeSequences>
 <!--
 TODO:
