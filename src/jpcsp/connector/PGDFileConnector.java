@@ -31,6 +31,7 @@ import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -87,45 +88,47 @@ public class PGDFileConnector {
 				} catch (FileNotFoundException e) {
 				}
 			} else {
-				// The file has not yet been decrypted, prepare for decryption with JpcspConnector
-				new File(getBaseDirectory(id)).mkdirs();
-				generateCommandFile(keyHex);
-				try {
-					OutputStream outputFile = new FileOutputStream(getCompleteFileName(encryptedFileName));
-					byte[] buffer = new byte[100 * 1024];
-					long fileLength = fileInput.length();
-					for (long readLength = 0; readLength < fileLength; ) {
-						long restLength = fileLength - readLength;
-						int length = buffer.length;
-						if (restLength < length) {
-							length = (int) restLength;
-						}
-						fileInput.readFully(buffer, 0, length);
-						outputFile.write(buffer, 0, length);
-						readLength += length;
-					}
-					outputFile.close();
+                            // The file has not yet been decrypted, prepare for decryption with JpcspConnector
+                            new File(getBaseDirectory(id)).mkdirs();
+                            generateCommandFile(keyHex);
+                            OutputStream outputFile = null;
+                            try {
+                                outputFile = new FileOutputStream(getCompleteFileName(encryptedFileName));
+                                byte[] buffer = new byte[100 * 1024];
+                                long fileLength = fileInput.length();
+                                for (long readLength = 0; readLength < fileLength;) {
+                                    long restLength = fileLength - readLength;
+                                    int length = buffer.length;
+                                    if (restLength < length) {
+                                        length = (int) restLength;
+                                    }
+                                    fileInput.readFully(buffer, 0, length);
+                                    outputFile.write(buffer, 0, length);
+                                    readLength += length;
+                                }
 
-					// Inform the user how to decrypt the file using JpcspConnector
-					String msg = "";
-					msg += "This application contains a crypted file which needs to be decrypted on your PSP.\n";
-					msg += "Copy the following 2 files\n";
-					msg += "    " + getCompleteFileName(encryptedFileName) + "\n";
-					msg += "    " + getBaseDirectory(id) + Connector.commandFileName + "\n";
-					msg += "to your PSP under\n";
-					msg += "    " + Connector.basePSPDirectory + "\n";
-					msg += "and run the '" + Connector.jpcspConnectorName + "' on your PSP.\n";
-					msg += "Decrypting might take a while on your PSP.\n";
-					msg += "When the JpcspConnector is done, copy back the PSP file\n";
-					msg += "    " + Connector.basePSPDirectory + decryptedFileName + "\n";
-					msg += "to Jpcsp\n";
-					msg += "    " + getCompleteFileName(decryptedFileName) + "\n";
-					msg += "Afterwards, you can delete the files on your PSP.\n";
-					msg += "Now run the application again in Jpcsp.\n";
-					JOptionPane.showMessageDialog(null, msg);
-				} catch (IOException e) {
-					Modules.log.error(e);
-				}
+                                // Inform the user how to decrypt the file using JpcspConnector
+                                String msg = "";
+                                msg += "This application contains a crypted file which needs to be decrypted on your PSP.\n";
+                                msg += "Copy the following 2 files\n";
+                                msg += "    " + getCompleteFileName(encryptedFileName) + "\n";
+                                msg += "    " + getBaseDirectory(id) + Connector.commandFileName + "\n";
+                                msg += "to your PSP under\n";
+                                msg += "    " + Connector.basePSPDirectory + "\n";
+                                msg += "and run the '" + Connector.jpcspConnectorName + "' on your PSP.\n";
+                                msg += "Decrypting might take a while on your PSP.\n";
+                                msg += "When the JpcspConnector is done, copy back the PSP file\n";
+                                msg += "    " + Connector.basePSPDirectory + decryptedFileName + "\n";
+                                msg += "to Jpcsp\n";
+                                msg += "    " + getCompleteFileName(decryptedFileName) + "\n";
+                                msg += "Afterwards, you can delete the files on your PSP.\n";
+                                msg += "Now run the application again in Jpcsp.\n";
+                                JOptionPane.showMessageDialog(null, msg);
+                            } catch (IOException e) {
+                                Modules.log.error(e);
+                            } finally {
+                                Utilities.close(outputFile);
+                            }
 			}
 		}
 
