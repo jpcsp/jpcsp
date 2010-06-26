@@ -18,12 +18,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
+
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 
 public class sceDeflt implements HLEModule {
 	@Override
@@ -73,7 +81,7 @@ public class sceDeflt implements HLEModule {
 	public void sceZlibAdler32(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceZlibAdler32 [0x2EE39A64]");
+		Modules.log.warn("Unimplemented NID function sceZlibAdler32 [0x2EE39A64]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -81,7 +89,7 @@ public class sceDeflt implements HLEModule {
 	public void sceDeflateDecompress(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceDeflateDecompress [0x44054E03]");
+		Modules.log.warn("Unimplemented NID function sceDeflateDecompress [0x44054E03]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -89,7 +97,7 @@ public class sceDeflt implements HLEModule {
 	public void sceGzipDecompress(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceGzipDecompress [0x6DBCF897]");
+		Modules.log.warn("Unimplemented NID function sceGzipDecompress [0x6DBCF897]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -97,7 +105,7 @@ public class sceDeflt implements HLEModule {
 	public void sceGzipGetComment(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceGzipGetComment [0xB767F9A0]");
+		Modules.log.warn("Unimplemented NID function sceGzipGetComment [0xB767F9A0]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -105,7 +113,7 @@ public class sceDeflt implements HLEModule {
 	public void sceGzipGetCompressedData(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceGzipGetCompressedData [0x0BA3B9CC]");
+		Modules.log.warn("Unimplemented NID function sceGzipGetCompressedData [0x0BA3B9CC]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -113,7 +121,7 @@ public class sceDeflt implements HLEModule {
 	public void sceGzipGetInfo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceGzipGetInfo [0x8AA82C92]");
+		Modules.log.warn("Unimplemented NID function sceGzipGetInfo [0x8AA82C92]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -121,7 +129,7 @@ public class sceDeflt implements HLEModule {
 	public void sceGzipGetName(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceGzipGetName [0x106A3552]");
+		Modules.log.warn("Unimplemented NID function sceGzipGetName [0x106A3552]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -129,23 +137,60 @@ public class sceDeflt implements HLEModule {
 	public void sceGzipIsValid(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceGzipIsValid [0x1B5B82BC]");
+		Modules.log.warn("Unimplemented NID function sceGzipIsValid [0x1B5B82BC]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
 	public void sceZlibDecompress(Processor processor) {
+
 		CpuState cpu = processor.cpu;
+		
+		int outBufferAddr = cpu.gpr[4];
+		int outBufferLength = cpu.gpr[5];
+		int inBufferAddr = cpu.gpr[6];
+		int crc32Addr = cpu.gpr[7];
+		
+		byte inBuffer[] = new byte[4096];
+		byte outBuffer[] = new byte[4096];
+		int inBufferPtr = 0;
+		IMemoryReader reader = MemoryReader.getMemoryReader(inBufferAddr, 1);
+		IMemoryWriter writer = MemoryWriter.getMemoryWriter(outBufferAddr, outBufferLength, 1);
+		Inflater inflater = new Inflater();
+		
+		while(!inflater.finished()) {
+			if(inflater.needsInput()) {
+				for(inBufferPtr = 0; inBufferPtr < inBuffer.length; ++inBufferPtr)
+					inBuffer[inBufferPtr] = (byte) reader.readNext();
+				
+				inflater.setInput(inBuffer);
+			}
+			
+			try {
+				int count = inflater.inflate(outBuffer);
+				
+				if(inflater.getTotalOut() > outBufferLength) {
+					Modules.log.warn("sceZlibDecompress : zlib decompress buffer too small inBuffer=0x" + Integer.toHexString(inBufferAddr) + " outLength=" + outBufferLength);
+					cpu.gpr[2] = SceKernelErrors.ERROR_FORMAT;
+					return;
+				}
+				for(int i = 0; i < count; ++i) {
+					writer.writeNext(outBuffer[i]);
+				}
+			} catch (DataFormatException e) {
+				Modules.log.warn("sceZlibDecompress : malformed zlib stream inBuffer=0x" + Integer.toHexString(inBufferAddr));
+				cpu.gpr[2] = SceKernelErrors.ERROR_FORMAT;
+				return;
+			}
+		}
 
-		Modules.log.debug("Unimplemented NID function sceZlibDecompress [0xA9E4FB28]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = inflater.getTotalOut();
 	}
     
 	public void sceZlibGetCompressedData(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceZlibGetCompressedData [0x6A548477]");
+		Modules.log.warn("Unimplemented NID function sceZlibGetCompressedData [0x6A548477]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -153,7 +198,7 @@ public class sceDeflt implements HLEModule {
 	public void sceZlibGetInfo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceZlibGetInfo [0xAFE01FD3]");
+		Modules.log.warn("Unimplemented NID function sceZlibGetInfo [0xAFE01FD3]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -161,7 +206,7 @@ public class sceDeflt implements HLEModule {
 	public void sceZlibIsValid(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceZlibIsValid [0xE46EB986]");
+		Modules.log.warn("Unimplemented NID function sceZlibIsValid [0xE46EB986]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
