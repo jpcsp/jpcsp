@@ -876,8 +876,8 @@ public class Loader {
                                 importAddress, code, nid, module.importFixupAttempts));
                         }
                     } else {
-                        Emulator.log.warn(String.format("Failed to map import at 0x%08X [0x%08X] (attempt %d)",
-                            importAddress, nid, module.importFixupAttempts));
+                        Emulator.log.warn(String.format("Failed to map import at 0x%08X [0x%08X] Module '%s'(attempt %d)",
+                            importAddress, nid, moduleName, module.importFixupAttempts));
                         numberoffailedNIDS++;
                     }
                 }

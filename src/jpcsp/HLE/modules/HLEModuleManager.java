@@ -91,6 +91,7 @@ public class HLEModuleManager {
         scePsmfPlayer(Modules.scePsmfPlayerModule),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
         sceMp3(Modules.sceMp3Module),
+        sceDeflt(Modules.sceDefltModule),
         // For testing purposes
     	SampleModule(Modules.SampleModule);
 
