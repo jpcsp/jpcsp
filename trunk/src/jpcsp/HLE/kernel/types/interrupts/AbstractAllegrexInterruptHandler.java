@@ -83,9 +83,7 @@ public class AbstractAllegrexInterruptHandler {
 	}
 
 	public void copyArgumentsToCpu(CpuState cpu) {
-		for (int i = 0; i < numberArguments; i++) {
-			cpu.gpr[4 + i] = arguments[i];
-		}
+            System.arraycopy(arguments, 0, cpu.gpr, 4, numberArguments);
 	}
 
 	@Override
