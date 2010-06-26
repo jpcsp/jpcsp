@@ -18,9 +18,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.util.zip.CRC32;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
+import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -156,6 +158,7 @@ public class sceDeflt implements HLEModule {
 		int inBufferPtr = 0;
 		IMemoryReader reader = MemoryReader.getMemoryReader(inBufferAddr, 1);
 		IMemoryWriter writer = MemoryWriter.getMemoryWriter(outBufferAddr, outBufferLength, 1);
+		CRC32 crc32 = new CRC32();
 		Inflater inflater = new Inflater();
 		
 		while(!inflater.finished()) {
@@ -171,9 +174,10 @@ public class sceDeflt implements HLEModule {
 				
 				if(inflater.getTotalOut() > outBufferLength) {
 					Modules.log.warn("sceZlibDecompress : zlib decompress buffer too small inBuffer=0x" + Integer.toHexString(inBufferAddr) + " outLength=" + outBufferLength);
-					cpu.gpr[2] = SceKernelErrors.ERROR_FORMAT;
+					cpu.gpr[2] = SceKernelErrors.ERROR_SIZE;
 					return;
 				}
+				crc32.update(outBuffer);
 				for(int i = 0; i < count; ++i) {
 					writer.writeNext(outBuffer[i]);
 				}
@@ -183,6 +187,8 @@ public class sceDeflt implements HLEModule {
 				return;
 			}
 		}
+		
+		Memory.getInstance().write32(crc32Addr, (int) crc32.getValue());
 
 		cpu.gpr[2] = inflater.getTotalOut();
 	}
