@@ -1134,9 +1134,7 @@ public class ThreadManForUser implements HLEModule {
 
 		// Copy parameters ($a0, $a1, ...) to the cpu
 		if (parameters != null) {
-			for (int i = 0; i < parameters.length; i++) {
-				cpu.gpr[4 + i] = parameters[i];
-			}
+                    System.arraycopy(parameters, 0, cpu.gpr, 4, parameters.length);
 		}
 
 		int callbackId = callbackManager.getNewCallbackId();

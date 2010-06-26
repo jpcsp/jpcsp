@@ -649,9 +649,7 @@ public class sceSasCore implements HLEModule {
 
         if (samples.length != numSamples) {
         	short[] resizedSamples = new short[numSamples];
-        	for (int i = 0; i < numSamples; i++) {
-        		resizedSamples[i] = samples[i];
-        	}
+        	System.arraycopy(samples, 0, resizedSamples, 0, numSamples);
         	samples = resizedSamples;
         }
         }
