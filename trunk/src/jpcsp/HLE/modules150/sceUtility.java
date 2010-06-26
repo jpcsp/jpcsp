@@ -499,14 +499,11 @@ public class sceUtility implements HLEModule {
      */
     private static int count(String s, String find) {
     	int count = 0;
-    	for (int i = 0; i < s.length(); count++) {
-    		int index = s.indexOf(find, i);
-    		if (index < 0) {
-    			break;
-    		}
-    		i = index + find.length();
-    	}
-
+        int i = 0;
+        while((i = s.indexOf(find, i)) >= 0){
+            count++;
+            i = i + find.length();
+        }
     	return count;
     }
 
