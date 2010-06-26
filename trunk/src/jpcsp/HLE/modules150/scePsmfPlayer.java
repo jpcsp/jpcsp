@@ -115,8 +115,8 @@ public class scePsmfPlayer implements HLEModule {
         int psmf = cpu.gpr[4];
 
         if(checkMediaEngineState()) {
-            me.finish();
-            pmfFileChannel.flush();
+            if(me != null) me.finish();
+            if(pmfFileChannel != null) pmfFileChannel.flush();
         }
 
         Modules.log.warn("IGNORING: scePsmfPlayerDelete psmf=" + Integer.toHexString(psmf));
