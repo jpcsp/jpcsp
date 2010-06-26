@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -63,122 +64,59 @@ public class sceNetResolver implements HLEModule {
 	
 	
 	public void sceNetResolverInit(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetResolverInit [0xF3370E61]");
+		Modules.log.debug("Unimplemented NID function sceNetResolverInit [0xF3370E61]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetResolverTerm(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetResolverTerm [0x6138194A]");
+		Modules.log.debug("Unimplemented NID function sceNetResolverTerm [0x6138194A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetResolverCreate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetResolverCreate [0x244172AF]");
+		Modules.log.debug("Unimplemented NID function sceNetResolverCreate [0x244172AF]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetResolverDelete(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetResolverDelete [0x94523E09]");
+		Modules.log.debug("Unimplemented NID function sceNetResolverDelete [0x94523E09]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetResolverStartNtoA(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetResolverStartNtoA [0x224C5F44]");
+		Modules.log.debug("Unimplemented NID function sceNetResolverStartNtoA [0x224C5F44]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetResolverStartAtoN(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetResolverStartAtoN [0x629E2FB7]");
+		Modules.log.debug("Unimplemented NID function sceNetResolverStartAtoN [0x629E2FB7]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetResolverStop(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetResolverStop [0x808F6063]");
+		Modules.log.debug("Unimplemented NID function sceNetResolverStop [0x808F6063]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceNetResolverInitFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverInit") {

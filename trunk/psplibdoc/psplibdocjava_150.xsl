@@ -64,20 +64,11 @@ public class <xsl:value-of select="NAME"/><xsl:choose><xsl:when test="$old_versi
 	
 	<xsl:for-each select="FUNCTIONS/FUNCTION">
 	public void <xsl:value-of select="NAME"/>(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+		CpuState cpu = processor.cpu;
 
 		Modules.log.debug("Unimplemented NID function <xsl:value-of select="NAME"/> [<xsl:value-of select="NID"/>]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result &amp; 0xffffffff);  cpu.gpr[3] = (int)(result &gt;&gt;&gt; 32); cpu.fpr[0] = result;
 	}
     </xsl:for-each>
     

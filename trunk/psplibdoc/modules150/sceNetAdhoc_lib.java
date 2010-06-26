@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -61,105 +62,51 @@ public class sceNetAdhoc_lib implements HLEModule {
 	
 	
 	public void sceNetAdhoc_lib_67346A2A(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetAdhoc_lib_67346A2A [0x67346A2A]");
+		Modules.log.debug("Unimplemented NID function sceNetAdhoc_lib_67346A2A [0x67346A2A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetAdhoc_lib_F9240FBA(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetAdhoc_lib_F9240FBA [0xF9240FBA]");
+		Modules.log.debug("Unimplemented NID function sceNetAdhoc_lib_F9240FBA [0xF9240FBA]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetAdhoc_lib_1059683E(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetAdhoc_lib_1059683E [0x1059683E]");
+		Modules.log.debug("Unimplemented NID function sceNetAdhoc_lib_1059683E [0x1059683E]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetAdhoc_lib_62B875A8(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetAdhoc_lib_62B875A8 [0x62B875A8]");
+		Modules.log.debug("Unimplemented NID function sceNetAdhoc_lib_62B875A8 [0x62B875A8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetAdhoc_lib_2CA12790(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetAdhoc_lib_2CA12790 [0x2CA12790]");
+		Modules.log.debug("Unimplemented NID function sceNetAdhoc_lib_2CA12790 [0x2CA12790]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetAdhocGameModeUpdateReplicaInternal(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceNetAdhocGameModeUpdateReplicaInternal [0xAF6DFB15]");
+		Modules.log.debug("Unimplemented NID function sceNetAdhocGameModeUpdateReplicaInternal [0xAF6DFB15]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceNetAdhoc_lib_67346A2AFunction = new HLEModuleFunction("sceNetAdhoc_lib", "sceNetAdhoc_lib_67346A2A") {

@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -67,156 +68,75 @@ public class sceUsb implements HLEModule {
 	
 	
 	public void sceUsbStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbStart [0xAE5DE6AF]");
+		Modules.log.debug("Unimplemented NID function sceUsbStart [0xAE5DE6AF]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbStop(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbStop [0xC2464FA0]");
+		Modules.log.debug("Unimplemented NID function sceUsbStop [0xC2464FA0]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbGetState(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbGetState [0xC21645A4]");
+		Modules.log.debug("Unimplemented NID function sceUsbGetState [0xC21645A4]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbGetDrvList(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbGetDrvList [0x4E537366]");
+		Modules.log.debug("Unimplemented NID function sceUsbGetDrvList [0x4E537366]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbGetDrvState(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbGetDrvState [0x112CC951]");
+		Modules.log.debug("Unimplemented NID function sceUsbGetDrvState [0x112CC951]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbActivate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbActivate [0x586DB82C]");
+		Modules.log.debug("Unimplemented NID function sceUsbActivate [0x586DB82C]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbDeactivate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbDeactivate [0xC572A9C8]");
+		Modules.log.debug("Unimplemented NID function sceUsbDeactivate [0xC572A9C8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbWaitState(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbWaitState [0x5BE0E002]");
+		Modules.log.debug("Unimplemented NID function sceUsbWaitState [0x5BE0E002]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbWaitCancel(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUsbWaitCancel [0x1C360735]");
+		Modules.log.debug("Unimplemented NID function sceUsbWaitCancel [0x1C360735]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceUsbStartFunction = new HLEModuleFunction("sceUsb", "sceUsbStart") {

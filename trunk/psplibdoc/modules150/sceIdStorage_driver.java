@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -89,343 +90,163 @@ public class sceIdStorage_driver implements HLEModule {
 	
 	
 	public void sceIdStorageInit(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageInit [0xAB129D20]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageInit [0xAB129D20]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageEnd(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageEnd [0x2CE0BE69]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageEnd [0x2CE0BE69]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageSuspend(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageSuspend [0xF77565B6]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageSuspend [0xF77565B6]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageResume(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageResume [0xFE51173D]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageResume [0xFE51173D]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageGetLeafSize(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageGetLeafSize [0xEB830733]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageGetLeafSize [0xEB830733]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageIsFormatted(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageIsFormatted [0xFEFA40C2]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageIsFormatted [0xFEFA40C2]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageIsReadOnly(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageIsReadOnly [0x2D633688]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageIsReadOnly [0x2D633688]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageIsDirty(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageIsDirty [0xB9069BAD]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageIsDirty [0xB9069BAD]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageFormat(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageFormat [0x958089DB]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageFormat [0x958089DB]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageUnformat(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageUnformat [0xF4BCB3EE]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageUnformat [0xF4BCB3EE]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageReadLeaf(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageReadLeaf [0xEB00C509]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageReadLeaf [0xEB00C509]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageWriteLeaf(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageWriteLeaf [0x1FA4D135]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageWriteLeaf [0x1FA4D135]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageCreateLeaf(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageCreateLeaf [0x08A471A6]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageCreateLeaf [0x08A471A6]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageDeleteLeaf(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageDeleteLeaf [0x2C97AB36]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageDeleteLeaf [0x2C97AB36]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageCreateAtomicLeaves(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageCreateAtomicLeaves [0x99ACCB71]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageCreateAtomicLeaves [0x99ACCB71]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageGetFreeLeaves(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageGetFreeLeaves [0x37833CB8]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageGetFreeLeaves [0x37833CB8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageEnumId(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageEnumId [0x31E08AFB]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageEnumId [0x31E08AFB]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageLookup(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageLookup [0x6FE062D1]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageLookup [0x6FE062D1]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageUpdate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageUpdate [0x683AAC10]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageUpdate [0x683AAC10]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceIdStorageFlush(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceIdStorageFlush [0x3AD32523]");
+		Modules.log.debug("Unimplemented NID function sceIdStorageFlush [0x3AD32523]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceIdStorageInitFunction = new HLEModuleFunction("sceIdStorage_driver", "sceIdStorageInit") {

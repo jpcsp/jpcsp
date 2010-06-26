@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -61,105 +62,51 @@ public class sceMeVideo_driver implements HLEModule {
 	
 	
 	public void sceMeVideo_driver_B655AD4E(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMeVideo_driver_B655AD4E [0xB655AD4E]");
+		Modules.log.debug("Unimplemented NID function sceMeVideo_driver_B655AD4E [0xB655AD4E]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceMeVideo_driver_06F0236A(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMeVideo_driver_06F0236A [0x06F0236A]");
+		Modules.log.debug("Unimplemented NID function sceMeVideo_driver_06F0236A [0x06F0236A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceMeVideo_driver_176BBE07(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMeVideo_driver_176BBE07 [0x176BBE07]");
+		Modules.log.debug("Unimplemented NID function sceMeVideo_driver_176BBE07 [0x176BBE07]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceMeVideo_driver_DE2E7E89(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMeVideo_driver_DE2E7E89 [0xDE2E7E89]");
+		Modules.log.debug("Unimplemented NID function sceMeVideo_driver_DE2E7E89 [0xDE2E7E89]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceMeVideo_driver_E67F4E0A(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMeVideo_driver_E67F4E0A [0xE67F4E0A]");
+		Modules.log.debug("Unimplemented NID function sceMeVideo_driver_E67F4E0A [0xE67F4E0A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceMeVideo_driver_1C6A60E1(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+		CpuState cpu = processor.cpu;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMeVideo_driver_1C6A60E1 [0x1C6A60E1]");
+		Modules.log.debug("Unimplemented NID function sceMeVideo_driver_1C6A60E1 [0x1C6A60E1]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceMeVideo_driver_B655AD4EFunction = new HLEModuleFunction("sceMeVideo_driver", "sceMeVideo_driver_B655AD4E") {

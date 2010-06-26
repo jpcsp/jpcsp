@@ -52,6 +52,7 @@ public class Modules {
     public static scePsmfPlayer scePsmfPlayerModule = new scePsmfPlayer();
     public static scePsmf scePsmfModule = new scePsmf();
     public static sceMp3 sceMp3Module = new sceMp3();
+    public static sceDeflt sceDefltModule = new sceDeflt();
 
     public static Logger log = Logger.getLogger("hle");
 
