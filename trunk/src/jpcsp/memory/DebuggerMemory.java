@@ -25,6 +25,7 @@ import java.util.HashSet;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.util.Utilities;
 
 public class DebuggerMemory extends Memory {
 	public static boolean traceMemoryRead = false;
@@ -47,24 +48,24 @@ public class DebuggerMemory extends Memory {
 		initBreakpoints();
 	}
 
-	private void initBreakpoints() {
-		memoryReadBreakpoint = new HashSet<Integer>();
-		memoryWriteBreakpoint = new HashSet<Integer>();
-
+    private void initBreakpoints() {
+        memoryReadBreakpoint = new HashSet<Integer>();
+        memoryWriteBreakpoint = new HashSet<Integer>();
+        BufferedReader in = null;
         try {
             File f = new File(mBrkFilePath);
-            BufferedReader in = new BufferedReader(new FileReader(f));
+            in = new BufferedReader(new FileReader(f));
 
             String nextBrk = in.readLine();
-            if(nextBrk.equals("READ")) {
+            if (nextBrk.equals("READ")) {
                 traceMemoryRead = true;
                 traceMemoryWrite = false;
                 nextBrk = in.readLine();
-            } else if(nextBrk.equals("WRITE")) {
+            } else if (nextBrk.equals("WRITE")) {
                 traceMemoryRead = false;
                 traceMemoryWrite = true;
                 nextBrk = in.readLine();
-            } else if(nextBrk.equals("READ|WRITE")) {
+            } else if (nextBrk.equals("READ|WRITE")) {
                 traceMemoryRead = true;
                 traceMemoryWrite = true;
                 nextBrk = in.readLine();
@@ -73,13 +74,13 @@ public class DebuggerMemory extends Memory {
                 traceMemoryWrite = false;
             }
 
-            int[] memBrkR = new int[(int)f.length()];
+            int[] memBrkR = new int[(int) f.length()];
             int r = 0;
-            int[] memBrkW = new int[(int)f.length()];
+            int[] memBrkW = new int[(int) f.length()];
             int w = 0;
 
             while (nextBrk != null) {
-                if(nextBrk.charAt(0) == 'R') {
+                if (nextBrk.charAt(0) == 'R') {
                     memBrkR[r] = Integer.parseInt(nextBrk.substring(3), 16);
                 } else if (nextBrk.charAt(0) == 'W') {
                     memBrkW[w] = Integer.parseInt(nextBrk.substring(3), 16);
@@ -92,15 +93,17 @@ public class DebuggerMemory extends Memory {
 
         } catch (Exception e) {
             // Ignore.
+        } finally {
+            Utilities.close(in);
         }
 
-		for (int i = 0; readBreakpoints != null && i < readBreakpoints.length; i++) {
-			memoryReadBreakpoint.add(readBreakpoints[i]);
-		}
-		for (int i = 0; writeBreakpoints != null && i < writeBreakpoints.length; i++) {
-			memoryWriteBreakpoint.add(writeBreakpoints[i]);
-		}
-	}
+        for (int i = 0; readBreakpoints != null && i < readBreakpoints.length; i++) {
+            memoryReadBreakpoint.add(readBreakpoints[i]);
+        }
+        for (int i = 0; writeBreakpoints != null && i < writeBreakpoints.length; i++) {
+            memoryWriteBreakpoint.add(writeBreakpoints[i]);
+        }
+    }
 
 	public static void install() {
 		Memory mem = Memory.getInstance();
