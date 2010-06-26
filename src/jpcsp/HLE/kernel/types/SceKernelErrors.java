@@ -48,7 +48,9 @@ public class SceKernelErrors {
 	public static final int ERROR_INVALID_LIST_ID                               = 0x80000100;
     public static final int ERROR_INDEX                                         = 0x80000102;
     public static final int ERROR_POINTER                                       = 0x80000103;
+    public static final int ERROR_SIZE                                  		= 0x80000104;
     public static final int ERROR_ARGUMENT                                      = 0x80000107;
+    public static final int ERROR_FORMAT                                		= 0x80000108;
 
     public final static int ERROR_FILE_OPERATION_NOT_PERMITTED                  = 0x80010001;
     public final static int ERROR_FILE_NOT_FOUND                                = 0x80010002;
