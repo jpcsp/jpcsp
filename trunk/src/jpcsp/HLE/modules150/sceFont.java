@@ -960,7 +960,7 @@ public class sceFont implements HLEModule {
                 , libHandle, hResf, vResf));
 
         globalFontHRes = hResf;
-        globalFontHRes = vResf;
+        globalFontVRes = vResf;
 
 		cpu.gpr[2] = 0;
 	}
