@@ -187,6 +187,7 @@ public class sceDeflt implements HLEModule {
 				return;
 			}
 		}
+		writer.flush();
 		
 		Memory.getInstance().write32(crc32Addr, (int) crc32.getValue());
 
