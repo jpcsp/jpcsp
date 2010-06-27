@@ -21,6 +21,27 @@ package jpcsp.memory;
  *
  */
 public interface IMemoryReader {
+	/**
+	 * Reads the next value from memory.
+	 * 
+	 * When reading 8-bit or 16-bit values, an unsigned value is returned
+	 * (i.e. masked using 0xFF or 0xFFFF).
+	 * 
+	 * MemoryReaders are created using the factory
+	 *   MemoryReader.getMemoryReader(...)
+	 *
+	 * @return the next value from memory.
+	 */
 	public int readNext();
+
+	/**
+	 * Skip n values when reading from memory.
+	 * 
+	 * When reading 32-bit values, the next 4*n bytes are skipped.
+	 * When reading 16-bit values, the next 2*n bytes are skipped.
+	 * When reading 8-bit values, the next n bytes are skipped.
+	 * 
+	 * @param n the number of values to be skipped.
+	 */
 	public void skip(int n);
 }
