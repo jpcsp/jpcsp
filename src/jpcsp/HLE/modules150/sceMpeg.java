@@ -315,9 +315,7 @@ public class sceMpeg implements HLEModule {
     	Memory mem = Memory.getInstance();
 
         mpegStreamAddr = buffer_addr;
-
         mpegMagic = mem.read32(buffer_addr);
-
         mpegRawVersion = mem.read32(buffer_addr + 4);
     	switch (mpegRawVersion) {
     		case PSMF_VERSION_0012: mpegVersion = MPEG_VERSION_0012; break;
@@ -326,11 +324,10 @@ public class sceMpeg implements HLEModule {
     		case PSMF_VERSION_0015: mpegVersion = MPEG_VERSION_0015; break;
     		default:                mpegVersion = -1;                break;
     	}
-
         mpegOffset = endianSwap(mem.read32(buffer_addr + 8));
-
     	mpegStreamSize = endianSwap(mem.read32(buffer_addr + 12));
-        mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 80 + 12));
+
+        mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 92));
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
 
         if (mpegRingbuffer != null) {
@@ -1158,7 +1155,7 @@ public class sceMpeg implements HLEModule {
 
             if(isEnableMediaEngine()) {
                 if(me.getContainer() != null) {
-                    mpegLastTimestamp = me.getVideoLenght();
+                    mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
                     me.step();
                     writeVideoImage(buffer, frameWidth);
                 } else {
@@ -1528,7 +1525,7 @@ public class sceMpeg implements HLEModule {
 
             if(isEnableMediaEngine()) {
                 if(me.getContainer() != null) {
-                    mpegLastTimestamp = me.getVideoLenght();
+                    mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
                     me.step();
                     writeVideoImage(dest_addr, frameWidth);
                 } else {
@@ -1719,6 +1716,11 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegRingbufferDestruct(Processor processor) {
         CpuState cpu = processor.cpu;
+
+        int ringbuffer_addr = cpu.gpr[4];
+
+        Modules.log.debug("sceMpegRingbufferDestruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
+
         cpu.gpr[2] = 0;
     }
 
@@ -1777,7 +1779,7 @@ public class sceMpeg implements HLEModule {
             Modules.log.debug(String.format("sceMpegRingbufferPut(ringbuffer=0x%08X,numPackets=%d,available=%d", ringbuffer_addr, numPackets, available));
         }
 
-        if (numPackets < 0 || !getRingBufStatus()) {
+        if (numPackets < 0 || (!getRingBufStatus() && !isEnableMediaEngine())) {
             cpu.gpr[2] = 0;
         } else {
             SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);

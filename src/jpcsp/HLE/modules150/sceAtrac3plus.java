@@ -121,6 +121,7 @@ public class sceAtrac3plus implements HLEModule {
     protected int inputBufferAddr; // currently not used
     protected int inputBufferSize; // currently not used
     protected int inputBufferOffset;
+    protected int inputBufferAvailableBytes;
     protected int inputFileSize;
     protected int inputFileOffset;
     protected int currentLoop;
@@ -197,6 +198,7 @@ public class sceAtrac3plus implements HLEModule {
         inputBufferAddr = buffer;
         inputBufferSize = bufferSize;
         inputBufferOffset = 0;
+        inputBufferAvailableBytes = 0;
         inputFileSize = inputBufferSize;
         inputFileOffset = inputBufferSize;
 
@@ -254,15 +256,15 @@ public class sceAtrac3plus implements HLEModule {
     		// Address of an unknown structure of size 32
             // Holds buffer related parameters.
             // Main buffer.
-            mem.write32(bufferInfoAddr      , 0);  // Current writing position.
-    		mem.write32(bufferInfoAddr +   4, 0);  // Unknown.
-            mem.write32(bufferInfoAddr +   8, 0);  // Unknown.
-            mem.write32(bufferInfoAddr +  12, 0);  // Unknown.
-            // Secondary buffer? This data is ignored with only one buffer.
-            mem.write32(bufferInfoAddr +  16, 0);
-    		mem.write32(bufferInfoAddr +  20, 0);
-            mem.write32(bufferInfoAddr +  24, 0);
-    		mem.write32(bufferInfoAddr +  28, 0);
+            mem.write32(bufferInfoAddr      , inputBufferAddr);            // Pointer to current writing position in the buffer.
+    		mem.write32(bufferInfoAddr +   4, inputBufferAvailableBytes);  // Available bytes in buffer.
+            mem.write32(bufferInfoAddr +   8, 0);                          // Unknown.
+            mem.write32(bufferInfoAddr +  12, inputFileOffset);            // Read offset.
+            // Secondary buffer.
+            mem.write32(bufferInfoAddr +  16, inputBufferAddr);            // Pointer to current writing position in the buffer.
+    		mem.write32(bufferInfoAddr +  20, inputBufferAvailableBytes);  // Available bytes in buffer.
+            mem.write32(bufferInfoAddr +  24, 0);                          // Unknown.
+    		mem.write32(bufferInfoAddr +  28, inputFileOffset);            // Read offset.
     	}
     }
 
@@ -507,24 +509,24 @@ public class sceAtrac3plus implements HLEModule {
         int availableBytesAddr = cpu.gpr[6];
         int readOffsetAddr = cpu.gpr[7];
 
-    	int availableBytes = inputBufferOffset;
+    	inputBufferAvailableBytes = inputBufferOffset;
     	if (inputFileOffset >= inputFileSize) {
     		// All data is in the buffer
-    		availableBytes = 0;
-    	} else if (availableBytes > (inputFileSize - inputFileOffset)) {
+    		inputBufferAvailableBytes = 0;
+    	} else if (inputBufferAvailableBytes > (inputFileSize - inputFileOffset)) {
     		// Do not need more data than input file size
-    		availableBytes = inputFileSize - inputFileOffset;
+    		inputBufferAvailableBytes = inputFileSize - inputFileOffset;
     	}
 
         Modules.log.warn(String.format("PARTIAL: sceAtracGetStreamDataInfo: atID=0x%08x, writeAddr=0x%08x, availableBytesAddr=0x%08x, readOffsetAddr=0x%08x, returning availableBytes=%d",
-                atID, writeAddr, availableBytesAddr, readOffsetAddr, availableBytes));
+                atID, writeAddr, availableBytesAddr, readOffsetAddr, inputBufferAvailableBytes));
 
         Memory mem = Memory.getInstance();
         if (mem.isAddressGood(writeAddr)) {
         	mem.write32(writeAddr, inputBufferAddr);
         }
         if (mem.isAddressGood(availableBytesAddr)) {
-        	mem.write32(availableBytesAddr, inputBufferOffset);
+        	mem.write32(availableBytesAddr, inputBufferAvailableBytes);
         }
         if (mem.isAddressGood(readOffsetAddr)) {
         	mem.write32(readOffsetAddr, inputFileOffset);
@@ -757,10 +759,10 @@ public class sceAtrac3plus implements HLEModule {
 
         int atID = cpu.gpr[4];
         int sample = cpu.gpr[5];
-        int unknown1 = cpu.gpr[6];  // 2nd parameter from buffer info struct.
-        int unknown2 = cpu.gpr[7];  // 6th parameter from buffer info struct.
+        int unk1 = cpu.gpr[6];  // 2nd parameter from buffer info struct.
+        int unk2 = cpu.gpr[7];  // 6th parameter from buffer info struct.
 
-        Modules.log.warn(String.format("PARTIAL: sceAtracResetPlayPosition atracId=%d, sample=%d, %08X, %08X", atID, sample, unknown1, unknown2));
+        Modules.log.warn(String.format("PARTIAL: sceAtracResetPlayPosition atracId=%d, sample=%d, unk1=%d, unk2=%d", atID, sample, unk1, unk2));
 
         inputBufferOffset = sample * 4;
         inputFileSize = inputBufferSize;

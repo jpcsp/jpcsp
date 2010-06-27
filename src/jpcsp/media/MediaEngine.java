@@ -111,8 +111,34 @@ public class MediaEngine {
         return currentImg;
     }
 
-    public long getVideoLenght() {
-        return container.getDuration();
+    /**
+     * Method getPacketTimestamp() - analyzes the current packet
+     * and returns it's timestamp.
+     * Note: Only call this after a sucessful Media Engine init().
+     *
+     * @param stream the stream to check for (video or audio).
+     * @param type the timestamp format (PTS or DTS).
+     * @return the timestamp of the current packet or 0 if none.
+     */
+    public long getPacketTimestamp(String stream, String type) {
+        if(stream.equals("Video")) {
+            if(packet.getStreamIndex() == getVideoStreamID()) {
+                if(type.equals("DTS")) {
+                    return packet.getDts();
+                } else if (type.equals("PTS")) {
+                    return packet.getPts();
+                }
+            }
+        } else if (stream.equals("Audio")) {
+            if(packet.getStreamIndex() == getAudioStreamID()) {
+                if(type.equals("DTS")) {
+                    return packet.getDts();
+                } else if (type.equals("PTS")) {
+                    return packet.getPts();
+                }
+            }
+        }
+        return 0;
     }
 
     /*
