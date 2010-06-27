@@ -2,7 +2,7 @@
 if "%programfiles(x86)%XXX"=="XXX" goto JAVA32
 if not exist "%programfiles%\Java\jre6\bin" goto JAVAMISSING
 echo Running Jpcsp 64bit...
-"%programfiles%\Java\jre6\bin\java" -Xmx512m -Djava.library.path=lib/windows-amd64 -jar bin/jpcsp.jar
+"%programfiles%\Java\jre6\bin\java" -Xmx1024m -Djava.library.path=lib/windows-amd64 -jar bin/jpcsp.jar
 goto END
 
 :JAVA32
