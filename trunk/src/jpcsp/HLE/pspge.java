@@ -307,6 +307,15 @@ public class pspge {
 				if (VideoEngine.log.isDebugEnabled()) {
 					VideoEngine.log.debug("hleGeOnAfterCallback restarting list " + list);
 				}
+
+				// If the list is still on the END command, skip it.
+				Memory mem = Memory.getInstance();
+				if (mem.isAddressGood(list.pc)) {
+					if (VideoEngine.command(mem.read32(list.pc)) == GeCommands.END) {
+						list.pc += 4;
+					}
+				}
+
 				list.restartList();
 			}
 		}
