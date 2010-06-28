@@ -126,28 +126,45 @@ public class Utilities {
 
      /**
       * Read a string from memory.
-      * The string ends when a '\0' byte is found.
+      * The string ends when the maximal length is reached or a '\0' byte is found.
+      * The memory bytes are interpreted as UTF-8 bytes to form the string.
       *
       * @param mem     the memory
       * @param address the address of the first byte of the string
       * @param n       the maximal string length
-      * @return        the string
+      * @return        the string converted to UTF-8
       */
      public static String readStringNZ(Memory mem, int address, int n) {
          address &= Memory.addressMask;
          if (address + n > MemoryMap.END_RAM) {
                  n = MemoryMap.END_RAM - address + 1;
          }
-         int b;
-         byte[] bytes = new byte[n];
-         int i = 0;
+
+         // Allocate a byte array to store the bytes of the string.
+         // At first, allocate maximum 10000 bytes in case we don't know
+         // the maximal string length. The array will be extended if required.
+         byte[] bytes = new byte[Math.min(n, 10000)];
+
+         int length = 0;
          for (; n > 0; n--) {
-             b = mem.read8(address++);
-             if (b == 0)
+             int b = mem.read8(address++);
+             if (b == 0) {
                  break;
-             bytes[i++] = (byte) b;
+             }
+
+             if (length >= bytes.length) {
+            	 // Extend the bytes array
+            	 byte[] newBytes = new byte[bytes.length + 10000];
+            	 System.arraycopy(bytes, 0, newBytes, 0, bytes.length);
+            	 bytes = newBytes;
+             }
+
+             bytes[length] = (byte) b;
+             length++;
          }
-         return new String(bytes, 0, i, charset);
+
+         // Convert the bytes to UTF-8
+         return new String(bytes, 0, length, charset);
      }
 
      public static String readStringZ(Memory mem, int address) {
@@ -223,8 +240,11 @@ public class Utilities {
              return address;
          }
 
-         if (value.startsWith("0x"))
+         value = value.trim();
+
+         if (value.startsWith("0x")) {
              value = value.substring(2);
+         }
 
          if (Integer.SIZE == 32 && value.length() == 8 && value.charAt(0) >= '8') {
              address = (int) Long.parseLong(value, 16);
