@@ -361,7 +361,28 @@ public class CodeInstruction {
 
     private int getBranchingOpcodeBV(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	context.loadVcrCc();
-        compileDelaySlot(context, mv);
+
+    	CodeInstruction delaySlotCodeInstruction = getDelaySlotCodeInstruction(context);
+        if (delaySlotCodeInstruction != null && delaySlotCodeInstruction.insn == insn) {
+        	// We are compiling a sequence where the delay instruction is again a BV
+        	// instruction:
+        	//    bvt 0, label
+        	//    bvt 1, label
+        	//    bvt 2, label
+        	//    bvt 3, label
+        	//    nop
+        	// Handle the sequence by inserting nop's between the BV instructions:
+        	//    bvt 0, label
+        	//    nop
+        	//    bvt 1, label
+        	//    nop
+        	//    bvt 2, label
+        	//    nop
+        	//    bvt 3, label
+        	//    nop
+        } else {
+        	compileDelaySlot(context, mv);
+        }
 
         return branchingOpcode;
     }
