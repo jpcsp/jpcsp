@@ -2970,9 +2970,6 @@ public class ThreadManForUser implements HLEModule {
         }
     }
 
-    public void sceKernelReferThreadStatus(int uid, int addr) {
-    }
-
     /** Get the status information for the specified thread
      **/
     public void sceKernelReferThreadStatus(Processor processor) {
