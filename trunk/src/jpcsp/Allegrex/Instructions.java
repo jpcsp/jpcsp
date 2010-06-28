@@ -2458,6 +2458,12 @@ public void interpret(Processor processor, int insn) {
 @Override
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
+        // According to MIPS spec., result is unpredictable when dividing by zero.
+		// Here, do nothing when dividing by zero.
+		Label divideByZero = new Label();
+		context.loadRt();
+		context.getMethodVisitor().visitJumpInsn(Opcodes.IFEQ, divideByZero);
+
 		context.loadRs();
 		context.loadRt();
 		context.getMethodVisitor().visitInsn(Opcodes.DUP2);
@@ -2473,6 +2479,8 @@ public void compile(ICompilerContext context, int insn) {
 		context.getMethodVisitor().visitInsn(Opcodes.LAND);
 		context.getMethodVisitor().visitInsn(Opcodes.LOR);
 		context.storeHilo();
+
+		context.getMethodVisitor().visitLabel(divideByZero);
 	}
 }
 @Override
