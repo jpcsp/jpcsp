@@ -28,9 +28,9 @@ import jpcsp.Memory;
 import jpcsp.util.Utilities;
 
 public class DebuggerMemory extends Memory {
-	public static boolean traceMemoryRead = false;
-	public static boolean traceMemoryWrite = false;
-	public static boolean pauseEmulatorOnMemoryBreakpoint = true;
+	public boolean traceMemoryRead = false;
+	public boolean traceMemoryWrite = false;
+	public boolean pauseEmulatorOnMemoryBreakpoint = true;
 	// List of breakpoints for memory read
 	public static int[] readBreakpoints  = { 0x1234567, 0x7654321 };
 	// List of breakpoints for memory write
@@ -51,57 +51,75 @@ public class DebuggerMemory extends Memory {
     private void initBreakpoints() {
         memoryReadBreakpoint = new HashSet<Integer>();
         memoryWriteBreakpoint = new HashSet<Integer>();
+
         BufferedReader in = null;
+        boolean addDefaultBreakpoints = true;
         try {
             File f = new File(mBrkFilePath);
             in = new BufferedReader(new FileReader(f));
 
-            String nextBrk = in.readLine();
-            if (nextBrk.equals("READ")) {
+            String line = in.readLine();
+            if (line.equalsIgnoreCase("READ")) {
                 traceMemoryRead = true;
                 traceMemoryWrite = false;
-                nextBrk = in.readLine();
-            } else if (nextBrk.equals("WRITE")) {
+                line = in.readLine();
+            } else if (line.equalsIgnoreCase("WRITE")) {
                 traceMemoryRead = false;
                 traceMemoryWrite = true;
-                nextBrk = in.readLine();
-            } else if (nextBrk.equals("READ|WRITE")) {
+                line = in.readLine();
+            } else if (line.equalsIgnoreCase("READ|WRITE")) {
                 traceMemoryRead = true;
                 traceMemoryWrite = true;
-                nextBrk = in.readLine();
+                line = in.readLine();
             } else {
                 traceMemoryRead = false;
                 traceMemoryWrite = false;
             }
 
-            int[] memBrkR = new int[(int) f.length()];
-            int r = 0;
-            int[] memBrkW = new int[(int) f.length()];
-            int w = 0;
-
-            while (nextBrk != null) {
-                if (nextBrk.charAt(0) == 'R') {
-                    memBrkR[r] = Integer.parseInt(nextBrk.substring(3), 16);
-                } else if (nextBrk.charAt(0) == 'W') {
-                    memBrkW[w] = Integer.parseInt(nextBrk.substring(3), 16);
+            while (line != null) {
+            	int rangeIndex = line.indexOf("-");
+            	if (rangeIndex >= 0) {
+            		// Range parsing
+            		if (line.startsWith("RW")) {
+            			int start = Utilities.parseAddress(line.substring(2, rangeIndex));
+            			int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
+            			addRangeReadWriteBreakpoint(start, end);
+            		} else if (line.startsWith("R")) {
+            			int start = Utilities.parseAddress(line.substring(1, rangeIndex));
+            			int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
+            			addRangeReadBreakpoint(start, end);
+            		} else if (line.startsWith("W")) {
+            			int start = Utilities.parseAddress(line.substring(1, rangeIndex));
+            			int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
+            			addRangeWriteBreakpoint(start, end);
+            		}
+            	} else if (line.startsWith("RW")) {
+            		int address = Utilities.parseAddress(line.substring(2));
+            		addReadWriteBreakpoint(address);
+            	} else if (line.startsWith("R")) {
+                    int address = Utilities.parseAddress(line.substring(1));
+                    addReadBreakpoint(address);
+                } else if (line.startsWith("W")) {
+                    int address = Utilities.parseAddress(line.substring(1));
+                    addWriteBreakpoint(address);
                 }
-                nextBrk = in.readLine();
+                line = in.readLine();
             }
 
-            readBreakpoints = memBrkR;
-            writeBreakpoints = memBrkW;
-
+            addDefaultBreakpoints = false;
         } catch (Exception e) {
             // Ignore.
         } finally {
             Utilities.close(in);
         }
 
-        for (int i = 0; readBreakpoints != null && i < readBreakpoints.length; i++) {
-            memoryReadBreakpoint.add(readBreakpoints[i]);
-        }
-        for (int i = 0; writeBreakpoints != null && i < writeBreakpoints.length; i++) {
-            memoryWriteBreakpoint.add(writeBreakpoints[i]);
+        if (addDefaultBreakpoints) {
+	        for (int i = 0; readBreakpoints != null && i < readBreakpoints.length; i++) {
+	        	addReadBreakpoint(readBreakpoints[i]);
+	        }
+	        for (int i = 0; writeBreakpoints != null && i < writeBreakpoints.length; i++) {
+	        	addWriteBreakpoint(writeBreakpoints[i]);
+	        }
         }
     }
 
@@ -118,6 +136,68 @@ public class DebuggerMemory extends Memory {
 		if (mem instanceof DebuggerMemory) {
 			DebuggerMemory debuggerMemory = (DebuggerMemory) mem;
 			Memory.setInstance(debuggerMemory.mem);
+		}
+	}
+
+	public void addReadBreakpoint(int address) {
+		memoryReadBreakpoint.add(address);
+	}
+
+	public void removeReadBreakpoint(int address) {
+		memoryReadBreakpoint.remove(address);
+	}
+
+	public void addRangeReadBreakpoint(int start, int end) {
+		for (int address = start; address <= end; address++) {
+			addReadBreakpoint(address);
+		}
+	}
+
+	public void removeRangeReadBreakpoint(int start, int end) {
+		for (int address = start; address <= end; address++) {
+			removeReadBreakpoint(address);
+		}
+	}
+
+	public void addWriteBreakpoint(int address) {
+		memoryWriteBreakpoint.add(address);
+	}
+
+	public void removeWriteBreakpoint(int address) {
+		memoryWriteBreakpoint.remove(address);
+	}
+
+	public void addRangeWriteBreakpoint(int start, int end) {
+		for (int address = start; address <= end; address++) {
+			addWriteBreakpoint(address);
+		}
+	}
+
+	public void removeRangeWriteBreakpoint(int start, int end) {
+		for (int address = start; address <= end; address++) {
+			removeWriteBreakpoint(address);
+		}
+	}
+
+	public void addReadWriteBreakpoint(int address) {
+		memoryReadBreakpoint.add(address);
+		memoryWriteBreakpoint.add(address);
+	}
+
+	public void removeReadWriteBreakpoint(int address) {
+		memoryReadBreakpoint.remove(address);
+		memoryWriteBreakpoint.remove(address);
+	}
+
+	public void addRangeReadWriteBreakpoint(int start, int end) {
+		for (int address = start; address <= end; address++) {
+			addReadWriteBreakpoint(address);
+		}
+	}
+
+	public void removeRangeReadWriteBreakpoint(int start, int end) {
+		for (int address = start; address <= end; address++) {
+			removeReadWriteBreakpoint(address);
 		}
 	}
 
