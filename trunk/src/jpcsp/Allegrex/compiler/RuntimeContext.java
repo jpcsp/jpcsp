@@ -610,11 +610,14 @@ public class RuntimeContext {
     		return;
     	}
 
-    	IExecutable executable = getExecutable(processor.cpu.pc);
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+
+        IExecutable executable = getExecutable(processor.cpu.pc);
 		thread.setInSyscall(false);
     	try {
     		updateStaticVariables();
     		executable.exec(ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS, 0, false);
+    		threadMan.hleKernelExitThread();
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Exception e) {
@@ -629,18 +632,6 @@ public class RuntimeContext {
     		log.debug("End of Thread " + threadInfo.name + " - stopped");
     	}
 
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-    	if (!thread.getThreadInfo().doDelete) {
-    		thread.setInSyscall(true);
-
-            log.info("Thread exit detected SceUID=" + Integer.toHexString(threadInfo.uid)
-                + " name:'" + threadInfo.name + "' return:0x" + Integer.toHexString(gpr[2]));
-
-			threadInfo.exitStatus = gpr[2];
-			threadMan.hleChangeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
-			threadMan.hleRescheduleCurrentThread();
-    	}
-
 		threads.remove(threadInfo);
 		toBeStoppedThreads.remove(threadInfo);
 		toBeDeletedThreads.remove(threadInfo);
@@ -652,6 +643,9 @@ public class RuntimeContext {
 		    		log.debug("End of Thread " + threadInfo.name + " - sync");
 		    	}
 
+		    	// Be careful to not execute Interrupts or Callbacks by this thread,
+		    	// as it is already stopped and the next active thread
+		    	// will be resumed immediately.
 	    		syncIdle();
 	    		syncThreadImmediately();
 			} catch (StopThreadException e) {
