@@ -183,11 +183,14 @@ public class sceMpeg implements HLEModule {
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
     public static final int PSMF_VERSION_0015 = 0x35313030;
-    protected static final int MPEG_MEMSIZE = 0x10000;          // 64k
-    protected static final int atracDecodeDelay = 50;           // milliseconds
-    protected static final int avcDecodeDelay   = 1000 / 60;    // milliseconds, decoding video at maximum 60 FPS
+    protected static final int MPEG_MEMSIZE = 0x10000;         // 64k
+    protected static final int atracDecodeDelay = 1000 / 30;   // Milliseconds.
+    protected static final int avcDecodeDelay   = 1000 / 30;   // Milliseconds (decoding video at 30 FPS, .PMF standard).
     protected static final int maxAheadTimestamp = 100000;
-    protected static final int mpegTimestampPerSecond = 90000;  // how many MPEG Timestamp unit in a second
+    protected static final int mpegTimestampPerSecond = 90000; // How many MPEG Timestamp units in a second.
+    protected static final int videoTimestampStep = 3003;      // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
+    protected static final int audioTimestampStep = 4180;      // Value based on pmfplayer.
+
 
     // MPEG processing vars.
     protected int mpegHandle;
@@ -330,12 +333,17 @@ public class sceMpeg implements HLEModule {
         mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 92));
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
 
+        avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);
+        avcDetailFrameHeight = (mem.read8(buffer_addr + 143) * 0x10);
+
         if (mpegRingbuffer != null) {
         	mpegRingbuffer.reset();
         	mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
-        mpegAtracCurrentDecodingTimestamp = 0;
-        mpegAvcCurrentDecodingTimestamp = 0;
+        mpegAtracCurrentDecodingTimestamp = -1;
+        mpegAtracCurrentPresentationTimestamp = -1;
+        mpegAvcCurrentDecodingTimestamp = -1;
+        mpegAvcCurrentPresentationTimestamp = -1;
         videoFrameCount = 0;
         audioFrameCount = 0;
 
@@ -591,8 +599,13 @@ public class sceMpeg implements HLEModule {
             // Initialise mpeg values.
             mpegRingbufferAddr = ringbuffer_addr;
             mpegRingbuffer = ringbuffer;
-            mpegAtracCurrentDecodingTimestamp = 0;
-            mpegAvcCurrentDecodingTimestamp = 0;
+
+            // From "The Legend of Heroes II: Prophecy of the Moonlight Witch":
+            //   - "Warning:AUDIO START PTS is not 90000:4180".
+            mpegAtracCurrentDecodingTimestamp = mpegTimestampPerSecond / audioTimestampStep;
+            mpegAtracCurrentPresentationTimestamp = mpegTimestampPerSecond / audioTimestampStep;
+            mpegAvcCurrentDecodingTimestamp = mpegTimestampPerSecond / videoTimestampStep;
+            mpegAvcCurrentPresentationTimestamp = mpegTimestampPerSecond / videoTimestampStep;
             videoFrameCount = 0;
             audioFrameCount = 0;
             videoPixelMode = PSP_DISPLAY_PIXEL_FORMAT_8888;
@@ -813,11 +826,11 @@ public class sceMpeg implements HLEModule {
             cpu.gpr[2] = -1;
         } else {
             // Presentation Timestamp (-1 == not init).
-            mem.write32(au_addr, 0xFFFFFFFF);       // MSB (endian swapped).
-            mem.write32(au_addr + 4, 0xFFFFFFFF);   // LSB.
+            mem.write32(au_addr, endianSwap(mpegAtracCurrentPresentationTimestamp));     // MSB (endian swapped).
+            mem.write32(au_addr + 4, mpegAtracCurrentPresentationTimestamp);             // LSB.
             // Decoding Timestamp (-1 == not init).
-            mem.write32(au_addr + 8, 0xFFFFFFFF);   // MSB (endian swapped).
-            mem.write32(au_addr + 12, 0xFFFFFFFF);  // LSB.
+            mem.write32(au_addr + 8, endianSwap(mpegAtracCurrentDecodingTimestamp));     // MSB (endian swapped).
+            mem.write32(au_addr + 12, mpegAtracCurrentDecodingTimestamp);                // LSB.
             // Allocated buffer.
             mem.write32(au_addr + 16, buffer_addr);
             mem.write32(au_addr + 20, MPEG_ESBUF_SIZE);
@@ -898,8 +911,6 @@ public class sceMpeg implements HLEModule {
                 cpu.gpr[2] = 0x80618001; // no video data in ring buffer (actual name unknown)
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
-                // TODO: Get the proper audio PTS and DTS (requires Atrac3plus decoding).
-                mpegAtracCurrentPresentationTimestamp = mpegAtracCurrentDecodingTimestamp;
                 // Update the audio timestamp (Atrac).
                 mem.write32(au_addr,      endianSwap(mpegAtracCurrentPresentationTimestamp));
                 mem.write32(au_addr + 4,  mpegAtracCurrentPresentationTimestamp);
@@ -949,8 +960,6 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn("sceMpegGetPcmAu didn't get a fake stream");
             cpu.gpr[2] = 0;
         } else if (isFakeStreamHandle(stream_addr)) {
-            // TODO: Get the proper audio PTS and DTS (requires Atrac3plus decoding).
-            mpegAtracCurrentPresentationTimestamp = mpegAtracCurrentDecodingTimestamp;
             // Update the audio timestamp (Atrac).
             mem.write32(au_addr,      endianSwap(mpegAtracCurrentPresentationTimestamp));
             mem.write32(au_addr + 4,  mpegAtracCurrentPresentationTimestamp);
@@ -1008,8 +1017,6 @@ public class sceMpeg implements HLEModule {
                 cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
-                // TODO: Get the proper audio PTS and DTS (requires Atrac3plus decoding).
-                mpegAtracCurrentPresentationTimestamp = mpegAtracCurrentDecodingTimestamp;
                 // Update the audio timestamp (Atrac).
                 mem.write32(au_addr,      endianSwap(mpegAtracCurrentPresentationTimestamp));
                 mem.write32(au_addr + 4,  mpegAtracCurrentPresentationTimestamp);
@@ -1083,9 +1090,8 @@ public class sceMpeg implements HLEModule {
 
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
-            // If sceMpegCreate sent a frameWidth of 0, use the frame buffer's value.
             if(defaultFrameWidth == 0) {
-                frameWidth = pspdisplay.getInstance().getBufferWidthFb();
+                frameWidth = avcDetailFrameWidth;
             } else {
                 frameWidth = defaultFrameWidth;
             }
@@ -1126,7 +1132,8 @@ public class sceMpeg implements HLEModule {
                 lastAvcSystemTime = currentSystemTime;
             }
 
-            mpegAvcCurrentDecodingTimestamp += (int)(90000 / 29.97); // value based on pmfplayer
+            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
+            mpegAvcCurrentPresentationTimestamp += videoTimestampStep;
 
             int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
             int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
@@ -1199,8 +1206,6 @@ public class sceMpeg implements HLEModule {
                 Modules.log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
             }
 
-            avcDetailFrameWidth = width;
-            avcDetailFrameHeight = height;
             if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                 mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                 mpegRingbuffer.write(mem, mpegRingbufferAddr);
@@ -1453,9 +1458,8 @@ public class sceMpeg implements HLEModule {
 
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
-            // If sceMpegCreate sent a frameWidth of 0, use the frame buffer's value.
             if(defaultFrameWidth == 0) {
-                frameWidth = pspdisplay.getInstance().getBufferWidthFb();
+                frameWidth = avcDetailFrameWidth;
             } else {
                 frameWidth = defaultFrameWidth;
             }
@@ -1499,7 +1503,8 @@ public class sceMpeg implements HLEModule {
                 lastAvcSystemTime = currentSystemTime;
             }
 
-            mpegAvcCurrentDecodingTimestamp += (int)(90000 / 29.97);
+            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
+            mpegAvcCurrentPresentationTimestamp += videoTimestampStep;
 
             int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
             int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
@@ -1601,7 +1606,8 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn("sceMpegAtracDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr)) {
-            mpegAtracCurrentDecodingTimestamp += 4180;      // value based on pmfplayer
+            mpegAtracCurrentDecodingTimestamp += audioTimestampStep;
+            mpegAtracCurrentPresentationTimestamp += audioTimestampStep;
 
             long currentSystemTime = Emulator.getClock().milliTime();
             int elapsedTime = (int) (currentSystemTime - lastAtracSystemTime);
