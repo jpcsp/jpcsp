@@ -244,4 +244,10 @@ public class SceKernelErrors {
     public final static int ERROR_AUDIO_INVALID_FORMAT                          = 0x80260007;
     public final static int ERROR_AUDIO_CHANNEL_NOT_RESERVED                    = 0x80260008;
     public final static int ERROR_AUDIO_NOT_OUTPUT                              = 0x80260009;
+
+    public final static int ERROR_PSMF_NOT_INITIALIZED                          = 0x80615001;
+    public final static int ERROR_PSMF_BAD_VERSION                              = 0x80615002;
+    public final static int ERROR_PSMF_NOT_FOUND                                = 0x80615025;
+    public final static int ERROR_PSMF_INVALID_PSMF                             = 0x80615501;
+    public final static int ERROR_PSMF_INVALID_VALUE                            = 0x806151FE;
 }
