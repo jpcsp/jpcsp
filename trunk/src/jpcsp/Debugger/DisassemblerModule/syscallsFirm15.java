@@ -978,13 +978,13 @@ public class syscallsFirm15 {
          scePsmfPlayerSetPsmf(0x30b7, 0x3D6D25A9), // umd game only 2.60+
          scePsmfPlayerReleasePsmf(0x30b8, 0xE792CD94), // umd game only 2.60+
          scePsmfPlayerStart(0x30b9, 0x95A84EE5), // umd game only 2.60+
-         scePsmfPlayer_3EA82A4B(0x30ba, 0x3EA82A4B), // umd game only 2.60+
+         scePsmfPlayerGetAudioOutSize(0x30ba, 0x3EA82A4B), // umd game only 2.60+
          scePsmfPlayerStop(0x30bb, 0x1078C008), // umd game only 2.60+
          scePsmfPlayerUpdate(0x30bc, 0xA0B8CA55), // umd game only 2.60+
-         scePsmfPlayer_46F61F8B(0x30bd, 0x46F61F8B), // umd game only 2.60+
-         scePsmfPlayer_B9848A74(0x30be, 0xB9848A74), // umd game only 2.60+
-         scePsmfPlayer_F8EF08A6(0x30bf, 0xF8EF08A6), // umd game only 2.60+
-         scePsmfPlayer_DF089680(0x30c0, 0xDF089680), // umd game only 2.60+
+         scePsmfPlayerGetVideoData(0x30bd, 0x46F61F8B), // umd game only 2.60+
+         scePsmfPlayerGetAudioData(0x30be, 0xB9848A74), // umd game only 2.60+
+         scePsmfPlayerGetCurrentStatus(0x30bf, 0xF8EF08A6), // umd game only 2.60+
+         scePsmfPlayerGetPsmfInfo(0x30c0, 0xDF089680), // umd game only 2.60+
          scePsmfPlayer_1E57A8E7(0x30c1, 0x1E57A8E7), // umd game only 2.60+
          scePsmfPlayer_2BEB1569(0x30c2, 0x2BEB1569), // umd game only 2.60+
          sceKernelCreateLwMutex(0x30c3, 0x19CFF145), // 3.95+
@@ -1083,6 +1083,12 @@ public class syscallsFirm15 {
          sceFontPointToPixelV(0x3120, 0x3C4B7E82),
          sceFontPixelToPointH(0x3121, 0x74B21701),
          sceFontPixelToPointV(0x3122, 0xF8F0752E),
+         scePsmfPlayerChangePlayMode(0x3123, 0xA3D81169),
+         scePsmfPlayerGetCurrentAudioStream(0x3124, 0x68F07175),
+         scePsmfPlayerGetCurrentPlayMode(0x3125, 0xF3EFAA91),
+         scePsmfPlayerGetCurrentPts(0x3126, 0x3ED62233),
+         scePsmfPlayerGetCurrentVideoStream(0x3127, 0x9FF2B2E7),
+         _scePsmfPlayerStrCurrentHeapSet(0x3128, 0xb8d10c56),
 
          // CFW
          kuKernelLoadModule(0x5000, 0x4C25EA72),

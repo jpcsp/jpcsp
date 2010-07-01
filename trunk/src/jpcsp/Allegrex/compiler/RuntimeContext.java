@@ -438,7 +438,8 @@ public class RuntimeContext {
 
     private static void syncThreadImmediately() throws StopThreadException {
         Thread currentThread = Thread.currentThread();
-    	if (currentThread != currentRuntimeThread && !alreadySwitchedStoppedThreads.contains(currentThread)) {
+    	if (currentRuntimeThread != null &&
+                currentThread != currentRuntimeThread && !alreadySwitchedStoppedThreads.contains(currentThread)) {
     		currentRuntimeThread.continueRuntimeExecution();
 
     		if (currentThread instanceof RuntimeThread) {

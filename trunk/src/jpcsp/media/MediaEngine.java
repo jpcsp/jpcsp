@@ -18,9 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media;
 
 import jpcsp.HLE.Modules;
-import jpcsp.Settings;
 
-import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 import javax.sound.sampled.AudioFormat;
@@ -292,121 +290,6 @@ public class MediaEngine {
         }
     }
 
-    /*
-     * Function based on Xuggler's demos.
-     * Given a certain file, it should parse it, look for the video stream,
-     * and generate images from each packet.
-     * Time control is based on timestamps, but it needs a small delay to
-     * avoid speedups.
-     *
-     * This method is used when the video is supposed to be played
-     * all at once (scePsmfPlayer case).
-     */
-    @SuppressWarnings("deprecated")
-    public void decodeAndPlay(String file) {
-        container = IContainer.make();
-
-        if (container.open(file, IContainer.Type.READ, null) < 0)
-            Modules.log.error("MediaEngine: Invalid file or container format!");
-
-        numStreams = container.getNumStreams();
-
-        videoStreamID = -1;
-        videoCoder = null;
-        audioStreamID = -1;
-        audioCoder = null;
-
-        for(int i = 0; i < numStreams; i++) {
-            IStream stream = container.getStream(i);
-            IStreamCoder coder = stream.getStreamCoder();
-
-            if (videoStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_VIDEO) {
-                videoStreamID = i;
-                videoCoder = coder;
-            } else if (audioStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
-                audioStreamID = i;
-                audioCoder = coder;
-            }
-        }
-
-        if (videoStreamID == -1)
-            Modules.log.error("MediaEngine: No video streams found!");
-        else if (videoCoder.open() < 0)
-            Modules.log.error("MediaEngine: Can't open video decoder!");
-
-        if (audioStreamID == -1)
-            Modules.log.error("MediaEngine: No audio streams found!");
-        else if (audioCoder.open() < 0)
-            Modules.log.error("MediaEngine: Can't open audio decoder!");
-        else {
-            try {
-                startSound(audioCoder);
-            } catch (LineUnavailableException ex) {
-                Modules.log.error("MediaEngine: Can't start audio line!");
-            }
-        }
-
-        packet = IPacket.make();
-        firstTimestamp = Global.NO_PTS;
-        clockStartTime = 0;
-
-        while(container.readNextPacket(packet) >= 0) {
-
-            if(movieFrame != null) {
-                 if(!movieFrame.isVisible())
-                     break;
-            }
-
-            if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
-
-                IVideoPicture picture = IVideoPicture.make(videoCoder.getPixelType(),
-                        videoCoder.getWidth(), videoCoder.getHeight());
-
-                if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
-                    picture = resample(picture, IPixelFormat.Type.BGR24);
-                }
-
-                int bytesDecoded = videoCoder.decodeVideo(picture, packet, 0);
-
-                if (bytesDecoded < 0)
-                    Modules.log.error("MediaEngine: No video bytes decoded!");
-
-           if (picture.isComplete()) {
-               long delay = calculateDelay(picture);
-
-                   if (delay > 0) {
-                       try {
-                           Thread.sleep(delay);
-                       } catch (InterruptedException e) {
-                           return;
-                       }
-                   }
-               }
-               BufferedImage img = Utils.videoPictureToImage(picture);
-               displayImage(img);
-
-            } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
-                IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
-
-                int offset = 0;
-                while(offset < packet.getSize()) {
-                    int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
-
-                    if (bytesDecoded < 0)
-                        Modules.log.error("MediaEngine: No audio bytes decoded!");
-
-                    offset += bytesDecoded;
-
-                    if (samples.isComplete())
-                        playSound(samples);
-                }
-            } else {
-                do {} while(false);
-            }
-        }
-        finish();
-    }
-
     // Cleanup function.
     public void finish() {
         if (container != null) {
@@ -474,23 +357,6 @@ public class MediaEngine {
 
         return picture;
      }
-
-    /*
-     * Main interaction functions.
-     */
-private void displayImage(BufferedImage img) {
-        if(movieFrame == null) {
-            movieFrame = new JFrame("JPCSP - PSMF Player");
-            movieFrame.setSize(img.getWidth(), img.getHeight() + 28);
-            int pos[] = Settings.getInstance().readWindowPos("mainwindow");
-            movieFrame.setLocation(pos[0] + 4, pos[1] + 76);
-            movieFrame.setResizable(false);
-            movieFrame.setVisible(true);
-        }
-
-        Graphics g = movieFrame.getGraphics();
-        g.drawImage(img, 0, 28, null);
-    }
 
     // Sound sampling functions also based on Xuggler's demos.
     private static void startSound(IStreamCoder aAudioCoder) throws LineUnavailableException {
