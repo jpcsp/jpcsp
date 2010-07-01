@@ -340,10 +340,14 @@ public class sceMpeg implements HLEModule {
         	mpegRingbuffer.reset();
         	mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
-        mpegAtracCurrentDecodingTimestamp = -1;
-        mpegAtracCurrentPresentationTimestamp = -1;
-        mpegAvcCurrentDecodingTimestamp = -1;
-        mpegAvcCurrentPresentationTimestamp = -1;
+
+        // From "The Legend of Heroes II: Prophecy of the Moonlight Witch":
+        //   - "Warning:AUDIO START PTS is not 90000:4180".
+        mpegAtracCurrentDecodingTimestamp = mpegTimestampPerSecond / audioTimestampStep;
+        mpegAtracCurrentPresentationTimestamp = mpegTimestampPerSecond / audioTimestampStep;
+        mpegAvcCurrentDecodingTimestamp = mpegTimestampPerSecond / videoTimestampStep;
+        mpegAvcCurrentPresentationTimestamp = mpegTimestampPerSecond / videoTimestampStep;
+
         videoFrameCount = 0;
         audioFrameCount = 0;
 
@@ -599,13 +603,6 @@ public class sceMpeg implements HLEModule {
             // Initialise mpeg values.
             mpegRingbufferAddr = ringbuffer_addr;
             mpegRingbuffer = ringbuffer;
-
-            // From "The Legend of Heroes II: Prophecy of the Moonlight Witch":
-            //   - "Warning:AUDIO START PTS is not 90000:4180".
-            mpegAtracCurrentDecodingTimestamp = mpegTimestampPerSecond / audioTimestampStep;
-            mpegAtracCurrentPresentationTimestamp = mpegTimestampPerSecond / audioTimestampStep;
-            mpegAvcCurrentDecodingTimestamp = mpegTimestampPerSecond / videoTimestampStep;
-            mpegAvcCurrentPresentationTimestamp = mpegTimestampPerSecond / videoTimestampStep;
             videoFrameCount = 0;
             audioFrameCount = 0;
             videoPixelMode = PSP_DISPLAY_PIXEL_FORMAT_8888;
@@ -1133,7 +1130,6 @@ public class sceMpeg implements HLEModule {
             }
 
             mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
-            mpegAvcCurrentPresentationTimestamp += videoTimestampStep;
 
             int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
             int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
@@ -1504,7 +1500,6 @@ public class sceMpeg implements HLEModule {
             }
 
             mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
-            mpegAvcCurrentPresentationTimestamp += videoTimestampStep;
 
             int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
             int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
@@ -1607,7 +1602,6 @@ public class sceMpeg implements HLEModule {
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr)) {
             mpegAtracCurrentDecodingTimestamp += audioTimestampStep;
-            mpegAtracCurrentPresentationTimestamp += audioTimestampStep;
 
             long currentSystemTime = Emulator.getClock().milliTime();
             int elapsedTime = (int) (currentSystemTime - lastAtracSystemTime);
