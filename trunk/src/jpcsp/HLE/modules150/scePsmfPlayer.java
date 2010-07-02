@@ -33,7 +33,6 @@ import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
@@ -105,12 +104,9 @@ public class scePsmfPlayer implements HLEModule {
     protected static final int psmfPlayerVideoTimestampStep = 3003;
     protected static final int psmfPlayerAudioTimestampStep = 4180;
     protected static final int psmfTimestampPerSecond = 90000;
-    protected static final int psmfAtracDecodeDelay = 1000 / 30;
-    protected static final int psmfAvcDecodeDelay   = 1000 / 30;
     protected static final int pmsfMaxAheadTimestamp = 100000;
-    protected static final int PSMF_PLAYER_STATUS_FINISH = 0x2;
-    protected static final int PSMF_PLAYER_STATUS_UNK1 = 0x100;
-    protected static final int PSMF_PLAYER_STATUS_UNK2 = 0x200;
+    protected static final int PSMF_PLAYER_STATUS_STOPPED = 2;
+    protected static final int PSMF_PLAYER_STATUS_FINISHED = 4;
 
     // .PMF file vars.
     protected String pmfFilePath;
@@ -122,13 +118,16 @@ public class scePsmfPlayer implements HLEModule {
     protected long lastPsmfPlayerAtracSystemTime;
     protected long psmfPlayerLastTimestamp;
     protected int psmfPlayerStatus;
+    protected int psmfPlayerVideoStatus;
+    protected int psmfPlayerAudioStatus;
     protected int psmfPlayerAvcCurrentDecodingTimestamp;
     protected int psmfPlayerAtracCurrentDecodingTimestamp;
     protected int psmfPlayerAvcCurrentPresentationTimestamp;
     protected int psmfPlayerAtracCurrentPresentationTimestamp;
 
     // Playback settings.
-    protected int bufferAddr;
+    protected int displayBuffer;
+    protected int frameWidth;
     protected int videoPixelMode;
     protected int audioSize;
 
@@ -233,18 +232,16 @@ public class scePsmfPlayer implements HLEModule {
         Memory mem = Processor.memory;
 
         int psmfplayer = cpu.gpr[4];
-        int mpeg = cpu.gpr[5];
+        int buffer_addr = cpu.gpr[5];
 
         Modules.log.warn("PARTIAL: scePsmfPlayerCreate psmfplayer=0x" + Integer.toHexString(psmfplayer)
-                + " mpeg=0x" + Integer.toHexString(mpeg));
+                + " buffer_addr=0x" + Integer.toHexString(buffer_addr));
 
-        // Set default video parameters.
-        bufferAddr = mem.read32(mpeg);
-        audioSize = 2048;
+        displayBuffer = mem.read32(buffer_addr);
+        frameWidth = 512;
+
+        audioSize = -1;  // Faking (no audio).
         videoPixelMode = pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
-        psmfPlayerStatus = 0;
-        psmfPlayerAvcCurrentDecodingTimestamp = 0;
-        psmfPlayerAtracCurrentDecodingTimestamp = 0;
 
         cpu.gpr[2] = 0;
     }
@@ -260,6 +257,8 @@ public class scePsmfPlayer implements HLEModule {
             if(me != null) me.finish();
             if(pmfFileChannel != null) pmfFileChannel.flush();
         }
+
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_FINISHED;
 
         cpu.gpr[2] = 0;
     }
@@ -309,6 +308,8 @@ public class scePsmfPlayer implements HLEModule {
             if(pmfFileChannel != null) pmfFileChannel.flush();
         }
 
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_FINISHED;
+
         cpu.gpr[2] = 0;
     }
 
@@ -317,11 +318,15 @@ public class scePsmfPlayer implements HLEModule {
         Memory mem = Processor.memory;
 
         int psmfplayer = cpu.gpr[4];
-        int unk1 = cpu.gpr[5];           // Another output address?
-        int unk2 = cpu.gpr[6];           // MPEG stream to be used?
+        int unk = cpu.gpr[5];
+        int init_status = cpu.gpr[6];
 
         Modules.log.warn("PARTIAL: scePsmfPlayerStart psmfplayer=0x" + Integer.toHexString(psmfplayer)
-                + " unk1=0x" + Integer.toHexString(unk1) + " unk2=" + Integer.toHexString(unk2));
+                + " unk=0x" + Integer.toHexString(unk) + " init_status=" + Integer.toHexString(init_status));
+
+        psmfPlayerStatus = init_status;
+        psmfPlayerAvcCurrentDecodingTimestamp = 0;
+        psmfPlayerAtracCurrentDecodingTimestamp = 0;
 
         analyzePSMFLastTimestamp();
 
@@ -355,7 +360,7 @@ public class scePsmfPlayer implements HLEModule {
             if(pmfFileChannel != null) pmfFileChannel.flush();
         }
 
-        psmfPlayerStatus = PSMF_PLAYER_STATUS_FINISH;
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_FINISHED;
 
         cpu.gpr[2] = 0;
     }
@@ -368,9 +373,11 @@ public class scePsmfPlayer implements HLEModule {
 
         Modules.log.warn("PARTIAL: scePsmfPlayerUpdate psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
-        // Check if we've reached the last timestamp.
-        if(psmfPlayerLastTimestamp < psmfPlayerAvcCurrentDecodingTimestamp) {
-            psmfPlayerStatus = PSMF_PLAYER_STATUS_FINISH;
+        // Change the current status to video or audio accordingly.
+        if ((psmfPlayerAtracCurrentDecodingTimestamp > psmfPlayerAvcCurrentDecodingTimestamp + pmsfMaxAheadTimestamp)) {
+            psmfPlayerStatus = psmfPlayerVideoStatus;
+        } else if ((psmfPlayerAvcCurrentDecodingTimestamp > psmfPlayerAtracCurrentDecodingTimestamp + pmsfMaxAheadTimestamp)) {
+            psmfPlayerStatus = psmfPlayerAudioStatus;
         }
 
         cpu.gpr[2] = 0;
@@ -387,32 +394,32 @@ public class scePsmfPlayer implements HLEModule {
         Modules.log.warn("PARTIAL: scePsmfPlayerGetVideoData psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " videoDataAddr=0x" + Integer.toHexString(videoDataAddr));
 
-        // Write output data.
-        mem.write32(videoDataAddr, 0);               // Unknown.
-        mem.write32(videoDataAddr + 4, bufferAddr);  // Backup pointer to display buffer.
+        // Check if there's already a valid pointer at videoDataAddr.
+        if(mem.isAddressGood(mem.read32(videoDataAddr + 4))) {
+            frameWidth = mem.read32(videoDataAddr);
+            displayBuffer = mem.read32(videoDataAddr + 4);
+        } else {
+            mem.write32(videoDataAddr, frameWidth);
+            mem.write32(videoDataAddr + 4, displayBuffer);
+        }
 
-        // Write video.
+        // Write video data.
         if(checkMediaEngineState()) {
             if(me.getContainer() != null) {
                 me.step();
-                writePSMFVideoImage(bufferAddr, 512);
+                writePSMFVideoImage(displayBuffer, frameWidth);
                 psmfPlayerLastTimestamp = me.getPacketTimestamp("Video", "DTS");
             }
         } else {
-            generateFakePSMFVideo(bufferAddr, 512);
+            generateFakePSMFVideo(displayBuffer, frameWidth);
         }
 
+        // Update video timestamp.
         psmfPlayerAvcCurrentDecodingTimestamp += psmfPlayerVideoTimestampStep;
 
-        // Delay.
-        long currentSystemTime = Emulator.getClock().milliTime();
-        int elapsedTime = (int) (currentSystemTime - lastPsmfPlayerAvcSystemTime);
-        if (elapsedTime >= 0 && elapsedTime <= (1000 / 30)) {
-            int delayMillis = (1000 / 30) - elapsedTime;
-            Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-            lastPsmfPlayerAvcSystemTime = currentSystemTime + delayMillis;
-        } else {
-            lastPsmfPlayerAvcSystemTime = currentSystemTime;
+        // Check if we've reached the last video timestamp.
+        if (psmfPlayerAvcCurrentDecodingTimestamp > psmfPlayerLastTimestamp) {
+            psmfPlayerStatus = PSMF_PLAYER_STATUS_STOPPED;
         }
 
         cpu.gpr[2] = 0;
@@ -428,18 +435,8 @@ public class scePsmfPlayer implements HLEModule {
         Modules.log.warn("PARTIAL: scePsmfPlayerGetAudioData psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " audioDataAddr=0x" + Integer.toHexString(audioDataAddr));
 
+        // Update audio timestamp.
         psmfPlayerAtracCurrentDecodingTimestamp += psmfPlayerAudioTimestampStep;
-
-        // Delay.
-        long currentSystemTime = Emulator.getClock().milliTime();
-        int elapsedTime = (int) (currentSystemTime - lastPsmfPlayerAtracSystemTime);
-        if (elapsedTime >= 0 && elapsedTime <= (1000 / 30)) {
-            int delayMillis = (1000 / 30) - elapsedTime;
-            Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-            lastPsmfPlayerAtracSystemTime = currentSystemTime + delayMillis;
-        } else {
-            lastPsmfPlayerAtracSystemTime = currentSystemTime;
-        }
 
         cpu.gpr[2] = 0;
     }
@@ -474,10 +471,18 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
         int stream_type = cpu.gpr[5];
-        int ch = cpu.gpr[6];
+        int status = cpu.gpr[6];
 
         Modules.log.warn("PARTIAL: scePsmfPlayer_1E57A8E7 psmfplayer=0x" + Integer.toHexString(psmfplayer)
-                + " stream_type=" + stream_type + " ch=" + ch);
+                + " stream_type=" + stream_type + " status=" + status);
+
+        if(stream_type == 0) {           // Video.
+            psmfPlayerVideoStatus = status;
+        } else if (stream_type == 1) {   // Audio.
+            psmfPlayerAudioStatus = status;
+        } else {
+            Modules.log.warn("scePsmfPlayer_1E57A8E7 unknown stream type.");
+        }
 
         cpu.gpr[2] = 0;
     }
