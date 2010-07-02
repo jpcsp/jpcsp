@@ -469,6 +469,9 @@ public class UmdBrowser extends JDialog {
 		if (umdBrowserPmf != null) {
 			umdBrowserPmf.stopVideo();
 		}
+		if (umdBrowserSound != null) {
+			umdBrowserSound.stopVideo();
+		}
 
 		Settings.getInstance().writeWindowPos(windowNameForSettings, getLocation());
 		Settings.getInstance().writeWindowSize(windowNameForSettings, getSize());
