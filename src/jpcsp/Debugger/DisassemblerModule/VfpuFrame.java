@@ -53,8 +53,7 @@ public class VfpuFrame extends JFrame {
 					Settings.getInstance().writeWindowPos("vfpuregisters", getLocation());
 
 					/* save window size */
-					Settings.getInstance().writeWindowSize("vfpuregisters",
-							new int[] { getWidth(), getHeight()});
+					Settings.getInstance().writeWindowSize("vfpuregisters", getSize());
 				}
 			}});
 
@@ -148,10 +147,9 @@ public class VfpuFrame extends JFrame {
 						.addComponent(panels[5])
 						.addComponent(panels[7]))
 				);
-		int[] size = Settings.getInstance().readWindowSize("vfpuregisters");
-		setSize(size[0], size[1]);
-		size = Settings.getInstance().readWindowPos("vfpuregisters");
-		setLocation(size[0], size[1]);
+
+		setSize(Settings.getInstance().readWindowSize("vfpuregisters", 100, 100));
+		setLocation(Settings.getInstance().readWindowPos("vfpuregisters"));
 	}
 
 	public void updateRegisters(CpuState cpu) {

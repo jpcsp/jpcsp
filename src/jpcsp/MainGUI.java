@@ -70,7 +70,6 @@ import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceAtrac3plus;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -105,6 +104,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private boolean snapConsole = true;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
+    public final static String windowNameForSettings = "mainwindow";
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -124,9 +124,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         initComponents();
         populateRecentMenu();
 
-        int pos[] = Settings.getInstance().readWindowPos("mainwindow");
-        setLocation(pos[0], pos[1]);
-        State.fileLogger.setLocation(pos[0] + 488, pos[1] + 18);
+        setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
+        State.fileLogger.setLocation(getLocation().x + 488, getLocation().y + 18);
         setTitle(MetaInformation.FULL_NAME);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
@@ -147,8 +146,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             mainwindowPos = getLocation();
             consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
         } else {
-            pos = Settings.getInstance().readWindowPos("logwindow");
-            consolewin.setLocation(pos[0], pos[1]);
+            consolewin.setLocation(Settings.getInstance().readWindowPos("logwindow"));
         }
     }
 
@@ -668,8 +666,7 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     if (State.debugger == null)
     {
         State.debugger = new DisassemblerFrame(emulator);
-        int pos[] = Settings.getInstance().readWindowPos("disassembler");
-        State.debugger.setLocation(pos[0], pos[1]);
+        State.debugger.setLocation(Settings.getInstance().readWindowPos("disassembler"));
         State.debugger.setVisible(true);
     }
     else
@@ -850,8 +847,7 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
      {
 
       elfheader = new ElfHeaderInfo();
-      int pos[] = Settings.getInstance().readWindowPos("elfheader");
-      elfheader.setLocation(pos[0], pos[1]);
+      elfheader.setLocation(Settings.getInstance().readWindowPos("elfheader"));
       elfheader.setVisible(true);
      }
      else
@@ -866,8 +862,7 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
     if (State.memoryViewer == null)
     {
         State.memoryViewer = new MemoryViewer();
-        int pos[] = Settings.getInstance().readWindowPos("memoryview");
-        State.memoryViewer.setLocation(pos[0], pos[1]);
+        State.memoryViewer.setLocation(Settings.getInstance().readWindowPos("memoryview"));
         State.memoryViewer.setVisible(true);
     }
     else
@@ -939,8 +934,6 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     if (Settings.getInstance().readBool("emu.umdbrowser"))
     {
         umdbrowser = new UmdBrowser(this, new File(Settings.getInstance().readString("emu.umdpath") + "/"));
-        Point mainwindow = this.getLocation();
-        umdbrowser.setLocation(mainwindow.x+100, mainwindow.y+50);
         umdbrowser.setVisible(true);
     }
     else

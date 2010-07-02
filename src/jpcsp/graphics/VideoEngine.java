@@ -3987,9 +3987,11 @@ public class VideoEngine {
 
         // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
         // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
-        if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
-            log.info("Capture PRIM");
-            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+        if (State.captureGeNextFrame) {
+    		if (!isVertexBufferEmbedded()) {
+	            log.info("Capture PRIM");
+	            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+    		}
             display.captureGeImage(gl);
         }
 

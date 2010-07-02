@@ -48,8 +48,7 @@ public class LogWindow extends JFrame {
 					Settings.getInstance().writeWindowPos("logwindow", getLocation());
 
 					/* save window size */
-					Settings.getInstance().writeWindowSize("logwindow",
-							new int[] { getWidth(), getHeight()});
+					Settings.getInstance().writeWindowSize("logwindow", getSize());
 				}
 			}});
 
@@ -177,10 +176,7 @@ public class LogWindow extends JFrame {
 						.addComponent(saveButton)
 						.addComponent(clearButton)));
 
-		int[] size = Settings.getInstance().readWindowSize("logwindow");
-		setSize(size[0], size[1]);
-		if (getHeight() <= 200 || getWidth() <= 200)
-			setSize(500, 300);
+		setSize(Settings.getInstance().readWindowSize("logwindow", 500, 300));
 		getRootPane().setLayout(layout);
 	}
 
