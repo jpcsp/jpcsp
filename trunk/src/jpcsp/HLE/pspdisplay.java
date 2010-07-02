@@ -329,8 +329,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         	return;
         }
 
+        // The lower 2 bits of the bufferwidth are ignored.
+        // E.g., the following bufferwidth values are valid: 120, 240, 480, 256, 512...
+        bufferwidth = bufferwidth & ~0x3;
+
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
-            bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
+            bufferwidth <= 0 ||
             pixelformat < 0 || pixelformat > 3 ||
             sync < 0 || sync > 1)
         {
