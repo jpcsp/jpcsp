@@ -211,6 +211,7 @@ public class sceUtility implements HLEModule {
 
     protected static final int maxLineLengthForDialog = 80;
     protected static final int[] fontHeightSavedataList = new int[] { 12, 12, 12, 12, 12, 12, 9, 8, 7, 6 };
+    private static final String windowNameForSettings = "savedata";
 
     protected UtilityDialogState gameSharingState;
     protected SceUtilityGameSharingParams gameSharingParams;
@@ -621,9 +622,8 @@ public class sceUtility implements HLEModule {
     protected void showSavedataList(final String[] saveNames) {
         final JDialog mainDisplay = new JDialog();
         mainDisplay.setTitle("Savedata List");
-        mainDisplay.setSize(400, 401);
-        int pos[] = Settings.getInstance().readWindowPos("savedata");
-        mainDisplay.setLocation(pos[0], pos[1]);
+        mainDisplay.setSize(Settings.getInstance().readWindowSize(windowNameForSettings, 400, 401));
+        mainDisplay.setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
         mainDisplay.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         final JButton selectButton = new JButton("Select");
@@ -684,7 +684,8 @@ public class sceUtility implements HLEModule {
                 break;
         }
 
-        Settings.getInstance().writeWindowPos("savedata", mainDisplay.getLocation());
+        Settings.getInstance().writeWindowPos(windowNameForSettings, mainDisplay.getLocation());
+        Settings.getInstance().writeWindowSize(windowNameForSettings, mainDisplay.getSize());
     }
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {

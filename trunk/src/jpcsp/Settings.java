@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
@@ -108,21 +109,25 @@ public class Settings {
 		writeSettings();
 	}
 
-	public int[] readWindowPos(String windowname) {
-		int[] dimension = new int[2];
+	public Point readWindowPos(String windowname) {
 		String x = loadedSettings.getProperty("gui.windows." + windowname + ".x");
 		String y = loadedSettings.getProperty("gui.windows." + windowname + ".y");
-		dimension[0] = x != null ? Integer.parseInt(x) : 0;
-		dimension[1] = y != null ? Integer.parseInt(y) : 0;
-		return dimension;
+
+		Point position = new Point();
+		position.x = x != null ? Integer.parseInt(x) : 0;
+		position.y = y != null ? Integer.parseInt(y) : 0;
+
+		return position;
 	}
 
-	public int[] readWindowSize(String windowname) {
-		int[] dimension = new int[2];
-		String x = loadedSettings.getProperty("gui.windows." + windowname + ".w");
-		String y = loadedSettings.getProperty("gui.windows." + windowname + ".h");
-		dimension[0] = x != null ? Integer.parseInt(x) : 100;
-		dimension[1] = y != null ? Integer.parseInt(y) : 100;
+	public Dimension readWindowSize(String windowname, int defaultWidth, int defaultHeight) {
+		String w = loadedSettings.getProperty("gui.windows." + windowname + ".w");
+		String h = loadedSettings.getProperty("gui.windows." + windowname + ".h");
+
+		Dimension dimension = new Dimension();
+		dimension.width = w != null ? Integer.parseInt(w) : defaultWidth;
+		dimension.height = h != null ? Integer.parseInt(h) : defaultHeight;
+
 		return dimension;
 	}
 
@@ -132,9 +137,9 @@ public class Settings {
 		writeSettings();
 	}
 
-	public void writeWindowSize(String windowname, int[] dimension) {
-		loadedSettings.setProperty("gui.windows." + windowname + ".w", Integer.toString(dimension[0]));
-		loadedSettings.setProperty("gui.windows." + windowname + ".h", Integer.toString(dimension[1]));
+	public void writeWindowSize(String windowname, Dimension dimension) {
+		loadedSettings.setProperty("gui.windows." + windowname + ".w", Integer.toString(dimension.width));
+		loadedSettings.setProperty("gui.windows." + windowname + ".h", Integer.toString(dimension.height));
 		writeSettings();
 	}
 
