@@ -417,7 +417,7 @@ char *texFilterNames[] = { "GU_NEAREST", "GU_LINEAR", "Unknown2", "Unknown3", "G
 
 int texFuncAlpha1 = 1;
 int texFuncAlpha2 = 1;
-char *texFuncAlphaNames[] = { "RGB", "ALPHA" };
+char *texFuncAlphaNames[] = { "RGB", "ALPHA", "UNKNOWN 0x81" };
 
 int texFuncDouble1 = 0;
 int texFuncDouble2 = 0;
@@ -535,6 +535,7 @@ char *faceNames[] = { "Unchanged", "GU_CW", "GU_CCW" };
 int patchPrim = 0;
 char *patchPrimNames[] = { "GU_TRIANGLE_STRIP", "GU_LINE_STRIP", "GU_POINTS" };
 
+int fbw = BUF_WIDTH;
 
 void addColorAttribute(char *label, struct Color *pcolor, int x, int y, int hasAlpha)
 {
@@ -864,6 +865,8 @@ void drawRectangles()
 	if (clearFlagDepth   != 0) clearFlags |= GU_DEPTH_BUFFER_BIT;
 	if (clearFlagStencil != 0) clearFlags |= GU_STENCIL_BUFFER_BIT;
 
+	sceGuDrawBuffer(GU_PSM_8888, fbp0, fbw);
+
 	if (clearMode == 0)
 	{
 		sceGuDisable(GU_TEXTURE_2D);
@@ -967,7 +970,7 @@ void drawRectangles()
 	{
 		sceGuDisable(GU_FRAGMENT_2X);
 	}
-	sceGuTexFunc(texFunc1, texFuncAlpha1);
+	sceGuTexFunc(texFunc1, texFuncAlpha1 == 2 ? 0x81 : texFuncAlpha1);
 	sceGuTexFilter(texMinFilter1, texMagFilter1);
 	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 	sceGuTexScale(1.0 / textureScale, 1.0 / textureScale);
@@ -1095,7 +1098,7 @@ void drawRectangles()
 	{
 		sceGuDisable(GU_FRAGMENT_2X);
 	}
-	sceGuTexFunc(texFunc2, texFuncAlpha2);
+	sceGuTexFunc(texFunc2, texFuncAlpha2 == 2 ? 0x81 : texFuncAlpha2);
 	sceGuTexFilter(texMinFilter2, texMagFilter2);
 	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 	sceGuTexScale(1.0 / textureScale, 1.0 / textureScale);
@@ -1291,11 +1294,11 @@ void init()
 	addAttribute(", Pos", &zpos, NULL, x + 14, y, 0, 0xFFFF, 1000);
 	y++;
 
-	addAttribute("Viewport X", &viewportX, NULL, x, y, 0, 4095, 1);
-	addAttribute(", Y", &viewportY, NULL, x + 16, y, 0, 4095, 1);
+	addAttribute("Viewport X", &viewportX, NULL, x, y, 0, 4095, 100);
+	addAttribute(", Y", &viewportY, NULL, x + 16, y, 0, 4095, 100);
 	y++;
-	addAttribute("         Width", &viewportWidth, NULL, x, y, 0, 4096, 1);
-	addAttribute(", Height", &viewportHeight, NULL, x + 19, y, 0, 4096, 1);
+	addAttribute("         Width", &viewportWidth, NULL, x, y, 0, 4096, 100);
+	addAttribute(", Height", &viewportHeight, NULL, x + 19, y, 0, 4096, 100);
 	y++;
 	addAttribute("Offset X", &offsetX, NULL, x, y, 0, 4096, 1);
 	addAttribute(", Y", &offsetY, NULL, x + 14, y, 0, 4096, 1);
@@ -1303,6 +1306,9 @@ void init()
 	addAttribute("Display Width", &displayWidth, NULL, x, y, 0, 512, 1);
 	addAttribute(", Height", &displayHeight, NULL, x + 18, y, 0, 512, 1);
 	addAttribute(", Mode", &displayMode, NULL, x + 31, y, 0, 100, 1);	// Which values can take displayMode?
+	y++;
+
+	addAttribute("FrameBuffer Width", &fbw, NULL, x, y, 0, 1024, 1);
 	y++;
 
 	addAttribute("sceGuAlphaFunc", &alphaFunc, NULL, x, y, 0, 7, 1);
@@ -1376,7 +1382,7 @@ void init()
 
 	addAttribute("sceGuTexFunc", &texFunc1, NULL, x + 6, y, 0, 4, 1);
 	setAttributeValueNames(&texFuncNames[0]);
-	addAttribute(NULL, &texFuncAlpha1, NULL, x + 36, y, 0, 1, 1);
+	addAttribute(NULL, &texFuncAlpha1, NULL, x + 36, y, 0, 2, 1);
 	setAttributeValueNames(&texFuncAlphaNames[0]);
 	addAttribute(NULL, &texFuncDouble1, NULL, x + 42, y, 0, 1, 1);
 	setAttributeValueNames(&texFuncDoubleNames[0]);
