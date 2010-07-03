@@ -1,35 +1,81 @@
+#extension GL_EXT_gpu_shader4 : enable
+
 uniform sampler2D tex;
-uniform bool texEnable;
-uniform int texEnvMode;
+uniform bool      texEnable;
+uniform int       texEnvMode;
+uniform int       texMapMode;
+uniform float     colorDoubling;
 
-vec4 getFragColor() {
-	if (!texEnable) {
-		return gl_Color;
-	}
+uniform bool      ctestEnable;
+uniform int       ctestFunc;
+uniform ivec3     ctestRef;
+uniform ivec3     ctestMsk;
 
-	vec4 texel = texture2D(tex, gl_TexCoord[0].st);
-	vec4 color;
+vec4 getFragColor()
+{
+    vec4 Cp = gl_Color;
+    vec4 Cs = gl_SecondaryColor;
+    vec4 Cd = vec4(1.0); // vec4(vec3(colorDoubling), 1.0);
 
-	if (texEnvMode == 0) { // MODULATE
-		color = gl_Color * texel; 
-	} else if(texEnvMode == 1) { // DECAL
-		color.rgb = mix(gl_Color.rgb, texel.rgb, texel.a);
-		color.a = gl_Color.a;
-	} else if(texEnvMode == 2) { // BLEND
-		color.rgb = mix(gl_Color.rgb, gl_TextureEnvColor[0].rgb, texel.rgb);
-		color.a = gl_Color.a * texel.a;
-	} else if(texEnvMode == 3) { // REPLACE
-		color = texel;
-	} else if(texEnvMode == 4) { // ADD
-		color.rgb = gl_Color.rgb + texel.rgb;
-		color.a = gl_Color.a * texel.a;
-	} else {
-		color = gl_Color;
-	}
+    if (!texEnable)
+    {
+        return Cp + Cs;
+    }
+    else
+    {
+        vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz);
 
-	return color;
+        switch (texEnvMode)
+        {
+        case 0: // MODULATE
+            Cp = Cp * Ct;
+            break;
+        case 1: // DECAL
+            Cp.rgb = mix(Cp.rgb, Ct.rgb, Ct.a);
+            Cp.a   = Cp.a;
+            break;
+        case 2: // BLEND
+            Cp.rgb = mix(Cp.rgb, gl_TextureEnvColor[0].rgb, Ct.rgb);
+            Cp.a   = Cp.a * Ct.a;
+            break;
+        case 3: // REPLACE
+            Cp = Ct;
+            break;
+        case 4: // ADD
+            Cp.rgb = Cp.rgb + Ct.rgb;
+            Cp.a   = Cp.a   * Ct.a;
+            break;
+        }
+
+        Cp = clamp(Cp, 0.0, 1.0);
+
+        return Cd * (Cp + Cs);
+    }
 }
 
-void main() {
-	gl_FragColor = getFragColor();
+void main()
+{
+    vec4  Cf = getFragColor();
+
+    if (ctestEnable)
+    {
+        ivec3 Cs = ivec3(Cf.rgb * 255.0);
+        switch (ctestFunc)
+        {
+        case 0:
+            discard;
+        default:
+            break;
+        case 2:
+            if ((Cs & ctestMsk) == (ctestRef & ctestMsk)) break;
+            discard;
+            break;
+        case 3:
+            if ((Cs & ctestMsk) != (ctestRef & ctestMsk)) break;
+            discard;
+            break;
+        }
+    }
+
+    gl_FragColor = Cf;
 }

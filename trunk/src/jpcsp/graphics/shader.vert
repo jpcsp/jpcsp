@@ -1,197 +1,156 @@
 attribute vec4 psp_weights1;
 attribute vec4 psp_weights2;
+
 uniform float psp_zPos;
 uniform float psp_zScale;
 uniform ivec3 psp_matFlags; // Ambient, Diffuse, Specular
 uniform ivec4 psp_lightType;
 uniform ivec4 psp_lightKind;
 uniform ivec4 psp_lightEnabled;
-uniform mat4 psp_boneMatrix[8];
-uniform int psp_numberBones;
-uniform bool texEnable;
-uniform bool lightingEnable; 
+uniform mat4  psp_boneMatrix[8];
+uniform int   psp_numberBones;
+uniform bool  texEnable;
+uniform int   texMapMode;
+uniform int   texMapProj;
+uniform ivec2 texShade;
+uniform bool  lightingEnable;
+uniform bool  colorAddition;
 
-float calculateAttenuation(in int i, in float dist) {
-    return clamp(1.0 / (gl_LightSource[i].constantAttenuation +
-                 gl_LightSource[i].linearAttenuation * dist +
-                 gl_LightSource[i].quadraticAttenuation * dist * dist), 0.0, 1.0);
-}
+void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, inout vec3 S)
+{
+    float w     = gl_LightSource[i].position.w;
+    vec3  L     = gl_LightSource[i].position.xyz - V * w;
+    vec3  H     = L + vec3(0.0, 0.0, 1.0);
+    float att   = 1.0;
+    float NdotL = max(dot(normalize(L), N), 0.0);
+    float NdotH = max(dot(normalize(H), N), 0.0);
+    float k     = gl_FrontMaterial.shininess;
+    float Dk    = (psp_lightKind[i] == 2) ? max(pow(NdotL, k), 0.0) : NdotL;
+    float Sk    = (psp_lightKind[i] != 0) ? max(pow(NdotH, k), 0.0) : 0.0;
 
-void directionalLight(in int i, in vec3 N, inout vec4 ambient, inout vec4 diffuse, inout vec4 specular) {
-    vec3 L = normalize(gl_LightSource[i].position.xyz);
-    float nDotL = dot(N, L);
-    if (nDotL > 0.0) {
-        vec3 H = gl_LightSource[i].halfVector.xyz;
-        float nDotH = dot(N,H);
-        if (nDotH > 0.0) {
-			float pf = pow(nDotH, gl_FrontMaterial.shininess);
-			specular += gl_LightSource[i].specular * pf;
-		}
-		diffuse += gl_LightSource[i].diffuse * nDotL;
+    if (w != 0.0)
+    {
+        float d = length(L);
+        att = clamp(1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation + gl_LightSource[i].quadraticAttenuation * d) * d), 0.0, 1.0);
+        //if (gl_LightSource[i].spotCutoff < 180.0)
+        {
+            float spot = max(dot(normalize(gl_LightSource[i].spotDirection.xyz), -L), 0.0);
+            att *= (spot < gl_LightSource[i].spotCosCutoff) ? 0.0 : pow(att, gl_LightSource[i].spotExponent);
+        }
     }
-
-    ambient += gl_LightSource[i].ambient;
+    A += gl_LightSource[i].ambient  * att;
+    D += gl_LightSource[i].diffuse  * att * Dk;
+    S += gl_LightSource[i].specular * att * Sk;
 }
 
-void pointLight(in int i, in vec3 N, in vec3 V, inout vec4 ambient, inout vec4 diffuse, inout vec4 specular) {
-    vec3 D = gl_LightSource[i].position.xyz - V;
-    vec3 L = normalize(D);
+void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
+{
+    vec3 Em = gl_FrontMaterial.emission.rgb;
+    vec4 Am = psp_matFlags[0] != 0 ? Cp.rgba : gl_FrontMaterial.ambient.rgba;
+    vec3 Dm = psp_matFlags[1] != 0 ? Cp.rgb  : gl_FrontMaterial.diffuse.rgb;
+    vec3 Sm = psp_matFlags[2] != 0 ? Cp.rgb  : gl_FrontMaterial.specular.rgb;
 
-    float dist = length(D);
-    float attenuation = calculateAttenuation(i, dist);
+    vec4 Al = gl_LightModel.ambient;
+    vec3 Dl = vec3(0.0);
+    vec3 Sl = vec3(0.0);
 
-    float nDotL = dot(N,L);
+    if (psp_lightEnabled[0] != 0) ComputeLight(0, N, V, Al.rgb, Dl.rgb, Sl.rgb);
+    if (psp_lightEnabled[1] != 0) ComputeLight(1, N, V, Al.rgb, Dl.rgb, Sl.rgb);
+    if (psp_lightEnabled[2] != 0) ComputeLight(2, N, V, Al.rgb, Dl.rgb, Sl.rgb);
+    if (psp_lightEnabled[3] != 0) ComputeLight(3, N, V, Al.rgb, Dl.rgb, Sl.rgb);
 
-    if (nDotL > 0.0) {
-    	// TODO Which model is correct?
-    	if (true) {
-	        vec3 E = normalize(-V);
-	        vec3 R = reflect(-L, N);
-
-			float rDotE = dot(R,E);
-			if (rDotE > 0.0) {
-				float pf = pow(rDotE, gl_FrontMaterial.shininess);
-		        specular += gl_LightSource[i].specular * attenuation * pf;
-		    }
-		} else {
-			vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
-			float nDotH = dot(N,H);
-			if (nDotH > 0.0) {
-				float pf = pow(nDotH, gl_FrontMaterial.shininess);
-				specular += gl_LightSource[i].specular * attenuation * pf;
-			}
-		}
-        diffuse += gl_LightSource[i].diffuse * attenuation * nDotL;
+    if (colorAddition)
+    {
+        Cp.rgb = clamp(Em.rgb + Al.rgb * Am.rgb + Dl.rgb * Dm.rgb, 0.0, 1.0);
+        Cs.rgb = clamp(Sl.rgb * Sm.rgb, 0.0, 1.0);
     }
-
-    ambient  += gl_LightSource[i].ambient * attenuation;
+    else
+    {
+        Cp.rgb = clamp(Em.rgb + Al.rgb * Am.rgb + Dl.rgb * Dm.rgb + Sl.rgb * Sm.rgb, 0.0, 1.0);
+    }
+    Cp.a = Al.a * Am.a;
 }
 
-void spotLight(in int i, in vec3 N, in vec3 V, inout vec4 ambient, inout vec4 diffuse, inout vec4 specular) {
-    vec3 D = gl_LightSource[i].position.xyz - V;
-    vec3 L = normalize(D);
+void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
+{
+    switch (texMapMode)
+    {
+    case 0: // UV mapping
+        T.xyz = vec3(vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0), 1.0);
+        break;
 
-	// Check if point on surface is inside cone of illumination
-    float spotEffect = dot(normalize(gl_LightSource[i].spotDirection), -L);
+    case 1: // Projection mapping
+        switch (texMapProj)
+        {
+        case 0: // Model Coordinate Projection
+            T.xyz = vec3(gl_TextureMatrix[0] * vec4(V.xyz, 1.0));
+            break;
+        case 1: // Texture Coordinate Projection
+            T.xyz = vec3(gl_TextureMatrix[0] * vec4(gl_MultiTexCoord0.st, 0.0, 1.0));
+            break;
+        case 2: // Normalized Normal Coordinate projection
+            T.xyz = vec3(gl_TextureMatrix[0] * vec4(normalize(N.xyz), 1.0));
+            break;
+        case 3: // Non-normailzed Normal Coordinate projection
+            T.xyz = vec3(gl_TextureMatrix[0] * vec4(N.xyz, 1.0));
+            break;
+        }
+        break;
 
-    if (spotEffect >= gl_LightSource[i].spotCosCutoff) {
-	    float dist = length(D);
-    	float attenuation = calculateAttenuation(i, dist);
-
-        attenuation *=  pow(spotEffect, gl_LightSource[i].spotExponent);
-
-	    float nDotL = dot(N,L);
-	    if (nDotL > 0.0) {
-			// TODO Which model is correct?
-			if (true) {
-	            vec3 E = normalize(-V);
-	            vec3 R = reflect(-L, N);
-
-				float rDotE = dot(R,E);
-				if (rDotE > 0.0) {
-					float pf = pow(rDotE, gl_FrontMaterial.shininess);
-					specular += gl_LightSource[i].specular * attenuation * pf;
-				}
-			} else {
-				vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
-				float nDotH = dot(N,H);
-				if (nDotH > 0.0) {
-					float pf = pow(nDotH, gl_FrontMaterial.shininess);
-					specular += gl_LightSource[i].specular * attenuation * pf;
-				}
-			}
-			diffuse += gl_LightSource[i].diffuse * attenuation * nDotL;
-	    }
-
-	    ambient += gl_LightSource[i].ambient * attenuation;
-	}
-}
-
-void calculateLighting(in vec3 N, in vec3 V, inout vec4 ambient, inout vec4 diffuse, inout vec4 specular) {
-    for (int i = 0; i < 4; i++) {
-    	if (psp_lightEnabled[i] != 0) {
-	    	if(psp_lightType[i] == 0)
-	    		directionalLight(i, N, ambient, diffuse, specular);
-	    	else if(psp_lightType[i] == 1)
-	    		pointLight(i, N, V, ambient, diffuse, specular);
-	    	else if(psp_lightType[i] == 2)
-	    		spotLight(i, N, V, ambient, diffuse, specular);
-	    }
+    case 2: // Shade mapping
+        vec3  Nn = normalize(N);
+        vec3  Ve = vec3(gl_ModelViewMatrix * V);
+        float k  = gl_FrontMaterial.shininess;
+        vec3  Lu = gl_LightSource[0].position.xyz - Ve.xyz * gl_LightSource[0].position.w;
+        vec3  Lv = gl_LightSource[1].position.xyz - Ve.xyz * gl_LightSource[1].position.w;
+        float Pu = psp_lightKind[0] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
+        float Pv = psp_lightKind[1] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
+        T.xyz = vec3(0.5*vec2(1.0 + Pu, 1.0 + Pv), 1.0);
+        break;
     }
 }
 
-vec4 getEyeCoordinatePosition() {
-	return gl_ModelViewMatrix * gl_Vertex;
+void ApplySkinning(inout vec3 Vv, inout vec3 Nv)
+{
+    vec3  V = vec3(0.0, 0.0, 0.0);
+    vec3  N = V;
+    float W;
+    mat3  M;
+    switch (psp_numberBones - 1)
+    {
+    case 7: W = psp_weights2[3]; M = mat3(psp_boneMatrix[7]); V += (M * Vv + psp_boneMatrix[7][3].xyz) * W; N += M * Nv * W;
+    case 6: W = psp_weights2[2]; M = mat3(psp_boneMatrix[6]); V += (M * Vv + psp_boneMatrix[6][3].xyz) * W; N += M * Nv * W;
+    case 5: W = psp_weights2[1]; M = mat3(psp_boneMatrix[5]); V += (M * Vv + psp_boneMatrix[5][3].xyz) * W; N += M * Nv * W;
+    case 4: W = psp_weights2[0]; M = mat3(psp_boneMatrix[4]); V += (M * Vv + psp_boneMatrix[4][3].xyz) * W; N += M * Nv * W;
+    case 3: W = psp_weights1[3]; M = mat3(psp_boneMatrix[3]); V += (M * Vv + psp_boneMatrix[3][3].xyz) * W; N += M * Nv * W;
+    case 2: W = psp_weights1[2]; M = mat3(psp_boneMatrix[2]); V += (M * Vv + psp_boneMatrix[2][3].xyz) * W; N += M * Nv * W;
+    case 1: W = psp_weights1[1]; M = mat3(psp_boneMatrix[1]); V += (M * Vv + psp_boneMatrix[1][3].xyz) * W; N += M * Nv * W;
+    case 0: W = psp_weights1[0]; M = mat3(psp_boneMatrix[0]); V += (M * Vv + psp_boneMatrix[0][3].xyz) * W; N += M * Nv * W;
+    }
+    Vv = V;
+    Nv = N;
 }
 
-vec3 getEyeCoordinatePosition3(in vec4 eyeCoordinatePosition) {
-	return vec3(eyeCoordinatePosition) / eyeCoordinatePosition.w;
-}
+void main()
+{
+    vec3 N  = gl_Normal;
+    vec4 V  = gl_Vertex;
+    vec3 Ve = vec3(gl_ModelViewMatrix * V);
+    vec4 Cp = gl_Color;
+    vec4 Cs = vec4(0.0);
+    vec4 T;
 
-vec4 doLight(in vec4 eyeCoordinatePosition, in vec4 matAmbient, in vec4 matDiffuse, in vec4 matSpecular, in vec3 normal) {
-	vec4 ambient  = vec4(0.0);
-    vec4 diffuse  = vec4(0.0);
-    vec4 specular = vec4(0.0);
-	vec3 n = normalize(gl_NormalMatrix * normal);
+    if (psp_numberBones > 0) ApplySkinning(V.xyz, N);
 
-    calculateLighting(n, getEyeCoordinatePosition3(eyeCoordinatePosition), ambient, diffuse, specular);
+    N  = gl_NormalMatrix * N;
 
-	ambient += gl_LightModel.ambient;
-    vec4 color = (ambient  * matAmbient) +
-                 (diffuse  * matDiffuse) +
-                 (specular * matSpecular) +
-                 gl_FrontMaterial.emission;
+    if (lightingEnable) ApplyLighting(Cp, Cs, Ve, normalize(N));
 
-    return clamp(color, 0.0, 1.0);
-}
+    if (texEnable) ApplyTexture(T, V, N);
 
-vec4 getFrontColor(in vec4 eyeCoordinatePosition, in vec3 normal) {
-	if (!lightingEnable) {
-		return gl_Color;
-	}
-
-	vec4 matAmbient  = psp_matFlags[0] != 0 ? gl_Color : gl_FrontMaterial.ambient;
-	vec4 matDiffuse  = psp_matFlags[1] != 0 ? gl_Color : gl_FrontMaterial.diffuse;
-	vec4 matSpecular = psp_matFlags[2] != 0 ? gl_Color : gl_FrontMaterial.specular;
-
-	return doLight(eyeCoordinatePosition, matAmbient, matDiffuse, matSpecular, normal);
-}
-
-vec4 getPosition(inout vec3 normal) {
-	if (psp_numberBones == 0) {
-		return gl_Vertex;
-	}
-
-	vec4 position = vec4(0.0, 0.0, 0.0, gl_Vertex.w);
-	vec4 vertex = vec4(gl_Vertex.xyz, 1.0);
-	normal = vec3(0.0, 0.0, 0.0);
-	for (int i = 0; i < psp_numberBones; i++) {
-		float weight = (i <= 3 ? psp_weights1[i] : psp_weights2[i - 4]);
-		if (weight != 0.0) {
-			position.xyz += vec3(psp_boneMatrix[i] * vertex) * weight;
-
-			// Normals shouldn't be translated :)
-			normal += mat3(psp_boneMatrix[i]) * gl_Normal * weight;
-		}
-	}
-
-	return position;
-}
-
-float getFogFragCoord(vec4 eyeCoordinatePosition) {
-	return abs(eyeCoordinatePosition.z);
-}
-
-void main() {
-	vec4 eyeCoordinatePosition = getEyeCoordinatePosition();
-	vec3 normal = gl_Normal;
-
-	gl_Position = gl_ModelViewProjectionMatrix * getPosition(normal);
-	gl_FrontColor = getFrontColor(eyeCoordinatePosition, normal);
-	gl_FogFragCoord = getFogFragCoord(eyeCoordinatePosition); 
-	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
-
-//	gl_Position = ftransform();
-//	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-//	gl_Position.z = gl_Position.z * psp_zScale + psp_zPos * gl_Position.w;
+    gl_Position            = gl_ModelViewProjectionMatrix * V;
+    gl_FogFragCoord        = abs(Ve.z);
+    gl_TexCoord[0]         = T;
+    gl_FrontColor          = Cp;
+    gl_FrontSecondaryColor = Cs;
 }
