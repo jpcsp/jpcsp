@@ -2834,7 +2834,7 @@ public class VideoEngine {
                 shaderCtestRef[0] = (normalArgument      ) & 0xFF;
                 shaderCtestRef[1] = (normalArgument >>  8) & 0xFF;
                 shaderCtestRef[2] = (normalArgument >> 16) & 0xFF;
-                gl.glUniform1iv(Uniforms.ctestEnable.getId(), 3, shaderCtestRef, 0);
+                gl.glUniform1iv(Uniforms.ctestRef.getId(), 3, shaderCtestRef, 0);
 
                 break;
             }
@@ -2843,7 +2843,7 @@ public class VideoEngine {
                 shaderCtestMsk[0] = (normalArgument      ) & 0xFF;
                 shaderCtestMsk[1] = (normalArgument >>  8) & 0xFF;
                 shaderCtestMsk[2] = (normalArgument >> 16) & 0xFF;
-                gl.glUniform1iv(Uniforms.ctestEnable.getId(), 3, shaderCtestMsk, 0);
+                gl.glUniform1iv(Uniforms.ctestMsk.getId(), 3, shaderCtestMsk, 0);
 
                 break;
             }
