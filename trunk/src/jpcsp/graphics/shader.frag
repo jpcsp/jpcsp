@@ -64,15 +64,13 @@ void main()
         {
         case 0:
             discard;
-        default:
-            break;
         case 2:
             if ((Cs & ctestMsk) == (ctestRef & ctestMsk)) break;
             discard;
-            break;
         case 3:
             if ((Cs & ctestMsk) != (ctestRef & ctestMsk)) break;
             discard;
+        default:
             break;
         }
     }

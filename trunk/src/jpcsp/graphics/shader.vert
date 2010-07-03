@@ -91,7 +91,7 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
         case 2: // Normalized Normal Coordinate projection
             T.xyz = vec3(gl_TextureMatrix[0] * vec4(normalize(N.xyz), 1.0));
             break;
-        case 3: // Non-normailzed Normal Coordinate projection
+        case 3: // Non-normalized Normal Coordinate projection
             T.xyz = vec3(gl_TextureMatrix[0] * vec4(N.xyz, 1.0));
             break;
         }
