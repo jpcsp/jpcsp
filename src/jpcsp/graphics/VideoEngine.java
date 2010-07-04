@@ -3583,7 +3583,7 @@ public class VideoEngine {
         }
 
         if (useShaders) {
-            gl.glUniform1i(Uniforms.texEnvMode.getId(), normalArgument & 7);
+            gl.glUniform2i(Uniforms.texEnvMode.getId(), (normalArgument & 7), ((normalArgument >> 8) & 1));
             gl.glUniform1f(Uniforms.colorDoubling.getId(), (normalArgument & 65536) == 0 ? 1.0f : 2.0f);
             return;
         }

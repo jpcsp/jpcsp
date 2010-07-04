@@ -1,8 +1,9 @@
+#version 120
 #extension GL_EXT_gpu_shader4 : enable
 
 uniform sampler2D tex;
 uniform bool      texEnable;
-uniform int       texEnvMode;
+uniform ivec2     texEnvMode;
 uniform int       texMapMode;
 uniform float     colorDoubling;
 
@@ -25,21 +26,26 @@ vec4 getFragColor()
     {
         vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz);
 
-        switch (texEnvMode)
+        if (texEnvMode[1] == 0) // RGB
+        {
+            Ct.a = 1.0;
+        }
+
+        switch (texEnvMode[0])
         {
         case 0: // MODULATE
             Cp = Cp * Ct;
             break;
         case 1: // DECAL
             Cp.rgb = mix(Cp.rgb, Ct.rgb, Ct.a);
-            Cp.a   = Cp.a;
             break;
         case 2: // BLEND
             Cp.rgb = mix(Cp.rgb, gl_TextureEnvColor[0].rgb, Ct.rgb);
             Cp.a   = Cp.a * Ct.a;
             break;
         case 3: // REPLACE
-            Cp = Ct;
+            Cp.rgb = Ct.rgb;
+            if (texEnvMode[1] != 0) Cp.a = Ct.a;
             break;
         case 4: // ADD
             Cp.rgb = Cp.rgb + Ct.rgb;
