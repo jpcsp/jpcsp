@@ -1,3 +1,6 @@
+#version 120
+#extension GL_EXT_gpu_shader4 : enable
+
 attribute vec4 psp_weights1;
 attribute vec4 psp_weights2;
 
@@ -32,9 +35,9 @@ void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, in
     {
         float d = length(L);
         att = clamp(1.0 / (gl_LightSource[i].constantAttenuation + (gl_LightSource[i].linearAttenuation + gl_LightSource[i].quadraticAttenuation * d) * d), 0.0, 1.0);
-        //if (gl_LightSource[i].spotCutoff < 180.0)
+        if (gl_LightSource[i].spotCutoff < 180.0)
         {
-            float spot = max(dot(normalize(gl_LightSource[i].spotDirection.xyz), -L), 0.0);
+            float spot = dot(normalize(gl_LightSource[i].spotDirection.xyz), -L);
             att *= (spot < gl_LightSource[i].spotCosCutoff) ? 0.0 : pow(att, gl_LightSource[i].spotExponent);
         }
     }
