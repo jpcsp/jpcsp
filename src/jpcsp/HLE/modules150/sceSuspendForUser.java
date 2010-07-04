@@ -153,7 +153,7 @@ public class sceSuspendForUser implements HLEModule {
                 } else {
                     // TODO implement mem locking using psp semaphores, block here until unlock
                     Modules.log.warn("UNIMPLEMENTED:hleKernelVolatileMemLock blocking current thread");
-                    Modules.ThreadManForUserModule.hleBlockCurrentThread();
+                    //Modules.ThreadManForUserModule.hleBlockCurrentThread();
                     cpu.gpr[2] = -1; // check, probably 0 if/when the psp wakes from the semaphore... when we implement it :)
                 }
             }

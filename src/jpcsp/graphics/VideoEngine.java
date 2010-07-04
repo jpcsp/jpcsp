@@ -2826,7 +2826,7 @@ public class VideoEngine {
 
             case CTST: {
                 shaderCtestFunc = normalArgument & 3;
-                gl.glUniform1i(Uniforms.ctestEnable.getId(), shaderCtestFunc);
+                gl.glUniform1i(Uniforms.ctestFunc.getId(), shaderCtestFunc);
                 break;
             }
 
