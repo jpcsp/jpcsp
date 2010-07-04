@@ -18,7 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
+public class sceRtc extends jpcsp.HLE.modules200.sceRtc {
 	@Override
 	public final String getName() { return "sceRtc"; }
 	
