@@ -73,6 +73,7 @@ public class HLEModuleManager {
         sceUmdUser(Modules.sceUmdUserModule),
         scePower(Modules.scePowerModule),
         sceUtility(Modules.sceUtilityModule),
+        sceGe_user(Modules.sceGe_userModule),
         sceRtc(Modules.sceRtcModule),
         KernelLibrary(Modules.Kernel_LibraryModule),
         ModuleMgrForUser(Modules.ModuleMgrForUserModule),
@@ -287,6 +288,16 @@ public class HLEModuleManager {
         func.setSyscallCode(code);
         syscallCodeToFunction.put(code, func);
     }
+    
+    public void addHLEFunction(HLEModuleFunction func) {
+        func.setNid(-1);
+
+        // Allocate an arbitrary syscall code to the function
+        int code = syscallCodeAllocator++;
+
+        func.setSyscallCode(code);
+        syscallCodeToFunction.put(code, func);
+    }
 
     public void removeFunction(HLEModuleFunction func) {
         /*
@@ -323,8 +334,15 @@ public class HLEModuleManager {
         if (func != null) {
             func.execute(Emulator.getProcessor());
             return true;
-        } else {
-            return false;
         }
+		return false;
+    }
+    
+    public String functionName(int code) {
+    	HLEModuleFunction func = syscallCodeToFunction.get(code);
+        if (func != null) {
+            return func.getFunctionName();
+        }
+		return null;
     }
 }

@@ -17,7 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex;
 
 import jpcsp.Allegrex.compiler.ICompilerContext;
+import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.Utilities;
 import jpcsp.Processor;
 
@@ -511,9 +513,8 @@ public class Common {
     public static String disasmRDRTSA(String opname, int rd, int rt, int sa) {
         if ((rd == 0) && sa == 0) {
             return "nop";
-        } else {
-            return String.format("%1$-10s %2$s, %3$s, 0x%4$04X", opname, gprNames[rd], gprNames[rt], sa);
         }
+		return String.format("%1$-10s %2$s, %3$s, 0x%4$04X", opname, gprNames[rd], gprNames[rt], sa);
     }
 
     public static String disasmRDRTRS(String opname, int rd, int rt, int rs) {
@@ -631,12 +632,21 @@ public class Common {
     }
 
     public static String disasmSYSCALL(int code) {
-        for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
-            if (c.getSyscall() == code) {
-                return String.format("%1$-10s 0x%2$05X [%3$s]", "syscall", code, c);
-            }
-        }
-        return String.format("%1$-10s 0x%2$05X [unknown]", "syscall", code);
+    	String functionName = HLEModuleManager.getInstance().functionName(code);
+    	
+    	if(functionName == null) {
+	        for (syscallsFirm15.calls c : syscallsFirm15.calls.values()) {
+	            if (c.getSyscall() == code) {
+	                functionName = c.toString();
+	                break;
+	            }
+	        }
+    	}
+    	
+    	if(functionName == null)
+    		functionName = "unknown";
+    	
+        return String.format("%1$-10s 0x%2$05X [%3$s]", "syscall", code, functionName);
     }
 
     public static String disasmBREAK(int code) {

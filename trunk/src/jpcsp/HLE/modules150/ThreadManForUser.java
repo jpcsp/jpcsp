@@ -78,7 +78,6 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
-import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
 
 public class ThreadManForUser implements HLEModule {
 
@@ -200,6 +199,9 @@ public class ThreadManForUser implements HLEModule {
             mm.addFunction(sceKernelReferThreadProfilerFunction, 0x64D4540E);
             mm.addFunction(sceKernelReferGlobalProfilerFunction, 0x8218B4DD);
 
+            mm.addHLEFunction(hleKernelAsyncLoopFunction);
+            mm.addHLEFunction(hleKernelExitCallbackFunction);
+            mm.addHLEFunction(hleKernelExitThreadFunction);
         }
     }
 
@@ -316,6 +318,9 @@ public class ThreadManForUser implements HLEModule {
             mm.removeFunction(sceKernelReferThreadProfilerFunction);
             mm.removeFunction(sceKernelReferGlobalProfilerFunction);
 
+            mm.removeFunction(hleKernelAsyncLoopFunction);
+            mm.removeFunction(hleKernelExitCallbackFunction);
+            mm.removeFunction(hleKernelExitThreadFunction);
         }
     }
 
@@ -464,7 +469,7 @@ public class ThreadManForUser implements HLEModule {
         int instruction_syscall = // syscall 0x0201c [sceKernelDelayThread]
             ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((syscallsFirm15.calls.sceKernelDelayThread.getSyscall() & 0x000fffff) << 6);
+            | ((sceKernelDelayThreadFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // This memory is always reserved on a real PSP
         int reservedMem = pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
@@ -501,7 +506,7 @@ public class ThreadManForUser implements HLEModule {
         int instruction_syscall = // syscall 0x6f000 [hleKernelExitThread]
             ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((syscallsFirm15.calls.hleKernelExitThread.getSyscall() & 0x000fffff) << 6);
+            | ((hleKernelExitThreadFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
@@ -516,7 +521,7 @@ public class ThreadManForUser implements HLEModule {
         int instruction_syscall = // syscall 0x6f001 [hleKernelExitCallback]
             ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((syscallsFirm15.calls.hleKernelExitCallback.getSyscall() & 0x000fffff) << 6);
+            | ((hleKernelExitCallbackFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
@@ -531,7 +536,7 @@ public class ThreadManForUser implements HLEModule {
         int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
             ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((syscallsFirm15.calls.hleKernelAsyncLoop.getSyscall() & 0x000fffff) << 6);
+            | ((hleKernelAsyncLoopFunction.getSyscallCode() & 0x000fffff) << 6);
 
         int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
         int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
@@ -745,9 +750,8 @@ public class ThreadManForUser implements HLEModule {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             return "NOT A THREAD";
-        } else {
-            return thread.name;
         }
+		return thread.name;
     }
 
     public void hleBlockCurrentThread() {
@@ -1077,10 +1081,12 @@ public class ThreadManForUser implements HLEModule {
     }
 
 	public void hleKernelExitCallback() {
-		hleKernelExitCallback(Emulator.getProcessor().cpu);
+		hleKernelExitCallback(Emulator.getProcessor());
 	}
 
-	private void hleKernelExitCallback(CpuState cpu) {
+	private void hleKernelExitCallback(Processor processor) {
+		CpuState cpu = processor.cpu;
+		
 		int callbackId = cpu.gpr[CALLBACKID_REGISTER];
 		Callback callback = callbackManager.remove(callbackId);
 		if (callback != null) {
@@ -1096,6 +1102,19 @@ public class ThreadManForUser implements HLEModule {
 			}
 		}
 	}
+	    
+    public final HLEModuleFunction hleKernelExitCallbackFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitCallback") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	hleKernelExitCallback(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelExitCallback(processor);";
+        }
+    };
 
 	/**
 	 * Execute the code at the given address.
@@ -1153,7 +1172,7 @@ public class ThreadManForUser implements HLEModule {
 		// When the compiler is enabled, the callback is already executed
 		// when returning from RuntimeContext.executeCallback()
 		if (cpu.pc == CALLBACK_EXIT_HANDLER_ADDRESS) {
-			hleKernelExitCallback(cpu);
+			hleKernelExitCallback(Emulator.getProcessor());
 		}
 	}
 
@@ -1235,13 +1254,26 @@ public class ThreadManForUser implements HLEModule {
 		callAddress(thread, address, afterAction, new int[] { registerA0, registerA1, registerA2 });
 	}
 
-	public void hleKernelExitThread() {
+	public void hleKernelExitThread(Processor processor) {
 		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, Emulator.getProcessor().cpu.gpr[2]));
+			Modules.log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
 		}
 
-		sceKernelExitThread(Emulator.getProcessor());
+		sceKernelExitThread(processor);
 	}
+	
+	public final HLEModuleFunction hleKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitThread") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	hleKernelExitThread(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelExitThread(processor);";
+        }
+    };
 
 	public void hleKernelExitDeleteThread() {
 		if (Modules.log.isDebugEnabled()) {
@@ -1251,9 +1283,22 @@ public class ThreadManForUser implements HLEModule {
 		sceKernelExitDeleteThread(Emulator.getProcessor());
 	}
 
-    public void hleKernelAsyncLoop() {
-        pspiofilemgr.getInstance().hleAsyncThread();
+    public void hleKernelAsyncLoop(Processor processor) {
+        pspiofilemgr.getInstance().hleAsyncThread(processor);
     }
+    
+    public final HLEModuleFunction hleKernelAsyncLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelAsyncLoop") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	hleKernelAsyncLoop(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelAsyncLoop(processor);";
+        }
+    };
 
 	/** Note: Some functions allow uid = 0 = current thread, others don't.
      * if uid = 0 then $v0 is set to ERROR_ILLEGAL_THREAD and false is returned
@@ -1617,11 +1662,10 @@ public class ThreadManForUser implements HLEModule {
         if (callback == null) {
             Modules.log.warn("hleKernelRegisterCallback(type=" + callbackType + ") unknown uid " + Integer.toHexString(cbid));
             return false;
-        } else {
-            currentThread.callbackRegistered[callbackType] = true;
-            currentThread.callbackInfo[callbackType] = callback;
-            return true;
         }
+		currentThread.callbackRegistered[callbackType] = true;
+		currentThread.callbackInfo[callbackType] = callback;
+		return true;
     }
 
     /** Unregisters a callback by type and cbid. May not be on the current thread.
@@ -4602,4 +4646,5 @@ public class ThreadManForUser implements HLEModule {
             return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferGlobalProfiler(processor);";
         }
     };
+
 }

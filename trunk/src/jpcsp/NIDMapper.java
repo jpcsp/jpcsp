@@ -18,6 +18,8 @@ package jpcsp;
 
 import java.util.HashMap;
 
+import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
+
 public class NIDMapper {
     private static NIDMapper instance;
     private HashMap<Integer, Integer> nidToSyscall;
@@ -34,8 +36,8 @@ public class NIDMapper {
         moduleToNidTable = new HashMap<String, HashMap<Integer, Integer>>();
         nidToSyscall = new HashMap<Integer, Integer>();
 
-        for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
-              nidToSyscall.put(c.getNID(), c.getSyscall());
+        for (syscallsFirm15.calls c : syscallsFirm15.calls.values()) {
+            nidToSyscall.put(c.getNID(), c.getSyscall());
         }
     }
 

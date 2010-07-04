@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types.interrupts;
 
-import jpcsp.HLE.pspge;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 
 public class AfterGeCallbackAction implements IAction {
@@ -30,6 +30,6 @@ public class AfterGeCallbackAction implements IAction {
 
 	@Override
 	public void execute() {
-		pspge.getInstance().hleGeOnAfterCallback(listId, behavior);
+		Modules.sceGe_userModule.hleGeOnAfterCallback(listId, behavior);
 	}
 }

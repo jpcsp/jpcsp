@@ -29,6 +29,7 @@ import org.apache.log4j.Logger;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Processor;
 import jpcsp.connector.PGDFileConnector;
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
@@ -436,9 +437,8 @@ public class pspiofilemgr {
         IoInfo info = filelist.get(uid);
         if (info == null) {
             return null;
-        } else {
-            return info.readOnlyFile;
         }
+		return info.readOnlyFile;
     }
 
     public String getFileFilename(int uid) {
@@ -446,9 +446,8 @@ public class pspiofilemgr {
         IoInfo info = filelist.get(uid);
         if (info == null) {
             return null;
-        } else {
-            return info.filename;
         }
+		return info.filename;
     }
 
     private String getMode(int flags) {
@@ -563,8 +562,8 @@ public class pspiofilemgr {
     /*
      * Async thread functions.
      */
-    public void hleAsyncThread() {
-        CpuState cpu = Emulator.getProcessor().cpu;
+    public void hleAsyncThread(Processor processor) {
+        CpuState cpu = processor.cpu;
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         int uid = cpu.gpr[asyncThreadRegisterArgument];
@@ -1049,48 +1048,45 @@ public class pspiofilemgr {
                 	}
 
                 	switch(whence) {
-                        case PSP_SEEK_SET:
-                            if (offset < 0) {
-                                Modules.log.warn("SEEK_SET UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
-                                result = ERROR_INVALID_ARGUMENT;
-                                State.fileLogger.logIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
-                                return;
-                            } else {
-                                info.position = offset;
+                    case PSP_SEEK_SET:
+                        if (offset < 0) {
+                            Modules.log.warn("SEEK_SET UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
+                            result = ERROR_INVALID_ARGUMENT;
+                            State.fileLogger.logIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                            return;
+                        }
+						info.position = offset;
 
-                                if (offset < info.readOnlyFile.length())
-                                    info.readOnlyFile.seek(offset);
-                            }
-                            break;
-                        case PSP_SEEK_CUR:
-                            if (info.position + offset < 0) {
-                                Modules.log.warn("SEEK_CUR UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
-                                result = ERROR_INVALID_ARGUMENT;
-                                State.fileLogger.logIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
-                                return;
-                            } else {
-                                info.position += offset;
+						if (offset < info.readOnlyFile.length())
+						    info.readOnlyFile.seek(offset);
+                        break;
+                    case PSP_SEEK_CUR:
+                        if (info.position + offset < 0) {
+                            Modules.log.warn("SEEK_CUR UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
+                            result = ERROR_INVALID_ARGUMENT;
+                            State.fileLogger.logIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                            return;
+                        }
+						info.position += offset;
 
-                                if (info.position < info.readOnlyFile.length())
-                                    info.readOnlyFile.seek(info.position);
-                            }
-                            break;
-                        case PSP_SEEK_END:
-                            if (info.readOnlyFile.length() + offset < 0) {
-                                Modules.log.warn("SEEK_END UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
-                                result = ERROR_INVALID_ARGUMENT;
-                                State.fileLogger.logIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
-                                return;
-                            } else {
-                                info.position = info.readOnlyFile.length() + offset;
+						if (info.position < info.readOnlyFile.length())
+						    info.readOnlyFile.seek(info.position);
+                        break;
+                    case PSP_SEEK_END:
+                        if (info.readOnlyFile.length() + offset < 0) {
+                            Modules.log.warn("SEEK_END UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
+                            result = ERROR_INVALID_ARGUMENT;
+                            State.fileLogger.logIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                            return;
+                        }
+						info.position = info.readOnlyFile.length() + offset;
 
-                                if (info.position < info.readOnlyFile.length())
-                                    info.readOnlyFile.seek(info.position);
-                            }
-                            break;
-                        default:
-                            Modules.log.error("seek - unhandled whence " + whence);
-                            break;
+						if (info.position < info.readOnlyFile.length())
+						    info.readOnlyFile.seek(info.position);
+                        break;
+                    default:
+                        Modules.log.error("seek - unhandled whence " + whence);
+                        break;
                     }
                     result = info.position;
                     if (info.sectorBlockMode) {
