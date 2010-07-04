@@ -38,9 +38,9 @@ void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, in
             att *= (spot < gl_LightSource[i].spotCosCutoff) ? 0.0 : pow(att, gl_LightSource[i].spotExponent);
         }
     }
-    A += gl_LightSource[i].ambient  * att;
-    D += gl_LightSource[i].diffuse  * att * Dk;
-    S += gl_LightSource[i].specular * att * Sk;
+    A += gl_LightSource[i].ambient.rgb  * att;
+    D += gl_LightSource[i].diffuse.rgb  * att * Dk;
+    S += gl_LightSource[i].specular.rgb * att * Sk;
 }
 
 void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
@@ -76,22 +76,22 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
     switch (texMapMode)
     {
     case 0: // UV mapping
-        T.xyz = vec3(vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0), 1.0);
+        T.xyz = vec3(vec2(gl_TextureMatrix[0] * T), 1.0);
         break;
 
     case 1: // Projection mapping
         switch (texMapProj)
         {
-        case 0: // Model Coordinate Projection
+        case 0: // Model Coordinate Projection (XYZ)
             T.xyz = vec3(gl_TextureMatrix[0] * vec4(V.xyz, 1.0));
             break;
-        case 1: // Texture Coordinate Projection
-            T.xyz = vec3(gl_TextureMatrix[0] * vec4(gl_MultiTexCoord0.st, 0.0, 1.0));
+        case 1: // Texture Coordinate Projection (UV0)
+            T.xyz = vec3(gl_TextureMatrix[0] * vec4(T.st, 0.0, 1.0));
             break;
-        case 2: // Normalized Normal Coordinate projection
+        case 2: // Normalized Normal Coordinate projection (N/|N|)
             T.xyz = vec3(gl_TextureMatrix[0] * vec4(normalize(N.xyz), 1.0));
             break;
-        case 3: // Non-normalized Normal Coordinate projection
+        case 3: // Non-normalized Normal Coordinate projection (N)
             T.xyz = vec3(gl_TextureMatrix[0] * vec4(N.xyz, 1.0));
             break;
         }
@@ -101,10 +101,10 @@ void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
         vec3  Nn = normalize(N);
         vec3  Ve = vec3(gl_ModelViewMatrix * V);
         float k  = gl_FrontMaterial.shininess;
-        vec3  Lu = gl_LightSource[0].position.xyz - Ve.xyz * gl_LightSource[0].position.w;
-        vec3  Lv = gl_LightSource[1].position.xyz - Ve.xyz * gl_LightSource[1].position.w;
-        float Pu = psp_lightKind[0] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
-        float Pv = psp_lightKind[1] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
+        vec3  Lu = gl_LightSource[texShade.x].position.xyz - Ve.xyz * gl_LightSource[texShade.x].position.w;
+        vec3  Lv = gl_LightSource[texShade.y].position.xyz - Ve.xyz * gl_LightSource[texShade.y].position.w;
+        float Pu = psp_lightKind[texShade.x] == 0 ? dot(Nn, normalize(Lu)) : pow(dot(Nn, normalize(Lu + vec3(0.0, 0.0, 1.0))), k);
+        float Pv = psp_lightKind[texShade.y] == 0 ? dot(Nn, normalize(Lv)) : pow(dot(Nn, normalize(Lv + vec3(0.0, 0.0, 1.0))), k);
         T.xyz = vec3(0.5*vec2(1.0 + Pu, 1.0 + Pv), 1.0);
         break;
     }
@@ -138,7 +138,7 @@ void main()
     vec3 Ve = vec3(gl_ModelViewMatrix * V);
     vec4 Cp = gl_Color;
     vec4 Cs = vec4(0.0);
-    vec4 T;
+    vec4 T  = gl_MultiTexCoord0;
 
     if (psp_numberBones > 0) ApplySkinning(V.xyz, N);
 

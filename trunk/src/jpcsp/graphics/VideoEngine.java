@@ -2440,8 +2440,7 @@ public class VideoEngine {
                 tex_shade_v = (normalArgument >> 8) & 0x03;
 
                 if (useShaders) {
-                    int columns[] = { tex_shade_u, tex_shade_v };
-                    gl.glUniform1iv(Uniforms.texShade.getId(), 2, columns, 0);
+                    gl.glUniform2i(Uniforms.texShade.getId(), tex_shade_u, tex_shade_v);
                 } else {
                     for (int i = 0; i < 3; i++) {
                         tex_envmap_matrix[i + 0] = light_pos[tex_shade_u][i];
