@@ -28,7 +28,6 @@ import jpcsp.Debugger.StepLogger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.pspge;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.psputils;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -160,7 +159,7 @@ public class Emulator implements Runnable {
 
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
         psputils.getInstance().Initialise();
-        pspge.getInstance().Initialise();
+        Modules.sceGe_userModule.Initialise();
         pspdisplay.getInstance().Initialise();
         pspiofilemgr.getInstance().Initialise();
 
@@ -218,7 +217,7 @@ public class Emulator implements Runnable {
             	RuntimeContext.run();
             } else {
                 processor.step();
-                pspge.getInstance().step();
+                Modules.sceGe_userModule.step();
                 Modules.ThreadManForUserModule.step();
                 scheduler.step();
                 pspdisplay.getInstance().step();

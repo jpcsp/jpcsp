@@ -22,6 +22,7 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.util.DurationStatistics;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
 
 public class SyscallHandler {
 	public static DurationStatistics durationStatistics = new DurationStatistics("Syscall");
@@ -271,57 +272,6 @@ public class SyscallHandler {
                 case 0x20ec:
                     LoadExec.getInstance().sceKernelRegisterExitCallback(gpr[4]);
                     break;
-                case 0x20ef:
-                    pspge.getInstance().sceGeEdramGetSize();
-                    break;
-                case 0x20f0:
-                    pspge.getInstance().sceGeEdramGetAddr();
-                    break;
-                case 0x20f1:
-                    pspge.getInstance().sceGeEdramSetAddrTranslation(gpr[4]);
-                    break;
-                case 0x20f2:
-                    pspge.getInstance().sceGeGetCmd(gpr[4]);
-                    break;
-                case 0x20f3:
-                    pspge.getInstance().sceGeGetMtx(gpr[4], gpr[5]);
-                    break;
-                case 0x20f4:
-                    pspge.getInstance().sceGeSaveContext(gpr[4]);
-                    break;
-                case 0x20f5:
-                    pspge.getInstance().sceGeRestoreContext(gpr[4]);
-                    break;
-                case 0x20f6:
-                    pspge.getInstance().sceGeListEnQueue(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-                case 0x20f7:
-                    pspge.getInstance().sceGeListEnQueueHead(gpr[4], gpr[5], gpr[6], gpr[7]);
-                    break;
-                case 0x20f8:
-                    pspge.getInstance().sceGeListDeQueue(gpr[4]);
-                    break;
-                case 0x20f9:
-                    pspge.getInstance().sceGeListUpdateStallAddr(gpr[4], gpr[5]);
-                    break;
-                case 0x20fa:
-                    pspge.getInstance().sceGeListSync(gpr[4], gpr[5]);
-                    break;
-                case 0x20fb:
-                    pspge.getInstance().sceGeDrawSync(gpr[4]);
-                    break;
-                case 0x20fc:
-                	pspge.getInstance().sceGeBreak();
-                	break;
-                case 0x20fd:
-                	pspge.getInstance().sceGeContinue();
-                	break;
-                case 0x20fe:
-                    pspge.getInstance().sceGeSetCallback(gpr[4]);
-                    break;
-                case 0x20ff:
-                    pspge.getInstance().sceGeUnsetCallback(gpr[4]);
-                    break;
                 case 0x213a:
                     pspdisplay.getInstance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
@@ -440,17 +390,6 @@ public class SyscallHandler {
                     pspdisplay.getInstance().sceDisplayWaitVblankStartMulti();
                     break;
 
-                // special codes for HLE syscalls
-                case 0x6f000:
-                	Modules.ThreadManForUserModule.hleKernelExitThread();
-                    break;
-                case 0x6f001:
-                	Modules.ThreadManForUserModule.hleKernelExitCallback();
-                    break;
-                case 0x6f002:
-                	Modules.ThreadManForUserModule.hleKernelAsyncLoop();
-                    break;
-
                 case 0xfffff: { // special code for unmapped imports
                     CpuState cpu = Emulator.getProcessor().cpu;
                     if(isEnableIgnoreUnmappedImports()) {
@@ -476,7 +415,7 @@ public class SyscallHandler {
                         String params = String.format("%08x %08x %08x", cpu.gpr[4],
                             cpu.gpr[5], cpu.gpr[6]);
 
-                        for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
+                        for (syscallsFirm15.calls c : syscallsFirm15.calls.values()) {
                             if (c.getSyscall() == code) {
                                 Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + c + " " + params);
                                 return;

@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import jpcsp.HLE.pspge;
+import jpcsp.HLE.Modules;
 import jpcsp.graphics.VideoEngine;
-import static jpcsp.HLE.pspge.*;
+import static jpcsp.HLE.modules150.sceGe_user.*;
 
 public class PspGeList
 {
@@ -87,11 +87,11 @@ public class PspGeList
     }
 
     public void pushSignalCallback(int listId, int behavior, int signal) {
-        pspge.getInstance().triggerSignalCallback(cbid, listId, behavior, signal);
+        Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, behavior, signal);
     }
 
     public void pushFinishCallback(int arg) {
-        pspge.getInstance().triggerFinishCallback(cbid, arg);
+    	Modules.sceGe_userModule.triggerFinishCallback(cbid, arg);
     }
 
     private void pushStack(int value) {
@@ -148,9 +148,8 @@ public class PspGeList
 
     			if (sync.tryAcquire(millis, TimeUnit.MILLISECONDS)) {
     				break;
-    			} else {
-    				return false;
     			}
+				return false;
 			} catch (InterruptedException e) {
 				// Ignore exception and retry again
 			}
@@ -215,6 +214,6 @@ public class PspGeList
 
 	@Override
 	public String toString() {
-		return String.format("id=0x%x %s", id, pspge.PSP_GE_LIST_STRINGS[status]);
+		return String.format("id=0x%x %s", id, PSP_GE_LIST_STRINGS[status]);
 	}
 }

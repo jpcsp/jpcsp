@@ -20,7 +20,6 @@ package jpcsp.graphics;
 
 import static jpcsp.graphics.GeCommands.*;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -37,15 +36,14 @@ import java.util.concurrent.Semaphore;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GLException;
-import javax.media.opengl.glu.GLU;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.State;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.pspge;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
@@ -56,7 +54,7 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
-import static jpcsp.HLE.pspge.*;
+import static jpcsp.HLE.modules150.sceGe_user.*;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -119,7 +117,6 @@ public class VideoEngine {
     private static final int[] textureByteAlignmentMapping = {2, 2, 2, 4};
     private static VideoEngine instance;
     private GL gl;
-    private GLU glu;
     private pspdisplay display;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
@@ -614,7 +611,6 @@ public class VideoEngine {
 
     public void setGL(GL gl) {
         this.gl = gl;
-        this.glu = new GLU();
         display = pspdisplay.getInstance();
 
         String openGLVersion = getOpenGLVersion(gl);
@@ -979,14 +975,13 @@ public class VideoEngine {
             if (!mem.isIgnoreInvalidMemoryAccess()) {
                 error("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
                 break;
-            } else {
-                // Ignoring memory read errors.
-                // Try to fall back and continue the list processing.
-                log.warn("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
-                if (tryToFallback()) {
-                    break;
-                }
             }
+			// Ignoring memory read errors.
+			// Try to fall back and continue the list processing.
+			log.warn("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
+			if (tryToFallback()) {
+			    break;
+			}
         }
     }
 
@@ -1022,33 +1017,32 @@ public class VideoEngine {
                 if (currentList.isFinished()) {
                     listHasEnded = true;
                     break;
-                } else {
-                    waitSignalStatistics.start();
-                    if (isLogDebugEnabled) {
-                        log.debug(String.format("SIGNAL / END reached, waiting for Sync"));
-                    }
-                    currentList.status = PSP_GE_LIST_END_REACHED;
-                    if (!currentList.waitForSync(10)) {
-                        if (isLogDebugEnabled) {
-                            log.debug("Wait for sync while END reached");
-                        }
-                        waitForSyncCount++;
-
-                        // Waiting maximum 100 * 10ms (= 1 second) on an END command.
-                        // After this timeout, abort the list.
-                        if (waitForSyncCount > 100) {
-                            error(String.format("Waiting too long on an END command, aborting the list %s", currentList));
-                        }
-                    } else {
-                        waitForSyncCount = 0;
-                    }
-
-                    executeHleAction();
-                    if (!currentList.isPaused()) {
-                        currentList.status = PSP_GE_LIST_DRAWING;
-                    }
-                    waitSignalStatistics.end();
                 }
+				waitSignalStatistics.start();
+				if (isLogDebugEnabled) {
+				    log.debug(String.format("SIGNAL / END reached, waiting for Sync"));
+				}
+				currentList.status = PSP_GE_LIST_END_REACHED;
+				if (!currentList.waitForSync(10)) {
+				    if (isLogDebugEnabled) {
+				        log.debug("Wait for sync while END reached");
+				    }
+				    waitForSyncCount++;
+
+				    // Waiting maximum 100 * 10ms (= 1 second) on an END command.
+				    // After this timeout, abort the list.
+				    if (waitForSyncCount > 100) {
+				        error(String.format("Waiting too long on an END command, aborting the list %s", currentList));
+				    }
+				} else {
+				    waitForSyncCount = 0;
+				}
+
+				executeHleAction();
+				if (!currentList.isPaused()) {
+				    currentList.status = PSP_GE_LIST_DRAWING;
+				}
+				waitSignalStatistics.end();
             } else if (currentList.isStallReached()) {
                 waitStallStatistics.start();
                 if (isLogDebugEnabled) {
@@ -1120,7 +1114,7 @@ public class VideoEngine {
         }
 
         if (list.isDone()) {
-            pspge.getInstance().hleGeListSyncDone(list);
+        	Modules.sceGe_userModule.hleGeListSyncDone(list);
         }
 
         executeHleAction();

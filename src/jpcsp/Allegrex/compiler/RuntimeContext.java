@@ -39,7 +39,6 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.pspge;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -548,7 +547,7 @@ public class RuntimeContext {
             log.debug("syncEmulator immediately=" + immediately);
         }
 
-    	pspge.getInstance().step();
+        Modules.sceGe_userModule.step();
 		pspdisplay.getInstance().step(immediately);
         HLEModuleManager.getInstance().step();
         State.controller.checkControllerState();
@@ -618,7 +617,7 @@ public class RuntimeContext {
     	try {
     		updateStaticVariables();
     		executable.exec(ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS, 0, false);
-    		threadMan.hleKernelExitThread();
+    		threadMan.hleKernelExitThread(processor);
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Exception e) {
