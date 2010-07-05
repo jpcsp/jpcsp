@@ -184,60 +184,6 @@ public class SyscallHandler {
                     // sceKernelStdioWrite(0x20af),
                     // sceKernelStdioClose(0x20b0),
                      //sceKernelStdioOpen(0x20b1),
-                case 0x20b5:
-                    psputils.getInstance().sceKernelDcacheInvalidateRange(gpr[4], gpr[5]);
-                    break;
-                case 0x20b6:
-                    psputils.getInstance().sceKernelIcacheInvalidateRange(gpr[4], gpr[5]);
-                    break;
-                    // sceKernelUtilsMd5Digest(0x20b7),
-                    // sceKernelUtilsMd5BlockInit(0x20b8),
-                    // sceKernelUtilsMd5BlockUpdate(0x20b9),
-                    // sceKernelUtilsMd5BlockResult(0x20ba),
-                    // sceKernelUtilsSha1Digest(0x20bb),
-                    // sceKernelUtilsSha1BlockInit(0x20bc),
-                    // sceKernelUtilsSha1BlockUpdate(0x20bd),
-                    // sceKernelUtilsSha1BlockResult(0x20be),
-                case 0x20bf:
-                    psputils.getInstance().sceKernelUtilsMt19937Init(gpr[4], gpr[5]);
-                    break;
-                case 0x20c0:
-                    psputils.getInstance().sceKernelUtilsMt19937UInt(gpr[4]);
-                    break;
-                case 0x20c1:
-                    psputils.getInstance().sceKernelGetGPI();
-                    break;
-                case 0x20c2:
-                    psputils.getInstance().sceKernelSetGPO(gpr[4]);
-                    break;
-                case 0x20c3:
-                    psputils.getInstance().sceKernelLibcClock();
-                    break;
-                case 0x20c4:
-                    psputils.getInstance().sceKernelLibcTime(gpr[4]);
-                    break;
-                case 0x20c5:
-                    psputils.getInstance().sceKernelLibcGettimeofday(gpr[4], gpr[5]);
-                    break;
-                case 0x20c6:
-                    psputils.getInstance().sceKernelDcacheWritebackAll();
-                    break;
-                case 0x20c7:
-                    psputils.getInstance().sceKernelDcacheWritebackInvalidateAll();
-                    break;
-                case 0x20c8:
-                    psputils.getInstance().sceKernelDcacheWritebackRange(gpr[4], gpr[5]);
-                    break;
-                case 0x20c9:
-                    psputils.getInstance().sceKernelDcacheWritebackInvalidateRange(gpr[4], gpr[5]);
-                    break;
-                    // sceKernelDcacheProbe(0x20ca),
-                    // sceKernelDcacheReadTag(0x20cb),
-                case 0x20cc:
-                    psputils.getInstance().sceKernelIcacheInvalidateAll();
-                    break;
-                    // sceKernelIcacheProbe(0x20cd),
-                    // sceKernelIcacheReadTag(0x20ce),
                 case 0x20dc:
                     pspSysMem.getInstance().sceKernelMaxFreeMemSize();
                     break;

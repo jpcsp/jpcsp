@@ -29,7 +29,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
-import jpcsp.HLE.psputils;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.graphics.VertexCache;
@@ -158,7 +157,7 @@ public class Emulator implements Runnable {
         cpu.gpr[28] = module.gp_value; //gp_reg.
 
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
-        psputils.getInstance().Initialise();
+        Modules.UtilsForUserModule.Initialise();
         Modules.sceGe_userModule.Initialise();
         pspdisplay.getInstance().Initialise();
         pspiofilemgr.getInstance().Initialise();
