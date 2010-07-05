@@ -70,7 +70,7 @@ public class HLEModuleManager {
     	// Modules loaded by default in all firmware version...
     	ThreadManForUser(Modules.ThreadManForUserModule),
     	SysMemUserForUser(Modules.SysMemUserForUserModule),
-    	InterruptManager(Modules.ModuleMgrForUserModule),
+    	InterruptManager(Modules.InterruptManagerModule),
     	LoadExecForUser(Modules.LoadExecForUserModule),
         StdioForUser(Modules.StdioForUserModule),
         sceUmdUser(Modules.sceUmdUserModule),
