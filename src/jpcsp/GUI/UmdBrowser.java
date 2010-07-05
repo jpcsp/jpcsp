@@ -443,14 +443,8 @@ public class UmdBrowser extends JDialog {
 			icon0Icon = icons[rowIndex];
 
 			if (lastRowIndex != rowIndex) {
-				if (umdBrowserPmf != null) {
-					umdBrowserPmf.stopVideo();
-				}
+				stopVideo();
 				umdBrowserPmf = new UmdBrowserPmf(iso, "PSP_GAME/ICON1.PMF", icon0Label);
-
-				if (umdBrowserSound != null) {
-					umdBrowserSound.stopVideo();
-				}
 				umdBrowserSound = new UmdBrowserSound(iso, "PSP_GAME/SND0.AT3");
 			}
 
@@ -465,13 +459,20 @@ public class UmdBrowser extends JDialog {
 		icon0Label.setIcon(icon0Icon);
 	}
 
-	private void loadSelectedfile() {
+	private void stopVideo() {
 		if (umdBrowserPmf != null) {
 			umdBrowserPmf.stopVideo();
+			umdBrowserPmf = null;
 		}
+
 		if (umdBrowserSound != null) {
 			umdBrowserSound.stopVideo();
+			umdBrowserSound = null;
 		}
+	}
+
+	private void loadSelectedfile() {
+		stopVideo();
 
 		Settings.getInstance().writeWindowPos(windowNameForSettings, getLocation());
 		Settings.getInstance().writeWindowSize(windowNameForSettings, getSize());
@@ -481,6 +482,14 @@ public class UmdBrowser extends JDialog {
 
 		setVisible(false);
 		dispose();
+	}
+
+	@Override
+	public void dispose() {
+		// Stop the PMF video and sound before closing the UMD Browser
+		stopVideo();
+
+		super.dispose();
 	}
 
 	private static void sleep(long millis) {
