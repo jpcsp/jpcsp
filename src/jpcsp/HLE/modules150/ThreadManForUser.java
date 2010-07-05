@@ -169,6 +169,24 @@ public class ThreadManForUser implements HLEModule {
             mm.addFunction(sceKernelGetSystemTimeFunction, 0xDB738F35);
             mm.addFunction(sceKernelGetSystemTimeWideFunction, 0x82BC5777);
             mm.addFunction(sceKernelGetSystemTimeLowFunction, 0x369ED59D);
+			mm.addFunction(sceKernelSetAlarmFunction, 0x6652B8CA);
+			mm.addFunction(sceKernelSetSysClockAlarmFunction, 0xB2C25152);
+			mm.addFunction(sceKernelCancelAlarmFunction, 0x7E65B999);
+			mm.addFunction(sceKernelReferAlarmStatusFunction, 0xDAA3F564);
+			mm.addFunction(sceKernelCreateVTimerFunction, 0x20FFF560);
+			mm.addFunction(sceKernelDeleteVTimerFunction, 0x328F9E52);
+			mm.addFunction(sceKernelGetVTimerBaseFunction, 0xB3A59970);
+			mm.addFunction(sceKernelGetVTimerBaseWideFunction, 0xB7C18B77);
+			mm.addFunction(sceKernelGetVTimerTimeFunction, 0x034A921F);
+			mm.addFunction(sceKernelGetVTimerTimeWideFunction, 0xC0B3FFD2);
+			mm.addFunction(sceKernelSetVTimerTimeFunction, 0x542AD630);
+			mm.addFunction(sceKernelSetVTimerTimeWideFunction, 0xFB6425C3);
+			mm.addFunction(sceKernelStartVTimerFunction, 0xC68D9437);
+			mm.addFunction(sceKernelStopVTimerFunction, 0xD0AEEE87);
+			mm.addFunction(sceKernelSetVTimerHandlerFunction, 0xD8B299AE);
+			mm.addFunction(sceKernelSetVTimerHandlerWideFunction, 0x53B00E9A);
+			mm.addFunction(sceKernelCancelVTimerHandlerFunction, 0xD2D615EF);
+			mm.addFunction(sceKernelReferVTimerStatusFunction, 0x5F32BEAA);
             mm.addFunction(sceKernelCreateThreadFunction, 0x446D8DE6);
             mm.addFunction(sceKernelDeleteThreadFunction, 0x9FA03CD3);
             mm.addFunction(sceKernelStartThreadFunction, 0xF475845D);
@@ -288,6 +306,24 @@ public class ThreadManForUser implements HLEModule {
             mm.removeFunction(sceKernelGetSystemTimeFunction);
             mm.removeFunction(sceKernelGetSystemTimeWideFunction);
             mm.removeFunction(sceKernelGetSystemTimeLowFunction);
+            mm.removeFunction(sceKernelSetAlarmFunction);
+			mm.removeFunction(sceKernelSetSysClockAlarmFunction);
+			mm.removeFunction(sceKernelCancelAlarmFunction);
+			mm.removeFunction(sceKernelReferAlarmStatusFunction);
+			mm.removeFunction(sceKernelCreateVTimerFunction);
+			mm.removeFunction(sceKernelDeleteVTimerFunction);
+			mm.removeFunction(sceKernelGetVTimerBaseFunction);
+			mm.removeFunction(sceKernelGetVTimerBaseWideFunction);
+			mm.removeFunction(sceKernelGetVTimerTimeFunction);
+			mm.removeFunction(sceKernelGetVTimerTimeWideFunction);
+			mm.removeFunction(sceKernelSetVTimerTimeFunction);
+			mm.removeFunction(sceKernelSetVTimerTimeWideFunction);
+			mm.removeFunction(sceKernelStartVTimerFunction);
+			mm.removeFunction(sceKernelStopVTimerFunction);
+			mm.removeFunction(sceKernelSetVTimerHandlerFunction);
+			mm.removeFunction(sceKernelSetVTimerHandlerWideFunction);
+			mm.removeFunction(sceKernelCancelVTimerHandlerFunction);
+			mm.removeFunction(sceKernelReferVTimerStatusFunction);
             mm.removeFunction(sceKernelCreateThreadFunction);
             mm.removeFunction(sceKernelDeleteThreadFunction);
             mm.removeFunction(sceKernelStartThreadFunction);
@@ -2502,6 +2538,150 @@ public class ThreadManForUser implements HLEModule {
     public void sceKernelGetSystemTimeLow(Processor processor) {
         Managers.systime.sceKernelGetSystemTimeLow();
     }
+    
+    public void sceKernelSetAlarm(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelSetAlarm [0x6652B8CA]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelSetSysClockAlarm(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelSetSysClockAlarm [0xB2C25152]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelCancelAlarm(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelCancelAlarm [0x7E65B999]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelReferAlarmStatus(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelReferAlarmStatus [0xDAA3F564]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelCreateVTimer(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelCreateVTimer [0x20FFF560]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelDeleteVTimer(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelDeleteVTimer [0x328F9E52]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelGetVTimerBase(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerBase [0xB3A59970]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelGetVTimerBaseWide(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerBaseWide [0xB7C18B77]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelGetVTimerTime(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerTime [0x034A921F]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelGetVTimerTimeWide(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerTimeWide [0xC0B3FFD2]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelSetVTimerTime(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerTime [0x542AD630]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelSetVTimerTimeWide(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerTimeWide [0xFB6425C3]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelStartVTimer(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelStartVTimer [0xC68D9437]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelStopVTimer(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelStopVTimer [0xD0AEEE87]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelSetVTimerHandler(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerHandler [0xD8B299AE]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelSetVTimerHandlerWide(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerHandlerWide [0x53B00E9A]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelCancelVTimerHandler(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelCancelVTimerHandler [0xD2D615EF]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+    
+	public void sceKernelReferVTimerStatus(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		Modules.log.debug("Unimplemented NID function sceKernelReferVTimerStatus [0x5F32BEAA]");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
 
     public void sceKernelCreateThread(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -4331,6 +4511,186 @@ public class ThreadManForUser implements HLEModule {
             return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetSystemTimeLow(processor);";
         }
     };
+    public final HLEModuleFunction sceKernelSetAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetAlarm") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelSetAlarm(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetAlarm(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelSetSysClockAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetSysClockAlarm") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelSetSysClockAlarm(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetSysClockAlarm(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelCancelAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelAlarm") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelCancelAlarm(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelAlarm(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelReferAlarmStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferAlarmStatus") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelReferAlarmStatus(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferAlarmStatus(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelCreateVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVTimer") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelCreateVTimer(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateVTimer(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelDeleteVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVTimer") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelDeleteVTimer(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteVTimer(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelGetVTimerBaseFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBase") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelGetVTimerBase(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBase(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelGetVTimerBaseWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBaseWide") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelGetVTimerBaseWide(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBaseWide(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelGetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTime") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelGetVTimerTime(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTime(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelGetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTimeWide") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelGetVTimerTimeWide(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTimeWide(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelSetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTime") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelSetVTimerTime(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTime(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelSetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTimeWide") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelSetVTimerTimeWide(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTimeWide(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelStartVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartVTimer") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelStartVTimer(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStartVTimer(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelStopVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStopVTimer") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelStopVTimer(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStopVTimer(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelSetVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandler") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelSetVTimerHandler(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandler(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelSetVTimerHandlerWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandlerWide") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelSetVTimerHandlerWide(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandlerWide(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelCancelVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVTimerHandler") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelCancelVTimerHandler(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelVTimerHandler(processor);";
+		}
+	};
+	public final HLEModuleFunction sceKernelReferVTimerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVTimerStatus") {
+		@Override
+		public final void execute(Processor processor) {
+			sceKernelReferVTimerStatus(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
+		}
+	};
     public final HLEModuleFunction sceKernelCreateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateThread") {
 
         @Override

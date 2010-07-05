@@ -151,9 +151,8 @@ public class MutexManager {
         if (info.locked == 0 || allowSameThread) {
             info.locked += count;
             return true;
-        } else {
-            return false;
         }
+		return false;
     }
 
     private boolean allowSameThread(SceKernelMutexInfo info, SceKernelThreadInfo thread) {
