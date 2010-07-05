@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
+public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 
     @Override
     public final String getName() {

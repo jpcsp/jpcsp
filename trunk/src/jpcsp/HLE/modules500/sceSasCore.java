@@ -37,7 +37,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
+        super.uninstallModule(mm, version);
 
         if (version >= 500) {
             mm.removeFunction(__sceSasSetVoicePCMFunction);

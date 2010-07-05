@@ -18,7 +18,6 @@ package jpcsp.HLE;
 
 import jpcsp.Emulator;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.kernel.Managers;
 import jpcsp.util.DurationStatistics;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
@@ -218,54 +217,6 @@ public class SyscallHandler {
 		        break;
 		    case 0x214b:
 		        pspdisplay.getInstance().sceDisplay_A83EF139();
-		        break;
-		    case 0x30a7:
-		        Managers.mutex.sceKernelCreateMutex(gpr[4], gpr[5], gpr[6], gpr[7]);
-		        break;
-		    case 0x3015:
-		        Managers.mutex.sceKernelDeleteMutex(gpr[4]);
-		        break;
-		    case 0x3017:
-		        Managers.mutex.sceKernelLockMutex(gpr[4], gpr[5], gpr[6]);
-		        break;
-		    case 0x30a2:
-		        Managers.mutex.sceKernelLockMutexCB(gpr[4], gpr[5], gpr[6]);
-		        break;
-		    case 0x30a1:
-		        Managers.mutex.sceKernelTryLockMutex(gpr[4], gpr[5]);
-		        break;
-		    case 0x3016:
-		        Managers.mutex.sceKernelUnlockMutex(gpr[4], gpr[5]);
-		        break;
-		    case 0x30a3:
-		        Managers.mutex.sceKernelCancelMutex(gpr[4]);
-		        break;
-		    case 0x30a4:
-		        Managers.mutex.sceKernelReferMutexStatus(gpr[4], gpr[5]);
-		        break;
-		    case 0x30c3:
-		        Managers.mutex.sceKernelCreateLwMutex(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
-		        break;
-		    case 0x30c4:
-		        Managers.mutex.sceKernelReferLwMutexStatusByID();
-		        break;
-		    case 0x30c5:
-		        Managers.mutex.sceKernelDeleteLwMutex(gpr[4]);
-		        break;
-		    case 0x30c6:
-		        Managers.mutex.sceKernelUnlockLwMutex(gpr[4], gpr[5]);
-		        break;
-		    case 0x30c7:
-		        Managers.mutex.sceKernelLockLwMutexCB(gpr[4], gpr[5], gpr[6]);
-		        break;
-		    case 0x30c8:
-		        Managers.mutex.sceKernelLockLwMutex(gpr[4], gpr[5], gpr[6]);
-		        break;
-		    case 0x30c9:
-		        Managers.mutex.sceKernelReferLwMutexStatus(gpr[4], gpr[5]);
-		        break;
-		    case 0x30ca:
-		        Managers.mutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
 		        break;
 		    case 0x311f:
 		        pspdisplay.getInstance().sceDisplayWaitVblankStartMulti();
