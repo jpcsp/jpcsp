@@ -27,6 +27,7 @@ public class Modules {
 
     public static Sample SampleModule = new Sample();
 
+    public static IoFileMgrForUser IoFileMgrForUserModule = new IoFileMgrForUser();
     public static ThreadManForUser ThreadManForUserModule = new ThreadManForUser();
     public static SysMemUserForUser SysMemUserForUserModule = new SysMemUserForUser();
     public static InterruptManager InterruptManagerModule = new InterruptManager();

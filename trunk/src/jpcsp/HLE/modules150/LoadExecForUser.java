@@ -27,7 +27,6 @@ import jpcsp.Loader;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -78,7 +77,7 @@ public class LoadExecForUser implements HLEModule {
             Modules.log.warn("UNIMPLEMENTED:sceKernelLoadExec option=0x" + Integer.toHexString(option_addr));
 
         try {
-            SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, pspiofilemgr.PSP_O_RDONLY);
+            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
             if (moduleInput != null) {
                 byte[] moduleBytes = new byte[(int) moduleInput.length()];
                 moduleInput.readFully(moduleBytes);

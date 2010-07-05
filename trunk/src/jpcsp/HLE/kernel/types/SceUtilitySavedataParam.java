@@ -16,15 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.List;
 
 import jpcsp.Memory;
-import jpcsp.HLE.pspiofilemgr;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSF;
@@ -104,6 +105,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public String detail;
 		public int parentalLevel;
 
+		@Override
 		protected void read() {
 			title = readStringNZ(0x80);
 			savedataTitle = readStringNZ(0x80);
@@ -111,6 +113,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			parentalLevel = read32();
 		}
 
+		@Override
 		protected void write() {
 		    writeStringNZ(0x80, title);
             writeStringNZ(0x80, savedataTitle);
@@ -118,6 +121,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             write32(parentalLevel);
 		}
 
+		@Override
 		public int sizeof() {
 			return 0x80 + 0x80 + 0x400 + 4;
 		}
@@ -128,6 +132,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public int bufSize;
 		public int size;
 
+		@Override
 		protected void read() {
 			buf     = read32();
 			bufSize = read32();
@@ -135,6 +140,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			readUnknown(4);
 		}
 
+		@Override
 		protected void write() {
 			write32(buf);
 			write32(bufSize);
@@ -142,6 +148,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			writeUnknown(4);
 		}
 
+		@Override
 		public int sizeof() {
 			return 4 * 4;
 		}
@@ -152,6 +159,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public int titleAddr;
 		public String title;
 
+		@Override
 		protected void read() {
 			icon0 = new PspUtilitySavedataFileData();
 			read(icon0);
@@ -163,6 +171,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			}
 		}
 
+		@Override
 		protected void write() {
 			write(icon0);
 			write32(titleAddr);
@@ -171,11 +180,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			}
 		}
 
+		@Override
 		public int sizeof() {
 			return icon0.sizeof() + 4;
 		}
 	}
 
+	@Override
 	protected void read() {
 		base = new pspUtilityDialogCommon();
 		read(base);
@@ -238,6 +249,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         buffer6Addr = read32();
 	}
 
+	@Override
 	protected void write() {
         setMaxSize(base.size);
 	    write(base);
@@ -278,37 +290,37 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         write32(buffer6Addr);
 	}
 
-    private void safeLoad(Memory mem, pspiofilemgr fileManager, String filename, PspUtilitySavedataFileData fileData) throws IOException {
+    private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {
 		String path = getBasePath();
 
         try {
-            fileData.size = loadFile(mem, fileManager, path, filename, fileData.buf, fileData.bufSize);
+            fileData.size = loadFile(mem, path, filename, fileData.buf, fileData.bufSize);
         } catch(FileNotFoundException e) {
             // ignore
         }
     }
 
-	public boolean test(Memory mem, pspiofilemgr fileManager) throws IOException {
+	public boolean test(Memory mem) throws IOException {
 		String path = getBasePath();
 
-		boolean result = testFile(mem, fileManager, path, fileName);
+		boolean result = testFile(mem, path, fileName);
 
 		return result;
 	}
 
-	public void load(Memory mem, pspiofilemgr fileManager) throws IOException {
+	public void load(Memory mem) throws IOException {
 		String path = getBasePath();
 
 		// Firmware 1.5 stores data file non-encrypted.
 		// From Firmware 2.0, the data file is encrypted using the kirk chip.
 		// Encrypted files cannot be loaded.
 		// TODO Detect and reject an encrypted data file.
-		dataSize = loadFile(mem, fileManager, path, fileName, dataBuf, dataBufSize);
-        safeLoad(mem, fileManager, icon0FileName, icon0FileData);
-        safeLoad(mem, fileManager, icon1FileName, icon1FileData);
-        safeLoad(mem, fileManager, pic1FileName, pic1FileData);
-        safeLoad(mem, fileManager, snd0FileName, snd0FileData);
-		loadPsf(mem, fileManager, path, paramSfoFileName, sfoParam);
+		dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+        safeLoad(mem, icon0FileName, icon0FileData);
+        safeLoad(mem, icon1FileName, icon1FileData);
+        safeLoad(mem, pic1FileName, pic1FileData);
+        safeLoad(mem, snd0FileName, snd0FileData);
+		loadPsf(mem, path, paramSfoFileName, sfoParam);
 	}
 
     private String getBasePath() {
@@ -328,14 +340,14 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return getBasePath(saveName) + fileName;
 	}
 
-	public boolean isPresent(pspiofilemgr fileManager, String gameName, String saveName) {
+	public boolean isPresent(String gameName, String saveName) {
 	    if (fileName == null || fileName.length() <= 0) {
 	        return false;
 	    }
 
 	    String path = getBasePath();
 	    try {
-            SeekableDataInput fileInput = getDataInput(fileManager, path, fileName);
+            SeekableDataInput fileInput = getDataInput(path, fileName);
             if (fileInput != null) {
                 fileInput.close();
                 return true;
@@ -346,15 +358,15 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return false;
 	}
 
-	public boolean isPresent(pspiofilemgr fileManager) {
-		return isPresent(fileManager, gameName, saveName);
+	public boolean isPresent() {
+		return isPresent(gameName, saveName);
 	}
 
-	private int getFileSize(pspiofilemgr fileManager, String fileName) {
+	private int getFileSize(String fileName) {
 		int size = 0;
 
 		if (fileName != null && fileName.length() > 0) {
-		    SceIoStat fileStat = fileManager.statFile(getFileName(saveName, fileName));
+		    SceIoStat fileStat = Modules.IoFileMgrForUserModule.statFile(getFileName(saveName, fileName));
 		    if (fileStat != null) {
 		    	size = (int) fileStat.size;
 		    }
@@ -363,27 +375,27 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return size;
 	}
 
-	public int getSize(pspiofilemgr fileManager, String gameName, String saveName) {
+	public int getSize(String gameName, String saveName) {
 		int size;
 
-		size  = getFileSize(fileManager, fileName);
-		size += getFileSize(fileManager, icon0FileName);
-		size += getFileSize(fileManager, icon1FileName);
-		size += getFileSize(fileManager, pic1FileName);
-		size += getFileSize(fileManager, snd0FileName);
-		size += getFileSize(fileManager, paramSfoFileName);
+		size  = getFileSize(fileName);
+		size += getFileSize(icon0FileName);
+		size += getFileSize(icon1FileName);
+		size += getFileSize(pic1FileName);
+		size += getFileSize(snd0FileName);
+		size += getFileSize(paramSfoFileName);
 
         return size;
 	}
 
-	private SeekableDataInput getDataInput(pspiofilemgr fileManager, String path, String name) {
-		SeekableDataInput fileInput = fileManager.getFile(path + name, pspiofilemgr.PSP_O_RDONLY);
+	private SeekableDataInput getDataInput(String path, String name) {
+		SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, IoFileMgrForUser.PSP_O_RDONLY);
 
 		return fileInput;
 	}
 
-	private SeekableRandomFile getDataOutput(pspiofilemgr fileManager, String path, String name) {
-		SeekableDataInput fileInput = fileManager.getFile(path + name, pspiofilemgr.PSP_O_RDWR | pspiofilemgr.PSP_O_CREAT);
+	private SeekableRandomFile getDataOutput(String path, String name) {
+		SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, IoFileMgrForUser.PSP_O_RDWR | IoFileMgrForUser.PSP_O_CREAT);
 
 		if (fileInput instanceof SeekableRandomFile) {
 			return (SeekableRandomFile) fileInput;
@@ -392,8 +404,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return null;
 	}
 
-    private void loadPsf(Memory mem, pspiofilemgr fileManager, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
-        SeekableDataInput fileInput = getDataInput(fileManager, path, name);
+    private void loadPsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
+        SeekableDataInput fileInput = getDataInput(path, name);
         if (fileInput != null) {
             byte[] buffer = new byte[(int) fileInput.length()];
             fileInput.readFully(buffer);
@@ -409,12 +421,12 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
     }
 
-	private boolean testFile(Memory mem, pspiofilemgr fileManager, String path, String name) throws IOException {
+	private boolean testFile(Memory mem, String path, String name) throws IOException {
 		if (name == null || name.length() <= 0) {
 			return false;
 		}
 
-		SeekableDataInput fileInput = getDataInput(fileManager, path, name);
+		SeekableDataInput fileInput = getDataInput(path, name);
 		if (fileInput == null) {
 			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
 		}
@@ -424,12 +436,12 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return true;
 	}
 
-	private int loadFile(Memory mem, pspiofilemgr fileManager, String path, String name, int address, int maxLength) throws IOException {
+	private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
 		if (name == null || name.length() <= 0 || address == 0 || maxLength <= 0) {
 			return 0;
 		}
 
-		SeekableDataInput fileInput = getDataInput(fileManager, path, name);
+		SeekableDataInput fileInput = getDataInput(path, name);
 		if (fileInput == null) {
 			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
 		}
@@ -445,24 +457,24 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return fileSize;
 	}
 
-	public void save(Memory mem, pspiofilemgr fileManager) throws IOException {
+	public void save(Memory mem) throws IOException {
 		String path = getBasePath();
 
-		fileManager.mkdirs(path);
-		writeFile(mem, fileManager, path, fileName,      dataBuf,           dataSize);
-		writeFile(mem, fileManager, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
-		writeFile(mem, fileManager, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
-		writeFile(mem, fileManager, path, pic1FileName,  pic1FileData.buf,  pic1FileData.size);
-		writeFile(mem, fileManager, path, snd0FileName,  snd0FileData.buf,  snd0FileData.size);
-		writePsf(mem, fileManager, path, paramSfoFileName, sfoParam);
+		Modules.IoFileMgrForUserModule.mkdirs(path);
+		writeFile(mem, path, fileName,      dataBuf,           dataSize);
+		writeFile(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
+		writeFile(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
+		writeFile(mem, path, pic1FileName,  pic1FileData.buf,  pic1FileData.size);
+		writeFile(mem, path, snd0FileName,  snd0FileData.buf,  snd0FileData.size);
+		writePsf(mem, path, paramSfoFileName, sfoParam);
 	}
 
-	private void writeFile(Memory mem, pspiofilemgr fileManager, String path, String name, int address, int length) throws IOException {
+	private void writeFile(Memory mem, String path, String name, int address, int length) throws IOException {
 		if (name == null || name.length() <= 0 || address == 0) {
 			return;
 		}
 
-		SeekableRandomFile fileOutput = getDataOutput(fileManager, path, name);
+		SeekableRandomFile fileOutput = getDataOutput(path, name);
 		if (fileOutput == null) {
 			return;
 		}
@@ -471,8 +483,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		fileOutput.close();
 	}
 
-	private void writePsf(Memory mem, pspiofilemgr fileManager, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
-        SeekableRandomFile fileOutput = getDataOutput(fileManager, path, name);
+	private void writePsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
+        SeekableRandomFile fileOutput = getDataOutput(path, name);
 		if (fileOutput == null) {
 			return;
 		}
@@ -486,7 +498,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         psf.write(fileOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
 	}
 
-    public int sizeof() {
+    @Override
+	public int sizeof() {
         return base.size;
     }
 

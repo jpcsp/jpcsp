@@ -22,24 +22,21 @@ import java.util.Date;
 import java.util.Random;
 import java.util.TimeZone;
 
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.pspiofilemgr;
+import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
-
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
-
-import jpcsp.Allegrex.CpuState;
 
 /*
  * TODO list:
@@ -274,11 +271,10 @@ public class scePsmfPlayer implements HLEModule {
                 + " file_addr=0x" + Integer.toHexString(file_addr));
 
         pmfFilePath = Utilities.readStringZ(file_addr);
-        pspiofilemgr fileManager = pspiofilemgr.getInstance();
 
         //Get the file and read it to a buffer.
         try{
-            SeekableDataInput psmfFile = fileManager.getFile(pmfFilePath, 0);
+            SeekableDataInput psmfFile = Modules.IoFileMgrForUserModule.getFile(pmfFilePath, 0);
             pmfFileData = new byte[(int)psmfFile.length()];
             psmfFile.readFully(pmfFileData);
 

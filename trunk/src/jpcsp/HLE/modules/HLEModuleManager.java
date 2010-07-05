@@ -68,6 +68,7 @@ public class HLEModuleManager {
      */
     private enum DefaultModule {
     	// Modules loaded by default in all firmware version...
+    	IoFileMgrForUser(Modules.IoFileMgrForUserModule),
     	ThreadManForUser(Modules.ThreadManForUserModule),
     	SysMemUserForUser(Modules.SysMemUserForUserModule),
     	InterruptManager(Modules.InterruptManagerModule),
@@ -122,7 +123,8 @@ public class HLEModuleManager {
     		return module;
     	}
 
-    	public int getFirmwareVersionAsDefault() {
+    	@SuppressWarnings("unused")
+		public int getFirmwareVersionAsDefault() {
     		return firmwareVersionAsDefault;
     	}
 

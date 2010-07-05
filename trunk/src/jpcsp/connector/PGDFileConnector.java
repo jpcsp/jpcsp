@@ -27,7 +27,6 @@ import javax.swing.JOptionPane;
 
 import jpcsp.State;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -73,7 +72,7 @@ public class PGDFileConnector {
 
 	public SeekableDataInput decryptPGDFile(String fileName, SeekableDataInput fileInput, String keyHex) {
 		Modules.log.info(String.format("decryptPGDFile(fileName='%s', key=%s)", fileName, keyHex));
-		SceIoStat stat = pspiofilemgr.getInstance().statFile(fileName);
+		SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(fileName);
 		if (stat != null) {
 			int startSector = stat.getReserved(0);
 			id = generateID(startSector);
