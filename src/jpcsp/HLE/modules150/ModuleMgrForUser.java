@@ -28,7 +28,6 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelModuleInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -127,7 +126,7 @@ public class ModuleMgrForUser implements HLEModule {
         int PRXStartSector = (int) Utilities.parseHexLong(sectorString);
 
         try {
-            byte[] buffer = pspiofilemgr.getInstance().getIsoReader().readSector(PRXStartSector);
+            byte[] buffer = Modules.IoFileMgrForUserModule.getIsoReader().readSector(PRXStartSector);
             String libName = new String(buffer);
             if(libName.contains("sce")) {
                 String module = libName.substring(libName.indexOf("sce"), libName.indexOf(" "));
@@ -208,7 +207,7 @@ public class ModuleMgrForUser implements HLEModule {
 
         // Load module as ELF
         try {
-            SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, flags);
+            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, flags);
             if (moduleInput != null) {
             	if (moduleInput instanceof UmdIsoFile) {
             		UmdIsoFile umdIsoFile = (UmdIsoFile) moduleInput;
@@ -266,7 +265,7 @@ public class ModuleMgrForUser implements HLEModule {
 
         int uid = cpu.gpr[4];
         int option_addr = cpu.gpr[5];
-        String name = pspiofilemgr.getInstance().getFileFilename(uid);
+        String name = Modules.IoFileMgrForUserModule.getFileFilename(uid);
 
         Modules.log.debug("sceKernelLoadModuleByID(uid=0x" + Integer.toHexString(uid)
             + "('" + name + "')"

@@ -17,6 +17,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_MODE15_SAVEDATA_NOT_PRESENT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_MODE15_SAVEDATA_PRESENT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_MODE8_NO_DATA;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
+
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -27,10 +39,10 @@ import java.util.Calendar;
 import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.JFrame;
 import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
@@ -42,41 +54,31 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 
-import java.awt.Component;
-import java.awt.Font;
-import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Resource;
 import jpcsp.Settings;
+import jpcsp.State;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.GUI.CancelButton;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
+import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
+import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
-import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
-import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
-
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.Resource;
-import jpcsp.State;
-
-import jpcsp.Allegrex.CpuState;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
 public class sceUtility implements HLEModule {
 	@Override
@@ -524,7 +526,7 @@ public class sceUtility implements HLEModule {
 				if (saveNames[i] != null) {
 					// Get icon0 file
 					String iconFileName = savedataParams.getFileName(saveNames[i], SceUtilitySavedataParam.icon0FileName);
-					SeekableDataInput iconDataInput = pspiofilemgr.getInstance().getFile(iconFileName, pspiofilemgr.PSP_O_RDONLY);
+					SeekableDataInput iconDataInput = Modules.IoFileMgrForUserModule.getFile(iconFileName, IoFileMgrForUser.PSP_O_RDONLY);
 					if (iconDataInput != null) {
 						try {
 							int length = (int) iconDataInput.length();
@@ -538,7 +540,7 @@ public class sceUtility implements HLEModule {
 
 					// Get values (title, detail...) from SFO file
 					String sfoFileName = savedataParams.getFileName(saveNames[i], SceUtilitySavedataParam.paramSfoFileName);
-	                SeekableDataInput sfoDataInput = pspiofilemgr.getInstance().getFile(sfoFileName, pspiofilemgr.PSP_O_RDONLY);
+	                SeekableDataInput sfoDataInput = Modules.IoFileMgrForUserModule.getFile(sfoFileName, IoFileMgrForUser.PSP_O_RDONLY);
 	                if (sfoDataInput != null) {
 						try {
 							int length = (int) sfoDataInput.length();
@@ -553,7 +555,7 @@ public class sceUtility implements HLEModule {
 				            String savedataTitle = psf.getString("SAVEDATA_TITLE");
 
 				            // Get Modification time of SFO file
-				            SceIoStat sfoStat = pspiofilemgr.getInstance().statFile(sfoFileName);
+				            SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
 				            Calendar cal = Calendar.getInstance();
 				            ScePspDateTime pspTime = sfoStat.mtime;
 				            cal.set(pspTime.year, pspTime.month, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
@@ -605,9 +607,8 @@ public class sceUtility implements HLEModule {
 		public Object getValueAt(int rowIndex, int columnIndex) {
 			if (columnIndex == 0) {
 				return icons[rowIndex];
-			} else {
-				return descriptions[rowIndex];
 			}
+			return descriptions[rowIndex];
 		}
 
 		public int getFontHeight() {
@@ -778,7 +779,7 @@ public class sceUtility implements HLEModule {
                 }
 
                 try {
-                    savedataParams.load(mem, pspiofilemgr.getInstance());
+                    savedataParams.load(mem);
                     savedataParams.base.result = 0;
                     savedataParams.write(mem);
                 } catch (IOException e) {
@@ -796,7 +797,7 @@ public class sceUtility implements HLEModule {
                 for(int i = 0; i < savedataParams.saveNameList.length; i++) {
                     savedataParams.saveName = savedataParams.saveNameList[i];
 
-                    if(savedataParams.isPresent(pspiofilemgr.getInstance())) {
+                    if(savedataParams.isPresent()) {
                         validNames.add(savedataParams.saveName);
                     }
                 }
@@ -808,7 +809,7 @@ public class sceUtility implements HLEModule {
                 } else {
                     savedataParams.saveName = saveListSelection.toString();
                     try {
-                        savedataParams.load(mem, pspiofilemgr.getInstance());
+                        savedataParams.load(mem);
                         savedataParams.base.result = 0;
                         savedataParams.write(mem);
                     } catch (IOException e) {
@@ -831,7 +832,7 @@ public class sceUtility implements HLEModule {
                         }
                     }
 
-                    savedataParams.save(mem, pspiofilemgr.getInstance());
+                    savedataParams.save(mem);
                     savedataParams.base.result = 0;
                 } catch (IOException e) {
                     savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
@@ -851,7 +852,7 @@ public class sceUtility implements HLEModule {
                 else {
                     savedataParams.saveName = saveListSelection.toString();
                     try {
-                        savedataParams.save(mem, pspiofilemgr.getInstance());
+                        savedataParams.save(mem);
                         savedataParams.base.result = 0;
                     } catch (IOException e) {
                         savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
@@ -934,7 +935,7 @@ public class sceUtility implements HLEModule {
                 if (mem.isAddressGood(buffer2Addr)) {
                     gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
                     saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
-                    int savedataSizeKb = savedataParams.getSize(pspiofilemgr.getInstance(), gameName, saveName);
+                    int savedataSizeKb = savedataParams.getSize(gameName, saveName);
                     int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
 
                     mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors
@@ -967,7 +968,7 @@ public class sceUtility implements HLEModule {
                     Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
                 }
 
-            	if (savedataParams.isPresent(pspiofilemgr.getInstance(), gameName, saveName)) {
+            	if (savedataParams.isPresent(gameName, saveName)) {
                     savedataParams.base.result = 0;
             	} else {
                     savedataParams.base.result = ERROR_SAVEDATA_MODE8_NO_DATA;
@@ -992,14 +993,13 @@ public class sceUtility implements HLEModule {
                 	pattern = pattern.replace("*", ".*");
                 	pattern = savedataParams.gameName + pattern;
 
-                	pspiofilemgr fileManager = pspiofilemgr.getInstance();
-                	String[] entries = fileManager.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
+                	String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
                 	Modules.log.debug("Entries: " + entries);
                 	int numEntries = entries == null ? 0 : entries.length;
                 	numEntries = Math.min(numEntries, maxEntries);
                 	for (int i = 0; i < numEntries; i++) {
                 		String filePath = SceUtilitySavedataParam.savedataPath + "/" + entries[i];
-                		SceIoStat stat = fileManager.statFile(filePath);
+                		SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
                 		int entryAddr = entriesAddr + i * 72;
                 		if (stat != null) {
                 			mem.write32(entryAddr + 0, stat.mode);
@@ -1024,8 +1024,7 @@ public class sceUtility implements HLEModule {
                     int systemEntriesAddr = mem.read32(buffer5Addr + 32);
 
                     String path = savedataParams.getBasePath(savedataParams.saveName);
-                	pspiofilemgr fileManager = pspiofilemgr.getInstance();
-                	String[] entries = fileManager.listFiles(path, null);
+                	String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
 
                 	int maxNumEntries = entries == null ? 0 : entries.length;
                     int saveFileSecureNumEntries = 0;
@@ -1035,7 +1034,7 @@ public class sceUtility implements HLEModule {
                     // List all files in the savedata (normal and/or encrypted).
                 	for (int i = 0; i < maxNumEntries; i++) {
                         String filePath = path + "/" + entries[i];
-                        SceIoStat stat = fileManager.statFile(filePath);
+                        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
 
                         // Write to secure (encrypted). In this mode, encrypted files have higher priority.
                         if(filePath.contains(".DAT") || filePath.contains(".BIN")) {
@@ -1081,7 +1080,7 @@ public class sceUtility implements HLEModule {
             	boolean isPresent = false;
 
             	try {
-                    isPresent = savedataParams.test(mem, pspiofilemgr.getInstance());
+                    isPresent = savedataParams.test(mem);
                 } catch (FileNotFoundException e) {
                 	isPresent = false;
                 } catch (Exception e) {
@@ -1102,8 +1101,7 @@ public class sceUtility implements HLEModule {
                     int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
 
                     String path = savedataParams.getBasePath(savedataParams.saveName);
-                	pspiofilemgr fileManager = pspiofilemgr.getInstance();
-                	String[] entries = fileManager.listFiles(path, null);
+                	String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
 
                 	int maxNumEntries = entries == null ? 0 : entries.length;
                     int saveFileSecureNumEntries = 0;
@@ -1113,7 +1111,7 @@ public class sceUtility implements HLEModule {
                     // List all files in the savedata (normal and/or encrypted).
                 	for (int i = 0; i < maxNumEntries; i++) {
                         String filePath = path + "/" + entries[i];
-                        SceIoStat stat = fileManager.statFile(filePath);
+                        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
 
                         // Write to secure (encrypted). In this mode, encrypted files have higher priority.
                         if(filePath.contains(".DAT") || filePath.contains(".BIN")) {

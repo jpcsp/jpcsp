@@ -28,7 +28,6 @@ import jpcsp.Debugger.StepLogger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -161,7 +160,7 @@ public class Emulator implements Runnable {
         Modules.UtilsForUserModule.Initialise();
         Modules.sceGe_userModule.Initialise();
         pspdisplay.getInstance().Initialise();
-        pspiofilemgr.getInstance().Initialise();
+        Modules.IoFileMgrForUserModule.Initialise();
 
         if (State.memoryViewer != null)
             State.memoryViewer.RefreshMemory();

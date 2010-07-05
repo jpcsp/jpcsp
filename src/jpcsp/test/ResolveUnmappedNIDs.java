@@ -104,17 +104,17 @@ class Firmware {
         m_version = version;
         m_moduleCount = 0;
         m_functionCount = 0;
-        m_moduleTable = new Hashtable();
+        m_moduleTable = new Hashtable<String, Module>();
 
         SAXBuilder builder = new SAXBuilder();
         Document doc = builder.build(new File(psplibdoc_filename));
 
         XPath modules = XPath.newInstance("/PSPLIBDOC/PRXFILES/PRXFILE/LIBRARIES/LIBRARY");
 
-        List LibList = modules.selectNodes(doc);
+        List<?> LibList = modules.selectNodes(doc);
         //m_moduleList = modules.selectNodes(doc, "//NAME");
 
-        Iterator i = LibList.iterator();
+        Iterator<?> i = LibList.iterator();
 
         int x = 0;
 
@@ -122,8 +122,8 @@ class Firmware {
             Element curEl = (Element) i.next();
             String modName = curEl.getChild("NAME").getText();
             Module newMod = new Module(modName);
-            List FunctionList = curEl.getChild("FUNCTIONS").getChildren("FUNCTION");
-            Iterator j = FunctionList.iterator();
+            List<?> FunctionList = curEl.getChild("FUNCTIONS").getChildren("FUNCTION");
+            Iterator<?> j = FunctionList.iterator();
             while (j.hasNext()) {
                 Element funcEl = (Element) j.next();
                 newMod.addFunction(funcEl.getChild("NID").getText(), funcEl.getChild("NAME").getText());

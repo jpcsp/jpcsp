@@ -23,24 +23,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
 
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.Resource;
 import jpcsp.Settings;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 
 /**
  *
  * @author  fiveofhearts
  */
 public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
-
-    private FileHandleModel fileHandleModel;
+	private static final long serialVersionUID = 8455039521164613143L;
+	private FileHandleModel fileHandleModel;
     private FileCommandModel fileCommandModel;
     private Thread refreshThread;
     private volatile boolean dirty;
@@ -176,7 +177,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
     /** Renders closed files in gray. */
     public class FileHandleRenderer extends DefaultTableCellRenderer {
-        @Override
+		private static final long serialVersionUID = -792377736132676194L;
+
+		@Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
 
@@ -196,8 +199,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     private class FileHandleModel extends AbstractTableModel {
+		private static final long serialVersionUID = -109193689444035593L;
 
-        @Override
+		@Override
         public int getColumnCount() {
             return 4;
         }
@@ -236,8 +240,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     };
 
     private class FileCommandModel extends AbstractTableModel {
+		private static final long serialVersionUID = -5088674695489235024L;
 
-        @Override
+		@Override
         public int getColumnCount() {
             return 6;
         }
@@ -422,10 +427,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         if (!Settings.getInstance().readBool("emu.debug.enablefilelogger")) {
             setTitle("File IO - LOGGING DISABLED");
             return true;
-        } else {
-            setTitle("File IO");
-            return false;
         }
+		setTitle("File IO");
+		return false;
     }
 
     /** Handles repeated commands */
@@ -531,9 +535,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
     private String getWhenceName(int whence) {
         switch(whence) {
-            case pspiofilemgr.PSP_SEEK_SET: return whence + "(set)";
-            case pspiofilemgr.PSP_SEEK_CUR: return whence + "(cur)";
-            case pspiofilemgr.PSP_SEEK_END: return whence + "(end)";
+            case IoFileMgrForUser.PSP_SEEK_SET: return whence + "(set)";
+            case IoFileMgrForUser.PSP_SEEK_CUR: return whence + "(cur)";
+            case IoFileMgrForUser.PSP_SEEK_END: return whence + "(end)";
             default: return "" + whence;
         }
     }

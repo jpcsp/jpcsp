@@ -57,7 +57,6 @@ import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -1317,7 +1316,7 @@ public class ThreadManForUser implements HLEModule {
 	}
 
     public void hleKernelAsyncLoop(Processor processor) {
-        pspiofilemgr.getInstance().hleAsyncThread(processor);
+        Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
     }
     
     public final HLEModuleFunction hleKernelAsyncLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelAsyncLoop") {
@@ -3394,6 +3393,7 @@ public class ThreadManForUser implements HLEModule {
 			return afterAction;
 		}
 
+		@SuppressWarnings("unused")
 		public void setAfterAction(IAction afterAction) {
 			this.afterAction = afterAction;
 		}
@@ -3402,6 +3402,7 @@ public class ThreadManForUser implements HLEModule {
 			return id;
 		}
 
+		@SuppressWarnings("unused")
 		public void setId(int id) {
 			this.id = id;
 		}
@@ -3410,6 +3411,7 @@ public class ThreadManForUser implements HLEModule {
 			return savedIdRegister;
 		}
 
+		@SuppressWarnings("unused")
 		public void setSavedIdRegister(int savedIdRegister) {
 			this.savedIdRegister = savedIdRegister;
 		}
@@ -3418,6 +3420,7 @@ public class ThreadManForUser implements HLEModule {
 			return savedRa;
 		}
 
+		@SuppressWarnings("unused")
 		public void setSavedRa(int savedRa) {
 			this.savedRa = savedRa;
 		}
@@ -3426,6 +3429,7 @@ public class ThreadManForUser implements HLEModule {
 			return savedPc;
 		}
 
+		@SuppressWarnings("unused")
 		public void setSavedPc(int savedPc) {
 			this.savedPc = savedPc;
 		}

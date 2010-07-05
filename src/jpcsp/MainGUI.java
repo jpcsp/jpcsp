@@ -26,12 +26,12 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -49,9 +49,9 @@ import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
+import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
@@ -66,10 +66,9 @@ import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.pspdisplay;
-import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
-import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceAtrac3plus;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -212,7 +211,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
+            @Override
+			public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
@@ -262,7 +262,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
 
         MenuBar.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseExited(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseExited(java.awt.event.MouseEvent evt) {
                 MenuBarMouseExited(evt);
             }
         });
@@ -769,8 +770,8 @@ public void loadFile(File file) {
             filepath = filepath.substring(ms0path.length() - 3); // path must start with "ms0"
         }
 
-        pspiofilemgr.getInstance().setfilepath(filepath);
-        pspiofilemgr.getInstance().setIsoReader(null);
+        Modules.IoFileMgrForUserModule.setfilepath(filepath);
+        Modules.IoFileMgrForUserModule.setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
         RuntimeContext.setIsHomebrew(isHomebrew);
@@ -1026,10 +1027,10 @@ public void loadUMD(File file) {
             State.discId = discId;
             State.title = title;
 
-            pspiofilemgr.getInstance().setfilepath("disc0/");
-            //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
+            Modules.IoFileMgrForUserModule.setfilepath("disc0/");
+            //Modules.IoFileMgrForUserModule.setfilepath("disc0/PSP_GAME/SYSDIR");
 
-            pspiofilemgr.getInstance().setIsoReader(iso);
+            Modules.IoFileMgrForUserModule.setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
 
             // use regular settings first
@@ -1224,7 +1225,7 @@ private void VfpuRegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 
 private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpIsoActionPerformed
     if (umdLoaded) {
-        UmdIsoReader iso = pspiofilemgr.getInstance().getIsoReader();
+        UmdIsoReader iso = Modules.IoFileMgrForUserModule.getIsoReader();
         if (iso != null) {
             try {
                 iso.dumpIndexFile("iso-index.txt");
