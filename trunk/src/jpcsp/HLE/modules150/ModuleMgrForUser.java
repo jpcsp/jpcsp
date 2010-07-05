@@ -16,30 +16,29 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_FILE_NOT_FOUND;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UNKNOWN_MODULE;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
-import jpcsp.HLE.pspiofilemgr;
-import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.types.SceKernelModuleInfo;
-import jpcsp.HLE.kernel.types.SceModule;
-import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
 
 import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.pspiofilemgr;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceKernelModuleInfo;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.HLEModuleFunction;
+import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.util.Utilities;
-import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-
-import jpcsp.Allegrex.CpuState;
 
 public class ModuleMgrForUser implements HLEModule {
     enum bannedModulesList {
@@ -230,8 +229,8 @@ public class ModuleMgrForUser implements HLEModule {
                 // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
                 // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
                 // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
-                int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 256, 0) + 256;
-                pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, 256, loadBase);
+                int loadBase = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_Low, 256, 0) + 256;
+                Modules.SysMemUserForUserModule.addSysMemInfo(2, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Low, 256, loadBase);
                 SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
@@ -247,7 +246,7 @@ public class ModuleMgrForUser implements HLEModule {
                     cpu.gpr[2] = module.modid;
                 } else {
                     // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
-                    //pspSysMem.getInstance().free(loadBase);
+                    //Modules.SysMemUserForUserModule.free(loadBase);
                     cpu.gpr[2] = -1;
                 }
 

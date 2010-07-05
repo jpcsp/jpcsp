@@ -31,7 +31,7 @@ public class DumpDebugState {
         if (isGameLoaded()) {
             dumpCurrentFrame();
             dumpThreads();
-            pspSysMem.getInstance().dumpSysMemInfo();
+            Modules.SysMemUserForUserModule.dumpSysMemInfo();
         } else {
             log("No game loaded");
         }

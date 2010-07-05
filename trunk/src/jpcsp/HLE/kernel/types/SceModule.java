@@ -16,14 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
-import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
-import jpcsp.HLE.pspSysMem;
-import jpcsp.HLE.kernel.managers.*;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;
@@ -126,9 +125,8 @@ public class SceModule {
 
     /** For use when unloading modules. */
     public void free() {
-        pspSysMem sysMem = pspSysMem.getInstance();
         for (int i = 0; i < nsegment; i++) {
-            sysMem.free(-1, segmentaddr[i]);
+        	Modules.SysMemUserForUserModule.free(-1, segmentaddr[i]);
         }
     }
 

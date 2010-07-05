@@ -16,10 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.util.Utilities;
 
 public class SceKernelMppInfo {
@@ -52,18 +52,18 @@ public class SceKernelMppInfo {
         this.numSendWaitThreads = 0;
         this.numReceiveWaitThreads = 0;
 
-        int memType = pspSysMem.PSP_SMEM_Low;
+        int memType = SysMemUserForUser.PSP_SMEM_Low;
 
         // Checked. 0x1100 means PSP_SMEM_High.
         if ((attr & MSGPIPE_ATTR_ADDR_HIGH) == MSGPIPE_ATTR_ADDR_HIGH)
-            memType = pspSysMem.PSP_SMEM_High;
+            memType = SysMemUserForUser.PSP_SMEM_High;
 
         int alignedSize = (size + 0xFF) & ~0xFF; // 256 byte align (or is this stage done by pspsysmem? aren't we using 64-bytes in pspsysmem?)
-        address = pspSysMem.getInstance().malloc(partitionid, memType, alignedSize, 0);
+        address = Modules.SysMemUserForUserModule.malloc(partitionid, memType, alignedSize, 0);
         if (address == 0)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
 
-        this.sysMemUID = pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-MsgPipe", memType, alignedSize, address);
+        this.sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-MsgPipe", memType, alignedSize, address);
         this.uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
         this.partitionid = partitionid;
         this.head = 0;
@@ -73,7 +73,7 @@ public class SceKernelMppInfo {
     public static SceKernelMppInfo tryCreateMpp(String name, int partitionid, int attr, int size) {
         SceKernelMppInfo info = null;
         int alignedSize = (size + 0xFF) & ~0xFF; // 256 byte align (or is this stage done by pspsysmem? aren't we using 64-bytes in pspsysmem?)
-        int maxFreeSize = pspSysMem.getInstance().maxFreeMemSize();
+        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
 
         if (size <= 0) {
             Modules.log.warn("tryCreateMpp invalid size " + size);
@@ -115,7 +115,7 @@ public class SceKernelMppInfo {
     }
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().free(sysMemUID, address);
+        Modules.SysMemUserForUserModule.free(sysMemUID, address);
     }
 
     // this will clobber itself if used carelessly but won't overflow outside of its allocated memory

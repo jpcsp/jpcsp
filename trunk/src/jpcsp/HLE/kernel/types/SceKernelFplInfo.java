@@ -16,10 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.util.Utilities;
 
 /*
@@ -68,17 +68,17 @@ public class SceKernelFplInfo {
             blockAllocated[i] = false;
         }
 
-        int memType = pspSysMem.PSP_SMEM_Low;
+        int memType = SysMemUserForUser.PSP_SMEM_Low;
         if ((attr & FPL_ATTR_ADDR_HIGH) == FPL_ATTR_ADDR_HIGH)
-            memType = pspSysMem.PSP_SMEM_High;
+            memType = SysMemUserForUser.PSP_SMEM_High;
 
         // Reserve psp memory
         int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
         int totalFplSize = alignedBlockSize * numBlocks;
-        int addr = pspSysMem.getInstance().malloc(partitionid, memType, totalFplSize, 0);
+        int addr = Modules.SysMemUserForUserModule.malloc(partitionid, memType, totalFplSize, 0);
         if (addr == 0)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
-        sysMemUID = pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Fpl", memType, totalFplSize, addr);
+        sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-Fpl", memType, totalFplSize, addr);
 
         // Initialise the block addresses
         for (int i = 0; i < numBlocks; i++) {
@@ -90,7 +90,7 @@ public class SceKernelFplInfo {
         SceKernelFplInfo info = null;
         int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
         int totalFplSize = alignedBlockSize * numBlocks;
-        int maxFreeSize = pspSysMem.getInstance().maxFreeMemSize();
+        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
 
         if (totalFplSize <= maxFreeSize) {
             info = new SceKernelFplInfo(name, partitionid, attr, blockSize, numBlocks);
@@ -168,6 +168,6 @@ public class SceKernelFplInfo {
     }
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().free(sysMemUID, blockAddress[0]);
+    	Modules.SysMemUserForUserModule.free(sysMemUID, blockAddress[0]);
     }
 }

@@ -16,16 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_DORMANT;
+
 import java.util.Comparator;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.HLE.pspSysMem;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.util.Utilities;
 
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
@@ -134,9 +136,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         // setup the stack
         if (stackSize > 0) {
-            stack_addr = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, stackSize, 0);
+            stack_addr = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
             if (stack_addr != 0) {
-                sysMemUID = pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, stackSize, stack_addr);
+                sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(2, "ThreadMan-Stack", SysMemUserForUser.PSP_SMEM_High, stackSize, stack_addr);
             }
         } else {
             stack_addr = 0;
@@ -257,6 +259,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 	}
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().free(sysMemUID, stack_addr);
+        Modules.SysMemUserForUserModule.free(sysMemUID, stack_addr);
     }
 }
