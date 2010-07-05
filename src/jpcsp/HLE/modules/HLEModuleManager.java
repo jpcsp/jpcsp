@@ -73,6 +73,7 @@ public class HLEModuleManager {
         sceUmdUser(Modules.sceUmdUserModule),
         scePower(Modules.scePowerModule),
         sceUtility(Modules.sceUtilityModule),
+        UtilsForUser(Modules.UtilsForUserModule),
         sceGe_user(Modules.sceGe_userModule),
         sceRtc(Modules.sceRtcModule),
         KernelLibrary(Modules.Kernel_LibraryModule),
