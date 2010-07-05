@@ -29,6 +29,8 @@ public class Modules {
 
     public static ThreadManForUser ThreadManForUserModule = new ThreadManForUser();
     public static SysMemUserForUser SysMemUserForUserModule = new SysMemUserForUser();
+    public static InterruptManager InterruptManagerModule = new InterruptManager();
+    public static LoadExecForUser LoadExecForUserModule = new LoadExecForUser();
     public static StdioForUser StdioForUserModule = new StdioForUser();
     public static sceCtrl sceCtrlModule = new sceCtrl();
     public static sceDisplay sceDisplayModule = new sceDisplay();

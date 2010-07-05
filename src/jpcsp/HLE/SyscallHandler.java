@@ -48,23 +48,6 @@ public class SyscallHandler {
         durationStatistics.start();
 
         switch(code) {
-		  case 0x2000:
-			  gpr[2] = Managers.intr.sceKernelRegisterSubIntrHandler(gpr[4], gpr[5], gpr[6], gpr[7]);
-			  break;
-		  case 0x2001:
-			  gpr[2] = Managers.intr.sceKernelReleaseSubIntrHandler(gpr[4], gpr[5]);
-			  break;
-		  case 0x2002:
-			  gpr[2] = Managers.intr.sceKernelEnableSubIntr(gpr[4], gpr[5]);
-			  break;
-		  case 0x2003:
-			  gpr[2] = Managers.intr.sceKernelDisableSubIntr(gpr[4], gpr[5]);
-			  break;
-		    //  case 0x2004: //sceKernelSuspendSubIntr
-		    //  case 0x2005: //sceKernelResumeSubIntr
-		    //  case 0x2006: //sceKernelIsSubInterruptOccurred
-		    //  case 0x2007: //QueryIntrHandlerInfo
-		    //  case 0x2008: //sceKernelRegisterUserSpaceIntrStack
 		    case 0x2087:
 		        pspiofilemgr.getInstance().sceIoPollAsync(gpr[4], gpr[5]);
 		        break;
@@ -182,16 +165,6 @@ public class SyscallHandler {
 		        // sceKernelStdioWrite(0x20af),
 		        // sceKernelStdioClose(0x20b0),
 		         //sceKernelStdioOpen(0x20b1),
-		    case 0x20e9:
-		        LoadExec.getInstance().sceKernelLoadExec(gpr[4], gpr[5]);
-		        break;
-		        // sceKernelExitGameWithStatus(0x20ea),
-		    case 0x20eb:
-		        LoadExec.getInstance().sceKernelExitGame();
-		        break;
-		    case 0x20ec:
-		        LoadExec.getInstance().sceKernelRegisterExitCallback(gpr[4]);
-		        break;
 		    case 0x213a:
 		        pspdisplay.getInstance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
 		        break;
