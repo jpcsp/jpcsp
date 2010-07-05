@@ -59,9 +59,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public final static int MODE_LISTDELETE = 6;
 		public final static int MODE_DELETE = 7;
 		public final static int MODE_SIZES = 8;
-		public final static int MODE_LIST = 11;
+        public final static int MODE_LIST = 11;
+        public final static int MODE_FILES = 12;
 		public final static int MODE_TEST = 15;
-        public final static int MODE_SECURE = 22;
+        public final static int MODE_GETSIZE = 22;
 	public int focus;
 		public final static int FOCUS_UNKNOWN = 0;
 		public final static int FOCUS_FIRSTLIST = 1;	// First in list
@@ -93,6 +94,9 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
     public int buffer5Addr;
     public int buffer6Addr;
 	public String key;		// encrypt/decrypt key for save with firmware >= 2.00
+    public int secureVersion;
+    public int errorStatus;
+    public int secureStatus;
 
 	public static class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
         public String title;
@@ -222,12 +226,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			newData = null;
 		}
         focus = read32();
-		readUnknown(4);
+		errorStatus = read32();
 		buffer1Addr = read32();
         buffer2Addr = read32();
         buffer3Addr = read32();
 		key = readStringNZ(16);
-		readUnknown(8);
+		secureVersion = read32();
+        secureStatus = read32();
 		buffer4Addr = read32();
         buffer5Addr = read32();
         buffer6Addr = read32();
@@ -261,12 +266,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			newData.write(mem, newDataAddr);
 		}
 		write32(focus);
-		write32(0); // Unknown value but game "INFECTED" requires this to be 0.
+		write32(errorStatus);
 		write32(buffer1Addr);
         write32(buffer2Addr);
         write32(buffer3Addr);
 		writeStringNZ(16, key);
-		writeUnknown(8);
+		write32(secureVersion);
+        write32(secureStatus);
 		write32(buffer4Addr);
         write32(buffer5Addr);
         write32(buffer6Addr);
@@ -309,7 +315,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return getBasePath(saveName);
     }
 
-    private String getBasePath(String saveName) {
+    public String getBasePath(String saveName) {
         String path = savedataPath + gameName;
         if (!saveName.equals("<>")) {
             path += saveName;

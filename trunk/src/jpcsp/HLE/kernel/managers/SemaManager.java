@@ -37,6 +37,11 @@ public class SemaManager {
     private HashMap<Integer, SceKernelSemaInfo> semaMap;
     private SemaWaitStateChecker semaWaitStateChecker;
 
+    private final static int PSP_SEMA_ATTR_FIFO = 0;           // Signal waiting threads with a FIFO iterator.
+    private final static int PSP_SEMA_ATTR_PRIORITY = 0x100;   // Signal waiting threads with a priority based iterator.
+
+    private int waitThreadOrder;
+
     public void reset() {
         semaMap = new HashMap<Integer, SceKernelSemaInfo>();
         semaWaitStateChecker = new SemaWaitStateChecker();
@@ -107,7 +112,7 @@ public class SemaManager {
         	return;
         }
 
-        if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));
+        waitThreadOrder = attr;
 
         Memory mem = Memory.getInstance();
         if (mem.isAddressGood(option)) {
@@ -274,13 +279,11 @@ public class SemaManager {
 
     public void sceKernelWaitSema(int semaid, int signal, int timeout_addr)
     {
-        //Modules.log.debug("sceKernelWaitSema redirecting to hleKernelWaitSema(callbacks=false)");
         hleKernelWaitSema(semaid, signal, timeout_addr, false);
     }
 
     public void sceKernelWaitSemaCB(int semaid, int signal, int timeout_addr)
     {
-        //Modules.log.debug("sceKernelWaitSemaCB redirecting to hleKernelWaitSema(callbacks=true)");
         hleKernelWaitSema(semaid, signal, timeout_addr, true);
     }
 
@@ -313,44 +316,58 @@ public class SemaManager {
                 sema.currentCount = sema.maxCount;
             }
 
-            // For each thread (sorted by priority),
-            // if the thread is waiting on this semaphore,
-            // and signal <= currentCount,
-            // then wake up the thread and adjust currentCount.
-            // repeat for all remaining threads or until currentCount = 0.
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext(); ) {
-                SceKernelThreadInfo thread = it.next();
 
-                if (thread.waitType == PSP_WAIT_SEMA &&
-                    thread.wait.waitingOnSemaphore &&
-                    thread.wait.Semaphore_id == semaid &&
-                    tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
+            if(waitThreadOrder == PSP_SEMA_ATTR_FIFO) {
+                for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
+                    SceKernelThreadInfo thread = it.next();
 
-                	if (Modules.log.isDebugEnabled()) {
-                		Modules.log.debug("sceKernelSignalSema waking thread 0x" + Integer.toHexString(thread.uid)
+                    if (thread.waitType == PSP_WAIT_SEMA &&
+                            thread.wait.waitingOnSemaphore &&
+                            thread.wait.Semaphore_id == semaid &&
+                            tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
+
+                        if (Modules.log.isDebugEnabled()) {
+                            Modules.log.debug("sceKernelSignalSema waking thread 0x" + Integer.toHexString(thread.uid)
                 				+ " name:'" + thread.name + "'");
-                	}
+                        }
 
-                    // Untrack
-                    thread.wait.waitingOnSemaphore = false;
+                        thread.wait.waitingOnSemaphore = false;
+                        thread.cpuContext.gpr[2] = 0;
+                        threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
 
-                    // Return success
-                    thread.cpuContext.gpr[2] = 0;
+                        sema.numWaitThreads--;
+                        if (sema.currentCount == 0) {
+                            break;
+                        }
+                    }
+                }
+            } else if (waitThreadOrder == PSP_SEMA_ATTR_PRIORITY) {
+                for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext(); ) {
+                    SceKernelThreadInfo thread = it.next();
 
-                    // Wakeup
-                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    if (thread.waitType == PSP_WAIT_SEMA &&
+                            thread.wait.waitingOnSemaphore &&
+                            thread.wait.Semaphore_id == semaid &&
+                            tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
 
-                    // Adjust sema
-                    sema.numWaitThreads--;
-                    if (sema.currentCount == 0) {
-                        break;
+                        if (Modules.log.isDebugEnabled()) {
+                            Modules.log.debug("sceKernelSignalSema waking thread 0x" + Integer.toHexString(thread.uid)
+                                    + " name:'" + thread.name + "'");
+                        }
+
+                        thread.wait.waitingOnSemaphore = false;
+                        thread.cpuContext.gpr[2] = 0;
+                        threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+
+                        sema.numWaitThreads--;
+                        if (sema.currentCount == 0) {
+                            break;
+                        }
                     }
                 }
             }
-
             Emulator.getProcessor().cpu.gpr[2] = 0;
-
             threadMan.hleRescheduleCurrentThread();
         }
     }

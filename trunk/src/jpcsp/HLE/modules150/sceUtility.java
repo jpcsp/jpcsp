@@ -862,6 +862,22 @@ public class sceUtility implements HLEModule {
                 }
                 break;
 
+            case SceUtilitySavedataParam.MODE_DELETE:
+                if(savedataParams.saveNameList != null) {
+                    for(int i = 0; i < savedataParams.saveNameList.length; i++) {
+                        String save = "ms0/PSP/SAVEDATA/" + (State.discId) +
+                                (savedataParams.saveNameList[i]);
+                        if(deleteSavedataDir(save)) {
+                            Modules.log.debug("Savedata MODE_DELETE deleting " + save);
+                        }
+                    }
+                    savedataParams.base.result = 0;
+                } else {
+                    Modules.log.warn("Savedata MODE_DELETE no saves found!");
+                   savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                }
+                break;
+
             case SceUtilitySavedataParam.MODE_SIZES: {
             	// "METAL SLUG XX" outputs the following on stdout after calling mode 8:
             	//
@@ -1000,6 +1016,67 @@ public class sceUtility implements HLEModule {
                 break;
             }
 
+            case SceUtilitySavedataParam.MODE_FILES: {
+                int buffer5Addr = savedataParams.buffer5Addr;
+                if (mem.isAddressGood(buffer5Addr)) {
+                    int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
+                    int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
+                    int systemEntriesAddr = mem.read32(buffer5Addr + 32);
+
+                    String path = savedataParams.getBasePath(savedataParams.saveName);
+                	pspiofilemgr fileManager = pspiofilemgr.getInstance();
+                	String[] entries = fileManager.listFiles(path, null);
+
+                	int maxNumEntries = entries == null ? 0 : entries.length;
+                    int saveFileSecureNumEntries = 0;
+                    int saveFileNumEntries = 0;
+                    int systemFileNumEntries = 0;
+
+                    // List all files in the savedata (normal and/or encrypted).
+                	for (int i = 0; i < maxNumEntries; i++) {
+                        String filePath = path + "/" + entries[i];
+                        SceIoStat stat = fileManager.statFile(filePath);
+
+                        // Write to secure (encrypted). In this mode, encrypted files have higher priority.
+                        if(filePath.contains(".DAT") || filePath.contains(".BIN")) {
+                            if(mem.isAddressGood(saveFileSecureEntriesAddr)) {
+                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
+                                if (stat != null) {
+                                    mem.write32(entryAddr + 0, stat.mode);
+                                    mem.write64(entryAddr + 8, stat.size);
+                                    stat.ctime.write(mem, entryAddr + 16);
+                                    stat.atime.write(mem, entryAddr + 32);
+                                    stat.mtime.write(mem, entryAddr + 48);
+                                }
+                                String entryName = entries[i];
+                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                            }
+                            saveFileSecureNumEntries++;
+                        } else if(filePath.contains(".SFO") || filePath.contains("ICON")
+                                || filePath.contains("PIC") || filePath.contains("SND")) {
+                            if(mem.isAddressGood(systemEntriesAddr)) {
+                                int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
+                                if (stat != null) {
+                                    mem.write32(entryAddr + 0, stat.mode);
+                                    mem.write64(entryAddr + 8, stat.size);
+                                    stat.ctime.write(mem, entryAddr + 16);
+                                    stat.atime.write(mem, entryAddr + 32);
+                                    stat.mtime.write(mem, entryAddr + 48);
+                                }
+                                String entryName = entries[i];
+                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                            }
+                            systemFileNumEntries++;
+                        }
+                    }
+                    mem.write32(buffer5Addr + 12, saveFileSecureNumEntries);
+                    mem.write32(buffer5Addr + 16, saveFileNumEntries);
+                    mem.write32(buffer5Addr + 20, systemFileNumEntries);
+                }
+        		savedataParams.base.result = 0;
+                break;
+            }
+
             case SceUtilitySavedataParam.MODE_TEST: {
             	boolean isPresent = false;
 
@@ -1018,49 +1095,64 @@ public class sceUtility implements HLEModule {
                 break;
             }
 
-            case SceUtilitySavedataParam.MODE_DELETE:
-                // Should receive a savedata list address as parameter.
-                // Scan the list and try to delete the saves.
-               if(savedataParams.saveNameList != null) {
-                   for(int i = 0; i < savedataParams.saveNameList.length; i++) {
-                       String save = "ms0/PSP/SAVEDATA/" + (State.discId) +
-                           (savedataParams.saveNameList[i]);
-                       if(deleteSavedataDir(save)) {
-                           Modules.log.debug("Savedata MODE_DELETE deleting " + save);
-                       }
-                   }
-                   savedataParams.base.result = 0;
-               } else {
-                   Modules.log.warn("Savedata MODE_DELETE no saves found!");
-                   savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
-               }
-               break;
+            case SceUtilitySavedataParam.MODE_GETSIZE:
+                int buffer6Addr = savedataParams.buffer6Addr;
+                if (mem.isAddressGood(buffer6Addr)) {
+                    int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
+                    int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
 
-            case SceUtilitySavedataParam.MODE_SECURE:
-                // This one acts as an hybrid save/load access test mode. If it fails loading the file
-                // it tries to save it (encrypted or decrypted) and it stores the result
-                // in a new buffer (buffer6Addr).
-                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                        savedataParams.saveName = savedataParams.saveNameList[0];
-                    } else {
-                        savedataParams.saveName = "-000";
+                    String path = savedataParams.getBasePath(savedataParams.saveName);
+                	pspiofilemgr fileManager = pspiofilemgr.getInstance();
+                	String[] entries = fileManager.listFiles(path, null);
+
+                	int maxNumEntries = entries == null ? 0 : entries.length;
+                    int saveFileSecureNumEntries = 0;
+                    int saveFileNumEntries = 0;
+                    int totalSize = 0;
+
+                    // List all files in the savedata (normal and/or encrypted).
+                	for (int i = 0; i < maxNumEntries; i++) {
+                        String filePath = path + "/" + entries[i];
+                        SceIoStat stat = fileManager.statFile(filePath);
+
+                        // Write to secure (encrypted). In this mode, encrypted files have higher priority.
+                        if(filePath.contains(".DAT") || filePath.contains(".BIN")) {
+                            if(mem.isAddressGood(saveFileSecureEntriesAddr)) {
+                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
+                                if (stat != null) {
+                                    mem.write32(entryAddr + 0, stat.mode);
+                                    mem.write64(entryAddr + 8, stat.size);
+                                    stat.ctime.write(mem, entryAddr + 16);
+                                    stat.atime.write(mem, entryAddr + 32);
+                                    stat.mtime.write(mem, entryAddr + 48);
+                                }
+                                String entryName = entries[i];
+                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                            }
+                            saveFileSecureNumEntries++;
+                            totalSize += stat.size;
+                        }
                     }
+                    // Write files count.
+                    mem.write32(buffer6Addr + 0, saveFileSecureNumEntries);
+                    mem.write32(buffer6Addr + 4, saveFileNumEntries);
+
+                    // Free MS size.
+                	String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
+                    mem.write32(buffer6Addr +  16, MemoryStick.getSectorSize());
+                    mem.write32(buffer6Addr +  20, MemoryStick.getFreeSizeKb() / MemoryStick.getSectorSizeKb());
+                    mem.write32(buffer6Addr +  24, MemoryStick.getFreeSizeKb());
+                    Utilities.writeStringNZ(mem, buffer6Addr +  28, 8, memoryStickFreeSpaceString);
+
+                    // Savedata file size.
+                    mem.write32(buffer6Addr +  36, totalSize);
+                    Utilities.writeStringNZ(mem, buffer6Addr +  40, 8, totalSize + " KB");
+
+                    // Another size (unknown purpose).
+                    mem.write32(buffer6Addr +  44, totalSize);
+                    Utilities.writeStringNZ(mem, buffer6Addr +  48, 8, totalSize + " KB");
                 }
-                try {
-                    savedataParams.load(mem, pspiofilemgr.getInstance());
-                    savedataParams.base.result = 0;
-                    savedataParams.write(mem);
-                } catch (Exception load) {
-                    savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
-                    try{
-                        savedataParams.save(mem, pspiofilemgr.getInstance());
-                        savedataParams.base.result = 0;
-                    } catch (Exception save) {
-                        savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-                    }
-                }
-                mem.write32(savedataParams.buffer6Addr, savedataParams.base.result);
+        		savedataParams.base.result = 0;
                 break;
 
             default:
@@ -1069,6 +1161,7 @@ public class sceUtility implements HLEModule {
                 break;
         }
 
+        savedataParams.errorStatus = 0;
         savedataParams.base.writeResult(mem);
         if (Modules.log.isDebugEnabled()) {
             Modules.log.debug("hleUtilitySavedataDisplay savedResult:0x" + Integer.toHexString(savedataParams.base.result));

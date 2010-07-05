@@ -22,7 +22,9 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -313,6 +315,8 @@ public class sceSasCore implements HLEModule {
     protected int grainSamples;
     protected int outputMode;
 
+    protected static final int waveformBufMaxSize = 1024;  // 256 sound samples.
+
     public void setAudioMuted(boolean muted) {
     	audioMuted = muted;
     }
@@ -347,6 +351,80 @@ public class sceSasCore implements HLEModule {
         Modules.log.warn(functionName + " bad voice number " + voice);
         cpu.gpr[2] = -1;
         return false;
+    }
+
+    protected short[] decodeSamples(Processor processor, int vagAddr, int size) {
+        Memory mem = Processor.memory;
+
+        // Based on vgmstream
+        short[] samples = new short[size / 16 * 28];
+        int numSamples = 0;
+
+        // VAG address can be null. In this case, just return empty samples.
+        if(vagAddr != 0) {
+        int headerCheck = mem.read32(vagAddr);
+        if ((headerCheck & 0x00FFFFFF) == 0x00474156)	{ // VAGx
+        	vagAddr += 0x30;	// Skip the VAG header
+        }
+
+        int[] unpackedSamples = new int[28];
+        int hist1 = 0;
+        int hist2 = 0;
+        final double[][] VAG_f = {
+        		{   0.0       ,   0.0 },
+        		{  60.0 / 64.0,   0.0 },
+        		{ 115.0 / 64.0, -52.0 / 64.0 },
+        		{  98.0 / 64.0, -55.0 / 64.0 },
+        		{ 122.0 / 64.0, -60.0 / 64.0 }
+        		};
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(vagAddr, 1);
+        for (int i = 0; i <= (size - 16); i += 16) {
+        	int n = memoryReader.readNext();
+        	int predict_nr = n >> 4;
+        	if (predict_nr >= VAG_f.length) {
+        		// predict_nr is supposed to be included in [0..4].
+        		// TODO The game "Tenchu: TOTA" is using a value "predict_nr = 7", I could not find out how this value should be interpreted...
+        		Modules.log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
+        		// Avoid ArrayIndexOutOfBoundsException
+        		predict_nr = 0;
+        	}
+        	int shift_factor = n & 0x0F;
+        	int flag = memoryReader.readNext();
+        	if (flag == 0x07) {
+        		break;	// End of stream flag
+        	}
+        	for (int j = 0; j < 28; j += 2) {
+        		int d = memoryReader.readNext();
+        		int s = (short) ((d & 0x0F) << 12);
+        		unpackedSamples[j] = s >> shift_factor;
+        		s = (short) ((d & 0xF0) << 8);
+        		unpackedSamples[j + 1] = s >> shift_factor;
+        	}
+
+        	for (int j = 0; j < 28; j++) {
+        		int sample = (int) (unpackedSamples[j] + hist1 * VAG_f[predict_nr][0] + hist2 * VAG_f[predict_nr][1]);
+        		hist2 = hist1;
+        		hist1 = sample;
+
+        		if (sample < -32768) {
+        			samples[numSamples] = -32768;
+        		} else if (sample > 0x7FFF) {
+        			samples[numSamples] = 0x7FFF;
+        		} else {
+        			samples[numSamples] = (short) sample;
+        		}
+        		numSamples++;
+        	}
+        }
+
+        if (samples.length != numSamples) {
+        	short[] resizedSamples = new short[numSamples];
+        	System.arraycopy(samples, 0, resizedSamples, 0, numSamples);
+        	samples = resizedSamples;
+        }
+        }
+
+        return samples;
     }
 
     public void __sceSasSetADSR(Processor processor) {
@@ -482,21 +560,21 @@ public class sceSasCore implements HLEModule {
 
     public void __sceSasCoreWithMix(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
         int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
         int sasMix = cpu.gpr[6]; // Bitfield?
 
-         Modules.log.debug("IGNORING:__sceSasCoreWithMix " + makeLogParams(cpu));
+        Modules.log.debug("__sceSasCoreWithMix " + makeLogParams(cpu));
 
-        if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
-            // Tested on PSP:
-            // There's no evidence that a context switch can occur here,
-            // also, not delaying here showed some speed increase in several
-            // applications and promoted the correct context switch between audio threads.
-
-            // Variation of __sceSasCore.
-            // This one sends an encoded mix in the 3rd parameter.
+        // Tested on PSP:
+        // __sceSasCoreWithMix cannot be called from an interrupt.
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		Modules.log.warn("__sceSasCoreWithMix called inside an Interrupt!");
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
+            mem.memset(sasOut, (byte)0, waveformBufMaxSize);  // Empty waveform.
             cpu.gpr[2] = 0;
         }
     }
@@ -546,7 +624,6 @@ public class sceSasCore implements HLEModule {
         cpu.gpr[2] = voices[voice].BASE_ENVELOPE_HEIGHT;
     }
 
-    // I think this means start playing this channel, key off would then mean stop or pause the playback (fiveofhearts)
     public void __sceSasSetKeyOn(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -581,80 +658,6 @@ public class sceSasCore implements HLEModule {
         	}
             cpu.gpr[2] = 0;
         }
-    }
-
-    protected short[] decodeSamples(Processor processor, int vagAddr, int size) {
-    	Memory mem = Processor.memory;
-
-    	// Based on vgmstream
-        short[] samples = new short[size / 16 * 28];
-        int numSamples = 0;
-
-        // VAG address can be null. In this case, just return empty samples.
-        if(vagAddr != 0) {
-        int headerCheck = mem.read32(vagAddr);
-        if ((headerCheck & 0x00FFFFFF) == 0x00474156)	{ // VAGx
-        	vagAddr += 0x30;	// Skip the VAG header
-        }
-
-        int[] unpackedSamples = new int[28];
-        int hist1 = 0;
-        int hist2 = 0;
-        final double[][] VAG_f = {
-        		{   0.0       ,   0.0 },
-        		{  60.0 / 64.0,   0.0 },
-        		{ 115.0 / 64.0, -52.0 / 64.0 },
-        		{  98.0 / 64.0, -55.0 / 64.0 },
-        		{ 122.0 / 64.0, -60.0 / 64.0 }
-        		};
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(vagAddr, 1);
-        for (int i = 0; i <= (size - 16); i += 16) {
-        	int n = memoryReader.readNext();
-        	int predict_nr = n >> 4;
-        	if (predict_nr >= VAG_f.length) {
-        		// predict_nr is supposed to be included in [0..4].
-        		// TODO The game "Tenchu: TOTA" is using a value "predict_nr = 7", I could not find out how this value should be interpreted...
-        		Modules.log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
-        		// Avoid ArrayIndexOutOfBoundsException
-        		predict_nr = 0;
-        	}
-        	int shift_factor = n & 0x0F;
-        	int flag = memoryReader.readNext();
-        	if (flag == 0x07) {
-        		break;	// End of stream flag
-        	}
-        	for (int j = 0; j < 28; j += 2) {
-        		int d = memoryReader.readNext();
-        		int s = (short) ((d & 0x0F) << 12);
-        		unpackedSamples[j] = s >> shift_factor;
-        		s = (short) ((d & 0xF0) << 8);
-        		unpackedSamples[j + 1] = s >> shift_factor;
-        	}
-
-        	for (int j = 0; j < 28; j++) {
-        		int sample = (int) (unpackedSamples[j] + hist1 * VAG_f[predict_nr][0] + hist2 * VAG_f[predict_nr][1]);
-        		hist2 = hist1;
-        		hist1 = sample;
-
-        		if (sample < -32768) {
-        			samples[numSamples] = -32768;
-        		} else if (sample > 0x7FFF) {
-        			samples[numSamples] = 0x7FFF;
-        		} else {
-        			samples[numSamples] = (short) sample;
-        		}
-        		numSamples++;
-        	}
-        }
-
-        if (samples.length != numSamples) {
-        	short[] resizedSamples = new short[numSamples];
-        	System.arraycopy(samples, 0, resizedSamples, 0, numSamples);
-        	samples = resizedSamples;
-        }
-        }
-
-        return samples;
     }
 
     public void __sceSasSetVoice(Processor processor) {
@@ -730,21 +733,20 @@ public class sceSasCore implements HLEModule {
 
     public void __sceSasCore(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
         int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
 
-        // The data outputted to sasOut is used by several audio functions, like
-        // an overlaying sound envelope. -1 for instance, produces static over
-        // any audio sample the application uses.
-        Modules.log.debug("IGNORING:__sceSasCore " + makeLogParams(cpu));
+        Modules.log.debug("__sceSasCore " + makeLogParams(cpu));
 
-        if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-            // Tested on PSP:
-            // There's no evidence that a context switch can occur here,
-            // also, not delaying here showed some speed increase in several
-            // applications and promoted the correct context switch between audio threads.
-
+        // Tested on PSP:
+        // __sceSasCore cannot be called from an interrupt.
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		Modules.log.warn("__sceSasCore called inside an Interrupt!");
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
+            mem.memset(sasOut, (byte)0, waveformBufMaxSize);  // Empty waveform.
             cpu.gpr[2] = 0;
         }
     }
@@ -1254,4 +1256,4 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetAllEnvelopeHeights(processor);";
         }
     };
-};
+}
