@@ -29,6 +29,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.graphics.VertexCache;
@@ -184,9 +185,9 @@ public class Emulator implements Runnable {
         Loader.getInstance().reset();
         State.fileLogger.resetLogging();
 
-        jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise(firmwareVersion);
-        jpcsp.HLE.kernel.Managers.reset();
-        jpcsp.HLE.pspSysMem.getInstance().Initialise(firmwareVersion);
+        HLEModuleManager.getInstance().Initialise(firmwareVersion);
+        Managers.reset();
+        Modules.SysMemUserForUserModule.Initialise(firmwareVersion);
     }
 
     @Override
@@ -349,12 +350,12 @@ public class Emulator implements Runnable {
         this.firmwareVersion = firmwareVersion;
 
         NIDMapper.getInstance().Initialise();
-        jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise(this.firmwareVersion);
-        jpcsp.HLE.pspSysMem.getInstance().setFirmwareVersion(this.firmwareVersion);
+        HLEModuleManager.getInstance().Initialise(this.firmwareVersion);
+        Modules.SysMemUserForUserModule.setFirmwareVersion(this.firmwareVersion);
     }
 
     /** @param firmwareVersion : in this format: "A.BB", where A = major and B = minor, for example "2.71" */
     public void setFirmwareVersion(String firmwareVersion) {
-        setFirmwareVersion(jpcsp.HLE.modules.HLEModuleManager.psfFirmwareVersionToInt(firmwareVersion));
+        setFirmwareVersion(HLEModuleManager.psfFirmwareVersionToInt(firmwareVersion));
     }
 }

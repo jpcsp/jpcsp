@@ -19,11 +19,11 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_PRIORITY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_THREAD;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_THREAD;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_ALREADY_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_KERNEL;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_USER;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
@@ -47,8 +47,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import jpcsp.AllegrexOpcodes;
+import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Debugger.DumpDebugState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -59,25 +67,14 @@ import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelSystemStatus;
-import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.scheduler.Scheduler;
-
-import jpcsp.AllegrexOpcodes;
-import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState;
-import jpcsp.Allegrex.Decoder;
-import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.Debugger.DumpDebugState;
 
 public class ThreadManForUser implements HLEModule {
 
@@ -472,7 +469,7 @@ public class ThreadManForUser implements HLEModule {
             | ((sceKernelDelayThreadFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // This memory is always reserved on a real PSP
-        int reservedMem = pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
+        int reservedMem = Modules.SysMemUserForUserModule.malloc(1, SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
 
         mem.write32(IDLE_THREAD_ADDRESS + 0,  instruction_addiu);
         mem.write32(IDLE_THREAD_ADDRESS + 4,  instruction_lui);

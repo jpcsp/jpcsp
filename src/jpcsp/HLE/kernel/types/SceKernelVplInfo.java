@@ -17,10 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import java.util.HashMap;
-import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspSysMem;
+
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.util.Utilities;
 
 /*
@@ -67,17 +68,17 @@ public class SceKernelVplInfo {
         uid = SceUidManager.getNewUid("ThreadMan-Vpl");
         this.partitionid = partitionid;
 
-        int memType = pspSysMem.PSP_SMEM_Low;
+        int memType = SysMemUserForUser.PSP_SMEM_Low;
         if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH)
-            memType = pspSysMem.PSP_SMEM_High;
+            memType = SysMemUserForUser.PSP_SMEM_High;
 
         // Reserve psp memory
         int alignedSize = (size + 7) & ~7; // 8-byte align
         int totalVplSize = alignedSize;
-        int addr = pspSysMem.getInstance().malloc(partitionid, memType, totalVplSize, 0);
+        int addr = Modules.SysMemUserForUserModule.malloc(partitionid, memType, totalVplSize, 0);
         if (addr == 0)
             throw new RuntimeException("SceKernelVplInfo: not enough free mem");
-        sysMemUID = pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Vpl", memType, totalVplSize, addr);
+        sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-Vpl", memType, totalVplSize, addr);
 
         // 24 byte header, probably not necessary to mimick this
         Memory mem = Memory.getInstance();
@@ -98,7 +99,7 @@ public class SceKernelVplInfo {
         SceKernelVplInfo info = null;
         int alignedSize = (size + 7) & ~7; // 8-byte align
         int totalVplSize = alignedSize;
-        int maxFreeSize = pspSysMem.getInstance().maxFreeMemSize();
+        int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
 
         if (totalVplSize <= maxFreeSize) {
             info = new SceKernelVplInfo(name, partitionid, attr, totalVplSize);
@@ -110,7 +111,7 @@ public class SceKernelVplInfo {
     }
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().free(sysMemUID, allocAddress);
+        Modules.SysMemUserForUserModule.free(sysMemUID, allocAddress);
     }
 
     public void read(Memory mem, int address) {

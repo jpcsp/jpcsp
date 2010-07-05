@@ -56,7 +56,7 @@ public class HLEModuleManager {
     private HashMap<String, List<HLEModule>> flash0prxMap;
 
     /** The current firmware version we are using
-     * was supposed to be one of pspSysMem.PSP_FIRMWARE_* but there's a mistake
+     * was supposed to be one of SysMemUserForUser.PSP_FIRMWARE_* but there's a mistake
      * in the module autogen and now its an int in this format:
      * ABB, where A = major and B = minor, for example 271 */
     private int firmwareVersion;
@@ -69,6 +69,7 @@ public class HLEModuleManager {
     private enum DefaultModule {
     	// Modules loaded by default in all firmware version...
     	ThreadManForUser(Modules.ThreadManForUserModule),
+    	SysMemUserForUser(Modules.SysMemUserForUserModule),
         StdioForUser(Modules.StdioForUserModule),
         sceUmdUser(Modules.sceUmdUserModule),
         scePower(Modules.scePowerModule),

@@ -16,9 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.HLE.pspSysMem;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.interrupts.VTimerInterruptHandler;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.scheduler.VTimerInterruptAction;
 import jpcsp.scheduler.VTimerInterruptResultAction;
 
@@ -57,7 +58,7 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 	public int getInternalMemory() {
 		if (internalMemory == 0) {
 			// Allocate enough memory to store "current" and "schedule"
-			internalMemory = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 16, 0);
+			internalMemory = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_Low, 16, 0);
 		}
 
 		return internalMemory;
@@ -65,7 +66,7 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 
 	public void delete() {
 		if (internalMemory != 0) {
-			pspSysMem.getInstance().free(-1, internalMemory);
+			Modules.SysMemUserForUserModule.free(-1, internalMemory);
 			internalMemory = 0;
 		}
 	}

@@ -28,9 +28,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Debugger.ElfHeaderInfo;
-import jpcsp.HLE.pspSysMem;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32EntHeader;
@@ -567,18 +568,17 @@ public class Loader {
             + String.format("%08x", module.loadAddressLow)
             + " for module '" + module.pspfilename + "'");
 
-        pspSysMem SysMemUserForUserModule = pspSysMem.getInstance();
         int address = module.loadAddressLow & ~0xFF; // Round down to nearest 256-bytes to match sysmem allocations
         int size = module.loadAddressHigh - address;
 
-        int allocatedAddress = SysMemUserForUserModule.malloc(2, pspSysMem.PSP_SMEM_Addr, size, address);
+        int allocatedAddress = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_Addr, size, address);
         if (allocatedAddress != address) {
             Memory.log.warn("Failed to properly reserve memory consumed by module " + module.modname
                 + " at address 0x" + Integer.toHexString(address)
                 + " size " + size
                 + " new address 0x" + Integer.toHexString(allocatedAddress));
         }
-        SysMemUserForUserModule.addSysMemInfo(2, module.modname, pspSysMem.PSP_SMEM_Low, size, allocatedAddress);
+        Modules.SysMemUserForUserModule.addSysMemInfo(2, module.modname, SysMemUserForUser.PSP_SMEM_Low, size, allocatedAddress);
     }
 
     /** Loads from memory */
