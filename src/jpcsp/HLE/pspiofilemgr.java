@@ -278,7 +278,10 @@ public class pspiofilemgr {
     	}
 
     	File f = new File(pcfilename);
-    	String[] list = f.list(new PatternFilter(pattern));
+        String[] list = f.list();
+        if(pattern != null) {
+            list = f.list(new PatternFilter(pattern));
+        }
 
     	return list;
     }

@@ -94,7 +94,9 @@ public class sceGe_user implements HLEModule {
     public final static int PSP_GE_MATRIX_VIEW   = 9;
     public final static int PSP_GE_MATRIX_PROJECTION = 10;
     public final static int PSP_GE_MATRIX_TEXGEN = 11;
-	
+
+    public int eDRAMMemoryWidth;
+
     @Override
     public String getName() {
         return "sceGe_user";
@@ -149,7 +151,7 @@ public class sceGe_user implements HLEModule {
 
         }
     }
-    
+
     public void Initialise() {
         waitingForSync = false;
         syncDone = false;
@@ -165,8 +167,10 @@ public class sceGe_user implements HLEModule {
     	}
 
         deferredThreadWakeupQueue = new ConcurrentLinkedQueue<Integer>();
+
+        eDRAMMemoryWidth = 1024;
     }
-    
+
     public void step() {
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
@@ -234,7 +238,7 @@ public class sceGe_user implements HLEModule {
         	}
 		}
     }
-    
+
     /** Called from VideoEngine */
     public void hleGeListSyncDone(PspGeList list) {
         if (VideoEngine.log.isDebugEnabled()) {
@@ -304,7 +308,7 @@ public class sceGe_user implements HLEModule {
     	list.startListHead();
     	pspdisplay.getInstance().setGeDirty(true);
     }
-    
+
     /** safe to call from the Async display thread */
     public void triggerFinishCallback(int cbid, int callbackNotifyArg1) {
 		triggerAsyncCallback(cbid, -1, PSP_GE_BEHAVIOR_SUSPEND, callbackNotifyArg1, finishCallbacks);
@@ -372,33 +376,35 @@ public class sceGe_user implements HLEModule {
 
     public void sceGeEdramSetAddrTranslation(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int size = cpu.gpr[4];
-        
-        VideoEngine.log.warn("UNIMPLEMENTED: sceGeEdramSetAddrTranslation size=" + size);
-        
-        cpu.gpr[2] = 0;
+
+        // Faking. There's no need for real memory width conversion.
+        int previousWidth = eDRAMMemoryWidth;
+        eDRAMMemoryWidth = size;
+
+        cpu.gpr[2] = previousWidth;
     }
 
     public void sceGeGetCmd(Processor processor) {
         CpuState cpu = processor.cpu;
-                
+
         int cmd = cpu.gpr[4];
-        
+
         VideoEngine ve = VideoEngine.getInstance();
         int arg = ve.getCommandValue(cmd);
 
         Modules.log.info("sceGeGetCmd " + ve.commandToString(cmd).toUpperCase() + ":" + " cmd=0x" + Integer.toHexString(cmd) + " value=0x" + Integer.toHexString(arg));
-        
+
         cpu.gpr[2] = arg;
     }
 
     public void sceGeGetMtx(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int mtxtype = cpu.gpr[4];
         int mtx_addr = cpu.gpr[5];
-        
+
         VideoEngine ve = VideoEngine.getInstance();
         float[] mtx = ve.getMatrix(mtxtype);
 
@@ -408,9 +414,9 @@ public class sceGe_user implements HLEModule {
 
     public void sceGeSaveContext(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int contextAddr = cpu.gpr[4];
-        
+
         if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceGeSaveContext contextAddr=" + Integer.toHexString(contextAddr));
     	}
@@ -424,9 +430,9 @@ public class sceGe_user implements HLEModule {
 
     public void sceGeRestoreContext(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int contextAddr = cpu.gpr[4];
-        
+
         if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceGeRestoreContext contextAddr=" + Integer.toHexString(contextAddr));
     	}
@@ -522,7 +528,7 @@ public class sceGe_user implements HLEModule {
         CpuState cpu = processor.cpu;
 
         int id = cpu.gpr[4];
-        
+
         if (VideoEngine.log.isDebugEnabled()) {
         	VideoEngine.log.debug("sceGeListDeQueue(id=" + id + ")");
         }
@@ -543,10 +549,10 @@ public class sceGe_user implements HLEModule {
 
     public void sceGeListUpdateStallAddr(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int id = cpu.gpr[4];
         int stall_addr = cpu.gpr[5];
-        
+
         if (VideoEngine.log.isDebugEnabled()) {
         	VideoEngine.log.debug(String.format("sceGeListUpdateStallAddr(id=0x%x, stall=0x%08X)", id, stall_addr));
         }
@@ -569,10 +575,10 @@ public class sceGe_user implements HLEModule {
 
     public void sceGeListSync(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int id = cpu.gpr[4];
         int mode = cpu.gpr[5];
-        
+
         if (VideoEngine.log.isDebugEnabled()) {
         	VideoEngine.log.debug(String.format("sceGeListSync(id=0x%x,mode=%d)", id, mode));
         }
@@ -581,8 +587,8 @@ public class sceGe_user implements HLEModule {
         	cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
         } else if (id < 0 || id >= NUMBER_GE_LISTS) {
         	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
-        } else if (mode == 0 && IntrManager.getInstance().isInsideInterrupt()) {
-    		VideoEngine.log.warn("sceGeListSync mode=0 called inside an Interrupt!");
+        } else if (IntrManager.getInstance().isInsideInterrupt()) {
+    		VideoEngine.log.warn("sceGeListSync called inside an Interrupt!");
     		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
         	PspGeList list = null;
@@ -613,58 +619,83 @@ public class sceGe_user implements HLEModule {
 
     public void sceGeDrawSync(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int mode = cpu.gpr[4];
-        
+
         if (VideoEngine.log.isDebugEnabled()) {
     		VideoEngine.log.debug("sceGeDrawSync mode=" + mode);
     	}
 
         // no synchronization on "this" required because we are not accessing
     	// local data, only list information from the VideoEngine.
-        if (mode == 0) {
-            if (IntrManager.getInstance().isInsideInterrupt()) {
-        		VideoEngine.log.warn("sceGeDrawSync mode=0 called inside an Interrupt!");
-        		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        	} else {
-	    		cpu.gpr[2] = 0;
-
-	    		PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
-	    		if (lastList != null) {
-	    			blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
-	    		} else {
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            VideoEngine.log.warn("sceGeDrawSync called inside an Interrupt!");
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            if (mode == 0) {
+                cpu.gpr[2] = 0;
+                PspGeList lastList = VideoEngine.getInstance().getLastDrawList();
+                if (lastList != null) {
+                    blockCurrentThreadOnList(lastList, new HLEAfterDrawSyncAction());
+                } else {
 	    			if (VideoEngine.log.isDebugEnabled()) {
-	    				VideoEngine.log.debug("sceGeDrawSync all lists completed, not waiting");
-	    			}
-	    			hleGeAfterDrawSyncAction();
-	    			Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+                        VideoEngine.log.debug("sceGeDrawSync all lists completed, not waiting");
+                    }
+                    hleGeAfterDrawSyncAction();
+                    Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
 	    		}
-        	}
-    	} else if (mode == 1) {
-    		PspGeList currentList = VideoEngine.getInstance().getCurrentList();
-    		if (currentList == null) {
-    			cpu.gpr[2] = 0;
-    		} else {
-    			cpu.gpr[2] = currentList.status;
-    		}
-    	} else {
-    		VideoEngine.log.warn("sceGeDrawSync invalid mode=" + mode);
-        	cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
-    	}
+            } else if (mode == 1) {
+                PspGeList currentList = VideoEngine.getInstance().getCurrentList();
+                if (currentList == null) {
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = currentList.status;
+                }
+            } else {
+                VideoEngine.log.warn("sceGeDrawSync invalid mode=" + mode);
+                cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
+            }
+        }
     }
 
     public void sceGeBreak(Processor processor) {
         CpuState cpu = processor.cpu;
-        
-        Modules.log.warn("Unsupported sceGeBreak");
-        
-        cpu.gpr[2] = 0;
+
+        int mode = cpu.gpr[4];
+        int brk_addr = cpu.gpr[5];
+
+        if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceGeBreak mode=" + mode + ", brk_addr=0x" + Integer.toHexString(brk_addr));
+    	}
+
+        PspGeList list = VideoEngine.getInstance().getCurrentList();
+        if(mode == 0) {  // Pause the current list only.
+            if(list != null) {
+                list.pauseList();
+                cpu.gpr[2] = list.id;
+            } else {
+                cpu.gpr[2] = 0;
+            }
+        } else if (mode == 1) {  // Pause the current list and finish the rest of the queue.
+            if(list != null) {
+                list.pauseList();
+                for (int i = 0; i < NUMBER_GE_LISTS; i++) {
+                    allGeLists[i].finishList();
+                }
+                cpu.gpr[2] = list.id;
+            } else {
+                cpu.gpr[2] = 0;
+            }
+        } else {
+            VideoEngine.log.warn("sceGeBreak invalid mode=" + mode);
+            cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
+        }
     }
 
     public void sceGeContinue(Processor processor) {
         CpuState cpu = processor.cpu;
     	Memory mem = Processor.memory;
-        
+
         if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceGeContinue()");
     	}
@@ -687,9 +718,9 @@ public class sceGe_user implements HLEModule {
 
     public void sceGeSetCallback(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int cbdata_addr = cpu.gpr[4];
-        
+
         pspGeCallbackData cbdata = new pspGeCallbackData();
         cbdata.read(Emulator.getMemory(), cbdata_addr);
         int cbid = SceUidManager.getNewUid("pspge-callback");
@@ -701,13 +732,18 @@ public class sceGe_user implements HLEModule {
                               + ", result cbid=" + Integer.toHexString(cbid));
         }
 
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
-        SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
-        signalCallbacks.put(cbid, callbackSignal);
-        finishCallbacks.put(cbid, callbackFinish);
+         if (IntrManager.getInstance().isInsideInterrupt()) {
+             VideoEngine.log.warn("sceGeSetCallback called inside an Interrupt!");
+             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+         } else {
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
+            SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
+            signalCallbacks.put(cbid, callbackSignal);
+            finishCallbacks.put(cbid, callbackFinish);
 
-        cpu.gpr[2] = cbid;
+            cpu.gpr[2] = cbid;
+        }
     }
 
     public void sceGeUnsetCallback(Processor processor) {
@@ -719,16 +755,21 @@ public class sceGe_user implements HLEModule {
     		Modules.log.debug("sceGeUnsetCallback cbid=" + Integer.toHexString(cbid));
     	}
 
-    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
-        SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
-        if (callbackSignal != null) {
-            threadMan.hleKernelDeleteCallback(callbackSignal.uid);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+             VideoEngine.log.warn("sceGeUnsetCallback called inside an Interrupt!");
+             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
+            SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
+            if (callbackSignal != null) {
+                threadMan.hleKernelDeleteCallback(callbackSignal.uid);
+            }
+            if (callbackFinish != null) {
+                threadMan.hleKernelDeleteCallback(callbackFinish.uid);
+            }
+            cpu.gpr[2] = 0;
         }
-        if (callbackFinish != null) {
-            threadMan.hleKernelDeleteCallback(callbackFinish.uid);
-        }
-        cpu.gpr[2] = 0;
     }
     public final HLEModuleFunction sceGeEdramGetSizeFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramGetSize") {
 
@@ -934,4 +975,4 @@ public class sceGe_user implements HLEModule {
             return "jpcsp.HLE.Modules.sceGe_userModule.sceGeUnsetCallback(processor);";
         }
     };
-};
+}
