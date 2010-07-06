@@ -16,14 +16,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
-import jpcsp.*;
-import jpcsp.HLE.*;
-import jpcsp.HLE.kernel.types.*;
-import jpcsp.HLE.modules.ThreadManForUser;
-
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_KILLED;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_RUNNING;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_STOPPED;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_SUSPEND;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 
 import java.util.Iterator;
+
+import jpcsp.Emulator;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
+import jpcsp.HLE.modules.ThreadManForUser;
 
 public class DumpDebugState {
     public static void dumpDebugState() {

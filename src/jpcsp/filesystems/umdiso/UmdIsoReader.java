@@ -16,14 +16,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.util.Date;
 import java.util.HashMap;
 
-import jpcsp.filesystems.umdiso.iso9660.*;
+import jpcsp.filesystems.umdiso.iso9660.Iso9660Directory;
+import jpcsp.filesystems.umdiso.iso9660.Iso9660File;
+import jpcsp.filesystems.umdiso.iso9660.Iso9660Handler;
 import jpcsp.util.Utilities;
 
-import org.bolet.jgz.*;
+import org.bolet.jgz.Inflater;
 
 /**
  *
@@ -54,7 +61,7 @@ public class UmdIsoReader {
 
     private int Ubyte(byte b)
     {
-        return ((int)b)&255;
+        return (b)&255;
     }
 
     private int BytesToInt(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException
@@ -107,7 +114,7 @@ public class UmdIsoReader {
 
             for(int i=0;i<=numSectors;i++)
             {
-                sectorOffsets[i] = ((long)BytesToInt(offsetData, i*4))&0xFFFFFFFFl;
+                sectorOffsets[i] = (BytesToInt(offsetData, i*4))&0xFFFFFFFFl;
                 if(i>0)
                 {
                     if((sectorOffsets[i]&0x7FFFFFFF)<(sectorOffsets[i-1]&0x7FFFFFFF))

@@ -34,7 +34,7 @@ public class MduState extends GprState {
     }
 
     public void setLo(int value) {
-        hilo = (hilo & ~0xffffffffL) | (((long) value) & 0xffffffffL);
+        hilo = (hilo & ~0xffffffffL) | ((value) & 0xffffffffL);
     }
 
     public int getLo() {
@@ -67,7 +67,7 @@ public class MduState extends GprState {
     }
 
     public static final long signedDivMod(int x, int y) {
-        return (((long) (x % y)) << 32) | (((long) (x / y)) & 0xffffffffL);
+        return (((long) (x % y)) << 32) | (((x / y)) & 0xffffffffL);
     }
 
     public static final long unsignedDivMod(long x, long y) {
@@ -93,7 +93,7 @@ public class MduState extends GprState {
 
     public final void doMTLO(int rs) {
         int lo = gpr[rs];
-        hilo = (hilo & 0xffffffff00000000L) | (((long) lo) & 0x00000000ffffffffL);
+        hilo = (hilo & 0xffffffff00000000L) | ((lo) & 0x00000000ffffffffL);
     }
 
     public final void doMULT(int rs, int rt) {
@@ -101,7 +101,7 @@ public class MduState extends GprState {
     }
 
     public final void doMULTU(int rs, int rt) {
-        hilo = (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
+        hilo = ((gpr[rs]) & 0xffffffffL) * ((gpr[rt]) & 0xffffffffL);
     }
 
     public final void doDIV(int rs, int rt) {
@@ -109,15 +109,15 @@ public class MduState extends GprState {
         if (gpr[rt] != 0) {
             int lo = gpr[rs] / gpr[rt];
             int hi = gpr[rs] % gpr[rt];
-            hilo = (((long) hi) << 32) | (((long) lo) & 0xffffffffL);
+            hilo = (((long) hi) << 32) | ((lo) & 0xffffffffL);
         }
     }
 
     public final void doDIVU(int rs, int rt) {
         // According to MIPS spec., result is unpredictable when dividing by zero.
         if (gpr[rt] != 0) {
-            long x = ((long) gpr[rs]) & 0xffffffffL;
-            long y = ((long) gpr[rt]) & 0xffffffffL;
+            long x = (gpr[rs]) & 0xffffffffL;
+            long y = (gpr[rt]) & 0xffffffffL;
             hilo = ((x % y) << 32) | ((x / y) & 0xffffffffL);
         }
     }
@@ -127,7 +127,7 @@ public class MduState extends GprState {
     }
 
     public final void doMADDU(int rs, int rt) {
-        hilo += (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
+        hilo += ((gpr[rs]) & 0xffffffffL) * ((gpr[rt]) & 0xffffffffL);
     }
 
     public final void doMSUB(int rs, int rt) {
@@ -135,6 +135,6 @@ public class MduState extends GprState {
     }
 
     public final void doMSUBU(int rs, int rt) {
-        hilo -= (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
+        hilo -= ((gpr[rs]) & 0xffffffffL) * ((gpr[rt]) & 0xffffffffL);
     }
 }

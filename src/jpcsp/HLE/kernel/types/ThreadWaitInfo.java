@@ -73,45 +73,45 @@ public class ThreadWaitInfo {
     public int Mbx_resultAddr;
 
     public void copy(ThreadWaitInfo that) {
-    	this.forever = that.forever;
-    	this.microTimeTimeout = that.microTimeTimeout;
-    	this.micros = that.micros;
-    	this.waitTimeoutAction = that.waitTimeoutAction;
-    	this.waitStateChecker = that.waitStateChecker;
+    	forever = that.forever;
+    	microTimeTimeout = that.microTimeTimeout;
+    	micros = that.micros;
+    	waitTimeoutAction = that.waitTimeoutAction;
+    	waitStateChecker = that.waitStateChecker;
 
-    	this.waitingOnThreadEnd = that.waitingOnThreadEnd;
-    	this.ThreadEnd_id = that.ThreadEnd_id;
+    	waitingOnThreadEnd = that.waitingOnThreadEnd;
+    	ThreadEnd_id = that.ThreadEnd_id;
 
-    	this.waitingOnEventFlag = that.waitingOnEventFlag;
-    	this.EventFlag_id = that.EventFlag_id;
-    	this.EventFlag_bits = that.EventFlag_bits;
-    	this.EventFlag_wait = that.EventFlag_wait;
-    	this.EventFlag_outBits_addr = that.EventFlag_outBits_addr;
+    	waitingOnEventFlag = that.waitingOnEventFlag;
+    	EventFlag_id = that.EventFlag_id;
+    	EventFlag_bits = that.EventFlag_bits;
+    	EventFlag_wait = that.EventFlag_wait;
+    	EventFlag_outBits_addr = that.EventFlag_outBits_addr;
 
-    	this.waitingOnSemaphore = that.waitingOnSemaphore;
-    	this.Semaphore_id = that.Semaphore_id;
-    	this.Semaphore_signal = that.Semaphore_signal;
+    	waitingOnSemaphore = that.waitingOnSemaphore;
+    	Semaphore_id = that.Semaphore_id;
+    	Semaphore_signal = that.Semaphore_signal;
 
-    	this.waitingOnMutex = that.waitingOnMutex;
-    	this.Mutex_id = that.Mutex_id;
-    	this.Mutex_count = that.Mutex_count;
+    	waitingOnMutex = that.waitingOnMutex;
+    	Mutex_id = that.Mutex_id;
+    	Mutex_count = that.Mutex_count;
 
-    	this.waitingOnIo = that.waitingOnIo;
-    	this.Io_id = that.Io_id;
+    	waitingOnIo = that.waitingOnIo;
+    	Io_id = that.Io_id;
 
-    	this.waitingOnUmd = that.waitingOnUmd;
-    	this.wantedUmdStat = that.wantedUmdStat;
+    	waitingOnUmd = that.waitingOnUmd;
+    	wantedUmdStat = that.wantedUmdStat;
 
-    	this.waitingOnMsgPipeSend = that.waitingOnMsgPipeSend;
-    	this.waitingOnMsgPipeReceive = that.waitingOnMsgPipeReceive;
-    	this.MsgPipe_id = that.MsgPipe_id;
-    	this.MsgPipe_address = that.MsgPipe_address;
-    	this.MsgPipe_size = that.MsgPipe_size;
-    	this.MsgPipe_waitMode = that.MsgPipe_waitMode;
-    	this.MsgPipe_resultSize_addr = that.MsgPipe_resultSize_addr;
+    	waitingOnMsgPipeSend = that.waitingOnMsgPipeSend;
+    	waitingOnMsgPipeReceive = that.waitingOnMsgPipeReceive;
+    	MsgPipe_id = that.MsgPipe_id;
+    	MsgPipe_address = that.MsgPipe_address;
+    	MsgPipe_size = that.MsgPipe_size;
+    	MsgPipe_waitMode = that.MsgPipe_waitMode;
+    	MsgPipe_resultSize_addr = that.MsgPipe_resultSize_addr;
 
-    	this.waitingOnMbxReceive = that.waitingOnMbxReceive;
-    	this.Mbx_id = that.Mbx_id;
-    	this.Mbx_resultAddr = that.Mbx_resultAddr;
+    	waitingOnMbxReceive = that.waitingOnMbxReceive;
+    	Mbx_id = that.Mbx_id;
+    	Mbx_resultAddr = that.Mbx_resultAddr;
     }
 }

@@ -16,10 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.IOException;
 import java.util.Date;
 
-import jpcsp.filesystems.*;
+import jpcsp.filesystems.SeekableInputStream;
 
 /**
  *
@@ -68,7 +70,7 @@ public class UmdIsoFile extends SeekableInputStream {
 
     private int Ubyte(byte b)
     {
-        return ((int)b)&255;
+        return (b)&255;
     }
 
     @Override
@@ -155,13 +157,13 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public short readShort() throws IOException
     {
-        return (short)(readUnsignedByte() | (((int)readByte())<<8));
+        return (short)(readUnsignedByte() | ((readByte())<<8));
     }
 
     @Override
     public int readInt() throws IOException
     {
-        return (readUnsignedByte() | (((int)readUnsignedByte())<<8) | (((int)readUnsignedByte())<<16) | (((int)readByte())<<24));
+        return (readUnsignedByte() | ((readUnsignedByte())<<8) | ((readUnsignedByte())<<16) | ((readByte())<<24));
     }
 
     @Override
@@ -176,13 +178,13 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public int readUnsignedShort() throws IOException
     {
-        return ((int)readShort())&0xFFFF;
+        return (readShort())&0xFFFF;
     }
 
     @Override
     public long readLong() throws IOException
     {
-        return (((long)readInt())&0xFFFFFFFFl) | (((long)readInt())<<32);
+        return ((readInt())&0xFFFFFFFFl) | (((long)readInt())<<32);
     }
 
     @Override
@@ -240,7 +242,7 @@ public class UmdIsoFile extends SeekableInputStream {
         StringBuilder s = new StringBuilder();
         char c=0;
         do {
-            c = this.readChar();
+            c = readChar();
 
             if((c=='\n')||(c!='\r'))
             {

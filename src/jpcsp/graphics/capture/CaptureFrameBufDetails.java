@@ -16,13 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.capture;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import jpcsp.HLE.pspdisplay;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceDisplay;
 
 /** captures sceDisplaySetFrameBuf */
 public class CaptureFrameBufDetails {
@@ -34,7 +35,7 @@ public class CaptureFrameBufDetails {
     private int sync;
 
     public CaptureFrameBufDetails() {
-        pspdisplay display = pspdisplay.getInstance();
+        sceDisplay display = Modules.sceDisplayModule;
 
         topaddrFb = display.getTopAddrFb();
         bufferwidthFb = display.getBufferWidthFb();
@@ -75,9 +76,9 @@ public class CaptureFrameBufDetails {
     }
 
     public void commit() {
-        pspdisplay display = pspdisplay.getInstance();
+        sceDisplay display = Modules.sceDisplayModule;
 
         // This is almost side effect free, but replay is going to trash the emulator state anyway
-        display.sceDisplaySetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb, sync);
+        display.hleDisplaySetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb, sync);
     }
 }

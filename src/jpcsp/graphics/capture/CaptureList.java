@@ -16,16 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.capture;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import jpcsp.Memory;
+import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.HLE.kernel.types.PspGeList;
 
 /** captures a display list
  * - PspGeList details

@@ -16,7 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
-import jpcsp.Allegrex.Common.*;
+import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.Common.STUB;
 
 public class Decoder {
 
@@ -69,21 +70,17 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00200000) == 0x00000000) {
                     return table_7[(insn >> 16) & 0x00000003].instance(insn);
-                } else {
-                    if ((insn & 0x00000080) == 0x00000000) {
-                        if ((insn & 0x00800000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.MFV;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.MTV;
-                        }
-                    } else {
-                        if ((insn & 0x00800000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.MFVC;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.MTVC;
-                        }
-                    }
                 }
+				if ((insn & 0x00000080) == 0x00000000) {
+				    if ((insn & 0x00800000) == 0x00000000) {
+				        return jpcsp.Allegrex.Instructions.MFV;
+				    }
+					return jpcsp.Allegrex.Instructions.MTV;
+				}
+				if ((insn & 0x00800000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.MFVC;
+				}
+				return jpcsp.Allegrex.Instructions.MTVC;
             }
         },
         jpcsp.Allegrex.Common.UNK,
@@ -120,12 +117,10 @@ public class Decoder {
                 if ((insn & 0x00000002) == 0x00000000) {
                     if ((insn & 0x00000004) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.HALT;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.MFIC;
                     }
-                } else {
-                    return jpcsp.Allegrex.Instructions.MTIC;
+					return jpcsp.Allegrex.Instructions.MFIC;
                 }
+				return jpcsp.Allegrex.Instructions.MTIC;
             }
         },
         jpcsp.Allegrex.Common.UNK,
@@ -139,26 +134,20 @@ public class Decoder {
                         if ((insn & 0x00000100) == 0x00000000) {
                             if ((insn & 0x00000200) == 0x00000000) {
                                 return jpcsp.Allegrex.Instructions.SEB;
-                            } else {
-                            	return jpcsp.Allegrex.Instructions.SEH;
                             }
-                        } else {
-                            return jpcsp.Allegrex.Instructions.BITREV;
+							return jpcsp.Allegrex.Instructions.SEH;
                         }
-                    } else {
-                        if ((insn & 0x00000040) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.WSBH;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.WSBW;
-                        }
+						return jpcsp.Allegrex.Instructions.BITREV;
                     }
-                } else {
-                    if ((insn & 0x00000004) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.EXT;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.INS;
-                    }
+					if ((insn & 0x00000040) == 0x00000000) {
+					    return jpcsp.Allegrex.Instructions.WSBH;
+					}
+					return jpcsp.Allegrex.Instructions.WSBW;
                 }
+				if ((insn & 0x00000004) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.EXT;
+				}
+				return jpcsp.Allegrex.Instructions.INS;
             }
         },
         jpcsp.Allegrex.Instructions.LB,
@@ -200,9 +189,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000002) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.LVLQ;
-                } else {
-                    return jpcsp.Allegrex.Instructions.LVRQ;
                 }
+				return jpcsp.Allegrex.Instructions.LVRQ;
             }
         },
         jpcsp.Allegrex.Instructions.LVQ,
@@ -230,9 +218,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000002) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.SVLQ;
-                } else {
-                    return jpcsp.Allegrex.Instructions.SVRQ;
                 }
+				return jpcsp.Allegrex.Instructions.SVRQ;
             }
         },
         new STUB() {
@@ -241,9 +228,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000002) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.SVQ;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWB;
                 }
+				return jpcsp.Allegrex.Instructions.VWB;
             }
         },
         new STUB() {
@@ -253,12 +239,10 @@ public class Decoder {
                 if ((insn & 0x00000001) == 0x00000000) {
                     if ((insn & 0x00000020) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VNOP;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VSYNC;
                     }
-                } else {
-                    return jpcsp.Allegrex.Instructions.VFLUSH;
+					return jpcsp.Allegrex.Instructions.VSYNC;
                 }
+				return jpcsp.Allegrex.Instructions.VFLUSH;
             }
         },
     };
@@ -269,9 +253,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x001fffc0) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.NOP;
-                } else {
-                    return jpcsp.Allegrex.Instructions.SLL;
                 }
+				return jpcsp.Allegrex.Instructions.SLL;
             }
         },
         jpcsp.Allegrex.Common.UNK,
@@ -281,9 +264,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00200000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.SRL;
-                } else {
-                    return jpcsp.Allegrex.Instructions.ROTR;
                 }
+				return jpcsp.Allegrex.Instructions.ROTR;
             }
         },
         jpcsp.Allegrex.Instructions.SRA,
@@ -295,9 +277,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000040) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.SRLV;
-                } else {
-                    return jpcsp.Allegrex.Instructions.ROTRV;
                 }
+				return jpcsp.Allegrex.Instructions.ROTRV;
             }
         },
         jpcsp.Allegrex.Instructions.SRAV,
@@ -365,9 +346,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00100000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.BLTZ;
-                } else {
-                    return jpcsp.Allegrex.Instructions.BLTZAL;
                 }
+				return jpcsp.Allegrex.Instructions.BLTZAL;
             }
         },
         new STUB() {
@@ -376,9 +356,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00100000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.BGEZ;
-                } else {
-                    return jpcsp.Allegrex.Instructions.BGEZAL;
                 }
+				return jpcsp.Allegrex.Instructions.BGEZAL;
             }
         },
         new STUB() {
@@ -387,9 +366,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00100000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.BLTZL;
-                } else {
-                    return jpcsp.Allegrex.Instructions.BLTZALL;
                 }
+				return jpcsp.Allegrex.Instructions.BLTZALL;
             }
         },
         new STUB() {
@@ -398,9 +376,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00100000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.BGEZL;
-                } else {
-                    return jpcsp.Allegrex.Instructions.BGEZALL;
                 }
+				return jpcsp.Allegrex.Instructions.BGEZALL;
             }
         },
     };
@@ -411,9 +388,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000008) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.MFC0;
-                } else {
-                    return jpcsp.Allegrex.Instructions.ERET;
                 }
+				return jpcsp.Allegrex.Instructions.ERET;
             }
         },
         jpcsp.Allegrex.Instructions.CFC0,
@@ -427,9 +403,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00400000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.MFC1;
-                } else {
-                    return jpcsp.Allegrex.Instructions.CFC1;
                 }
+				return jpcsp.Allegrex.Instructions.CFC1;
             }
         },
         new STUB() {
@@ -438,9 +413,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00400000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.MTC1;
-                } else {
-                    return jpcsp.Allegrex.Instructions.CTC1;
                 }
+				return jpcsp.Allegrex.Instructions.CTC1;
             }
         },
         new STUB() {
@@ -479,9 +453,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000020) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.SQRT_S;
-                } else {
-                    return jpcsp.Allegrex.Instructions.CVT_W_S;
                 }
+				return jpcsp.Allegrex.Instructions.CVT_W_S;
             }
         },
         jpcsp.Allegrex.Instructions.ABS_S,
@@ -556,9 +529,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00010000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.ICACHE_FILL;
-                } else {
-                    return jpcsp.Allegrex.Instructions.ICACHE_FILL_WITH_LOCK;
                 }
+				return jpcsp.Allegrex.Instructions.ICACHE_FILL_WITH_LOCK;
             }
         },
         jpcsp.Allegrex.Common.UNK,
@@ -573,9 +545,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00010000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.DCACHE_CREATE_DIRTY_EXCLUSIVE;
-                } else {
-                    return jpcsp.Allegrex.Instructions.DCACHE_HIT_INVALIDATE;
                 }
+				return jpcsp.Allegrex.Instructions.DCACHE_HIT_INVALIDATE;
             }
         },
         new STUB() {
@@ -584,9 +555,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00010000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.DCACHE_HIT_WRITEBACK;
-                } else {
-                    return jpcsp.Allegrex.Instructions.DCACHE_HIT_WRITEBACK_INVALIDATE;
                 }
+				return jpcsp.Allegrex.Instructions.DCACHE_HIT_WRITEBACK_INVALIDATE;
             }
         },
         jpcsp.Allegrex.Instructions.DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK,
@@ -596,9 +566,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00010000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.DCACHE_FILL;
-                } else {
-                    return jpcsp.Allegrex.Instructions.DCACHE_FILL_WITH_LOCK;
                 }
+				return jpcsp.Allegrex.Instructions.DCACHE_FILL_WITH_LOCK;
             }
         },
     };
@@ -610,28 +579,22 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VMOV;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VNEG;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VABS;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VIDT;
-                        } else {
-                            if ((insn & 0x01800000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IN;
-                            } else {
-                                if ((insn & 0x01000000) == 0x00000000) {
-                                    return jpcsp.Allegrex.Instructions.VI2F;
-                                } else {
-                                    return jpcsp.Allegrex.Instructions.VWBN;
-                                }
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VNEG;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VABS;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VIDT;
+				}
+				if ((insn & 0x01800000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IN;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -641,28 +604,22 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VSAT0;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VZERO;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VSAT1;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VONE;
-                        } else {
-                            if ((insn & 0x01800000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IN;
-                            } else {
-                                if ((insn & 0x01000000) == 0x00000000) {
-                                    return jpcsp.Allegrex.Instructions.VI2F;
-                                } else {
-                                    return jpcsp.Allegrex.Instructions.VWBN;
-                                }
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VZERO;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VSAT1;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VONE;
+				}
+				if ((insn & 0x01800000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IN;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -671,13 +628,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01800000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VF2IN;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VI2F;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -686,13 +641,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01800000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VF2IN;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VI2F;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -702,28 +655,22 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VRCP;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VSIN;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VRSQ;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VCOS;
-                        } else {
-                            if ((insn & 0x01800000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IN;
-                            } else {
-                                if ((insn & 0x01000000) == 0x00000000) {
-                                    return jpcsp.Allegrex.Instructions.VI2F;
-                                } else {
-                                    return jpcsp.Allegrex.Instructions.VWBN;
-                                }
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VSIN;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VRSQ;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VCOS;
+				}
+				if ((insn & 0x01800000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IN;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -733,28 +680,22 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VEXP2;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VSQRT;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VLOG2;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VASIN;
-                        } else {
-                            if ((insn & 0x01800000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IN;
-                            } else {
-                                if ((insn & 0x01000000) == 0x00000000) {
-                                    return jpcsp.Allegrex.Instructions.VI2F;
-                                } else {
-                                    return jpcsp.Allegrex.Instructions.VWBN;
-                                }
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VSQRT;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VLOG2;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VASIN;
+				}
+				if ((insn & 0x01800000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IN;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -763,21 +704,17 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02020000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VNRCP;
-                } else {
-                    if ((insn & 0x02000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VNSIN;
-                    } else {
-                        if ((insn & 0x01800000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VF2IN;
-                        } else {
-                            if ((insn & 0x01000000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VI2F;
-                            } else {
-                                return jpcsp.Allegrex.Instructions.VWBN;
-                            }
-                        }
-                    }
                 }
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VNSIN;
+				}
+				if ((insn & 0x01800000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IN;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -786,17 +723,14 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VREXP2;
-                } else {
-                    if ((insn & 0x01800000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2IN;
-                    } else {
-                        if ((insn & 0x01000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VI2F;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.VWBN;
-                        }
-                    }
                 }
+				if ((insn & 0x01800000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IN;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2F;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -806,28 +740,22 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VRNDS;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VRNDF1;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VRNDI;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VRNDF2;
-                        } else {
-                            if ((insn & 0x01800000) == 0x00800000) {
-                                return jpcsp.Allegrex.Instructions.VCMOVT;
-                            } else {
-                                if ((insn & 0x01000000) == 0x00000000) {
-                                    return jpcsp.Allegrex.Instructions.VF2IZ;
-                                } else {
-                                    return jpcsp.Allegrex.Instructions.VWBN;
-                                }
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VRNDF1;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VRNDI;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VRNDF2;
+				}
+				if ((insn & 0x01800000) == 0x00800000) {
+				    return jpcsp.Allegrex.Instructions.VCMOVT;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -836,13 +764,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01800000) == 0x00800000) {
                     return jpcsp.Allegrex.Instructions.VCMOVT;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2IZ;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -851,13 +777,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01800000) == 0x00800000) {
                     return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2IZ;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -866,13 +790,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01800000) == 0x00800000) {
                     return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2IZ;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -881,17 +803,14 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02010000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VF2H;
-                } else {
-                    if ((insn & 0x02000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VH2F;
-                    } else {
-                        if ((insn & 0x01000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VF2IZ;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.VWBN;
-                        }
-                    }
                 }
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VH2F;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -900,17 +819,14 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02010000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VSBZ;
-                } else {
-                    if ((insn & 0x02000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VLGB;
-                    } else {
-                        if ((insn & 0x01000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VF2IZ;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.VWBN;
-                        }
-                    }
                 }
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VLGB;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -920,24 +836,19 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VUC2I;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VUS2I;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VC2I;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VS2I;
-                        } else {
-                            if ((insn & 0x01000000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IZ;
-                            } else {
-                                return jpcsp.Allegrex.Instructions.VWBN;
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VUS2I;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VC2I;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VS2I;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -947,24 +858,19 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VI2UC;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VI2US;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VI2C;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VI2S;
-                        } else {
-                            if ((insn & 0x01000000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IZ;
-                            } else {
-                                return jpcsp.Allegrex.Instructions.VWBN;
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VI2US;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2C;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VI2S;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IZ;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -974,24 +880,19 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VSRT1;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VBFY1;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VSRT2;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VBFY2;
-                        } else {
-                            if ((insn & 0x01000000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IU;
-                            } else {
-                                return jpcsp.Allegrex.Instructions.VWBN;
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VBFY1;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VSRT2;
+				}
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VBFY2;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IU;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1001,24 +902,19 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VOCP;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VFAD;
                     }
-                } else {
-                    if ((insn & 0x02020000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VSOCP;
-                    } else {
-                        if ((insn & 0x02000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VAVG;
-                        } else {
-                            if ((insn & 0x01000000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VF2IU;
-                            } else {
-                                return jpcsp.Allegrex.Instructions.VWBN;
-                            }
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VFAD;
                 }
+				if ((insn & 0x02020000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VSOCP;
+				} 
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VAVG;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IU;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1028,20 +924,16 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                     	return jpcsp.Allegrex.Instructions.VSRT3;
-                    } else {
-                    	return jpcsp.Allegrex.Instructions.VSGN;
                     }
-                } else {
-                    if ((insn & 0x02000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VSRT4;
-                    } else {
-                        if ((insn & 0x01000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VF2IU;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.VWBN;
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VSGN;
                 }
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VSRT4;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IU;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1050,9 +942,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VF2IU;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
                 }
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1061,17 +952,14 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02010000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VMFVC;
-                } else {
-                    if ((insn & 0x02000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VMTVC;
-                    } else {
-                        if ((insn & 0x01000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VF2IU;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.VWBN;
-                        }
-                    }
                 }
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VMTVC;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IU;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1080,9 +968,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VF2IU;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
                 }
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1092,20 +979,16 @@ public class Decoder {
                 if ((insn & 0x02010000) == 0x00010000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VT4444;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VT5650;
                     }
-                } else {
-                    if ((insn & 0x02000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VT5551;
-                    } else {
-                        if ((insn & 0x01000000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VF2IU;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.VWBN;
-                        }
-                    }
+					return jpcsp.Allegrex.Instructions.VT5650;
                 }
+				if ((insn & 0x02000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VT5551;
+				}
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2IU;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1114,9 +997,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x01000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VF2IU;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
                 }
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1125,13 +1007,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1140,13 +1020,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1155,13 +1033,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1170,13 +1046,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1185,13 +1059,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1200,13 +1072,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1215,13 +1085,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
         new STUB() {
@@ -1230,13 +1098,11 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCST;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
                 }
+				if ((insn & 0x01000000) == 0x00000000) {
+				    return jpcsp.Allegrex.Instructions.VF2ID;
+				}
+				return jpcsp.Allegrex.Instructions.VWBN;
             }
         },
     };
@@ -1250,9 +1116,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00800000) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VIIM;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VFIM;
                 }
+				return jpcsp.Allegrex.Instructions.VFIM;
             }
         },
     };
@@ -1264,9 +1129,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000080) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VHTFM2;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VTFM2;
                 }
+				return jpcsp.Allegrex.Instructions.VTFM2;
             }
         },
         new STUB() {
@@ -1275,9 +1139,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000080) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VTFM3;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VHTFM3;
                 }
+				return jpcsp.Allegrex.Instructions.VHTFM3;
             }
         },
         new STUB() {
@@ -1286,9 +1149,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000080) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VHTFM4;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VTFM4;
                 }
+				return jpcsp.Allegrex.Instructions.VTFM4;
             }
         },
         jpcsp.Allegrex.Instructions.VMSCL,
@@ -1298,9 +1160,8 @@ public class Decoder {
             public Instruction instance(int insn) {
                 if ((insn & 0x00000080) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.VCRSP;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VQMUL;
                 }
+				return jpcsp.Allegrex.Instructions.VQMUL;
             }
         },
         jpcsp.Allegrex.Common.UNK,
@@ -1311,20 +1172,16 @@ public class Decoder {
                 if ((insn & 0x00210000) == 0x00000000) {
                     if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VMMOV;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VMZERO;
                     }
-                } else {
-                    if ((insn & 0x00200000) == 0x00000000) {
-                        if ((insn & 0x00040000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VMIDT;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.VMONE;
-                        }
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VROT;
-                    }
+					return jpcsp.Allegrex.Instructions.VMZERO;
                 }
+				if ((insn & 0x00200000) == 0x00000000) {
+				    if ((insn & 0x00040000) == 0x00000000) {
+				        return jpcsp.Allegrex.Instructions.VMIDT;
+				    }
+					return jpcsp.Allegrex.Instructions.VMONE;
+				}
+				return jpcsp.Allegrex.Instructions.VROT;
             }
         },
     };

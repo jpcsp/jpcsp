@@ -17,10 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
-import jpcsp.util.Utilities;
-
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.util.Utilities;
 
 public class SceKernelCallbackInfo {
 
@@ -40,8 +39,8 @@ public class SceKernelCallbackInfo {
         this.threadId = threadId;
         this.callback_addr = callback_addr;
         this.callback_arg_addr = callback_arg_addr;
-        this.notifyCount = 0;
-        this.notifyArg = 0;
+        notifyCount = 0;
+        notifyArg = 0;
 
         // internal state
         uid = SceUidManager.getNewUid("ThreadMan-callback");

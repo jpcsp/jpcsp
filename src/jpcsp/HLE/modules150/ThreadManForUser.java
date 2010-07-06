@@ -609,15 +609,17 @@ public class ThreadManForUser implements HLEModule {
      *  i.e. it is no longer used when the Compiler is enabled.
      */
     public void step() {
-        if (LOG_INSTRUCTIONS && Modules.log.isTraceEnabled()) {
-            CpuState cpu = Emulator.getProcessor().cpu;
+        if (LOG_INSTRUCTIONS) {
+			if (Modules.log.isTraceEnabled()) {
+			    CpuState cpu = Emulator.getProcessor().cpu;
 
-            if (!isIdleThread(currentThread) && cpu.pc != 0) {
-            	int address = cpu.pc - 4;
-            	int opcode = Memory.getInstance().read32(address);
-            	Modules.log.trace(String.format("Executing %08X %s", address, Decoder.instruction(opcode).disasm(address, opcode)));
-            }
-        }
+			    if (!isIdleThread(currentThread) && cpu.pc != 0) {
+			    	int address = cpu.pc - 4;
+			    	int opcode = Memory.getInstance().read32(address);
+			    	Modules.log.trace(String.format("Executing %08X %s", address, Decoder.instruction(opcode).disasm(address, opcode)));
+			    }
+			}
+		}
 
         if (currentThread != null) {
             currentThread.runClocks++;

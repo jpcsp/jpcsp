@@ -16,9 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import jpcsp.HLE.Modules;
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 
 public class SystemTimeManager {
 
@@ -109,7 +109,7 @@ public class SystemTimeManager {
     public void sceKernelSysClock2USecWide(int sysclockLow, int sysclockHigh, int low_addr, int high_addr) {
         // sysclockLow and sysclockHigh are for example
         // the result from sceKernelGetSystemTimeWide()
-        long clocks = ((long) sysclockLow) & 0xFFFFFFFFL | (((long) sysclockHigh) << 32);
+        long clocks = (sysclockLow) & 0xFFFFFFFFL | (((long) sysclockHigh) << 32);
 
         Memory mem = Memory.getInstance();
         boolean ok = false;

@@ -16,16 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.test;
 
-import jpcsp.format.PSF;
-//import jpcsp.test.PSF;
-
-import java.nio.ByteBuffer;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
-
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+
+import jpcsp.format.PSF;
 
 public class mksfo {
 
@@ -47,7 +44,7 @@ public class mksfo {
         psf.put("TITLE", title, 128);
 
         psf.write(buffer);
-        byte[] data = new byte[(int)psf.size()];
+        byte[] data = new byte[psf.size()];
         buffer.position(0);
         buffer.get(data);
 
@@ -73,7 +70,7 @@ public class mksfo {
         psf.put("TITLE", title, 128);
 
         psf.write(buffer);
-        byte[] data = new byte[(int)psf.size()];
+        byte[] data = new byte[psf.size()];
         buffer.position(0);
         buffer.get(data);
 

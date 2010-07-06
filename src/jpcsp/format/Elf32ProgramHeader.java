@@ -15,11 +15,12 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import jpcsp.filesystems.*;
+
 import jpcsp.util.Utilities;
-import static jpcsp.util.Utilities.*;
 
 public class Elf32ProgramHeader {
 
@@ -51,7 +52,8 @@ public class Elf32ProgramHeader {
         p_align = readUWord(f);
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("p_type " + "\t\t " + Utilities.formatString("long", Long.toHexString(getP_type() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_offset " + "\t " + Utilities.formatString("long", Long.toHexString(getP_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");

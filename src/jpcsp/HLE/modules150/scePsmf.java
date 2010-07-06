@@ -19,16 +19,14 @@ package jpcsp.HLE.modules150;
 
 import java.util.HashMap;
 
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.Modules;
-
-import jpcsp.Memory;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState;
 
 public class scePsmf implements HLEModule {
 	@Override

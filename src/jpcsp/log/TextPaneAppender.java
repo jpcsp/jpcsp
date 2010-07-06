@@ -81,7 +81,7 @@ public class TextPaneAppender extends AppenderSkeleton {
 		Image img = null;
 		try {
 			URL url = ClassLoader.getSystemResource(path);
-			img = (Image) (Toolkit.getDefaultToolkit()).getImage(url);
+			img = (Toolkit.getDefaultToolkit()).getImage(url);
 		} catch (Exception e) {
 			Emulator.log.error("Exception occured: " + e.getMessage(), e);
 		}
@@ -102,9 +102,9 @@ public class TextPaneAppender extends AppenderSkeleton {
 		setTextPane(new JTextPane());
 		createAttributes();
 		createIcons();
-		this.label = "";
-		this.sw = new StringWriter();
-		this.fancy = false;
+		label = "";
+		sw = new StringWriter();
+		fancy = false;
 	}
 
 	public void close() {
@@ -150,8 +150,9 @@ public class TextPaneAppender extends AppenderSkeleton {
 		}*/
 	}
 
+	@Override
 	public void append(LoggingEvent event) {
-		String text = this.layout.format(event);
+		String text = layout.format(event);
 		String trace = "";
 		if (event.getThrowableInformation() != null) {
 			String[] ts = event.getThrowableStrRep();
@@ -206,10 +207,12 @@ public class TextPaneAppender extends AppenderSkeleton {
 		return c.getAlpha() >= 255 ? res : res + "," + c.getAlpha();
 	}
 
+	@Override
 	public void setLayout(Layout layout) {
 		this.layout = layout;
 	}
 
+	@Override
 	public void setName(String name) {
 		this.name = name;
 	}
@@ -217,7 +220,7 @@ public class TextPaneAppender extends AppenderSkeleton {
 	public void setTextPane(JTextPane textpane) {
 		this.textpane = textpane;
 		textpane.setEditable(false);
-		this.doc = textpane.getStyledDocument();
+		doc = textpane.getStyledDocument();
 	}
 
 	private void setColor(Level p, String v) {

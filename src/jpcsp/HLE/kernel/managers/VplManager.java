@@ -16,14 +16,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ATTR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_VPOOL;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+
 import java.util.HashMap;
-import jpcsp.HLE.kernel.types.SceKernelVplInfo;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-import jpcsp.HLE.Modules;
-import jpcsp.Allegrex.CpuState;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelVplInfo;
 import jpcsp.util.Utilities;
 
 /*

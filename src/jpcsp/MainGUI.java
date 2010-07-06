@@ -65,9 +65,9 @@ import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.sceAtrac3plus;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
@@ -128,16 +128,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setTitle(MetaInformation.FULL_NAME);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
-        getContentPane().add(pspdisplay.getInstance(), java.awt.BorderLayout.CENTER);
-        pspdisplay.getInstance().addKeyListener(this);
-        this.addComponentListener(this);
+        getContentPane().add(Modules.sceDisplayModule, java.awt.BorderLayout.CENTER);
+        Modules.sceDisplayModule.addKeyListener(this);
+        addComponentListener(this);
         pack();
 
-        Insets insets = this.getInsets();
+        Insets insets = getInsets();
         Dimension minSize = new Dimension(
             480 + insets.left + insets.right,
             272 + insets.top + insets.bottom);
-        this.setMinimumSize(minSize);
+        setMinimumSize(minSize);
 
         //logging console window stuff
         snapConsole = Settings.getInstance().readBool("gui.snapLogwindow");
@@ -1066,7 +1066,7 @@ private void installCompatibilitySettings()
     Emulator.log.info("Loading global compatibility settings");
 
     boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
-    pspdisplay.getInstance().setOnlyGEGraphics(onlyGEGraphics);
+    Modules.sceDisplayModule.setOnlyGEGraphics(onlyGEGraphics);
 
     boolean useViewport = Settings.getInstance().readBool("emu.useViewport");
     VideoEngine.getInstance().setUseViewport(useViewport);
@@ -1124,7 +1124,7 @@ public boolean installCompatibilityPatches(String filename)
 
         String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
         if (onlyGEGraphics != null)
-            pspdisplay.getInstance().setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
+            Modules.sceDisplayModule.setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
 
         String useViewport = patchSettings.getProperty("emu.useViewport");
         if (useViewport != null)
@@ -1241,15 +1241,15 @@ private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ResetProfilerActionPerformed
 
 private void MenuBarMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_MenuBarMouseExited
-pspdisplay.getInstance().repaint();
+Modules.sceDisplayModule.repaint();
 }//GEN-LAST:event_MenuBarMouseExited
 
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
-    pspdisplay.getInstance().getscreen = true;
+    Modules.sceDisplayModule.getscreen = true;
 }//GEN-LAST:event_ShotItemActionPerformed
 
 private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RotateItemActionPerformed
-pspdisplay screen = pspdisplay.getInstance();
+sceDisplay screen = Modules.sceDisplayModule;
 Object[] options = {"90 CW","90 CCW","180","Mirror","Normal"};
 
 int jop = JOptionPane.showOptionDialog(null, Resource.get("chooseRotation"), "Rotate", JOptionPane.UNDEFINED_CONDITION, JOptionPane.QUESTION_MESSAGE, null, options, options[4]);
@@ -1382,7 +1382,7 @@ private void exitEmu() {
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
 
     Modules.ThreadManForUserModule.exit();
-    pspdisplay.getInstance().exit();
+    Modules.sceDisplayModule.exit();
     VideoEngine.exit();
     Emulator.exit();
 

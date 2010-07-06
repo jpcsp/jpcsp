@@ -21,17 +21,15 @@ package jpcsp.HLE.modules150;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState; // New-Style Processor
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
+import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.HLEModuleFunction;
+import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceRtc implements HLEModule {
     @Override

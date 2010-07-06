@@ -149,9 +149,8 @@ public class FpuState extends BcuState {
         if (!fcr31.c) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 
@@ -159,9 +158,8 @@ public class FpuState extends BcuState {
         if (fcr31.c) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 
@@ -214,7 +212,7 @@ public class FpuState extends BcuState {
     }
 
     public void doCVTSW(int fd, int fs) {
-        fpr[fd] = (float) Float.floatToRawIntBits(fpr[fs]);
+        fpr[fd] = Float.floatToRawIntBits(fpr[fs]);
     }
 
     public void doCVTWS(int fd, int fs) {

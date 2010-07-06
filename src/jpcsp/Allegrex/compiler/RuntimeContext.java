@@ -26,8 +26,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -38,7 +36,6 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -46,6 +43,8 @@ import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
+
+import org.apache.log4j.Logger;
 
 /**
  * @author gid15
@@ -415,7 +414,7 @@ public class RuntimeContext {
             while (isIdle) {
             	checkStoppedThread();
             	{
-            		// Do not take the duration of pspdisplay into idleDuration
+            		// Do not take the duration of sceDisplay into idleDuration
             		idleDuration.end();
             		syncEmulator(true);
             		idleDuration.start();
@@ -548,7 +547,7 @@ public class RuntimeContext {
         }
 
         Modules.sceGe_userModule.step();
-		pspdisplay.getInstance().step(immediately);
+		Modules.sceDisplayModule.step(immediately);
         HLEModuleManager.getInstance().step();
         State.controller.checkControllerState();
     }

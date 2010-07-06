@@ -24,6 +24,7 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 
@@ -74,7 +75,8 @@ public class ConsoleWindow extends javax.swing.JFrame {
         setTitle(Resource.get("logger"));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+            @Override
+			public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
             }
         });
@@ -203,7 +205,8 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
          * <p>
          * @throws IOException
          */
-        public synchronized void write( byte b[] )
+        @Override
+		public synchronized void write( byte b[] )
             throws IOException
         {
             String s = new String( b );
@@ -221,7 +224,8 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
          * <p>
          * @throws IOException
          */
-        public synchronized void write( byte b[], int off, int len )
+        @Override
+		public synchronized void write( byte b[], int off, int len )
             throws IOException
         {
             String s = new String(b, off, len);

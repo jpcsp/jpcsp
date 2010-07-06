@@ -16,10 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
-import jpcsp.util.*;
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import static jpcsp.util.Utilities.*;
+
+import jpcsp.util.Utilities;
 
 public class Elf32Relocate {
 
@@ -35,7 +37,8 @@ public class Elf32Relocate {
         setR_info(readUWord(f));
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("r_offset " + "\t " + Utilities.formatString("long", Long.toHexString(getR_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("r_info " + "\t\t " + Utilities.formatString("long", Long.toHexString(getR_info() & 0xFFFFFFFFL).toUpperCase()) + "\n");

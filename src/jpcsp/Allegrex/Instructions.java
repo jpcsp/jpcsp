@@ -16,30 +16,27 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex;
 
 
+import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
+import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_COMPILED_PFX;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_ENDS_BLOCK;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_HAS_DELAY_SLOT;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXD;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXS;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXT;
+import jpcsp.Processor;
+import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
+import jpcsp.Allegrex.VfpuState.Vcr.PfxSrc;
+import jpcsp.Allegrex.compiler.ICompilerContext;
+import jpcsp.HLE.SyscallHandler;
+
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-
-import jpcsp.HLE.SyscallHandler;
-
-import jpcsp.Allegrex.Common.*;
-import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
-import jpcsp.Allegrex.VfpuState.Vcr.PfxSrc;
-import jpcsp.Allegrex.compiler.ICompilerContext;
-
-import jpcsp.Processor;
-
-import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
-import static jpcsp.Allegrex.Common.Instruction.FLAG_HAS_DELAY_SLOT;
-import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
-import static jpcsp.Allegrex.Common.Instruction.FLAG_ENDS_BLOCK;
-import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXS;
-import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXT;
-import static jpcsp.Allegrex.Common.Instruction.FLAG_USE_VFPU_PFXD;
-import static jpcsp.Allegrex.Common.Instruction.FLAG_COMPILED_PFX;
-import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
-import static jpcsp.Allegrex.Common.Instruction.FLAGS_LINK_INSTRUCTION;
 
 /**
  * This file has been auto-generated from Allegrex.isa file.
@@ -98,7 +95,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x04, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x04, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_INDEX_UNLOCK = new Instruction(2) {
@@ -125,7 +122,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x06, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x06, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_HIT_INVALIDATE = new Instruction(3) {
@@ -152,7 +149,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x08, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x08, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_FILL = new Instruction(4) {
@@ -179,7 +176,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x0A, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x0A, (short)imm16, rs);
 }
 };
 public static final Instruction ICACHE_FILL_WITH_LOCK = new Instruction(5) {
@@ -206,7 +203,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x0B, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x0B, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_INDEX_WRITEBACK_INVALIDATE = new Instruction(6) {
@@ -233,7 +230,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x14, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x14, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_INDEX_UNLOCK = new Instruction(7) {
@@ -260,7 +257,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x16, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x16, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE = new Instruction(8) {
@@ -287,7 +284,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x18, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x18, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_HIT_INVALIDATE = new Instruction(9) {
@@ -314,7 +311,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x19, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x19, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_HIT_WRITEBACK = new Instruction(10) {
@@ -341,7 +338,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1A, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x1A, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_HIT_WRITEBACK_INVALIDATE = new Instruction(11) {
@@ -368,7 +365,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1B, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x1B, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK = new Instruction(12) {
@@ -395,7 +392,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1C, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x1C, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_FILL = new Instruction(13) {
@@ -422,7 +419,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1E, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x1E, (short)imm16, rs);
 }
 };
 public static final Instruction DCACHE_FILL_WITH_LOCK = new Instruction(14) {
@@ -449,7 +446,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int rs = (insn>>21)&31;
 
-return Common.disasmCODEIMMRS("cache", 0x1F, (int)(short)imm16, rs);
+return Common.disasmCODEIMMRS("cache", 0x1F, (short)imm16, rs);
 }
 };
 public static final Instruction SYSCALL = new Instruction(15) {
@@ -723,7 +720,7 @@ public void interpret(Processor processor, int insn) {
 
 
                 // just ignore overflow exception as it is useless
-                processor.cpu.doADDIU(rt, rs, (int)(short)imm16);
+                processor.cpu.doADDIU(rt, rs, (short)imm16);
             
 }
 @Override
@@ -736,7 +733,7 @@ public String disasm(int address, int insn) {
 	int rt = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmRTRSIMM("addi", rt, rs, (int)(short)imm16);
+return Common.disasmRTRSIMM("addi", rt, rs, (short)imm16);
 }
 };
 public static final Instruction ADDIU = new Instruction(25) {
@@ -754,7 +751,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doADDIU(rt, rs, (int)(short)imm16);
+                processor.cpu.doADDIU(rt, rs, (short)imm16);
             
 }
 @Override
@@ -780,7 +777,7 @@ public String disasm(int address, int insn) {
 	int rt = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmRTRSIMM("addiu", rt, rs, (int)(short)imm16);
+return Common.disasmRTRSIMM("addiu", rt, rs, (short)imm16);
 }
 };
 public static final Instruction AND = new Instruction(26) {

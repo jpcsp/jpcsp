@@ -17,17 +17,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.GUI;
 
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.Point;
+
 import javax.swing.JOptionPane;
 
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
+	private static final long serialVersionUID = 6791588139795694296L;
 
-    private class CheatsThread extends Thread {
+	private class CheatsThread extends Thread {
         public CheatsThread () {
         }
 
@@ -131,7 +133,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         jTextArea1.setFont(new java.awt.Font("Monospaced", 1, 14));
         jTextArea1.setRows(5);
         jTextArea1.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jTextArea1MouseClicked(evt);
             }
         });
@@ -238,7 +241,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             cheatsThread.run();
             toggle = true;
         } else {
-            cheatsThread.yield();
+            Thread.yield();
             toggle = false;
         }
     }

@@ -16,8 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
-import jpcsp.Emulator;
 import java.util.Arrays;
+
+import jpcsp.Emulator;
 
 /**
  * General Purpose Registers, handles integer operations like ALU, shifter, etc.
@@ -290,7 +291,7 @@ public class GprState {
 
     public final void doSEB(int rd, int rt) {
         if (rd != 0) {
-            gpr[rd] = (int)(byte)gpr[rt];
+            gpr[rd] = (byte)gpr[rt];
         }
     }
 
@@ -302,7 +303,7 @@ public class GprState {
 
     public final void doSEH(int rd, int rt) {
         if (rd != 0) {
-            gpr[rd] = (int)(short)gpr[rt];
+            gpr[rd] = (short)gpr[rt];
         }
     }
 }

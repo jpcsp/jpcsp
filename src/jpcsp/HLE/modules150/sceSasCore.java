@@ -21,6 +21,9 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -30,11 +33,6 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
-
-import jpcsp.Memory;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState;
 
 public class sceSasCore implements HLEModule {
 
@@ -332,9 +330,8 @@ public class sceSasCore implements HLEModule {
     	if (Processor.memory.isAddressGood(sasCore)) {
     		if (Processor.memory.read32(sasCore) == sasCoreUid) {
     			return true;
-    		} else {
-    	        Modules.log.warn(functionName + " bad sasCoreUid 0x" + Integer.toHexString(Processor.memory.read32(sasCore)));
     		}
+			Modules.log.warn(functionName + " bad sasCoreUid 0x" + Integer.toHexString(Processor.memory.read32(sasCore)));
     	} else {
 	        Modules.log.warn(functionName + " bad sasCore Address 0x" + Integer.toHexString(sasCore));
     	}
@@ -538,7 +535,7 @@ public class sceSasCore implements HLEModule {
             mem.write32(sasCore, sasCoreUid);
         }
 
-        this.sampleRate = sasSampleRate;
+        sampleRate = sasSampleRate;
         cpu.gpr[2] = 0;
     }
 

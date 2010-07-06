@@ -16,15 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.capture;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import jpcsp.MemoryMap;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.HLE.pspdisplay;
 
 /** captures draw, depth and display buffers along with their settings (width, height, etc) */
 public class CaptureDisplayDetails {
@@ -50,7 +51,7 @@ public class CaptureDisplayDetails {
 
     public CaptureDisplayDetails()  throws IOException {
         VideoEngine ge = VideoEngine.getInstance();
-        pspdisplay display = pspdisplay.getInstance();
+        sceDisplay display = Modules.sceDisplayModule;
 
         fbp = ge.getFBP();
         fbw = ge.getFBW();
@@ -64,12 +65,12 @@ public class CaptureDisplayDetails {
         sync = display.getSync();
 
         // TODO clamp lengths to within valid RAM range
-        int pixelFormatBytes = (psm == pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) ? 4 : 2;
+        int pixelFormatBytes = (psm == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) ? 4 : 2;
         drawBuffer = new CaptureRAM(fbp + MemoryMap.START_VRAM, fbw * 272 * pixelFormatBytes);
 
         depthBuffer = new CaptureRAM(zbp + MemoryMap.START_VRAM, zbw * 272 * 2);
 
-        pixelFormatBytes = (pixelformatFb == pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) ? 4 : 2;
+        pixelFormatBytes = (pixelformatFb == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) ? 4 : 2;
         displayBuffer = new CaptureRAM(topaddrFb, bufferwidthFb * 272 * pixelFormatBytes);
     }
 
@@ -158,11 +159,11 @@ public class CaptureDisplayDetails {
     }
 
     public void commit() {
-        pspdisplay display = pspdisplay.getInstance();
+        sceDisplay display = Modules.sceDisplayModule;
         //VideoEngine ge = VideoEngine.getInstance();
 
         // This is almost side effect free, but replay is going to trash the emulator state anyway
-        display.sceDisplaySetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb, sync);
+        display.hleDisplaySetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb, sync);
         display.hleDisplaySetGeBuf(null, fbp, fbw, psm, false);
 
         if (captureRenderTargets) {

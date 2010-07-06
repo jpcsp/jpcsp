@@ -17,9 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.nio.ByteBuffer;
+
+import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
-import jpcsp.Debugger.MemoryViewer;
 
 /**
  *

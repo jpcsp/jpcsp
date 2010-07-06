@@ -16,12 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.formatString;
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import jpcsp.filesystems.*;
-import static jpcsp.util.Utilities.*;
 
 public class PBP {
     private static final long PBP_MAGIC = 0x50425000L;
@@ -77,7 +78,7 @@ public class PBP {
     }
 
     public PBP(ByteBuffer f) throws IOException {
-        size_pbp = (int)f.capacity();
+        size_pbp = f.capacity();
         if (size_pbp == 0)
             return;
         p_magic = readUWord(f);
@@ -102,7 +103,7 @@ public class PBP {
             size_psp_data = (int)(p_offset_psar_data - p_offset_psp_data);
             size_psar_data = (int)(size_pbp - p_offset_psar_data);
 
-            info = this.toString();
+            info = toString();
         }
     }
     public PSF readPSF(ByteBuffer f) throws IOException {

@@ -20,8 +20,12 @@ package jpcsp.HLE.modules150;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
@@ -41,13 +45,6 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
-
-import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState; // New-Style Processor
 
 public class sceGe_user implements HLEModule {
 
@@ -300,13 +297,13 @@ public class sceGe_user implements HLEModule {
     private void startGeList(PspGeList list) {
     	// Send the list to the VideoEngine before triggering the display (setting GE dirty)
     	list.startList();
-    	pspdisplay.getInstance().setGeDirty(true);
+    	Modules.sceDisplayModule.setGeDirty(true);
     }
 
     private void startGeListHead(PspGeList list) {
     	// Send the list to the VideoEngine at the head of the queue.
     	list.startListHead();
-    	pspdisplay.getInstance().setGeDirty(true);
+    	Modules.sceDisplayModule.setGeDirty(true);
     }
 
     /** safe to call from the Async display thread */
@@ -566,7 +563,7 @@ public class sceGe_user implements HLEModule {
             	PspGeList list = allGeLists[id];
             	if (list.getStallAddr() != stall_addr) {
             		list.setStallAddr(stall_addr);
-                    pspdisplay.getInstance().setGeDirty(true);
+                    Modules.sceDisplayModule.setGeDirty(true);
             	}
 			}
             cpu.gpr[2] = 0;

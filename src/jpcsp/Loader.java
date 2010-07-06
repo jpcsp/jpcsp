@@ -267,10 +267,9 @@ public class Loader {
             // Setup position for chaining loaders
             f.position((int)pbp.getOffsetPspData());
             return true;
-        } else {
-            // Not a valid PBP
-            return false;
         }
+		// Not a valid PBP
+		return false;
     }
 
     /** @return true on success */
@@ -280,10 +279,9 @@ public class Loader {
             module.fileFormat |= FORMAT_SCE;
             Emulator.log.warn("Encrypted file not supported! (~SCE)");
             return true;
-        } else {
-            // Not a valid PSP
-            return false;
         }
+		// Not a valid PSP
+		return false;
     }
 
     /** @return true on success */
@@ -293,10 +291,9 @@ public class Loader {
             module.fileFormat |= FORMAT_PSP;
             Emulator.log.warn("Encrypted file not supported! (~PSP)");
             return true;
-        } else {
-            // Not a valid PSP
-            return false;
         }
+		// Not a valid PSP
+		return false;
     }
 
     /** @return true on success */
@@ -368,11 +365,10 @@ public class Loader {
 
             loadedFirstModule = true;
             return true;
-        } else {
-            // Not a valid ELF
-            Emulator.log.debug("Loader: Not a ELF");
-            return false;
         }
+		// Not a valid ELF
+		Emulator.log.debug("Loader: Not a ELF");
+		return false;
     }
 
     /** Dummy loader for unrecognized file formats, put at the end of a loader chain.

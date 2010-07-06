@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Emulator;
-import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 
 public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStructure {
 	public int size;

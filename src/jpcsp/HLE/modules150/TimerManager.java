@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ADDR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_ALARM;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_VTIMER;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,9 +31,6 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.SceKernelAlarmInfo;
 import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_ALARM;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_VTIMER;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ADDR;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;

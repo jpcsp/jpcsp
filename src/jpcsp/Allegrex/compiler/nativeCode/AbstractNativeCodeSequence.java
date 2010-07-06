@@ -116,9 +116,8 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 					return i;
 				}
 			}
-		} else {
-			jpcsp.Allegrex.compiler.Compiler.log.warn("getStrlen: null MemoryReader");
 		}
+		jpcsp.Allegrex.compiler.Compiler.log.warn("getStrlen: null MemoryReader");
 
 		return 0;
 	}

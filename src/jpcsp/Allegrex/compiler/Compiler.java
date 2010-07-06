@@ -24,10 +24,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.log4j.Logger;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -38,6 +34,10 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.DurationStatistics;
+
+import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 /*
  * TODO to cleanup the code:
@@ -204,7 +204,7 @@ public class Compiler implements ICompiler {
 	}
 
 	private int branchTarget(int pc, int opcode) {
-		return pc + (((int)(short) (opcode & 0x0000FFFF)) << 2);
+		return pc + (((short) (opcode & 0x0000FFFF)) << 2);
 	}
 
 	private IExecutable interpret(CompilerContext context, int startAddress) {

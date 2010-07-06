@@ -17,18 +17,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
-import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceModule;
 
 
 /**
@@ -41,7 +41,7 @@ import jpcsp.HLE.kernel.Managers;
  * Modules that require stepping should implement HLEThread and call
  * mm.addThread inside installModule with a matching mm.removeThread in
  * uninstall module.
- * Example: ThreadMan, pspctrl, pspAudio, pspdisplay
+ * Example: ThreadMan, pspctrl, pspAudio, sceDisplay
  *
  * @author fiveofhearts
  */
@@ -97,9 +97,7 @@ public class HLEModuleManager {
         scePsmfPlayer(Modules.scePsmfPlayerModule),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
         sceMp3(Modules.sceMp3Module),
-        sceDeflt(Modules.sceDefltModule),
-        // For testing purposes
-    	SampleModule(Modules.SampleModule);
+        sceDeflt(Modules.sceDefltModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
@@ -108,14 +106,14 @@ public class HLEModuleManager {
     	// Module loaded by default in all Firmware versions
     	DefaultModule(HLEModule module) {
     		this.module = module;
-    		this.firmwareVersionAsDefault = 100;	// Loaded by default in all firmwares (from 1.00)
-    		this.prxNames = null;
+    		firmwareVersionAsDefault = 100;	// Loaded by default in all firmwares (from 1.00)
+    		prxNames = null;
     	}
 
     	// Module only loaded as a PRX, under different names
     	DefaultModule(HLEModule module, String[] prxNames) {
     		this.module = module;
-    		this.firmwareVersionAsDefault = Integer.MAX_VALUE;	// Never loaded by default
+    		firmwareVersionAsDefault = Integer.MAX_VALUE;	// Never loaded by default
     		this.prxNames = prxNames;
     	}
 

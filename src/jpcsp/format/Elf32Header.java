@@ -16,11 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.readUByte;
+import static jpcsp.util.Utilities.readUHalf;
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.IOException;
-import jpcsp.MemoryMap;
 import java.nio.ByteBuffer;
+
+import jpcsp.MemoryMap;
 import jpcsp.util.Utilities;
-import static jpcsp.util.Utilities.*;
 
 public class Elf32Header {
 

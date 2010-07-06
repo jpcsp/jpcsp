@@ -19,7 +19,6 @@ package jpcsp;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.MissingResourceException;
-import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
 public class Resource {
@@ -45,7 +44,7 @@ public class Resource {
 	 */
 	public static void add(String basename) {
 		bundles = new LinkedList<ResourceBundle>();
-		bundles.addFirst(PropertyResourceBundle.getBundle(basename));
+		bundles.addFirst(ResourceBundle.getBundle(basename));
 	}
 
 	/**

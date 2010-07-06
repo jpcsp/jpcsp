@@ -22,20 +22,18 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Random;
 
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.managers.SystemTimeManager;
-import jpcsp.HLE.modules.HLEModule;
-import jpcsp.HLE.modules.HLEModuleFunction;
-import jpcsp.HLE.modules.HLEModuleManager;
-
 import jpcsp.Clock;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.State;
-
-import jpcsp.Allegrex.CpuState; // New-Style Processor
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
+import jpcsp.HLE.modules.HLEModule;
+import jpcsp.HLE.modules.HLEModuleFunction;
+import jpcsp.HLE.modules.HLEModuleManager;
 
 /*
  * TODO list:

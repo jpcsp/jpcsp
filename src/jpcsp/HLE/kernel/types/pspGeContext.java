@@ -16,10 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;
+
 import javax.media.opengl.GL;
 
 import jpcsp.HLE.Modules;
-import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;;
 
 public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	//

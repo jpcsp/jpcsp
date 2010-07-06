@@ -49,6 +49,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+
 import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.JScrollPane;
@@ -136,7 +137,8 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         return refcount--;
     }
 
-    public void mouseMoved(MouseEvent e) {
+    @Override
+	public void mouseMoved(MouseEvent e) {
         Point p = e.getPoint();
         JComponent comp = (JComponent) e.getSource();
         JScrollPane jsp = (JScrollPane)
@@ -147,15 +149,18 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         }
     }
 
-    public void mouseDragged(MouseEvent e) {
+    @Override
+	public void mouseDragged(MouseEvent e) {
         hide();
     }
 
-    public void mouseEntered(MouseEvent e) {
+    @Override
+	public void mouseEntered(MouseEvent e) {
         hide();
     }
 
-    public void mouseExited(MouseEvent e) {
+    @Override
+	public void mouseExited(MouseEvent e) {
         hide();
     }
 
@@ -439,7 +444,8 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
      * renderer.
      */
     private static final class ImgComp extends JComponent {
-        private BufferedImage img;
+		private static final long serialVersionUID = 7193267359698796218L;
+		private BufferedImage img;
         private Dimension d = null;
 
         private Color bg = Color.WHITE;
@@ -532,7 +538,8 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             setImage (nue);
         }
 
-        public Rectangle getBounds() {
+        @Override
+		public Rectangle getBounds() {
             Dimension dd = getPreferredSize();
             return new Rectangle (0, 0, dd.width, dd.height);
         }
@@ -542,18 +549,21 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             d = null;
         }
 
-        public Dimension getPreferredSize() {
+        @Override
+		public Dimension getPreferredSize() {
             if (d == null) {
                 d = new Dimension (img.getWidth(), img.getHeight());
             }
             return d;
         }
 
-        public Dimension getSize() {
+        @Override
+		public Dimension getSize() {
             return getPreferredSize();
         }
 
-        public void paint (Graphics g) {
+        @Override
+		public void paint (Graphics g) {
             g.setColor (bg);
             g.fillRect (0, 0, d.width, d.height);
             Graphics2D g2d = (Graphics2D) g;
@@ -568,10 +578,14 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
         }
 
-        public void firePropertyChange (String s, Object a, Object b) {}
-        public void invalidate() {}
-        public void validate() {}
-        public void revalidate() {}
+        @Override
+		public void firePropertyChange (String s, Object a, Object b) {}
+        @Override
+		public void invalidate() {}
+        @Override
+		public void validate() {}
+        @Override
+		public void revalidate() {}
     }
 
     /**
@@ -586,11 +600,11 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
 
         public Hider (JComponent comp, JScrollPane pane) {
             if (comp instanceof JTree) {
-                this.tree = (JTree) comp;
-                this.list = null;
+                tree = (JTree) comp;
+                list = null;
             } else {
-                this.list = (JList) comp;
-                this.tree = null;
+                list = (JList) comp;
+                tree = null;
             }
             assert tree != null || list != null;
             this.pane = pane;

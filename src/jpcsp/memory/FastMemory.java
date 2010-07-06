@@ -23,7 +23,7 @@ import java.util.Arrays;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.HLE.pspdisplay;
+import jpcsp.HLE.Modules;
 
 public class FastMemory extends Memory {
 	//
@@ -101,8 +101,10 @@ public class FastMemory extends Memory {
 				case 3: data >>= 24; break;
 			}
 
-			if (traceRead && log.isTraceEnabled()) {
-				log.trace("read8(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(data & 0xFF).toUpperCase());
+			if (traceRead) {
+				if (log.isTraceEnabled()) {
+					log.trace("read8(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(data & 0xFF).toUpperCase());
+				}
 			}
 	
 			return data & 0xFF;
@@ -121,8 +123,10 @@ public class FastMemory extends Memory {
 				data >>= 16;
 			}
 
-			if (traceRead && log.isTraceEnabled()) {
-				log.trace("read16(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(data & 0xFFFF).toUpperCase());
+			if (traceRead) {
+				if (log.isTraceEnabled()) {
+					log.trace("read16(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(data & 0xFFFF).toUpperCase());
+				}
 			}
 
 			return data & 0xFFFF;
@@ -137,8 +141,10 @@ public class FastMemory extends Memory {
 		try {
 			address &= addressMask;
 
-			if (traceRead && log.isTraceEnabled()) {
-				log.trace("read32(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(all[address / 4]).toUpperCase() + " (" + Float.intBitsToFloat(all[address / 4]) + ")");
+			if (traceRead) {
+				if (log.isTraceEnabled()) {
+					log.trace("read32(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(all[address / 4]).toUpperCase() + " (" + Float.intBitsToFloat(all[address / 4]) + ")");
+				}
 			}
 
 			return all[address >> 2];
@@ -158,8 +164,10 @@ public class FastMemory extends Memory {
 			address &= addressMask;
 			long data = (((long) all[address / 4 + 1]) << 32) | (((long) all[address / 4]) & 0xFFFFFFFFL);
 
-			if (traceRead && log.isTraceEnabled()) {
-				log.trace("read64(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Long.toHexString(data).toUpperCase());
+			if (traceRead) {
+				if (log.isTraceEnabled()) {
+					log.trace("read64(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Long.toHexString(data).toUpperCase());
+				}
 			}
 
 			return data;
@@ -181,12 +189,14 @@ public class FastMemory extends Memory {
 			case 3: memData = (memData & 0x00FFFFFF) | ((data & 0xFF) << 24); break;
 			}
 
-			if (traceWrite && log.isTraceEnabled()) {
-				log.trace("write8(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFF).toUpperCase() + ")");
+			if (traceWrite) {
+				if (log.isTraceEnabled()) {
+					log.trace("write8(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFF).toUpperCase() + ")");
+				}
 			}
 
 			all[address >> 2] = memData;
-            pspdisplay.getInstance().write8(address, data);
+            Modules.sceDisplayModule.write8(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -203,12 +213,14 @@ public class FastMemory extends Memory {
 				memData = (memData & 0x0000FFFF) | ((data & 0xFFFF) << 16);
 			}
 
-			if (traceWrite && log.isTraceEnabled()) {
-				log.trace("write16(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFFFF).toUpperCase() + ")");
+			if (traceWrite) {
+				if (log.isTraceEnabled()) {
+					log.trace("write16(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFFFF).toUpperCase() + ")");
+				}
 			}
 
 			all[address >> 2] = memData;
-            pspdisplay.getInstance().write16(address, data);
+            Modules.sceDisplayModule.write16(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -220,11 +232,13 @@ public class FastMemory extends Memory {
 			address &= addressMask;
 			all[address >> 2] = data;
 
-			if (traceWrite && log.isTraceEnabled()) {
-				log.trace("write32(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data).toUpperCase() + " (" + Float.intBitsToFloat(data) + "))");
+			if (traceWrite) {
+				if (log.isTraceEnabled()) {
+					log.trace("write32(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data).toUpperCase() + " (" + Float.intBitsToFloat(data) + "))");
+				}
 			}
 
-			pspdisplay.getInstance().write32(address, data);
+			Modules.sceDisplayModule.write32(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -235,8 +249,10 @@ public class FastMemory extends Memory {
 		try {
 			address &= addressMask;
 
-			if (traceWrite && log.isTraceEnabled()) {
-				log.trace("write64(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Long.toHexString(data).toUpperCase() + ")");
+			if (traceWrite) {
+				if (log.isTraceEnabled()) {
+					log.trace("write64(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Long.toHexString(data).toUpperCase() + ")");
+				}
 			}
 
 			all[address / 4] = (int) data;

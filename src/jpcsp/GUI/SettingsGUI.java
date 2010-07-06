@@ -17,16 +17,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.GUI;
 
-import com.jidesoft.swing.FolderChooser;
-import jpcsp.*;
-
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
 import javax.swing.JTextField;
+
+import jpcsp.Emulator;
+import jpcsp.MainGUI;
+import jpcsp.Resource;
+import jpcsp.Settings;
+import jpcsp.State;
 import jpcsp.Controller.keyCode;
+
+import com.jidesoft.swing.FolderChooser;
 
 /**
  *
@@ -210,18 +216,18 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         // pressedKey already mapped?
         if (k != null) {
             Emulator.log.warn("Key already used for " + k);
-            this.sender.setText(KeyEvent.getKeyText(revertKeys.get(this.targetKey)));
+            sender.setText(KeyEvent.getKeyText(revertKeys.get(targetKey)));
             return;
         }
         
         //Remove old key
-        int oldMapping = revertKeys.get(this.targetKey);
-        revertKeys.remove(this.targetKey);
+        int oldMapping = revertKeys.get(targetKey);
+        revertKeys.remove(targetKey);
         currentKeys.remove(oldMapping);
         
         //Add new mapping
-        currentKeys.put(pressedKey, this.targetKey);
-        revertKeys.put(this.targetKey, pressedKey);
+        currentKeys.put(pressedKey, targetKey);
+        revertKeys.put(targetKey, pressedKey);
         sender.setText(KeyEvent.getKeyText(pressedKey));
     }
 
@@ -593,7 +599,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldStart.setToolTipText(Resource.get("putkey"));
         fieldStart.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldStart.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldStartMouseClicked(evt);
             }
         });
@@ -604,7 +611,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldSelect.setToolTipText(Resource.get("putkey"));
         fieldSelect.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldSelect.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldSelectMouseClicked(evt);
             }
         });
@@ -615,7 +623,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldCross.setToolTipText(Resource.get("putkey"));
         fieldCross.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldCross.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldCrossMouseClicked(evt);
             }
         });
@@ -626,6 +635,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldCircle.setToolTipText(Resource.get("putkey"));
         fieldCircle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldCircle.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldCircleMouseClicked(evt);
             }
@@ -637,6 +647,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldTriangle.setToolTipText(Resource.get("putkey"));
         fieldTriangle.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldTriangle.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldTriangleMouseClicked(evt);
             }
@@ -648,6 +659,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldSquare.setToolTipText(Resource.get("putkey"));
         fieldSquare.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldSquare.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldSquareMouseClicked(evt);
             }
@@ -659,6 +671,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldRight.setToolTipText(Resource.get("putkey"));
         fieldRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldRight.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldRightMouseClicked(evt);
             }
@@ -670,6 +683,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldUp.setToolTipText(Resource.get("putkey"));
         fieldUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldUp.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldUpMouseClicked(evt);
             }
@@ -681,6 +695,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldLeft.setToolTipText(Resource.get("putkey"));
         fieldLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldLeft.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldLeftMouseClicked(evt);
             }
@@ -692,6 +707,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldDown.setToolTipText(Resource.get("putkey"));
         fieldDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldDown.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldDownMouseClicked(evt);
             }
@@ -703,6 +719,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldHold.setToolTipText(Resource.get("putkey"));
         fieldHold.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldHold.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldHoldMouseClicked(evt);
             }
@@ -714,6 +731,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldHome.setToolTipText(Resource.get("putkey"));
         fieldHome.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldHome.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldHomeMouseClicked(evt);
             }
@@ -725,6 +743,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldVolMin.setToolTipText(Resource.get("putkey"));
         fieldVolMin.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldVolMin.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldVolMinMouseClicked(evt);
             }
@@ -736,6 +755,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldVolPlus.setToolTipText(Resource.get("putkey"));
         fieldVolPlus.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldVolPlus.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldVolPlusMouseClicked(evt);
             }
@@ -747,6 +767,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldLTrigger.setToolTipText(Resource.get("putkey"));
         fieldLTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldLTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldLTriggerMouseClicked(evt);
             }
@@ -758,6 +779,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldRTrigger.setToolTipText(Resource.get("putkey"));
         fieldRTrigger.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldRTrigger.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldRTriggerMouseClicked(evt);
             }
@@ -769,6 +791,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldScreen.setToolTipText(Resource.get("putkey"));
         fieldScreen.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldScreen.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldScreenMouseClicked(evt);
             }
@@ -780,6 +803,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldMusic.setToolTipText(Resource.get("putkey"));
         fieldMusic.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldMusic.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldMusicMouseClicked(evt);
             }
@@ -791,6 +815,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogUp.setToolTipText(Resource.get("putkey"));
         fieldAnalogUp.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogUp.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogUpMouseClicked(evt);
             }
@@ -802,6 +827,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogDown.setToolTipText(Resource.get("putkey"));
         fieldAnalogDown.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogDown.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogDownMouseClicked(evt);
             }
@@ -813,6 +839,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogLeft.setToolTipText(Resource.get("putkey"));
         fieldAnalogLeft.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogLeft.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogLeftMouseClicked(evt);
             }
@@ -824,6 +851,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogRight.setToolTipText(Resource.get("putkey"));
         fieldAnalogRight.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 102, 102), 2, true));
         fieldAnalogRight.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 fieldAnalogRightMouseClicked(evt);
             }

@@ -31,22 +31,20 @@ todo:
 
 package jpcsp.graphics.capture;
 
-import java.io.OutputStream;
-import java.io.FileOutputStream;
-import java.io.BufferedOutputStream;
-
-import java.io.InputStream;
-import java.io.FileInputStream;
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.Buffer;
 import java.util.HashSet;
 
-import org.apache.log4j.Level;
-
-
 import jpcsp.Emulator;
-import jpcsp.graphics.VideoEngine;
 import jpcsp.HLE.kernel.types.PspGeList;
+import jpcsp.graphics.VideoEngine;
+
+import org.apache.log4j.Level;
 
 public class CaptureManager {
 

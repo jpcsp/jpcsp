@@ -19,7 +19,6 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.util.Utilities;
 
 /*
@@ -68,9 +67,9 @@ public class SceKernelFplInfo {
             blockAllocated[i] = false;
         }
 
-        int memType = SysMemUserForUser.PSP_SMEM_Low;
+        int memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
         if ((attr & FPL_ATTR_ADDR_HIGH) == FPL_ATTR_ADDR_HIGH)
-            memType = SysMemUserForUser.PSP_SMEM_High;
+            memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 
         // Reserve psp memory
         int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align

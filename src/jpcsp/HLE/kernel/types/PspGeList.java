@@ -16,6 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DONE;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_QUEUED;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_STALL_REACHED;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_STRINGS;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -23,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import jpcsp.HLE.Modules;
 import jpcsp.graphics.VideoEngine;
-import static jpcsp.HLE.modules150.sceGe_user.*;
 
 public class PspGeList
 {
@@ -131,10 +136,9 @@ public class PspGeList
 		if (sync != null) {
 			sync.release();
 
-			if (false) {
-				// Test for single-core processor: force a context
-				Thread.yield();
-			}
+			
+			// Test for single-core processor: force a context
+			//Thread.yield();
 		}
     }
 

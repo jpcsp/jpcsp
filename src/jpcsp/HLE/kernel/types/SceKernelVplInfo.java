@@ -21,7 +21,6 @@ import java.util.HashMap;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.util.Utilities;
 
 /*
@@ -58,7 +57,7 @@ public class SceKernelVplInfo {
     private SceKernelVplInfo(String name, int partitionid, int attr, int size) {
         this.name = name;
         this.attr = attr;
-        this.poolSize = size - 32; // 32 byte overhead per VPL
+        poolSize = size - 32; // 32 byte overhead per VPL
 
         freeSize = poolSize;
         numWaitThreads = 0;
@@ -68,9 +67,9 @@ public class SceKernelVplInfo {
         uid = SceUidManager.getNewUid("ThreadMan-Vpl");
         this.partitionid = partitionid;
 
-        int memType = SysMemUserForUser.PSP_SMEM_Low;
+        int memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
         if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH)
-            memType = SysMemUserForUser.PSP_SMEM_High;
+            memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 
         // Reserve psp memory
         int alignedSize = (size + 7) & ~7; // 8-byte align
@@ -165,21 +164,19 @@ public class SceKernelVplInfo {
             if (top != allocAddress) {
                 Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
                 return false;
-             } else {
-                //Recover free size from deallocated block.
-                int deallocSize = (dataBlockMap.get(addr) + 8);
-                freeSize += deallocSize;
-                dataBlockMap.remove(addr);
+             }
+			//Recover free size from deallocated block.
+			int deallocSize = (dataBlockMap.get(addr) + 8);
+			freeSize += deallocSize;
+			dataBlockMap.remove(addr);
 
-                Modules.log.debug("Free VPL: Block 0x" + Integer.toHexString(addr) + " with size=" +
-                        deallocSize + " freed");
+			Modules.log.debug("Free VPL: Block 0x" + Integer.toHexString(addr) + " with size=" +
+			        deallocSize + " freed");
 
-                return true;
-            }
-        } else {
-            // address is not in valid range
-            Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
-            return false;
+			return true;
         }
+		// address is not in valid range
+		Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
+		return false;
     }
 }

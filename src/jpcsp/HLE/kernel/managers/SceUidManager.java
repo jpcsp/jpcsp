@@ -16,9 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import jpcsp.Emulator;
 import java.util.HashMap;
 
+import jpcsp.Emulator;
 import jpcsp.HLE.kernel.types.SceUid;
 
 /**

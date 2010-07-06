@@ -60,7 +60,8 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
         setTitle(Resource.get("elfheaderinfo"));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+            @Override
+			public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
             }
         });

@@ -61,14 +61,12 @@ public class MemoryStick {
 	public static String getSizeKbString(int sizeKb) {
 		if (sizeKb < 1024) {
 			return String.format("%d KB", sizeKb);
-		} else {
-			sizeKb /= 1024;
-			if (sizeKb < 1024) {
-				return String.format("%d MB", sizeKb);
-			} else {
-				sizeKb /= 1024;
-				return String.format("%d GB", sizeKb);
-			}
 		}
+		sizeKb /= 1024;
+		if (sizeKb < 1024) {
+			return String.format("%d MB", sizeKb);
+		}
+		sizeKb /= 1024;
+		return String.format("%d GB", sizeKb);
 	}
 }

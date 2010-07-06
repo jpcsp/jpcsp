@@ -16,9 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.io.File;
 
 import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;

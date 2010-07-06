@@ -23,7 +23,7 @@ package jpcsp.Allegrex.compiler.nativeCode;
 public class FloatToDouble extends AbstractNativeCodeSequence {
 	static public void call() {
 		float input = getFprF12();
-		double output = (double) input;
+		double output = input;
 		setGprV0V1(Double.doubleToLongBits(output));
 	}
 }

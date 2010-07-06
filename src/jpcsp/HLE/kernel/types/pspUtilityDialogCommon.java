@@ -30,6 +30,7 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 	public int soundThread;		// 0x10
 	public int result;
 
+	@Override
 	protected void read() {
 		size           = read32();
 		setMaxSize(size);
@@ -43,6 +44,7 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 		readUnknown(16);
 	}
 
+	@Override
 	protected void write() {
 	    setMaxSize(size);
 		write32(size);
@@ -64,6 +66,7 @@ public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 		mem.write32(address + 28, result);
 	}
 
+	@Override
 	public int sizeof() {
 		return 12 * 4;
 	}

@@ -16,12 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.Utilities;
-import jpcsp.Processor;
 
 /**
  *

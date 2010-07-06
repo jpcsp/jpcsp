@@ -25,8 +25,6 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -39,6 +37,8 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEThread;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+
+import org.apache.log4j.Logger;
 
 public class sceAudio implements HLEModule, HLEThread {
 	

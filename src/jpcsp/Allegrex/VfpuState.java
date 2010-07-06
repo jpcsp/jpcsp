@@ -16,9 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
-import jpcsp.Memory;
-
 import java.util.Arrays;
+
+import jpcsp.Memory;
 
 /**
  * Vectorial Floating Point Unit, handles scalar, vector and matrix operations.
@@ -76,16 +76,16 @@ public class VfpuState extends FpuState {
         }
 
         public void setSeed(int seed) {
-            this.seed = ((long)seed) & mask;
+            this.seed = (seed) & mask;
         }
 
         public int getSeed() {
-            return (int)this.seed;
+            return (int)seed;
         }       
         
         protected int next(int bits) {
-            this.seed = (this.seed * multiplier + addend) & mask;
-            return (int)(this.seed >>> (32 - bits));
+            seed = (seed * multiplier + addend) & mask;
+            return (int)(seed >>> (32 - bits));
         }
 
         public int nextInt() {
@@ -601,23 +601,21 @@ public class VfpuState extends FpuState {
             if (f == 0) {
                 // Plus or minus zero
                 return Float.intBitsToFloat(s << 31);                
-            } else {
-                // Denormalized number -- renormalize it
-                while ((f & 0x00000400) == 0) {
-                    f <<= 1;
-                    e -=  1;
-                }
-                e += 1;
-                f &= ~0x00000400;
             }
+			// Denormalized number -- renormalize it
+			while ((f & 0x00000400) == 0) {
+			    f <<= 1;
+			    e -=  1;
+			}
+			e += 1;
+			f &= ~0x00000400;
         } else if (e == 31) {
             if (f == 0) {
                 // Inf
                 return Float.intBitsToFloat((s << 31) | 0x7f800000);
-            } else {
-                // NaN
-                return Float.intBitsToFloat((s << 31) | 0x7f800000 | (f << 13));
             }
+			// NaN
+			return Float.intBitsToFloat((s << 31) | 0x7f800000 | (f << 13));
         }
 
         e = e + (127 - 15);
@@ -1011,9 +1009,8 @@ public class VfpuState extends FpuState {
     	if (!vcr.cc[imm3]) {
     		npc = branchTarget(pc, simm16);
     		return true;
-    	} else {
-    		pc = pc + 4;
     	}
+		pc = pc + 4;
         return false;
     }
     // VFPU2:BVTL
@@ -1021,9 +1018,8 @@ public class VfpuState extends FpuState {
     	if (vcr.cc[imm3]) {
     		npc = branchTarget(pc, simm16);
     		return true;
-    	} else {
-    		pc = pc + 4;
     	}
+		pc = pc + 4;
         return false;
     }
     // group VFPU3
@@ -1989,7 +1985,7 @@ public class VfpuState extends FpuState {
 
         for (int i = 0; i < vsize; ++i) {
             float value = Math.scalb(v1[i], imm5);
-            v3[i] = Float.intBitsToFloat((int) Math.round(value));
+            v3[i] = Float.intBitsToFloat(Math.round(value));
         }
 
         saveVd(vsize, vd, v3);
@@ -2032,7 +2028,7 @@ public class VfpuState extends FpuState {
         loadVs(vsize, vs);
 
         for (int i = 0; i < vsize; ++i) {
-            float value = (float) Float.floatToRawIntBits(v1[i]);
+            float value = Float.floatToRawIntBits(v1[i]);
             v3[i] = Math.scalb(value, -imm5);
         }
 
@@ -2152,7 +2148,7 @@ public class VfpuState extends FpuState {
 
     // VFPU5:VIIM
     public void doVIIM(int vd, int imm16) {
-        v3[0] = (float) imm16;
+        v3[0] = imm16;
 
         saveVd(1, vd, v3);
     }
@@ -2264,7 +2260,7 @@ public class VfpuState extends FpuState {
     // VFPU6:VMSCL
     public void doVMSCL(int vsize, int vd, int vs, int vt) {
         for (int i = 0; i < vsize; ++i) {
-            this.doVSCL(vsize, vd + i, vs + i, vt);
+            doVSCL(vsize, vd + i, vs + i, vt);
         }
     }
 
@@ -2296,28 +2292,28 @@ public class VfpuState extends FpuState {
     // VFPU6:VMMOV
     public void doVMMOV(int vsize, int vd, int vs) {
         for (int i = 0; i < vsize; ++i) {
-            this.doVMOV(vsize, vd + i, vs + i);
+            doVMOV(vsize, vd + i, vs + i);
         }
     }
 
     // VFPU6:VMIDT
     public void doVMIDT(int vsize, int vd) {
         for (int i = 0; i < vsize; ++i) {
-            this.doVIDT(vsize, vd + i);
+            doVIDT(vsize, vd + i);
         }
     }
 
     // VFPU6:VMZERO
     public void doVMZERO(int vsize, int vd) {
         for (int i = 0; i < vsize; ++i) {
-            this.doVZERO(vsize, vd + i);
+            doVZERO(vsize, vd + i);
         }
     }
 
     // VFPU7:VMONE
     public void doVMONE(int vsize, int vd) {
         for (int i = 0; i < vsize; ++i) {
-            this.doVONE(vsize, vd + i);
+            doVONE(vsize, vd + i);
         }
     }
 

@@ -16,21 +16,27 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MUTEX_LOCKED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_MUTEX;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MUTEX;
+
 import java.util.HashMap;
 import java.util.Iterator;
 
+import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelMutexInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
-import jpcsp.HLE.Modules;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.util.Utilities;
 
 /*

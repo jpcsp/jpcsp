@@ -16,10 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.readUHalf;
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import jpcsp.Memory;
-import static jpcsp.util.Utilities.*;
 
 public class PSPModuleInfo {
 

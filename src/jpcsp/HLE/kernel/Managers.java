@@ -16,7 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel;
 
-import jpcsp.HLE.kernel.managers.*;
+import jpcsp.HLE.kernel.managers.EventFlagManager;
+import jpcsp.HLE.kernel.managers.FplManager;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.managers.MbxManager;
+import jpcsp.HLE.kernel.managers.ModuleManager;
+import jpcsp.HLE.kernel.managers.MsgPipeManager;
+import jpcsp.HLE.kernel.managers.MutexManager;
+import jpcsp.HLE.kernel.managers.SemaManager;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
+import jpcsp.HLE.kernel.managers.VplManager;
 
 /**
  *

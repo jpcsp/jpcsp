@@ -43,7 +43,7 @@ public abstract class pspAbstractMemoryMappedStructure {
 
     private void start(Memory mem, int address) {
         start(mem);
-        this.baseAddress = address;
+        baseAddress = address;
     }
 
     private void start(Memory mem, int address, int maxSize) {

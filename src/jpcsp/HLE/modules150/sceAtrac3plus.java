@@ -19,16 +19,14 @@ package jpcsp.HLE.modules150;
 
 import java.util.HashMap;
 
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-
-import jpcsp.Memory;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.connector.AtracCodec;
 
 public class sceAtrac3plus implements HLEModule {
@@ -244,9 +242,8 @@ public class sceAtrac3plus implements HLEModule {
     protected int getRemainFrames(int atracID) {
     	if (inputFileOffset >= inputFileSize) {
     		return -1; // All data in input buffer
-    	} else {
-    		return (inputBufferSize - inputBufferOffset) / (4 * maxSamples);
     	}
+		return (inputBufferSize - inputBufferOffset) / (4 * maxSamples);
     }
 
     protected void hleAtracGetBufferInfoForReseting(int atracID, int sample, int bufferInfoAddr) {

@@ -17,13 +17,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger;
 
-import java.awt.event.KeyEvent;
 import java.awt.Point;
+import java.awt.event.KeyEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+
 import javax.swing.JOptionPane;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Resource;
@@ -57,9 +59,8 @@ public class MemoryViewer extends javax.swing.JFrame {
       //    return (byte)32;
      // else
         if (character < 0x020 || character >= 0x07f && character <= 0x0a0 ||character == 0x0ad)
-            return (char)'.';
-        else
-          return (char)(character & 0x0ff);
+            return '.';
+		return (char)(character & 0x0ff);
 
     }
 
@@ -121,6 +122,7 @@ public class MemoryViewer extends javax.swing.JFrame {
         setTitle(Resource.get("memoryviewer"));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
             public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
             }
@@ -136,6 +138,7 @@ public class MemoryViewer extends javax.swing.JFrame {
             }
         });
         memoryview.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 memoryviewKeyPressed(evt);
             }
@@ -143,6 +146,7 @@ public class MemoryViewer extends javax.swing.JFrame {
         jScrollPane1.setViewportView(memoryview);
 
         AddressField.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 onKeyPressed(evt);
             }
@@ -294,7 +298,7 @@ private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
        out = new BufferedWriter( new FileWriter(f) );
        for(int i = 0x08000000; i<=0x09ffffff; i++ )
        {
-          out.write((byte)safeRead8(i));
+          out.write(safeRead8(i));
        }
 
    }

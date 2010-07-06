@@ -22,12 +22,12 @@ import java.nio.FloatBuffer;
 
 import javax.media.opengl.GL;
 
-import com.sun.opengl.util.BufferUtil;
-
 import jpcsp.Memory;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Hash;
+
+import com.sun.opengl.util.BufferUtil;
 
 // Based on soywiz/pspemulator
 public class VertexInfo {
@@ -103,29 +103,29 @@ public class VertexInfo {
 	}
 
 	public VertexInfo(VertexInfo vertexInfo) {
-		this.param               = vertexInfo.param;
-		this.transform2D         = vertexInfo.transform2D;
-		this.skinningWeightCount = vertexInfo.skinningWeightCount;
-		this.morphingVertexCount = vertexInfo.morphingVertexCount;
-		this.texture             = vertexInfo.texture;
-		this.color               = vertexInfo.color;
-		this.normal              = vertexInfo.normal;
-		this.position            = vertexInfo.position;
-		this.weight              = vertexInfo.weight;
-		this.index               = vertexInfo.index;
-		this.ptr_vertex          = vertexInfo.ptr_vertex;
-		this.ptr_index           = vertexInfo.ptr_index;
-		this.vertexSize          = vertexInfo.vertexSize;
-		this.oneVertexSize       = vertexInfo.oneVertexSize;
-		this.textureOffset       = vertexInfo.textureOffset;
-		this.colorOffset         = vertexInfo.colorOffset;
-		this.normalOffset        = vertexInfo.normalOffset;
-		this.positionOffset      = vertexInfo.positionOffset;
-		this.alignmentSize       = vertexInfo.alignmentSize;
-		this.morph_weight        = vertexInfo.morph_weight;
-		this.hashCode            = vertexInfo.hashCode;
-		this.hashCodeComputed    = vertexInfo.hashCodeComputed;
-		this.vertexCache         = vertexInfo.vertexCache;
+		param               = vertexInfo.param;
+		transform2D         = vertexInfo.transform2D;
+		skinningWeightCount = vertexInfo.skinningWeightCount;
+		morphingVertexCount = vertexInfo.morphingVertexCount;
+		texture             = vertexInfo.texture;
+		color               = vertexInfo.color;
+		normal              = vertexInfo.normal;
+		position            = vertexInfo.position;
+		weight              = vertexInfo.weight;
+		index               = vertexInfo.index;
+		ptr_vertex          = vertexInfo.ptr_vertex;
+		ptr_index           = vertexInfo.ptr_index;
+		vertexSize          = vertexInfo.vertexSize;
+		oneVertexSize       = vertexInfo.oneVertexSize;
+		textureOffset       = vertexInfo.textureOffset;
+		colorOffset         = vertexInfo.colorOffset;
+		normalOffset        = vertexInfo.normalOffset;
+		positionOffset      = vertexInfo.positionOffset;
+		alignmentSize       = vertexInfo.alignmentSize;
+		morph_weight        = vertexInfo.morph_weight;
+		hashCode            = vertexInfo.hashCode;
+		hashCodeComputed    = vertexInfo.hashCodeComputed;
+		vertexCache         = vertexInfo.vertexCache;
 	}
 
 	public void processType(int param) {
@@ -197,23 +197,23 @@ public class VertexInfo {
         VertexState v = new VertexState();
 
         // testing
-        if (false) {
-            int u0 = mem.read8(addr);
-            int u1 = mem.read8(addr + 1);
-            int u2 = mem.read8(addr + 2);
-            int u3 = mem.read8(addr + 3);
-            int u4 = mem.read8(addr + 4);
-            int u5 = mem.read8(addr + 5);
-            int u6 = mem.read8(addr + 6);
-            int u7 = mem.read8(addr + 7);
-            int u8 = mem.read8(addr + 8);
-            int u9 = mem.read8(addr + 9);
-            int u10 = mem.read8(addr + 10);
-            int u11 = mem.read8(addr + 11);
-            int u12 = mem.read8(addr + 12);
-            VideoEngine.log.debug("vertex " + String.format("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",
-                    u0, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12));
-        }
+        /*
+        int u0 = mem.read8(addr);
+        int u1 = mem.read8(addr + 1);
+        int u2 = mem.read8(addr + 2);
+        int u3 = mem.read8(addr + 3);
+        int u4 = mem.read8(addr + 4);
+        int u5 = mem.read8(addr + 5);
+        int u6 = mem.read8(addr + 6);
+        int u7 = mem.read8(addr + 7);
+        int u8 = mem.read8(addr + 8);
+        int u9 = mem.read8(addr + 9);
+        int u10 = mem.read8(addr + 10);
+        int u11 = mem.read8(addr + 11);
+        int u12 = mem.read8(addr + 12);
+        VideoEngine.log.debug("vertex " + String.format("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",
+                u0, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12));
+        */
         
         tempAddr = addr;
 
@@ -678,7 +678,7 @@ public class VertexInfo {
 
     public boolean equals(VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForShader) {
 		if (param != vertexInfo.param ||
-		    this.cachedNumberOfVertex != numberOfVertex ||
+		    cachedNumberOfVertex != numberOfVertex ||
 		    ptr_index != vertexInfo.ptr_index) {
 			return false;
 		}

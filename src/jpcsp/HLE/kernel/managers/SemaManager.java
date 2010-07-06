@@ -16,21 +16,30 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import java.util.HashMap;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_COUNT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_SEMAPHORE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SEMA_ZERO;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UNKNOWN_UID;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
+import static jpcsp.util.Utilities.readStringNZ;
 
+import java.util.HashMap;
 import java.util.Iterator;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import static jpcsp.util.Utilities.*;
-
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
 public class SemaManager {
 

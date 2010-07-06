@@ -19,7 +19,6 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.interrupts.VTimerInterruptHandler;
-import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.scheduler.VTimerInterruptAction;
 import jpcsp.scheduler.VTimerInterruptResultAction;
 
@@ -58,7 +57,7 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 	public int getInternalMemory() {
 		if (internalMemory == 0) {
 			// Allocate enough memory to store "current" and "schedule"
-			internalMemory = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_Low, 16, 0);
+			internalMemory = Modules.SysMemUserForUserModule.malloc(2, jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low, 16, 0);
 		}
 
 		return internalMemory;

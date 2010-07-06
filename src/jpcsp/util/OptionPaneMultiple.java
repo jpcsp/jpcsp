@@ -21,7 +21,10 @@ package jpcsp.util;
  * @author nickblame
  */
 import java.awt.Component;
-import javax.swing.*;
+
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
 
 public class OptionPaneMultiple {
     JTextField startaddr;
