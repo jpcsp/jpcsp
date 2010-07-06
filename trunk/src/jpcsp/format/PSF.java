@@ -16,13 +16,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.readStringZ;
+import static jpcsp.util.Utilities.readUByte;
+import static jpcsp.util.Utilities.readUHalf;
+import static jpcsp.util.Utilities.readUWord;
+import static jpcsp.util.Utilities.writeByte;
+import static jpcsp.util.Utilities.writeHalf;
+import static jpcsp.util.Utilities.writeStringZ;
+import static jpcsp.util.Utilities.writeWord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import jpcsp.util.Utilities;
-
-import static jpcsp.util.Utilities.*;
 
 public class PSF {
     private int psfOffset;
@@ -231,7 +238,7 @@ public class PSF {
     }
 
     public void put(String key, String data, int rawlen) {
-        byte[] b = (byte[])(data.getBytes(Utilities.charset));
+        byte[] b = (data.getBytes(Utilities.charset));
 
         //if (b.length != data.length())
         //    System.out.println("put string '" + data + "' size mismatch. UTF-8=" + b.length + " regular=" + (data.length() + 1));
@@ -246,7 +253,7 @@ public class PSF {
     }
 
     public void put(String key, String data) {
-        byte[] b = (byte[])(data.getBytes(Utilities.charset));
+        byte[] b = (data.getBytes(Utilities.charset));
         //int rawlen = data.length() + 1;
         int rawlen = b.length + 1;
 
@@ -427,9 +434,9 @@ public class PSF {
         /** only reads the index entry, since this class has doesn't know about the psf/key/value offsets */
         public void read(ByteBuffer f) throws IOException {
             // index table entry
-            keyOffset = (int)readUHalf(f);
-            unknown1 = (int)readUByte(f);
-            dataType = (int)readUByte(f);
+            keyOffset = readUHalf(f);
+            unknown1 = readUByte(f);
+            dataType = readUByte(f);
             dataSize = (int)readUWord(f);
             dataSizePadded = (int)readUWord(f);
             valueOffset = (int)readUWord(f);

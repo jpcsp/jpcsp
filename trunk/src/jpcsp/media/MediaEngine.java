@@ -17,8 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.media;
 
-import jpcsp.HLE.Modules;
-
 import java.awt.image.BufferedImage;
 
 import javax.sound.sampled.AudioFormat;
@@ -28,18 +26,20 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.swing.JFrame;
 
+import jpcsp.HLE.Modules;
+
+import com.xuggle.ferry.Logger;
 import com.xuggle.xuggler.Global;
 import com.xuggle.xuggler.IAudioSamples;
+import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
 import com.xuggle.xuggler.IPacket;
 import com.xuggle.xuggler.IPixelFormat;
 import com.xuggle.xuggler.IStream;
 import com.xuggle.xuggler.IStreamCoder;
-import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IVideoPicture;
 import com.xuggle.xuggler.IVideoResampler;
 import com.xuggle.xuggler.Utils;
-import com.xuggle.ferry.Logger;
 
 public class MediaEngine {
     private static MediaEngine instance;
@@ -195,7 +195,7 @@ public class MediaEngine {
         clockStartTime = 0;
     }
 
-    @SuppressWarnings("deprecated")
+    @SuppressWarnings("deprecation")
     public void step() {
         container.readNextPacket(packet);
 

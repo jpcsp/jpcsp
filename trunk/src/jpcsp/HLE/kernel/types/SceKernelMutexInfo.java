@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.Memory;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.util.Utilities;
 
 // this is all guessed

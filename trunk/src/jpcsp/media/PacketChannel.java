@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.RandomAccessFile;
 
 import jpcsp.Memory;
-import jpcsp.memory.MemoryReader;
 import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 /*
  * Common interface for PSMF/MPEG -> Media Engine communication.

@@ -62,7 +62,6 @@ import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.GUI.CancelButton;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
@@ -323,7 +322,7 @@ public class sceUtility implements HLEModule {
 	            // A call to the GUI (JOptionPane) is only possible when the VideoEngine is not
 	            // busy waiting on a sync: call JOptionPane only when the display is not locked.
             	while (true) {
-		            canDisplay = pspdisplay.getInstance().tryLockDisplay();
+		            canDisplay = Modules.sceDisplayModule.tryLockDisplay();
 		            if (canDisplay) {
 		            	displayLocked = true;
 		            	break;
@@ -331,7 +330,7 @@ public class sceUtility implements HLEModule {
 		            	// Check if the VideoEngine is not processing a list: in that case,
 		            	// this could mean the display will be soon available for locking
 		            	// (e.g. list processing is done, but still copying the graphics
-		            	//  to PSP memory in pspdisplay.display()).
+		            	//  to PSP memory in sceDisplay.display()).
 		            	// Wait a little bit and try again to lock the display.
 		            	if (Modules.log.isDebugEnabled()) {
 		            		Modules.log.debug(name + "Update : could not lock the display but VideoEngine not displayed, waiting a while...");
@@ -365,7 +364,7 @@ public class sceUtility implements HLEModule {
 
     	public void endUpdate(Processor processor) {
     		if (displayLocked) {
-    			pspdisplay.getInstance().unlockDisplay();
+    			Modules.sceDisplayModule.unlockDisplay();
     			displayLocked = false;
     		}
 

@@ -33,7 +33,6 @@ import javax.swing.table.TableColumnModel;
 import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.IoFileMgrForUser;
 
 /**
  *
@@ -341,13 +340,13 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 int result, String parameters) {
             this.hasFd = hasFd;
 
-            this.threadId = Modules.ThreadManForUserModule.getCurrentThreadID();
-            this.threadName = Modules.ThreadManForUserModule.getThreadName(threadId);
+            threadId = Modules.ThreadManForUserModule.getCurrentThreadID();
+            threadName = Modules.ThreadManForUserModule.getThreadName(threadId);
             this.fd = fd;
             this.command = command;
             this.result = result;
             this.parameters = parameters;
-            this.occurences = 1;
+            occurences = 1;
 
             synchronized(getInstance()) {
                 if (!dirty) {
@@ -385,11 +384,11 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         @Override
         public int hashCode() {
             int hash = 7;
-            hash = 43 * hash + this.threadId;
-            hash = 43 * hash + this.fd;
-            hash = 43 * hash + (this.command != null ? this.command.hashCode() : 0);
-            hash = 43 * hash + this.result;
-            hash = 43 * hash + (this.parameters != null ? this.parameters.hashCode() : 0);
+            hash = 43 * hash + threadId;
+            hash = 43 * hash + fd;
+            hash = 43 * hash + (command != null ? command.hashCode() : 0);
+            hash = 43 * hash + result;
+            hash = 43 * hash + (parameters != null ? parameters.hashCode() : 0);
             return hash;
         }
     }
@@ -535,9 +534,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
     private String getWhenceName(int whence) {
         switch(whence) {
-            case IoFileMgrForUser.PSP_SEEK_SET: return whence + "(set)";
-            case IoFileMgrForUser.PSP_SEEK_CUR: return whence + "(cur)";
-            case IoFileMgrForUser.PSP_SEEK_END: return whence + "(end)";
+            case jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_SET: return whence + "(set)";
+            case jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_CUR: return whence + "(cur)";
+            case jpcsp.HLE.modules150.IoFileMgrForUser.PSP_SEEK_END: return whence + "(end)";
             default: return "" + whence;
         }
     }

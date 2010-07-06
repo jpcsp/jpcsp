@@ -16,10 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso.iso9660;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import jpcsp.filesystems.umdiso.*;
+
+import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 /**
  *

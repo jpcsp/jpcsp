@@ -16,13 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules200;
 
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.Modules;
-
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState;
 
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
 

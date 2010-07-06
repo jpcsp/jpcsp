@@ -63,7 +63,8 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
         name = sceModule.modname;
     }
 
-    protected void read() {
+    @Override
+	protected void read() {
         size = read32();
         setMaxSize(size);
 
@@ -91,7 +92,8 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
         name            = readStringNZ(28);
     }
 
-    protected void write() {
+    @Override
+	protected void write() {
         setMaxSize(size);
         write32(size);
         write8(nsegment);
@@ -116,7 +118,8 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
         writeStringNZ(28, name);
     }
 
-    public int sizeof() {
+    @Override
+	public int sizeof() {
         return size;
     }
 }

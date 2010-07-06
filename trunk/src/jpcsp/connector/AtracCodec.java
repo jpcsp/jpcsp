@@ -26,15 +26,14 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Hash;
+
+import org.apache.log4j.Logger;
 
 /**
  * @author gid15
@@ -55,7 +54,7 @@ public class AtracCodec {
 	protected static boolean commandFileDirty = true;
 
 	public AtracCodec() {
-		atracDecodeBuffer = new byte[sceAtrac3plus.maxSamples * 4];
+		atracDecodeBuffer = new byte[jpcsp.HLE.modules150.sceAtrac3plus.maxSamples * 4];
 		generateCommandFile();
 	}
 
@@ -197,7 +196,7 @@ public class AtracCodec {
 		}
 
 		atracEnd = samples <= 0 ? 1 : 0;
-		atracRemainFrames = sceAtrac3plus.remainFrames;
+		atracRemainFrames = jpcsp.HLE.modules150.sceAtrac3plus.remainFrames;
 
 		return samples;
 	}

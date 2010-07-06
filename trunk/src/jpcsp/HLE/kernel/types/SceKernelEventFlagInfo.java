@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
-
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
 public class SceKernelEventFlagInfo {
@@ -35,7 +34,7 @@ public class SceKernelEventFlagInfo {
         this.attr = attr;
         this.initPattern = initPattern;
         this.currentPattern = currentPattern;
-        this.numWaitThreads = 0;
+        numWaitThreads = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-eventflag");
     }

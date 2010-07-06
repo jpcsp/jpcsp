@@ -16,13 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules500;
 
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState; // New-Style Processor
 
 public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
 

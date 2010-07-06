@@ -16,6 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MESSAGEBOX_NO_MESSAGE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_MESSAGE_BOX;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
+
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -29,8 +39,6 @@ import jpcsp.HLE.kernel.types.SceKernelMbxInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.util.Utilities;
 
 public class MbxManager {

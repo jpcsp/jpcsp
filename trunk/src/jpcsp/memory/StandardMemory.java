@@ -16,6 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory;
 
+import static jpcsp.MemoryMap.SIZE_RAM;
+import static jpcsp.MemoryMap.SIZE_SCRATCHPAD;
+import static jpcsp.MemoryMap.SIZE_VRAM;
+import static jpcsp.MemoryMap.START_RAM;
+import static jpcsp.MemoryMap.START_SCRATCHPAD;
+import static jpcsp.MemoryMap.START_VRAM;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -23,8 +30,7 @@ import java.util.Arrays;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.HLE.pspdisplay;
-import static jpcsp.MemoryMap.*;
+import jpcsp.HLE.Modules;
 
 public class StandardMemory extends Memory {
     private static final int PAGE_COUNT        = 0x00100000;
@@ -151,7 +157,7 @@ public class StandardMemory extends Memory {
     public int read8(int address) {
         try {
             int page = indexFromAddr(address);
-            return (int)buf.get(page + (address & PAGE_MASK)) & 0xFF;
+            return buf.get(page + (address & PAGE_MASK)) & 0xFF;
         } catch (Exception e) {
             Memory.log.error("read8 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
@@ -163,7 +169,7 @@ public class StandardMemory extends Memory {
     public int read16(int address) {
         try {
             int page = indexFromAddr(address);
-            return (int)buf.getShort(page + (address & PAGE_MASK)) & 0xFFFF;
+            return buf.getShort(page + (address & PAGE_MASK)) & 0xFFFF;
         } catch (Exception e) {
         	Memory.log.error("read16 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
@@ -204,7 +210,7 @@ public class StandardMemory extends Memory {
         try {
             int page = indexFromAddr(address);
             buf.put(page + (address & PAGE_MASK), data);
-            pspdisplay.getInstance().write8(address, data);
+            Modules.sceDisplayModule.write8(address, data);
         } catch (Exception e) {
         	Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -216,7 +222,7 @@ public class StandardMemory extends Memory {
         try {
             int page = indexFromAddr(address);
             buf.putShort(page + (address & PAGE_MASK), data);
-            pspdisplay.getInstance().write16(address, data);
+            Modules.sceDisplayModule.write16(address, data);
         } catch (Exception e) {
         	Memory.log.error("write16 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -228,7 +234,7 @@ public class StandardMemory extends Memory {
         try {
             int page = indexFromAddr(address);
             buf.putInt(page + (address & PAGE_MASK), data);
-            pspdisplay.getInstance().write32(address, data);
+            Modules.sceDisplayModule.write32(address, data);
         } catch (Exception e) {
         	Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -240,7 +246,7 @@ public class StandardMemory extends Memory {
         try {
             int page = indexFromAddr(address);
             buf.putLong(page + (address & PAGE_MASK), data);
-            //pspdisplay.getInstance().write64(address, data);
+            //Modules.sceDisplayModule.write64(address, data);
         } catch (Exception e) {
         	Memory.log.error("write64 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);

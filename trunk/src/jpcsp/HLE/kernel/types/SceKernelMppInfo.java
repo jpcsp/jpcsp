@@ -19,7 +19,6 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.util.Utilities;
 
 public class SceKernelMppInfo {
@@ -47,27 +46,27 @@ public class SceKernelMppInfo {
         this.name = name;
         this.attr = attr;
 
-        this.bufSize = size;
-        this.freeSize = size;
-        this.numSendWaitThreads = 0;
-        this.numReceiveWaitThreads = 0;
+        bufSize = size;
+        freeSize = size;
+        numSendWaitThreads = 0;
+        numReceiveWaitThreads = 0;
 
-        int memType = SysMemUserForUser.PSP_SMEM_Low;
+        int memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
 
         // Checked. 0x1100 means PSP_SMEM_High.
         if ((attr & MSGPIPE_ATTR_ADDR_HIGH) == MSGPIPE_ATTR_ADDR_HIGH)
-            memType = SysMemUserForUser.PSP_SMEM_High;
+            memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 
         int alignedSize = (size + 0xFF) & ~0xFF; // 256 byte align (or is this stage done by pspsysmem? aren't we using 64-bytes in pspsysmem?)
         address = Modules.SysMemUserForUserModule.malloc(partitionid, memType, alignedSize, 0);
         if (address == 0)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
 
-        this.sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-MsgPipe", memType, alignedSize, address);
-        this.uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
+        sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-MsgPipe", memType, alignedSize, address);
+        uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
         this.partitionid = partitionid;
-        this.head = 0;
-        this.tail = 0;
+        head = 0;
+        tail = 0;
     }
 
     public static SceKernelMppInfo tryCreateMpp(String name, int partitionid, int attr, int size) {

@@ -18,16 +18,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ARGUMENT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SEMA_OVERFLOW;
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-
-import jpcsp.Memory;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState; // New-Style Processor
 
 public class sceSuspendForUser implements HLEModule {
     @Override

@@ -19,7 +19,7 @@ package jpcsp.HLE.kernel.managers;
 import java.util.Collection;
 import java.util.HashMap;
 
-import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.types.SceModule;
 
 public class ModuleManager {
 

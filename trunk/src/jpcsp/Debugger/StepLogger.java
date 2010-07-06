@@ -16,9 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
-import java.io.IOException;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
+
 import jpcsp.Emulator;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;

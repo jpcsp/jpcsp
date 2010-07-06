@@ -16,14 +16,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ATTR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_FPOOL;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+
 import java.util.HashMap;
-import jpcsp.HLE.kernel.types.SceKernelFplInfo;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-import jpcsp.HLE.Modules;
-import jpcsp.Allegrex.CpuState;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelFplInfo;
 import jpcsp.util.Utilities;
 
 /*
@@ -116,9 +122,8 @@ public class FplManager {
         if (info.freeBlocks == 0 || (block = info.findFreeBlock()) == -1) {
             Modules.log.warn("tryAllocateFpl no free blocks (numBlocks=" + info.numBlocks + ")");
             return 0;
-        } else {
-            addr = info.allocateBlock(block);
         }
+		addr = info.allocateBlock(block);
 
         return addr;
     }

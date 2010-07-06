@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.test;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -23,15 +27,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-
-import org.jdom.input.SAXBuilder;
-import org.jdom.xpath.XPath;
 import org.jdom.Document;
 import org.jdom.Element;
+import org.jdom.input.SAXBuilder;
+import org.jdom.xpath.XPath;
 
 
 class NIDInfo {
@@ -45,8 +44,8 @@ class NIDInfo {
     public String firmwareVersion;
 
     public NIDInfo(int nid) {
-        this.functionNID = nid;
-        this.resolved = false;
+        functionNID = nid;
+        resolved = false;
     }
 
     @Override

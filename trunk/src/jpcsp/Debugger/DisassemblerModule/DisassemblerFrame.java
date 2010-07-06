@@ -17,9 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger.DisassemblerModule;
 
-import com.jidesoft.list.StyledListCellRenderer;
-import com.jidesoft.swing.StyleRange;
-import com.jidesoft.swing.StyledLabel;
+import static jpcsp.Allegrex.Common.gprNames;
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Toolkit;
@@ -29,34 +28,39 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
+import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JFileChooser;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.State;
-
-import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Debugger.DumpDebugState;
-import static jpcsp.Allegrex.Common.gprNames;
-import jpcsp.util.*;
+import jpcsp.util.JpcspDialogManager;
+import jpcsp.util.OptionPaneMultiple;
+import jpcsp.util.Utilities;
+
+import com.jidesoft.list.StyledListCellRenderer;
+import com.jidesoft.swing.StyleRange;
+import com.jidesoft.swing.StyledLabel;
 
 /**
  *
@@ -115,8 +119,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         // all other places should go through disasmListGetSelectedIndex()
                         SelectedPC = DebuggerPC + disasmList.getSelectedIndex() * 4;
                         DisassemblerFrame.this.updateSelectedRegisters(text);
-                        DisassemblerFrame.this.disasmList.clearSelection();
-                        DisassemblerFrame.this.disasmList.repaint();
+                        disasmList.clearSelection();
+                        disasmList.repaint();
                     }
                 }
             }
@@ -434,7 +438,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         setTitle("Debugger");
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+            @Override
+			public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
             }
         });
@@ -448,12 +453,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
         disasmList.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 disasmListMouseClicked(evt);
             }
         });
         disasmList.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
+            @Override
+			public void keyPressed(java.awt.event.KeyEvent evt) {
                 disasmListKeyPressed(evt);
             }
         });
@@ -613,25 +620,29 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 "REG", "HEX"
             }
         ) {
-            Class[] types = new Class [] {
+			private static final long serialVersionUID = 4714824805211201111L;
+			Class[] types = new Class [] {
                 java.lang.String.class, java.lang.Object.class
             };
             boolean[] canEdit = new boolean [] {
                 false, false
             };
 
-            public Class getColumnClass(int columnIndex) {
+            @Override
+			public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
 
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
+            @Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
                 return canEdit [columnIndex];
             }
         });
         gprTable.setColumnSelectionAllowed(true);
         gprTable.getTableHeader().setReorderingAllowed(false);
         gprTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 gprTableMouseClicked(evt);
             }
         });
@@ -648,18 +659,21 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 "REG", "HEX"
             }
         ) {
-            Class[] types = new Class [] {
+			private static final long serialVersionUID = 1080691380828614427L;
+			Class[] types = new Class [] {
                 java.lang.String.class, java.lang.Object.class
             };
             boolean[] canEdit = new boolean [] {
                 false, false
             };
 
-            public Class getColumnClass(int columnIndex) {
+            @Override
+			public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
 
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
+            @Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
                 return canEdit [columnIndex];
             }
         });
@@ -704,24 +718,28 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 "REG", "FLOAT"
             }
         ) {
-            Class[] types = new Class [] {
+			private static final long serialVersionUID = -5902668243370431997L;
+			Class[] types = new Class [] {
                 java.lang.String.class, java.lang.Float.class
             };
             boolean[] canEdit = new boolean [] {
                 false, false
             };
 
-            public Class getColumnClass(int columnIndex) {
+            @Override
+			public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
 
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
+            @Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
                 return canEdit [columnIndex];
             }
         });
         cop1Table.setColumnSelectionAllowed(true);
         cop1Table.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            @Override
+			public void mouseClicked(java.awt.event.MouseEvent evt) {
                 cop1TableMouseClicked(evt);
             }
         });
@@ -1238,20 +1256,16 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
       JpcspDialogManager.showError(this, "Can't find the jump or branch address");
       return;
     }
-    else
-    {
-      String add = value.substring(address+2,value.length());
+	String add = value.substring(address+2,value.length());
 
-      // Remove syscall code, if present
-      int addressend = add.indexOf(" ");
-      if (addressend != -1)
-        add = add.substring(0, addressend);
-
-      StringSelection stringSelection = new StringSelection(add);
-      Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-      clipboard.setContents(stringSelection, this);
-
-    }
+	// Remove syscall code, if present
+	int addressend = add.indexOf(" ");
+	if (addressend != -1)
+		add = add.substring(0, addressend);
+	
+	StringSelection stringSelection = new StringSelection(add);
+	Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	clipboard.setContents(stringSelection, this);
 }//GEN-LAST:event_BranchOrJumpActionPerformed
     @Override
 public void lostOwnership( Clipboard aClipboard, Transferable aContents) {

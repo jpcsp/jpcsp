@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso.iso9660;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
@@ -37,7 +37,7 @@ public class Iso9660File {
 
     private int Ubyte(byte b)
     {
-        return ((int)b)&255;
+        return (b)&255;
     }
 
     public Iso9660File(byte[] data, int length) throws IOException

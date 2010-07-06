@@ -14,7 +14,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
-import com.jidesoft.utils.SwingWorker;
 import java.awt.Cursor;
 import java.awt.Toolkit;
 import java.beans.PropertyChangeEvent;
@@ -24,12 +23,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+
 import javax.swing.JFileChooser;
+
 import jpcsp.Memory;
 import jpcsp.Resource;
-import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.util.Utilities;
+
+import com.jidesoft.utils.SwingWorker;
 
 /**
  *
@@ -156,11 +159,13 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
                 false, false, false
             };
 
-            public Class getColumnClass(int columnIndex) {
+            @Override
+			public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
 
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
+            @Override
+			public boolean isCellEditable(int rowIndex, int columnIndex) {
                 return canEdit [columnIndex];
             }
         });

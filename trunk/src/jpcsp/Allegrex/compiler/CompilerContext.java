@@ -1175,13 +1175,15 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IADD);
 		}
 
-		if (RuntimeContext.debugMemoryRead && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex)) {
-			mv.visitInsn(Opcodes.DUP);
-			loadImm(0);
-            loadImm(codeInstruction.getAddress());
-			loadImm(1);
-			loadImm(32);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
+		if (RuntimeContext.debugMemoryRead) {
+			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex) {
+				mv.visitInsn(Opcodes.DUP);
+				loadImm(0);
+			    loadImm(codeInstruction.getAddress());
+				loadImm(1);
+				loadImm(32);
+			    mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
+			}
 		}
 
 		if (RuntimeContext.memoryInt == null) {
@@ -1371,16 +1373,18 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.SWAP);
 		}
 
-		if (RuntimeContext.debugMemoryWrite && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex)) {
-			mv.visitInsn(Opcodes.DUP2);
-			mv.visitInsn(Opcodes.SWAP);
-			loadImm(2);
-			mv.visitInsn(Opcodes.ISHL);
-			mv.visitInsn(Opcodes.SWAP);
-            loadImm(codeInstruction.getAddress());
-			loadImm(0);
-			loadImm(32);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
+		if (RuntimeContext.debugMemoryWrite) {
+			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex) {
+				mv.visitInsn(Opcodes.DUP2);
+				mv.visitInsn(Opcodes.SWAP);
+				loadImm(2);
+				mv.visitInsn(Opcodes.ISHL);
+				mv.visitInsn(Opcodes.SWAP);
+			    loadImm(codeInstruction.getAddress());
+				loadImm(0);
+				loadImm(32);
+			    mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
+			}
 		}
 
 		if (RuntimeContext.memoryInt == null) {

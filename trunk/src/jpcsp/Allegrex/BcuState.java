@@ -119,9 +119,8 @@ public class BcuState extends LsuState {
         if (gpr[rs] < 0) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 
@@ -129,9 +128,8 @@ public class BcuState extends LsuState {
         if (gpr[rs] >= 0) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 
@@ -216,9 +214,8 @@ public class BcuState extends LsuState {
         if (gpr[rs] == gpr[rt]) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 
@@ -226,9 +223,8 @@ public class BcuState extends LsuState {
         if (gpr[rs] != gpr[rt]) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 
@@ -236,9 +232,8 @@ public class BcuState extends LsuState {
         if (gpr[rs] <= 0) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 
@@ -246,9 +241,8 @@ public class BcuState extends LsuState {
         if (gpr[rs] > 0) {
             npc = branchTarget(pc, simm16);
             return true;
-        } else {
-            pc += 4;
         }
+		pc += 4;
         return false;
     }
 }

@@ -18,6 +18,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_CANCEL_DONE;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DONE;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_DRAWING;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_END_REACHED;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_LIST_STALL_REACHED;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE0;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE1;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE2;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE3;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE4;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE5;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE6;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_BONE7;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_PROJECTION;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_TEXGEN;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_VIEW;
+import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_WORLD;
 import static jpcsp.graphics.GeCommands.*;
 
 import java.io.IOException;
@@ -43,10 +60,10 @@ import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
@@ -54,7 +71,6 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
-import static jpcsp.HLE.modules150.sceGe_user.*;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -117,7 +133,7 @@ public class VideoEngine {
     private static final int[] textureByteAlignmentMapping = {2, 2, 2, 4};
     private static VideoEngine instance;
     private GL gl;
-    private pspdisplay display;
+    private sceDisplay display;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
     private boolean useVertexCache = false;
@@ -335,7 +351,7 @@ public class VideoEngine {
 
         public EnableDisableFlag(String name) {
             this.name = name;
-            this.glFlag = 0;
+            glFlag = 0;
             validInClearMode = true;
             init();
         }
@@ -615,7 +631,7 @@ public class VideoEngine {
 
     public void setGL(GL gl) {
         this.gl = gl;
-        display = pspdisplay.getInstance();
+        display = Modules.sceDisplayModule;
 
         String openGLVersion = getOpenGLVersion(gl);
         openGL1_2 = openGLVersion.compareTo("1.2") >= 0;
@@ -4113,7 +4129,7 @@ public class VideoEngine {
 
         int pixelFormatGe = psm;
         int bpp = (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
-        int bppGe = pspdisplay.getPixelFormatBytes(pixelFormatGe);
+        int bppGe = sceDisplay.getPixelFormatBytes(pixelFormatGe);
 
         memoryForGEUpdated();
 
@@ -4213,8 +4229,8 @@ public class VideoEngine {
             // This the reason why we are also using glTexSubImage2D.
             //
             int bufferHeight = Utilities.makePow2(height);
-            int pixelFormatGL = pspdisplay.getPixelFormatGL(pixelFormatGe);
-            int formatGL = pspdisplay.getFormatGL(pixelFormatGe);
+            int pixelFormatGL = sceDisplay.getPixelFormatGL(pixelFormatGe);
+            int formatGL = sceDisplay.getFormatGL(pixelFormatGe);
             gl.glTexImage2D(
                     GL.GL_TEXTURE_2D, 0,
                     GL.GL_RGBA,

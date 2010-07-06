@@ -27,7 +27,6 @@ import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -81,9 +80,9 @@ public class Emulator implements Runnable {
         Compiler.exit();
         RuntimeContext.exit();
         Profiler.exit();
-        if (Modules.ThreadManForUserModule.statistics != null && pspdisplay.getInstance().statistics != null) {
+        if (Modules.ThreadManForUserModule.statistics != null && Modules.sceDisplayModule.statistics != null) {
             long totalMillis = getClock().milliTime();
-            long displayMillis = pspdisplay.getInstance().statistics.cumulatedTimeMillis;
+            long displayMillis = Modules.sceDisplayModule.statistics.cumulatedTimeMillis;
             long syscallMillis = SyscallHandler.durationStatistics.cumulatedTimeMillis;
             long idleMillis = RuntimeContext.idleDuration.cumulatedTimeMillis;
             long cpuMillis = totalMillis - displayMillis - syscallMillis - idleMillis;
@@ -159,7 +158,7 @@ public class Emulator implements Runnable {
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
         Modules.UtilsForUserModule.Initialise();
         Modules.sceGe_userModule.Initialise();
-        pspdisplay.getInstance().Initialise();
+        Modules.sceDisplayModule.Initialise();
         Modules.IoFileMgrForUserModule.Initialise();
 
         if (State.memoryViewer != null)
@@ -219,7 +218,7 @@ public class Emulator implements Runnable {
                 Modules.sceGe_userModule.step();
                 Modules.ThreadManForUserModule.step();
                 scheduler.step();
-                pspdisplay.getInstance().step();
+                Modules.sceDisplayModule.step();
                 HLEModuleManager.getInstance().step();
                 State.controller.checkControllerState();
 
@@ -249,7 +248,7 @@ public class Emulator implements Runnable {
             mainThread.start();
         }
 
-        pspdisplay.getInstance().setGeDirty(true);
+        Modules.sceDisplayModule.setGeDirty(true);
         Modules.ThreadManForUserModule.clearSyscallFreeCycles();
 
         gui.RefreshButtons();

@@ -24,8 +24,11 @@ import static jpcsp.util.Utilities.readStringZ;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import org.apache.log4j.Logger;
-
+import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
@@ -33,12 +36,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
-import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState;
+import org.apache.log4j.Logger;
 
 /*
  * TODO list:

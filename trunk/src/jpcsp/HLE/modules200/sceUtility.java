@@ -18,15 +18,13 @@ package jpcsp.HLE.modules200;
 
 import java.util.HashMap;
 
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.Modules;
-
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState;
 
 public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 

@@ -16,13 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-
 import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
+
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * @author gid15
@@ -278,15 +278,14 @@ public class CodeInstruction {
     		if (branchingOpcode == Opcodes.IF_ICMPEQ) {
     			loadRs = false;
     			loadRt = false;
-    			if (false) {
-    				branchingOpcode = Opcodes.GOTO;
-    			} else {
-    				// The ASM library has problems with small frames having no
-    				// stack (NullPointerException). Generate a dummy stack requirement.
-    				// "IFEQ 0" is equivalent to GOTO
-    				context.loadImm(0);
-    				branchingOpcode = Opcodes.IFEQ;
-    			}
+    			
+    			//branchingOpcode = Opcodes.GOTO;
+    			
+				// The ASM library has problems with small frames having no
+				// stack (NullPointerException). Generate a dummy stack requirement.
+				// "IFEQ 0" is equivalent to GOTO
+				context.loadImm(0);
+				branchingOpcode = Opcodes.IFEQ;
     		} else if (branchingOpcode == Opcodes.IF_ICMPNE) {
     			loadRs = false;
     			loadRt = false;
@@ -465,7 +464,8 @@ public class CodeInstruction {
         return getInsn().hasFlags(flags);
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
     	StringBuilder result = new StringBuilder();
 
     	result.append(isBranching()    ? "<" : " ");

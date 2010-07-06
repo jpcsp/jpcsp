@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+
 import jpcsp.Memory;
 
 public class ScePspDateTime {
@@ -34,13 +35,13 @@ public class ScePspDateTime {
     public ScePspDateTime() {
         Calendar cal = Calendar.getInstance();
 
-        this.year = cal.get(Calendar.YEAR);
-        this.month = 1 + cal.get(Calendar.MONTH);
-        this.day = cal.get(Calendar.DAY_OF_MONTH);
-        this.hour = cal.get(Calendar.HOUR_OF_DAY);
-        this.minute = cal.get(Calendar.MINUTE);
-        this.second = cal.get(Calendar.SECOND);
-        this.microsecond = cal.get(Calendar.MILLISECOND) * 1000;
+        year = cal.get(Calendar.YEAR);
+        month = 1 + cal.get(Calendar.MONTH);
+        day = cal.get(Calendar.DAY_OF_MONTH);
+        hour = cal.get(Calendar.HOUR_OF_DAY);
+        minute = cal.get(Calendar.MINUTE);
+        second = cal.get(Calendar.SECOND);
+        microsecond = cal.get(Calendar.MILLISECOND) * 1000;
     }
 
     public ScePspDateTime(int timezone) {
@@ -56,13 +57,13 @@ public class ScePspDateTime {
         TimeZone tz = TimeZone.getTimeZone(timeString);
         cal.setTimeZone(tz);
 
-        this.year = cal.get(Calendar.YEAR);
-        this.month = 1 + cal.get(Calendar.MONTH);
-        this.day = cal.get(Calendar.DAY_OF_MONTH);
-        this.hour = cal.get(Calendar.HOUR_OF_DAY);
-        this.minute = cal.get(Calendar.MINUTE);
-        this.second = cal.get(Calendar.SECOND);
-        this.microsecond = cal.get(Calendar.MILLISECOND) * 1000;
+        year = cal.get(Calendar.YEAR);
+        month = 1 + cal.get(Calendar.MONTH);
+        day = cal.get(Calendar.DAY_OF_MONTH);
+        hour = cal.get(Calendar.HOUR_OF_DAY);
+        minute = cal.get(Calendar.MINUTE);
+        second = cal.get(Calendar.SECOND);
+        microsecond = cal.get(Calendar.MILLISECOND) * 1000;
     }
 
     public ScePspDateTime(int year, int month, int day,

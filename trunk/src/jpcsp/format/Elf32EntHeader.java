@@ -16,10 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.formatString;
+import static jpcsp.util.Utilities.readUByte;
+import static jpcsp.util.Utilities.readUHalf;
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import jpcsp.Memory;
-import static jpcsp.util.Utilities.*;
 
 public class Elf32EntHeader
 {
@@ -61,7 +66,8 @@ public class Elf32EntHeader
         resident = mem.read32(address + 12);
     }
 
-    public String toString()
+    @Override
+	public String toString()
     {
         StringBuilder str = new StringBuilder();
         if (modulenamez != null && modulenamez.length() > 0)

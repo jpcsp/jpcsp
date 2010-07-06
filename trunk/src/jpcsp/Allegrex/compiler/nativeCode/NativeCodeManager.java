@@ -26,15 +26,15 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.compiler.CodeBlock;
 import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.util.Utilities;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * @author gid15

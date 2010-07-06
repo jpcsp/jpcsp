@@ -17,10 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import jpcsp.filesystems.*;
-import static jpcsp.util.Utilities.*;
 /**
  *
  * @author shadow

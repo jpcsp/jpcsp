@@ -18,7 +18,9 @@ package jpcsp;
 
 import java.nio.ByteBuffer;
 
-import jpcsp.Allegrex.*;
+import jpcsp.Allegrex.Common;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.Decoder;
 import jpcsp.Debugger.StepLogger;
 
 import org.apache.log4j.Logger;

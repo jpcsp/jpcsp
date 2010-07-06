@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.util;
 
 import java.awt.Component;
+
 import javax.swing.JOptionPane;
 
 public class JpcspDialogManager {

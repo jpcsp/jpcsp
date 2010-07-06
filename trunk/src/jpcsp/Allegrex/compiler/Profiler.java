@@ -21,11 +21,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 
 import org.apache.log4j.Logger;
-
-import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 
 /**
  * @author gid15

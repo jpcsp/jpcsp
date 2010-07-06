@@ -16,10 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.formatString;
+import static jpcsp.util.Utilities.integerToHex;
+import static jpcsp.util.Utilities.readUWord;
+import static jpcsp.util.Utilities.readWord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import jpcsp.Memory;
-import static jpcsp.util.Utilities.*;
 
 public class Elf32SectionHeader {
 
@@ -65,7 +70,8 @@ public class Elf32SectionHeader {
         sh_entsize = mem.read32(address + 36);
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("sh_name " + "\t " + formatString("long", Long.toHexString(getSh_name() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("sh_type " + "\t " + formatString("long", Long.toHexString(getSh_type() & 0xFFFFFFFFL).toUpperCase()) + "\n");

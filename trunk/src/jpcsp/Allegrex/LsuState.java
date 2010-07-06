@@ -50,7 +50,7 @@ public class LsuState extends MduState {
     }
 
     public void doLB(int rt, int rs, int simm16) {
-        int word = (int)(byte)memory.read8(gpr[rs] + simm16);
+        int word = (byte)memory.read8(gpr[rs] + simm16);
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -72,7 +72,7 @@ public class LsuState extends MduState {
             }
         }
 
-        int word = (int)(short)memory.read16(gpr[rs] + simm16);
+        int word = (short)memory.read16(gpr[rs] + simm16);
         if (rt != 0) {
             gpr[rt] = word;
         }

@@ -37,7 +37,8 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         base.size = 532;
     }
 
-    protected void read() {
+    @Override
+	protected void read() {
         base = new pspUtilityDialogCommon();
         read(base);
         setMaxSize(base.size);
@@ -50,7 +51,8 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         buttonPressed   = read32();
     }
 
-    protected void write() {
+    @Override
+	protected void write() {
         setMaxSize(base.size);
         write(base);
 
@@ -62,7 +64,8 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         write32(buttonPressed);
     }
 
-    public int sizeof() {
+    @Override
+	public int sizeof() {
         return base.size;
     }
 

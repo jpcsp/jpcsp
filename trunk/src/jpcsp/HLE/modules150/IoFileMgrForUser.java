@@ -44,8 +44,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -71,6 +69,8 @@ import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
+
+import org.apache.log4j.Logger;
 
 /*
  * TODO list:
@@ -176,12 +176,12 @@ public class IoFileMgrForUser implements HLEModule {
         /** Memory stick version */
         public IoInfo(String filename, SeekableRandomFile f, String mode, int flags, int permissions) {
             this.filename = filename;
-            this.msFile = f;
-            this.readOnlyFile = f;
+            msFile = f;
+            readOnlyFile = f;
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
-            this.sectorBlockMode = false;
+            sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
         }
@@ -189,12 +189,12 @@ public class IoFileMgrForUser implements HLEModule {
         /** UMD version (read only) */
         public IoInfo(String filename, SeekableDataInput f, String mode, int flags, int permissions) {
             this.filename = filename;
-            this.msFile = null;
-            this.readOnlyFile = f;
+            msFile = null;
+            readOnlyFile = f;
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
-            this.sectorBlockMode = false;
+            sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
         }

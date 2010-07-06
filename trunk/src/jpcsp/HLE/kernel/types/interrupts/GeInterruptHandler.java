@@ -27,9 +27,9 @@ public class GeInterruptHandler extends AbstractInterruptHandler {
 		geCallbackInterruptHandler.setId(id);
 
 		if (listId >= 0) {
-			this.afterGeCallbackAction = new AfterGeCallbackAction(listId, behavior);
+			afterGeCallbackAction = new AfterGeCallbackAction(listId, behavior);
 		} else {
-			this.afterGeCallbackAction = null;
+			afterGeCallbackAction = null;
 		}
 	}
 

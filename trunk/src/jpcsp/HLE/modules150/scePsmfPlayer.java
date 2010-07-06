@@ -26,7 +26,6 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -142,7 +141,7 @@ public class scePsmfPlayer implements HLEModule {
     }
 
     private void writePSMFVideoImage(int dest_addr, int frameWidth) {
-        final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         int width = Math.min(480, frameWidth);
         int height = 272;
 
@@ -178,7 +177,7 @@ public class scePsmfPlayer implements HLEModule {
 
         Random random = new Random();
         final int pixelSize = 3;
-        final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
             int address = dest_addr + y * frameWidth * bytesPerPixel;
             final int width = Math.min(480, frameWidth);
@@ -238,7 +237,7 @@ public class scePsmfPlayer implements HLEModule {
         frameWidth = 512;
 
         audioSize = -1;  // Faking (no audio).
-        videoPixelMode = pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+        videoPixelMode = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
         cpu.gpr[2] = 0;
     }

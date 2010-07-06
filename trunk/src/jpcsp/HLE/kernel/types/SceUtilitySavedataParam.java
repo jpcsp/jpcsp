@@ -25,7 +25,6 @@ import java.util.List;
 
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSF;
@@ -389,13 +388,13 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
 	private SeekableDataInput getDataInput(String path, String name) {
-		SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, IoFileMgrForUser.PSP_O_RDONLY);
+		SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_RDONLY);
 
 		return fileInput;
 	}
 
 	private SeekableRandomFile getDataOutput(String path, String name) {
-		SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, IoFileMgrForUser.PSP_O_RDWR | IoFileMgrForUser.PSP_O_CREAT);
+		SeekableDataInput fileInput = Modules.IoFileMgrForUserModule.getFile(path + name, jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_RDWR | jpcsp.HLE.modules150.IoFileMgrForUser.PSP_O_CREAT);
 
 		if (fileInput instanceof SeekableRandomFile) {
 			return (SeekableRandomFile) fileInput;
@@ -414,7 +413,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             PSF psf = new PSF();
             psf.read(ByteBuffer.wrap(buffer));
 
-            sfoParam.parentalLevel = (int) psf.getNumeric("PARENTAL_LEVEL");
+            sfoParam.parentalLevel = psf.getNumeric("PARENTAL_LEVEL");
             sfoParam.title = psf.getString("TITLE");
             sfoParam.detail = psf.getString("SAVEDATA_DETAIL");
             sfoParam.savedataTitle = psf.getString("SAVEDATA_TITLE");

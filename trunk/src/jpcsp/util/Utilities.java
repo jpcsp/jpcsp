@@ -21,18 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-
-import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
-import jpcsp.filesystems.*;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.IMemoryWriter;
-import jpcsp.memory.MemoryReader;
-import jpcsp.memory.MemoryWriter;
-
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -42,6 +30,18 @@ import java.nio.ShortBuffer;
 import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
+import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 
 public class Utilities {
     public static final Charset charset = Charset.forName("UTF-8");
@@ -68,7 +68,7 @@ public class Utilities {
     }
 
     public static String integerToBin(int value) {
-        return Long.toBinaryString(0x0000000100000000L|(((long)value)&0x00000000FFFFFFFFL)).substring(1);
+        return Long.toBinaryString(0x0000000100000000L|((value)&0x00000000FFFFFFFFL)).substring(1);
     }
 
     public static String integerToHex(int value) {
@@ -424,7 +424,7 @@ public class Utilities {
     }
 
     public static long makeValue64(int low32, int high32) {
-    	return (((long) high32) << 32) | (((long) low32) & 0xFFFFFFFFL);
+    	return (((long) high32) << 32) | ((low32) & 0xFFFFFFFFL);
     }
 
     public static void storeRegister64(CpuState cpu, int register, long value) {

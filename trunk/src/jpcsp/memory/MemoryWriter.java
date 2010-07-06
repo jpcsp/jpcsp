@@ -76,23 +76,22 @@ public class MemoryWriter {
 		address &= Memory.addressMask;
 		if (mem instanceof FastMemory) {
 			return getFastMemoryWriter((FastMemory) mem, address, step);
-		} else {
-			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+		}
+		Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
-			if (buffer instanceof IntBuffer) {
-				IntBuffer intBuffer = (IntBuffer) buffer;
-				switch (step) {
-				case 1: return new MemoryWriterInt8(intBuffer, address & 0x03);
-				case 2: return new MemoryWriterInt16(intBuffer, (address & 0x02) >> 1);
-				case 4: return new MemoryWriterInt32(intBuffer);
-				}
-			} else if (buffer instanceof ByteBuffer) {
-				ByteBuffer byteBuffer = (ByteBuffer) buffer;
-				switch (step) {
-				case 1: return new MemoryWriterByte8(byteBuffer);
-				case 2: return new MemoryWriterByte16(byteBuffer);
-				case 4: return new MemoryWriterByte32(byteBuffer);
-				}
+		if (buffer instanceof IntBuffer) {
+			IntBuffer intBuffer = (IntBuffer) buffer;
+			switch (step) {
+			case 1: return new MemoryWriterInt8(intBuffer, address & 0x03);
+			case 2: return new MemoryWriterInt16(intBuffer, (address & 0x02) >> 1);
+			case 4: return new MemoryWriterInt32(intBuffer);
+			}
+		} else if (buffer instanceof ByteBuffer) {
+			ByteBuffer byteBuffer = (ByteBuffer) buffer;
+			switch (step) {
+			case 1: return new MemoryWriterByte8(byteBuffer);
+			case 2: return new MemoryWriterByte16(byteBuffer);
+			case 4: return new MemoryWriterByte32(byteBuffer);
 			}
 		}
 
@@ -118,9 +117,8 @@ public class MemoryWriter {
 		address &= Memory.addressMask;
 		if (mem instanceof FastMemory) {
 			return getFastMemoryWriter((FastMemory) mem, address, step);
-		} else {
-			return getMemoryWriter(address, getMaxLength(address), step);
 		}
+		return getMemoryWriter(address, getMaxLength(address), step);
 	}
 
 	private static class MemoryWriterGeneric implements IMemoryWriter {

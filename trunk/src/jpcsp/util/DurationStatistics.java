@@ -49,7 +49,8 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
     	startTimeMillis = 0;
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder result = new StringBuilder();
 
         if (name != null) {

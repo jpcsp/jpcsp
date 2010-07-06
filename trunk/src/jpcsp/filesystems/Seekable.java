@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems;
 
-import java.io.*;
+import java.io.IOException;
 
 /**
  *

@@ -16,6 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_SIZE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MESSAGE_PIPE_EMPTY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_MESSAGE_PIPE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MSGPIPE;
+
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -29,8 +40,6 @@ import jpcsp.HLE.kernel.types.SceKernelMppInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.util.Utilities;
 
 /*

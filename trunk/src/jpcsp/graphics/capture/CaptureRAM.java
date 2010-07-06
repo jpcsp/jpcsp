@@ -16,21 +16,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.capture;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
 import jpcsp.Memory;
+import jpcsp.graphics.VideoEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
-import jpcsp.graphics.VideoEngine;
 
 /** captures a piece of RAM */
 public class CaptureRAM {
@@ -41,10 +40,10 @@ public class CaptureRAM {
     private Buffer buffer;
 
     public CaptureRAM(int address, int length) throws IOException {
-        this.packetSize = 8 + length;
+        packetSize = 8 + length;
         this.address = address;
         this.length = length;
-        this.buffer = Memory.getInstance().getBuffer(address, length);
+        buffer = Memory.getInstance().getBuffer(address, length);
 
         if (buffer == null) {
             throw new IOException(String.format("CaptureRAM: Unable to read buffer %08x - %08x", address, address + length));

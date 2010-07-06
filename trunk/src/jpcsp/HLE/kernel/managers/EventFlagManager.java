@@ -16,18 +16,28 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_NO_MULTI_PERM;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_POLL_FAILED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_EVENT_FLAG;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MISC;
+import static jpcsp.util.Utilities.readStringZ;
+
 import java.util.HashMap;
 import java.util.Iterator;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import static jpcsp.util.Utilities.*;
-
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
+import jpcsp.HLE.kernel.types.SceKernelEventFlagInfo;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
 /*
  * TODO list:

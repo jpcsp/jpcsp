@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
-import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
+import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -27,27 +27,23 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.TimeZone;
 
+import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspdisplay;
+import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-
-import jpcsp.HLE.kernel.types.IAction;
-import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
+import jpcsp.connector.MpegCodec;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
-
-import jpcsp.Emulator;
-import jpcsp.Memory;
-import jpcsp.Processor;
-import jpcsp.connector.MpegCodec;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
-
-import jpcsp.Allegrex.CpuState;
 
 public class sceMpeg implements HLEModule {
     @Override
@@ -366,7 +362,7 @@ public class sceMpeg implements HLEModule {
 
         Random random = new Random();
         final int pixelSize = 3;
-        final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
             int address = dest_addr + y * frameWidth * bytesPerPixel;
             final int width = Math.min(480, frameWidth);
@@ -393,7 +389,7 @@ public class sceMpeg implements HLEModule {
     }
 
     private void writeVideoImage(int dest_addr, int frameWidth) {
-        final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         int width = Math.min(480, frameWidth);
         int height = 272;
 

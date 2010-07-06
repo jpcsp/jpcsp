@@ -31,6 +31,10 @@ import javax.sound.sampled.SourceDataLine;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
+import jpcsp.Emulator;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
+
 import com.xuggle.xuggler.Global;
 import com.xuggle.xuggler.IAudioSamples;
 import com.xuggle.xuggler.ICodec;
@@ -43,10 +47,6 @@ import com.xuggle.xuggler.IVideoPicture;
 import com.xuggle.xuggler.IVideoResampler;
 import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
-
-import jpcsp.Emulator;
-import jpcsp.filesystems.umdiso.UmdIsoFile;
-import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 public class UmdBrowserPmf {
 	private UmdIsoReader iso;

@@ -24,6 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
+import jpcsp.Allegrex.Common.Instruction;
+
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -31,8 +33,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
-
-import jpcsp.Allegrex.Common.Instruction;
 
 /**
  * @author gid15
@@ -52,8 +52,8 @@ public class CodeBlock {
 
 	public CodeBlock(int startAddress) {
 		this.startAddress = startAddress;
-		this.lowestAddress = startAddress;
-		this.highestAddress = startAddress;
+		lowestAddress = startAddress;
+		highestAddress = startAddress;
 
 		RuntimeContext.addCodeBlock(startAddress, this);
 	}

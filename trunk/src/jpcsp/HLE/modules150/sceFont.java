@@ -16,13 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import java.util.HashMap;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 
 import jpcsp.Emulator;
-import jpcsp.format.PGF;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -31,6 +30,7 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.format.PGF;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 

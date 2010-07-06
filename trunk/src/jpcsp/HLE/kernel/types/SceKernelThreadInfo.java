@@ -26,8 +26,6 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import jpcsp.HLE.modules.SysMemUserForUser;
-import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.util.Utilities;
 
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
@@ -136,9 +134,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         // setup the stack
         if (stackSize > 0) {
-            stack_addr = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
+            stack_addr = Modules.SysMemUserForUserModule.malloc(2, jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
             if (stack_addr != 0) {
-                sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(2, "ThreadMan-Stack", SysMemUserForUser.PSP_SMEM_High, stackSize, stack_addr);
+                sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(2, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, stack_addr);
             }
         } else {
             stack_addr = 0;
@@ -197,7 +195,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         // We'll hook "jr $ra" where $ra == address of HLE syscall hleKernelExitThread
         // when the thread is exiting
-        cpuContext.gpr[31] = ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS; // $ra
+        cpuContext.gpr[31] = jpcsp.HLE.modules150.ThreadManForUser.THREAD_EXIT_HANDLER_ADDRESS; // $ra
 
         doDelete = false;
         doCallbacks = false;

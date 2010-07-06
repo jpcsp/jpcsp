@@ -29,8 +29,6 @@ public class MetaInformation {
     public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
     public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts, hlide, Nutzje,<br/>aisesal, shashClp, spip2, mozvip, Orphis, gigaherz, gid15, hykem,<br/>Drakon, raziel1000, theball, J_BYYX";
 
-    private static MetaInformation singleton;
-
     private MetaInformation() {
         //System.err.println("MetaInformation loading...");
         try {
@@ -52,6 +50,6 @@ public class MetaInformation {
     }
 
     static {
-        singleton = new MetaInformation();
+        new MetaInformation();
     }
 }

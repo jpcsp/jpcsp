@@ -76,23 +76,22 @@ public class MemoryReader {
 		address &= Memory.addressMask;
 		if (mem instanceof FastMemory) {
 			return getFastMemoryReader((FastMemory) mem, address, step);
-		} else {
-			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+		}
+		Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
-			if (buffer instanceof IntBuffer) {
-				IntBuffer intBuffer = (IntBuffer) buffer;
-				switch (step) {
-				case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
-				case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
-				case 4: return new MemoryReaderInt32(intBuffer);
-				}
-			} else if (buffer instanceof ByteBuffer) {
-				ByteBuffer byteBuffer = (ByteBuffer) buffer;
-				switch (step) {
-				case 1: return new MemoryReaderByte8(byteBuffer);
-				case 2: return new MemoryReaderByte16(byteBuffer);
-				case 4: return new MemoryReaderByte32(byteBuffer);
-				}
+		if (buffer instanceof IntBuffer) {
+			IntBuffer intBuffer = (IntBuffer) buffer;
+			switch (step) {
+			case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
+			case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
+			case 4: return new MemoryReaderInt32(intBuffer);
+			}
+		} else if (buffer instanceof ByteBuffer) {
+			ByteBuffer byteBuffer = (ByteBuffer) buffer;
+			switch (step) {
+			case 1: return new MemoryReaderByte8(byteBuffer);
+			case 2: return new MemoryReaderByte16(byteBuffer);
+			case 4: return new MemoryReaderByte32(byteBuffer);
 			}
 		}
 
@@ -118,9 +117,8 @@ public class MemoryReader {
 		address &= Memory.addressMask;
 		if (mem instanceof FastMemory) {
 			return getFastMemoryReader((FastMemory) mem, address, step);
-		} else {
-			return getMemoryReader(address, getMaxLength(address), step);
 		}
+		return getMemoryReader(address, getMaxLength(address), step);
 	}
 
 	// The Java JIT compiler is producing slightly faster code for "final" methods.
@@ -371,7 +369,7 @@ public class MemoryReader {
 
 		@Override
 		public final int readNext() {
-			return ((int) buffer.get()) & 0xFF;
+			return (buffer.get()) & 0xFF;
 		}
 
 		@Override
@@ -389,7 +387,7 @@ public class MemoryReader {
 
 		@Override
 		public final int readNext() {
-			return ((int) buffer.getShort()) & 0xFFFF;
+			return (buffer.getShort()) & 0xFFFF;
 		}
 
 		@Override

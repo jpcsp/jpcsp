@@ -102,7 +102,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
             dateTime.read(mem, date_addr);
             Calendar cal = Calendar.getInstance();
             cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
-            long unixtime = (long)(cal.getTime().getTime() / 1000L);
+            long unixtime = (cal.getTime().getTime() / 1000L);
             Modules.log.debug("sceRtcGetTime_t psptime:" + dateTime + " unixtime:" + unixtime);
             mem.write64(time_addr, unixtime);
             cpu.gpr[2] = 0;

@@ -56,11 +56,10 @@ public class BufferedMemoryReader {
 		if (index == 0 || index == 3) {
 			index = 2;
 			readValue = memoryReader.readNext();
-			return (readValue & 0xFFFF);
-		} else {
-			index = 0;
-			return (readValue >>> 16);
+			return readValue & 0xFFFF;
 		}
+		index = 0;
+		return readValue >>> 16;
 	}
 
 	public void skipNext16() {

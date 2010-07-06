@@ -33,8 +33,8 @@ public class FileHandleInfo implements Comparable<FileHandleInfo> {
     public FileHandleInfo(int fd, String filename) {
         this.fd = fd;
         this.filename = filename;
-        this.bytesRead = 0;
-        this.bytesWritten = 0;
+        bytesRead = 0;
+        bytesWritten = 0;
 
         isOpen = true;
         sortId = nextSortId++;
@@ -51,6 +51,6 @@ public class FileHandleInfo implements Comparable<FileHandleInfo> {
     /** For sort by time opened */
     @Override
     public int compareTo(FileHandleInfo obj) {
-        return (int)(this.sortId - obj.sortId);
+        return (sortId - obj.sortId);
     }
 }

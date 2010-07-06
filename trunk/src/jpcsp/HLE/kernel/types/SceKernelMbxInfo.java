@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.Memory;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 
 public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
     //Mbx info
@@ -36,12 +36,12 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
         this.name = name;
         this.attr = attr;
 
-        this.numWaitThreads = 0;
-        this.numMessages = 0;
-        this.firstMessage_addr = 0;
-        this.lastMessage_addr = 0;
+        numWaitThreads = 0;
+        numMessages = 0;
+        firstMessage_addr = 0;
+        lastMessage_addr = 0;
 
-        this.uid = SceUidManager.getNewUid("ThreadMan-Mbx");
+        uid = SceUidManager.getNewUid("ThreadMan-Mbx");
     }
 
 	@Override
