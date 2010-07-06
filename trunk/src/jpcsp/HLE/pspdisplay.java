@@ -171,6 +171,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private boolean tryLockDisplay;
     private long tryLockTimestamp;
 
+    private boolean isFbShowing = false;
+
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
 
@@ -536,7 +538,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             texS1 = texS4 = texS;
             texT1 = texT2 = texT;
-            
+
             texS2 = texS3 = texT3 = texT4 = 0.0f;
         }
 
@@ -856,7 +858,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 0, 0, bufferwidthFb, height,
                 getFormatGL(pixelformatFb),
                 pixelFormatGL, pixelsFb);
-            
+
             //Call the rotating function (if needed)
             if(ang != 4)
                 rotate(ang);
@@ -948,6 +950,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 ",bufferwidth=" + bufferwidth +
                 ",pixelformat=" + pixelformat +
                 ",sync=" + sync + ") bad params");
+            isFbShowing = false;
             gotBadFbBufParams = true;
             Emulator.getProcessor().cpu.gpr[2] = -1;
         } else if (topaddr == 0) {
@@ -958,6 +961,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 ",bufferwidth=" + bufferwidth +
                 ",pixelformat=" + pixelformat +
                 ",sync=" + sync + ") bad params (topaddr==0)");
+            isFbShowing = false;  // This is also set to false if topaddr == 0.
             gotBadFbBufParams = true;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else if (Memory.getInstance().isAddressGood(topaddr)){
@@ -1003,6 +1007,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 State.captureGeNextFrame = false;
             }
 
+            isFbShowing = true;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -1148,7 +1153,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayIsForeground() {
-    	Emulator.getProcessor().cpu.gpr[2] = 1;
+        if(isFbShowing) {
+            Emulator.getProcessor().cpu.gpr[2] = 1;
+        } else {
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceDisplayIsForeground ret: " + Emulator.getProcessor().cpu.gpr[2]);
     	}

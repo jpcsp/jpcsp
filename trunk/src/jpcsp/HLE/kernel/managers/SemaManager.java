@@ -40,8 +40,6 @@ public class SemaManager {
     private final static int PSP_SEMA_ATTR_FIFO = 0;           // Signal waiting threads with a FIFO iterator.
     private final static int PSP_SEMA_ATTR_PRIORITY = 0x100;   // Signal waiting threads with a priority based iterator.
 
-    private int waitThreadOrder;
-
     public void reset() {
         semaMap = new HashMap<Integer, SceKernelSemaInfo>();
         semaWaitStateChecker = new SemaWaitStateChecker();
@@ -111,8 +109,6 @@ public class SemaManager {
         	Emulator.getProcessor().cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         	return;
         }
-
-        waitThreadOrder = attr;
 
         Memory mem = Memory.getInstance();
         if (mem.isAddressGood(option)) {
@@ -318,7 +314,7 @@ public class SemaManager {
 
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
-            if(waitThreadOrder == PSP_SEMA_ATTR_FIFO) {
+            if(sema.attr == PSP_SEMA_ATTR_FIFO) {
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
                     SceKernelThreadInfo thread = it.next();
 
@@ -342,7 +338,7 @@ public class SemaManager {
                         }
                     }
                 }
-            } else if (waitThreadOrder == PSP_SEMA_ATTR_PRIORITY) {
+            } else if (sema.attr == PSP_SEMA_ATTR_PRIORITY) {
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext(); ) {
                     SceKernelThreadInfo thread = it.next();
 

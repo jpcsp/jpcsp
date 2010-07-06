@@ -1036,22 +1036,8 @@ public class sceUtility implements HLEModule {
                         String filePath = path + "/" + entries[i];
                         SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
 
-                        // Write to secure (encrypted). In this mode, encrypted files have higher priority.
-                        if(filePath.contains(".DAT") || filePath.contains(".BIN")) {
-                            if(mem.isAddressGood(saveFileSecureEntriesAddr)) {
-                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
-                                if (stat != null) {
-                                    mem.write32(entryAddr + 0, stat.mode);
-                                    mem.write64(entryAddr + 8, stat.size);
-                                    stat.ctime.write(mem, entryAddr + 16);
-                                    stat.atime.write(mem, entryAddr + 32);
-                                    stat.mtime.write(mem, entryAddr + 48);
-                                }
-                                String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                            }
-                            saveFileSecureNumEntries++;
-                        } else if(filePath.contains(".SFO") || filePath.contains("ICON")
+                        // System files.
+                        if(filePath.contains(".SFO") || filePath.contains("ICON")
                                 || filePath.contains("PIC") || filePath.contains("SND")) {
                             if(mem.isAddressGood(systemEntriesAddr)) {
                                 int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
@@ -1066,6 +1052,34 @@ public class sceUtility implements HLEModule {
                                 Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
                             }
                             systemFileNumEntries++;
+                        } else { // Write to secure and normal.
+                            if(mem.isAddressGood(saveFileSecureEntriesAddr)) {
+                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
+                                if (stat != null) {
+                                    mem.write32(entryAddr + 0, stat.mode);
+                                    mem.write64(entryAddr + 8, stat.size);
+                                    stat.ctime.write(mem, entryAddr + 16);
+                                    stat.atime.write(mem, entryAddr + 32);
+                                    stat.mtime.write(mem, entryAddr + 48);
+                                }
+                                String entryName = entries[i];
+                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                            }
+                            saveFileSecureNumEntries++;
+
+                            if(mem.isAddressGood(saveFileEntriesAddr)) {
+                                int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
+                                if (stat != null) {
+                                    mem.write32(entryAddr + 0, stat.mode);
+                                    mem.write64(entryAddr + 8, stat.size);
+                                    stat.ctime.write(mem, entryAddr + 16);
+                                    stat.atime.write(mem, entryAddr + 32);
+                                    stat.mtime.write(mem, entryAddr + 48);
+                                }
+                                String entryName = entries[i];
+                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                            }
+                            saveFileNumEntries++;
                         }
                     }
                     mem.write32(buffer5Addr + 12, saveFileSecureNumEntries);
@@ -1113,8 +1127,9 @@ public class sceUtility implements HLEModule {
                         String filePath = path + "/" + entries[i];
                         SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
 
-                        // Write to secure (encrypted). In this mode, encrypted files have higher priority.
-                        if(filePath.contains(".DAT") || filePath.contains(".BIN")) {
+                        // Ignore system files and write to secure and normal.
+                        if(!filePath.contains(".SFO") && !filePath.contains("ICON")
+                                && !filePath.contains("PIC") && !filePath.contains("SND")) {
                             if(mem.isAddressGood(saveFileSecureEntriesAddr)) {
                                 int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
                                 if (stat != null) {
@@ -1128,6 +1143,21 @@ public class sceUtility implements HLEModule {
                                 Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
                             }
                             saveFileSecureNumEntries++;
+
+                            if(mem.isAddressGood(saveFileEntriesAddr)) {
+                                int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
+                                if (stat != null) {
+                                    mem.write32(entryAddr + 0, stat.mode);
+                                    mem.write64(entryAddr + 8, stat.size);
+                                    stat.ctime.write(mem, entryAddr + 16);
+                                    stat.atime.write(mem, entryAddr + 32);
+                                    stat.mtime.write(mem, entryAddr + 48);
+                                }
+                                String entryName = entries[i];
+                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                            }
+                            saveFileNumEntries++;
+
                             totalSize += stat.size;
                         }
                     }
@@ -1147,8 +1177,8 @@ public class sceUtility implements HLEModule {
                     Utilities.writeStringNZ(mem, buffer6Addr +  40, 8, totalSize + " KB");
 
                     // Another size (unknown purpose).
-                    mem.write32(buffer6Addr +  44, totalSize);
-                    Utilities.writeStringNZ(mem, buffer6Addr +  48, 8, totalSize + " KB");
+                    mem.write32(buffer6Addr +  48, totalSize);
+                    Utilities.writeStringNZ(mem, buffer6Addr +  52, 8, totalSize + " KB");
                 }
         		savedataParams.base.result = 0;
                 break;

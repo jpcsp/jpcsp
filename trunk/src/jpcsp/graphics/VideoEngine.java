@@ -230,6 +230,10 @@ public class VideoEngine {
     private int tex_shade_v = 0;
     private int patch_div_s;
     private int patch_div_t;
+    private int patch_prim;
+    private int[] patch_prim_types = {GL.GL_TRIANGLE_STRIP, GL.GL_LINE_STRIP, GL.GL_POINTS};
+    private boolean patch_face;
+    private boolean rev_normal;
     private boolean clutIsDirty;
     private int transform_mode;
     private int textureTx_sourceAddress;
@@ -2156,13 +2160,13 @@ public class VideoEngine {
                 int old_texture_num_mip_maps = texture_num_mip_maps;
                 boolean old_mipmapShareClut = mipmapShareClut;
                 boolean old_texture_swizzle = texture_swizzle;
-                texture_num_mip_maps = (normalArgument >> 16) & 0xFF;
+                texture_num_mip_maps = (normalArgument >> 16) & 0x7;
                 // This parameter has only a meaning when
                 //  texture_storage == GU_PSM_T4 and texture_num_mip_maps > 0
                 // when parameter==0: all the mipmaps share the same clut entries (normal behavior)
                 // when parameter==1: each mipmap has its own clut table, 16 entries each, stored sequentially
-                mipmapShareClut = ((normalArgument >> 8) & 0xFF) == 0;
-                texture_swizzle = ((normalArgument) & 0xFF) != 0;
+                mipmapShareClut = ((normalArgument >> 8) & 0x1) == 0;
+                texture_swizzle = ((normalArgument) & 0x1) != 0;
 
                 if (old_texture_num_mip_maps != texture_num_mip_maps || old_mipmapShareClut != mipmapShareClut || old_texture_swizzle != texture_swizzle) {
                     textureChanged = true;
@@ -2176,10 +2180,7 @@ public class VideoEngine {
 
             case TPSM: {
                 int old_texture_storage = texture_storage;
-                // TODO find correct mask
-                // - unknown game 0x105 (261)
-                // - hot wheels 0x40 (64)
-                texture_storage = normalArgument & 0xFF;
+                texture_storage = normalArgument & 0xF; // Lower four bits.
 
                 if (old_texture_storage != texture_storage) {
                     textureChanged = true;
@@ -2223,8 +2224,7 @@ public class VideoEngine {
 
             case CLOAD: {
                 int old_tex_clut_num_blocks = tex_clut_num_blocks;
-                // TODO Check mask value (some games send 0xFFFF20)
-                tex_clut_num_blocks = normalArgument & 0x0000FF;
+                tex_clut_num_blocks = normalArgument & 0x3F; // Checked.
 
                 clutIsDirty = true;
                 if (old_tex_clut_num_blocks != tex_clut_num_blocks) {
@@ -2251,9 +2251,9 @@ public class VideoEngine {
                 int old_tex_clut_mask = tex_clut_mask;
                 int old_tex_clut_start = tex_clut_start;
                 tex_clut_mode = normalArgument & 0x03;
-                tex_clut_shift = (normalArgument >> 2) & 0x3F;
+                tex_clut_shift = (normalArgument >> 2) & 0x1F;
                 tex_clut_mask = (normalArgument >> 8) & 0xFF;
-                tex_clut_start = (normalArgument >> 16) & 0xFF;
+                tex_clut_start = (normalArgument >> 16) & 0x1F;
 
                 clutIsDirty = true;
                 if (old_tex_clut_mode != tex_clut_mode || old_tex_clut_shift != tex_clut_shift || old_tex_clut_mask != tex_clut_mask || old_tex_clut_start != tex_clut_start) {
@@ -2426,12 +2426,9 @@ public class VideoEngine {
                 break;
 
             case TEXTURE_ENV_MAP_MATRIX: {
-                // Some games give column0=0x1B (Hot Wheels Ultimate Racing)
-                // TODO Check if our interpretation is correct. Masking with 0x03 for now.
-                //int column0 =  normalArgument     & 0xFF,
-                //	column1 = (normalArgument>>8) & 0xFF;
-                tex_shade_u = (normalArgument >> 0) & 0x03;
-                tex_shade_v = (normalArgument >> 8) & 0x03;
+                // Checked.
+                tex_shade_u = (normalArgument >> 0) & 0x3;
+                tex_shade_v = (normalArgument >> 8) & 0x3;
 
                 if (useShaders) {
                     gl.glUniform2i(Uniforms.texShade.getId(), tex_shade_u, tex_shade_v);
@@ -3412,39 +3409,51 @@ public class VideoEngine {
                 break;
             }
 
-            //
-            // Incorrect implementation of PCE, CTE, RNORM, PFACE:
-            // - see comments from http://code.google.com/p/jpcsp/source/detail?r=1435
-            // - not matching test results using 3DStudio
-            //
-//            case PCE:
-//            	if(normalArgument != 0)
-//            		gl.glEnable(GL.GL_CULL_FACE);
-//            	else
-//            		gl.glDisable(GL.GL_CULL_FACE);
-//            	break;
-//
-            case CTE:
-            	shaderCtestEnable = (normalArgument != 0);
+            case PPRIM: {
+                patch_prim = (normalArgument & 0x3);
+                // Primitive type to use in patch division:
+                // 0 - Triangle.
+                // 1 - Line.
+                // 2 - Point.
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(PPRIM) + " patch_prim=" + patch_prim);
+                }
+                break;
+            }
+
+            case PFACE: {
+                patch_face = (normalArgument & 0x1) == 1;
+                // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
+                if (isLogDebugEnabled) {
+                    if(patch_face)
+                        log(helper.getCommandString(PFACE) + " patch_face=counter clockwise");
+                    else
+                        log(helper.getCommandString(PFACE) + " patch_face=clockwise");
+                }
+                break;
+            }
+
+            case CTE: {
+                shaderCtestEnable = (normalArgument != 0);
                 if (!clearMode) {
                     gl.glUniform1i(Uniforms.ctestEnable.getId(), shaderCtestEnable ? 1 : 0);
                 }
-
             	break;
-//            
-//            case RNORM:
-//            	if (isLogDebugEnabled) {
-//                    log(String.format("%s reverse fase normal mask=0x%06X", helper.getCommandString(PMSKA), normalArgument));
-//                }
-//            	break;
-//
-//            case PFACE:
-//            	if(normalArgument != 0)
-//            		gl.glEnable(GL.GL_FRONT_FACE);
-//            	else
-//            		gl.glDisable(GL.GL_FRONT_FACE);
-//            	break;
+            }
 
+            case RNORM: {
+                rev_normal = (normalArgument & 0x1) == 1;
+                // 0 - Don't reverse normal / 1 - Reverse normal.
+                // This seems to be taked into account when calculating the lighting
+                // for the current normal.
+                if (isLogDebugEnabled) {
+                    if(rev_normal)
+                        log(helper.getCommandString(PFACE) + " rev_normal=yes");
+                    else
+                        log(helper.getCommandString(PFACE) + " rev_normal=no");
+                }
+                break;
+            }
 
             case UNKNOWNCOMMAND_0xFF: {
                 // This command always appears before a BOFS command and seems to have
@@ -5827,7 +5836,8 @@ public class VideoEngine {
                     gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
                 }
             }
-            gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, (vdivs + 1) * 2);
+
+            gl.glDrawArrays(patch_prim_types[patch_prim], 0, (vdivs + 1) * 2);
 
             pyold = py;
         }
