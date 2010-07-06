@@ -587,8 +587,11 @@ public class sceGe_user implements HLEModule {
         	cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
         } else if (id < 0 || id >= NUMBER_GE_LISTS) {
         	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
-        } else if (IntrManager.getInstance().isInsideInterrupt()) {
-    		VideoEngine.log.warn("sceGeListSync called inside an Interrupt!");
+        } else if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
+            // Based on tests on a PSP, sceGeListSync can't be called inside an interrupt handler
+            // for both modes. However, some recent games rely on a mode == 1 call to execute this function.
+            // TODO: Investigate if this is firmware dependent.
+    		VideoEngine.log.debug("sceGeListSync cannot be called inside an interrupt handler!");
     		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
         	PspGeList list = null;
@@ -628,8 +631,11 @@ public class sceGe_user implements HLEModule {
 
         // no synchronization on "this" required because we are not accessing
     	// local data, only list information from the VideoEngine.
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            VideoEngine.log.warn("sceGeDrawSync called inside an Interrupt!");
+        if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
+            // Based on tests on a PSP, sceGeDrawSync can't be called inside an interrupt handler
+            // for both modes. However, some recent games rely on a mode == 1 call to execute this function.
+            // TODO: Investigate if this is firmware dependent.
+            VideoEngine.log.debug("sceGeListSync cannot be called inside an interrupt handler!");
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
             if (mode == 0) {
@@ -676,11 +682,11 @@ public class sceGe_user implements HLEModule {
             } else {
                 cpu.gpr[2] = 0;
             }
-        } else if (mode == 1) {  // Pause the current list and finish the rest of the queue.
+        } else if (mode == 1) {  // Pause the current list and cancel the rest of the queue.
             if(list != null) {
                 list.pauseList();
                 for (int i = 0; i < NUMBER_GE_LISTS; i++) {
-                    allGeLists[i].finishList();
+                    allGeLists[i].status = PSP_GE_LIST_CANCEL_DONE;
                 }
                 cpu.gpr[2] = list.id;
             } else {
