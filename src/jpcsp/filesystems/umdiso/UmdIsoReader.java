@@ -110,7 +110,7 @@ public class UmdIsoReader {
 
             byte[] offsetData = new byte[(numSectors+1)*4];
 
-            fileReader.read(offsetData);
+            fileReader.readFully(offsetData);
 
             for(int i=0;i<=numSectors;i++)
             {

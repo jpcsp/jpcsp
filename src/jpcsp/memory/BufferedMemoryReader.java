@@ -47,9 +47,13 @@ public class BufferedMemoryReader {
 		return memoryReader.readNext();
 	}
 
-	public void skipNext32() {
+	public void skipNext32(int count) {
 		index = 0;
-		memoryReader.readNext();
+		memoryReader.skip(count);
+	}
+
+	public void skipNext32() {
+		skipNext32(1);
 	}
 
 	public int readNext16() {

@@ -2832,7 +2832,9 @@ public class VideoEngine {
 
             case CTST: {
                 shaderCtestFunc = normalArgument & 3;
-                gl.glUniform1i(Uniforms.ctestFunc.getId(), shaderCtestFunc);
+                if (useShaders) {
+                	gl.glUniform1i(Uniforms.ctestFunc.getId(), shaderCtestFunc);
+                }
                 break;
             }
 
@@ -2840,7 +2842,9 @@ public class VideoEngine {
                 shaderCtestRef[0] = (normalArgument      ) & 0xFF;
                 shaderCtestRef[1] = (normalArgument >>  8) & 0xFF;
                 shaderCtestRef[2] = (normalArgument >> 16) & 0xFF;
-                gl.glUniform1iv(Uniforms.ctestRef.getId(), 3, shaderCtestRef, 0);
+                if (useShaders) {
+                	gl.glUniform1iv(Uniforms.ctestRef.getId(), 3, shaderCtestRef, 0);
+                }
 
                 break;
             }
@@ -2849,7 +2853,9 @@ public class VideoEngine {
                 shaderCtestMsk[0] = (normalArgument      ) & 0xFF;
                 shaderCtestMsk[1] = (normalArgument >>  8) & 0xFF;
                 shaderCtestMsk[2] = (normalArgument >> 16) & 0xFF;
-                gl.glUniform1iv(Uniforms.ctestMsk.getId(), 3, shaderCtestMsk, 0);
+                if (useShaders) {
+                	gl.glUniform1iv(Uniforms.ctestMsk.getId(), 3, shaderCtestMsk, 0);
+                }
 
                 break;
             }
@@ -3451,7 +3457,7 @@ public class VideoEngine {
 
             case CTE: {
                 shaderCtestEnable = (normalArgument != 0);
-                if (!clearMode) {
+                if (!clearMode && useShaders) {
                     gl.glUniform1i(Uniforms.ctestEnable.getId(), shaderCtestEnable ? 1 : 0);
                 }
             	break;

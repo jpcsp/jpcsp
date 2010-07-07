@@ -177,7 +177,7 @@ public class sceDeflt implements HLEModule {
 					cpu.gpr[2] = SceKernelErrors.ERROR_SIZE;
 					return;
 				}
-				crc32.update(outBuffer);
+				crc32.update(outBuffer, 0, count);
 				for(int i = 0; i < count; ++i) {
 					writer.writeNext(outBuffer[i]);
 				}
