@@ -1060,7 +1060,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         gl.glPopMatrix();
     }
     
-    private void blockCurrentThreadOnVblank(boolean doCallbacks) {
+    protected void blockCurrentThreadOnVblank(boolean doCallbacks) {
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         int threadId = threadMan.getCurrentThreadID();
 
