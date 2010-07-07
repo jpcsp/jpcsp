@@ -1139,30 +1139,22 @@ public class sceUtility implements HLEModule, HLEStartModule {
                         if(!filePath.contains(".SFO") && !filePath.contains("ICON")
                                 && !filePath.contains("PIC") && !filePath.contains("SND")) {
                             if(mem.isAddressGood(saveFileSecureEntriesAddr)) {
-                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
+                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 24;
                                 if (stat != null) {
-                                    mem.write32(entryAddr + 0, stat.mode);
-                                    mem.write64(entryAddr + 8, stat.size);
-                                    stat.ctime.write(mem, entryAddr + 16);
-                                    stat.atime.write(mem, entryAddr + 32);
-                                    stat.mtime.write(mem, entryAddr + 48);
+                                    mem.write64(entryAddr + 0, stat.size);
                                 }
                                 String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                Utilities.writeStringNZ(mem, entryAddr + 8, 16, entryName);
                             }
                             saveFileSecureNumEntries++;
 
                             if(mem.isAddressGood(saveFileEntriesAddr)) {
-                                int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
+                                int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 24;
                                 if (stat != null) {
-                                    mem.write32(entryAddr + 0, stat.mode);
-                                    mem.write64(entryAddr + 8, stat.size);
-                                    stat.ctime.write(mem, entryAddr + 16);
-                                    stat.atime.write(mem, entryAddr + 32);
-                                    stat.mtime.write(mem, entryAddr + 48);
+                                    mem.write64(entryAddr + 0, stat.size);
                                 }
                                 String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+                                Utilities.writeStringNZ(mem, entryAddr + 8, 16, entryName);
                             }
                             saveFileNumEntries++;
 
