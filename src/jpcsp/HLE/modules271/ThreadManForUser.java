@@ -30,14 +30,14 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
 		
 		if (version >= 271) {
 		
-			mm.addFunction(sceKernelTryLockMutexFunction, 0x0DDCD2C9);
-			mm.addFunction(sceKernelLockMutexCBFunction, 0x5BF4DD27);
-			mm.addFunction(sceKernelUnlockMutexFunction, 0x6B30100F);
-			mm.addFunction(sceKernelCancelMutexFunction, 0x87D9223C);
-			mm.addFunction(sceKernelReferMutexStatusFunction, 0xA9C2CB9A);
-			mm.addFunction(sceKernelLockMutexFunction, 0xB011B11F);
-			mm.addFunction(sceKernelCreateMutexFunction, 0xB7D098C6);
-			mm.addFunction(sceKernelDeleteMutexFunction, 0xF8170FBE);
+			mm.addFunction(0x0DDCD2C9, sceKernelTryLockMutexFunction);
+			mm.addFunction(0x5BF4DD27, sceKernelLockMutexCBFunction);
+			mm.addFunction(0x6B30100F, sceKernelUnlockMutexFunction);
+			mm.addFunction(0x87D9223C, sceKernelCancelMutexFunction);
+			mm.addFunction(0xA9C2CB9A, sceKernelReferMutexStatusFunction);
+			mm.addFunction(0xB011B11F, sceKernelLockMutexFunction);
+			mm.addFunction(0xB7D098C6, sceKernelCreateMutexFunction);
+			mm.addFunction(0xF8170FBE, sceKernelDeleteMutexFunction);
 			
 		}
 	}

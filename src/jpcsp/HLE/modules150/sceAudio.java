@@ -305,40 +305,40 @@ public class sceAudio implements HLEModule, HLEThread {
 
         if (version >= 150) {
 
-            mm.addFunction(sceAudioOutputFunction, 0x8C1009B2);
-            mm.addFunction(sceAudioOutputBlockingFunction, 0x136CAF51);
-            mm.addFunction(sceAudioOutputPannedFunction, 0xE2D56B2D);
-            mm.addFunction(sceAudioOutputPannedBlockingFunction, 0x13F592BC);
-            mm.addFunction(sceAudioChReserveFunction, 0x5EC81C55);
-            mm.addFunction(sceAudioOneshotOutputFunction, 0x41EFADE7);
-            mm.addFunction(sceAudioChReleaseFunction, 0x6FC46853);
-            mm.addFunction(sceAudioGetChannelRestLengthFunction, 0xB011922F);
-            mm.addFunction(sceAudioSetChannelDataLenFunction, 0xCB2E439E);
-            mm.addFunction(sceAudioChangeChannelConfigFunction, 0x95FD0C2D);
-            mm.addFunction(sceAudioChangeChannelVolumeFunction, 0xB7E1D8E7);
-            mm.addFunction(sceAudioOutput2ReserveFunction, 0x01562BA3);
-            mm.addFunction(sceAudioOutput2ReleaseFunction, 0x43196845);
-            mm.addFunction(sceAudioOutput2OutputBlockingFunction, 0x2D53F36E);
-            mm.addFunction(sceAudioOutput2GetRestSampleFunction, 0x647CEF33);
-            mm.addFunction(sceAudioOutput2ChangeLengthFunction, 0x63F2889C);
-            mm.addFunction(sceAudioSRCChReserveFunction, 0x38553111);
-            mm.addFunction(sceAudioSRCChReleaseFunction, 0x5C37C0AE);
-            mm.addFunction(sceAudioSRCOutputBlockingFunction, 0xE0727056);
-            mm.addFunction(sceAudioInputBlockingFunction, 0x086E5895);
-            mm.addFunction(sceAudioInputFunction, 0x6D4BEC68);
-            mm.addFunction(sceAudioGetInputLengthFunction, 0xA708C6A6);
-            mm.addFunction(sceAudioWaitInputEndFunction, 0x87B2E651);
-            mm.addFunction(sceAudioInputInitFunction, 0x7DE61688);
-            mm.addFunction(sceAudioInputInitExFunction, 0xE926D3FB);
-            mm.addFunction(sceAudioPollInputEndFunction, 0xA633048E);
-            mm.addFunction(sceAudioGetChannelRestLenFunction, 0xE9D97901);
+            mm.addFunction(0x8C1009B2, sceAudioOutputFunction);
+            mm.addFunction(0x136CAF51, sceAudioOutputBlockingFunction);
+            mm.addFunction(0xE2D56B2D, sceAudioOutputPannedFunction);
+            mm.addFunction(0x13F592BC, sceAudioOutputPannedBlockingFunction);
+            mm.addFunction(0x5EC81C55, sceAudioChReserveFunction);
+            mm.addFunction(0x41EFADE7, sceAudioOneshotOutputFunction);
+            mm.addFunction(0x6FC46853, sceAudioChReleaseFunction);
+            mm.addFunction(0xB011922F, sceAudioGetChannelRestLengthFunction);
+            mm.addFunction(0xCB2E439E, sceAudioSetChannelDataLenFunction);
+            mm.addFunction(0x95FD0C2D, sceAudioChangeChannelConfigFunction);
+            mm.addFunction(0xB7E1D8E7, sceAudioChangeChannelVolumeFunction);
+            mm.addFunction(0x01562BA3, sceAudioOutput2ReserveFunction);
+            mm.addFunction(0x43196845, sceAudioOutput2ReleaseFunction);
+            mm.addFunction(0x2D53F36E, sceAudioOutput2OutputBlockingFunction);
+            mm.addFunction(0x647CEF33, sceAudioOutput2GetRestSampleFunction);
+            mm.addFunction(0x63F2889C, sceAudioOutput2ChangeLengthFunction);
+            mm.addFunction(0x38553111, sceAudioSRCChReserveFunction);
+            mm.addFunction(0x5C37C0AE, sceAudioSRCChReleaseFunction);
+            mm.addFunction(0xE0727056, sceAudioSRCOutputBlockingFunction);
+            mm.addFunction(0x086E5895, sceAudioInputBlockingFunction);
+            mm.addFunction(0x6D4BEC68, sceAudioInputFunction);
+            mm.addFunction(0xA708C6A6, sceAudioGetInputLengthFunction);
+            mm.addFunction(0x87B2E651, sceAudioWaitInputEndFunction);
+            mm.addFunction(0x7DE61688, sceAudioInputInitFunction);
+            mm.addFunction(0xE926D3FB, sceAudioInputInitExFunction);
+            mm.addFunction(0xA633048E, sceAudioPollInputEndFunction);
+            mm.addFunction(0xE9D97901, sceAudioGetChannelRestLenFunction);
 
             /* From sceAudio_driver */
-            mm.addFunction(sceAudioInitFunction, 0x80F1F7E0);
-            mm.addFunction(sceAudioEndFunction, 0x210567F7);
-            mm.addFunction(sceAudioSetFrequencyFunction, 0xA2BEAA6C);
-            mm.addFunction(sceAudioLoopbackTestFunction, 0xB61595C0);
-            mm.addFunction(sceAudioSetVolumeOffsetFunction, 0x927AC32B);
+            mm.addFunction(0x80F1F7E0, sceAudioInitFunction);
+            mm.addFunction(0x210567F7, sceAudioEndFunction);
+            mm.addFunction(0xA2BEAA6C, sceAudioSetFrequencyFunction);
+            mm.addFunction(0xB61595C0, sceAudioLoopbackTestFunction);
+            mm.addFunction(0x927AC32B, sceAudioSetVolumeOffsetFunction);
 
             // unfortunately we get here before setBlockingEnabled is called
             //if (!disableBlockingAudio)

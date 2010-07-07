@@ -78,6 +78,7 @@ public class HLEModuleManager {
         scePower(Modules.scePowerModule),
         sceUtility(Modules.sceUtilityModule),
         UtilsForUser(Modules.UtilsForUserModule),
+        sceDisplay(Modules.sceDisplayModule),
         sceGe_user(Modules.sceGe_userModule),
         sceRtc(Modules.sceRtcModule),
         KernelLibrary(Modules.Kernel_LibraryModule),
@@ -93,8 +94,7 @@ public class HLEModuleManager {
         sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE" } ),
         sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE" }),
         sceFont(Modules.sceFontModule, new String[] { "libfont" }),
-        TimerManager(Modules.TimerManager),
-        scePsmfPlayer(Modules.scePsmfPlayerModule),
+        scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer" }),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
         sceMp3(Modules.sceMp3Module),
         sceDeflt(Modules.sceDefltModule);
@@ -113,7 +113,7 @@ public class HLEModuleManager {
     	// Module only loaded as a PRX, under different names
     	DefaultModule(HLEModule module, String[] prxNames) {
     		this.module = module;
-    		firmwareVersionAsDefault = Integer.MAX_VALUE;	// Never loaded by default
+    		firmwareVersionAsDefault = 100; //Integer.MAX_VALUE;	// Never loaded by default
     		this.prxNames = prxNames;
     	}
 
@@ -269,7 +269,7 @@ public class HLEModuleManager {
         Managers.modules.removeModule(sceModule.modid);
     }
 
-    public void addFunction(HLEModuleFunction func, int nid) {
+    public void addFunction(int nid, HLEModuleFunction func) {
         func.setNid(nid);
 
         // See if a known syscall code exists for this NID
@@ -280,6 +280,8 @@ public class HLEModuleManager {
             // Add the new code to the NIDMapper
             NIDMapper.getInstance().addSyscallNid(func.getNid(), syscallCodeAllocator);
             syscallCodeAllocator++;
+        } else {
+        	Modules.log.error("Tried to register a second handler for NID 0x" + Integer.toHexString(nid) + " called " + func.getFunctionName());
         }
 
         /*
@@ -349,4 +351,18 @@ public class HLEModuleManager {
         }
 		return null;
     }
+
+	public static void startModules() {
+		for(DefaultModule defaultModule : DefaultModule.values()) {
+			if(defaultModule.module instanceof HLEStartModule) {
+				((HLEStartModule)defaultModule.module).start();
+			}
+		}
+	}
+	
+	public static void stopModules() {
+		for(DefaultModule defaultModule : DefaultModule.values()) {
+			((HLEStartModule)defaultModule.module).stop();
+		}
+	}
 }

@@ -38,35 +38,35 @@ public class LoadCoreForKernel implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 
-			mm.addFunction(sceKernelCheckPspConfigFunction, 0xACE23476);
-			mm.addFunction(sceKernelCheckExecFileFunction, 0x7BE1421C);
-			mm.addFunction(sceKernelProbeExecutableObjectFunction, 0xBF983EF2);
-			mm.addFunction(sceKernelLoadExecutableObjectFunction, 0x7068E6BA);
-			mm.addFunction(sceKernelApplyElfRelSectionFunction, 0xB4D6FECC);
-			mm.addFunction(sceKernelApplyPspRelSectionFunction, 0x54AB2675);
-			mm.addFunction(sceKernelDcacheWBinvAllFunction, 0x2952F5AC);
-			mm.addFunction(sceKernelIcacheClearAllFunction, 0xD8779AC6);
-			mm.addFunction(sceKernelRegisterLibraryFunction, 0x99A695F0);
-			mm.addFunction(sceKernelRegisterLibraryForUserFunction, 0x5873A31F);
-			mm.addFunction(sceKernelReleaseLibraryFunction, 0x0B464512);
-			mm.addFunction(sceKernelCanReleaseLibraryFunction, 0x9BAF90F6);
-			mm.addFunction(sceKernelLinkLibraryEntriesFunction, 0x0E760DBA);
-			mm.addFunction(sceKernelLinkLibraryEntriesForUserFunction, 0x0DE1F600);
-			mm.addFunction(sceKernelUnLinkLibraryEntriesFunction, 0xDA1B09AA);
-			mm.addFunction(sceKernelQueryLoadCoreCBFunction, 0xC99DD47A);
-			mm.addFunction(sceKernelSetBootCallbackLevelFunction, 0x616FCCCD);
-			mm.addFunction(sceKernelGetModuleFromUIDFunction, 0x52A86C21);
-			mm.addFunction(sceKernelCreateModuleFunction, 0xCD0F3BAC);
-			mm.addFunction(sceKernelDeleteModuleFunction, 0x6B2371C2);
-			mm.addFunction(sceKernelAssignModuleFunction, 0x8D8A8ACE);
-			mm.addFunction(sceKernelCreateAssignModuleFunction, 0xAFF947D4);
-			mm.addFunction(sceKernelRegisterModuleFunction, 0xAE7C6E76);
-			mm.addFunction(sceKernelReleaseModuleFunction, 0x74CF001A);
-			mm.addFunction(sceKernelFindModuleByNameFunction, 0xCF8A41B1);
-			mm.addFunction(sceKernelFindModuleByAddressFunction, 0xFB8AE27D);
-			mm.addFunction(sceKernelFindModuleByUIDFunction, 0xCCE4A157);
-			mm.addFunction(sceKernelGetModuleListWithAllocFunction, 0x929B5C69);
-			mm.addFunction(sceKernelGetModuleIdListForKernelFunction, 0x05D915DB);
+			mm.addFunction(0xACE23476, sceKernelCheckPspConfigFunction);
+			mm.addFunction(0x7BE1421C, sceKernelCheckExecFileFunction);
+			mm.addFunction(0xBF983EF2, sceKernelProbeExecutableObjectFunction);
+			mm.addFunction(0x7068E6BA, sceKernelLoadExecutableObjectFunction);
+			mm.addFunction(0xB4D6FECC, sceKernelApplyElfRelSectionFunction);
+			mm.addFunction(0x54AB2675, sceKernelApplyPspRelSectionFunction);
+			mm.addFunction(0x2952F5AC, sceKernelDcacheWBinvAllFunction);
+			mm.addFunction(0xD8779AC6, sceKernelIcacheClearAllFunction);
+			mm.addFunction(0x99A695F0, sceKernelRegisterLibraryFunction);
+			mm.addFunction(0x5873A31F, sceKernelRegisterLibraryForUserFunction);
+			mm.addFunction(0x0B464512, sceKernelReleaseLibraryFunction);
+			mm.addFunction(0x9BAF90F6, sceKernelCanReleaseLibraryFunction);
+			mm.addFunction(0x0E760DBA, sceKernelLinkLibraryEntriesFunction);
+			mm.addFunction(0x0DE1F600, sceKernelLinkLibraryEntriesForUserFunction);
+			mm.addFunction(0xDA1B09AA, sceKernelUnLinkLibraryEntriesFunction);
+			mm.addFunction(0xC99DD47A, sceKernelQueryLoadCoreCBFunction);
+			mm.addFunction(0x616FCCCD, sceKernelSetBootCallbackLevelFunction);
+			mm.addFunction(0x52A86C21, sceKernelGetModuleFromUIDFunction);
+			mm.addFunction(0xCD0F3BAC, sceKernelCreateModuleFunction);
+			mm.addFunction(0x6B2371C2, sceKernelDeleteModuleFunction);
+			mm.addFunction(0x8D8A8ACE, sceKernelAssignModuleFunction);
+			mm.addFunction(0xAFF947D4, sceKernelCreateAssignModuleFunction);
+			mm.addFunction(0xAE7C6E76, sceKernelRegisterModuleFunction);
+			mm.addFunction(0x74CF001A, sceKernelReleaseModuleFunction);
+			mm.addFunction(0xCF8A41B1, sceKernelFindModuleByNameFunction);
+			mm.addFunction(0xFB8AE27D, sceKernelFindModuleByAddressFunction);
+			mm.addFunction(0xCCE4A157, sceKernelFindModuleByUIDFunction);
+			mm.addFunction(0x929B5C69, sceKernelGetModuleListWithAllocFunction);
+			mm.addFunction(0x05D915DB, sceKernelGetModuleIdListForKernelFunction);
 
 		}
 	}

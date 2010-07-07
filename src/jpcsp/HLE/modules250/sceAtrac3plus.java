@@ -32,11 +32,11 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     	super.installModule(mm, version);
 
     	if (version >= 250) {
-            mm.addFunction(sceAtracGetOutputChannelFunction, 0xB3B5D042);
-            mm.addFunction(sceAtracIsSecondBufferNeededFunction, 0xECA32A99);
-            mm.addFunction(sceAtracReinitFunction, 0x132F1ECA);
-            mm.addFunction(sceAtracGetBufferInfoForResettingFunction, 0x2DD3E298);
-            mm.addFunction(sceAtracSetMOutHalfwayBufferFunction, 0x5CF9D852);
+            mm.addFunction(0xB3B5D042, sceAtracGetOutputChannelFunction);
+            mm.addFunction(0xECA32A99, sceAtracIsSecondBufferNeededFunction);
+            mm.addFunction(0x132F1ECA, sceAtracReinitFunction);
+            mm.addFunction(0x2DD3E298, sceAtracGetBufferInfoForResettingFunction);
+            mm.addFunction(0x5CF9D852, sceAtracSetMOutHalfwayBufferFunction);
         }
     }
 

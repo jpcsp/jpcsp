@@ -30,8 +30,8 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
 
         if (version >= 200) {
 
-            mm.addFunction(sceUmdReplaceProhibitFunction, 0x87533940);
-            mm.addFunction(sceUmdReplacePermitFunction, 0xCBE9F02A);
+            mm.addFunction(0x87533940, sceUmdReplaceProhibitFunction);
+            mm.addFunction(0xCBE9F02A, sceUmdReplacePermitFunction);
 
         }
     }

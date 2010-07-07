@@ -34,10 +34,10 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
 		
 		if (version >= 352) {
 		
-			mm.addFunction(SysMemUserForUser_50F61D8AFunction, 0x50F61D8A);
-			mm.addFunction(SysMemUserForUser_ACBD88CAFunction, 0xACBD88CA);
-			mm.addFunction(SysMemUserForUser_DB83A952Function, 0xDB83A952);
-			mm.addFunction(SysMemUserForUser_FE707FDFFunction, 0xFE707FDF);
+			mm.addFunction(0x50F61D8A, SysMemUserForUser_50F61D8AFunction);
+			mm.addFunction(0xACBD88CA, SysMemUserForUser_ACBD88CAFunction);
+			mm.addFunction(0xDB83A952, SysMemUserForUser_DB83A952Function);
+			mm.addFunction(0xFE707FDF, SysMemUserForUser_FE707FDFFunction);
 			
 		}
 	}

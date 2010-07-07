@@ -26,8 +26,9 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
-public class sceMp3 implements HLEModule {
+public class sceMp3 implements HLEModule, HLEStartModule {
 	@Override
 	public String getName() { return "sceMp3"; }
 
@@ -35,25 +36,23 @@ public class sceMp3 implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 
-			mm.addFunction(sceMp3ReserveMp3HandleFunction, 0x07EC321A);
-            mm.addFunction(sceMp3NotifyAddStreamDataFunction, 0x0DB149F4);
-            mm.addFunction(sceMp3ResetPlayPositionFunction, 0x2A368661);
-            mm.addFunction(sceMp3InitResourceFunction, 0x35750070);
-            mm.addFunction(sceMp3TermResourceFunction, 0x3C2FA058);
-            mm.addFunction(sceMp3SetLoopNumFunction, 0x3CEF484F);
-            mm.addFunction(sceMp3InitFunction, 0x44E07129);
-            mm.addFunction(sceMp3GetMp3ChannelNumFunction, 0x7F696782);
-            mm.addFunction(sceMp3GetSamplingRateFunction, 0x8F450998);
-            mm.addFunction(sceMp3GetInfoToAddStreamDataFunction, 0xA703FE0F);
-            mm.addFunction(sceMp3DecodeFunction, 0xD021C0FB);
-            mm.addFunction(sceMp3CheckStreamDataNeededFunction, 0xD0A56296);
-            mm.addFunction(sceMp3ReleaseMp3HandleFunction, 0xF5478233);
-            mm.addFunction(sceMp3GetSumDecodedSampleFunction, 0x354D27EA);
-            mm.addFunction(sceMp3GetBitRateFunction, 0x87677E40);
-            mm.addFunction(sceMp3GetMaxOutputSampleFunction, 0x87C263D1);
-            mm.addFunction(sceMp3GetLoopNumFunction, 0xD8F54A51);
-
-            mp3Map = new HashMap<Integer, Mp3Stream>();
+			mm.addFunction(0x07EC321A, sceMp3ReserveMp3HandleFunction);
+            mm.addFunction(0x0DB149F4, sceMp3NotifyAddStreamDataFunction);
+            mm.addFunction(0x2A368661, sceMp3ResetPlayPositionFunction);
+            mm.addFunction(0x35750070, sceMp3InitResourceFunction);
+            mm.addFunction(0x3C2FA058, sceMp3TermResourceFunction);
+            mm.addFunction(0x3CEF484F, sceMp3SetLoopNumFunction);
+            mm.addFunction(0x44E07129, sceMp3InitFunction);
+            mm.addFunction(0x7F696782, sceMp3GetMp3ChannelNumFunction);
+            mm.addFunction(0x8F450998, sceMp3GetSamplingRateFunction);
+            mm.addFunction(0xA703FE0F, sceMp3GetInfoToAddStreamDataFunction);
+            mm.addFunction(0xD021C0FB, sceMp3DecodeFunction);
+            mm.addFunction(0xD0A56296, sceMp3CheckStreamDataNeededFunction);
+            mm.addFunction(0xF5478233, sceMp3ReleaseMp3HandleFunction);
+            mm.addFunction(0x354D27EA, sceMp3GetSumDecodedSampleFunction);
+            mm.addFunction(0x87677E40, sceMp3GetBitRateFunction);
+            mm.addFunction(0x87C263D1, sceMp3GetMaxOutputSampleFunction);
+            mm.addFunction(0xD8F54A51, sceMp3GetLoopNumFunction);
 
 		}
 	}
@@ -82,6 +81,15 @@ public class sceMp3 implements HLEModule {
 
 		}
 	}
+	
+	@Override
+    public void start() {
+		mp3Map = new HashMap<Integer, Mp3Stream>();
+    }
+
+    @Override
+    public void stop() {
+    }
 
     protected int mp3HandleCount;
     protected HashMap<Integer, Mp3Stream> mp3Map;

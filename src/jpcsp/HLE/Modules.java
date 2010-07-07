@@ -28,7 +28,6 @@ import jpcsp.HLE.modules.ModuleMgrForUser;
 import jpcsp.HLE.modules.StdioForUser;
 import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.HLE.modules.TimerManager;
 import jpcsp.HLE.modules.UtilsForUser;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceAudio;
@@ -81,7 +80,6 @@ public class Modules {
     public static sceSasCore sceSasCoreModule = new sceSasCore();
     public static sceHprm sceHprmModule = new sceHprm();
     public static sceFont sceFontModule = new sceFont();
-    public static TimerManager TimerManager = new TimerManager();
     public static scePsmfPlayer scePsmfPlayerModule = new scePsmfPlayer();
     public static scePsmf scePsmfModule = new scePsmf();
     public static sceMp3 sceMp3Module = new sceMp3();

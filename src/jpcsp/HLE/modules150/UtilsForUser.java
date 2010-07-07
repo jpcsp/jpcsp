@@ -34,6 +34,7 @@ import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
 /*
  * TODO list:
@@ -49,7 +50,7 @@ import jpcsp.HLE.modules.HLEModuleManager;
  *           int tz_dsttime; // type of dst correction to apply
  *      };
  */
-public class UtilsForUser implements HLEModule {
+public class UtilsForUser implements HLEModule, HLEStartModule {
 	private HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
 	
     private static class SceKernelUtilsMt19937Context {
@@ -67,32 +68,32 @@ public class UtilsForUser implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 		
-			mm.addFunction(sceKernelDcacheInvalidateRangeFunction, 0xBFA98062);
-			mm.addFunction(sceKernelIcacheInvalidateRangeFunction, 0xC2DF770E);
-			mm.addFunction(sceKernelUtilsMd5DigestFunction, 0xC8186A58);
-			mm.addFunction(sceKernelUtilsMd5BlockInitFunction, 0x9E5C5086);
-			mm.addFunction(sceKernelUtilsMd5BlockUpdateFunction, 0x61E1E525);
-			mm.addFunction(sceKernelUtilsMd5BlockResultFunction, 0xB8D24E78);
-			mm.addFunction(sceKernelUtilsSha1DigestFunction, 0x840259F1);
-			mm.addFunction(sceKernelUtilsSha1BlockInitFunction, 0xF8FCD5BA);
-			mm.addFunction(sceKernelUtilsSha1BlockUpdateFunction, 0x346F6DA8);
-			mm.addFunction(sceKernelUtilsSha1BlockResultFunction, 0x585F1C09);
-			mm.addFunction(sceKernelUtilsMt19937InitFunction, 0xE860E75E);
-			mm.addFunction(sceKernelUtilsMt19937UIntFunction, 0x06FB8A63);
-			mm.addFunction(sceKernelGetGPIFunction, 0x37FB5C42);
-			mm.addFunction(sceKernelSetGPOFunction, 0x6AD345D7);
-			mm.addFunction(sceKernelLibcClockFunction, 0x91E4F6A7);
-			mm.addFunction(sceKernelLibcTimeFunction, 0x27CC57F0);
-			mm.addFunction(sceKernelLibcGettimeofdayFunction, 0x71EC4271);
-			mm.addFunction(sceKernelDcacheWritebackAllFunction, 0x79D1C3FA);
-			mm.addFunction(sceKernelDcacheWritebackInvalidateAllFunction, 0xB435DEC5);
-			mm.addFunction(sceKernelDcacheWritebackRangeFunction, 0x3EE30821);
-			mm.addFunction(sceKernelDcacheWritebackInvalidateRangeFunction, 0x34B9FA9E);
-			mm.addFunction(sceKernelDcacheProbeFunction, 0x80001C4C);
-			mm.addFunction(sceKernelDcacheReadTagFunction, 0x16641D70);
-			mm.addFunction(sceKernelIcacheInvalidateAllFunction, 0x920F104A);
-			mm.addFunction(sceKernelIcacheProbeFunction, 0x4FD31C9D);
-			mm.addFunction(sceKernelIcacheReadTagFunction, 0xFB05FAD0);
+			mm.addFunction(0xBFA98062, sceKernelDcacheInvalidateRangeFunction);
+			mm.addFunction(0xC2DF770E, sceKernelIcacheInvalidateRangeFunction);
+			mm.addFunction(0xC8186A58, sceKernelUtilsMd5DigestFunction);
+			mm.addFunction(0x9E5C5086, sceKernelUtilsMd5BlockInitFunction);
+			mm.addFunction(0x61E1E525, sceKernelUtilsMd5BlockUpdateFunction);
+			mm.addFunction(0xB8D24E78, sceKernelUtilsMd5BlockResultFunction);
+			mm.addFunction(0x840259F1, sceKernelUtilsSha1DigestFunction);
+			mm.addFunction(0xF8FCD5BA, sceKernelUtilsSha1BlockInitFunction);
+			mm.addFunction(0x346F6DA8, sceKernelUtilsSha1BlockUpdateFunction);
+			mm.addFunction(0x585F1C09, sceKernelUtilsSha1BlockResultFunction);
+			mm.addFunction(0xE860E75E, sceKernelUtilsMt19937InitFunction);
+			mm.addFunction(0x06FB8A63, sceKernelUtilsMt19937UIntFunction);
+			mm.addFunction(0x37FB5C42, sceKernelGetGPIFunction);
+			mm.addFunction(0x6AD345D7, sceKernelSetGPOFunction);
+			mm.addFunction(0x91E4F6A7, sceKernelLibcClockFunction);
+			mm.addFunction(0x27CC57F0, sceKernelLibcTimeFunction);
+			mm.addFunction(0x71EC4271, sceKernelLibcGettimeofdayFunction);
+			mm.addFunction(0x79D1C3FA, sceKernelDcacheWritebackAllFunction);
+			mm.addFunction(0xB435DEC5, sceKernelDcacheWritebackInvalidateAllFunction);
+			mm.addFunction(0x3EE30821, sceKernelDcacheWritebackRangeFunction);
+			mm.addFunction(0x34B9FA9E, sceKernelDcacheWritebackInvalidateRangeFunction);
+			mm.addFunction(0x80001C4C, sceKernelDcacheProbeFunction);
+			mm.addFunction(0x16641D70, sceKernelDcacheReadTagFunction);
+			mm.addFunction(0x920F104A, sceKernelIcacheInvalidateAllFunction);
+			mm.addFunction(0x4FD31C9D, sceKernelIcacheProbeFunction);
+			mm.addFunction(0xFB05FAD0, sceKernelIcacheReadTagFunction);
 			
 		}
 	}
@@ -131,9 +132,14 @@ public class UtilsForUser implements HLEModule {
 		}
 	}
 	
-	public void Initialise() {
+	@Override
+	public void start() {
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
     }
+	
+	@Override
+	public void stop() {
+	}
 	
 	public void sceKernelDcacheInvalidateRange(Processor processor) {
 		Modules.log.trace("UNIMPLEMENTED:sceKernelDcacheInvalidateRange");

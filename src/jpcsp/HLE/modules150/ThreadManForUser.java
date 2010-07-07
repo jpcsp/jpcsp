@@ -16,10 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ADDR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_PRIORITY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_THREAD;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_ALARM;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_THREAD;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_VTIMER;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_ALREADY_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_SUSPEND;
@@ -63,17 +66,20 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
+import jpcsp.HLE.kernel.types.SceKernelAlarmInfo;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelSystemStatus;
 import jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.util.Utilities;
 
 public class ThreadManForUser implements HLEModule {
 
@@ -86,132 +92,132 @@ public class ThreadManForUser implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(_sceKernelReturnFromCallbackFunction, 0x6E9EA350);
-            mm.addFunction(sceKernelRegisterThreadEventHandlerFunction, 0x0C106E53);
-            mm.addFunction(sceKernelReleaseThreadEventHandlerFunction, 0x72F3C145);
-            mm.addFunction(sceKernelReferThreadEventHandlerStatusFunction, 0x369EEB6B);
-            mm.addFunction(sceKernelCreateCallbackFunction, 0xE81CAF8F);
-            mm.addFunction(sceKernelDeleteCallbackFunction, 0xEDBA5844);
-            mm.addFunction(sceKernelNotifyCallbackFunction, 0xC11BA8C4);
-            mm.addFunction(sceKernelCancelCallbackFunction, 0xBA4051D6);
-            mm.addFunction(sceKernelGetCallbackCountFunction, 0x2A3D44FF);
-            mm.addFunction(sceKernelCheckCallbackFunction, 0x349D6D6C);
-            mm.addFunction(sceKernelReferCallbackStatusFunction, 0x730ED8BC);
-            mm.addFunction(sceKernelSleepThreadFunction, 0x9ACE131E);
-            mm.addFunction(sceKernelSleepThreadCBFunction, 0x82826F70);
-            mm.addFunction(sceKernelWakeupThreadFunction, 0xD59EAD2F);
-            mm.addFunction(sceKernelCancelWakeupThreadFunction, 0xFCCFAD26);
-            mm.addFunction(sceKernelSuspendThreadFunction, 0x9944F31F);
-            mm.addFunction(sceKernelResumeThreadFunction, 0x75156E8F);
-            mm.addFunction(sceKernelWaitThreadEndFunction, 0x278C0DF5);
-            mm.addFunction(sceKernelWaitThreadEndCBFunction, 0x840E8133);
-            mm.addFunction(sceKernelDelayThreadFunction, 0xCEADEB47);
-            mm.addFunction(sceKernelDelayThreadCBFunction, 0x68DA9E36);
-            mm.addFunction(sceKernelDelaySysClockThreadFunction, 0xBD123D9E);
-            mm.addFunction(sceKernelDelaySysClockThreadCBFunction, 0x1181E963);
-            mm.addFunction(sceKernelCreateSemaFunction, 0xD6DA4BA1);
-            mm.addFunction(sceKernelDeleteSemaFunction, 0x28B6489C);
-            mm.addFunction(sceKernelSignalSemaFunction, 0x3F53E640);
-            mm.addFunction(sceKernelWaitSemaFunction, 0x4E3A1105);
-            mm.addFunction(sceKernelWaitSemaCBFunction, 0x6D212BAC);
-            mm.addFunction(sceKernelPollSemaFunction, 0x58B1F937);
-            mm.addFunction(sceKernelCancelSemaFunction, 0x8FFDF9A2);
-            mm.addFunction(sceKernelReferSemaStatusFunction, 0xBC6FEBC5);
-            mm.addFunction(sceKernelCreateEventFlagFunction, 0x55C20A00);
-            mm.addFunction(sceKernelDeleteEventFlagFunction, 0xEF9E4C70);
-            mm.addFunction(sceKernelSetEventFlagFunction, 0x1FB15A32);
-            mm.addFunction(sceKernelClearEventFlagFunction, 0x812346E4);
-            mm.addFunction(sceKernelWaitEventFlagFunction, 0x402FCF22);
-            mm.addFunction(sceKernelWaitEventFlagCBFunction, 0x328C546A);
-            mm.addFunction(sceKernelPollEventFlagFunction, 0x30FD48F0);
-            mm.addFunction(sceKernelCancelEventFlagFunction, 0xCD203292);
-            mm.addFunction(sceKernelReferEventFlagStatusFunction, 0xA66B0120);
-            mm.addFunction(sceKernelCreateMbxFunction, 0x8125221D);
-            mm.addFunction(sceKernelDeleteMbxFunction, 0x86255ADA);
-            mm.addFunction(sceKernelSendMbxFunction, 0xE9B3061E);
-            mm.addFunction(sceKernelReceiveMbxFunction, 0x18260574);
-            mm.addFunction(sceKernelReceiveMbxCBFunction, 0xF3986382);
-            mm.addFunction(sceKernelPollMbxFunction, 0x0D81716A);
-            mm.addFunction(sceKernelCancelReceiveMbxFunction, 0x87D4DD36);
-            mm.addFunction(sceKernelReferMbxStatusFunction, 0xA8E8C846);
-            mm.addFunction(sceKernelCreateMsgPipeFunction, 0x7C0DC2A0);
-            mm.addFunction(sceKernelDeleteMsgPipeFunction, 0xF0B7DA1C);
-            mm.addFunction(sceKernelSendMsgPipeFunction, 0x876DBFAD);
-            mm.addFunction(sceKernelSendMsgPipeCBFunction, 0x7C41F2C2);
-            mm.addFunction(sceKernelTrySendMsgPipeFunction, 0x884C9F90);
-            mm.addFunction(sceKernelReceiveMsgPipeFunction, 0x74829B76);
-            mm.addFunction(sceKernelReceiveMsgPipeCBFunction, 0xFBFA697D);
-            mm.addFunction(sceKernelTryReceiveMsgPipeFunction, 0xDF52098F);
-            mm.addFunction(sceKernelCancelMsgPipeFunction, 0x349B864D);
-            mm.addFunction(sceKernelReferMsgPipeStatusFunction, 0x33BE4024);
-            mm.addFunction(sceKernelCreateVplFunction, 0x56C039B5);
-            mm.addFunction(sceKernelDeleteVplFunction, 0x89B3D48C);
-            mm.addFunction(sceKernelAllocateVplFunction, 0xBED27435);
-            mm.addFunction(sceKernelAllocateVplCBFunction, 0xEC0A693F);
-            mm.addFunction(sceKernelTryAllocateVplFunction, 0xAF36D708);
-            mm.addFunction(sceKernelFreeVplFunction, 0xB736E9FF);
-            mm.addFunction(sceKernelCancelVplFunction, 0x1D371B8A);
-            mm.addFunction(sceKernelReferVplStatusFunction, 0x39810265);
-            mm.addFunction(sceKernelCreateFplFunction, 0xC07BB470);
-            mm.addFunction(sceKernelDeleteFplFunction, 0xED1410E0);
-            mm.addFunction(sceKernelAllocateFplFunction, 0xD979E9BF);
-            mm.addFunction(sceKernelAllocateFplCBFunction, 0xE7282CB6);
-            mm.addFunction(sceKernelTryAllocateFplFunction, 0x623AE665);
-            mm.addFunction(sceKernelFreeFplFunction, 0xF6414A71);
-            mm.addFunction(sceKernelCancelFplFunction, 0xA8AA591F);
-            mm.addFunction(sceKernelReferFplStatusFunction, 0xD8199E4C);
-            mm.addFunction(_sceKernelReturnFromTimerHandlerFunction, 0x0E927AED);
-            mm.addFunction(sceKernelUSec2SysClockFunction, 0x110DEC9A);
-            mm.addFunction(sceKernelUSec2SysClockWideFunction, 0xC8CD158C);
-            mm.addFunction(sceKernelSysClock2USecFunction, 0xBA6B92E2);
-            mm.addFunction(sceKernelSysClock2USecWideFunction, 0xE1619D7C);
-            mm.addFunction(sceKernelGetSystemTimeFunction, 0xDB738F35);
-            mm.addFunction(sceKernelGetSystemTimeWideFunction, 0x82BC5777);
-            mm.addFunction(sceKernelGetSystemTimeLowFunction, 0x369ED59D);
-			mm.addFunction(sceKernelSetAlarmFunction, 0x6652B8CA);
-			mm.addFunction(sceKernelSetSysClockAlarmFunction, 0xB2C25152);
-			mm.addFunction(sceKernelCancelAlarmFunction, 0x7E65B999);
-			mm.addFunction(sceKernelReferAlarmStatusFunction, 0xDAA3F564);
-			mm.addFunction(sceKernelCreateVTimerFunction, 0x20FFF560);
-			mm.addFunction(sceKernelDeleteVTimerFunction, 0x328F9E52);
-			mm.addFunction(sceKernelGetVTimerBaseFunction, 0xB3A59970);
-			mm.addFunction(sceKernelGetVTimerBaseWideFunction, 0xB7C18B77);
-			mm.addFunction(sceKernelGetVTimerTimeFunction, 0x034A921F);
-			mm.addFunction(sceKernelGetVTimerTimeWideFunction, 0xC0B3FFD2);
-			mm.addFunction(sceKernelSetVTimerTimeFunction, 0x542AD630);
-			mm.addFunction(sceKernelSetVTimerTimeWideFunction, 0xFB6425C3);
-			mm.addFunction(sceKernelStartVTimerFunction, 0xC68D9437);
-			mm.addFunction(sceKernelStopVTimerFunction, 0xD0AEEE87);
-			mm.addFunction(sceKernelSetVTimerHandlerFunction, 0xD8B299AE);
-			mm.addFunction(sceKernelSetVTimerHandlerWideFunction, 0x53B00E9A);
-			mm.addFunction(sceKernelCancelVTimerHandlerFunction, 0xD2D615EF);
-			mm.addFunction(sceKernelReferVTimerStatusFunction, 0x5F32BEAA);
-            mm.addFunction(sceKernelCreateThreadFunction, 0x446D8DE6);
-            mm.addFunction(sceKernelDeleteThreadFunction, 0x9FA03CD3);
-            mm.addFunction(sceKernelStartThreadFunction, 0xF475845D);
-            mm.addFunction(_sceKernelExitThreadFunction, 0x532A522E);
-            mm.addFunction(sceKernelExitThreadFunction, 0xAA73C935);
-            mm.addFunction(sceKernelExitDeleteThreadFunction, 0x809CE29B);
-            mm.addFunction(sceKernelTerminateThreadFunction, 0x616403BA);
-            mm.addFunction(sceKernelTerminateDeleteThreadFunction, 0x383F7BCC);
-            mm.addFunction(sceKernelSuspendDispatchThreadFunction, 0x3AD58B8C);
-            mm.addFunction(sceKernelResumeDispatchThreadFunction, 0x27E22EC2);
-            mm.addFunction(sceKernelChangeCurrentThreadAttrFunction, 0xEA748E31);
-            mm.addFunction(sceKernelChangeThreadPriorityFunction, 0x71BC9871);
-            mm.addFunction(sceKernelRotateThreadReadyQueueFunction, 0x912354A7);
-            mm.addFunction(sceKernelReleaseWaitThreadFunction, 0x2C34E053);
-            mm.addFunction(sceKernelGetThreadIdFunction, 0x293B45B8);
-            mm.addFunction(sceKernelGetThreadCurrentPriorityFunction, 0x94AA61EE);
-            mm.addFunction(sceKernelGetThreadExitStatusFunction, 0x3B183E26);
-            mm.addFunction(sceKernelCheckThreadStackFunction, 0xD13BDE95);
-            mm.addFunction(sceKernelGetThreadStackFreeSizeFunction, 0x52089CA1);
-            mm.addFunction(sceKernelReferThreadStatusFunction, 0x17C1684E);
-            mm.addFunction(sceKernelReferThreadRunStatusFunction, 0xFFC36A14);
-            mm.addFunction(sceKernelReferSystemStatusFunction, 0x627E6F3A);
-            mm.addFunction(sceKernelGetThreadmanIdListFunction, 0x94416130);
-            mm.addFunction(sceKernelGetThreadmanIdTypeFunction, 0x57CF62DD);
-            mm.addFunction(sceKernelReferThreadProfilerFunction, 0x64D4540E);
-            mm.addFunction(sceKernelReferGlobalProfilerFunction, 0x8218B4DD);
+            mm.addFunction(0x6E9EA350, _sceKernelReturnFromCallbackFunction);
+            mm.addFunction(0x0C106E53, sceKernelRegisterThreadEventHandlerFunction);
+            mm.addFunction(0x72F3C145, sceKernelReleaseThreadEventHandlerFunction);
+            mm.addFunction(0x369EEB6B, sceKernelReferThreadEventHandlerStatusFunction);
+            mm.addFunction(0xE81CAF8F, sceKernelCreateCallbackFunction);
+            mm.addFunction(0xEDBA5844, sceKernelDeleteCallbackFunction);
+            mm.addFunction(0xC11BA8C4, sceKernelNotifyCallbackFunction);
+            mm.addFunction(0xBA4051D6, sceKernelCancelCallbackFunction);
+            mm.addFunction(0x2A3D44FF, sceKernelGetCallbackCountFunction);
+            mm.addFunction(0x349D6D6C, sceKernelCheckCallbackFunction);
+            mm.addFunction(0x730ED8BC, sceKernelReferCallbackStatusFunction);
+            mm.addFunction(0x9ACE131E, sceKernelSleepThreadFunction);
+            mm.addFunction(0x82826F70, sceKernelSleepThreadCBFunction);
+            mm.addFunction(0xD59EAD2F, sceKernelWakeupThreadFunction);
+            mm.addFunction(0xFCCFAD26, sceKernelCancelWakeupThreadFunction);
+            mm.addFunction(0x9944F31F, sceKernelSuspendThreadFunction);
+            mm.addFunction(0x75156E8F, sceKernelResumeThreadFunction);
+            mm.addFunction(0x278C0DF5, sceKernelWaitThreadEndFunction);
+            mm.addFunction(0x840E8133, sceKernelWaitThreadEndCBFunction);
+            mm.addFunction(0xCEADEB47, sceKernelDelayThreadFunction);
+            mm.addFunction(0x68DA9E36, sceKernelDelayThreadCBFunction);
+            mm.addFunction(0xBD123D9E, sceKernelDelaySysClockThreadFunction);
+            mm.addFunction(0x1181E963, sceKernelDelaySysClockThreadCBFunction);
+            mm.addFunction(0xD6DA4BA1, sceKernelCreateSemaFunction);
+            mm.addFunction(0x28B6489C, sceKernelDeleteSemaFunction);
+            mm.addFunction(0x3F53E640, sceKernelSignalSemaFunction);
+            mm.addFunction(0x4E3A1105, sceKernelWaitSemaFunction);
+            mm.addFunction(0x6D212BAC, sceKernelWaitSemaCBFunction);
+            mm.addFunction(0x58B1F937, sceKernelPollSemaFunction);
+            mm.addFunction(0x8FFDF9A2, sceKernelCancelSemaFunction);
+            mm.addFunction(0xBC6FEBC5, sceKernelReferSemaStatusFunction);
+            mm.addFunction(0x55C20A00, sceKernelCreateEventFlagFunction);
+            mm.addFunction(0xEF9E4C70, sceKernelDeleteEventFlagFunction);
+            mm.addFunction(0x1FB15A32, sceKernelSetEventFlagFunction);
+            mm.addFunction(0x812346E4, sceKernelClearEventFlagFunction);
+            mm.addFunction(0x402FCF22, sceKernelWaitEventFlagFunction);
+            mm.addFunction(0x328C546A, sceKernelWaitEventFlagCBFunction);
+            mm.addFunction(0x30FD48F0, sceKernelPollEventFlagFunction);
+            mm.addFunction(0xCD203292, sceKernelCancelEventFlagFunction);
+            mm.addFunction(0xA66B0120, sceKernelReferEventFlagStatusFunction);
+            mm.addFunction(0x8125221D, sceKernelCreateMbxFunction);
+            mm.addFunction(0x86255ADA, sceKernelDeleteMbxFunction);
+            mm.addFunction(0xE9B3061E, sceKernelSendMbxFunction);
+            mm.addFunction(0x18260574, sceKernelReceiveMbxFunction);
+            mm.addFunction(0xF3986382, sceKernelReceiveMbxCBFunction);
+            mm.addFunction(0x0D81716A, sceKernelPollMbxFunction);
+            mm.addFunction(0x87D4DD36, sceKernelCancelReceiveMbxFunction);
+            mm.addFunction(0xA8E8C846, sceKernelReferMbxStatusFunction);
+            mm.addFunction(0x7C0DC2A0, sceKernelCreateMsgPipeFunction);
+            mm.addFunction(0xF0B7DA1C, sceKernelDeleteMsgPipeFunction);
+            mm.addFunction(0x876DBFAD, sceKernelSendMsgPipeFunction);
+            mm.addFunction(0x7C41F2C2, sceKernelSendMsgPipeCBFunction);
+            mm.addFunction(0x884C9F90, sceKernelTrySendMsgPipeFunction);
+            mm.addFunction(0x74829B76, sceKernelReceiveMsgPipeFunction);
+            mm.addFunction(0xFBFA697D, sceKernelReceiveMsgPipeCBFunction);
+            mm.addFunction(0xDF52098F, sceKernelTryReceiveMsgPipeFunction);
+            mm.addFunction(0x349B864D, sceKernelCancelMsgPipeFunction);
+            mm.addFunction(0x33BE4024, sceKernelReferMsgPipeStatusFunction);
+            mm.addFunction(0x56C039B5, sceKernelCreateVplFunction);
+            mm.addFunction(0x89B3D48C, sceKernelDeleteVplFunction);
+            mm.addFunction(0xBED27435, sceKernelAllocateVplFunction);
+            mm.addFunction(0xEC0A693F, sceKernelAllocateVplCBFunction);
+            mm.addFunction(0xAF36D708, sceKernelTryAllocateVplFunction);
+            mm.addFunction(0xB736E9FF, sceKernelFreeVplFunction);
+            mm.addFunction(0x1D371B8A, sceKernelCancelVplFunction);
+            mm.addFunction(0x39810265, sceKernelReferVplStatusFunction);
+            mm.addFunction(0xC07BB470, sceKernelCreateFplFunction);
+            mm.addFunction(0xED1410E0, sceKernelDeleteFplFunction);
+            mm.addFunction(0xD979E9BF, sceKernelAllocateFplFunction);
+            mm.addFunction(0xE7282CB6, sceKernelAllocateFplCBFunction);
+            mm.addFunction(0x623AE665, sceKernelTryAllocateFplFunction);
+            mm.addFunction(0xF6414A71, sceKernelFreeFplFunction);
+            mm.addFunction(0xA8AA591F, sceKernelCancelFplFunction);
+            mm.addFunction(0xD8199E4C, sceKernelReferFplStatusFunction);
+            mm.addFunction(0x0E927AED, _sceKernelReturnFromTimerHandlerFunction);
+            mm.addFunction(0x110DEC9A, sceKernelUSec2SysClockFunction);
+            mm.addFunction(0xC8CD158C, sceKernelUSec2SysClockWideFunction);
+            mm.addFunction(0xBA6B92E2, sceKernelSysClock2USecFunction);
+            mm.addFunction(0xE1619D7C, sceKernelSysClock2USecWideFunction);
+            mm.addFunction(0xDB738F35, sceKernelGetSystemTimeFunction);
+            mm.addFunction(0x82BC5777, sceKernelGetSystemTimeWideFunction);
+            mm.addFunction(0x369ED59D, sceKernelGetSystemTimeLowFunction);
+			mm.addFunction(0x6652B8CA, sceKernelSetAlarmFunction);
+			mm.addFunction(0xB2C25152, sceKernelSetSysClockAlarmFunction);
+			mm.addFunction(0x7E65B999, sceKernelCancelAlarmFunction);
+			mm.addFunction(0xDAA3F564, sceKernelReferAlarmStatusFunction);
+			mm.addFunction(0x20FFF560, sceKernelCreateVTimerFunction);
+			mm.addFunction(0x328F9E52, sceKernelDeleteVTimerFunction);
+			mm.addFunction(0xB3A59970, sceKernelGetVTimerBaseFunction);
+			mm.addFunction(0xB7C18B77, sceKernelGetVTimerBaseWideFunction);
+			mm.addFunction(0x034A921F, sceKernelGetVTimerTimeFunction);
+			mm.addFunction(0xC0B3FFD2, sceKernelGetVTimerTimeWideFunction);
+			mm.addFunction(0x542AD630, sceKernelSetVTimerTimeFunction);
+			mm.addFunction(0xFB6425C3, sceKernelSetVTimerTimeWideFunction);
+			mm.addFunction(0xC68D9437, sceKernelStartVTimerFunction);
+			mm.addFunction(0xD0AEEE87, sceKernelStopVTimerFunction);
+			mm.addFunction(0xD8B299AE, sceKernelSetVTimerHandlerFunction);
+			mm.addFunction(0x53B00E9A, sceKernelSetVTimerHandlerWideFunction);
+			mm.addFunction(0xD2D615EF, sceKernelCancelVTimerHandlerFunction);
+			mm.addFunction(0x5F32BEAA, sceKernelReferVTimerStatusFunction);
+            mm.addFunction(0x446D8DE6, sceKernelCreateThreadFunction);
+            mm.addFunction(0x9FA03CD3, sceKernelDeleteThreadFunction);
+            mm.addFunction(0xF475845D, sceKernelStartThreadFunction);
+            mm.addFunction(0x532A522E, _sceKernelExitThreadFunction);
+            mm.addFunction(0xAA73C935, sceKernelExitThreadFunction);
+            mm.addFunction(0x809CE29B, sceKernelExitDeleteThreadFunction);
+            mm.addFunction(0x616403BA, sceKernelTerminateThreadFunction);
+            mm.addFunction(0x383F7BCC, sceKernelTerminateDeleteThreadFunction);
+            mm.addFunction(0x3AD58B8C, sceKernelSuspendDispatchThreadFunction);
+            mm.addFunction(0x27E22EC2, sceKernelResumeDispatchThreadFunction);
+            mm.addFunction(0xEA748E31, sceKernelChangeCurrentThreadAttrFunction);
+            mm.addFunction(0x71BC9871, sceKernelChangeThreadPriorityFunction);
+            mm.addFunction(0x912354A7, sceKernelRotateThreadReadyQueueFunction);
+            mm.addFunction(0x2C34E053, sceKernelReleaseWaitThreadFunction);
+            mm.addFunction(0x293B45B8, sceKernelGetThreadIdFunction);
+            mm.addFunction(0x94AA61EE, sceKernelGetThreadCurrentPriorityFunction);
+            mm.addFunction(0x3B183E26, sceKernelGetThreadExitStatusFunction);
+            mm.addFunction(0xD13BDE95, sceKernelCheckThreadStackFunction);
+            mm.addFunction(0x52089CA1, sceKernelGetThreadStackFreeSizeFunction);
+            mm.addFunction(0x17C1684E, sceKernelReferThreadStatusFunction);
+            mm.addFunction(0xFFC36A14, sceKernelReferThreadRunStatusFunction);
+            mm.addFunction(0x627E6F3A, sceKernelReferSystemStatusFunction);
+            mm.addFunction(0x94416130, sceKernelGetThreadmanIdListFunction);
+            mm.addFunction(0x57CF62DD, sceKernelGetThreadmanIdTypeFunction);
+            mm.addFunction(0x64D4540E, sceKernelReferThreadProfilerFunction);
+            mm.addFunction(0x8218B4DD, sceKernelReferGlobalProfilerFunction);
 
             mm.addHLEFunction(hleKernelAsyncLoopFunction);
             mm.addHLEFunction(hleKernelExitCallbackFunction);
@@ -408,6 +414,10 @@ public class ThreadManForUser implements HLEModule {
     public final static int SCE_KERNEL_TMID_SuspendThread      = 66;
     public final static int SCE_KERNEL_TMID_DormantThread      = 67;
 
+    protected static final int INTR_NUMBER = IntrManager.PSP_SYSTIMER0_INTR;
+	protected Map<Integer, SceKernelAlarmInfo> alarms;
+	protected Map<Integer, SceKernelVTimerInfo> vtimers;
+    
     public ThreadManForUser() {
     }
 
@@ -1804,6 +1814,108 @@ public class ThreadManForUser implements HLEModule {
 
     	return handled;
     }
+    
+    public void cancelAlarm(SceKernelAlarmInfo sceKernelAlarmInfo) {
+		Scheduler.getInstance().removeAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
+		sceKernelAlarmInfo.schedule = 0;
+	}
+
+	public void rescheduleAlarm(SceKernelAlarmInfo sceKernelAlarmInfo, int delay) {
+		if (delay < 0) {
+			delay = 100;
+		}
+
+		sceKernelAlarmInfo.schedule += delay;
+		scheduleAlarm(sceKernelAlarmInfo);
+
+		if (Modules.log.isDebugEnabled()) {
+			Modules.log.debug(String.format("New Schedule for Alarm uid=%x: %d", sceKernelAlarmInfo.uid, sceKernelAlarmInfo.schedule));
+		}
+	}
+
+	private void scheduleAlarm(SceKernelAlarmInfo sceKernelAlarmInfo) {
+		Scheduler.getInstance().addAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
+	}
+
+	protected void hleKernelSetAlarm(Processor processor, long delayUsec, int handlerAddress, int handlerArgument) {
+        CpuState cpu = processor.cpu;
+
+        Scheduler scheduler = Scheduler.getInstance();
+		long now = scheduler.getNow();
+		long schedule = now + delayUsec;
+        SceKernelAlarmInfo sceKernelAlarmInfo = new SceKernelAlarmInfo(schedule, handlerAddress, handlerArgument);
+        alarms.put(sceKernelAlarmInfo.uid, sceKernelAlarmInfo);
+
+        scheduleAlarm(sceKernelAlarmInfo);
+
+        cpu.gpr[2] = sceKernelAlarmInfo.uid;
+	}
+
+	protected long getSystemTime() {
+		return SystemTimeManager.getSystemTime();
+	}
+
+	public long getVTimerTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
+		long time = sceKernelVTimerInfo.current;
+
+		if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+			time += getSystemTime() - sceKernelVTimerInfo.base;
+		}
+
+		return time;
+	}
+
+	protected long getVTimerScheduleForScheduler(SceKernelVTimerInfo sceKernelVTimerInfo) {
+		return sceKernelVTimerInfo.base + sceKernelVTimerInfo.schedule;
+	}
+
+	protected void setVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long time) {
+		sceKernelVTimerInfo.current = time;
+	}
+
+	protected void startVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
+		sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_RUNNING;
+		sceKernelVTimerInfo.base = getSystemTime();
+
+		if (sceKernelVTimerInfo.schedule != 0 && sceKernelVTimerInfo.handlerAddress != 0) {
+			scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
+		}
+	}
+
+	protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
+		sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
+		sceKernelVTimerInfo.current = getSystemTime() - sceKernelVTimerInfo.base;
+	}
+
+	protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
+		sceKernelVTimerInfo.schedule = schedule;
+
+		if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+			Scheduler scheduler = Scheduler.getInstance();
+			scheduler.addAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
+		}
+	}
+
+	public void cancelVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
+		Scheduler.getInstance().removeAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
+		sceKernelVTimerInfo.schedule = 0;
+		sceKernelVTimerInfo.handlerAddress = 0;
+		sceKernelVTimerInfo.handlerArgument = 0;
+	}
+
+	public void rescheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, int delay) {
+		if (delay < 0) {
+			delay = 100;
+		}
+
+		sceKernelVTimerInfo.schedule += delay;
+
+		scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
+
+		if (Modules.log.isDebugEnabled()) {
+			Modules.log.debug(String.format("New Schedule for VTimer uid=%x: %d", sceKernelVTimerInfo.uid, sceKernelVTimerInfo.schedule));
+		}
+	}
 
     /**
      * Iterates waiting threads, making sure doCallbacks is set before
@@ -2540,149 +2652,529 @@ public class ThreadManForUser implements HLEModule {
         Managers.systime.sceKernelGetSystemTimeLow();
     }
     
-    public void sceKernelSetAlarm(Processor processor) {
-		CpuState cpu = processor.cpu;
+    /**
+	 * Set an alarm.
+	 * @param delayUsec - The number of micro seconds till the alarm occurs.
+	 * @param handlerAddress - Pointer to a ::SceKernelAlarmHandler
+	 * @param handlerArgument - Common pointer for the alarm handler
+	 *
+	 * @return A UID representing the created alarm, < 0 on error.
+	 */
+	public void sceKernelSetAlarm(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceKernelSetAlarm [0x6652B8CA]");
+        int delayUsec = cpu.gpr[4];
+        int handlerAddress = cpu.gpr[5];
+        int handlerArgument = cpu.gpr[6];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelSetAlarm(%d,0x%08X,0x%08X)", delayUsec, handlerAddress, handlerArgument));
+        }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
+        hleKernelSetAlarm(processor, delayUsec, handlerAddress, handlerArgument);
+    }
+
+	/**
+	 * Set an alarm using a ::SceKernelSysClock structure for the time
+	 *
+	 * @param delaySysclockAddr - Pointer to a ::SceKernelSysClock structure
+	 * @param handlerAddress - Pointer to a ::SceKernelAlarmHandler
+	 * @param handlerArgument - Common pointer for the alarm handler.
+	 *
+	 * @return A UID representing the created alarm, < 0 on error.
+	 */
 	public void sceKernelSetSysClockAlarm(Processor processor) {
-		CpuState cpu = processor.cpu;
+        CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-		Modules.log.debug("Unimplemented NID function sceKernelSetSysClockAlarm [0xB2C25152]");
+        int delaySysclockAddr = cpu.gpr[4];
+        int handlerAddress = cpu.gpr[5];
+        int handlerArgument = cpu.gpr[6];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelSetSysClockAlarm(0x%08X,0x%08X,0x%08X)", delaySysclockAddr, handlerAddress, handlerArgument));
+        }
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(delaySysclockAddr)) {
+        	long delaySysclock = mem.read64(delaySysclockAddr);
+        	long delayUsec = SystemTimeManager.hleSysClock2USec(delaySysclock);
+
+        	hleKernelSetAlarm(processor, delayUsec, handlerAddress, handlerArgument);
+        } else {
+        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        }
 	}
-    
-	public void sceKernelCancelAlarm(Processor processor) {
-		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceKernelCancelAlarm [0x7E65B999]");
+	/**
+	 * Cancel a pending alarm.
+	 *
+	 * @param alarmUid - UID of the alarm to cancel.
+	 *
+	 * @return 0 on success, < 0 on error.
+	 */
+    public void sceKernelCancelAlarm(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelReferAlarmStatus(Processor processor) {
-		CpuState cpu = processor.cpu;
+        int alarmUid = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelCancelAlarm(uid=0x%x)", alarmUid));
+        }
 
-		Modules.log.debug("Unimplemented NID function sceKernelReferAlarmStatus [0xDAA3F564]");
+    	SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
+        if (sceKernelAlarmInfo == null) {
+        	Modules.log.warn(String.format("sceKernelCancelAlarm unknown uid=0x%x", alarmUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_ALARM;
+        } else {
+        	cancelAlarm(sceKernelAlarmInfo);
+        	cpu.gpr[2] = 0;
+        }
+    }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelCreateVTimer(Processor processor) {
-		CpuState cpu = processor.cpu;
+    /**
+     * Refer the status of a created alarm.
+     *
+     * @param alarmUid - UID of the alarm to get the info of
+     * @param infoAddr - Pointer to a ::SceKernelAlarmInfo structure
+     *
+     * @return 0 on success, < 0 on error.
+     */
+    public void sceKernelReferAlarmStatus(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		Modules.log.debug("Unimplemented NID function sceKernelCreateVTimer [0x20FFF560]");
+        int alarmUid = cpu.gpr[4];
+        int infoAddr = cpu.gpr[5];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelReferAlarmStatus(uid=0x%x, infoAddr=0x%08X)", alarmUid, infoAddr));
+        }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelDeleteVTimer(Processor processor) {
-		CpuState cpu = processor.cpu;
+    	SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
+        if (sceKernelAlarmInfo == null) {
+        	Modules.log.warn(String.format("sceKernelReferAlarmStatus unknown uid=0x%x", alarmUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_ALARM;
+        } else if (!mem.isAddressGood(infoAddr)) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        } else {
+        	int size = mem.read32(infoAddr);
+        	sceKernelAlarmInfo.size = size;
+        	sceKernelAlarmInfo.write(mem, infoAddr);
+        	cpu.gpr[2] = 0;
+        }
+    }
 
-		Modules.log.debug("Unimplemented NID function sceKernelDeleteVTimer [0x328F9E52]");
+    /**
+     * Create a virtual timer
+     *
+     * @param nameAddr - Name for the timer.
+     * @param optAddr  - Pointer to an ::SceKernelVTimerOptParam (pass NULL)
+     *
+     * @return The VTimer's UID or < 0 on error.
+     */
+    public void sceKernelCreateVTimer(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelGetVTimerBase(Processor processor) {
-		CpuState cpu = processor.cpu;
+        int nameAddr = cpu.gpr[4];
+        int optAddr = cpu.gpr[5];
+        String name = Utilities.readStringZ(nameAddr);
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelCreateVTimer(name=%s(0x%08X), optAddr=0x%08X)", name, nameAddr, optAddr));
+        }
 
-		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerBase [0xB3A59970]");
+        SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
+        vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelGetVTimerBaseWide(Processor processor) {
-		CpuState cpu = processor.cpu;
+        cpu.gpr[2] = sceKernelVTimerInfo.uid;
+    }
 
-		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerBaseWide [0xB7C18B77]");
+    /**
+     * Delete a virtual timer
+     *
+     * @param vtimerUid - The UID of the timer
+     *
+     * @return < 0 on error.
+     */
+    public void sceKernelDeleteVTimer(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelGetVTimerTime(Processor processor) {
-		CpuState cpu = processor.cpu;
+        int vtimerUid = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelDeleteVTimer(uid=0x%x)", vtimerUid));
+        }
 
-		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerTime [0x034A921F]");
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelDeleteVTimer unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	sceKernelVTimerInfo.delete();
+        	cpu.gpr[2] = 0;
+        }
+    }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelGetVTimerTimeWide(Processor processor) {
-		CpuState cpu = processor.cpu;
+    /**
+     * Get the timer base
+     *
+     * @param vtimerUid - UID of the vtimer
+     * @param baseAddr - Pointer to a ::SceKernelSysClock structure
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void sceKernelGetVTimerBase(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		Modules.log.debug("Unimplemented NID function sceKernelGetVTimerTimeWide [0xC0B3FFD2]");
+        int vtimerUid = cpu.gpr[4];
+        int baseAddr = cpu.gpr[5];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelGetVTimerBase(uid=0x%x,baseAddr=0x%08X)", vtimerUid, baseAddr));
+        }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelSetVTimerTime(Processor processor) {
-		CpuState cpu = processor.cpu;
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelGetVTimerBase unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else if (!mem.isAddressGood(baseAddr)) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        } else {
+        	mem.write64(baseAddr, sceKernelVTimerInfo.base);
+        	cpu.gpr[2] = 0;
+        }
+    }
 
-		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerTime [0x542AD630]");
+    /**
+     * Get the timer base (wide format)
+     *
+     * @param vtimerUid - UID of the vtimer
+     *
+     * @return The 64bit timer base
+     */
+    public void sceKernelGetVTimerBaseWide(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelSetVTimerTimeWide(Processor processor) {
-		CpuState cpu = processor.cpu;
+        int vtimerUid = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelGetVTimerBaseWide(uid=0x%x)", vtimerUid));
+        }
 
-		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerTimeWide [0xFB6425C3]");
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelGetVTimerBaseWide unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	Utilities.returnRegister64(cpu, sceKernelVTimerInfo.base);
+        }
+    }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelStartVTimer(Processor processor) {
-		CpuState cpu = processor.cpu;
+    /**
+     * Get the timer time
+     *
+     * @param vtimerUid - UID of the vtimer
+     * @param timeAddr - Pointer to a ::SceKernelSysClock structure
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void sceKernelGetVTimerTime(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		Modules.log.debug("Unimplemented NID function sceKernelStartVTimer [0xC68D9437]");
+        int vtimerUid = cpu.gpr[4];
+        int timeAddr = cpu.gpr[5];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelGetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
+        }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelStopVTimer(Processor processor) {
-		CpuState cpu = processor.cpu;
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelGetVTimerTime unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else if (!mem.isAddressGood(timeAddr)) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        } else {
+        	long time = getVTimerTime(sceKernelVTimerInfo);
+            if (Modules.log.isDebugEnabled()) {
+            	Modules.log.debug(String.format("sceKernelGetVTimerTime returning %d", time));
+            }
+        	mem.write64(timeAddr, time);
+        	cpu.gpr[2] = 0;
+        }
+    }
 
-		Modules.log.debug("Unimplemented NID function sceKernelStopVTimer [0xD0AEEE87]");
+    /**
+     * Get the timer time (wide format)
+     *
+     * @param vtimerUid - UID of the vtimer
+     *
+     * @return The 64bit timer time
+     */
+    public void sceKernelGetVTimerTimeWide(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelSetVTimerHandler(Processor processor) {
-		CpuState cpu = processor.cpu;
+        int vtimerUid = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelGetVTimerTimeWide(uid=0x%x)", vtimerUid));
+        }
 
-		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerHandler [0xD8B299AE]");
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelGetVTimerTimeWide unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	long time = getVTimerTime(sceKernelVTimerInfo);
+            if (Modules.log.isDebugEnabled()) {
+            	Modules.log.debug(String.format("sceKernelGetVTimerTimeWide returning %d", time));
+            }
+        	Utilities.returnRegister64(cpu, time);
+        }
+    }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelSetVTimerHandlerWide(Processor processor) {
-		CpuState cpu = processor.cpu;
+    /**
+     * Set the timer time
+     *
+     * @param vtimerUid - UID of the vtimer
+     * @param timeAddr - Pointer to a ::SceKernelSysClock structure
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void sceKernelSetVTimerTime(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		Modules.log.debug("Unimplemented NID function sceKernelSetVTimerHandlerWide [0x53B00E9A]");
+        int vtimerUid = cpu.gpr[4];
+        int timeAddr = cpu.gpr[5];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
+        }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelCancelVTimerHandler(Processor processor) {
-		CpuState cpu = processor.cpu;
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else if (!mem.isAddressGood(timeAddr)) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        } else {
+        	long time = mem.read64(timeAddr);
+        	setVTimer(sceKernelVTimerInfo, time);
+        	cpu.gpr[2] = 0;
+        }
+    }
 
-		Modules.log.debug("Unimplemented NID function sceKernelCancelVTimerHandler [0xD2D615EF]");
+    /**
+     * Set the timer time (wide format)
+     *
+     * @param vtimerUid - UID of the vtimer
+     * @param time - a ::SceKernelSysClock structure
+     *
+     * @return Possibly the last time
+     */
+    public void sceKernelSetVTimerTimeWide(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
-    
-	public void sceKernelReferVTimerStatus(Processor processor) {
-		CpuState cpu = processor.cpu;
+        int vtimerUid = cpu.gpr[4];
+        // cpu.gpr[5] not used!
+        long time = Utilities.getRegister64(cpu, 6);
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,time=0x%016X)", vtimerUid, time));
+        }
 
-		Modules.log.debug("Unimplemented NID function sceKernelReferVTimerStatus [0x5F32BEAA]");
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	setVTimer(sceKernelVTimerInfo, time);
+        	cpu.gpr[2] = 0;
+        }
+    }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-	}
+    /**
+     * Start a virtual timer
+     *
+     * @param vtimerUid - The UID of the timer
+     *
+     * @return < 0 on error
+     */
+    public void sceKernelStartVTimer(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int vtimerUid = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelStartVTimer(uid=0x%x)", vtimerUid));
+        }
+
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelStartVTimer unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+        		cpu.gpr[2] = 1; // already started
+        	} else {
+        		startVTimer(sceKernelVTimerInfo);
+        		cpu.gpr[2] = 0;
+        	}
+        }
+    }
+
+    /**
+     * Stop a virtual timer
+     *
+     * @param vtimerUid - The UID of the timer
+     *
+     * @return < 0 on error
+     */
+    public void sceKernelStopVTimer(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int vtimerUid = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelStopVTimer(uid=0x%x)", vtimerUid));
+        }
+
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelStopVTimer unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_STOPPED) {
+        		cpu.gpr[2] = 0; // already stopped
+        	} else {
+        		stopVTimer(sceKernelVTimerInfo);
+        		cpu.gpr[2] = 1;
+        	}
+        }
+    }
+
+    /**
+     * Set the timer handler
+     *
+     * @param vtimerUid - UID of the vtimer
+     * @param scheduleAddr - Time to call the handler
+     * @param handlerAddress - The timer handler
+     * @param handlerArgument  - Common pointer
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void sceKernelSetVTimerHandler(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
+
+        int vtimerUid = cpu.gpr[4];
+        int scheduleAddr = cpu.gpr[5];
+        int handlerAddress = cpu.gpr[6];
+        int handlerArgument = cpu.gpr[7];
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.warn(String.format("sceKernelSetVTimerHandler(uid=0x%x,scheduleAddr=0x%08X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
+        }
+
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else if (!mem.isAddressGood(scheduleAddr)) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        } else {
+        	long schedule = mem.read64(scheduleAddr);
+        	sceKernelVTimerInfo.handlerAddress = handlerAddress;
+        	sceKernelVTimerInfo.handlerArgument = handlerArgument;
+        	if (handlerAddress != 0) {
+        		scheduleVTimer(sceKernelVTimerInfo, schedule);
+        	}
+        	cpu.gpr[2] = 0;
+        }
+    }
+
+    /**
+     * Set the timer handler (wide mode)
+     *
+     * @param vtimerUid - UID of the vtimer
+     * @param schedule - Time to call the handler
+     * @param handlerAddress - The timer handler
+     * @param handlerArgument  - Common pointer
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void sceKernelSetVTimerHandlerWide(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int vtimerUid = cpu.gpr[4];
+        // cpu.gpr[5] not used!
+        long schedule = Utilities.getRegister64(cpu, 6);
+        int handlerAddress = cpu.gpr[8];
+        int handlerArgument = cpu.gpr[9];
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelSetVTimerHandlerWide(uid=0x%x,schedule=0x%016X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, schedule, handlerAddress, handlerArgument));
+        }
+
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	sceKernelVTimerInfo.handlerAddress = handlerAddress;
+        	sceKernelVTimerInfo.handlerArgument = handlerArgument;
+        	if (handlerAddress != 0) {
+        		scheduleVTimer(sceKernelVTimerInfo, schedule);
+        	}
+        	cpu.gpr[2] = 0;
+        }
+    }
+
+    /**
+     * Cancel the timer handler
+     *
+     * @param vtimerUid - The UID of the vtimer
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void sceKernelCancelVTimerHandler(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int vtimerUid = cpu.gpr[4];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelCancelVTimerHandler(uid=0x%x)", vtimerUid));
+        }
+
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelCancelVTimerHandler unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else {
+        	cancelVTimer(sceKernelVTimerInfo);
+        	cpu.gpr[2] = 0;
+        }
+    }
+
+    /**
+     * Get the status of a VTimer
+     *
+     * @param vtimerUid - The uid of the VTimer
+     * @param infoAddr - Pointer to a ::SceKernelVTimerInfo structure
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void sceKernelReferVTimerStatus(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
+
+        int vtimerUid = cpu.gpr[4];
+        int infoAddr = cpu.gpr[5];
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceKernelReferVTimerStatus(uid=0x%x,infoAddr=0x%08X)", vtimerUid, infoAddr));
+        }
+
+    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+        	Modules.log.warn(String.format("sceKernelReferVTimerStatus unknown uid=0x%x", vtimerUid));
+        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else if (!mem.isAddressGood(infoAddr)) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        } else {
+        	int size = mem.read32(infoAddr);
+        	sceKernelVTimerInfo.size = size;
+        	sceKernelVTimerInfo.write(mem, infoAddr);
+        	cpu.gpr[2] = 0;
+        }
+    }
 
     public void sceKernelCreateThread(Processor processor) {
         CpuState cpu = processor.cpu;

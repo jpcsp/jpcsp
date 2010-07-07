@@ -31,8 +31,9 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
-public class sceCtrl implements HLEModule {
+public class sceCtrl implements HLEModule, HLEStartModule {
 
 	private int cycle;
     private int mode;
@@ -143,52 +144,23 @@ public class sceCtrl implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceCtrlSetSamplingCycleFunction, 0x6A2774F3);
-            mm.addFunction(sceCtrlGetSamplingCycleFunction, 0x02BAAD91);
-            mm.addFunction(sceCtrlSetSamplingModeFunction, 0x1F4011E6);
-            mm.addFunction(sceCtrlGetSamplingModeFunction, 0xDA6B76A1);
-            mm.addFunction(sceCtrlPeekBufferPositiveFunction, 0x3A622550);
-            mm.addFunction(sceCtrlPeekBufferNegativeFunction, 0xC152080A);
-            mm.addFunction(sceCtrlReadBufferPositiveFunction, 0x1F803938);
-            mm.addFunction(sceCtrlReadBufferNegativeFunction, 0x60B81F86);
-            mm.addFunction(sceCtrlPeekLatchFunction, 0xB1D0E5CD);
-            mm.addFunction(sceCtrlReadLatchFunction, 0x0B588501);
-            mm.addFunction(sceCtrlSetIdleCancelThresholdFunction, 0xA7144800);
-            mm.addFunction(sceCtrlGetIdleCancelThresholdFunction, 0x687660FA);
-            mm.addFunction(sceCtrl_348D99D4Function, 0x348D99D4);
-            mm.addFunction(sceCtrl_AF5960F3Function, 0xAF5960F3);
-            mm.addFunction(sceCtrlClearRapidFireFunction, 0xA68FD260);
-            mm.addFunction(sceCtrlSetRapidFireFunction, 0x6841BE1A);
+            mm.addFunction(0x6A2774F3, sceCtrlSetSamplingCycleFunction);
+            mm.addFunction(0x02BAAD91, sceCtrlGetSamplingCycleFunction);
+            mm.addFunction(0x1F4011E6, sceCtrlSetSamplingModeFunction);
+            mm.addFunction(0xDA6B76A1, sceCtrlGetSamplingModeFunction);
+            mm.addFunction(0x3A622550, sceCtrlPeekBufferPositiveFunction);
+            mm.addFunction(0xC152080A, sceCtrlPeekBufferNegativeFunction);
+            mm.addFunction(0x1F803938, sceCtrlReadBufferPositiveFunction);
+            mm.addFunction(0x60B81F86, sceCtrlReadBufferNegativeFunction);
+            mm.addFunction(0xB1D0E5CD, sceCtrlPeekLatchFunction);
+            mm.addFunction(0x0B588501, sceCtrlReadLatchFunction);
+            mm.addFunction(0xA7144800, sceCtrlSetIdleCancelThresholdFunction);
+            mm.addFunction(0x687660FA, sceCtrlGetIdleCancelThresholdFunction);
+            mm.addFunction(0x348D99D4, sceCtrl_348D99D4Function);
+            mm.addFunction(0xAF5960F3, sceCtrl_AF5960F3Function);
+            mm.addFunction(0xA68FD260, sceCtrlClearRapidFireFunction);
+            mm.addFunction(0x6841BE1A, sceCtrlSetRapidFireFunction);
 
-            uiMake = 0;
-            uiBreak = 0;
-            uiPress = 0;
-            uiRelease = ~uiPress;
-
-            Lx = (byte)128;
-            Ly = (byte)128;
-            Buttons = 0;
-
-            idlereset = -1;
-            idleback = -1;
-
-            mode = PSP_CTRL_MODE_DIGITAL; // check initial mode
-            cycle = 0;
-
-            samples = new Sample[SAMPLE_BUFFER_SIZE];
-            for (int i = 0; i < samples.length; i++) {
-            	samples[i] = new Sample();
-            }
-            currentSamplingIndex = 0;
-            currentReadingIndex = 0;
-            latchSamplingCount = 0;
-
-            threadsWaitingForSampling = new LinkedList<ThreadWaitingForSampling>();
-
-            if (sampleAction == null) {
-            	sampleAction = new SamplingAction();
-            	Managers.intr.addVBlankAction(sampleAction);
-            }
         }
     }
 
@@ -218,6 +190,43 @@ public class sceCtrl implements HLEModule {
             	sampleAction = null;
             }
         }
+    }
+    
+    @Override
+    public void start() {
+    	uiMake = 0;
+        uiBreak = 0;
+        uiPress = 0;
+        uiRelease = ~uiPress;
+
+        Lx = (byte)128;
+        Ly = (byte)128;
+        Buttons = 0;
+
+        idlereset = -1;
+        idleback = -1;
+
+        mode = PSP_CTRL_MODE_DIGITAL; // check initial mode
+        cycle = 0;
+
+        samples = new Sample[SAMPLE_BUFFER_SIZE];
+        for (int i = 0; i < samples.length; i++) {
+        	samples[i] = new Sample();
+        }
+        currentSamplingIndex = 0;
+        currentReadingIndex = 0;
+        latchSamplingCount = 0;
+
+        threadsWaitingForSampling = new LinkedList<ThreadWaitingForSampling>();
+
+        if (sampleAction == null) {
+        	sampleAction = new SamplingAction();
+        	Managers.intr.addVBlankAction(sampleAction);
+        }
+    }
+
+    @Override
+    public void stop() {
     }
 
     protected class SamplingAction implements IAction {

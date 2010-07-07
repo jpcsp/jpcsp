@@ -37,7 +37,7 @@ public class VTimerInterruptHandler extends AbstractAllegrexInterruptHandler {
 		int internalMemory = sceKernelVTimerInfo.getInternalMemory();
 		if (internalMemory != 0) {
 			mem.write64(internalMemory    , sceKernelVTimerInfo.schedule);
-			mem.write64(internalMemory + 8, Modules.TimerManager.getVTimerTime(sceKernelVTimerInfo));
+			mem.write64(internalMemory + 8, Modules.ThreadManForUserModule.getVTimerTime(sceKernelVTimerInfo));
 			setArgument(1, internalMemory    );
 			setArgument(2, internalMemory + 8);
 		} else {

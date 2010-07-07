@@ -34,15 +34,15 @@ public class InterruptManager implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 		
-			mm.addFunction(sceKernelRegisterSubIntrHandlerFunction, 0xCA04A2B9);
-			mm.addFunction(sceKernelReleaseSubIntrHandlerFunction, 0xD61E6961);
-			mm.addFunction(sceKernelEnableSubIntrFunction, 0xFB8E22EC);
-			mm.addFunction(sceKernelDisableSubIntrFunction, 0x8A389411);
-			mm.addFunction(sceKernelSuspendSubIntrFunction, 0x5CB5A78B);
-			mm.addFunction(sceKernelResumeSubIntrFunction, 0x7860E0DC);
-			mm.addFunction(sceKernelIsSubInterruptOccurredFunction, 0xFC4374B8);
-			mm.addFunction(QueryIntrHandlerInfoFunction, 0xD2E8363F);
-			mm.addFunction(sceKernelRegisterUserSpaceIntrStackFunction, 0xEEE43F47);
+			mm.addFunction(0xCA04A2B9, sceKernelRegisterSubIntrHandlerFunction);
+			mm.addFunction(0xD61E6961, sceKernelReleaseSubIntrHandlerFunction);
+			mm.addFunction(0xFB8E22EC, sceKernelEnableSubIntrFunction);
+			mm.addFunction(0x8A389411, sceKernelDisableSubIntrFunction);
+			mm.addFunction(0x5CB5A78B, sceKernelSuspendSubIntrFunction);
+			mm.addFunction(0x7860E0DC, sceKernelResumeSubIntrFunction);
+			mm.addFunction(0xFC4374B8, sceKernelIsSubInterruptOccurredFunction);
+			mm.addFunction(0xD2E8363F, QueryIntrHandlerInfoFunction);
+			mm.addFunction(0xEEE43F47, sceKernelRegisterUserSpaceIntrStackFunction);
 			
 		}
 	}
@@ -63,7 +63,6 @@ public class InterruptManager implements HLEModule {
 			
 		}
 	}
-	
 	
 	public void sceKernelRegisterSubIntrHandler(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
@@ -223,5 +222,4 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelRegisterUserSpaceIntrStack(processor);";
 		}
 	};
-    
 };

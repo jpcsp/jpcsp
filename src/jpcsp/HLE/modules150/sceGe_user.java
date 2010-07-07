@@ -42,11 +42,12 @@ import jpcsp.HLE.kernel.types.interrupts.GeInterruptHandler;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 
-public class sceGe_user implements HLEModule {
+public class sceGe_user implements HLEModule, HLEStartModule {
 
     public volatile boolean waitingForSync;
     public volatile boolean syncDone;
@@ -103,23 +104,23 @@ public class sceGe_user implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceGeEdramGetSizeFunction, 0x1F6752AD);
-            mm.addFunction(sceGeEdramGetAddrFunction, 0xE47E40E4);
-            mm.addFunction(sceGeEdramSetAddrTranslationFunction, 0xB77905EA);
-            mm.addFunction(sceGeGetCmdFunction, 0xDC93CFEF);
-            mm.addFunction(sceGeGetMtxFunction, 0x57C8945B);
-            mm.addFunction(sceGeSaveContextFunction, 0x438A385A);
-            mm.addFunction(sceGeRestoreContextFunction, 0x0BF608FB);
-            mm.addFunction(sceGeListEnQueueFunction, 0xAB49E76A);
-            mm.addFunction(sceGeListEnQueueHeadFunction, 0x1C0D95A6);
-            mm.addFunction(sceGeListDeQueueFunction, 0x5FB86AB0);
-            mm.addFunction(sceGeListUpdateStallAddrFunction, 0xE0D68148);
-            mm.addFunction(sceGeListSyncFunction, 0x03444EB4);
-            mm.addFunction(sceGeDrawSyncFunction, 0xB287BD61);
-            mm.addFunction(sceGeBreakFunction, 0xB448EC0D);
-            mm.addFunction(sceGeContinueFunction, 0x4C06E472);
-            mm.addFunction(sceGeSetCallbackFunction, 0xA4FC06A4);
-            mm.addFunction(sceGeUnsetCallbackFunction, 0x05DB22CE);
+            mm.addFunction(0x1F6752AD, sceGeEdramGetSizeFunction);
+            mm.addFunction(0xE47E40E4, sceGeEdramGetAddrFunction);
+            mm.addFunction(0xB77905EA, sceGeEdramSetAddrTranslationFunction);
+            mm.addFunction(0xDC93CFEF, sceGeGetCmdFunction);
+            mm.addFunction(0x57C8945B, sceGeGetMtxFunction);
+            mm.addFunction(0x438A385A, sceGeSaveContextFunction);
+            mm.addFunction(0x0BF608FB, sceGeRestoreContextFunction);
+            mm.addFunction(0xAB49E76A, sceGeListEnQueueFunction);
+            mm.addFunction(0x1C0D95A6, sceGeListEnQueueHeadFunction);
+            mm.addFunction(0x5FB86AB0, sceGeListDeQueueFunction);
+            mm.addFunction(0xE0D68148, sceGeListUpdateStallAddrFunction);
+            mm.addFunction(0x03444EB4, sceGeListSyncFunction);
+            mm.addFunction(0xB287BD61, sceGeDrawSyncFunction);
+            mm.addFunction(0xB448EC0D, sceGeBreakFunction);
+            mm.addFunction(0x4C06E472, sceGeContinueFunction);
+            mm.addFunction(0xA4FC06A4, sceGeSetCallbackFunction);
+            mm.addFunction(0x05DB22CE, sceGeUnsetCallbackFunction);
 
         }
     }
@@ -149,7 +150,8 @@ public class sceGe_user implements HLEModule {
         }
     }
 
-    public void Initialise() {
+    @Override
+    public void start() {
         waitingForSync = false;
         syncDone = false;
 
@@ -166,6 +168,10 @@ public class sceGe_user implements HLEModule {
         deferredThreadWakeupQueue = new ConcurrentLinkedQueue<Integer>();
 
         eDRAMMemoryWidth = 1024;
+    }
+    
+    @Override
+    public void stop() {
     }
 
     public void step() {

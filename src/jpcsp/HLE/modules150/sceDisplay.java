@@ -50,6 +50,7 @@ import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.capture.CaptureManager;
@@ -59,7 +60,7 @@ import jpcsp.util.Utilities;
 
 import com.sun.opengl.util.Screenshot;
 
-public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule {
+public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, HLEStartModule {
 	private static final long serialVersionUID = 2267866365228834812L;
 
     private static final boolean useGlReadPixels = true;
@@ -246,24 +247,24 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceDisplaySetModeFunction, 0x0E20F177);
-            mm.addFunction(sceDisplayGetModeFunction, 0xDEA197D4);
-            mm.addFunction(sceDisplayGetFramePerSecFunction, 0xDBA6C4C4);
-            mm.addFunction(sceDisplaySetHoldModeFunction, 0x7ED59BC4);
-            mm.addFunction(sceDisplaySetResumeModeFunction, 0xA544C486);
-            mm.addFunction(sceDisplaySetFrameBufFunction, 0x289D82FE);
-            mm.addFunction(sceDisplayGetFrameBufFunction, 0xEEDA2E54);
-            mm.addFunction(sceDisplayIsForegroundFunction, 0xB4F378FA);
-            mm.addFunction(sceDisplayGetBrightnessFunction, 0x31C4BAA8);
-            mm.addFunction(sceDisplayGetVcountFunction, 0x9C6EAAD7);
-            mm.addFunction(sceDisplayIsVblankFunction, 0x4D4E10EC);
-            mm.addFunction(sceDisplayWaitVblankFunction, 0x36CDFADE);
-            mm.addFunction(sceDisplayWaitVblankCBFunction, 0x8EB9EC49);
-            mm.addFunction(sceDisplayWaitVblankStartFunction, 0x984C27E7);
-            mm.addFunction(sceDisplayWaitVblankStartCBFunction, 0x46F186C3);
-            mm.addFunction(sceDisplayGetCurrentHcountFunction, 0x773DD3A3);
-            mm.addFunction(sceDisplayGetAccumulatedHcountFunction, 0x210EAB3A);
-            mm.addFunction(sceDisplayAdjustAccumulatedHcountFunction, 0xA83EF139);
+            mm.addFunction(0x0E20F177, sceDisplaySetModeFunction);
+            mm.addFunction(0xDEA197D4, sceDisplayGetModeFunction);
+            mm.addFunction(0xDBA6C4C4, sceDisplayGetFramePerSecFunction);
+            mm.addFunction(0x7ED59BC4, sceDisplaySetHoldModeFunction);
+            mm.addFunction(0xA544C486, sceDisplaySetResumeModeFunction);
+            mm.addFunction(0x289D82FE, sceDisplaySetFrameBufFunction);
+            mm.addFunction(0xEEDA2E54, sceDisplayGetFrameBufFunction);
+            mm.addFunction(0xB4F378FA, sceDisplayIsForegroundFunction);
+            mm.addFunction(0x31C4BAA8, sceDisplayGetBrightnessFunction);
+            mm.addFunction(0x9C6EAAD7, sceDisplayGetVcountFunction);
+            mm.addFunction(0x4D4E10EC, sceDisplayIsVblankFunction);
+            mm.addFunction(0x36CDFADE, sceDisplayWaitVblankFunction);
+            mm.addFunction(0x8EB9EC49, sceDisplayWaitVblankCBFunction);
+            mm.addFunction(0x984C27E7, sceDisplayWaitVblankStartFunction);
+            mm.addFunction(0x46F186C3, sceDisplayWaitVblankStartCBFunction);
+            mm.addFunction(0x773DD3A3, sceDisplayGetCurrentHcountFunction);
+            mm.addFunction(0x210EAB3A, sceDisplayGetAccumulatedHcountFunction);
+            mm.addFunction(0xA83EF139, sceDisplayAdjustAccumulatedHcountFunction);
 
         }
     }
@@ -309,7 +310,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule {
         texFb = -1;
     }
 
-    public void Initialise() {
+    @Override
+    public void start() {
         statistics = new DurationStatistics("sceDisplay Statistics");
         statisticsCopyGeToMemory = new DurationStatistics("Copy GE to Memory");
         statisticsCopyMemoryToGe = new DurationStatistics("Copy Memory to GE");
@@ -366,6 +368,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule {
     		displayVblankAction = new DisplayVblankAction();
     		IntrManager.getInstance().addVBlankAction(displayVblankAction);
     	}
+    }
+    
+    @Override
+    public void stop() {
     }
 
     public void exit() {

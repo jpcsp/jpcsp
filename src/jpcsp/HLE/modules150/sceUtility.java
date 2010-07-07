@@ -73,60 +73,55 @@ import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
-public class sceUtility implements HLEModule {
+public class sceUtility implements HLEModule, HLEStartModule {
 	@Override
 	public String getName() { return "sceUtility"; }
 
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			mm.addFunction(sceUtilityGameSharingInitStartFunction, 0xC492F751);
-			mm.addFunction(sceUtilityGameSharingShutdownStartFunction, 0xEFC6F80F);
-			mm.addFunction(sceUtilityGameSharingUpdateFunction, 0x7853182D);
-			mm.addFunction(sceUtilityGameSharingGetStatusFunction, 0x946963F3);
-			mm.addFunction(sceNetplayDialogInitStartFunction, 0x3AD50AE7);
-			mm.addFunction(sceNetplayDialogShutdownStartFunction, 0xBC6B6296);
-			mm.addFunction(sceNetplayDialogUpdateFunction, 0x417BED54);
-			mm.addFunction(sceNetplayDialogGetStatusFunction, 0xB6CEE597);
-			mm.addFunction(sceUtilityNetconfInitStartFunction, 0x4DB1E739);
-			mm.addFunction(sceUtilityNetconfShutdownStartFunction, 0xF88155F6);
-			mm.addFunction(sceUtilityNetconfUpdateFunction, 0x91E70E35);
-			mm.addFunction(sceUtilityNetconfGetStatusFunction, 0x6332AA39);
-			mm.addFunction(sceUtilitySavedataInitStartFunction, 0x50C4CD57);
-			mm.addFunction(sceUtilitySavedataShutdownStartFunction, 0x9790B33C);
-			mm.addFunction(sceUtilitySavedataUpdateFunction, 0xD4B95FFB);
-			mm.addFunction(sceUtilitySavedataGetStatusFunction, 0x8874DBE0);
-			mm.addFunction(sceUtility_2995D020Function, 0x2995D020);
-			mm.addFunction(sceUtility_B62A4061Function, 0xB62A4061);
-			mm.addFunction(sceUtility_ED0FAD38Function, 0xED0FAD38);
-			mm.addFunction(sceUtility_88BC7406Function, 0x88BC7406);
-			mm.addFunction(sceUtilityMsgDialogInitStartFunction, 0x2AD8E239);
-			mm.addFunction(sceUtilityMsgDialogShutdownStartFunction, 0x67AF3428);
-			mm.addFunction(sceUtilityMsgDialogUpdateFunction, 0x95FC253B);
-			mm.addFunction(sceUtilityMsgDialogGetStatusFunction, 0x9A1C91D7);
-			mm.addFunction(sceUtilityOskInitStartFunction, 0xF6269B82);
-			mm.addFunction(sceUtilityOskShutdownStartFunction, 0x3DFAEBA9);
-			mm.addFunction(sceUtilityOskUpdateFunction, 0x4B85C861);
-			mm.addFunction(sceUtilityOskGetStatusFunction, 0xF3F76017);
-			mm.addFunction(sceUtilitySetSystemParamIntFunction, 0x45C18506);
-			mm.addFunction(sceUtilitySetSystemParamStringFunction, 0x41E30674);
-			mm.addFunction(sceUtilityGetSystemParamIntFunction, 0xA5DA2406);
-			mm.addFunction(sceUtilityGetSystemParamStringFunction, 0x34B78343);
-			mm.addFunction(sceUtilityCheckNetParamFunction, 0x5EEE6548);
-			mm.addFunction(sceUtilityGetNetParamFunction, 0x434D4B3A);
+			mm.addFunction(0xC492F751, sceUtilityGameSharingInitStartFunction);
+			mm.addFunction(0xEFC6F80F, sceUtilityGameSharingShutdownStartFunction);
+			mm.addFunction(0x7853182D, sceUtilityGameSharingUpdateFunction);
+			mm.addFunction(0x946963F3, sceUtilityGameSharingGetStatusFunction);
+			mm.addFunction(0x3AD50AE7, sceNetplayDialogInitStartFunction);
+			mm.addFunction(0xBC6B6296, sceNetplayDialogShutdownStartFunction);
+			mm.addFunction(0x417BED54, sceNetplayDialogUpdateFunction);
+			mm.addFunction(0xB6CEE597, sceNetplayDialogGetStatusFunction);
+			mm.addFunction(0x4DB1E739, sceUtilityNetconfInitStartFunction);
+			mm.addFunction(0xF88155F6, sceUtilityNetconfShutdownStartFunction);
+			mm.addFunction(0x91E70E35, sceUtilityNetconfUpdateFunction);
+			mm.addFunction(0x6332AA39, sceUtilityNetconfGetStatusFunction);
+			mm.addFunction(0x50C4CD57, sceUtilitySavedataInitStartFunction);
+			mm.addFunction(0x9790B33C, sceUtilitySavedataShutdownStartFunction);
+			mm.addFunction(0xD4B95FFB, sceUtilitySavedataUpdateFunction);
+			mm.addFunction(0x8874DBE0, sceUtilitySavedataGetStatusFunction);
+			mm.addFunction(0x2995D020, sceUtility_2995D020Function);
+			mm.addFunction(0xB62A4061, sceUtility_B62A4061Function);
+			mm.addFunction(0xED0FAD38, sceUtility_ED0FAD38Function);
+			mm.addFunction(0x88BC7406, sceUtility_88BC7406Function);
+			mm.addFunction(0x2AD8E239, sceUtilityMsgDialogInitStartFunction);
+			mm.addFunction(0x67AF3428, sceUtilityMsgDialogShutdownStartFunction);
+			mm.addFunction(0x95FC253B, sceUtilityMsgDialogUpdateFunction);
+			mm.addFunction(0x9A1C91D7, sceUtilityMsgDialogGetStatusFunction);
+			mm.addFunction(0xF6269B82, sceUtilityOskInitStartFunction);
+			mm.addFunction(0x3DFAEBA9, sceUtilityOskShutdownStartFunction);
+			mm.addFunction(0x4B85C861, sceUtilityOskUpdateFunction);
+			mm.addFunction(0xF3F76017, sceUtilityOskGetStatusFunction);
+			mm.addFunction(0x45C18506, sceUtilitySetSystemParamIntFunction);
+			mm.addFunction(0x41E30674, sceUtilitySetSystemParamStringFunction);
+			mm.addFunction(0xA5DA2406, sceUtilityGetSystemParamIntFunction);
+			mm.addFunction(0x34B78343, sceUtilityGetSystemParamStringFunction);
+			mm.addFunction(0x5EEE6548, sceUtilityCheckNetParamFunction);
+			mm.addFunction(0x434D4B3A, sceUtilityGetNetParamFunction);
 
-            gameSharingState    = new UtilityDialogState("sceUtilityGameSharing");
-            netplayDialogState  = new NotImplementedUtilityDialogState("sceNetplayDialog");
-            netconfState        = new UtilityDialogState("sceUtilityNetconf");
-			savedataState       = new UtilityDialogState("sceUtilitySavedata");
-			msgDialogState      = new UtilityDialogState("sceUtilityMsgDialog");
-			oskState            = new UtilityDialogState("sceUtilityOsk");
 		}
 	}
 
@@ -169,6 +164,20 @@ public class sceUtility implements HLEModule {
 			mm.removeFunction(sceUtilityGetNetParamFunction);
 		}
 	}
+	
+	@Override
+    public void start() {
+		gameSharingState    = new UtilityDialogState("sceUtilityGameSharing");
+        netplayDialogState  = new NotImplementedUtilityDialogState("sceNetplayDialog");
+        netconfState        = new UtilityDialogState("sceUtilityNetconf");
+		savedataState       = new UtilityDialogState("sceUtilitySavedata");
+		msgDialogState      = new UtilityDialogState("sceUtilityMsgDialog");
+		oskState            = new UtilityDialogState("sceUtilityOsk");
+    }
+
+    @Override
+    public void stop() {
+    }
 
     public static final int PSP_SYSTEMPARAM_ID_STRING_NICKNAME = 1;
     public static final int PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL = 2;

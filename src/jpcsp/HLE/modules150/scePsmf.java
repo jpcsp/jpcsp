@@ -27,8 +27,9 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
-public class scePsmf implements HLEModule {
+public class scePsmf implements HLEModule, HLEStartModule {
 	@Override
 	public String getName() { return "scePsmf"; }
 
@@ -36,30 +37,28 @@ public class scePsmf implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 
-			mm.addFunction(scePsmfSetPsmfFunction, 0xC22C8327);
-            mm.addFunction(scePsmfGetCurrentStreamTypeFunction, 0xC7DB3A5B);
-            mm.addFunction(scePsmfGetCurrentStreamNumberFunction, 0x28240568);
-            mm.addFunction(scePsmfSpecifyStreamWithStreamTypeFunction, 0x1E6D9013);
-            mm.addFunction(scePsmfSpecifyStreamFunction, 0x4BC9BDE0);
-            mm.addFunction(scePsmfGetPresentationStartTimeFunction, 0x76D3AEBA);
-            mm.addFunction(scePsmfGetPresentationEndTimeFunction, 0xBD8AE0D8);
-            mm.addFunction(scePsmfGetNumberOfStreamsFunction, 0xEAED89CD);
-            mm.addFunction(scePsmfGetNumberOfEPentriesFunction, 0x7491C438);
-            mm.addFunction(scePsmfGetVideoInfoFunction, 0x0BA514E5);
-            mm.addFunction(scePsmfGetAudioInfoFunction, 0xA83F7113);
-            mm.addFunction(scePsmfCheckEPmapFunction, 0x971A3A90);
-            mm.addFunction(scePsmfGetEPWithIdFunction, 0x4E624A34);
-            mm.addFunction(scePsmfGetEPWithTimestampFunction, 0x7C0E7AC3);
-            mm.addFunction(scePsmfGetEPidWithTimestampFunction, 0x5F457515);
-            mm.addFunction(scePsmfQueryStreamOffsetFunction, 0x5B70FCC1);
-            mm.addFunction(scePsmfQueryStreamSizeFunction, 0x9553CC91);
-            mm.addFunction(scePsmfGetNumberOfSpecificStreamsFunction, 0x68D42328);
-            mm.addFunction(scePsmfSpecifyStreamWithStreamTypeNumberFunction, 0x0C120E1D);
-            mm.addFunction(scePsmfVerifyPsmfFunction, 0x2673646B);
-            mm.addFunction(scePsmfGetHeaderSizeFunction, 0xB78EB9E9);
-            mm.addFunction(scePsmfGetStreamSizeFunction, 0xA5EBFE81);
-
-            psmfMap = new HashMap<Integer, PSMFHeader>();
+			mm.addFunction(0xC22C8327, scePsmfSetPsmfFunction);
+            mm.addFunction(0xC7DB3A5B, scePsmfGetCurrentStreamTypeFunction);
+            mm.addFunction(0x28240568, scePsmfGetCurrentStreamNumberFunction);
+            mm.addFunction(0x1E6D9013, scePsmfSpecifyStreamWithStreamTypeFunction);
+            mm.addFunction(0x4BC9BDE0, scePsmfSpecifyStreamFunction);
+            mm.addFunction(0x76D3AEBA, scePsmfGetPresentationStartTimeFunction);
+            mm.addFunction(0xBD8AE0D8, scePsmfGetPresentationEndTimeFunction);
+            mm.addFunction(0xEAED89CD, scePsmfGetNumberOfStreamsFunction);
+            mm.addFunction(0x7491C438, scePsmfGetNumberOfEPentriesFunction);
+            mm.addFunction(0x0BA514E5, scePsmfGetVideoInfoFunction);
+            mm.addFunction(0xA83F7113, scePsmfGetAudioInfoFunction);
+            mm.addFunction(0x971A3A90, scePsmfCheckEPmapFunction);
+            mm.addFunction(0x4E624A34, scePsmfGetEPWithIdFunction);
+            mm.addFunction(0x7C0E7AC3, scePsmfGetEPWithTimestampFunction);
+            mm.addFunction(0x5F457515, scePsmfGetEPidWithTimestampFunction);
+            mm.addFunction(0x5B70FCC1, scePsmfQueryStreamOffsetFunction);
+            mm.addFunction(0x9553CC91, scePsmfQueryStreamSizeFunction);
+            mm.addFunction(0x68D42328, scePsmfGetNumberOfSpecificStreamsFunction);
+            mm.addFunction(0x0C120E1D, scePsmfSpecifyStreamWithStreamTypeNumberFunction);
+            mm.addFunction(0x2673646B, scePsmfVerifyPsmfFunction);
+            mm.addFunction(0xB78EB9E9, scePsmfGetHeaderSizeFunction);
+            mm.addFunction(0xA5EBFE81, scePsmfGetStreamSizeFunction);
 
 		}
 	}
@@ -93,6 +92,15 @@ public class scePsmf implements HLEModule {
 
 		}
 	}
+	
+	@Override
+    public void start() {
+        psmfMap = new HashMap<Integer, PSMFHeader>();
+    }
+
+    @Override
+    public void stop() {
+    }
 
     private HashMap<Integer, PSMFHeader> psmfMap;
 

@@ -31,14 +31,14 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 		
 		if (version >= 380) {
 		
-			mm.addFunction(sceKernelCreateLwMutexFunction, 0x19CFF145);
-			mm.addFunction(sceKernelDonateWakeupThreadFunction, 0x1AF94D03);
-			mm.addFunction(ThreadManForUser_31327F19Function, 0x31327F19);
-			mm.addFunction(sceKernelReferLwMutexStatusByIDFunction, 0x4C145944);
-			mm.addFunction(sceKernelDeleteLwMutexFunction, 0x60107536);
-			mm.addFunction(ThreadManForUser_71040D5CFunction, 0x71040D5C);
-			mm.addFunction(ThreadManForUser_7CFF8CF3Function, 0x7CFF8CF3);
-			mm.addFunction(ThreadManForUser_BEED3A47Function, 0xBEED3A47);
+			mm.addFunction(0x19CFF145, sceKernelCreateLwMutexFunction);
+			mm.addFunction(0x1AF94D03, sceKernelDonateWakeupThreadFunction);
+			mm.addFunction(0x31327F19, ThreadManForUser_31327F19Function);
+			mm.addFunction(0x4C145944, sceKernelReferLwMutexStatusByIDFunction);
+			mm.addFunction(0x60107536, sceKernelDeleteLwMutexFunction);
+			mm.addFunction(0x71040D5C, ThreadManForUser_71040D5CFunction);
+			mm.addFunction(0x7CFF8CF3, ThreadManForUser_7CFF8CF3Function);
+			mm.addFunction(0xBEED3A47, ThreadManForUser_BEED3A47Function);
 			
 		}
 	}

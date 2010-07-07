@@ -42,10 +42,10 @@ public class LoadExecForUser implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 		
-			mm.addFunction(sceKernelLoadExecFunction, 0xBD2F1094);
-			mm.addFunction(sceKernelExitGameWithStatusFunction, 0x2AC9954B);
-			mm.addFunction(sceKernelExitGameFunction, 0x05572A5F);
-			mm.addFunction(sceKernelRegisterExitCallbackFunction, 0x4AC57943);
+			mm.addFunction(0xBD2F1094, sceKernelLoadExecFunction);
+			mm.addFunction(0x2AC9954B, sceKernelExitGameWithStatusFunction);
+			mm.addFunction(0x05572A5F, sceKernelExitGameFunction);
+			mm.addFunction(0x4AC57943, sceKernelRegisterExitCallbackFunction);
 			
 		}
 	}

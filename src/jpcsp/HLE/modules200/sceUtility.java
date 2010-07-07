@@ -34,8 +34,8 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
         if (version >= 200) {
 
-            mm.addFunction(sceUtilityLoadNetModuleFunction, 0x1579A159);
-            mm.addFunction(sceUtilityUnloadNetModuleFunction, 0x64D50C56);
+            mm.addFunction(0x1579A159, sceUtilityLoadNetModuleFunction);
+            mm.addFunction(0x64D50C56, sceUtilityUnloadNetModuleFunction);
 
             loadedModules = new HashMap<Integer, SceModule>();
         }

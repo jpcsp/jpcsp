@@ -32,8 +32,8 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         // TODO move to a 270 directory if it becomes a problem
         if (version >= 270) {
 
-            mm.addFunction(sceUtilityLoadAvModuleFunction, 0xC629AF26);
-            mm.addFunction(sceUtilityUnloadAvModuleFunction, 0xF7D8D092);
+            mm.addFunction(0xC629AF26, sceUtilityLoadAvModuleFunction);
+            mm.addFunction(0xF7D8D092, sceUtilityUnloadAvModuleFunction);
 
         }
     }

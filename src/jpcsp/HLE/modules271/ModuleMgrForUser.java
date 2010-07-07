@@ -30,7 +30,7 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
         if (version >= 271) {
 
-            mm.addFunction(ModuleMgrForUser_FEF27DC1Function, 0xFEF27DC1);
+            mm.addFunction(0xFEF27DC1, ModuleMgrForUser_FEF27DC1Function);
 
         }
     }
