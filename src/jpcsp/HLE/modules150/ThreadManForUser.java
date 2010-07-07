@@ -78,10 +78,11 @@ import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
-public class ThreadManForUser implements HLEModule {
+public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     @Override
     public String getName() {
@@ -421,6 +422,35 @@ public class ThreadManForUser implements HLEModule {
     public ThreadManForUser() {
     }
 
+	@Override
+	public void start() {
+        threadMap = new HashMap<Integer, SceKernelThreadInfo>();
+        threadEventMap = new HashMap<Integer, Integer>();
+        threadEventHandlerMap = new HashMap<Integer, SceKernelThreadEventHandlerInfo>();
+        readyThreads = new LinkedList<SceKernelThreadInfo>();
+        statistics = new Statistics();
+
+        callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
+		callbackManager.Initialize();
+
+        install_idle_threads();
+        install_thread_exit_handler();
+        install_callback_exit_handler();
+        install_async_loop_handler();
+
+        alarms = new HashMap<Integer, SceKernelAlarmInfo>();
+        vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
+
+        syscallFreeCycles = 0;
+        dispatchThreadEnabled = true;
+	}
+
+	@Override
+	public void stop() {
+        alarms = null;
+        vtimers = null;
+	}
+
     public Iterator<SceKernelThreadInfo> iterator() {
         return threadMap.values().iterator();
     }
@@ -436,20 +466,6 @@ public class ThreadManForUser implements HLEModule {
      * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
     public void Initialise(SceModule module, int entry_addr, int attr, String pspfilename, int moduleid, boolean fromSyscall) {
-        threadMap = new HashMap<Integer, SceKernelThreadInfo>();
-        threadEventMap = new HashMap<Integer, Integer>();
-        threadEventHandlerMap = new HashMap<Integer, SceKernelThreadEventHandlerInfo>();
-        readyThreads = new LinkedList<SceKernelThreadInfo>();
-        statistics = new Statistics();
-
-        callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
-		callbackManager.Initialize();
-
-        install_idle_threads();
-        install_thread_exit_handler();
-        install_callback_exit_handler();
-        install_async_loop_handler();
-
         // Create a thread the program will run inside
 
         // The stack size seems to be 0x40000 when starting the application from the VSH
@@ -488,8 +504,6 @@ public class ThreadManForUser implements HLEModule {
         // Switch in the thread
         currentThread.status = PSP_THREAD_RUNNING;
         currentThread.restoreContext();
-        syscallFreeCycles = 0;
-        dispatchThreadEnabled = true;
     }
 
     private void install_idle_threads() {
@@ -5501,5 +5515,4 @@ public class ThreadManForUser implements HLEModule {
             return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferGlobalProfiler(processor);";
         }
     };
-
 }
