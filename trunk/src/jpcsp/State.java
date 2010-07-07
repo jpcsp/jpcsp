@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.FileLogger.FileLoggerFrame;
+import jpcsp.Debugger.ImageViewer;
 
 /**
  *
@@ -31,6 +32,7 @@ public class State extends jpcsp.HLE.Modules {
     public static final Controller controller;
     public static DisassemblerFrame debugger;
     public static MemoryViewer memoryViewer;
+    public static ImageViewer imageViewer;
     public static final FileLoggerFrame fileLogger;
     public static String discId;
     public static String title;

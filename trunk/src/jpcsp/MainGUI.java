@@ -53,6 +53,7 @@ import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.ElfHeaderInfo;
+import jpcsp.Debugger.ImageViewer;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.StepLogger;
@@ -182,6 +183,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ToolsSubMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
+        EnterImageViewer = new javax.swing.JMenuItem();
         VfpuRegisters = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
         FileLog = new javax.swing.JMenuItem();
@@ -423,6 +425,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         ToolsSubMenu.add(EnterMemoryViewer);
+
+        EnterImageViewer.setText(Resource.get("imageviewer"));
+        EnterImageViewer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EnterImageViewerActionPerformed(evt);
+            }
+        });
+        ToolsSubMenu.add(EnterImageViewer);
 
         VfpuRegisters.setText(Resource.get("vfpuregisters"));
         VfpuRegisters.addActionListener(new java.awt.event.ActionListener() {
@@ -872,6 +882,16 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
         State.memoryViewer.setVisible(true);
     }
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
+
+private void EnterImageViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterImageViewerActionPerformed
+    if (State.imageViewer == null) {
+        State.imageViewer = new ImageViewer();
+        State.imageViewer.setVisible(true);
+    } else {
+        State.imageViewer.refreshImage();
+        State.imageViewer.setVisible(true);
+    }
+}//GEN-LAST:event_EnterImageViewerActionPerformed
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
   StringBuilder message = new StringBuilder();
@@ -1530,6 +1550,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem English;
     private javax.swing.JMenuItem EnterDebugger;
     private javax.swing.JMenuItem EnterMemoryViewer;
+    private javax.swing.JMenuItem EnterImageViewer;
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenuItem FileLog;
     private javax.swing.JMenu FileMenu;
