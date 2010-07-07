@@ -671,8 +671,7 @@ public class VertexInfoReader {
 		@Override
 		public void read() {
 			// Skip 2 Floats
-			memoryReader.skipNext32();
-			memoryReader.skipNext32();
+			memoryReader.skipNext32(2);
 		}
 	}
 
@@ -684,9 +683,7 @@ public class VertexInfoReader {
 		@Override
 		public void read() {
 			// Skip 3 Floats
-			memoryReader.skipNext32();
-			memoryReader.skipNext32();
-			memoryReader.skipNext32();
+			memoryReader.skipNext32(3);
 		}
 	}
 
