@@ -18,7 +18,6 @@ package jpcsp.HLE;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.DurationStatistics;
 
@@ -49,13 +48,11 @@ public class SyscallHandler {
         if(code == 0xfffff) { // special code for unmapped imports
 	        CpuState cpu = Emulator.getProcessor().cpu;
 	        if(isEnableIgnoreUnmappedImports()) {
-	            Modules.log.warn(String.format("IGNORING: Unmapped import @ 0x%08X - %08x %08x %08x",
-	            cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+	            Modules.log.warn(String.format("IGNORING: Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 	        }
 	        else {
-	        Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x",
-	            cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-	        Emulator.PauseEmu();
+		        Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+		        Emulator.PauseEmu();
 	        }
 	    } else {
 	        // Try and handle as an HLE module export
@@ -67,7 +64,7 @@ public class SyscallHandler {
 	            String params = String.format("%08x %08x %08x", cpu.gpr[4],
 	                cpu.gpr[5], cpu.gpr[6]);
 
-	            for (syscallsFirm15.calls c : syscallsFirm15.calls.values()) {
+	            for (SyscallIgnore c : SyscallIgnore.values()) {
 	                if (c.getSyscall() == code) {
 	                    Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + c + " " + params);
 	                    return;

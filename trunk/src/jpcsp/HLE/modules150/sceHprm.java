@@ -25,8 +25,9 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
-public class sceHprm implements HLEModule {
+public class sceHprm implements HLEModule, HLEStartModule {
     @Override
     public String getName() { return "sceHprm"; }
 
@@ -34,17 +35,16 @@ public class sceHprm implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceHprmRegisterCallbackFunction, 0xC7154136);
-            mm.addFunction(sceHprmUnregisterCallbackFunction, 0x444ED0B7);
-            mm.addFunction(sceHprmGetHpDetectFunction, 0x71B5FB67);
-            mm.addFunction(sceHprmIsRemoteExistFunction, 0x208DB1BD);
-            mm.addFunction(sceHprmIsHeadphoneExistFunction, 0x7E69EDA4);
-            mm.addFunction(sceHprmIsMicrophoneExistFunction, 0x219C58F1);
-            mm.addFunction(sceHprmPeekCurrentKeyFunction, 0x1910B327);
-            mm.addFunction(sceHprmPeekLatchFunction, 0x2BCEC83E);
-            mm.addFunction(sceHprmReadLatchFunction, 0x40D2F9F0);
+            mm.addFunction(0xC7154136, sceHprmRegisterCallbackFunction);
+            mm.addFunction(0x444ED0B7, sceHprmUnregisterCallbackFunction);
+            mm.addFunction(0x71B5FB67, sceHprmGetHpDetectFunction);
+            mm.addFunction(0x208DB1BD, sceHprmIsRemoteExistFunction);
+            mm.addFunction(0x7E69EDA4, sceHprmIsHeadphoneExistFunction);
+            mm.addFunction(0x219C58F1, sceHprmIsMicrophoneExistFunction);
+            mm.addFunction(0x1910B327, sceHprmPeekCurrentKeyFunction);
+            mm.addFunction(0x2BCEC83E, sceHprmPeekLatchFunction);
+            mm.addFunction(0x40D2F9F0, sceHprmReadLatchFunction);
 
-            peekCurrentKeyWarningLogged = false;
         }
     }
 
@@ -63,6 +63,15 @@ public class sceHprm implements HLEModule {
             mm.removeFunction(sceHprmReadLatchFunction);
 
         }
+    }
+    
+    @Override
+    public void start() {
+    	peekCurrentKeyWarningLogged = false;
+    }
+
+    @Override
+    public void stop() {
     }
 
     private boolean enableRemote = false;

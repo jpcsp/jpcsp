@@ -31,10 +31,11 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
-public class sceSasCore implements HLEModule {
+public class sceSasCore implements HLEModule, HLEStartModule {
 
     @Override
     public String getName() {
@@ -45,52 +46,37 @@ public class sceSasCore implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(__sceSasSetADSRFunction, 0x019B25EB);
-            mm.addFunction(__sceSasRevParamFunction, 0x267A6DD2);
-            mm.addFunction(__sceSasGetPauseFlagFunction, 0x2C8E6AB3);
-            mm.addFunction(__sceSasRevTypeFunction, 0x33D4AB37);
-            mm.addFunction(__sceSasInitFunction, 0x42778A9F);
-            mm.addFunction(__sceSasSetVolumeFunction, 0x440CA7D8);
-            mm.addFunction(__sceSasCoreWithMixFunction, 0x50A14DFC);
-            mm.addFunction(__sceSasSetSLFunction, 0x5F9529F6);
-            mm.addFunction(__sceSasGetEndFlagFunction, 0x68A46B95);
-            mm.addFunction(__sceSasGetEnvelopeHeightFunction, 0x74AE582A);
-            mm.addFunction(__sceSasSetKeyOnFunction, 0x76F01ACA);
-            mm.addFunction(__sceSasSetPauseFunction, 0x787D04D5);
-            mm.addFunction(__sceSasSetVoiceFunction, 0x99944089);
-            mm.addFunction(__sceSasSetADSRmodeFunction, 0x9EC3676A);
-            mm.addFunction(__sceSasSetKeyOffFunction, 0xA0CF2FA4);
-            mm.addFunction(__sceSasSetTrianglarWaveFunction, 0xA232CBE6);
-            mm.addFunction(__sceSasCoreFunction, 0xA3589D81);
-            mm.addFunction(__sceSasSetPitchFunction, 0xAD84D37F);
-            mm.addFunction(__sceSasSetNoiseFunction, 0xB7660A23);
-            mm.addFunction(__sceSasGetGrainFunction, 0xBD11B7C2);
-            mm.addFunction(__sceSasSetSimpleADSRFunction, 0xCBCD4F79);
-            mm.addFunction(__sceSasSetGrainFunction, 0xD1E0A01E);
-            mm.addFunction(__sceSasRevEVOLFunction, 0xD5A229C9);
-            mm.addFunction(__sceSasSetSteepWaveFunction, 0xD5EBBBCD);
-            mm.addFunction(__sceSasGetOutputmodeFunction, 0xE175EF66);
-            mm.addFunction(__sceSasSetOutputmodeFunction, 0xE855BF76);
-            mm.addFunction(__sceSasRevVONFunction, 0xF983B186);
-            mm.addFunction(__sceSasGetAllEnvelopeHeightsFunction, 0x07F58C24);
+            mm.addFunction(0x019B25EB, __sceSasSetADSRFunction);
+            mm.addFunction(0x267A6DD2, __sceSasRevParamFunction);
+            mm.addFunction(0x2C8E6AB3, __sceSasGetPauseFlagFunction);
+            mm.addFunction(0x33D4AB37, __sceSasRevTypeFunction);
+            mm.addFunction(0x42778A9F, __sceSasInitFunction);
+            mm.addFunction(0x440CA7D8, __sceSasSetVolumeFunction);
+            mm.addFunction(0x50A14DFC, __sceSasCoreWithMixFunction);
+            mm.addFunction(0x5F9529F6, __sceSasSetSLFunction);
+            mm.addFunction(0x68A46B95, __sceSasGetEndFlagFunction);
+            mm.addFunction(0x74AE582A, __sceSasGetEnvelopeHeightFunction);
+            mm.addFunction(0x76F01ACA, __sceSasSetKeyOnFunction);
+            mm.addFunction(0x787D04D5, __sceSasSetPauseFunction);
+            mm.addFunction(0x99944089, __sceSasSetVoiceFunction);
+            mm.addFunction(0x9EC3676A, __sceSasSetADSRmodeFunction);
+            mm.addFunction(0xA0CF2FA4, __sceSasSetKeyOffFunction);
+            mm.addFunction(0xA232CBE6, __sceSasSetTrianglarWaveFunction);
+            mm.addFunction(0xA3589D81, __sceSasCoreFunction);
+            mm.addFunction(0xAD84D37F, __sceSasSetPitchFunction);
+            mm.addFunction(0xB7660A23, __sceSasSetNoiseFunction);
+            mm.addFunction(0xBD11B7C2, __sceSasGetGrainFunction);
+            mm.addFunction(0xCBCD4F79, __sceSasSetSimpleADSRFunction);
+            mm.addFunction(0xD1E0A01E, __sceSasSetGrainFunction);
+            mm.addFunction(0xD5A229C9, __sceSasRevEVOLFunction);
+            mm.addFunction(0xD5EBBBCD, __sceSasSetSteepWaveFunction);
+            mm.addFunction(0xE175EF66, __sceSasGetOutputmodeFunction);
+            mm.addFunction(0xE855BF76, __sceSasSetOutputmodeFunction);
+            mm.addFunction(0xF983B186, __sceSasRevVONFunction);
+            mm.addFunction(0x07F58C24, __sceSasGetAllEnvelopeHeightsFunction);
         }
 
-        sasCoreUid = -1;
-        sampleRate = 48000;
-        voices = new pspVoice[32];
-        for (int i = 0; i < voices.length; i++) {
-        	voices[i] = new pspVoice();
-        }
-
-        grainSamples = 0x100; // Normal base value for sound processing.
-        outputMode = 0; // Checked. 0 is default (STEREO).
-
-        if (voicesCheckerThread == null) {
-	        voicesCheckerThread = new VoicesCheckerThread(500);
-	        voicesCheckerThread.setDaemon(true);
-	        voicesCheckerThread.setName("sceSasCore Voices Checker");
-	        voicesCheckerThread.start();
-        }
+        
     }
 
     @Override
@@ -127,6 +113,30 @@ public class sceSasCore implements HLEModule {
             mm.removeFunction(__sceSasGetAllEnvelopeHeightsFunction);
 
         }
+    }
+    
+    @Override
+    public void start() {
+    	sasCoreUid = -1;
+        sampleRate = 48000;
+        voices = new pspVoice[32];
+        for (int i = 0; i < voices.length; i++) {
+        	voices[i] = new pspVoice();
+        }
+
+        grainSamples = 0x100; // Normal base value for sound processing.
+        outputMode = 0; // Checked. 0 is default (STEREO).
+
+        if (voicesCheckerThread == null) {
+	        voicesCheckerThread = new VoicesCheckerThread(500);
+	        voicesCheckerThread.setDaemon(true);
+	        voicesCheckerThread.setName("sceSasCore Voices Checker");
+	        voicesCheckerThread.start();
+        }
+    }
+
+    @Override
+    public void stop() {
     }
 
     protected class pspVoice {

@@ -1020,6 +1020,12 @@ public void loadUMD(File file) {
         emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
         RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
 
+        // use regular settings first
+        installCompatibilitySettings();
+
+        // override with patch file (allows incomplete patch files)
+        installCompatibilityPatches(discId + ".patch");
+        
         if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
             loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
             loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
@@ -1032,12 +1038,6 @@ public void loadUMD(File file) {
 
             Modules.IoFileMgrForUserModule.setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
-
-            // use regular settings first
-            installCompatibilitySettings();
-
-            // override with patch file (allows incomplete patch files)
-            installCompatibilityPatches(discId + ".patch");
 
             if (instructioncounter != null)
                 instructioncounter.RefreshWindow();

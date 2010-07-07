@@ -30,11 +30,11 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 		
 		if (version >= 380) {
 		
-			mm.addFunction(sceKernelUnlockLwMutexFunction, 0x15B6446B);
-			mm.addFunction(sceKernelLockLwMutexCBFunction, 0x1FC64E09);
-			mm.addFunction(sceKernelLockLwMutexFunction, 0xBEA46419);
-			mm.addFunction(sceKernelReferLwMutexStatusFunction, 0xC1734599);
-			mm.addFunction(sceKernelTryLockLwMutexFunction, 0xDC692EE3);
+			mm.addFunction(0x15B6446B, sceKernelUnlockLwMutexFunction);
+			mm.addFunction(0x1FC64E09, sceKernelLockLwMutexCBFunction);
+			mm.addFunction(0xBEA46419, sceKernelLockLwMutexFunction);
+			mm.addFunction(0xC1734599, sceKernelReferLwMutexStatusFunction);
+			mm.addFunction(0xDC692EE3, sceKernelTryLockLwMutexFunction);
 			
 		}
 	}

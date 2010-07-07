@@ -39,42 +39,42 @@ public class sceRtc implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceRtcGetTickResolutionFunction, 0xC41C2853);
-            mm.addFunction(sceRtcGetCurrentTickFunction, 0x3F7AD767);
-            mm.addFunction(sceRtcGetAccumulativeTimeFunction, 0x011F03C1);
-            mm.addFunction(sceRtc_029CA3B3Function, 0x029CA3B3);
-            mm.addFunction(sceRtcGetCurrentClockFunction, 0x4CFA57B0);
-            mm.addFunction(sceRtcGetCurrentClockLocalTimeFunction, 0xE7C27D1B);
-            mm.addFunction(sceRtcConvertUtcToLocalTimeFunction, 0x34885E0D);
-            mm.addFunction(sceRtcConvertLocalTimeToUTCFunction, 0x779242A2);
-            mm.addFunction(sceRtcIsLeapYearFunction, 0x42307A17);
-            mm.addFunction(sceRtcGetDaysInMonthFunction, 0x05EF322C);
-            mm.addFunction(sceRtcGetDayOfWeekFunction, 0x57726BC1);
-            mm.addFunction(sceRtcCheckValidFunction, 0x4B1B5E82);
-            mm.addFunction(sceRtcSetTime_tFunction, 0x3A807CC8);
-            mm.addFunction(sceRtcGetTime_tFunction, 0x27C4594C);
-            mm.addFunction(sceRtcSetDosTimeFunction, 0xF006F264);
-            mm.addFunction(sceRtcGetDosTimeFunction, 0x36075567);
-            mm.addFunction(sceRtcSetWin32FileTimeFunction, 0x7ACE4C04);
-            mm.addFunction(sceRtcGetWin32FileTimeFunction, 0xCF561893);
-            mm.addFunction(sceRtcSetTickFunction, 0x7ED29E40);
-            mm.addFunction(sceRtcGetTickFunction, 0x6FF40ACC);
-            mm.addFunction(sceRtcCompareTickFunction, 0x9ED0AE87);
-            mm.addFunction(sceRtcTickAddTicksFunction, 0x44F45E05);
-            mm.addFunction(sceRtcTickAddMicrosecondsFunction, 0x26D25A5D);
-            mm.addFunction(sceRtcTickAddSecondsFunction, 0xF2A4AFE5);
-            mm.addFunction(sceRtcTickAddMinutesFunction, 0xE6605BCA);
-            mm.addFunction(sceRtcTickAddHoursFunction, 0x26D7A24A);
-            mm.addFunction(sceRtcTickAddDaysFunction, 0xE51B4B7A);
-            mm.addFunction(sceRtcTickAddWeeksFunction, 0xCF3A2CA8);
-            mm.addFunction(sceRtcTickAddMonthsFunction, 0xDBF74F1B);
-            mm.addFunction(sceRtcTickAddYearsFunction, 0x42842C77);
-            mm.addFunction(sceRtcFormatRFC2822Function, 0xC663B3B9);
-            mm.addFunction(sceRtcFormatRFC2822LocalTimeFunction, 0x7DE6711B);
-            mm.addFunction(sceRtcFormatRFC3339Function, 0x0498FB3C);
-            mm.addFunction(sceRtcFormatRFC3339LocalTimeFunction, 0x27F98543);
-            mm.addFunction(sceRtcParseDateTimeFunction, 0xDFBC5F16);
-            mm.addFunction(sceRtcParseRFC3339Function, 0x28E1E988);
+            mm.addFunction(0xC41C2853, sceRtcGetTickResolutionFunction);
+            mm.addFunction(0x3F7AD767, sceRtcGetCurrentTickFunction);
+            mm.addFunction(0x011F03C1, sceRtcGetAccumulativeTimeFunction);
+            mm.addFunction(0x029CA3B3, sceRtcGetAccumlativeTimeFunction);
+            mm.addFunction(0x4CFA57B0, sceRtcGetCurrentClockFunction);
+            mm.addFunction(0xE7C27D1B, sceRtcGetCurrentClockLocalTimeFunction);
+            mm.addFunction(0x34885E0D, sceRtcConvertUtcToLocalTimeFunction);
+            mm.addFunction(0x779242A2, sceRtcConvertLocalTimeToUTCFunction);
+            mm.addFunction(0x42307A17, sceRtcIsLeapYearFunction);
+            mm.addFunction(0x05EF322C, sceRtcGetDaysInMonthFunction);
+            mm.addFunction(0x57726BC1, sceRtcGetDayOfWeekFunction);
+            mm.addFunction(0x4B1B5E82, sceRtcCheckValidFunction);
+            mm.addFunction(0x3A807CC8, sceRtcSetTime_tFunction);
+            mm.addFunction(0x27C4594C, sceRtcGetTime_tFunction);
+            mm.addFunction(0xF006F264, sceRtcSetDosTimeFunction);
+            mm.addFunction(0x36075567, sceRtcGetDosTimeFunction);
+            mm.addFunction(0x7ACE4C04, sceRtcSetWin32FileTimeFunction);
+            mm.addFunction(0xCF561893, sceRtcGetWin32FileTimeFunction);
+            mm.addFunction(0x7ED29E40, sceRtcSetTickFunction);
+            mm.addFunction(0x6FF40ACC, sceRtcGetTickFunction);
+            mm.addFunction(0x9ED0AE87, sceRtcCompareTickFunction);
+            mm.addFunction(0x44F45E05, sceRtcTickAddTicksFunction);
+            mm.addFunction(0x26D25A5D, sceRtcTickAddMicrosecondsFunction);
+            mm.addFunction(0xF2A4AFE5, sceRtcTickAddSecondsFunction);
+            mm.addFunction(0xE6605BCA, sceRtcTickAddMinutesFunction);
+            mm.addFunction(0x26D7A24A, sceRtcTickAddHoursFunction);
+            mm.addFunction(0xE51B4B7A, sceRtcTickAddDaysFunction);
+            mm.addFunction(0xCF3A2CA8, sceRtcTickAddWeeksFunction);
+            mm.addFunction(0xDBF74F1B, sceRtcTickAddMonthsFunction);
+            mm.addFunction(0x42842C77, sceRtcTickAddYearsFunction);
+            mm.addFunction(0xC663B3B9, sceRtcFormatRFC2822Function);
+            mm.addFunction(0x7DE6711B, sceRtcFormatRFC2822LocalTimeFunction);
+            mm.addFunction(0x0498FB3C, sceRtcFormatRFC3339Function);
+            mm.addFunction(0x27F98543, sceRtcFormatRFC3339LocalTimeFunction);
+            mm.addFunction(0xDFBC5F16, sceRtcParseDateTimeFunction);
+            mm.addFunction(0x28E1E988, sceRtcParseRFC3339Function);
 
         }
     }
@@ -86,7 +86,7 @@ public class sceRtc implements HLEModule {
             mm.removeFunction(sceRtcGetTickResolutionFunction);
             mm.removeFunction(sceRtcGetCurrentTickFunction);
             mm.removeFunction(sceRtcGetAccumulativeTimeFunction);
-            mm.removeFunction(sceRtc_029CA3B3Function);
+            mm.removeFunction(sceRtcGetAccumlativeTimeFunction);
             mm.removeFunction(sceRtcGetCurrentClockFunction);
             mm.removeFunction(sceRtcGetCurrentClockLocalTimeFunction);
             mm.removeFunction(sceRtcConvertUtcToLocalTimeFunction);
@@ -153,11 +153,11 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    public void sceRtc_029CA3B3(Processor processor) {
+    public void sceRtcGetAccumlativeTime(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function sceRtc_029CA3B3 [0x029CA3B3]");
+        Modules.log.warn("Unimplemented NID function sceRtcGetAccumlativeTime [0x029CA3B3]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -633,14 +633,14 @@ public class sceRtc implements HLEModule {
         }
     };
 
-    public final HLEModuleFunction sceRtc_029CA3B3Function = new HLEModuleFunction("sceRtc", "sceRtc_029CA3B3") {
+    public final HLEModuleFunction sceRtcGetAccumlativeTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetAccumlativeTime") {
         @Override
         public final void execute(Processor processor) {
-            sceRtc_029CA3B3(processor);
+            sceRtcGetAccumlativeTime(processor);
         }
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceRtcModule.sceRtc_029CA3B3(processor);";
+            return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetAccumlativeTime(processor);";
         }
     };
 

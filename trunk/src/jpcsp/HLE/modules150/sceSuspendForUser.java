@@ -27,8 +27,9 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
-public class sceSuspendForUser implements HLEModule {
+public class sceSuspendForUser implements HLEModule, HLEStartModule {
     @Override
     public String getName() { return "sceSuspendForUser"; }
 
@@ -36,16 +37,14 @@ public class sceSuspendForUser implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceKernelPowerLockFunction, 0xEADB1BD7);
-            mm.addFunction(sceKernelPowerUnlockFunction, 0x3AEE7261);
-            mm.addFunction(sceKernelPowerTickFunction, 0x090CCB3F);
-            mm.addFunction(sceKernelVolatileMemLockFunction, 0x3E0271D3);
-            mm.addFunction(sceKernelVolatileMemTryLockFunction, 0xA14F40B2);
-            mm.addFunction(sceKernelVolatileMemUnlockFunction, 0xA569E425);
+            mm.addFunction(0xEADB1BD7, sceKernelPowerLockFunction);
+            mm.addFunction(0x3AEE7261, sceKernelPowerUnlockFunction);
+            mm.addFunction(0x090CCB3F, sceKernelPowerTickFunction);
+            mm.addFunction(0x3E0271D3, sceKernelVolatileMemLockFunction);
+            mm.addFunction(0xA14F40B2, sceKernelVolatileMemTryLockFunction);
+            mm.addFunction(0xA569E425, sceKernelVolatileMemUnlockFunction);
 
         }
-
-		volatileMemLocked = false;
     }
 
     @Override
@@ -60,6 +59,15 @@ public class sceSuspendForUser implements HLEModule {
             mm.removeFunction(sceKernelVolatileMemUnlockFunction);
 
         }
+    }
+    
+    @Override
+    public void start() {
+    	volatileMemLocked = false;
+    }
+
+    @Override
+    public void stop() {
     }
 
     public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;

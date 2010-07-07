@@ -35,15 +35,15 @@ public class StdioForUser implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceKernelStdioReadFunction, 0x3054D478);
-            mm.addFunction(sceKernelStdioLseekFunction, 0x0CBB0571);
-            mm.addFunction(sceKernelStdioSendCharFunction, 0xA46785C9);
-            mm.addFunction(sceKernelStdioWriteFunction, 0xA3B931DB);
-            mm.addFunction(sceKernelStdioCloseFunction, 0x9D061C19);
-            mm.addFunction(sceKernelStdioOpenFunction, 0x924ABA61);
-            mm.addFunction(sceKernelStdinFunction, 0x172D316E);
-            mm.addFunction(sceKernelStdoutFunction, 0xA6BAB2E9);
-            mm.addFunction(sceKernelStderrFunction, 0xF78BA90A);
+            mm.addFunction(0x3054D478, sceKernelStdioReadFunction);
+            mm.addFunction(0x0CBB0571, sceKernelStdioLseekFunction);
+            mm.addFunction(0xA46785C9, sceKernelStdioSendCharFunction);
+            mm.addFunction(0xA3B931DB, sceKernelStdioWriteFunction);
+            mm.addFunction(0x9D061C19, sceKernelStdioCloseFunction);
+            mm.addFunction(0x924ABA61, sceKernelStdioOpenFunction);
+            mm.addFunction(0x172D316E, sceKernelStdinFunction);
+            mm.addFunction(0xA6BAB2E9, sceKernelStdoutFunction);
+            mm.addFunction(0xF78BA90A, sceKernelStderrFunction);
 
         }
     }

@@ -35,11 +35,11 @@ public class Kernel_Library implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceKernelCpuSuspendIntrFunction, 0x092968F4);
-            mm.addFunction(sceKernelCpuResumeIntrFunction, 0x5F10D406);
-            mm.addFunction(sceKernelCpuResumeIntrWithSyncFunction, 0x3B84732D);
-            mm.addFunction(sceKernelIsCpuIntrSuspendedFunction, 0x47A0B729);
-            mm.addFunction(sceKernelIsCpuIntrEnableFunction, 0xB55249D2);
+            mm.addFunction(0x092968F4, sceKernelCpuSuspendIntrFunction);
+            mm.addFunction(0x5F10D406, sceKernelCpuResumeIntrFunction);
+            mm.addFunction(0x3B84732D, sceKernelCpuResumeIntrWithSyncFunction);
+            mm.addFunction(0x47A0B729, sceKernelIsCpuIntrSuspendedFunction);
+            mm.addFunction(0xB55249D2, sceKernelIsCpuIntrEnableFunction);
 
         }
     }

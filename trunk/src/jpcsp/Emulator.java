@@ -155,11 +155,8 @@ public class Emulator implements Runnable {
         cpu.gpr[27] = 0; //k1.
         cpu.gpr[28] = module.gp_value; //gp_reg.
 
+        HLEModuleManager.startModules();
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
-        Modules.UtilsForUserModule.Initialise();
-        Modules.sceGe_userModule.Initialise();
-        Modules.sceDisplayModule.Initialise();
-        Modules.IoFileMgrForUserModule.Initialise();
 
         if (State.memoryViewer != null)
             State.memoryViewer.RefreshMemory();
@@ -185,7 +182,8 @@ public class Emulator implements Runnable {
 
         HLEModuleManager.getInstance().Initialise(firmwareVersion);
         Managers.reset();
-        Modules.SysMemUserForUserModule.Initialise(firmwareVersion);
+        Modules.SysMemUserForUserModule.start();
+        Modules.SysMemUserForUserModule.setFirmwareVersion(firmwareVersion);
     }
 
     @Override

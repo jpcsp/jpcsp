@@ -27,9 +27,10 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.connector.AtracCodec;
 
-public class sceAtrac3plus implements HLEModule {
+public class sceAtrac3plus implements HLEModule, HLEStartModule {
     @Override
     public String getName() { return "sceAtrac3plus"; }
 
@@ -37,34 +38,32 @@ public class sceAtrac3plus implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceAtracStartEntryFunction, 0xD1F59FDB);
-            mm.addFunction(sceAtracEndEntryFunction, 0xD5C28CC0);
-            mm.addFunction(sceAtracGetAtracIDFunction, 0x780F88D1);
-            mm.addFunction(sceAtracReleaseAtracIDFunction, 0x61EB33F5);
-            mm.addFunction(sceAtracSetDataFunction, 0x0E2A73AB);
-            mm.addFunction(sceAtracSetHalfwayBufferFunction, 0x3F6E26B5);
-            mm.addFunction(sceAtracSetDataAndGetIDFunction, 0x7A20E7AF);
-            mm.addFunction(sceAtracSetHalfwayBufferAndGetIDFunction, 0x0FAE370E);
-            mm.addFunction(sceAtracDecodeDataFunction, 0x6A8C3CD5);
-            mm.addFunction(sceAtracGetRemainFrameFunction, 0x9AE849A7);
-            mm.addFunction(sceAtracGetStreamDataInfoFunction, 0x5D268707);
-            mm.addFunction(sceAtracAddStreamDataFunction, 0x7DB31251);
-            mm.addFunction(sceAtracGetSecondBufferInfoFunction, 0x83E85EA0);
-            mm.addFunction(sceAtracSetSecondBufferFunction, 0x83BF7AFD);
-            mm.addFunction(sceAtracGetNextDecodePositionFunction, 0xE23E3A35);
-            mm.addFunction(sceAtracGetSoundSampleFunction, 0xA2BBA8BE);
-            mm.addFunction(sceAtracGetChannelFunction, 0x31668BAA);
-            mm.addFunction(sceAtracGetMaxSampleFunction, 0xD6A5F2F7);
-            mm.addFunction(sceAtracGetNextSampleFunction, 0x36FAABFB);
-            mm.addFunction(sceAtracGetBitrateFunction, 0xA554A158);
-            mm.addFunction(sceAtracGetLoopStatusFunction, 0xFAA4F89B);
-            mm.addFunction(sceAtracSetLoopNumFunction, 0x868120B5);
-            mm.addFunction(sceAtracGetBufferInfoForResetingFunction, 0xCA3CA3D2);
-            mm.addFunction(sceAtracResetPlayPositionFunction, 0x644E5607);
-            mm.addFunction(sceAtracGetInternalErrorInfoFunction, 0xE88F759B);
+            mm.addFunction(0xD1F59FDB, sceAtracStartEntryFunction);
+            mm.addFunction(0xD5C28CC0, sceAtracEndEntryFunction);
+            mm.addFunction(0x780F88D1, sceAtracGetAtracIDFunction);
+            mm.addFunction(0x61EB33F5, sceAtracReleaseAtracIDFunction);
+            mm.addFunction(0x0E2A73AB, sceAtracSetDataFunction);
+            mm.addFunction(0x3F6E26B5, sceAtracSetHalfwayBufferFunction);
+            mm.addFunction(0x7A20E7AF, sceAtracSetDataAndGetIDFunction);
+            mm.addFunction(0x0FAE370E, sceAtracSetHalfwayBufferAndGetIDFunction);
+            mm.addFunction(0x6A8C3CD5, sceAtracDecodeDataFunction);
+            mm.addFunction(0x9AE849A7, sceAtracGetRemainFrameFunction);
+            mm.addFunction(0x5D268707, sceAtracGetStreamDataInfoFunction);
+            mm.addFunction(0x7DB31251, sceAtracAddStreamDataFunction);
+            mm.addFunction(0x83E85EA0, sceAtracGetSecondBufferInfoFunction);
+            mm.addFunction(0x83BF7AFD, sceAtracSetSecondBufferFunction);
+            mm.addFunction(0xE23E3A35, sceAtracGetNextDecodePositionFunction);
+            mm.addFunction(0xA2BBA8BE, sceAtracGetSoundSampleFunction);
+            mm.addFunction(0x31668BAA, sceAtracGetChannelFunction);
+            mm.addFunction(0xD6A5F2F7, sceAtracGetMaxSampleFunction);
+            mm.addFunction(0x36FAABFB, sceAtracGetNextSampleFunction);
+            mm.addFunction(0xA554A158, sceAtracGetBitrateFunction);
+            mm.addFunction(0xFAA4F89B, sceAtracGetLoopStatusFunction);
+            mm.addFunction(0x868120B5, sceAtracSetLoopNumFunction);
+            mm.addFunction(0xCA3CA3D2, sceAtracGetBufferInfoForResetingFunction);
+            mm.addFunction(0x644E5607, sceAtracResetPlayPositionFunction);
+            mm.addFunction(0xE88F759B, sceAtracGetInternalErrorInfoFunction);
 
-            atracCodecs = new HashMap<Integer, AtracCodec>();
-            atracLoopMap = new HashMap<Integer, Integer>();
         }
     }
 
@@ -100,7 +99,17 @@ public class sceAtrac3plus implements HLEModule {
 
         }
     }
+    
+    @Override
+    public void start() {
+        atracCodecs = new HashMap<Integer, AtracCodec>();
+        atracLoopMap = new HashMap<Integer, Integer>();
+    }
 
+    @Override
+    public void stop() {
+    }
+    
     protected static final String uidPurpose = "sceAtrac3plus";
 
     protected static final int AT3_MAGIC      = 0x00000270; // "AT3"

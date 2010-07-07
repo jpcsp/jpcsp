@@ -58,20 +58,20 @@ public class scePsmfPlayer implements HLEModule {
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-            mm.addFunction(scePsmfPlayerCreateFunction, 0x235D8787);
-            mm.addFunction(scePsmfPlayerDeleteFunction, 0x9B71A274);
-            mm.addFunction(scePsmfPlayerSetPsmfFunction, 0x3D6D25A9);
-            mm.addFunction(scePsmfPlayerReleasePsmfFunction, 0xE792CD94);
-            mm.addFunction(scePsmfPlayerStartFunction, 0x95A84EE5);
-            mm.addFunction(scePsmfPlayerGetAudioOutSizeFunction, 0x3EA82A4B);
-            mm.addFunction(scePsmfPlayerStopFunction, 0x1078C008);
-            mm.addFunction(scePsmfPlayerUpdateFunction, 0xA0B8CA55);
-            mm.addFunction(scePsmfPlayerGetVideoDataFunction, 0x46F61F8B);
-            mm.addFunction(scePsmfPlayerGetAudioDataFunction, 0xB9848A74);
-            mm.addFunction(scePsmfPlayerGetCurrentStatusFunction, 0xF8EF08A6);
-            mm.addFunction(scePsmfPlayerGetPsmfInfoFunction, 0xDF089680);
-            mm.addFunction(scePsmfPlayer_1E57A8E7Function, 0x1E57A8E7);
-            mm.addFunction(scePsmfPlayer_2BEB1569Function, 0x2BEB1569);
+            mm.addFunction(0x235D8787, scePsmfPlayerCreateFunction);
+            mm.addFunction(0x9B71A274, scePsmfPlayerDeleteFunction);
+            mm.addFunction(0x3D6D25A9, scePsmfPlayerSetPsmfFunction);
+            mm.addFunction(0xE792CD94, scePsmfPlayerReleasePsmfFunction);
+            mm.addFunction(0x95A84EE5, scePsmfPlayerStartFunction);
+            mm.addFunction(0x3EA82A4B, scePsmfPlayerGetAudioOutSizeFunction);
+            mm.addFunction(0x1078C008, scePsmfPlayerStopFunction);
+            mm.addFunction(0xA0B8CA55, scePsmfPlayerUpdateFunction);
+            mm.addFunction(0x46F61F8B, scePsmfPlayerGetVideoDataFunction);
+            mm.addFunction(0xB9848A74, scePsmfPlayerGetAudioDataFunction);
+            mm.addFunction(0xF8EF08A6, scePsmfPlayerGetCurrentStatusFunction);
+            mm.addFunction(0xDF089680, scePsmfPlayerGetPsmfInfoFunction);
+            mm.addFunction(0x1E57A8E7, scePsmfPlayer_1E57A8E7Function);
+            mm.addFunction(0x2BEB1569, scePsmfPlayer_2BEB1569Function);
 
         }
     }

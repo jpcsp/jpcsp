@@ -18,8 +18,8 @@ package jpcsp.Allegrex;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
-import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.SyscallIgnore;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.Utilities;
 
@@ -635,7 +635,7 @@ public class Common {
     	String functionName = HLEModuleManager.getInstance().functionName(code);
     	
     	if(functionName == null) {
-	        for (syscallsFirm15.calls c : syscallsFirm15.calls.values()) {
+	        for (SyscallIgnore c : SyscallIgnore.values()) {
 	            if (c.getSyscall() == code) {
 	                functionName = c.toString();
 	                break;

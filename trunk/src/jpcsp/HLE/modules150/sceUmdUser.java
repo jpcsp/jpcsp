@@ -36,9 +36,10 @@ import jpcsp.HLE.kernel.types.pspUmdInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 
-public class sceUmdUser implements HLEModule {
+public class sceUmdUser implements HLEModule, HLEStartModule {
     @Override
     public String getName() {
         return "sceUmdUser";
@@ -48,24 +49,20 @@ public class sceUmdUser implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(sceUmdCheckMediumFunction, 0x46EBB729);
-            mm.addFunction(sceUmdActivateFunction, 0xC6183D47);
-            mm.addFunction(sceUmdDeactivateFunction, 0xE83742BA);
-            mm.addFunction(sceUmdWaitDriveStatFunction, 0x8EF08FCE);
-            mm.addFunction(sceUmdWaitDriveStatWithTimerFunction, 0x56202973);
-            mm.addFunction(sceUmdWaitDriveStatCBFunction, 0x4A9E5E29);
-            mm.addFunction(sceUmdCancelWaitDriveStatFunction, 0x6AF9B50A);
-            mm.addFunction(sceUmdGetDriveStatFunction, 0x6B4A146C);
-            mm.addFunction(sceUmdGetErrorStatFunction, 0x20628E6F);
-            mm.addFunction(sceUmdGetDiscInfoFunction, 0x340B7686);
-            mm.addFunction(sceUmdRegisterUMDCallBackFunction, 0xAEE7404D);
-            mm.addFunction(sceUmdUnRegisterUMDCallBackFunction, 0xBD2BDE07);
+            mm.addFunction(0x46EBB729, sceUmdCheckMediumFunction);
+            mm.addFunction(0xC6183D47, sceUmdActivateFunction);
+            mm.addFunction(0xE83742BA, sceUmdDeactivateFunction);
+            mm.addFunction(0x8EF08FCE, sceUmdWaitDriveStatFunction);
+            mm.addFunction(0x56202973, sceUmdWaitDriveStatWithTimerFunction);
+            mm.addFunction(0x4A9E5E29, sceUmdWaitDriveStatCBFunction);
+            mm.addFunction(0x6AF9B50A, sceUmdCancelWaitDriveStatFunction);
+            mm.addFunction(0x6B4A146C, sceUmdGetDriveStatFunction);
+            mm.addFunction(0x20628E6F, sceUmdGetErrorStatFunction);
+            mm.addFunction(0x340B7686, sceUmdGetDiscInfoFunction);
+            mm.addFunction(0xAEE7404D, sceUmdRegisterUMDCallBackFunction);
+            mm.addFunction(0xBD2BDE07, sceUmdUnRegisterUMDCallBackFunction);
 
         }
-
-        umdActivated = false;
-        umdDeactivateCalled = false;
-        waitingThreads = new LinkedList<SceKernelThreadInfo>();
     }
 
     @Override
@@ -86,6 +83,17 @@ public class sceUmdUser implements HLEModule {
             mm.removeFunction(sceUmdUnRegisterUMDCallBackFunction);
 
         }
+    }
+    
+    @Override
+    public void start() {
+    	umdActivated = false;
+        umdDeactivateCalled = false;
+        waitingThreads = new LinkedList<SceKernelThreadInfo>();
+    }
+
+    @Override
+    public void stop() {
     }
 
     // HLE helper state

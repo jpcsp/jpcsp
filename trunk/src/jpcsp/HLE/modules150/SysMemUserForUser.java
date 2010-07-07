@@ -35,6 +35,7 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 
 import org.apache.log4j.Logger;
 
@@ -50,7 +51,7 @@ import org.apache.log4j.Logger;
  * 2. Implement format string parsing and reading variable number of parameters
  * in sceKernelPrintf.
  */
-public class SysMemUserForUser implements HLEModule {
+public class SysMemUserForUser implements HLEModule, HLEStartModule {
     protected static Logger stdout = Logger.getLogger("stdout");
     protected static HashMap<Integer, SysMemInfo> blockList;
     protected static MemoryChunkList freeMemoryChunks;
@@ -71,16 +72,16 @@ public class SysMemUserForUser implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 		
-			mm.addFunction(sceKernelMaxFreeMemSizeFunction, 0xA291F107);
-			mm.addFunction(sceKernelTotalFreeMemSizeFunction, 0xF919F628);
-			mm.addFunction(sceKernelAllocPartitionMemoryFunction, 0x237DBD4F);
-			mm.addFunction(sceKernelFreePartitionMemoryFunction, 0xB6D61D02);
-			mm.addFunction(sceKernelGetBlockHeadAddrFunction, 0x9D9A5BA1);
-			mm.addFunction(sceKernelPrintfFunction, 0x13A5ABEF);
-			mm.addFunction(sceKernelDevkitVersionFunction, 0x3FC9AE6A);
+			mm.addFunction(0xA291F107, sceKernelMaxFreeMemSizeFunction);
+			mm.addFunction(0xF919F628, sceKernelTotalFreeMemSizeFunction);
+			mm.addFunction(0x237DBD4F, sceKernelAllocPartitionMemoryFunction);
+			mm.addFunction(0xB6D61D02, sceKernelFreePartitionMemoryFunction);
+			mm.addFunction(0x9D9A5BA1, sceKernelGetBlockHeadAddrFunction);
+			mm.addFunction(0x13A5ABEF, sceKernelPrintfFunction);
+			mm.addFunction(0x3FC9AE6A, sceKernelDevkitVersionFunction);
 			
 			// Kernel
-			mm.addFunction(sceKernelMemsetFunction, 0xA089ECA4);
+			mm.addFunction(0xA089ECA4, sceKernelMemsetFunction);
 			
 		}
 	}
@@ -101,7 +102,28 @@ public class SysMemUserForUser implements HLEModule {
 			mm.removeFunction(sceKernelMemsetFunction);
 		}
 	}
-    
+
+	protected boolean started = false;
+	
+	@Override
+	public void start() {
+		if(started) return;
+		
+		blockList = new HashMap<Integer, SysMemInfo>();
+
+        int startFreeMem = MemoryMap.START_USERSPACE;
+        int endFreeMem = MemoryMap.END_USERSPACE;
+        MemoryChunk initialMemory = new MemoryChunk(startFreeMem, endFreeMem - startFreeMem + 1);
+        freeMemoryChunks = new MemoryChunkList(initialMemory);
+        
+        started = true;
+	}
+
+	@Override
+	public void stop() {
+		started = false;
+	}
+	
     protected static class SysMemInfo implements Comparable<SysMemInfo> {
 
         public final int uid;

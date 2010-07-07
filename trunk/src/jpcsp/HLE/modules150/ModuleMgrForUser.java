@@ -70,20 +70,20 @@ public class ModuleMgrForUser implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 
-			mm.addFunction(sceKernelLoadModuleByIDFunction, 0xB7F46618);
-			mm.addFunction(sceKernelLoadModuleFunction, 0x977DE386);
-			mm.addFunction(sceKernelLoadModuleMsFunction, 0x710F61B5);
-			mm.addFunction(sceKernelLoadModuleBufferUsbWlanFunction, 0xF9275D98);
-			mm.addFunction(sceKernelStartModuleFunction, 0x50F0C1EC);
-			mm.addFunction(sceKernelStopModuleFunction, 0xD1FF982A);
-			mm.addFunction(sceKernelUnloadModuleFunction, 0x2E0911AA);
-			mm.addFunction(sceKernelSelfStopUnloadModuleFunction, 0xD675EBB8);
-			mm.addFunction(sceKernelStopUnloadSelfModuleFunction, 0xCC1D3699);
-			mm.addFunction(sceKernelGetModuleIdListFunction, 0x644395E2);
-			mm.addFunction(sceKernelQueryModuleInfoFunction, 0x748CBED9);
-			mm.addFunction(sceKernelGetModuleIdFunction, 0xF0A26395);
-			mm.addFunction(sceKernelGetModuleIdByAddressFunction, 0xD8B73127);
-            mm.addFunction(sceKernelStopUnloadSelfModuleWithStatusFunction, 0x8f2df740);
+			mm.addFunction(0xB7F46618, sceKernelLoadModuleByIDFunction);
+			mm.addFunction(0x977DE386, sceKernelLoadModuleFunction);
+			mm.addFunction(0x710F61B5, sceKernelLoadModuleMsFunction);
+			mm.addFunction(0xF9275D98, sceKernelLoadModuleBufferUsbWlanFunction);
+			mm.addFunction(0x50F0C1EC, sceKernelStartModuleFunction);
+			mm.addFunction(0xD1FF982A, sceKernelStopModuleFunction);
+			mm.addFunction(0x2E0911AA, sceKernelUnloadModuleFunction);
+			mm.addFunction(0xD675EBB8, sceKernelSelfStopUnloadModuleFunction);
+			mm.addFunction(0xCC1D3699, sceKernelStopUnloadSelfModuleFunction);
+			mm.addFunction(0x644395E2, sceKernelGetModuleIdListFunction);
+			mm.addFunction(0x748CBED9, sceKernelQueryModuleInfoFunction);
+			mm.addFunction(0xF0A26395, sceKernelGetModuleIdFunction);
+			mm.addFunction(0xD8B73127, sceKernelGetModuleIdByAddressFunction);
+            mm.addFunction(0x8f2df740, sceKernelStopUnloadSelfModuleWithStatusFunction);
 		}
 	}
 

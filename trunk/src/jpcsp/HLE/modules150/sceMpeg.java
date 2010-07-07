@@ -37,6 +37,7 @@ import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.connector.MpegCodec;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
@@ -45,77 +46,58 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
-public class sceMpeg implements HLEModule {
+public class sceMpeg implements HLEModule, HLEStartModule {
     @Override
     public String getName() { return "sceMpeg"; }
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-            mm.addFunction(sceMpegQueryStreamOffsetFunction, 0x21FF80E4);
-            mm.addFunction(sceMpegQueryStreamSizeFunction, 0x611E9E11);
-            mm.addFunction(sceMpegInitFunction, 0x682A619B);
-            mm.addFunction(sceMpegFinishFunction, 0x874624D6);
-            mm.addFunction(sceMpegQueryMemSizeFunction, 0xC132E22F);
-            mm.addFunction(sceMpegCreateFunction, 0xD8C5F121);
-            mm.addFunction(sceMpegDeleteFunction, 0x606A4649);
-            mm.addFunction(sceMpegRegistStreamFunction, 0x42560F23);
-            mm.addFunction(sceMpegUnRegistStreamFunction, 0x591A4AA2);
-            mm.addFunction(sceMpegMallocAvcEsBufFunction, 0xA780CF7E);
-            mm.addFunction(sceMpegFreeAvcEsBufFunction, 0xCEB870B1);
-            mm.addFunction(sceMpegQueryAtracEsSizeFunction, 0xF8DCB679);
-            mm.addFunction(sceMpegQueryPcmEsSizeFunction, 0xC02CF6B5);
-            mm.addFunction(sceMpegInitAuFunction, 0x167AFD9E);
-            mm.addFunction(sceMpegChangeGetAvcAuModeFunction, 0x234586AE);
-            mm.addFunction(sceMpegChangeGetAuModeFunction, 0x9DCFB7EA);
-            mm.addFunction(sceMpegGetAvcAuFunction, 0xFE246728);
-            mm.addFunction(sceMpegGetPcmAuFunction, 0x8C1E027D);
-            mm.addFunction(sceMpegGetAtracAuFunction, 0xE1CE83A7);
-            mm.addFunction(sceMpegFlushStreamFunction, 0x500F0429);
-            mm.addFunction(sceMpegFlushAllStreamFunction, 0x707B7629);
-            mm.addFunction(sceMpegAvcDecodeFunction, 0x0E3C2E9D);
-            mm.addFunction(sceMpegAvcDecodeDetailFunction, 0x0F6C18D7);
-            mm.addFunction(sceMpegAvcDecodeModeFunction, 0xA11C7026);
-            mm.addFunction(sceMpegAvcDecodeStopFunction, 0x740FCCD1);
-            mm.addFunction(sceMpegAvcDecodeFlushFunction, 0x4571CC64);
-            mm.addFunction(sceMpegAvcQueryYCbCrSizeFunction, 0x211A057C);
-            mm.addFunction(sceMpegAvcInitYCbCrFunction, 0x67179B1B);
-            mm.addFunction(sceMpegAvcDecodeYCbCrFunction, 0xF0EB1125);
-            mm.addFunction(sceMpegAvcDecodeStopYCbCrFunction, 0xF2930C9C);
-            mm.addFunction(sceMpegAvcCscFunction, 0x31BD0272);
-            mm.addFunction(sceMpegAtracDecodeFunction, 0x800C44DF);
-            mm.addFunction(sceMpegRingbufferQueryMemSizeFunction, 0xD7A29F46);
-            mm.addFunction(sceMpegRingbufferConstructFunction, 0x37295ED8);
-            mm.addFunction(sceMpegRingbufferDestructFunction, 0x13407F13);
-            mm.addFunction(sceMpegRingbufferPutFunction, 0xB240A59E);
-            mm.addFunction(sceMpegRingbufferAvailableSizeFunction, 0xB5F6DC87);
-            mm.addFunction(sceMpeg_11CAB459Function, 0x11CAB459);
-            mm.addFunction(sceMpegNextAvcRpAuFunction, 0x3C37A7A6);
-            mm.addFunction(sceMpeg_B27711A8Function, 0xB27711A8);
-            mm.addFunction(sceMpeg_D4DD6E75Function, 0xD4DD6E75);
-            mm.addFunction(sceMpeg_C345DED2Function, 0xC345DED2);
-            mm.addFunction(sceMpeg_AB0E9556Function, 0xAB0E9556);
-            mm.addFunction(sceMpegAvcDecodeDetail2Function, 0xCF3547A2);
-            mm.addFunction(sceMpeg_988E9E12Function, 0x988E9E12);
-        }
-
-        mpegHandle = 0;
-        mpegRingbuffer = null;
-        mpegRingbufferAddr = 0;
-        mpegAtracCurrentDecodingTimestamp = 0;
-        mpegAvcCurrentDecodingTimestamp = 0;
-        avcAuAddr = 0;
-        atracAuAddr = 0;
-        atracStreamsMap = new HashMap<Integer, Integer>();
-        avcStreamsMap = new HashMap<Integer, Integer>();
-        pcmStreamsMap = new HashMap<Integer, Integer>();
-        afterRingbufferPutCallback = new AfterRingbufferPutCallback();
-        if (isEnableConnector()) {
-        	mpegCodec = new MpegCodec();
-        }
-        if (isEnableMediaEngine()) {
-        	me = new MediaEngine();
-            meChannel = new PacketChannel();
+            mm.addFunction(0x21FF80E4, sceMpegQueryStreamOffsetFunction);
+            mm.addFunction(0x611E9E11, sceMpegQueryStreamSizeFunction);
+            mm.addFunction(0x682A619B, sceMpegInitFunction);
+            mm.addFunction(0x874624D6, sceMpegFinishFunction);
+            mm.addFunction(0xC132E22F, sceMpegQueryMemSizeFunction);
+            mm.addFunction(0xD8C5F121, sceMpegCreateFunction);
+            mm.addFunction(0x606A4649, sceMpegDeleteFunction);
+            mm.addFunction(0x42560F23, sceMpegRegistStreamFunction);
+            mm.addFunction(0x591A4AA2, sceMpegUnRegistStreamFunction);
+            mm.addFunction(0xA780CF7E, sceMpegMallocAvcEsBufFunction);
+            mm.addFunction(0xCEB870B1, sceMpegFreeAvcEsBufFunction);
+            mm.addFunction(0xF8DCB679, sceMpegQueryAtracEsSizeFunction);
+            mm.addFunction(0xC02CF6B5, sceMpegQueryPcmEsSizeFunction);
+            mm.addFunction(0x167AFD9E, sceMpegInitAuFunction);
+            mm.addFunction(0x234586AE, sceMpegChangeGetAvcAuModeFunction);
+            mm.addFunction(0x9DCFB7EA, sceMpegChangeGetAuModeFunction);
+            mm.addFunction(0xFE246728, sceMpegGetAvcAuFunction);
+            mm.addFunction(0x8C1E027D, sceMpegGetPcmAuFunction);
+            mm.addFunction(0xE1CE83A7, sceMpegGetAtracAuFunction);
+            mm.addFunction(0x500F0429, sceMpegFlushStreamFunction);
+            mm.addFunction(0x707B7629, sceMpegFlushAllStreamFunction);
+            mm.addFunction(0x0E3C2E9D, sceMpegAvcDecodeFunction);
+            mm.addFunction(0x0F6C18D7, sceMpegAvcDecodeDetailFunction);
+            mm.addFunction(0xA11C7026, sceMpegAvcDecodeModeFunction);
+            mm.addFunction(0x740FCCD1, sceMpegAvcDecodeStopFunction);
+            mm.addFunction(0x4571CC64, sceMpegAvcDecodeFlushFunction);
+            mm.addFunction(0x211A057C, sceMpegAvcQueryYCbCrSizeFunction);
+            mm.addFunction(0x67179B1B, sceMpegAvcInitYCbCrFunction);
+            mm.addFunction(0xF0EB1125, sceMpegAvcDecodeYCbCrFunction);
+            mm.addFunction(0xF2930C9C, sceMpegAvcDecodeStopYCbCrFunction);
+            mm.addFunction(0x31BD0272, sceMpegAvcCscFunction);
+            mm.addFunction(0x800C44DF, sceMpegAtracDecodeFunction);
+            mm.addFunction(0xD7A29F46, sceMpegRingbufferQueryMemSizeFunction);
+            mm.addFunction(0x37295ED8, sceMpegRingbufferConstructFunction);
+            mm.addFunction(0x13407F13, sceMpegRingbufferDestructFunction);
+            mm.addFunction(0xB240A59E, sceMpegRingbufferPutFunction);
+            mm.addFunction(0xB5F6DC87, sceMpegRingbufferAvailableSizeFunction);
+            mm.addFunction(0x11CAB459, sceMpeg_11CAB459Function);
+            mm.addFunction(0x3C37A7A6, sceMpegNextAvcRpAuFunction);
+            mm.addFunction(0xB27711A8, sceMpeg_B27711A8Function);
+            mm.addFunction(0xD4DD6E75, sceMpeg_D4DD6E75Function);
+            mm.addFunction(0xC345DED2, sceMpeg_C345DED2Function);
+            mm.addFunction(0xAB0E9556, sceMpeg_AB0E9556Function);
+            mm.addFunction(0xCF3547A2, sceMpegAvcDecodeDetail2Function);
+            mm.addFunction(0x988E9E12, sceMpeg_988E9E12Function);
         }
     }
 
@@ -168,6 +150,32 @@ public class sceMpeg implements HLEModule {
             mm.removeFunction(sceMpegAvcDecodeDetail2Function);
             mm.removeFunction(sceMpeg_988E9E12Function);
         }
+    }
+    
+    @Override
+    public void start() {
+        mpegHandle = 0;
+        mpegRingbuffer = null;
+        mpegRingbufferAddr = 0;
+        mpegAtracCurrentDecodingTimestamp = 0;
+        mpegAvcCurrentDecodingTimestamp = 0;
+        avcAuAddr = 0;
+        atracAuAddr = 0;
+        atracStreamsMap = new HashMap<Integer, Integer>();
+        avcStreamsMap = new HashMap<Integer, Integer>();
+        pcmStreamsMap = new HashMap<Integer, Integer>();
+        afterRingbufferPutCallback = new AfterRingbufferPutCallback();
+        if (isEnableConnector()) {
+        	mpegCodec = new MpegCodec();
+        }
+        if (isEnableMediaEngine()) {
+        	me = new MediaEngine();
+            meChannel = new PacketChannel();
+        }
+    }
+
+    @Override
+    public void stop() {
     }
 
     public static boolean useMpegCodec = false;

@@ -30,11 +30,12 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.format.PGF;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
-public class sceFont implements HLEModule {
+public class sceFont implements HLEModule, HLEStartModule {
 	@Override
 	public String getName() {
 		return "sceFont";
@@ -43,35 +44,31 @@ public class sceFont implements HLEModule {
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			mm.addFunction(sceFontFindOptimumFontFunction, 0x99EF33C);
-			mm.addFunction(sceFontGetFontInfoFunction, 0xDA7535E);
-			mm.addFunction(sceFontCloseFunction, 0x3AEA8CB6);
-			mm.addFunction(sceFontDoneLibFunction, 0x574B6FBC);
-			mm.addFunction(sceFontNewLibFunction, 0x67F17ED7);
-			mm.addFunction(sceFontOpenFunction, 0xA834319D);
-			mm.addFunction(sceFontGetCharGlyphImage_ClipFunction, 0xCA1E6945);
-			mm.addFunction(sceFontGetCharInfoFunction, 0xDCC80C2F);
-			mm.addFunction(sceFontGetCharGlyphImageFunction, 0x980F4895);
-			mm.addFunction(sceFontGetNumFontListFunction, 0x27F6E642);
-			mm.addFunction(sceFontGetFontListFunction, 0xBC75D85B);
-			mm.addFunction(sceFontOpenUserMemoryFunction, 0xBB8E7FE6);
-			mm.addFunction(sceFontSetAltCharacterCodeFunction, 0xEE232411);
-			mm.addFunction(sceFontGetCharImageRectFunction, 0x5C3E4A9E);
-			mm.addFunction(sceFontPointToPixelHFunction, 0x472694CD);
-			mm.addFunction(sceFontGetFontInfoByIndexNumberFunction, 0x5333322D);
-			mm.addFunction(sceFontSetResolutionFunction, 0x48293280);
-			mm.addFunction(sceFontFlushFunction, 0x02D7F94B);
-			mm.addFunction(sceFontOpenUserFileFunction, 0x57FCB733);
-			mm.addFunction(sceFontFindFontFunction, 0x681E61A7);
-            mm.addFunction(sceFontPointToPixelVFunction, 0x3C4B7E82);
-            mm.addFunction(sceFontPixelToPointHFunction, 0x74B21701);
-            mm.addFunction(sceFontPixelToPointVFunction, 0xF8F0752E);
+			mm.addFunction(0x099EF33C, sceFontFindOptimumFontFunction);
+			mm.addFunction(0x0DA7535E, sceFontGetFontInfoFunction);
+			mm.addFunction(0x3AEA8CB6, sceFontCloseFunction);
+			mm.addFunction(0x574B6FBC, sceFontDoneLibFunction);
+			mm.addFunction(0x67F17ED7, sceFontNewLibFunction);
+			mm.addFunction(0xA834319D, sceFontOpenFunction);
+			mm.addFunction(0xCA1E6945, sceFontGetCharGlyphImage_ClipFunction);
+			mm.addFunction(0xDCC80C2F, sceFontGetCharInfoFunction);
+			mm.addFunction(0x980F4895, sceFontGetCharGlyphImageFunction);
+			mm.addFunction(0x27F6E642, sceFontGetNumFontListFunction);
+			mm.addFunction(0xBC75D85B, sceFontGetFontListFunction);
+			mm.addFunction(0xBB8E7FE6, sceFontOpenUserMemoryFunction);
+			mm.addFunction(0xEE232411, sceFontSetAltCharacterCodeFunction);
+			mm.addFunction(0x5C3E4A9E, sceFontGetCharImageRectFunction);
+			mm.addFunction(0x472694CD, sceFontPointToPixelHFunction);
+			mm.addFunction(0x5333322D, sceFontGetFontInfoByIndexNumberFunction);
+			mm.addFunction(0x48293280, sceFontSetResolutionFunction);
+			mm.addFunction(0x02D7F94B, sceFontFlushFunction);
+			mm.addFunction(0x57FCB733, sceFontOpenUserFileFunction);
+			mm.addFunction(0x681E61A7, sceFontFindFontFunction);
+            mm.addFunction(0x3C4B7E82, sceFontPointToPixelVFunction);
+            mm.addFunction(0x74B21701, sceFontPixelToPointHFunction);
+            mm.addFunction(0xF8F0752E, sceFontPixelToPointVFunction);
 
-            fontLibMap = new HashMap<Integer, FontLib>();
-            PGFFilesMap = new HashMap<Integer, PGF>();
-            fontLibCount = 0;
-            currentFontHandle = 0;
-            currentExternalFontHandle = 0;
+            
 		}
 	}
 
@@ -103,6 +100,19 @@ public class sceFont implements HLEModule {
             mm.removeFunction(sceFontPixelToPointVFunction);
 		}
 	}
+	
+	@Override
+    public void start() {
+		fontLibMap = new HashMap<Integer, FontLib>();
+        PGFFilesMap = new HashMap<Integer, PGF>();
+        fontLibCount = 0;
+        currentFontHandle = 0;
+        currentExternalFontHandle = 0;
+    }
+
+    @Override
+    public void stop() {
+    }
 
 	public static final int FONT_PIXELFORMAT_4     = 0; // 2 pixels packed in 1 byte (natural order)
 	public static final int FONT_PIXELFORMAT_4_REV = 1; // 2 pixels packed in 1 byte (reversed order)

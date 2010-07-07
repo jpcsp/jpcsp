@@ -29,7 +29,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
         super.installModule(mm, version);
 
         if (version >= 500) {
-            mm.addFunction(__sceSasSetVoicePCMFunction, 0xE1CD9561);
+            mm.addFunction(0xE1CD9561, __sceSasSetVoicePCMFunction);
         }
     }
 

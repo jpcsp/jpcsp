@@ -43,18 +43,18 @@ public class sceDeflt implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 		
-			mm.addFunction(sceZlibAdler32Function, 0x2EE39A64);
-			mm.addFunction(sceDeflateDecompressFunction, 0x44054E03);
-			mm.addFunction(sceGzipDecompressFunction, 0x6DBCF897);
-			mm.addFunction(sceGzipGetCommentFunction, 0xB767F9A0);
-			mm.addFunction(sceGzipGetCompressedDataFunction, 0x0BA3B9CC);
-			mm.addFunction(sceGzipGetInfoFunction, 0x8AA82C92);
-			mm.addFunction(sceGzipGetNameFunction, 0x106A3552);
-			mm.addFunction(sceGzipIsValidFunction, 0x1B5B82BC);
-			mm.addFunction(sceZlibDecompressFunction, 0xA9E4FB28);
-			mm.addFunction(sceZlibGetCompressedDataFunction, 0x6A548477);
-			mm.addFunction(sceZlibGetInfoFunction, 0xAFE01FD3);
-			mm.addFunction(sceZlibIsValidFunction, 0xE46EB986);
+			mm.addFunction(0x2EE39A64, sceZlibAdler32Function);
+			mm.addFunction(0x44054E03, sceDeflateDecompressFunction);
+			mm.addFunction(0x6DBCF897, sceGzipDecompressFunction);
+			mm.addFunction(0xB767F9A0, sceGzipGetCommentFunction);
+			mm.addFunction(0x0BA3B9CC, sceGzipGetCompressedDataFunction);
+			mm.addFunction(0x8AA82C92, sceGzipGetInfoFunction);
+			mm.addFunction(0x106A3552, sceGzipGetNameFunction);
+			mm.addFunction(0x1B5B82BC, sceGzipIsValidFunction);
+			mm.addFunction(0xA9E4FB28, sceZlibDecompressFunction);
+			mm.addFunction(0x6A548477, sceZlibGetCompressedDataFunction);
+			mm.addFunction(0xAFE01FD3, sceZlibGetInfoFunction);
+			mm.addFunction(0xE46EB986, sceZlibIsValidFunction);
 			
 		}
 	}

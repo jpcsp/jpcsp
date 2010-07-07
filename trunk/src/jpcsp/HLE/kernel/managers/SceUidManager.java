@@ -32,7 +32,7 @@ public class SceUidManager {
 
     static {
         uidMap = new HashMap<Integer, SceUid>();
-        uidNext = 0x1000;
+        uidNext = 0x1; // LocoRoco expects UID to be 8bit
     }
 
     /** classes should call getUid to get a new unique SceUID */

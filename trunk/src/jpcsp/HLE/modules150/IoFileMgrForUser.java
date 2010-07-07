@@ -60,6 +60,7 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.connector.PGDFileConnector;
@@ -92,7 +93,7 @@ import org.apache.log4j.Logger;
  *
  * 7. Check if cmd 0x01F20001 in sceIoDevctl needs thread blocking.
  */
-public class IoFileMgrForUser implements HLEModule {
+public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 	private static Logger stdout = Logger.getLogger("stdout");
     private static Logger stderr = Logger.getLogger("stderr");
 
@@ -268,43 +269,43 @@ public class IoFileMgrForUser implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 		
-			mm.addFunction(sceIoPollAsyncFunction, 0x3251EA56);
-			mm.addFunction(sceIoWaitAsyncFunction, 0xE23EEC33);
-			mm.addFunction(sceIoWaitAsyncCBFunction, 0x35DBD746);
-			mm.addFunction(sceIoGetAsyncStatFunction, 0xCB05F8D6);
-			mm.addFunction(sceIoChangeAsyncPriorityFunction, 0xB293727F);
-			mm.addFunction(sceIoSetAsyncCallbackFunction, 0xA12A0514);
-			mm.addFunction(sceIoCloseFunction, 0x810C4BC3);
-			mm.addFunction(sceIoCloseAsyncFunction, 0xFF5940B6);
-			mm.addFunction(sceIoOpenFunction, 0x109F50BC);
-			mm.addFunction(sceIoOpenAsyncFunction, 0x89AA9906);
-			mm.addFunction(sceIoReadFunction, 0x6A638D83);
-			mm.addFunction(sceIoReadAsyncFunction, 0xA0B5A7C2);
-			mm.addFunction(sceIoWriteFunction, 0x42EC03AC);
-			mm.addFunction(sceIoWriteAsyncFunction, 0x0FACAB19);
-			mm.addFunction(sceIoLseekFunction, 0x27EB27B8);
-			mm.addFunction(sceIoLseekAsyncFunction, 0x71B19E77);
-			mm.addFunction(sceIoLseek32Function, 0x68963324);
-			mm.addFunction(sceIoLseek32AsyncFunction, 0x1B385D8F);
-			mm.addFunction(sceIoIoctlFunction, 0x63632449);
-			mm.addFunction(sceIoIoctlAsyncFunction, 0xE95A012B);
-			mm.addFunction(sceIoDopenFunction, 0xB29DDF9C);
-			mm.addFunction(sceIoDreadFunction, 0xE3EB004C);
-			mm.addFunction(sceIoDcloseFunction, 0xEB092469);
-			mm.addFunction(sceIoRemoveFunction, 0xF27A9C51);
-			mm.addFunction(sceIoMkdirFunction, 0x06A70004);
-			mm.addFunction(sceIoRmdirFunction, 0x1117C65F);
-			mm.addFunction(sceIoChdirFunction, 0x55F4717D);
-			mm.addFunction(sceIoSyncFunction, 0xAB96437F);
-			mm.addFunction(sceIoGetstatFunction, 0xACE946E8);
-			mm.addFunction(sceIoChstatFunction, 0xB8A740F4);
-			mm.addFunction(sceIoRenameFunction, 0x779103A0);
-			mm.addFunction(sceIoDevctlFunction, 0x54F5FB11);
-			mm.addFunction(sceIoGetDevTypeFunction, 0x08BD7374);
-			mm.addFunction(sceIoAssignFunction, 0xB2A628C1);
-			mm.addFunction(sceIoUnassignFunction, 0x6D08A871);
-			mm.addFunction(sceIoCancelFunction, 0xE8BC6571);
-			mm.addFunction(sceIoGetFdListFunction, 0x5C2BE2CC);
+			mm.addFunction(0x3251EA56, sceIoPollAsyncFunction);
+			mm.addFunction(0xE23EEC33, sceIoWaitAsyncFunction);
+			mm.addFunction(0x35DBD746, sceIoWaitAsyncCBFunction);
+			mm.addFunction(0xCB05F8D6, sceIoGetAsyncStatFunction);
+			mm.addFunction(0xB293727F, sceIoChangeAsyncPriorityFunction);
+			mm.addFunction(0xA12A0514, sceIoSetAsyncCallbackFunction);
+			mm.addFunction(0x810C4BC3, sceIoCloseFunction);
+			mm.addFunction(0xFF5940B6, sceIoCloseAsyncFunction);
+			mm.addFunction(0x109F50BC, sceIoOpenFunction);
+			mm.addFunction(0x89AA9906, sceIoOpenAsyncFunction);
+			mm.addFunction(0x6A638D83, sceIoReadFunction);
+			mm.addFunction(0xA0B5A7C2, sceIoReadAsyncFunction);
+			mm.addFunction(0x42EC03AC, sceIoWriteFunction);
+			mm.addFunction(0x0FACAB19, sceIoWriteAsyncFunction);
+			mm.addFunction(0x27EB27B8, sceIoLseekFunction);
+			mm.addFunction(0x71B19E77, sceIoLseekAsyncFunction);
+			mm.addFunction(0x68963324, sceIoLseek32Function);
+			mm.addFunction(0x1B385D8F, sceIoLseek32AsyncFunction);
+			mm.addFunction(0x63632449, sceIoIoctlFunction);
+			mm.addFunction(0xE95A012B, sceIoIoctlAsyncFunction);
+			mm.addFunction(0xB29DDF9C, sceIoDopenFunction);
+			mm.addFunction(0xE3EB004C, sceIoDreadFunction);
+			mm.addFunction(0xEB092469, sceIoDcloseFunction);
+			mm.addFunction(0xF27A9C51, sceIoRemoveFunction);
+			mm.addFunction(0x06A70004, sceIoMkdirFunction);
+			mm.addFunction(0x1117C65F, sceIoRmdirFunction);
+			mm.addFunction(0x55F4717D, sceIoChdirFunction);
+			mm.addFunction(0xAB96437F, sceIoSyncFunction);
+			mm.addFunction(0xACE946E8, sceIoGetstatFunction);
+			mm.addFunction(0xB8A740F4, sceIoChstatFunction);
+			mm.addFunction(0x779103A0, sceIoRenameFunction);
+			mm.addFunction(0x54F5FB11, sceIoDevctlFunction);
+			mm.addFunction(0x08BD7374, sceIoGetDevTypeFunction);
+			mm.addFunction(0xB2A628C1, sceIoAssignFunction);
+			mm.addFunction(0x6D08A871, sceIoUnassignFunction);
+			mm.addFunction(0xE8BC6571, sceIoCancelFunction);
+			mm.addFunction(0x5C2BE2CC, sceIoGetFdListFunction);
 			
 		}
 	}
@@ -354,7 +355,8 @@ public class IoFileMgrForUser implements HLEModule {
 		}
 	}
 	
-	public void Initialise() {
+	@Override
+	public void start() {
         if (filelist != null) {
             // Close open files
             for (Iterator<IoInfo> it = filelist.values().iterator(); it.hasNext();) {
@@ -372,6 +374,10 @@ public class IoFileMgrForUser implements HLEModule {
         MemoryStick.setState(MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED);
         defaultAsyncPriority = -1;
     }
+	
+	@Override
+	public void stop() {
+	}
 
     /*
      *  Local file handling functions.

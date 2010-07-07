@@ -25,9 +25,10 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.hardware.Battery;
 
-public class sceImpose implements HLEModule {
+public class sceImpose implements HLEModule, HLEStartModule {
 	@Override
 	public String getName() { return "sceImpose"; }
 
@@ -35,18 +36,15 @@ public class sceImpose implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 
-			mm.addFunction(sceImposeHomeButtonFunction, 0x381BD9E7);
-			mm.addFunction(sceImposeSetHomePopupFunction, 0x5595A71A);
-			mm.addFunction(sceImposeGetHomePopupFunction, 0x0F341BE4);
-			mm.addFunction(sceImposeSetUMDPopupFunction, 0x72189C48);
-			mm.addFunction(sceImposeGetUMDPopupFunction, 0xE0887BC8);
-			mm.addFunction(sceImposeSetLanguageModeFunction, 0x36AA6E91);
-			mm.addFunction(sceImposeGetLanguageModeFunction, 0x24FD7BCF);
-			mm.addFunction(sceImposeGetBatteryIconStatusFunction, 0x8C943191);
-
-            // TODO add to settings gui
-            languageMode_language = PSP_LANGUAGE_ENGLISH;
-            languageMode_button = PSP_CONFIRM_BUTTON_CROSS;
+			mm.addFunction(0x381BD9E7, sceImposeHomeButtonFunction);
+			mm.addFunction(0x5595A71A, sceImposeSetHomePopupFunction);
+			mm.addFunction(0x0F341BE4, sceImposeGetHomePopupFunction);
+			mm.addFunction(0x72189C48, sceImposeSetUMDPopupFunction);
+			mm.addFunction(0xE0887BC8, sceImposeGetUMDPopupFunction);
+			mm.addFunction(0x36AA6E91, sceImposeSetLanguageModeFunction);
+			mm.addFunction(0x24FD7BCF, sceImposeGetLanguageModeFunction);
+			mm.addFunction(0x8C943191, sceImposeGetBatteryIconStatusFunction);
+            
 		}
 	}
 
@@ -65,6 +63,17 @@ public class sceImpose implements HLEModule {
 
 		}
 	}
+	
+	@Override
+    public void start() {
+		// TODO add to settings gui
+        languageMode_language = PSP_LANGUAGE_ENGLISH;
+        languageMode_button = PSP_CONFIRM_BUTTON_CROSS;
+    }
+
+    @Override
+    public void stop() {
+    }
 
     // TODO get all the language codes
     public final static int PSP_LANGUAGE_JAPANESE = 0;

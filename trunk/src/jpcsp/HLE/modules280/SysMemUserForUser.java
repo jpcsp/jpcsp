@@ -31,12 +31,12 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 		
 		if (version >= 280) {
 		
-			mm.addFunction(sceKernelQueryMemoryInfoFunction, 0x2A3E5280);
-			mm.addFunction(sceKernelGetPTRIGFunction, 0x39F49610);
-			mm.addFunction(sceKernelSetPTRIGFunction, 0x6231A71D);
+			mm.addFunction(0x2A3E5280, sceKernelQueryMemoryInfoFunction);
+			mm.addFunction(0x39F49610, sceKernelGetPTRIGFunction);
+			mm.addFunction(0x6231A71D, sceKernelSetPTRIGFunction);
 			
 			// Kernel export
-			mm.addFunction(sceKernelGetModelFunction, 0x6373995D);
+			mm.addFunction(0x6373995D, sceKernelGetModelFunction);
 			
 		}
 	}

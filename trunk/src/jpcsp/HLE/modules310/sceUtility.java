@@ -30,8 +30,8 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         if (version >= 310) {
 
-            mm.addFunction(sceUtilityLoadModuleFunction, 0x2A2B3DE0);
-            mm.addFunction(sceUtilityUnloadModuleFunction, 0xE49BFE92);
+            mm.addFunction(0x2A2B3DE0, sceUtilityLoadModuleFunction);
+            mm.addFunction(0xE49BFE92, sceUtilityUnloadModuleFunction);
 
         }
     }

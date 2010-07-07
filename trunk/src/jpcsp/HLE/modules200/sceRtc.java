@@ -34,11 +34,10 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 		
 		if (version >= 200) {
 		
-			mm.addFunction(sceRtcGetAccumlativeTimeFunction, 0x029CA3B3);
-			mm.addFunction(sceRtcGetLastReincarnatedTimeFunction, 0x203CEB0D);
-			mm.addFunction(sceRtcGetLastAdjustedTimeFunction, 0x62685E98);
-			mm.addFunction(sceRtcSetTime64_tFunction, 0x1909C99B);
-			mm.addFunction(sceRtcGetTime64_tFunction, 0xE1C93E47);
+			mm.addFunction(0x203CEB0D, sceRtcGetLastReincarnatedTimeFunction);
+			mm.addFunction(0x62685E98, sceRtcGetLastAdjustedTimeFunction);
+			mm.addFunction(0x1909C99B, sceRtcSetTime64_tFunction);
+			mm.addFunction(0xE1C93E47, sceRtcGetTime64_tFunction);
 			
 		}
 	}
@@ -49,21 +48,12 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 		
 		if (version >= 200) {
 		
-			mm.removeFunction(sceRtcGetAccumlativeTimeFunction);
 			mm.removeFunction(sceRtcGetLastReincarnatedTimeFunction);
 			mm.removeFunction(sceRtcGetLastAdjustedTimeFunction);
 			mm.removeFunction(sceRtcSetTime64_tFunction);
 			mm.removeFunction(sceRtcGetTime64_tFunction);
 			
 		}
-	}
-	
-	public void sceRtcGetAccumlativeTime(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		Modules.log.debug("Unimplemented NID function sceRtcGetAccumlativeTime [0x029CA3B3]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
 	}
     
 	public void sceRtcGetLastReincarnatedTime(Processor processor) {
@@ -112,17 +102,6 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         }
 	}
 	
-	public final HLEModuleFunction sceRtcGetAccumlativeTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetAccumlativeTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceRtcGetAccumlativeTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetAccumlativeTime(processor);";
-		}
-	};
-    
 	public final HLEModuleFunction sceRtcGetLastReincarnatedTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetLastReincarnatedTime") {
 		@Override
 		public final void execute(Processor processor) {

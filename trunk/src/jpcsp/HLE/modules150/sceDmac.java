@@ -33,8 +33,8 @@ public class sceDmac implements HLEModule {
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
 
-			mm.addFunction(sceDmacMemcpyFunction, 0x617F3FE6);
-			mm.addFunction(sceDmacTryMemcpyFunction, 0xD97F94D8);
+			mm.addFunction(0x617F3FE6, sceDmacMemcpyFunction);
+			mm.addFunction(0xD97F94D8, sceDmacTryMemcpyFunction);
 
 		}
 	}

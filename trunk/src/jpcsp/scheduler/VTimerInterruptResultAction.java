@@ -20,7 +20,7 @@ import jpcsp.Emulator;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
-import jpcsp.HLE.modules.TimerManager;
+import jpcsp.HLE.modules.ThreadManForUser;
 
 public class VTimerInterruptResultAction implements IAction {
 	private SceKernelVTimerInfo sceKernelVTimerInfo;
@@ -31,7 +31,7 @@ public class VTimerInterruptResultAction implements IAction {
 
 	@Override
 	public void execute() {
-		TimerManager timerManager = Modules.TimerManager;
+		ThreadManForUser timerManager = Modules.ThreadManForUserModule;
 
 		int vtimerInterruptResult = Emulator.getProcessor().cpu.gpr[2];
 		if (Modules.log.isDebugEnabled()) {
