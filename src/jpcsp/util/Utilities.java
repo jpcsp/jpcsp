@@ -234,7 +234,7 @@ public class Utilities {
          putUnsignedByte(buf, value);
      }
 
-     public static int parseAddress(String value) {
+     public static int parseAddress(String value) throws NumberFormatException {
          int address = 0;
          if (value == null) {
              return address;
