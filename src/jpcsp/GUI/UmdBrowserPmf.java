@@ -32,6 +32,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 import jpcsp.Emulator;
+import jpcsp.Settings;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 
@@ -147,6 +148,7 @@ public class UmdBrowserPmf {
 	    videoCoder = null;
 	    audioStreamId = -1;
 	    audioCoder = null;
+	    boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
 	    for (int i = 0; i < numStreams; i++)
 	    {
 	    	// Find the stream object
@@ -158,8 +160,7 @@ public class UmdBrowserPmf {
 	    	{
 	    		videoStreamId = i;
 	    		videoCoder = coder;
-	    		break;
-	    	} else if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
+	    	} else if (coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO && !audioMuted) {
 	    		audioStreamId = i;
 	    		audioCoder = coder;
 	    	}
