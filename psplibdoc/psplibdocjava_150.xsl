@@ -48,7 +48,7 @@ public class <xsl:value-of select="NAME"/><xsl:choose><xsl:when test="$old_versi
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= <xsl:value-of select="$version"/>) {
 		
-			<xsl:for-each select="FUNCTIONS/FUNCTION">mm.addFunction(<xsl:value-of select="NAME"/>Function, <xsl:value-of select="NID"/>);
+			<xsl:for-each select="FUNCTIONS/FUNCTION">mm.addFunction(<xsl:value-of select="NID"/>, <xsl:value-of select="NAME"/>Function);
 			</xsl:for-each>
 		}
 	}

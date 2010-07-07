@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules;
 
-public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
+public class sceDisplay extends jpcsp.HLE.modules500.sceDisplay {
 	private static final long serialVersionUID = 5133304298118632765L;
 
 	@Override
