@@ -1,6 +1,4 @@
 /*
-Parts based on soywiz's pspemulator.
-
 This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
@@ -158,18 +156,6 @@ public class VideoEngine {
     private boolean isLogInfoEnabled;
     private boolean isLogWarnEnabled;
     private int primCount;
-    // We have problems displaying mipmap textures with the following
-    // minimizing filters:
-    // - TFLT_NEAREST_MIPMAP_NEAREST
-    // - TFLT_NEAREST_MIPMAP_LINEAR
-    // - TFLT_LINEAR_MIPMAP_NEAREST
-    // - TFLT_LINEAR_MIPMAP_LINEAR
-    // No texture at all is displayed when using these filters.
-    // For now, disable these filters and used instead
-    // - TFLT_NEAREST
-    // - TFLT_LINEAR
-    // TODO investigate why these minimizing filters are not working properly
-    private static final boolean useMultiMipmapMinimizingFilter = false;
     private int base;
     // The value of baseOffset has to be added (not ORed) to the base value.
     // baseOffset is updated by the ORIGIN_ADDR and OFFSET_ADDR commands,
@@ -249,7 +235,10 @@ public class VideoEngine {
     private int patch_prim;
     private int[] patch_prim_types = {GL.GL_TRIANGLE_STRIP, GL.GL_LINE_STRIP, GL.GL_POINTS};
     private boolean patch_face;
+    private boolean patch_cull;
     private boolean rev_normal;
+    private boolean tsync_wait = false;
+    private float tslope_level;
     private boolean clutIsDirty;
     private int transform_mode;
     private int textureTx_sourceAddress;
@@ -1121,7 +1110,7 @@ public class VideoEngine {
 
         // let DONE take priority over STALL_REACHED
         if (listHasEnded) {
-
+            setTsync(false);
             // for now testing, but maybe list is not DONE until we get a FINISH and an END?
             // this could explain games trying to sync lists that have been discarded (fiveofhearts)
             // No FINISH:
@@ -1515,6 +1504,10 @@ public class VideoEngine {
         }
 
         return String.format("(hex=%08X,int=%d,float=%f)", normalArgument, normalArgument, floatArgument(normalArgument));
+    }
+
+    public void setTsync(boolean status) {
+        tsync_wait = status;
     }
 
     public void executeCommand(int instruction) {
@@ -2321,35 +2314,19 @@ public class VideoEngine {
                         break;
                     }
                     case TFLT_NEAREST_MIPMAP_NEAREST: {
-                        if (useMultiMipmapMinimizingFilter) {
-                            tex_min_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
-                        } else {
-                            tex_min_filter = GL.GL_NEAREST;
-                        }
+                        tex_min_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
                         break;
                     }
                     case TFLT_NEAREST_MIPMAP_LINEAR: {
-                        if (useMultiMipmapMinimizingFilter) {
-                            tex_min_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
-                        } else {
-                            tex_min_filter = GL.GL_NEAREST;
-                        }
+                        tex_min_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
                         break;
                     }
                     case TFLT_LINEAR_MIPMAP_NEAREST: {
-                        if (useMultiMipmapMinimizingFilter) {
-                            tex_min_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
-                        } else {
-                            tex_min_filter = GL.GL_LINEAR;
-                        }
+                        tex_min_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
                         break;
                     }
                     case TFLT_LINEAR_MIPMAP_LINEAR: {
-                        if (useMultiMipmapMinimizingFilter) {
-                            tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
-                        } else {
-                            tex_min_filter = GL.GL_LINEAR;
-                        }
+                        tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
                         break;
                     }
 
@@ -2463,11 +2440,11 @@ public class VideoEngine {
             }
 
             case TBIAS: {
-                tex_mipmap_mode = normalArgument & 0xFFFF;
-                tex_mipmap_bias_int = (int) (byte) (normalArgument >> 16);
+                tex_mipmap_mode = normalArgument & 0x3;
+                tex_mipmap_bias_int = (normalArgument >> 16) & 0xF;
                 tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
-                if (isLogWarnEnabled) {
-                    log.warn("Unimplemented sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
+                if (isLogDebugEnabled) {
+                    log.debug("sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
                 }
                 break;
             }
@@ -3244,6 +3221,27 @@ public class VideoEngine {
 
                 drawBezier(ucount, vcount);
                 break;
+
+            case SPLINE: {
+                // Number of control points.
+                int sp_ucount =  normalArgument & 0xF;
+                int sp_vcount = (normalArgument >> 8) & 0xF;
+                // Knot types.
+                int sp_utype =  (normalArgument >> 16) & 0x3;
+                int sp_vtype =  (normalArgument >> 18) & 0x3;
+
+                 if (isLogDebugEnabled) {
+                    log(helper.getCommandString(SPLINE) + " sp_ucount=" + sp_ucount + ", sp_vcount=" + sp_vcount +
+                            " sp_utype=" + sp_utype + ", sp_vtype=" + sp_vtype);
+                }
+
+                updateGeBuf();
+                loadTexture();
+
+                drawSpline(sp_ucount, sp_vcount, sp_utype, sp_vtype);
+                break;
+            }
+
             case CPE: //Clip Plane Enable
                 //uggly trying ... don't break any demo (that I've tested)
                 if (normalArgument != 0) {
@@ -3455,6 +3453,18 @@ public class VideoEngine {
                 break;
             }
 
+            case PCE: {
+                patch_cull = (normalArgument & 0x1) == 1;
+                 // 0 - Disable / 1 - Enable.
+                if (isLogDebugEnabled) {
+                    if(patch_cull)
+                        log(helper.getCommandString(PCE) + " patch_cull=enabled");
+                    else
+                        log(helper.getCommandString(PCE) + " patch_cull=disabled");
+                }
+                break;
+            }
+
             case CTE: {
                 shaderCtestEnable = (normalArgument != 0);
                 if (!clearMode && useShaders) {
@@ -3473,6 +3483,25 @@ public class VideoEngine {
                         log(helper.getCommandString(PFACE) + " rev_normal=yes");
                     else
                         log(helper.getCommandString(PFACE) + " rev_normal=no");
+                }
+                break;
+            }
+
+            case TSYNC: {
+                // Block texture reading until the current list is drawn.
+                // TODO: Currently just faking. Needs to be tested and compared
+                // in terms of speed.
+                setTsync(true);
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(TSYNC) + " waiting for drawing.");
+                }
+                break;
+            }
+
+            case TSLOPE: {
+                tslope_level = floatArgument(normalArgument & 0xFFF);
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(TSYNC) + " waiting for drawing.");
                 }
                 break;
             }
@@ -4872,15 +4901,20 @@ public class VideoEngine {
             boolean compressedTexture = false;
 
             int numberMipmaps = texture_num_mip_maps;
-            // I'm not sure about the exact meaning of TBIAS_MODE_CONST.
-            // I'm interpreting it here as forcing a specific mipmap (from bias parameter).
-            // This seems to work with TBIAS_MODE_CONST and bias=0.
             if (tex_mipmap_mode == TBIAS_MODE_CONST) {
-                numberMipmaps = Math.min(tex_mipmap_bias_int, texture_base_pointer.length - 1);
+                // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
+                numberMipmaps = tex_mipmap_bias_int;
                 log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
+            } else if(tex_mipmap_mode == TBIAS_MODE_AUTO) {
+                // TODO: TBIAS_MODE_AUTO.
+                log.debug("TBIAS_MODE_AUTO " + tex_mipmap_bias_int);
+            } else if(tex_mipmap_mode == TBIAS_MODE_SLOPE) {
+                // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
+                numberMipmaps = (int)((Math.log(tslope_level / texture_num_mip_maps) / Math.log(2)) + tex_mipmap_bias);
+                log.debug("TBIAS_MODE_SLOPE " + tex_mipmap_bias_int);
             }
 
-            for (int level = 0; level <= numberMipmaps; ++level) {
+            for (int level = 0; level <= numberMipmaps && level < texture_base_pointer.length; ++level) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
                 texaddr = texture_base_pointer[level];
@@ -5198,21 +5232,17 @@ public class VideoEngine {
                     texture_format = GL.GL_RGB;
                 }
 
-                // Upload texture to openGL
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+                // Upload texture to openGL.
+
+                // Tested on PSP:
+                // If numberMipmaps is greater than 0.5, use a min filter. Otherwise, use a mag one.
+                if(numberMipmaps > 0.5) {
+                  gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_min_filter);
+                } else {
+                  gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+                }
                 gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
                 gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
-
-                // apparently w > tbw still works, but I think we should log it just incase (fiveofhearts)
-                // update: seems some games are using tbw greater AND less than w, now I haven't got a clue what the meaning of the 2 variables are
-                /*
-                if (texture_width[level] > texture_buffer_width[level]) {
-                log.warn(helper.getCommandString(TFLUSH) + " w > tbw : w=" + texture_width[level] + " tbw=" + texture_buffer_width[level]);
-                } else if (texture_width[level] < texture_buffer_width[level]) {
-                log.warn(helper.getCommandString(TFLUSH) + " w < tbw : w=" + texture_width[level] + " tbw=" + texture_buffer_width[level]);
-                }
-                 */
 
                 if (compressedTexture) {
                     gl.glCompressedTexImage2D(GL.GL_TEXTURE_2D,
@@ -5745,6 +5775,106 @@ public class VideoEngine {
                 gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
             }
         }
+    }
+
+    private void drawSpline(int ucount, int vcount, int utype, int vtype) {
+        // Draw Spline surface (mostly based on drawBezier).
+        //
+        // This function is mostly an hack for now. The knot types
+        // must be considered to get the correct output:
+        //  utype/vtype:
+        //      - 0: Both starting and ending points are closed;
+        //      - 1: Starting point is open, ending is closed;
+        //      - 2: Starting point is closed, ending is open;
+        //      - 3: Both starting and ending points are open.
+        //
+        if (ucount < 4 || vcount < 4) {
+            log.warn("Unsupported Spline parameters");
+            return;
+        }
+
+        boolean useVertexColor = initRendering();
+
+        VertexState[][] anchors = new VertexState[ucount][vcount];
+        Memory mem = Memory.getInstance();
+        for (int u = 0; u < ucount; u++) {
+            for (int v = 0; v < vcount; v++) {
+                int addr = vinfo.getAddress(mem, u * vcount + v);
+                VertexState vs = vinfo.readVertex(mem, addr);
+                if (isLogDebugEnabled) {
+                    log("drawSpline  vertex#" + u + "," + v + " (" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + ") at (" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ")");
+                }
+                anchors[u][v] = vs;
+            }
+        }
+
+        if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
+            log.info("Capture drawSpline");
+            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * ucount * vcount);
+        }
+
+        VertexState[] temp = new VertexState[ucount];
+        for (int i = 0; i < temp.length; i++) {
+            temp[i] = new VertexState();
+        }
+        VertexState[] last = new VertexState[vcount + 1];
+        for (int i = 0; i < last.length; i++) {
+            last[i] = new VertexState();
+        }
+
+        for (int u = 0; u < ucount; u++) {
+            pointCopy(temp[u], anchors[u][vcount - 1]);
+        }
+        for (int v = 0; v <= vcount; v++) {
+            float px = ((float) v) / ((float) vcount);
+            Bernstein(last[v], px, temp);
+        }
+
+        boolean useTexture = true;
+        bindBuffers(useVertexColor, useTexture, true, 0);
+
+        float pyold = 0;
+        for (int u = 1; u <= vcount; u++) {
+            float py = ((float) u) / ((float) vcount);
+
+            for (int i = 0; i < ucount; i++) {
+                Bernstein(temp[i], py, anchors[i]);
+            }
+
+            vboFloatBuffer.clear();
+
+            for (int v = 0; v <= vcount; v++) {
+                float px = ((float) v) / ((float) vcount);
+
+                if (vinfo.texture != 0) {
+                    vboFloatBuffer.put(last[v].t);
+                } else {
+                    vboFloatBuffer.put(1 - pyold);
+                    vboFloatBuffer.put(1 - px);
+                }
+
+                vboFloatBuffer.put(last[v].p);
+                Bernstein(last[v], px, temp);
+
+                if (vinfo.texture != 0) {
+                    vboFloatBuffer.put(last[v].t);
+                } else {
+                    vboFloatBuffer.put(1 - py);
+                    vboFloatBuffer.put(1 - px);
+                }
+                vboFloatBuffer.put(last[v].p);
+            }
+            if (useVBO) {
+                if (openGL1_5) {
+                    gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+                } else {
+                    gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+                }
+            }
+            gl.glDrawArrays(GL.GL_POLYGON, 0, (vcount + 1) * 2);
+            pyold = py;
+        }
+        endRendering(useVertexColor, useTexture, ucount * vcount);
     }
 
     private void drawBezier(int ucount, int vcount) {

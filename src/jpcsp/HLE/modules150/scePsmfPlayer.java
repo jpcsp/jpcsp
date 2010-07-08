@@ -39,13 +39,7 @@ import jpcsp.util.Utilities;
 
 /*
  * TODO list:
- * 1. Figure out the full PSMF Player struct.
- *
- * 2. Check the meaning of the status' codes.
- *
- * 3. Resolve functions scePsmfPlayer_1E57A8E7 and scePsmfPlayer_2BEB1569's names.
- *
- * 4. Retrieve the correct playback settings (instead of default values).
+ * 1. Resolve function scePsmfPlayer_2BEB1569's name.
  */
 
 public class scePsmfPlayer implements HLEModule {
@@ -70,7 +64,7 @@ public class scePsmfPlayer implements HLEModule {
             mm.addFunction(0xB9848A74, scePsmfPlayerGetAudioDataFunction);
             mm.addFunction(0xF8EF08A6, scePsmfPlayerGetCurrentStatusFunction);
             mm.addFunction(0xDF089680, scePsmfPlayerGetPsmfInfoFunction);
-            mm.addFunction(0x1E57A8E7, scePsmfPlayer_1E57A8E7Function);
+            mm.addFunction(0x1E57A8E7, scePsmfPlayerConfigPlayerFunction);
             mm.addFunction(0x2BEB1569, scePsmfPlayer_2BEB1569Function);
 
         }
@@ -91,7 +85,7 @@ public class scePsmfPlayer implements HLEModule {
             mm.removeFunction(scePsmfPlayerGetAudioDataFunction);
             mm.removeFunction(scePsmfPlayerGetCurrentStatusFunction);
             mm.removeFunction(scePsmfPlayerGetPsmfInfoFunction);
-            mm.removeFunction(scePsmfPlayer_1E57A8E7Function);
+            mm.removeFunction(scePsmfPlayerConfigPlayerFunction);
             mm.removeFunction(scePsmfPlayer_2BEB1569Function);
 
         }
@@ -114,8 +108,6 @@ public class scePsmfPlayer implements HLEModule {
     protected long lastPsmfPlayerAtracSystemTime;
     protected long psmfPlayerLastTimestamp;
     protected int psmfPlayerStatus;
-    protected int psmfPlayerVideoStatus;
-    protected int psmfPlayerAudioStatus;
     protected int psmfPlayerAvcCurrentDecodingTimestamp;
     protected int psmfPlayerAtracCurrentDecodingTimestamp;
     protected int psmfPlayerAvcCurrentPresentationTimestamp;
@@ -125,6 +117,7 @@ public class scePsmfPlayer implements HLEModule {
     protected int displayBuffer;
     protected int frameWidth;
     protected int videoPixelMode;
+    protected int audioChannelMode;
     protected int audioSize;
 
     // Media Engine vars.
@@ -237,7 +230,7 @@ public class scePsmfPlayer implements HLEModule {
         frameWidth = 512;
 
         audioSize = -1;  // Faking (no audio).
-        videoPixelMode = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+        videoPixelMode = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;  // Default.
 
         cpu.gpr[2] = 0;
     }
@@ -368,13 +361,6 @@ public class scePsmfPlayer implements HLEModule {
 
         Modules.log.warn("PARTIAL: scePsmfPlayerUpdate psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
-        // Change the current status to video or audio accordingly.
-        if ((psmfPlayerAtracCurrentDecodingTimestamp > psmfPlayerAvcCurrentDecodingTimestamp + pmsfMaxAheadTimestamp)) {
-            psmfPlayerStatus = psmfPlayerVideoStatus;
-        } else if ((psmfPlayerAvcCurrentDecodingTimestamp > psmfPlayerAtracCurrentDecodingTimestamp + pmsfMaxAheadTimestamp)) {
-            psmfPlayerStatus = psmfPlayerAudioStatus;
-        }
-
         cpu.gpr[2] = 0;
     }
 
@@ -460,23 +446,23 @@ public class scePsmfPlayer implements HLEModule {
     }
 
 
-    public void scePsmfPlayer_1E57A8E7(Processor processor) {
+    public void scePsmfPlayerConfigPlayer(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
         int psmfplayer = cpu.gpr[4];
         int stream_type = cpu.gpr[5];
-        int status = cpu.gpr[6];
+        int setting = cpu.gpr[6];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayer_1E57A8E7 psmfplayer=0x" + Integer.toHexString(psmfplayer)
-                + " stream_type=" + stream_type + " status=" + status);
+        Modules.log.warn("PARTIAL: scePsmfPlayerConfigPlayer psmfplayer=0x" + Integer.toHexString(psmfplayer)
+                + " stream_type=" + stream_type + " setting=" + setting);
 
-        if(stream_type == 0) {           // Video.
-            psmfPlayerVideoStatus = status;
-        } else if (stream_type == 1) {   // Audio.
-            psmfPlayerAudioStatus = status;
+        if(stream_type == 1) {           // Video.
+            videoPixelMode = setting;
+        } else if (stream_type == 0) {   // Audio.
+            audioChannelMode = setting;
         } else {
-            Modules.log.warn("scePsmfPlayer_1E57A8E7 unknown stream type.");
+            Modules.log.warn("scePsmfPlayerConfigPlayer unknown stream type.");
         }
 
         cpu.gpr[2] = 0;
@@ -649,16 +635,16 @@ public class scePsmfPlayer implements HLEModule {
         }
     };
 
-    public final HLEModuleFunction scePsmfPlayer_1E57A8E7Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayer_1E57A8E7") {
+    public final HLEModuleFunction scePsmfPlayerConfigPlayerFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerConfigPlayer") {
 
         @Override
         public final void execute(Processor processor) {
-            scePsmfPlayer_1E57A8E7(processor);
+            scePsmfPlayerConfigPlayer(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayer_1E57A8E7(processor);";
+            return "jpcsp.HLE.Modules.scePsmfPlayerConfigPlayer(processor);";
         }
     };
 

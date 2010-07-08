@@ -68,7 +68,7 @@ public class sceFont implements HLEModule, HLEStartModule {
             mm.addFunction(0x74B21701, sceFontPixelToPointHFunction);
             mm.addFunction(0xF8F0752E, sceFontPixelToPointVFunction);
 
-            
+
 		}
 	}
 
@@ -100,14 +100,14 @@ public class sceFont implements HLEModule, HLEStartModule {
             mm.removeFunction(sceFontPixelToPointVFunction);
 		}
 	}
-	
+
 	@Override
     public void start() {
 		fontLibMap = new HashMap<Integer, FontLib>();
         PGFFilesMap = new HashMap<Integer, PGF>();
         fontLibCount = 0;
         currentFontHandle = 0;
-        currentExternalFontHandle = 0;
+        externalFontHandleCount = 0;
     }
 
     @Override
@@ -124,7 +124,7 @@ public class sceFont implements HLEModule, HLEStartModule {
     private HashMap<Integer, PGF> PGFFilesMap;
 	private int fontLibCount;
 	private int currentFontHandle;
-	private int currentExternalFontHandle;
+	private int externalFontHandleCount;
     private float globalFontHRes = 0.0f;
     private float globalFontVRes = 0.0f;
 	public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
@@ -292,19 +292,17 @@ public class sceFont implements HLEModule, HLEStartModule {
 		Modules.log.warn(String.format("PARTIAL: sceFontOpenUserFile libHandle=0x%08X, fileName=%s, unknown=0x%08X, errorCodeAddr=0x%08X",
                 libHandle, fileName, mode, errorCodeAddr));
 
-        int externalHandle = 0;
-
 		if (!fontLibMap.containsKey(libHandle)) {
 			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             FontLib fLib = fontLibMap.get(libHandle);
-            externalHandle = fLib.makeFakeExternalFontHandle(currentExternalFontHandle++);
+            currentFontHandle = fLib.makeFakeExternalFontHandle(externalFontHandleCount++);
 			if (mem.isAddressGood(errorCodeAddr)) {
 				mem.write32(errorCodeAddr, 0);
 			}
 
-			cpu.gpr[2] = externalHandle;
+			cpu.gpr[2] = currentFontHandle;
 		}
 	}
 
@@ -320,14 +318,12 @@ public class sceFont implements HLEModule, HLEStartModule {
 		Modules.log.warn(String.format("PARTIAL: sceFontOpenUserMemory libHandle=0x%08X, memoryFontAddr=0x%08X, memoryFontLength=%d, errorCodeAddr=0x%08X",
                 libHandle, memoryFontAddr, memoryFontLength, errorCodeAddr));
 
-        int externalHandle = 0;
-
 		if (!fontLibMap.containsKey(libHandle)) {
 			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             FontLib fLib = fontLibMap.get(libHandle);
-            externalHandle = fLib.makeFakeExternalFontHandle(currentExternalFontHandle++);
+            currentFontHandle = fLib.makeFakeExternalFontHandle(externalFontHandleCount++);
 			if (mem.isAddressGood(memoryFontAddr)) {
 				int magic = mem.read32(memoryFontAddr + 4);
 				if (magic == PGF_MAGIC) {
@@ -338,7 +334,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 				mem.write32(errorCodeAddr, 0);
 			}
 
-			cpu.gpr[2] = externalHandle;
+			cpu.gpr[2] = currentFontHandle;
 		}
 	}
 
@@ -723,7 +719,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                         + ", bytesPerLine=" + bytesPerLine
                         + ", pixelFormat=" + pixelFormat);
 
-                PGF currentPGF = PGFFilesMap.get(fontAddr);               
+                PGF currentPGF = PGFFilesMap.get(fontAddr);
                 if(currentPGF != null) {
                     // Font adjustment.
                     // TODO: Instead of using the loaded PGF, figure out
