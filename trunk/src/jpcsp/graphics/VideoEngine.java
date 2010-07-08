@@ -5237,7 +5237,7 @@ public class VideoEngine {
                 // Tested on PSP:
                 // If numberMipmaps is greater than 0.5, use a min filter. Otherwise, use a mag one.
                 if(numberMipmaps > 0.5) {
-                  gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_min_filter);
+                  gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
                 } else {
                   gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
                 }
