@@ -5235,11 +5235,12 @@ public class VideoEngine {
                 // Upload texture to openGL.
 
                 // Tested on PSP:
-                // If numberMipmaps is greater than 0.5, use a min filter. Otherwise, use a mag one.
-                if(numberMipmaps > 0.5) {
-                  gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
+                // The MIN filter is only triggered if the number of mipmaps (texture's level) is superior to 0.
+                if(numberMipmaps > 0) {
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
                 } else {
-                  gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
                 }
                 gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
                 gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
