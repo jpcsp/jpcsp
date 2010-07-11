@@ -1898,7 +1898,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
 	protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
 		sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
-		sceKernelVTimerInfo.current = getSystemTime() - sceKernelVTimerInfo.base;
+		// Sum the elapsed time (multiple Start/Stop sequences are added)
+		sceKernelVTimerInfo.current += getSystemTime() - sceKernelVTimerInfo.base;
 	}
 
 	protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
