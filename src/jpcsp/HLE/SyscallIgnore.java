@@ -55,7 +55,6 @@ public enum SyscallIgnore {
 	sceDisplayDisable(0x681EE6A7),
 	sceDisplayEnable(0x432D133F),
 	sceDisplaySetBrightness(0x9E3C6DC6),
-	sceDisplayWaitVblankStartMulti(0x40F1469C),
 	sceHprmEnd(0x588845DA),
 	sceHttpAbortRequest(0xc10b6bd9),
 	sceHttpAddExtraHeader(0x3eaba285),
