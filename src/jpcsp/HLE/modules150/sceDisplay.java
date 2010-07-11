@@ -210,7 +210,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 			}
 		}
 
-		@SuppressWarnings("unused")
 		public void exit() {
 			run = false;
 			display();
@@ -372,6 +371,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     
     @Override
     public void stop() {
+    	if (asyncDisplayThread != null) {
+    		asyncDisplayThread.exit();
+    		asyncDisplayThread = null;
+    	}
     }
 
     public void exit() {
@@ -762,6 +765,14 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     	return bufferwidthGe;
     }
 
+    public BufferInfo getBufferInfoGe() {
+    	return new BufferInfo(topaddrGe, bottomaddrGe, widthGe, heightGe, bufferwidthGe, pixelformatGe);
+    }
+
+    public BufferInfo getBufferInfoFb() {
+    	return new BufferInfo(topaddrFb, bottomaddrFb, width, height, bufferwidthFb, pixelformatFb);
+    }
+
     public void captureGeImage(GL gl) {
     	// Create a GE texture (the texture texFb might not have the right size)
         int[] textures = new int[1];
@@ -900,7 +911,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         gl.glDisable(GL.GL_LOGIC_OP);
         gl.glDisable(GL.GL_STENCIL_TEST);
         gl.glDisable(GL.GL_SCISSOR_TEST);
-        gl.glColorMask(true, true, true, false);
+        // Write RGB color and alpha
+        gl.glColorMask(true, true, true, true);
 
         pushTexEnv(gl);
         gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
@@ -1262,7 +1274,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplaySetMode(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int mode = cpu.gpr[4];
         int width = cpu.gpr[5];
@@ -1426,22 +1437,25 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayGetFrameBuf(Processor processor) {
         CpuState cpu = processor.cpu;
-        
-        int topaddr = cpu.gpr[4];
-        int bufferwidth = cpu.gpr[4];
-        int pixelformat = cpu.gpr[4];
-        int sync = cpu.gpr[4]; // Value 0 or 1. Unknown meaning.
+    	Memory mem = Memory.getInstance();
 
-    	Memory memory = Memory.getInstance();
-        if (!memory.isAddressGood(topaddr    ) ||
-            !memory.isAddressGood(bufferwidth) ||
-            !memory.isAddressGood(pixelformat))
-        {
+        int topaddrAddr = cpu.gpr[4];
+        int bufferwidthAddr = cpu.gpr[5];
+        int pixelformatAddr = cpu.gpr[6];
+        int sync = cpu.gpr[7]; // Value 0 or 1. Unknown meaning.
+
+        if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug(String.format("sceDisplayGetFrameBuf topaddrAddr=0x%08X, bufferwidthAddr=0x%08X, pixelformatAddr=0x%08X, sync=%d", topaddrAddr, bufferwidthAddr, pixelformatAddr, sync));
+        }
+
+        if (!mem.isAddressGood(topaddrAddr    ) ||
+            !mem.isAddressGood(bufferwidthAddr) ||
+            !mem.isAddressGood(pixelformatAddr)) {
             cpu.gpr[2] = -1;
         } else {
-            memory.write32(topaddr    , topaddrFb    );
-            memory.write32(bufferwidth, bufferwidthFb);
-            memory.write32(pixelformat, pixelformatFb);
+            mem.write32(topaddrAddr    , topaddrFb    );
+            mem.write32(bufferwidthAddr, bufferwidthFb);
+            mem.write32(pixelformatAddr, pixelformatFb);
             cpu.gpr[2] = 0;
         }
     }
@@ -1459,7 +1473,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         CpuState cpu = processor.cpu;
         
         int leveladdr = cpu.gpr[4];
-        int unkaddr = cpu.gpr[4];
+        int unkaddr = cpu.gpr[5];
         
         Modules.log.warn("IGNORING: sceDisplayGetBrightness leveladdr=0x"
                 + Integer.toHexString(leveladdr) + ", unkaddr=0x"
@@ -1549,6 +1563,25 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         Modules.log.warn("UNIMPLEMENTED: sceDisplayAdjustAccumulatedHcount");
         cpu.gpr[2] = 0;
     }
+
+    public static class BufferInfo {
+    	public int topAddr;
+    	public int bottomAddr;
+    	public int width;
+    	public int height;
+    	public int bufferWidth;
+    	public int pixelFormat;
+
+    	public BufferInfo(int topAddr, int bottomAddr, int width, int height, int bufferWidth, int pixelFormat) {
+    		this.topAddr = topAddr;
+    		this.bottomAddr = bottomAddr;
+    		this.width = width;
+    		this.height = height;
+    		this.bufferWidth = bufferWidth;
+    		this.pixelFormat = pixelFormat;
+    	}
+    }
+
     public final HLEModuleFunction sceDisplaySetModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetMode") {
 
         @Override
