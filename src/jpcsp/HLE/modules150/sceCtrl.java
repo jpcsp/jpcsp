@@ -82,7 +82,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     protected int currentSamplingIndex;
     protected int currentReadingIndex;
     protected int latchSamplingCount;
-    protected final static int SAMPLE_BUFFER_SIZE = 10;
+    // PSP remembers the last 64 samples.
+    protected final static int SAMPLE_BUFFER_SIZE = 64;
     protected List<ThreadWaitingForSampling> threadsWaitingForSampling;
 
     public boolean isModeDigital() {
@@ -209,7 +210,10 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         mode = PSP_CTRL_MODE_DIGITAL; // check initial mode
         cycle = 0;
 
-        samples = new Sample[SAMPLE_BUFFER_SIZE];
+        // Allocate 1 more entry because we always leave 1 entry free
+        // for the internal management
+        // (to differentiate a full buffer from an empty one).
+        samples = new Sample[SAMPLE_BUFFER_SIZE + 1];
         for (int i = 0; i < samples.length; i++) {
         	samples[i] = new Sample();
         }
