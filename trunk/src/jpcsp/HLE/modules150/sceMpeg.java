@@ -1350,8 +1350,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             Modules.log.warn("sceMpegAvcQueryYCbCrSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(resultAddr)) {
-            // Write the stream size.
-            mem.write32(resultAddr, mpegStreamSize);
+            // Write the size of the buffer used by sceMpegAvcDecodeYCbCr:
+        	// assume 2 bytes per pixel.
+            mem.write32(resultAddr, width * height * 2);
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceMpegAvcQueryYCbCrSize bad result address 0x" + Integer.toHexString(resultAddr));
