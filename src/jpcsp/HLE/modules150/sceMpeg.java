@@ -1403,7 +1403,68 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0x80628002;
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
             // Decode the video data in YCbCr mode.
-            // Simulate a correct decoding.
+            long currentSystemTime = Emulator.getClock().milliTime();
+            int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
+            if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
+                int delayMillis = avcDecodeDelay - elapsedTime;
+                Modules.log.info("Delaying sceMpegAvcDecodeYCbCr for " + delayMillis + "ms");
+                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
+                lastAvcSystemTime = currentSystemTime + delayMillis;
+            } else {
+                lastAvcSystemTime = currentSystemTime;
+            }
+
+            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
+
+            int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
+            int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
+            int processedSize = processedPackets * mpegRingbuffer.packetSize;
+
+            // let's go with 3 packets per frame for now
+            int packetsConsumed = 3;
+            if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
+                // Try a better approximation of the packets consumed based on the timestamp
+                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
+                if (processedSizeBasedOnTimestamp < processedSize) {
+                    packetsConsumed = 0;
+                } else {
+                    packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
+                    if (packetsConsumed > 10) {
+                        packetsConsumed = 10;
+                    }
+                }
+                if (Modules.log.isDebugEnabled()) {
+                    Modules.log.debug(String.format("sceMpegAvcDecodeYCbCr consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
+                }
+            }
+
+            // sceMpegAvcDecodeYCbCr() is performing the video decoding and
+            // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
+            // Currently, only the MediaEngine is supporting these 2 steps approach.
+            // The other methods (JpcspConnector and Faked video) are performing
+            // both steps together: this will be done in sceMpegAvcCsc().
+            if (isEnableMediaEngine()) {
+                if (me.getContainer() != null) {
+                    mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
+                    me.step();
+                } else {
+                    me.init(meChannel.getFilePath());
+                }
+            } else {
+            	packetsConsumed = 0;
+            }
+            videoFrameCount++;
+
+            if (Modules.log.isDebugEnabled()) {
+                Modules.log.debug("sceMpegAvcDecodeYCbCr currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+            }
+
+            if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets && packetsConsumed > 0) {
+                mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+                mpegRingbuffer.write(mem, mpegRingbufferAddr);
+            }
+
+            // Correct decoding.
             avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
             mem.write32(init_addr, avcDecodeResult);
 
@@ -1493,91 +1554,94 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                         + " yLen:" + rangeHeigtEnd);
             }
 
-            long currentSystemTime = Emulator.getClock().milliTime();
-            int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
-            if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
-                int delayMillis = avcDecodeDelay - elapsedTime;
-                Modules.log.info("Delaying sceMpegAvcCsc for " + delayMillis + "ms");
-                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-                lastAvcSystemTime = currentSystemTime + delayMillis;
-            } else {
-                lastAvcSystemTime = currentSystemTime;
-            }
-
-            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
-
-            int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-            int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
-            int processedSize = processedPackets * mpegRingbuffer.packetSize;
-
-            // let's go with 3 packets per frame for now
-            int packetsConsumed = 3;
-            if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
-                // Try a better approximation of the packets consumed based on the timestamp
-                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
-                if (processedSizeBasedOnTimestamp < processedSize) {
-                    packetsConsumed = 0;
-                } else {
-                    packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
-                    if (packetsConsumed > 10) {
-                        packetsConsumed = 10;
-                    }
-                }
-                if (Modules.log.isDebugEnabled()) {
-                    Modules.log.debug(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
-                }
-            }
-
-            if(isEnableMediaEngine()) {
-                if(me.getContainer() != null) {
-                    mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
-                    me.step();
+            // sceMpegAvcDecodeYCbCr() is performing the video decoding and
+            // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
+            // Currently, only the MediaEngine is supporting these 2 steps approach.
+            // The other methods (JpcspConnector and Faked video) are performing
+            // both steps together: this is done in here.
+            if (isEnableMediaEngine()) {
+            	if (me.getContainer() != null) {
                     writeVideoImage(dest_addr, frameWidth);
-                } else {
-                    me.init(meChannel.getFilePath());
-                }
-            } else if (isEnableConnector() && mpegCodec.readVideoFrame(source_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoFrameCount)) {
-                packetsConsumed = mpegCodec.getPacketsConsumed();
-                mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
+            	}
             } else {
-                // Generate static.
-                generateFakeMPEGVideo(dest_addr, frameWidth);
+	            long currentSystemTime = Emulator.getClock().milliTime();
+	            int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
+	            if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
+	                int delayMillis = avcDecodeDelay - elapsedTime;
+	                Modules.log.info("Delaying sceMpegAvcCsc for " + delayMillis + "ms");
+	                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
+	                lastAvcSystemTime = currentSystemTime + delayMillis;
+	            } else {
+	                lastAvcSystemTime = currentSystemTime;
+	            }
 
-                if (isEnableConnector())
-                    mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
+	            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
 
-                Date currentDate = convertTimestampToDate(mpegAvcCurrentDecodingTimestamp);
-                Modules.log.info("currentDate: " + currentDate.toString());
-                SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+	            int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
+	            int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
+	            int processedSize = processedPackets * mpegRingbuffer.packetSize;
 
-                Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
+	            // let's go with 3 packets per frame for now
+	            int packetsConsumed = 3;
+	            if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
+	                // Try a better approximation of the packets consumed based on the timestamp
+	                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
+	                if (processedSizeBasedOnTimestamp < processedSize) {
+	                    packetsConsumed = 0;
+	                } else {
+	                    packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
+	                    if (packetsConsumed > 10) {
+	                        packetsConsumed = 10;
+	                    }
+	                }
+	                if (Modules.log.isDebugEnabled()) {
+	                    Modules.log.debug(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
+	                }
+	            }
 
-                String displayedString;
-                if (mpegLastDate != null) {
-                    displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
-                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-                }
-                if (mpegStreamSize > 0) {
-                    displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
-                } else {
-                    displayedString = String.format(" %d ", processedSize);
-                }
-                Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+	            if (isEnableConnector() && mpegCodec.readVideoFrame(dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoFrameCount)) {
+	                packetsConsumed = mpegCodec.getPacketsConsumed();
+	                mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
+	            } else {
+	                // Generate static.
+	                generateFakeMPEGVideo(dest_addr, frameWidth);
 
-                if (Modules.log.isDebugEnabled()) {
-                    Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
-                }
-            }
-            videoFrameCount++;
+	                if (isEnableConnector())
+	                    mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
 
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
-            }
+	                Date currentDate = convertTimestampToDate(mpegAvcCurrentDecodingTimestamp);
+	                Modules.log.info("currentDate: " + currentDate.toString());
+	                SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+	                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-            if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
-                mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
-                mpegRingbuffer.write(mem, mpegRingbufferAddr);
+	                Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
+
+	                String displayedString;
+	                if (mpegLastDate != null) {
+	                    displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+	                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+	                }
+	                if (mpegStreamSize > 0) {
+	                    displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
+	                } else {
+	                    displayedString = String.format(" %d ", processedSize);
+	                }
+	                Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+
+	                if (Modules.log.isDebugEnabled()) {
+	                    Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+	                }
+	            }
+	            videoFrameCount++;
+
+	            if (Modules.log.isDebugEnabled()) {
+	                Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+	            }
+
+	            if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+	                mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+	                mpegRingbuffer.write(mem, mpegRingbufferAddr);
+	            }
             }
             cpu.gpr[2] = 0;
         } else {
