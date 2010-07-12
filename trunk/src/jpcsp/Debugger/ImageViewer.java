@@ -43,31 +43,46 @@ import jpcsp.MemoryMap;
 import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.GUI.CancelButton;
-import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules150.sceDisplay.BufferInfo;
+import jpcsp.graphics.GeCommands;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.ImageReader;
 import jpcsp.util.Utilities;
-import static jpcsp.HLE.modules.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_4444;
-import static jpcsp.HLE.modules.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_5551;
-import static jpcsp.HLE.modules.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
-import static jpcsp.HLE.modules.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
 public class ImageViewer extends JFrame {
 	private static final long serialVersionUID = 8837780642045065242L;
 
-	private int startAddress;
-	private int bufferWidth;
-	private int imageWidth;
-	private int imageHeight;
-	private boolean imageSwizzle;
-	private int pixelFormat = PSP_DISPLAY_PIXEL_FORMAT_8888;
+	private static final String windowNameForSettings = "imageviewer";
+	private static final Color imageBorderColor = Color.RED;
+	private static final int imageBorderSize = 2;
+
+	private int startAddress = MemoryMap.START_VRAM;
+	private int bufferWidth = 512;
+	private int imageWidth = 480;
+	private int imageHeight = 272;
+	private boolean imageSwizzle = false;
+	private boolean useAlpha = false;
+	private int pixelFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+	private int clutAddress = 0;
+	private int clutNumberBlocks = 0;
+	private int clutFormat = GeCommands.CMODE_FORMAT_32BIT_ABGR8888;
+	private int clutStart = 0;
+	private int clutShift = 0;
+	private int clutMask = 0xFF;
+
 	private MemoryImage memoryImage;
 	private Memory mem;
-	private static final String windowNameForSettings = "imageviewer";
 	private JTextField addressField;
 	private JTextField widthField;
 	private JTextField heightField;
 	private JTextField bufferWidthField;
 	private JComboBox pixelFormatField;
+	private JTextField clutAddressField;
+	private JTextField clutNumberBlocksField;
+	private JComboBox clutFormatField;
 	private JCheckBox swizzleField;
+	private JCheckBox useAlphaField;
 
 	public ImageViewer() {
 		init();
@@ -88,7 +103,7 @@ public class ImageViewer extends JFrame {
         });
     	setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-    	addressField = new JTextField(String.format("0x%X", MemoryMap.START_VRAM));
+    	addressField = new JTextField();
     	addressField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent evt) {
@@ -96,7 +111,7 @@ public class ImageViewer extends JFrame {
             }
     	});
 
-    	widthField = new JTextField("16");
+    	widthField = new JTextField();
     	widthField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent evt) {
@@ -104,7 +119,7 @@ public class ImageViewer extends JFrame {
             }
     	});
 
-    	heightField = new JTextField("16");
+    	heightField = new JTextField();
     	heightField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent evt) {
@@ -112,7 +127,7 @@ public class ImageViewer extends JFrame {
             }
     	});
 
-    	bufferWidthField = new JTextField("16");
+    	bufferWidthField = new JTextField();
     	bufferWidthField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent evt) {
@@ -120,46 +135,84 @@ public class ImageViewer extends JFrame {
             }
     	});
 
-    	pixelFormatField = new JComboBox(new String[] { "565", "5551", "4444", "8888" });
-    	pixelFormatField.setSelectedIndex(PSP_DISPLAY_PIXEL_FORMAT_8888);
+    	pixelFormatField = new JComboBox(new String[] { "565", "5551", "4444", "8888", "Indexed 4", "Indexed 8", "Indexed 16", "Indexed 32", "DXT1", "DXT3", "DXT5" });
 
     	swizzleField = new JCheckBox(Resource.get("swizzle"));
 
-    	JButton goToButton = new JButton(Resource.get("gotoaddress"));
-		goToButton.addActionListener(new ActionListener() {
+    	useAlphaField = new JCheckBox(Resource.get("usealpha"));
+
+    	JLabel clutLabel = new JLabel(Resource.get("clut"));
+    	clutAddressField = new JTextField();
+
+    	clutNumberBlocksField = new JTextField();
+
+    	clutFormatField = new JComboBox(new String[] { "565", "5551", "4444", "8888" });
+
+    	JButton goToAddress = new JButton(Resource.get("gotoaddress"));
+		goToAddress.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent evt) {
 				goToAddress();
 			}
 		});
 
+		JButton goToGeButton = new JButton(Resource.get("gotoge"));
+		goToGeButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent evt) {
+				goToGe();
+			}
+		});
+
+		JButton goToFbButton = new JButton(Resource.get("gotofb"));
+		goToFbButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent evt) {
+				goToFb();
+			}
+		});
+
 		CancelButton cancel = new CancelButton(this);
 
 		memoryImage = new MemoryImage();
-		memoryImage.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+		if (imageBorderSize > 0) {
+			memoryImage.setBorder(BorderFactory.createLineBorder(imageBorderColor, imageBorderSize));
+		}
 
 		GroupLayout layout = new GroupLayout(getContentPane());
 		getContentPane().setLayout(layout);
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
 
-		JLabel labelWidth = new JLabel("W:");
-		JLabel labelHeight = new JLabel("H:");
-		JLabel labelBufferWidth = new JLabel("BW:");
+		JLabel labelWidth = new JLabel(Resource.get("imagewidth"));
+		JLabel labelHeight = new JLabel(Resource.get("imageheight"));
+		JLabel labelBufferWidth = new JLabel(Resource.get("bufferwidth"));
 
 		layout.setHorizontalGroup(layout.createParallelGroup()
 				.addGroup(layout.createSequentialGroup()
-						.addComponent(addressField, GroupLayout.PREFERRED_SIZE, 65, GroupLayout.PREFERRED_SIZE)
+						.addComponent(addressField, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE)
 						.addComponent(labelWidth)
 						.addComponent(widthField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
 						.addComponent(labelHeight)
 						.addComponent(heightField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
 						.addComponent(labelBufferWidth)
 						.addComponent(bufferWidthField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
-						.addComponent(pixelFormatField)
+						.addComponent(pixelFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(swizzleField)
-						.addComponent(goToButton)
-						.addComponent(cancel))
+						.addComponent(useAlphaField)
+						)
+				.addGroup(layout.createSequentialGroup()
+						.addComponent(clutLabel)
+						.addComponent(clutAddressField, GroupLayout.PREFERRED_SIZE, 70, GroupLayout.PREFERRED_SIZE)
+						.addComponent(clutNumberBlocksField, GroupLayout.PREFERRED_SIZE, 32, GroupLayout.PREFERRED_SIZE)
+						.addComponent(clutFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+						)
+				.addGroup(layout.createSequentialGroup()
+						.addComponent(goToAddress)
+						.addComponent(goToGeButton)
+						.addComponent(goToFbButton)
+						.addComponent(cancel)
+						)
 				.addComponent(memoryImage));
 		layout.setVerticalGroup(layout.createSequentialGroup()
 				.addGroup(layout.createParallelGroup()
@@ -172,54 +225,26 @@ public class ImageViewer extends JFrame {
 						.addComponent(bufferWidthField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(pixelFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 						.addComponent(swizzleField)
-						.addComponent(goToButton)
-						.addComponent(cancel))
+						.addComponent(useAlphaField)
+						)
+				.addGroup(layout.createParallelGroup()
+						.addComponent(clutLabel)
+						.addComponent(clutAddressField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(clutNumberBlocksField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(clutFormatField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						)
+				.addGroup(layout.createParallelGroup()
+						.addComponent(goToAddress)
+						.addComponent(goToGeButton)
+						.addComponent(goToFbButton)
+						.addComponent(cancel)
+						)
 				.addComponent(memoryImage));
 
         setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
-        setSize(Settings.getInstance().readWindowSize(windowNameForSettings, 600, 300));
+        setSize(Settings.getInstance().readWindowSize(windowNameForSettings, Math.max(imageWidth + 30, 440), imageHeight + 110));
 
-        refreshImage();
-	}
-
-    public int getStartAddress() {
-		return startAddress;
-	}
-
-	public void setStartAddress(int startAddress) {
-		this.startAddress = startAddress;
-	}
-
-	public int getBufferWidth() {
-		return bufferWidth;
-	}
-
-	public void setBufferWidth(int bufferWidth) {
-		this.bufferWidth = bufferWidth;
-	}
-
-	public int getPixelFormat() {
-		return pixelFormat;
-	}
-
-	public void setPixelFormat(int pixelFormat) {
-		this.pixelFormat = pixelFormat;
-	}
-
-	public int getImageWidth() {
-		return imageWidth;
-	}
-
-	public void setImageWidth(int imageWidth) {
-		this.imageWidth = imageWidth;
-	}
-
-	public int getImageHeight() {
-		return imageHeight;
-	}
-
-	public void setImageHeight(int imageHeight) {
-		this.imageHeight = imageHeight;
+        copyValuesToFields();
 	}
 
 	public void refreshImage() {
@@ -231,6 +256,11 @@ public class ImageViewer extends JFrame {
 	    if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos(windowNameForSettings, getLocation());
 	    }
+	}
+
+	private void valuesUpdated() {
+		memoryImage.setSize(memoryImage.getPreferredSize());
+		repaint();
 	}
 
 	private void goToAddress() {
@@ -264,8 +294,60 @@ public class ImageViewer extends JFrame {
 
 		pixelFormat = pixelFormatField.getSelectedIndex();
 		imageSwizzle = swizzleField.isSelected();
+		useAlpha = useAlphaField.isSelected();
 
-		repaint();
+		try {
+			clutAddress = (int) Utilities.parseLong(clutAddressField.getText());
+		} catch (NumberFormatException e) {
+	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
+	        return;
+		}
+
+		try {
+			clutNumberBlocks = (int) Utilities.parseLong(clutNumberBlocksField.getText());
+		} catch (NumberFormatException e) {
+	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
+	        return;
+		}
+
+		clutFormat = clutFormatField.getSelectedIndex();
+
+		valuesUpdated();
+	}
+
+	private void copyValuesToFields() {
+		addressField.setText(String.format("0x%X", startAddress));
+		widthField.setText(String.format("%d", imageWidth));
+		heightField.setText(String.format("%d", imageHeight));
+		bufferWidthField.setText(String.format("%d", bufferWidth));
+		pixelFormatField.setSelectedIndex(pixelFormat);
+		swizzleField.setSelected(imageSwizzle);
+		useAlphaField.setSelected(useAlpha);
+		clutAddressField.setText(String.format("0x%X", clutAddress));
+		clutNumberBlocksField.setText(String.format("%d", clutNumberBlocks));
+		clutFormatField.setSelectedIndex(clutFormat);
+	}
+
+	private void goToBufferInfo(BufferInfo bufferInfo) {
+		startAddress = bufferInfo.topAddr;
+		imageWidth = bufferInfo.width;
+		imageHeight = bufferInfo.height;
+		bufferWidth = bufferInfo.bufferWidth;
+		pixelFormat = bufferInfo.pixelFormat;
+		imageSwizzle = false;
+		useAlpha = false;
+
+		copyValuesToFields();
+
+		valuesUpdated();
+	}
+
+	private void goToGe() {
+		goToBufferInfo(Modules.sceDisplayModule.getBufferInfoGe());
+	}
+
+	private void goToFb() {
+		goToBufferInfo(Modules.sceDisplayModule.getBufferInfoFb());
 	}
 
 	private void onKeyPressed(KeyEvent evt) {
@@ -285,72 +367,18 @@ public class ImageViewer extends JFrame {
 			if (mem.isAddressGood(startAddress)) {
 				Insets insets = getInsets();
 				int minWidth = Math.min(imageWidth, bufferWidth);
+				IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask);
+
 				for (int y = 0; y < imageHeight; y++) {
 					for (int x = 0; x < minWidth; x++) {
-						g.setColor(getColor(x, y));
+						int colorABGR = imageReader.readNext();
+						int colorARGB = ImageReader.colorABGRtoARGB(colorABGR);
+						g.setColor(new Color(colorARGB, useAlpha));
+
 						drawPixel(g, x + insets.left, y + insets.top);
 					}
 				}
 			}
-		}
-
-		private Color getColor(int x, int y) {
-			int r;
-			int g;
-			int b;
-			int a;
-
-			int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelFormat);
-			int pixel;
-			if (imageSwizzle) {
-				int swizzleStep = 16 / bytesPerPixel; // Number of pixels in 16 bytes
-				pixel = (x % swizzleStep) +
-				        (x / swizzleStep) * swizzleStep * 8 +
-				        (y % 8) * swizzleStep +
-				        (y / 8) * 8 * bufferWidth;
-			} else {
-				pixel = y * bufferWidth + x;
-			}
-			int address = startAddress + pixel * bytesPerPixel;
-			int value = (bytesPerPixel == 2 ? mem.read16(address) : mem.read32(address));
-
-            // GU_PSM_8888 : 0xAABBGGRR
-            // GU_PSM_4444 : 0xABGR
-            // GU_PSM_5551 : ABBBBBGGGGGRRRRR
-            // GU_PSM_5650 : BBBBBGGGGGGRRRRR
-			switch (pixelFormat) {
-				case PSP_DISPLAY_PIXEL_FORMAT_8888:
-					r = (value >>  0) & 0xFF;
-					g = (value >>  8) & 0xFF;
-					b = (value >> 16) & 0xFF;
-					a = (value >> 24) & 0xFF;
-					break;
-				case PSP_DISPLAY_PIXEL_FORMAT_4444:
-					r = ((value >>  0) & 0x0F) << 4;
-					g = ((value >>  4) & 0x0F) << 4;
-					b = ((value >>  8) & 0x0F) << 4;
-					a = ((value >> 12) & 0x0F) << 4;
-					break;
-				case PSP_DISPLAY_PIXEL_FORMAT_5551:
-					r = ((value >>  0) & 0x1F) << 3;
-					g = ((value >>  5) & 0x1F) << 3;
-					b = ((value >> 10) & 0x1F) << 3;
-					a = ((value >> 15) & 0x01) << 7;
-					break;
-				case PSP_DISPLAY_PIXEL_FORMAT_565:
-					r = ((value >>  0) & 0x1F) << 3;
-					g = ((value >>  5) & 0x3F) << 2;
-					b = ((value >> 11) & 0x1F) << 3;
-					a = 0xFF;
-					break;
-				default:
-					r = 0;
-					g = 0;
-					b = 0;
-					a = 0;
-			}
-
-			return new Color(r, g, b, a);
 		}
 
 		private void drawPixel(Graphics g, int x, int y) {

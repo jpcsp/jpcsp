@@ -254,26 +254,34 @@ public class Emulator implements Runnable {
             State.debugger.RefreshButtons();
     }
 
-    public static synchronized void PauseEmu()
-    {
-        if (run && !pause)
-        {
+    private static void PauseEmu(boolean hasStatus, int status) {
+        if (run && !pause) {
             pause = true;
 
-            {
-                gui.RefreshButtons();
+            gui.RefreshButtons();
 
-                if (State.debugger != null) {
-                    State.debugger.RefreshButtons();
-                    State.debugger.SafeRefreshDebugger(true);
-                }
-
-                if (State.memoryViewer != null)
-                    State.memoryViewer.RefreshMemory();
+            if (State.debugger != null) {
+                State.debugger.RefreshButtons();
+                State.debugger.SafeRefreshDebugger(true);
             }
 
+            if (State.memoryViewer != null) {
+                State.memoryViewer.RefreshMemory();
+            }
+
+            if (State.imageViewer != null) {
+            	State.imageViewer.refreshImage();
+            }
+
+            if (hasStatus) {
+            	StepLogger.setStatus(status);
+            }
             StepLogger.flush();
         }
+    }
+
+    public static synchronized void PauseEmu() {
+    	PauseEmu(false, 0);
     }
 
     public static final int EMU_STATUS_OK = 0x00;
@@ -288,27 +296,9 @@ public class Emulator implements Runnable {
     public static final int EMU_STATUS_UNIMPLEMENTED = 0x20;
     public static final int EMU_STATUS_PAUSE = 0x40;
     public static final int EMU_STATUS_JUMPSELF = 0x80;
-    public static synchronized void PauseEmuWithStatus(int status)
-    {
-        if (run && !pause)
-        {
-            pause = true;
 
-            {
-                gui.RefreshButtons();
-
-                if (State.debugger != null) {
-                    State.debugger.RefreshButtons();
-                    State.debugger.SafeRefreshDebugger(true);
-                }
-
-                if (State.memoryViewer != null)
-                    State.memoryViewer.RefreshMemory();
-            }
-
-            StepLogger.setStatus(status);
-            StepLogger.flush();
-        }
+    public static synchronized void PauseEmuWithStatus(int status) {
+    	PauseEmu(true, status);
     }
 
     public static void setFpsTitle(String fps)
