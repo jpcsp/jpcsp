@@ -43,7 +43,11 @@ public class CaptureRAM {
         packetSize = 8 + length;
         this.address = address;
         this.length = length;
-        buffer = Memory.getInstance().getBuffer(address, length);
+
+        Memory mem = Memory.getInstance();
+        if (mem.isAddressGood(address)) {
+        	buffer = mem.getBuffer(address, length);
+        }
 
         if (buffer == null) {
             throw new IOException(String.format("CaptureRAM: Unable to read buffer %08x - %08x", address, address + length));

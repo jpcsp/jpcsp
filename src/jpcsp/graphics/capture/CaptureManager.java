@@ -49,7 +49,7 @@ import org.apache.log4j.Level;
 public class CaptureManager {
 
     private static OutputStream out;
-    private static boolean captureInProgress;
+    public static boolean captureInProgress;
     private static boolean listExecuted;
     private static CaptureFrameBufDetails replayFrameBufDetails;
     private static Level logLevel;
