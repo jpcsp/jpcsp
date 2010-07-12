@@ -135,6 +135,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public final static int PSP_SEEK_CUR  = 1;
     public final static int PSP_SEEK_END  = 2;
 
+    // One async operation takes at least 10 millis to complete
+    private final static int ASYNC_DELAY_MILLIS = 10;
+
     // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
     // SeekableRandomFile doesn't support write only: take "rw",
     private final static String[] modeStrings = { "r", "r", "rw", "rw" };
@@ -168,6 +171,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
         public boolean closePending = false; // sceIoCloseAsync has been called on this file
         public boolean asyncPending; // Thread has not switched since an async operation was called on this file
+        public long asyncDoneMillis; // When the async operation can be completed
         public SceKernelThreadInfo asyncThread;
 
         // Async callback
@@ -202,6 +206,15 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         public boolean isUmdFile() {
             return (msFile == null);
+        }
+
+        public int getAsyncRestMillis() {
+        	long now = Emulator.getClock().currentTimeMillis();
+        	if (now >= asyncDoneMillis) {
+        		return 0;
+        	}
+
+        	return (int) (asyncDoneMillis - now);
         }
     }
 
@@ -788,10 +801,15 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         	// Exit and delete the thread to free its resources (e.g. its stack)
         	threadMan.hleKernelExitDeleteThread();
         } else {
-        	doStepAsync(info);
+        	boolean asyncCompleted = doStepAsync(info);
         	if (threadMan.getCurrentThread() == info.asyncThread) {
-        		// Wait for a new Async IO... wakeup is done by triggerAsyncThread()
-        		threadMan.hleKernelSleepThread(false);
+        		if (asyncCompleted) {
+	        		// Wait for a new Async IO... wakeup is done by triggerAsyncThread()
+	        		threadMan.hleKernelSleepThread(false);
+        		} else {
+        			// Wait for the Async IO to complete...
+        			threadMan.hleKernelDelayThread(info.getAsyncRestMillis() * 1000, false);
+        		}
         	}
         }
     }
@@ -820,6 +838,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     	}
 
         info.asyncPending = true;
+        info.asyncDoneMillis = Emulator.getClock().currentTimeMillis() + ASYNC_DELAY_MILLIS;
         info.result = result;
 
         if (info.asyncThread == null) {
@@ -846,38 +865,43 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
-    private void doStepAsync(IoInfo info) {
-    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+    private boolean doStepAsync(IoInfo info) {
+    	boolean done = true;
 
-    	if (info == null || !info.asyncPending) {
-    		return;
+    	if (info != null && info.asyncPending) {
+        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+    		if (info.getAsyncRestMillis() > 0) {
+    			done = false;
+    		} else {
+    			info.asyncPending = false;
+
+		        if (info.cbid >= 0) {
+		        	// Trigger Async callback
+		        	threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, info.cbid, info.notifyArg);
+		        }
+
+		        // Find threads waiting on this uid and wake them up
+		        // TODO If the call was sceIoWaitAsyncCB we might need to make sure
+		        // the callback is fully processed before waking the thread!
+		        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
+		            SceKernelThreadInfo thread = it.next();
+		
+		            if (thread.wait.waitingOnIo && thread.wait.Io_id == info.uid) {
+		            	if (Modules.log.isDebugEnabled()) {
+		            		Modules.log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
+		            	}
+		                // Untrack
+		                thread.wait.waitingOnIo = false;
+		                // Return success
+		                thread.cpuContext.gpr[2] = 0;
+		                // Wakeup
+		                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+		            }
+		        }
+    		}
     	}
 
-    	info.asyncPending = false;
-
-        if (info.cbid >= 0) {
-        	// Trigger Async callback
-        	threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, info.cbid, info.notifyArg);
-        }
-
-        // Find threads waiting on this uid and wake them up
-        // TODO If the call was sceIoWaitAsyncCB we might need to make sure
-        // the callback is fully processed before waking the thread!
-        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
-            SceKernelThreadInfo thread = it.next();
-
-            if (thread.wait.waitingOnIo && thread.wait.Io_id == info.uid) {
-            	if (Modules.log.isDebugEnabled()) {
-            		Modules.log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
-            	}
-                // Untrack
-                thread.wait.waitingOnIo = false;
-                // Return success
-                thread.cpuContext.gpr[2] = 0;
-                // Wakeup
-                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-            }
-        }
+        return done;
     }
 
     /*
@@ -2368,6 +2392,11 @@ CpuState cpu = processor.cpu;
 
             default:
                 Modules.log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown command");
+	            if (mem.isAddressGood(indata_addr)) {
+	                for (int i = 0; i < inlen; i += 4) {
+	                    Modules.log.warn("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
+	                }
+	            }
                 cpu.gpr[2] = -1;
                 break;
         }
