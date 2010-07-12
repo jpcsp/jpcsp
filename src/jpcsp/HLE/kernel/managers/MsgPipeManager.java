@@ -358,14 +358,14 @@ public class MsgPipeManager {
             micros = mem.read32(timeout_addr);
         }
 
-        String waitType = "";
-        if (poll) waitType = "poll";
-        else if (timeout_addr == 0) waitType = "forever";
-        else waitType = micros + " ms";
-        if (doCallbacks) waitType += " + CB";
-
         if (Modules.log.isDebugEnabled()) {
-	        Modules.log.info("hleKernelReceiveMsgPipe(uid=0x" + Integer.toHexString(uid)
+            String waitType = "";
+            if (poll) waitType = "poll";
+            else if (timeout_addr == 0) waitType = "forever";
+            else waitType = micros + " ms";
+            if (doCallbacks) waitType += " + CB";
+
+	        Modules.log.debug("hleKernelReceiveMsgPipe(uid=0x" + Integer.toHexString(uid)
 	            + ",msg=0x" + Integer.toHexString(msg_addr)
 	            + ",size=0x" + Integer.toHexString(size)
 	            + ",waitMode=0x" + Integer.toHexString(waitMode)
@@ -413,8 +413,10 @@ public class MsgPipeManager {
 
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                 } else {
-                    Modules.log.warn("hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size)
-                        + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));
+                	if (Modules.log.isDebugEnabled()) {
+                		Modules.log.debug("hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size)
+                		                  + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));
+                	}
                     cpu.gpr[2] = ERROR_MESSAGE_PIPE_EMPTY;
                 }
             } else {
