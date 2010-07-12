@@ -3224,8 +3224,8 @@ public class VideoEngine {
 
             case SPLINE: {
                 // Number of control points.
-                int sp_ucount =  normalArgument & 0xF;
-                int sp_vcount = (normalArgument >> 8) & 0xF;
+                int sp_ucount =  normalArgument & 0xFF;
+                int sp_vcount = (normalArgument >> 8) & 0xFF;
                 // Knot types.
                 int sp_utype =  (normalArgument >> 16) & 0x3;
                 int sp_vtype =  (normalArgument >> 18) & 0x3;
@@ -5779,101 +5779,70 @@ public class VideoEngine {
     }
 
     private void drawSpline(int ucount, int vcount, int utype, int vtype) {
-        // Draw Spline surface (mostly based on drawBezier).
-        //
-        // This function is mostly an hack for now. The knot types
-        // must be considered to get the correct output:
-        //  utype/vtype:
-        //      - 0: Both starting and ending points are closed;
-        //      - 1: Starting point is open, ending is closed;
-        //      - 2: Starting point is closed, ending is open;
-        //      - 3: Both starting and ending points are open.
-        //
         if (ucount < 4 || vcount < 4) {
-            log.warn("Unsupported Spline parameters");
+            log.warn("Unsupported Spline parameters uc=" + ucount + " vc=" + vcount);
             return;
         }
 
         boolean useVertexColor = initRendering();
+        boolean useTexture = true;
 
-        VertexState[][] anchors = new VertexState[ucount][vcount];
+        // Generate control points.
+        VertexState[][] ctrlpoints = new VertexState[ucount][vcount];
         Memory mem = Memory.getInstance();
         for (int u = 0; u < ucount; u++) {
             for (int v = 0; v < vcount; v++) {
                 int addr = vinfo.getAddress(mem, u * vcount + v);
                 VertexState vs = vinfo.readVertex(mem, addr);
                 if (isLogDebugEnabled) {
-                    log("drawSpline  vertex#" + u + "," + v + " (" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + ") at (" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ")");
+                    log.fatal("drawSpline  vertex#" + u + "," + v + " (" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + ") at (" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ")");
                 }
-                anchors[u][v] = vs;
+                ctrlpoints[u][v] = vs;
             }
         }
 
+        // GE capture.
         if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
             log.info("Capture drawSpline");
             CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * ucount * vcount);
         }
 
-        VertexState[] temp = new VertexState[ucount];
-        for (int i = 0; i < temp.length; i++) {
-            temp[i] = new VertexState();
-        }
-        VertexState[] last = new VertexState[vcount + 1];
-        for (int i = 0; i < last.length; i++) {
-            last[i] = new VertexState();
+        // Initialize the knot arrays based on their type.
+        int n = ucount - 1;
+        int m = vcount - 1;
+        int[] knot_u = spline_knot(n, utype);
+        int[] knot_v = spline_knot(m, vtype);
+
+        // Initialize patching VertexState.
+        VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
+        for (int i = 0; i < patch.length; i++) {
+            for(int j = 0; j < patch[i].length; j++) {
+                patch[i][j] = new VertexState();
+            }
         }
 
-        for (int u = 0; u < ucount; u++) {
-            pointCopy(temp[u], anchors[u][vcount - 1]);
-        }
-        for (int v = 0; v <= vcount; v++) {
-            float px = ((float) v) / ((float) vcount);
-            Bernstein(last[v], px, temp);
-        }
-
-        boolean useTexture = true;
         bindBuffers(useVertexColor, useTexture, true, 0);
 
-        float pyold = 0;
-        for (int u = 1; u <= vcount; u++) {
-            float py = ((float) u) / ((float) vcount);
-
-            for (int i = 0; i < ucount; i++) {
-                Bernstein(temp[i], py, anchors[i]);
-            }
-
+        // Calculate spline vertexes using Cox-deBoor's algorithm.
+        for(int i = 0; i <= patch_div_s; i++) {
+        	float u = (float)i * (n - 2) / patch_div_s;
             vboFloatBuffer.clear();
 
-            for (int v = 0; v <= vcount; v++) {
-                float px = ((float) v) / ((float) vcount);
+        	for(int j = 0; j <= patch_div_t; j++) {
+        		float v = (float)j * (m - 2) / patch_div_t;
 
-                if (vinfo.texture != 0) {
-                    vboFloatBuffer.put(last[v].t);
-                } else {
-                    vboFloatBuffer.put(1 - pyold);
-                    vboFloatBuffer.put(1 - px);
-                }
+        		Cox_deBoor(patch[i][j], ctrlpoints, n, m, u, v, knot_u, knot_v, 3);
 
-                vboFloatBuffer.put(last[v].p);
-                Bernstein(last[v], px, temp);
-
-                if (vinfo.texture != 0) {
-                    vboFloatBuffer.put(last[v].t);
-                } else {
-                    vboFloatBuffer.put(1 - py);
-                    vboFloatBuffer.put(1 - px);
-                }
-                vboFloatBuffer.put(last[v].p);
-            }
-            if (useVBO) {
-                if (openGL1_5) {
-                    gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-                } else {
-                    gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-                }
-            }
-            gl.glDrawArrays(GL.GL_POLYGON, 0, (vcount + 1) * 2);
-            pyold = py;
+                VertexState p = patch[i][j];
+        		if(vinfo.texture == 0) {
+        			p.t[0] = 1 - u;
+        			p.t[1] = 1 - v;
+        		}
+        		vboFloatBuffer.put(p.t);
+        		vboFloatBuffer.put(p.p);
+        	}
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+            gl.glDrawArrays(patch_prim_types[patch_prim], 0, (patch_div_s + 1) * 2);
         }
         endRendering(useVertexColor, useTexture, ucount * vcount);
     }
@@ -5996,6 +5965,60 @@ public class VideoEngine {
         }
 
         endRendering(useVertexColor, useTexture, ucount * vcount);
+    }
+
+    int[] spline_knot(int n, int type) {
+        int[] knot = new int[n + 5];
+        for(int i = 0; i < n - 1; i++) {
+            knot[i + 3] = i;
+        }
+
+        if((type & 1) == 0) {
+            knot[0] = -3;
+            knot[1] = -2;
+            knot[2] = -1;
+        }
+        if((type & 2) == 0) {
+            knot[n + 2] = n - 1;
+            knot[n + 3] = n;
+            knot[n + 4] = n + 1;
+        } else {
+            knot[n + 2] = n - 2;
+            knot[n + 3] = n - 2;
+            knot[n + 4] = n - 2;
+        }
+        return knot;
+    }
+
+    float spline_n(int i, int j, float u, int[] knot) {
+    	if(j == 0) {
+    		if((knot[i] <= u) && (u < knot[i + 1]))
+    			return 1;
+    		return 0;
+    	}
+    	float res = 0;
+    	if((knot[i + j] - knot[i]) != 0)
+    	    res += (u - knot[i]) / (knot[i + j] - knot[i]) * spline_n(i, j - 1, u, knot);
+    	if((knot[i + j + 1] - knot[i + 1]) != 0)
+    		res += (knot[i + j + 1] - u) / (knot[i + j + 1] - knot[i + 1]) * spline_n(i + 1, j - 1, u, knot);
+    	return res;
+    }
+
+    private void Cox_deBoor(VertexState result, VertexState[][] control, int n, int m, float u, float v, int knot_u[], int knot_v[], int deg) {
+        for(int i = 0; i <= n; i++) {
+            for(int j = 0; j <= m; j++) {
+                float f = spline_n(i, deg, u, knot_u) * spline_n(j, deg, v, knot_v);
+                if(f != 0) {
+                    result.p[0] += (control[i][j].p[0] * f);
+                    result.p[1] += (control[i][j].p[1] * f);
+                    result.p[2] += (control[i][j].p[2] * f);
+                    if (vinfo.texture != 0) {
+                        result.t[0] += (control[i][j].t[0] * f);
+                        result.t[1] += (control[i][j].t[1] * f);
+                    }
+                }
+            }
+        }
     }
 
     private void pointAdd(VertexState result, VertexState p, VertexState q) {

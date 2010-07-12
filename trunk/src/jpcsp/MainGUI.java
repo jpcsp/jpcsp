@@ -1118,9 +1118,6 @@ private void installCompatibilitySettings()
     Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
     Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
 
-    boolean enableWaitThreadEndCB = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
-    Modules.ThreadManForUserModule.setEnableWaitThreadEndCB(enableWaitThreadEndCB);
-
     boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
     SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
 }
@@ -1181,10 +1178,6 @@ public boolean installCompatibilityPatches(String filename)
             Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
             Compiler.setIgnoreInvalidMemory(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
         }
-
-        String enableWaitThreadEndCB = patchSettings.getProperty("emu.enablewaitthreadendcb");
-        if (enableWaitThreadEndCB != null)
-        	Modules.ThreadManForUserModule.setEnableWaitThreadEndCB(Integer.parseInt(enableWaitThreadEndCB) != 0);
 
         String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
         if (ignoreUnmappedImports != null)

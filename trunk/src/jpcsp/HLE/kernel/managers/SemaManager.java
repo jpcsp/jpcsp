@@ -413,11 +413,10 @@ public class SemaManager {
         }
     }
 
-    public void sceKernelCancelSema(int semaid)
-    {
-    	if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug("sceKernelCancelSema id= 0x" + Integer.toHexString(semaid));
-    	}
+    public void sceKernelCancelSema(int semaid, int newcount, int numWaitThreadAddr) {
+    	Modules.log.debug("sceKernelCancelSema semaid=0x" + Integer.toHexString(semaid)
+            + " newcount=" + newcount
+            + " numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
 
         if (semaid <= 0) {
             Modules.log.warn("sceKernelCancelSema bad id=0x" + Integer.toHexString(semaid));
@@ -431,6 +430,13 @@ public class SemaManager {
             Modules.log.warn("sceKernelCancelSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         } else {
+            Memory mem = Memory.getInstance();
+
+            // Write previous numWaitThreads count.
+            if (mem.isAddressGood(numWaitThreadAddr)) {
+                mem.write32(numWaitThreadAddr, sema.numWaitThreads);
+            }
+
             sema.numWaitThreads = 0;
 
             // Find threads waiting on this sema and wake them up
@@ -440,19 +446,22 @@ public class SemaManager {
 
                 if (thread.wait.waitingOnSemaphore &&
                     thread.wait.Semaphore_id == semaid) {
-                    // Untrack
                     thread.wait.waitingOnSemaphore = false;
-
-                    // Return WAIT_CANCELLED
                     thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
-
-                    // Wakeup
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 }
             }
 
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            // Reset this semaphore's count based on newcount.
+            // Note: If newcount is -1, the count becomes this semaphore's initCount.
+            if(newcount == -1) {
+                sema.currentCount = sema.initCount;
+            } else {
+                sema.currentCount = newcount;
+            }
         }
+
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceKernelReferSemaStatus(int semaid, int addr)
