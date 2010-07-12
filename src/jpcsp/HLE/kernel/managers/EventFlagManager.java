@@ -375,11 +375,10 @@ public class EventFlagManager {
         }
     }
 
-    public void sceKernelCancelEventFlag(int uid, int newPattern, int result_addr)
-    {
+    public void sceKernelCancelEventFlag(int uid, int newPattern, int numWaitThreadAddr) {
         Modules.log.debug("sceKernelCancelEventFlag uid=0x" + Integer.toHexString(uid)
             + " newPattern=0x" + Integer.toHexString(newPattern)
-            + " result=0x" + Integer.toHexString(result_addr));
+            + " numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
 
         SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", true);
         SceKernelEventFlagInfo event = eventMap.get(uid);
@@ -387,12 +386,14 @@ public class EventFlagManager {
             Modules.log.warn("sceKernelCancelEventFlag unknown uid=0x" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
         } else {
+            Memory mem = Memory.getInstance();
+
+            if (mem.isAddressGood(numWaitThreadAddr)) {
+            	mem.write32(numWaitThreadAddr, event.numWaitThreads);
+            }
+
             event.currentPattern = newPattern;
             event.numWaitThreads = 0;
-
-            Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(result_addr))
-            	mem.write32(result_addr, 0);
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
             onEventFlagCancelled(uid);

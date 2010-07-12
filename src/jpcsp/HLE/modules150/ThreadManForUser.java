@@ -391,7 +391,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
 
-    private boolean enableWaitThreadEndCB;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean IGNORE_DELAY = false;
@@ -418,7 +417,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     protected static final int INTR_NUMBER = IntrManager.PSP_SYSTIMER0_INTR;
 	protected Map<Integer, SceKernelAlarmInfo> alarms;
 	protected Map<Integer, SceKernelVTimerInfo> vtimers;
-    
+
     public ThreadManForUser() {
     }
 
@@ -1144,7 +1143,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
 	private void hleKernelExitCallback(Processor processor) {
 		CpuState cpu = processor.cpu;
-		
+
 		int callbackId = cpu.gpr[CALLBACKID_REGISTER];
 		Callback callback = callbackManager.remove(callbackId);
 		if (callback != null) {
@@ -1160,7 +1159,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 			}
 		}
 	}
-	    
+
     public final HLEModuleFunction hleKernelExitCallbackFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitCallback") {
 
         @Override
@@ -1319,7 +1318,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
 		sceKernelExitThread(processor);
 	}
-	
+
 	public final HLEModuleFunction hleKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitThread") {
 
         @Override
@@ -1344,7 +1343,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public void hleKernelAsyncLoop(Processor processor) {
         Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
     }
-    
+
     public final HLEModuleFunction hleKernelAsyncLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelAsyncLoop") {
 
         @Override
@@ -1597,11 +1596,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     }
 
-    public void setEnableWaitThreadEndCB(boolean enable) {
-        enableWaitThreadEndCB = enable;
-        Modules.log.info("WaitThreadEndCB enabled: " + enableWaitThreadEndCB);
-    }
-
     /**
      * Set the wait timeout for a thread. The state of the thread is not changed.
      *
@@ -1828,7 +1822,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     	return handled;
     }
-    
+
     public void cancelAlarm(SceKernelAlarmInfo sceKernelAlarmInfo) {
 		Scheduler.getInstance().removeAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
 		sceKernelAlarmInfo.schedule = 0;
@@ -1994,13 +1988,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                 + ", handler_func=0x" + Integer.toHexString(handler_func)
                 + ", common_addr=0x" + Integer.toHexString(common_addr));
 
-        if(threadMap.containsKey(thid)) {
-            SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
-            threadEventHandlerMap.put(handler.uid, handler);
-            threadEventMap.put(thid, handler.uid);
-            cpu.gpr[2] = handler.uid;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+            if(threadMap.containsKey(thid)) {
+                SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
+                threadEventHandlerMap.put(handler.uid, handler);
+                threadEventMap.put(thid, handler.uid);
+                cpu.gpr[2] = handler.uid;
+            } else {
+                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+            }
         }
     }
 
@@ -2011,11 +2009,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         Modules.log.info("sceKernelReleaseThreadEventHandler uid=0x" + Integer.toHexString(uid));
 
-        if(threadEventHandlerMap.containsKey(uid)) {
-            threadEventHandlerMap.remove(uid);
-            cpu.gpr[2] = 0;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
+            if(threadEventHandlerMap.containsKey(uid)) {
+                threadEventHandlerMap.remove(uid);
+                cpu.gpr[2] = 0;
+            } else {
+                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
+            }
         }
     }
 
@@ -2045,9 +2047,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int user_arg_addr = cpu.gpr[6];
         String name = readStringNZ(name_addr, 32);
 
-        SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
-
-        cpu.gpr[2] = callback.uid;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
+            cpu.gpr[2] = callback.uid;
+        }
     }
 
     public void sceKernelDeleteCallback(Processor processor) {
@@ -2055,12 +2060,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (hleKernelDeleteCallback(uid)) {
-            // TODO automatically unregister the callback if it was registered with another system?
-            // example: sceKernelDeleteCallback called before sceUmdUnRegisterUMDCallBack
-            cpu.gpr[2] = 0;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            cpu.gpr[2] = -1;
+            if (hleKernelDeleteCallback(uid)) {
+                cpu.gpr[2] = 0;
+            } else {
+                cpu.gpr[2] = -1;
+            }
         }
     }
 
@@ -2092,8 +2099,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public void sceKernelCancelCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented sceKernelCancelCallback");
+        int uid = cpu.gpr[4];
 
+        if (Modules.log.isDebugEnabled()) {
+              Modules.log.debug("sceKernelCancelCallback uid=0x" + Integer.toHexString(uid));
+        }
+
+        SceKernelCallbackInfo callback = callbackMap.get(uid);
+        if(callback != null) {
+            callback.notifyArg = 0;
+        }
         cpu.gpr[2] = 0;
     }
 
@@ -2119,9 +2134,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         Modules.log.debug("sceKernelCheckCallback(void)");
-        cpu.gpr[2] = 0;
-        currentThread.doCallbacks = true;
-        checkCallbacks();
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            cpu.gpr[2] = 0;
+            currentThread.doCallbacks = true;
+            checkCallbacks();
+        }
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {
@@ -2161,7 +2181,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     		Modules.log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
     	}
 
-        hleKernelSleepThread(false);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            hleKernelSleepThread(false);
+        }
     }
 
     /** sleep the current thread and handle callbacks (using wait)
@@ -2171,8 +2195,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     		Modules.log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
     	}
 
-        hleKernelSleepThread(true);
-        checkCallbacks();
+         if (IntrManager.getInstance().isInsideInterrupt()) {
+    		Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            hleKernelSleepThread(true);
+            checkCallbacks();
+        }
     }
 
     public void sceKernelWakeupThread(Processor processor) {
@@ -2268,41 +2296,42 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     		Modules.log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
     	}
 
-        int micros = 0;
-        boolean forever = true;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            int micros = 0;
+            boolean forever = true;
 
-        if (timeout_addr != 0) { // psp does not check for valid address here
-            micros = Memory.getInstance().read32(timeout_addr);
-            forever = false;
+            if (timeout_addr != 0) {
+                micros = Memory.getInstance().read32(timeout_addr);
+                forever = false;
+            }
+            hleKernelWaitThreadEnd(uid, micros, forever, false);
         }
-
-        hleKernelWaitThreadEnd(uid, micros, forever, false);
     }
 
-    // disable in TOE (and many other games) until we get better MPEG support
     public void sceKernelWaitThreadEndCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int uid = cpu.gpr[4];
         int timeout_addr = cpu.gpr[5];
 
-        if (enableWaitThreadEndCB) {
-        	if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
-        	}
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
+        }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
             int micros = 0;
             boolean forever = true;
 
-            if (timeout_addr != 0) { // psp does not check for address inside a valid range, just 0 or not 0
+            if (timeout_addr != 0) {
                 micros = Memory.getInstance().read32(timeout_addr);
                 forever = false;
             }
-
             hleKernelWaitThreadEnd(uid, micros, forever, true);
             checkCallbacks();
-        } else {
-            Modules.log.warn("IGNORING:sceKernelWaitThreadEndCB - enable in settings if you know what you're doing");
         }
     }
 
@@ -2312,7 +2341,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int micros = cpu.gpr[4];
 
-        hleKernelDelayThread(micros, false);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            hleKernelDelayThread(micros, false);
+        }
     }
 
     /** wait the current thread for a certain number of microseconds */
@@ -2321,7 +2354,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int micros = cpu.gpr[4];
 
-        hleKernelDelayThread(micros, true);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            hleKernelDelayThread(micros, true);
+        }
     }
 
     /**
@@ -2337,14 +2374,18 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int sysclocks_addr = cpu.gpr[4];
 
-    	if (mem.isAddressGood(sysclocks_addr)) {
-    		long sysclocks = mem.read64(sysclocks_addr);
-    		int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-            hleKernelDelayThread(micros, false);
-    	} else {
-            Modules.log.warn("sceKernelDelaySysClockThread invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
-            cpu.gpr[2] = -1;
-    	}
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            if (mem.isAddressGood(sysclocks_addr)) {
+                long sysclocks = mem.read64(sysclocks_addr);
+                int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
+                hleKernelDelayThread(micros, false);
+            } else {
+                Modules.log.warn("sceKernelDelaySysClockThread invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
+                cpu.gpr[2] = -1;
+            }
+        }
     }
 
     /**
@@ -2361,24 +2402,38 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int sysclocks_addr = cpu.gpr[4];
 
-    	if (mem.isAddressGood(sysclocks_addr)) {
-            long sysclocks = mem.read64(sysclocks_addr);
-    		int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-            hleKernelDelayThread(micros, true);
-    	} else {
-            Modules.log.warn("sceKernelDelaySysClockThreadCB invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
-    	}
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            if (mem.isAddressGood(sysclocks_addr)) {
+                long sysclocks = mem.read64(sysclocks_addr);
+                int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
+                hleKernelDelayThread(micros, true);
+            } else {
+                Modules.log.warn("sceKernelDelaySysClockThreadCB invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
+                Emulator.getProcessor().cpu.gpr[2] = -1;
+            }
+        }
     }
 
     public void sceKernelCreateSema(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelCreateSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.semas.sceKernelCreateSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+        }
     }
 
     public void sceKernelDeleteSema(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
+        }
     }
 
     public void sceKernelSignalSema(Processor processor) {
@@ -2388,22 +2443,37 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelWaitSema(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        }
     }
 
     public void sceKernelWaitSemaCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        }
     }
 
     public void sceKernelPollSema(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelPollSema(cpu.gpr[4], cpu.gpr[5]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.semas.sceKernelPollSema(cpu.gpr[4], cpu.gpr[5]);
+        }
     }
 
     public void sceKernelCancelSema(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.semas.sceKernelCancelSema(cpu.gpr[4]); // not in pspsdk, params guessed
+        Managers.semas.sceKernelCancelSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelReferSemaStatus(Processor processor) {
@@ -2413,12 +2483,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelCreateEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+        }
     }
 
     public void sceKernelDeleteEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
+        }
     }
 
     public void sceKernelSetEventFlag(Processor processor) {
@@ -2433,12 +2513,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelWaitEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+        }
     }
 
     public void sceKernelWaitEventFlagCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+        }
     }
 
     public void sceKernelPollEventFlag(Processor processor) {
@@ -2448,7 +2538,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelCancelEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.eventFlags.sceKernelCancelEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]); // not in pspsdk, params guessed
+        Managers.eventFlags.sceKernelCancelEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelReferEventFlagStatus(Processor processor) {
@@ -2458,12 +2548,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelCreateMbx(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.mbx.sceKernelCreateMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.mbx.sceKernelCreateMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        }
     }
 
     public void sceKernelDeleteMbx(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.mbx.sceKernelDeleteMbx(cpu.gpr[4]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.mbx.sceKernelDeleteMbx(cpu.gpr[4]);
+        }
     }
 
     public void sceKernelSendMbx(Processor processor) {
@@ -2473,12 +2573,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelReceiveMbx(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.mbx.sceKernelReceiveMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.mbx.sceKernelReceiveMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        }
     }
 
     public void sceKernelReceiveMbxCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.mbx.sceKernelReceiveMbxCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.mbx.sceKernelReceiveMbxCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        }
     }
 
     public void sceKernelPollMbx(Processor processor) {
@@ -2498,22 +2608,42 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelCreateMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelCreateMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.msgPipes.sceKernelCreateMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+        }
     }
 
     public void sceKernelDeleteMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelDeleteMsgPipe(cpu.gpr[4]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.msgPipes.sceKernelDeleteMsgPipe(cpu.gpr[4]);
+        }
     }
 
     public void sceKernelSendMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelSendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.msgPipes.sceKernelSendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+        }
     }
 
     public void sceKernelSendMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelSendMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.msgPipes.sceKernelSendMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+        }
     }
 
     public void sceKernelTrySendMsgPipe(Processor processor) {
@@ -2523,12 +2653,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelReceiveMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+        }
     }
 
     public void sceKernelReceiveMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+        }
     }
 
     public void sceKernelTryReceiveMsgPipe(Processor processor) {
@@ -2548,22 +2688,42 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelCreateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+        }
     }
 
     public void sceKernelDeleteVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
+        }
     }
 
     public void sceKernelAllocateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+        }
     }
 
     public void sceKernelAllocateVplCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+        }
     }
 
     public void sceKernelTryAllocateVpl(Processor processor) {
@@ -2573,7 +2733,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelFreeVpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
+        }
     }
 
     public void sceKernelCancelVpl(Processor processor) {
@@ -2588,22 +2753,42 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelCreateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+        }
     }
 
     public void sceKernelDeleteFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
+        }
     }
 
     public void sceKernelAllocateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        }
     }
 
     public void sceKernelAllocateFplCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        }
     }
 
     public void sceKernelTryAllocateFpl(Processor processor) {
@@ -2613,7 +2798,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelFreeFpl(Processor processor) {
         CpuState cpu = processor.cpu;
-        Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
+        }
     }
 
     public void sceKernelCancelFpl(Processor processor) {
@@ -2666,7 +2856,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public void sceKernelGetSystemTimeLow(Processor processor) {
         Managers.systime.sceKernelGetSystemTimeLow();
     }
-    
+
     /**
 	 * Set an alarm.
 	 * @param delayUsec - The number of micro seconds till the alarm occurs.
@@ -2793,10 +2983,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         	Modules.log.debug(String.format("sceKernelCreateVTimer(name=%s(0x%08X), optAddr=0x%08X)", name, nameAddr, optAddr));
         }
 
-        SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
-        vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
-
-        cpu.gpr[2] = sceKernelVTimerInfo.uid;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
+            vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
+            cpu.gpr[2] = sceKernelVTimerInfo.uid;
+        }
     }
 
     /**
@@ -2814,13 +3007,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         	Modules.log.debug(String.format("sceKernelDeleteVTimer(uid=0x%x)", vtimerUid));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-        	Modules.log.warn(String.format("sceKernelDeleteVTimer unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-        	sceKernelVTimerInfo.delete();
-        	cpu.gpr[2] = 0;
+            SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
+            if (sceKernelVTimerInfo == null) {
+                Modules.log.warn(String.format("sceKernelDeleteVTimer unknown uid=0x%x", vtimerUid));
+                cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            } else {
+                sceKernelVTimerInfo.delete();
+                cpu.gpr[2] = 0;
+            }
         }
     }
 
@@ -2958,16 +3155,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         	Modules.log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-        	Modules.log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-        } else if (!mem.isAddressGood(timeAddr)) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-        	long time = mem.read64(timeAddr);
-        	setVTimer(sceKernelVTimerInfo, time);
-        	cpu.gpr[2] = 0;
+            SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+            if (sceKernelVTimerInfo == null) {
+                Modules.log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
+                cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            } else if (!mem.isAddressGood(timeAddr)) {
+                cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+            } else {
+                long time = mem.read64(timeAddr);
+                setVTimer(sceKernelVTimerInfo, time);
+                cpu.gpr[2] = 0;
+            }
         }
     }
 
@@ -2989,13 +3190,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         	Modules.log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,time=0x%016X)", vtimerUid, time));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-        if (sceKernelVTimerInfo == null) {
-        	Modules.log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-        	setVTimer(sceKernelVTimerInfo, time);
-        	cpu.gpr[2] = 0;
+            SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+            if (sceKernelVTimerInfo == null) {
+                Modules.log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
+                cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            } else {
+                setVTimer(sceKernelVTimerInfo, time);
+                cpu.gpr[2] = 0;
+            }
         }
     }
 
@@ -3248,30 +3453,38 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (uid == 0) uid = currentThread.uid;
-        if (!checkThreadID(uid)) return;
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-            // Check if there's a registered event handler for this thread.
-            if(threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-
-                // Check if this handler's mask matches the function.
-                if(handler.checkDeleteMask()) {
-                    handler.triggerThreadEventHandler();
-                    cpu.gpr[2] = handler.result;
-                }
+            if (uid == 0) {
+                uid = currentThread.uid;
+            }
+            if (!checkThreadID(uid)) {
+                return;
+            }
+            SceKernelThreadInfo thread = threadMap.get(uid);
+            if (thread == null) {
+                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
             } else {
-                // Mark thread for deletion
-                setToBeDeletedThread(thread);
-                if (thread.status != PSP_THREAD_STOPPED) {
-                    cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
+                Modules.log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+                // Check if there's a registered event handler for this thread.
+                if (threadEventMap.containsKey(thread.uid)) {
+                    int handlerUid = threadEventMap.get(thread.uid);
+                    SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+
+                    // Check if this handler's mask matches the function.
+                    if (handler.checkDeleteMask()) {
+                        handler.triggerThreadEventHandler();
+                        cpu.gpr[2] = handler.result;
+                    }
                 } else {
-                    cpu.gpr[2] = 0;
+                    // Mark thread for deletion
+                    setToBeDeletedThread(thread);
+                    if (thread.status != PSP_THREAD_STOPPED) {
+                        cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
+                    } else {
+                        cpu.gpr[2] = 0;
+                    }
                 }
             }
         }
@@ -3284,32 +3497,38 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int len = cpu.gpr[5];
         int data_addr = cpu.gpr[6];
 
-        if (!checkThreadID(uid)) return;
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else if (isBannedThread(thread)) {
-            Modules.log.warn("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not starting");
-            // Banned, fake start
-            cpu.gpr[2] = 0;
-            hleRescheduleCurrentThread();
-        } else if (thread.status != PSP_THREAD_STOPPED) {
-        	cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            // Check if there's a registered event handler for this thread.
-            if(threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-
-                // Check if this handler's mask matches the function.
-                if(handler.checkStartMask()) {
-                    handler.triggerThreadEventHandler();
-                    cpu.gpr[2] = handler.result;
-                }
-            } else {
-                Modules.log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
+            if (!checkThreadID(uid)) {
+                return;
+            }
+            SceKernelThreadInfo thread = threadMap.get(uid);
+            if (thread == null) {
+                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+            } else if (isBannedThread(thread)) {
+                Modules.log.warn("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not starting");
+                // Banned, fake start
                 cpu.gpr[2] = 0;
-                hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
+                hleRescheduleCurrentThread();
+            } else if (thread.status != PSP_THREAD_STOPPED) {
+                cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
+            } else {
+                // Check if there's a registered event handler for this thread.
+                if (threadEventMap.containsKey(thread.uid)) {
+                    int handlerUid = threadEventMap.get(thread.uid);
+                    SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+
+                    // Check if this handler's mask matches the function.
+                    if (handler.checkStartMask()) {
+                        handler.triggerThreadEventHandler();
+                        cpu.gpr[2] = handler.result;
+                    }
+                } else {
+                    Modules.log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
+                    cpu.gpr[2] = 0;
+                    hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
+                }
             }
         }
     }
@@ -3331,21 +3550,26 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     		Modules.log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(thread.uid)
     				+ " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
     	}
-        // Check if there's a registered event handler for this thread.
-        if(threadEventMap.containsKey(thread.uid)) {
-            int handlerUid = threadEventMap.get(thread.uid);
-            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-            // Check if this handler's mask matches the function.
-            if(handler.checkExitMask()) {
-                handler.triggerThreadEventHandler();
-                cpu.gpr[2] = handler.result;
-            }
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            thread.exitStatus = exitStatus;
-            cpu.gpr[2] = 0;
-            hleChangeThreadState(thread, PSP_THREAD_STOPPED);
-            RuntimeContext.onThreadExit(thread);
-            hleRescheduleCurrentThread();
+            // Check if there's a registered event handler for this thread.
+            if (threadEventMap.containsKey(thread.uid)) {
+                int handlerUid = threadEventMap.get(thread.uid);
+                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+                // Check if this handler's mask matches the function.
+                if (handler.checkExitMask()) {
+                    handler.triggerThreadEventHandler();
+                    cpu.gpr[2] = handler.result;
+                }
+            } else {
+                thread.exitStatus = exitStatus;
+                cpu.gpr[2] = 0;
+                hleChangeThreadState(thread, PSP_THREAD_STOPPED);
+                RuntimeContext.onThreadExit(thread);
+                hleRescheduleCurrentThread();
+            }
         }
     }
 
@@ -3355,22 +3579,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int exitStatus = cpu.gpr[4];
 
-    	SceKernelThreadInfo thread = currentThread; // save a reference for post context switch operations
+    	SceKernelThreadInfo thread = currentThread;
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid)
     				+ " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
     	}
 
-        // Exit
-        thread.exitStatus = exitStatus;
-        cpu.gpr[2] = 0;
-        hleChangeThreadState(thread, PSP_THREAD_STOPPED);
-        RuntimeContext.onThreadExit(thread);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            thread.exitStatus = exitStatus;
+            cpu.gpr[2] = 0;
+            hleChangeThreadState(thread, PSP_THREAD_STOPPED);
+            RuntimeContext.onThreadExit(thread);
 
-        // Mark thread for deletion
-        setToBeDeletedThread(thread);
-
-        hleRescheduleCurrentThread();
+            setToBeDeletedThread(thread);
+            hleRescheduleCurrentThread();
+        }
     }
 
     /** terminate thread */
@@ -3397,19 +3622,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (!checkThreadID(uid)) return;
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+            if (!checkThreadID(uid)) {
+                return;
+            }
+            SceKernelThreadInfo thread = threadMap.get(uid);
+            if (thread == null) {
+                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+            } else {
+                Modules.log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-            terminateThread(thread);
+                terminateThread(thread);
+                setToBeDeletedThread(thread);
 
-            // Mark thread for deletion
-            setToBeDeletedThread(thread);
-
-            cpu.gpr[2] = 0;
+                cpu.gpr[2] = 0;
+            }
         }
     }
 
@@ -3425,8 +3654,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceKernelSuspendDispatchThread() state=" + state);
     	}
-    	dispatchThreadEnabled = false;
-        cpu.gpr[2] = state;
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            dispatchThreadEnabled = false;
+            cpu.gpr[2] = state;
+        }
     }
 
     /**
@@ -3444,10 +3678,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceKernelResumeDispatchThread(state=" + state + ")");
     	}
-    	if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
-    		dispatchThreadEnabled = true;
-    	}
-        cpu.gpr[2] = 0;
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
+                dispatchThreadEnabled = true;
+            }
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceKernelChangeCurrentThreadAttr(Processor processor) {
@@ -3629,7 +3868,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceKernelGetThreadId returning uid=0x" + Integer.toHexString(currentThread.uid));
     	}
-        cpu.gpr[2] = currentThread.uid;
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            cpu.gpr[2] = currentThread.uid;
+        }
     }
 
     public void sceKernelGetThreadCurrentPriority(Processor processor) {
@@ -3638,7 +3882,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceKernelGetThreadCurrentPriority returning currentPriority=" + currentThread.currentPriority);
     	}
-        cpu.gpr[2] = currentThread.currentPriority;
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            cpu.gpr[2] = currentThread.currentPriority;
+        }
     }
 
     /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
@@ -3659,9 +3908,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     }
 
-    public void sceKernelCheckThreadStack() {
-    }
-
     /** @return amount of free stack space.
      * TODO this isn't quite right */
     public void sceKernelCheckThreadStack(Processor processor) {
@@ -3672,7 +3918,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     		Modules.log.debug(String.format("sceKernelCheckThreadStack returning size=0x%X", size));
     	}
 
-        cpu.gpr[2] = size;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            cpu.gpr[2] = size;
+        }
     }
 
     /** @return amount of free stack space? up to 0x1000 lower?
@@ -3682,20 +3932,26 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (uid == 0) uid = currentThread.uid;
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            Modules.log.warn("sceKernelGetThreadStackFreeSize unknown uid=0x" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else  {
-            int size = getThreadCurrentStackSize() - 0xfb0;
-            if (size < 0) {
-                size = 0;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            if (uid == 0) {
+                uid = currentThread.uid;
             }
-        	if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", size));
-        	}
-            cpu.gpr[2] = size;
+            SceKernelThreadInfo thread = threadMap.get(uid);
+            if (thread == null) {
+                Modules.log.warn("sceKernelGetThreadStackFreeSize unknown uid=0x" + Integer.toHexString(uid));
+                Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+            } else {
+                int size = getThreadCurrentStackSize() - 0xfb0;
+                if (size < 0) {
+                    size = 0;
+                }
+                if (Modules.log.isDebugEnabled()) {
+                    Modules.log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", size));
+                }
+                cpu.gpr[2] = size;
+            }
         }
     }
 
@@ -3772,34 +4028,38 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 	            + " idcount:0x" + Integer.toHexString(idcount_addr));
         }
 
-        int saveCount = 0;
-        int fullCount = 0;
-
-        if (type == SCE_KERNEL_TMID_Thread){
-            for (SceKernelThreadInfo thread : threadMap.values()) {
-                // Hide kernel mode threads when called from a user mode thread
-                if (userThreadCalledKernelCurrentThread(thread)) {
-                    if (saveCount < readbufsize) {
-                    	if (Modules.log.isDebugEnabled()) {
-                    		Modules.log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
-                    	}
-                        mem.write32(readbuf_addr + saveCount * 4, thread.uid);
-                        saveCount++;
-                    } else {
-                        Modules.log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
-                    }
-                    fullCount++;
-                }
-            }
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
-        }
+            int saveCount = 0;
+            int fullCount = 0;
 
-        if (mem.isAddressGood(idcount_addr)) {
-            mem.write32(idcount_addr, fullCount);
-        }
+            if (type == SCE_KERNEL_TMID_Thread) {
+                for (SceKernelThreadInfo thread : threadMap.values()) {
+                    // Hide kernel mode threads when called from a user mode thread
+                    if (userThreadCalledKernelCurrentThread(thread)) {
+                        if (saveCount < readbufsize) {
+                            if (Modules.log.isDebugEnabled()) {
+                                Modules.log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
+                            }
+                            mem.write32(readbuf_addr + saveCount * 4, thread.uid);
+                            saveCount++;
+                        } else {
+                            Modules.log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
+                        }
+                        fullCount++;
+                    }
+                }
+            } else {
+                Modules.log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
+            }
 
-        cpu.gpr[2] = saveCount;
+            if (mem.isAddressGood(idcount_addr)) {
+                mem.write32(idcount_addr, fullCount);
+            }
+
+            cpu.gpr[2] = saveCount;
+        }
     }
 
     public void sceKernelGetThreadmanIdType(Processor processor) {
