@@ -104,8 +104,12 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
     private HashMap<Integer, PSMFHeader> psmfMap;
 
-    protected int endianSwap(int x) {
+    protected int endianSwap32(int x) {
         return (x << 24) | ((x << 8) &  0xFF0000) | ((x >> 8) &  0xFF00) | ((x >> 24) &  0xFF);
+    }
+
+    protected int endianSwap16(int x) {
+        return (x >> 8) | ((x << 8) & 0xFF00);
     }
 
     protected boolean isPSMFInit(int PSMFType) {
@@ -126,7 +130,6 @@ public class scePsmf implements HLEModule, HLEStartModule {
     protected class PSMFHeader {
         // Common fields.
         private final int size = 2048;
-        private final int PSMFMagic = 0x50534D46;
 
         // Header vars.
         private int streamOffset;
@@ -179,20 +182,20 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
             headerOffset = addr;
 
-            if(mem.read32(addr) != PSMFMagic) {
+            if (mem.read32(addr) != sceMpeg.PSMF_MAGIC) {
                 Modules.log.warn("Invalid PSMF detected!");
             }
 
             version = mem.read32(addr + 4);
-            streamOffset = endianSwap(mem.read32(addr + 8));
-            streamSize = endianSwap(mem.read32(addr + 12));
+            streamOffset = endianSwap32(mem.read32(addr + 8));
+            streamSize = endianSwap32(mem.read32(addr + 12));
 
             // Skip block of null data (80 bytes).
 
-            type = endianSwap(mem.read32(addr + 80));
+            type = endianSwap32(mem.read32(addr + 80));
 
-            presentationStartTime = endianSwap(mem.read32(addr + 86));  // First PTS in EPMap (90000).
-            presentationEndTime = endianSwap(mem.read32(addr + 92));    // mpegLastTimestamp.
+            presentationStartTime = endianSwap32(mem.read32(addr + 86));  // First PTS in EPMap (90000).
+            presentationEndTime = endianSwap32(mem.read32(addr + 92));    // mpegLastTimestamp.
 
             currentStreamType = mem.read8(addr + 104);
             currentStreamNumber = mem.read8(addr + 105);
@@ -203,8 +206,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
             //  - Next two bytes (short): a generic ID (0xE000);
             //  - Next two bytes (short): a generic size (0x20FB - can change);
             //  - Remaining: global audio and video settings.
-            streamStructSize = endianSwap(mem.read16(addr + 126));  // 16 bytes per stream + 2 bytes for the streamStructSize.
-            streamNum = endianSwap(mem.read16(addr + 128));
+            streamStructSize = endianSwap16(mem.read16(addr + 126));  // 16 bytes per stream + 2 bytes for the streamStructSize.
+            streamNum = endianSwap16(mem.read16(addr + 128));
 
             audioSampleFrequency = mem.read16(addr + 136);
             audioChannelsSetup = mem.read16(addr + 138);
@@ -237,8 +240,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
             for(int i = 0; i < EPMapEntriesNum; i += 10) {
                 int id = mem.read16(EPMapOffset + 2 + i);
-                int pts = endianSwap(mem.read32(EPMapOffset + 4 + i));
-                int offset = endianSwap(mem.read32(EPMapOffset + 6 + i));
+                int pts = endianSwap32(mem.read32(EPMapOffset + 4 + i));
+                int offset = endianSwap32(mem.read32(EPMapOffset + 6 + i));
 
                 PSMFEntry pEnt = new PSMFEntry(pts, offset);
                 EPMap.put(id, pEnt);
@@ -380,7 +383,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
         Modules.log.warn("Unimplemented NID function scePsmfSpecifyStream [0x4BC9BDE0]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfGetPresentationStartTime(Processor processor) {
@@ -558,7 +561,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
                 + " offset_addr=0x" + Integer.toHexString(offset_addr) + ")");
 
         // Same as sceMpeg. Read the offset and write it at the output address.
-        int offset = endianSwap(mem.read32(buffer_addr + 8));
+        int offset = endianSwap32(mem.read32(buffer_addr + 8));
         mem.write32(offset_addr, offset);
 
 		cpu.gpr[2] = 0;
@@ -575,7 +578,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
                 + " size_addr=0x" + Integer.toHexString(size_addr) + ")");
 
         // Same as sceMpeg. Read the size and write it at the output address.
-        int size = endianSwap(mem.read32(buffer_addr + 12));
+        int size = endianSwap32(mem.read32(buffer_addr + 12));
         if((size & 0x7FF) == 0) {
             mem.write32(size_addr, 0);
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_VALUE;
