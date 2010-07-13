@@ -97,24 +97,32 @@ public class SceKernelErrors {
     public final static int ERROR_NO_ASYNC_OP                                   = 0x8002032a;
 
     public static final int ERROR_SAVEDATA_LOAD_NO_MEMSTICK                     = 0x80110301;
+    public static final int ERROR_SAVEDATA_LOAD_MEMSTICK_REMOVED                = 0x80110302;
     public static final int ERROR_SAVEDATA_LOAD_ACCESS_ERROR                    = 0x80110305;
     public static final int ERROR_SAVEDATA_LOAD_DATA_BROKEN                     = 0x80110306;
     public static final int ERROR_SAVEDATA_LOAD_NO_DATA                         = 0x80110307;
     public static final int ERROR_SAVEDATA_LOAD_BAD_PARAMS                      = 0x80110308;
-    public static final int ERROR_SAVEDATA_MODE8_NO_MEMSTICK                    = 0x801103c1;
-    public static final int ERROR_SAVEDATA_MODE8_ACCESS_ERROR                   = 0x801103c5;
-    public static final int ERROR_SAVEDATA_MODE8_DATA_BROKEN                    = 0x801103c6;
-    public static final int ERROR_SAVEDATA_MODE8_NO_DATA                        = 0x801103c7;
-    public static final int ERROR_SAVEDATA_MODE15_SAVEDATA_PRESENT              = 0x80110326;
-    public static final int ERROR_SAVEDATA_MODE15_SAVEDATA_NOT_PRESENT          = 0x80110327;
+    public static final int ERROR_SAVEDATA_LOAD_NO_UMD                          = 0x80110309;
+
+    public static final int ERROR_SAVEDATA_RW_ACCESS_ERROR                      = 0x80110325;
+    public static final int ERROR_SAVEDATA_RW_DATA_BROKEN                       = 0x80110326;
+    public static final int ERROR_SAVEDATA_RW_NO_DATA                           = 0x80110327;
 
     public static final int ERROR_SAVEDATA_SAVE_NO_MEMSTICK                     = 0x80110381;
+    public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_REMOVED                = 0x80110382;
     public static final int ERROR_SAVEDATA_SAVE_NO_SPACE                        = 0x80110383;
     public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_PROTECTED              = 0x80110384;
     public static final int ERROR_SAVEDATA_SAVE_ACCESS_ERROR                    = 0x80110385;
     public static final int ERROR_SAVEDATA_SAVE_BAD_PARAMS                      = 0x80110388;
     public static final int ERROR_SAVEDATA_SAVE_NO_UMD                          = 0x80110389;
     public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD                       = 0x8011038a;
+
+    public static final int ERROR_SAVEDATA_SIZES_NO_MEMSTICK                    = 0x801103c1;
+    public static final int ERROR_SAVEDATA_SIZES_MEMSTICK_REMOVED               = 0x801103c2;
+    public static final int ERROR_SAVEDATA_SIZES_ACCESS_ERROR                   = 0x801103c5;
+    public static final int ERROR_SAVEDATA_SIZES_DATA_BROKEN                    = 0x801103c6;
+    public static final int ERROR_SAVEDATA_SIZES_NO_DATA                        = 0x801103c7;
+    public static final int ERROR_SAVEDATA_SIZES_BAD_PARAMS                     = 0x801103c8;
 
     public final static int ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT               = 0x80020064;
     public final static int ERROR_UNKNOWN_UID                                   = 0x800200cb;
