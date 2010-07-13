@@ -734,7 +734,7 @@ public class VertexInfo {
 		buffer.rewind();
 		cachedBuffer.rewind();
 
-		VideoEngine.getInstance().glBufferData(gl, size * BufferUtil.SIZEOF_FLOAT, cachedBuffer, GL.GL_STATIC_DRAW);
+		VideoEngine.getInstance().glBufferData(GL.GL_ARRAY_BUFFER, size * BufferUtil.SIZEOF_FLOAT, cachedBuffer, GL.GL_STATIC_DRAW);
 	}
 
 	public void deleteVertex(GL gl) {
