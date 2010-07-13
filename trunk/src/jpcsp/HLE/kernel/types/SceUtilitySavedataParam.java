@@ -61,7 +61,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public final static int MODE_SIZES = 8;
         public final static int MODE_LIST = 11;
         public final static int MODE_FILES = 12;
-		public final static int MODE_TEST = 15;
+		public final static int MODE_READ = 15;
+        public final static int MODE_WRITE = 17;
         public final static int MODE_GETSIZE = 22;
 	public int focus;
 		public final static int FOCUS_UNKNOWN = 0;
@@ -289,6 +290,17 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         write32(buffer6Addr);
 	}
 
+    public void singleRead(Memory mem) throws IOException {
+        String path = getBasePath();
+        dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+    }
+
+    public void singleWrite(Memory mem) throws IOException {
+        String path = getBasePath();
+        Modules.IoFileMgrForUserModule.mkdirs(path);
+        writeFile(mem, path, fileName, dataBuf, dataSize);
+    }
+
     private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {
 		String path = getBasePath();
 
@@ -310,10 +322,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public void load(Memory mem) throws IOException {
 		String path = getBasePath();
 
-		// Firmware 1.5 stores data file non-encrypted.
-		// From Firmware 2.0, the data file is encrypted using the kirk chip.
-		// Encrypted files cannot be loaded.
-		// TODO Detect and reject an encrypted data file.
 		dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
         safeLoad(mem, icon0FileName, icon0FileData);
         safeLoad(mem, icon1FileName, icon1FileData);

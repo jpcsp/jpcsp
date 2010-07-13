@@ -5791,16 +5791,17 @@ public class VideoEngine {
     		res += (knot[i + j + 1] - u) / (knot[i + j + 1] - knot[i + 1]) * spline_n(i + 1, j - 1, u, knot);
     	return res;
     }
-    
+
     int[] spline_knot(int n, int type) {
     	int[] knot = new int[n + 5];
-    	for(int i = 0; i < n - 1; ++i)
+    	for(int i = 0; i < n - 1; i++) {
     		knot[i + 3] = i;
-    	
+        }
+
     	if((type & 1) == 0) {
     		knot[0] = -3;
     		knot[1] = -2;
-    		knot[2] = -1; 
+    		knot[2] = -1;
     	}
     	if((type & 2) == 0) {
     		knot[n + 2] = n - 1;
@@ -5811,7 +5812,7 @@ public class VideoEngine {
     		knot[n + 3] = n - 2;
     		knot[n + 4] = n - 2;
     	}
-    	
+
     	return knot;
     }
 
@@ -5833,7 +5834,7 @@ public class VideoEngine {
                 int addr = vinfo.getAddress(mem, pointIndex++);
                 VertexState vs = vinfo.readVertex(mem, addr);
                 if (isLogDebugEnabled) {
-                    log.error("drawSpline  vertex#" + u + "," + v + " p(" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ") t(" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + " c(" + ((float) vs.c[0]) + "," + ((float) vs.c[1]) + "," + ((float) vs.c[2]) + ")");
+                    log.debug("drawSpline  vertex#" + u + "," + v + " p(" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ") t(" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + " c(" + ((float) vs.c[0]) + "," + ((float) vs.c[1]) + "," + ((float) vs.c[2]) + ")");
                 }
                 ctrlpoints[u][v] = vs;
             }
@@ -5844,77 +5845,83 @@ public class VideoEngine {
             log.info("Capture drawSpline");
             CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * ucount * vcount);
         }
-        
-        VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
 
+        // Generate patch VertexState.
+        VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
+        for(int i = 0; i < patch.length; i++) {
+            for(int j = 0; j < patch[i].length; j++) {
+                patch[i][j] = new VertexState();
+            }
+        }
+
+        // Calculate knot arrays.
         int n = ucount - 1;
         int m = vcount - 1;
         int[] knot_u = spline_knot(n, utype);
         int[] knot_v = spline_knot(m, vtype);
-        
-        log(String.format("U: patch_div_s=%d knot_u %s", patch_div_s, Arrays.toString(knot_u)));
-        log(String.format("V: patch_div_t=%d knot_v %s", patch_div_t, Arrays.toString(knot_v)));
-        
-        for(int j = 0; j <= patch_div_t; ++j) {
-        	float v = (float)j * (float)(m - 2) / (float)patch_div_t;
-        	for(int i = 0; i <= patch_div_s; ++i) {
-        		float u = (float)i * (float)(n - 2) / (float)patch_div_s;
-        		
-        		VertexState p = new VertexState();
-        		patch[i][j] = p;
-        		
-        		for(int ii = 0; ii <= n; ++ii) {
-        			for(int jj = 0; jj <= m; ++jj) {
+
+        // The spline grows to a limit defined by n - 2 for u and m - 2 for v.
+        // This limit is open, so we need to get a very close approximation of it.
+        float limit = 2.000001f;
+
+        // Process spline vertexes with Cox-deBoor's algorithm.
+        for(int j = 0; j <= patch_div_t; j++) {
+        	float v = (float)j * (float)(m - limit) / (float)patch_div_t;
+
+        	for(int i = 0; i <= patch_div_s; i++) {
+        		float u = (float)i * (float)(n - limit) / (float)patch_div_s;
+
+        		for(int ii = 0; ii <= n; ii++) {
+        			for(int jj = 0; jj <= m; jj++) {
         				float f = spline_n(ii, 3, u, knot_u) * spline_n(jj, 3, v, knot_v);
         				if(f != 0) {
-        					VertexState a = ctrlpoints[ii][jj];
-        					p.p[0] += f * a.p[0];
-        					p.p[1] += f * a.p[1];
-        					p.p[2] += f * a.p[2];
+        					patch[i][j].p[0] += f * ctrlpoints[ii][jj].p[0];
+        					patch[i][j].p[1] += f * ctrlpoints[ii][jj].p[1];
+        					patch[i][j].p[2] += f * ctrlpoints[ii][jj].p[2];
         					if(vinfo.texture != 0) {
-        						p.t[0] += f * a.t[0];
-        						p.t[1] += f * a.t[1];
+        						patch[i][j].t[0] += f * ctrlpoints[ii][jj].t[0];
+        						patch[i][j].t[1] += f * ctrlpoints[ii][jj].t[1];
         					}
         					if(useVertexColor) {
-        						p.c[0] += f * a.c[0];
-        						p.c[1] += f * a.c[1];
-        						p.c[2] += f * a.c[2];
+        						patch[i][j].c[0] += f * ctrlpoints[ii][jj].c[0];
+        						patch[i][j].c[1] += f * ctrlpoints[ii][jj].c[1];
+        						patch[i][j].c[2] += f * ctrlpoints[ii][jj].c[2];
         					}
         					if(vinfo.normal != 0) {
-        						p.n[0] += f * a.n[0];
-        						p.n[1] += f * a.n[1];
-        						p.n[2] += f * a.n[2];
+        						patch[i][j].n[0] += f * ctrlpoints[ii][jj].n[0];
+        						patch[i][j].n[1] += f * ctrlpoints[ii][jj].n[1];
+        						patch[i][j].n[2] += f * ctrlpoints[ii][jj].n[2];
         					}
         				}
         			}
         		}
-        		
         		if(vinfo.texture == 0) {
-        			p.t[0] = u;
-        			p.t[1] = v;
+        			patch[i][j].t[0] = u;
+        			patch[i][j].t[1] = v;
         		}
-        		log(String.format("u=%g v=%g patch(i=%d,j=%d) : p(%g, %g, %g) t(%g, %g)", u, v, i, j, p.p[0], p.p[1], p.p[2], p.t[0], p.t[1]));
         	}
         }
-        
+
         bindBuffers(useVertexColor, useTexture, true, 0);
-        
-        for(int j = 0; j <= patch_div_t - 1; ++j) {
+
+        for(int j = 0; j <= patch_div_t - 1; j++) {
         	vboFloatBuffer.clear();
-        	
-        	for(int i = 0; i <= patch_div_s; ++i) {
+
+        	for(int i = 0; i <= patch_div_s; i++) {
         		VertexState v1 = patch[i][j];
-        		VertexState v2 = patch[i][j + 1];
+                VertexState v2 = patch[i][j + 1];
+
         		vboFloatBuffer.put(v1.t);
         		if(useVertexColor) vboFloatBuffer.put(v1.c);
         		if(vinfo.normal != 0) vboFloatBuffer.put(v1.n);
         		vboFloatBuffer.put(v1.p);
+
         		vboFloatBuffer.put(v2.t);
         		if(useVertexColor) vboFloatBuffer.put(v2.c);
         		if(vinfo.normal != 0) vboFloatBuffer.put(v2.n);
         		vboFloatBuffer.put(v2.p);
         	}
-        	
+
         	glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
             gl.glDrawArrays(patch_prim_types[patch_prim], 0, (patch_div_s + 1) * 2);
         }

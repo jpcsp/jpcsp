@@ -17,20 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_MODE15_SAVEDATA_NOT_PRESENT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_MODE15_SAVEDATA_PRESENT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_MODE8_NO_DATA;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
-
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -63,6 +55,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.GUI.CancelButton;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceIoStat;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
@@ -164,7 +157,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 			mm.removeFunction(sceUtilityGetNetParamFunction);
 		}
 	}
-	
+
 	@Override
     public void start() {
 		gameSharingState    = new UtilityDialogState("sceUtilityGameSharing");
@@ -791,9 +784,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     savedataParams.base.result = 0;
                     savedataParams.write(mem);
                 } catch (IOException e) {
-                    savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                 } catch (Exception e) {
-                    savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                     e.printStackTrace();
                 }
                 break;
@@ -813,7 +806,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 showSavedataList(validNames.toArray(new String[validNames.size()]));
                 if (saveListSelection == null) {
                     Modules.log.warn("Savedata MODE_LISTLOAD no save selected");
-                    savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                 } else {
                     savedataParams.saveName = saveListSelection.toString();
                     try {
@@ -821,9 +814,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
                         savedataParams.base.result = 0;
                         savedataParams.write(mem);
                     } catch (IOException e) {
-                        savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                     } catch (Exception e) {
-                        savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                         e.printStackTrace();
                     }
                 }
@@ -843,9 +836,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     savedataParams.save(mem);
                     savedataParams.base.result = 0;
                 } catch (IOException e) {
-                    savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
                 } catch (Exception e) {
-                    savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
                     e.printStackTrace();
                 }
                 break;
@@ -854,7 +847,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 showSavedataList(savedataParams.saveNameList);
                 if (saveListSelection == null) {
                     Modules.log.warn("Savedata MODE_LISTSAVE no save selected");
-                    savedataParams.base.result = ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
                 }
 
                 else {
@@ -863,9 +856,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
                         savedataParams.save(mem);
                         savedataParams.base.result = 0;
                     } catch (IOException e) {
-                        savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
                     } catch (Exception e) {
-                        savedataParams.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
                         e.printStackTrace();
                     }
                 }
@@ -883,7 +876,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     savedataParams.base.result = 0;
                 } else {
                     Modules.log.warn("Savedata MODE_DELETE no saves found!");
-                   savedataParams.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                   savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                 }
                 break;
 
@@ -979,7 +972,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             	if (savedataParams.isPresent(gameName, saveName)) {
                     savedataParams.base.result = 0;
             	} else {
-                    savedataParams.base.result = ERROR_SAVEDATA_MODE8_NO_DATA;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
             	}
                 break;
             }
@@ -1098,22 +1091,34 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 break;
             }
 
-            case SceUtilitySavedataParam.MODE_TEST: {
-            	boolean isPresent = false;
-
-            	try {
-                    isPresent = savedataParams.test(mem);
-                } catch (FileNotFoundException e) {
-                	isPresent = false;
+            case SceUtilitySavedataParam.MODE_READ: {
+                // Sub-type of mode LOAD.
+                // Reads the contents of only one specified file.
+                try {
+                    savedataParams.singleRead(mem);
+                    savedataParams.base.result = 0;
+                    savedataParams.write(mem);
+                } catch (IOException e) {
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
                 } catch (Exception e) {
-                }
-
-                if (isPresent) {
-                	savedataParams.base.result = ERROR_SAVEDATA_MODE15_SAVEDATA_PRESENT;
-                } else {
-                    savedataParams.base.result = ERROR_SAVEDATA_MODE15_SAVEDATA_NOT_PRESENT;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                    e.printStackTrace();
                 }
                 break;
+            }
+
+            case SceUtilitySavedataParam.MODE_WRITE: {
+                // Sub-type of mode SAVE.
+                // Writes the contents of only one specified file.
+                try {
+                    savedataParams.singleWrite(mem);
+                    savedataParams.base.result = 0;
+                } catch (IOException e) {
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                } catch (Exception e) {
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                    e.printStackTrace();
+                }
             }
 
             case SceUtilitySavedataParam.MODE_GETSIZE:
