@@ -472,9 +472,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         Modules.log.warn("IGNORING:__sceSasRevParam("+ String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
 
         if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
-            cpu.gpr[2] = -1;
-        }
-        else {
             cpu.gpr[2] = 0;
         }
     }
@@ -517,7 +514,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         Modules.log.warn("IGNORING:__sceSasRevType(type=" + type + ") " + makeLogParams(cpu));
 
-        cpu.gpr[2] = 0;
+        if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void __sceSasInit(Processor processor) {
