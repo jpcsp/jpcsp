@@ -362,7 +362,9 @@ public class HLEModuleManager {
 	
 	public static void stopModules() {
 		for(DefaultModule defaultModule : DefaultModule.values()) {
-			((HLEStartModule)defaultModule.module).stop();
+			if(defaultModule.module instanceof HLEStartModule) {
+				((HLEStartModule)defaultModule.module).stop();
+			}
 		}
 	}
 }
