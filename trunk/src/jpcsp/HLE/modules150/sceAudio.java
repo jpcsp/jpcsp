@@ -41,13 +41,12 @@ import jpcsp.memory.MemoryReader;
 import org.apache.log4j.Logger;
 
 public class sceAudio implements HLEModule, HLEThread {
-	
+
 	public static Logger log = Logger.getLogger("hle.audio");
-	
+
     protected class pspChannelInfo {
     	public int index;
 		public boolean reserved;
-        public boolean reservedSRC;
         public int allocatedSamples;
         public int format;
         public int leftVolume;
@@ -67,7 +66,6 @@ public class sceAudio implements HLEModule, HLEThread {
         {
         	this.index = index;
             reserved = false;
-            reservedSRC = false;
             allocatedSamples = 0;
             format = 0;
             leftVolume = 0x8000;
@@ -108,20 +106,6 @@ public class sceAudio implements HLEModule, HLEThread {
     		float wantedSampleRate = getSampleRate();
     		int wantedBufferSize = 0;
     		if (outputDataLine == null) {
-            	//
-            	// The PSP is using a buffer equal to the sampleSize.
-            	// However, the Java sound system is not nicely handling buffer
-            	// underflows, causing discontinuities in the audio
-            	// that are perceived as "clicks".
-            	//
-            	// So, allocate a large buffer: 10 times the sampleSize is an
-            	// empirical value.
-            	// This has the disadvantage to introduce a small delay when playing
-            	// a new sound: a PSP application is typically sending continuously
-            	// sound data, even when nothing can be heard ("0" values are sent).
-            	// And we have first to play these buffered blanks before hearing
-            	// the real sound itself.
-    			//
     			wantedBufferSize = allocatedSamples * 4 * 10;
     		} else {
     			wantedBufferSize = outputDataLine.getBufferSize();
@@ -143,7 +127,7 @@ public class sceAudio implements HLEModule, HLEThread {
 	            			outputDataLine.open(format);
 	            		}
     			} catch (LineUnavailableException e) {
-    				log.error("sceSasCore.pspVoice.init: " + e.toString());
+    				log.info("sceSasCore.pspVoice.init: " + e.toString());
     			}
             }
     	}
@@ -247,8 +231,7 @@ public class sceAudio implements HLEModule, HLEThread {
         	result.append("Waiting " + waitingBuffers.size() + ", ");
         	result.append("Ended " + IsEnded()+ ", ");
         	result.append("OutputBlocking " + isOutputBlocking() + ", ");
-        	result.append("Reserved " + reserved + ", ");
-            result.append("ReservedSRC " + reservedSRC);
+        	result.append("Reserved " + reserved);
         	result.append(")");
 
         	return result.toString();
@@ -292,7 +275,8 @@ public class sceAudio implements HLEModule, HLEThread {
 
     private static ChannelsCheckerThread channelsCheckerThread = null;
 
-    protected pspChannelInfo[] pspchannels; // psp channels
+    protected pspChannelInfo[] pspchannels;
+    protected int SRCChannel;
     protected int sampleRate;
 
     protected boolean isAudioOutput2 = false;
@@ -302,7 +286,6 @@ public class sceAudio implements HLEModule, HLEThread {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
-
         if (version >= 150) {
 
             mm.addFunction(0x8C1009B2, sceAudioOutputFunction);
@@ -332,17 +315,13 @@ public class sceAudio implements HLEModule, HLEThread {
             mm.addFunction(0xE926D3FB, sceAudioInputInitExFunction);
             mm.addFunction(0xA633048E, sceAudioPollInputEndFunction);
             mm.addFunction(0xE9D97901, sceAudioGetChannelRestLenFunction);
-
-            /* From sceAudio_driver */
             mm.addFunction(0x80F1F7E0, sceAudioInitFunction);
             mm.addFunction(0x210567F7, sceAudioEndFunction);
             mm.addFunction(0xA2BEAA6C, sceAudioSetFrequencyFunction);
             mm.addFunction(0xB61595C0, sceAudioLoopbackTestFunction);
             mm.addFunction(0x927AC32B, sceAudioSetVolumeOffsetFunction);
 
-            // unfortunately we get here before setBlockingEnabled is called
-            //if (!disableBlockingAudio)
-                mm.addThread(this);
+            mm.addThread(this);
         }
 
         pspchannels = new pspChannelInfo[8];
@@ -364,9 +343,8 @@ public class sceAudio implements HLEModule, HLEThread {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-            // unfortunately addThread is called before setBlockingEnabled
-            //if (!disableBlockingAudio)
-                mm.removeThread(this);
+
+            mm.removeThread(this);
 
             mm.removeFunction(sceAudioOutputFunction);
             mm.removeFunction(sceAudioOutputBlockingFunction);
@@ -395,8 +373,6 @@ public class sceAudio implements HLEModule, HLEThread {
             mm.removeFunction(sceAudioInputInitExFunction);
             mm.removeFunction(sceAudioPollInputEndFunction);
             mm.removeFunction(sceAudioGetChannelRestLenFunction);
-
-            /* From sceAudio_driver */
             mm.removeFunction(sceAudioInitFunction);
             mm.removeFunction(sceAudioEndFunction);
             mm.removeFunction(sceAudioSetFrequencyFunction);
@@ -437,7 +413,7 @@ public class sceAudio implements HLEModule, HLEThread {
                 	SceKernelThreadInfo waitingThread = threadMan.getThreadById(waitingThreadId);
                 	if (waitingThread != null) {
 	                	if (pspchannels[channel].waitingAudioDataAddr != 0) {
-	        	            sceAudioChangeChannelVolume(channel, pspchannels[channel].waitingVolumeLeft, pspchannels[channel].waitingVolumeRight);
+	        	            changeChannelVolume(channel, pspchannels[channel].waitingVolumeLeft, pspchannels[channel].waitingVolumeRight);
 	        	            int ret = doAudioOutput(channel, pspchannels[channel].waitingAudioDataAddr);
 	        	            waitingThread.cpuContext.gpr[2] = ret;
 	                	}
@@ -454,21 +430,18 @@ public class sceAudio implements HLEModule, HLEThread {
     {
         int ret = -1;
 
-        if(pspchannels[channel].reserved || pspchannels[channel].reservedSRC)
-        {
+        if(pspchannels[channel].reserved) {
             int channels = ((pspchannels[channel].format&0x10)==0x10)?1:2;
-            int bytespersample = 4; //2*channels;
+            int bytespersample = 4;
 
             int bytes = bytespersample * pspchannels[channel].allocatedSamples;
 
             byte[] data = new byte[bytes];
 
-            // process audio volumes ourselves for now
             int nsamples = pspchannels[channel].allocatedSamples;
             int leftVolume = (audioMuted ? 0 : pspchannels[channel].leftVolume);
             int rightVolume = (audioMuted ? 0 : pspchannels[channel].rightVolume);
-            if(channels == 1)
-            {
+            if(channels == 1) {
             	IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nsamples * 2, 2);
                 for (int i = 0; i < nsamples; i++)
                 {
@@ -483,9 +456,7 @@ public class sceAudio implements HLEModule, HLEThread {
                     data[i*4+2] = (byte)(rval);
                     data[i*4+3] = (byte)(rval>>8);
                 }
-            }
-            else
-            {
+            } else {
             	IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nsamples * 4, 2);
                 for (int i = 0; i < nsamples; i++)
                 {
@@ -515,24 +486,34 @@ public class sceAudio implements HLEModule, HLEThread {
 
     protected int doAudioFlush(int channel)
     {
-        if(pspchannels[channel].outputDataLine != null)
-        {
+        if(pspchannels[channel].outputDataLine != null) {
             pspchannels[channel].outputDataLine.drain();
             return 0;
         }
         return -1;
     }
 
-    private int sceAudioChangeChannelVolume(int channel, int leftvol, int rightvol)
-    {
+    protected int changeChannelVolume(int channel, int leftvol, int rightvol) {
         int ret = -1;
 
-        if(pspchannels[channel].reserved || pspchannels[channel].reservedSRC) {
+        if(pspchannels[channel].reserved) {
             pspchannels[channel].leftVolume = leftvol;
             pspchannels[channel].rightVolume = rightvol;
             ret = 0;
         }
         return ret;
+    }
+
+    protected int hleAudioGetChannelRestLen(int channel) {
+        int len = 0;
+
+        len = pspchannels[channel].getRestLength();
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("hleAudioGetChannelRestLen(%d) = %d", channel, len));
+        }
+
+        return len;
     }
 
     public void sceAudioInit(Processor processor) {
@@ -556,13 +537,12 @@ public class sceAudio implements HLEModule, HLEThread {
 
         int frequency = cpu.gpr[4];
 
-        int ret = -1;
-        if(frequency == 44100 || frequency == 48000)
-        {
+        if(frequency == 44100 || frequency == 48000) {
             sampleRate = frequency;
-            ret = 0;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = -1;
         }
-        cpu.gpr[2] = ret;
     }
 
     public void sceAudioLoopbackTest(Processor processor) {
@@ -585,18 +565,16 @@ public class sceAudio implements HLEModule, HLEThread {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
+        int channel = cpu.gpr[4];
+        int vol = cpu.gpr[5];
+        int pvoid_buf = cpu.gpr[6];
 
         if (!mem.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAudioOutput 0x%08X", pvoid_buf));
-            }
-
         	if (!pspchannels[channel].isOutputBlocking()) {
-                sceAudioChangeChannelVolume(channel, vol, vol);
+                changeChannelVolume(channel, vol, vol);
                 cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
         	} else {
         		cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
@@ -608,36 +586,32 @@ public class sceAudio implements HLEModule, HLEThread {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
+        int channel = cpu.gpr[4];
+        int vol = cpu.gpr[5];
+        int pvoid_buf = cpu.gpr[6];
 
         if (!mem.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAudioOutputBlocking 0x%08X", pvoid_buf));
-            }
-
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
             	if (log.isDebugEnabled()) {
             		log.debug("sceAudioOutputBlocking[not blocking] " + pspchannels[channel].toString());
             	}
-	            sceAudioChangeChannelVolume(channel, vol, vol);
+	            changeChannelVolume(channel, vol, vol);
 	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
             	if (log.isDebugEnabled()) {
             		log.debug("sceAudioOutputBlocking[not blocking] returning " + cpu.gpr[2] + " (" + pspchannels[channel].toString() + ")");
             	}
-	            //threadMan.yieldCurrentThread();
             } else {
             	if (log.isDebugEnabled()) {
             		log.debug("sceAudioOutputBlocking[blocking] " + pspchannels[channel].toString());
             	}
-	            pspchannels[channel].waitingThreadId = threadMan.getCurrentThreadID();
+	            pspchannels[channel].waitingThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
 	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
 	            pspchannels[channel].waitingVolumeLeft  = vol;
 	            pspchannels[channel].waitingVolumeRight = vol;
-	            threadMan.hleBlockCurrentThread();
+	            Modules.ThreadManForUserModule.hleBlockCurrentThread();
             }
         }
     }
@@ -646,18 +620,17 @@ public class sceAudio implements HLEModule, HLEThread {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
+        int channel = cpu.gpr[4];
+        int leftvol = cpu.gpr[5];
+        int rightvol = cpu.gpr[6];
+        int pvoid_buf = cpu.gpr[7];
 
         if (!mem.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAudioOutputPanned 0x%08X", pvoid_buf));
-            }
-
         	if (!pspchannels[channel].isOutputBlocking()) {
-                sceAudioChangeChannelVolume(channel, leftvol, rightvol);
+                changeChannelVolume(channel, leftvol, rightvol);
                 cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
         	} else {
         		cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
@@ -669,33 +642,30 @@ public class sceAudio implements HLEModule, HLEThread {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
+        int channel = cpu.gpr[4];
+        int leftvol = cpu.gpr[5];
+        int rightvol = cpu.gpr[6];
+        int pvoid_buf = cpu.gpr[7];
 
         if (!mem.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputPannedBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAudioOutputPannedBlocking 0x%08X", pvoid_buf));
-            }
-
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
             	if (log.isDebugEnabled()) {
             		log.debug("sceAudioOutputPannedBlocking[not blocking] " + pspchannels[channel].toString());
             	}
-	            sceAudioChangeChannelVolume(channel, leftvol, rightvol);
+	            changeChannelVolume(channel, leftvol, rightvol);
 	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
-	            //threadMan.yieldCurrentThread();
             } else {
             	if (log.isDebugEnabled()) {
             		log.debug("sceAudioOutputPannedBlocking[blocking] " + pspchannels[channel].toString());
             	}
-	            pspchannels[channel].waitingThreadId = threadMan.getCurrentThreadID();
+	            pspchannels[channel].waitingThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
 	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
 	            pspchannels[channel].waitingVolumeLeft  = leftvol;
 	            pspchannels[channel].waitingVolumeRight = rightvol;
-	            threadMan.hleBlockCurrentThread();
+	            Modules.ThreadManForUserModule.hleBlockCurrentThread();
             }
         }
     }
@@ -703,44 +673,36 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioChReserve(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int channel = cpu.gpr[4], samplecount = cpu.gpr[5], format = cpu.gpr[6];
+        int channel = cpu.gpr[4];
+        int samplecount = cpu.gpr[5];
+        int format = cpu.gpr[6];
 
-        if (disableChReserve)
-        {
+        if (disableChReserve) {
             log.warn("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
             cpu.gpr[2] = -1;
-        }
-        else
-        {
+        } else {
             log.debug("sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
 
-            if (channel != -1) // use specified channel, if available
-            {
-                if (pspchannels[channel].reserved)
-                {
+            if (channel != -1) {
+                if (pspchannels[channel].reserved) {
                     log.warn("sceAudioChReserve failed - channel " + channel + " already in use");
                     channel = -1;
                 }
-            }
-            else // find first free channel
-            {
-                for (int i = 0; i < pspchannels.length; i++)
-                {
-                    if (!pspchannels[i].reserved)
-                    {
+            } else {
+                for (int i = 0; i < pspchannels.length; i++) {
+                    if (!pspchannels[i].reserved) {
                         channel = i;
                         break;
                     }
                 }
-
-                if (channel == -1)
+                if (channel == -1) {
                     log.warn("sceAudioChReserve failed - no free channels available");
+                }
             }
 
-            if (channel != -1) // if channel == -1 here, it means we couldn't use any.
-            {
+            if (channel != -1) {
                 pspchannels[channel].reserved = true;
-                pspchannels[channel].outputDataLine = null; // delay creation until first use.
+                pspchannels[channel].outputDataLine = null;
                 pspchannels[channel].allocatedSamples = samplecount;
                 pspchannels[channel].format = format;
             }
@@ -761,25 +723,29 @@ public class sceAudio implements HLEModule, HLEThread {
         CpuState cpu = processor.cpu;
 
         int channel = cpu.gpr[4];
-        int ret = -1;
 
-        if(pspchannels[channel].reserved)
-        {
+        if(pspchannels[channel].reserved)  {
         	pspchannels[channel].release();
-            pspchannels[channel].reserved=false;
-            ret = 0;
+            pspchannels[channel].reserved = false;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = -1;
         }
-        cpu.gpr[2] = ret;
     }
 
     public void sceAudioGetChannelRestLength(Processor processor) {
-        sceAudioGetChannelRestLen(processor);
+        CpuState cpu = processor.cpu;
+
+        int channel = cpu.gpr[4];
+
+        cpu.gpr[2] = hleAudioGetChannelRestLen(channel);
     }
 
     public void sceAudioSetChannelDataLen(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int channel = cpu.gpr[4], samplecount = cpu.gpr[5];
+        int channel = cpu.gpr[4];
+        int samplecount = cpu.gpr[5];
 
         pspchannels[channel].allocatedSamples = samplecount;
         cpu.gpr[2] = 0;
@@ -788,7 +754,8 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioChangeChannelConfig(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int channel = cpu.gpr[4], format = cpu.gpr[5];
+        int channel = cpu.gpr[4];
+        int format = cpu.gpr[5];
 
         pspchannels[channel].format = format;
         cpu.gpr[2] = 0;
@@ -797,7 +764,11 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioChangeChannelVolume(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        cpu.gpr[2] = sceAudioChangeChannelVolume(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+        int channel = cpu.gpr[4];
+        int leftvol = cpu.gpr[5];
+        int rightvol = cpu.gpr[6];
+
+        cpu.gpr[2] = changeChannelVolume(channel, leftvol, rightvol);
     }
 
     public void sceAudioOutput2Reserve(Processor processor) {
@@ -816,77 +787,56 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioOutput2GetRestSample(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int unplayed = 0;
-
-        // Retrieve the unplayed samples' count of the first channel.
-        // It should be the same for the remaining channels.
-        if(pspchannels[0].outputDataLine != null){
-            unplayed = pspchannels[0].outputDataLine.getBufferSize() - pspchannels[0].outputDataLine.available();
-        }
-
-        cpu.gpr[2] = unplayed;
+        cpu.gpr[2] = hleAudioGetChannelRestLen(SRCChannel);
     }
 
     public void sceAudioOutput2ChangeLength(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int samplecount = cpu.gpr[4];
-        int ret = -1;
 
-        for(int i = 0; i < pspchannels.length; i++) {
-            if(pspchannels[i].reservedSRC){
-                pspchannels[i].allocatedSamples = samplecount;
-                ret = 0;
-            }
+        if(pspchannels[SRCChannel].reserved){
+            pspchannels[SRCChannel].allocatedSamples = samplecount;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = -1;
         }
-
-        if(ret != 0){
-            log.warn("sceAudioOutput2ChangeLength audio output is not reserved");
-        }
-
-        cpu.gpr[2] = ret;
     }
 
     public void sceAudioSRCChReserve(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int samplecount = cpu.gpr[4], freq = cpu.gpr[5], channels = cpu.gpr[6];
+        int samplecount = cpu.gpr[4];
+        int freq = cpu.gpr[5];
+        int format = cpu.gpr[6];
 
-         if (disableChReserve) {
-            log.warn("IGNORED sceAudioSRCChReserve channels count= " + channels + " samplecount = " + samplecount + " freq = " + freq);
+        if(isAudioOutput2) {
+            freq = 44100;
+            format = 0;
+            isAudioOutput2 = false;
+        }
+
+        if (disableChReserve) {
+            log.warn("IGNORED sceAudioSRCChReserve samplecount= " + samplecount + " freq= " + freq + " format=" + format);
             cpu.gpr[2] = -1;
-         } else {
-            //Reserve the specified number of channels (if free)
-            //and set the sample count for each one.
-            if(isAudioOutput2) {
-                freq = 44100;
-                channels = 2;
-                isAudioOutput2 = false;
-            }
-
+        } else {
             sampleRate = freq;
-
-            for (int i = 0; i < channels; i++) {
-                if (!pspchannels[i].reservedSRC) {
-                    pspchannels[i].reservedSRC = true;
-                    pspchannels[i].outputDataLine = null;
-                    pspchannels[i].allocatedSamples = samplecount;
-                    pspchannels[i].format = (channels == 1 ? PSP_AUDIO_FORMAT_MONO : PSP_AUDIO_FORMAT_STEREO);
-                }
+            if (!pspchannels[SRCChannel].reserved) {
+                pspchannels[SRCChannel].reserved = true;
+                pspchannels[SRCChannel].outputDataLine = null;
+                pspchannels[SRCChannel].allocatedSamples = samplecount;
+                pspchannels[SRCChannel].format = format;
             }
-
-            cpu.gpr[2] = 0;
-         }
+        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceAudioSRCChRelease(Processor processor) {
        CpuState cpu = processor.cpu;
 
-       for(int i = 0; i < pspchannels.length; i++) {
-       if(pspchannels[i].reservedSRC) {
-           pspchannels[i].release();
-           pspchannels[i].reservedSRC = false;
-       }
+       if(pspchannels[SRCChannel].reserved) {
+           pspchannels[SRCChannel].release();
+           pspchannels[SRCChannel].reserved = false;
        }
 
        cpu.gpr[2] = 0;
@@ -895,43 +845,31 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioSRCOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
-        int vol = cpu.gpr[4], buf = cpu.gpr[5];
+        int vol = cpu.gpr[4];
+        int buf = cpu.gpr[5];
 
         if (!mem.isAddressGood(buf)) {
             log.warn("sceAudioSRCOutputBlocking bad pointer " + String.format("0x%08X", buf));
             cpu.gpr[2] = -1;
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAudioSRCOutputBlocking 0x%08X", buf));
-            }
-
-            boolean blockThread = false;
-            for (int i = 0; pspchannels[i].reservedSRC; i++) {
-            	if (!pspchannels[i].isOutputBlocking() || disableBlockingAudio) {
-            		if (log.isDebugEnabled()) {
-            			log.debug("sceAudioSRCOutputBlocking[not blocking] " + pspchannels[i].toString());
-            		}
-		            sceAudioChangeChannelVolume(i, vol, vol);
-		            doAudioOutput(i, buf);
-	                cpu.gpr[2] = 0;
-	            } else {
-	            	if (log.isDebugEnabled()) {
-	            		log.debug("sceAudioSRCOutputBlocking[blocking] " + pspchannels[i].toString());
-	            	}
-		            pspchannels[i].waitingThreadId = threadMan.getCurrentThreadID();
-		            pspchannels[i].waitingAudioDataAddr = buf;
-		            pspchannels[i].waitingVolumeLeft  = vol;
-		            pspchannels[i].waitingVolumeRight = vol;
-		            blockThread = true;
-	            }
-            }
-            if (blockThread) {
-            	threadMan.hleBlockCurrentThread();
+            if (!pspchannels[SRCChannel].isOutputBlocking() || disableBlockingAudio) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceAudioSRCOutputBlocking[not blocking] " + pspchannels[SRCChannel].toString());
+                }
+                changeChannelVolume(SRCChannel, vol, vol);
+                cpu.gpr[2] = doAudioOutput(SRCChannel, buf);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceAudioSRCOutputBlocking[blocking] " + pspchannels[SRCChannel].toString());
+                }
+                pspchannels[SRCChannel].waitingThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
+                pspchannels[SRCChannel].waitingAudioDataAddr = buf;
+                pspchannels[SRCChannel].waitingVolumeLeft  = vol;
+                pspchannels[SRCChannel].waitingVolumeRight = vol;
+                Modules.ThreadManForUserModule.hleBlockCurrentThread();
             }
         }
-
     }
 
     public void sceAudioInputBlocking(Processor processor) {
@@ -939,8 +877,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         System.out.println("Unimplemented NID function sceAudioInputBlocking [0x086E5895]");
 
-        cpu.gpr[2] = -1;
-        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceAudioInput(Processor processor) {
@@ -948,7 +885,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         System.out.println("Unimplemented NID function sceAudioInput [0x6D4BEC68]");
 
-        cpu.gpr[2] = -1;
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceAudioGetInputLength(Processor processor) {
@@ -956,7 +893,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         System.out.println("Unimplemented NID function sceAudioGetInputLength [0xA708C6A6]");
 
-        cpu.gpr[2] = -1;
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceAudioWaitInputEnd(Processor processor) {
@@ -964,7 +901,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         System.out.println("Unimplemented NID function sceAudioWaitInputEnd [0x87B2E651]");
 
-        cpu.gpr[2] = -1;
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceAudioInputInit(Processor processor) {
@@ -972,7 +909,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         System.out.println("Unimplemented NID function sceAudioInputInit [0x7DE61688]");
 
-        cpu.gpr[2] = -1;
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceAudioInputInitEx(Processor processor) {
@@ -980,7 +917,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         System.out.println("Unimplemented NID function sceAudioInputInitEx [0xE926D3FB]");
 
-        cpu.gpr[2] = -1;
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceAudioPollInputEnd(Processor processor) {
@@ -988,19 +925,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         System.out.println("Unimplemented NID function sceAudioPollInputEnd [0xA633048E]");
 
-        cpu.gpr[2] = -1;
-    }
-
-    protected int hleAudioGetChannelRestLen(int channel) {
-        int len = 0;
-
-        len = pspchannels[channel].getRestLength();
-
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("hleAudioGetChannelRestLen(%d) = %d", channel, len));
-        }
-
-        return len;
+        cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void sceAudioGetChannelRestLen(Processor processor) {
@@ -1362,5 +1287,4 @@ public class sceAudio implements HLEModule, HLEThread {
             return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLen(processor);";
         }
     };
-
-};
+}

@@ -63,6 +63,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         public final static int MODE_FILES = 12;
 		public final static int MODE_READ = 15;
         public final static int MODE_WRITE = 17;
+        public final static int MODE_DELETEDATA = 21;
         public final static int MODE_GETSIZE = 22;
 	public int focus;
 		public final static int FOCUS_UNKNOWN = 0;
