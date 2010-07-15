@@ -67,6 +67,7 @@ import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.HLE.modules.sceMpeg;
@@ -1203,6 +1204,7 @@ private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 private void resetEmu() {
     if(loadedFile != null) {
         PauseEmu();
+        HLEModuleManager.stopModules();
         if(umdLoaded)
             loadUMD(loadedFile);
         else
