@@ -1119,71 +1119,76 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
                     e.printStackTrace();
                 }
+                break;
             }
+
+            case SceUtilitySavedataParam.MODE_DELETEDATA:
+                // Sub-type of mode DELETE.
+                // Deletes the contents of only one specified file.
+                if(savedataParams.fileName != null) {
+                    String save = "ms0/PSP/SAVEDATA/" + State.discId + savedataParams.saveName + "/" + savedataParams.fileName;
+                    File f = new File(save);
+
+                    if(f != null) {
+                        Modules.log.debug("Savedata MODE_DELETEDATA deleting " + save);
+                        f = new File(save);
+                        f.delete();
+                    }
+                    savedataParams.base.result = 0;
+                } else {
+                    Modules.log.warn("Savedata MODE_DELETEDATA no data found!");
+                   savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+                }
+                break;
 
             case SceUtilitySavedataParam.MODE_GETSIZE:
                 int buffer6Addr = savedataParams.buffer6Addr;
                 if (mem.isAddressGood(buffer6Addr)) {
+                    int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
+                    int saveFileNumEntries = mem.read32(buffer6Addr + 4);
                     int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
                     int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
 
-                    String path = savedataParams.getBasePath(savedataParams.saveName);
-                	String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
-
-                	int maxNumEntries = entries == null ? 0 : entries.length;
-                    int saveFileSecureNumEntries = 0;
-                    int saveFileNumEntries = 0;
                     int totalSize = 0;
+                    int neededSize = 0;
+                    int freeSize = MemoryStick.getFreeSizeKb();
 
-                    // List all files in the savedata (normal and/or encrypted).
-                	for (int i = 0; i < maxNumEntries; i++) {
-                        String filePath = path + "/" + entries[i];
-                        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
+                    for(int i = 0; i < saveFileSecureNumEntries; i++) {
+                        int entryAddr = saveFileSecureEntriesAddr + i * 24;
+                        long size = mem.read64(entryAddr);
+                        String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
 
-                        // Ignore system files and write to secure and normal.
-                        if(!filePath.contains(".SFO") && !filePath.contains("ICON")
-                                && !filePath.contains("PIC") && !filePath.contains("SND")) {
-                            if(mem.isAddressGood(saveFileSecureEntriesAddr)) {
-                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 24;
-                                if (stat != null) {
-                                    mem.write64(entryAddr + 0, stat.size);
-                                }
-                                String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 8, 16, entryName);
-                            }
-                            saveFileSecureNumEntries++;
-
-                            if(mem.isAddressGood(saveFileEntriesAddr)) {
-                                int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 24;
-                                if (stat != null) {
-                                    mem.write64(entryAddr + 0, stat.size);
-                                }
-                                String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 8, 16, entryName);
-                            }
-                            saveFileNumEntries++;
-
-                            totalSize += stat.size;
-                        }
+                        totalSize += size;
                     }
-                    // Write files count.
-                    mem.write32(buffer6Addr + 0, saveFileSecureNumEntries);
-                    mem.write32(buffer6Addr + 4, saveFileNumEntries);
+                    for(int i = 0; i < saveFileNumEntries; i++) {
+                        int entryAddr = saveFileEntriesAddr + i * 24;
+                        long size = mem.read64(entryAddr);
+                        String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
+
+                        totalSize += size;
+                    }
+
+                    // If there's not enough size, we have to write how much size we need.
+                    // With enough size, our needed size is always 0.
+                    if(totalSize > freeSize) {
+                        neededSize = totalSize;
+                    }
 
                     // Free MS size.
-                	String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
+                	String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSize);
                     mem.write32(buffer6Addr +  16, MemoryStick.getSectorSize());
-                    mem.write32(buffer6Addr +  20, MemoryStick.getFreeSizeKb() / MemoryStick.getSectorSizeKb());
-                    mem.write32(buffer6Addr +  24, MemoryStick.getFreeSizeKb());
+                    mem.write32(buffer6Addr +  20, freeSize / MemoryStick.getSectorSizeKb());
+                    mem.write32(buffer6Addr +  24, freeSize);
                     Utilities.writeStringNZ(mem, buffer6Addr +  28, 8, memoryStickFreeSpaceString);
 
-                    // Savedata file size.
-                    mem.write32(buffer6Addr +  36, totalSize);
-                    Utilities.writeStringNZ(mem, buffer6Addr +  40, 8, totalSize + " KB");
+                    // Size needed to write savedata.
+                    mem.write32(buffer6Addr +  36, neededSize);
+                    Utilities.writeStringNZ(mem, buffer6Addr +  40, 8, neededSize + " KB");
 
-                    // Another size (unknown purpose).
-                    mem.write32(buffer6Addr +  48, totalSize);
-                    Utilities.writeStringNZ(mem, buffer6Addr +  52, 8, totalSize + " KB");
+                    // Size needed to overwrite savedata.
+                    mem.write32(buffer6Addr +  48, neededSize);
+                    Utilities.writeStringNZ(mem, buffer6Addr +  52, 8, neededSize + " KB");
+
                 }
         		savedataParams.base.result = 0;
                 break;

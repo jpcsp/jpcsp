@@ -76,7 +76,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             mm.addFunction(0x07F58C24, __sceSasGetAllEnvelopeHeightsFunction);
         }
 
-        
+
     }
 
     @Override
@@ -114,7 +114,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         }
     }
-    
+
     @Override
     public void start() {
     	sasCoreUid = -1;
@@ -152,11 +152,29 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     	public byte[] buffer;
     	public int bufferIndex;
         public boolean paused;
-        public final int BASE_ENVELOPE_HEIGHT = 0x10000000;  // Faking for now. Each voice has it's own envelope.
-        public int ADSREnvAttack;
-        public int ADSREnvDecay;
-        public int ADSREnvSustain;
-        public int ADSREnvRelease;
+        public VoiceADSREnvelope envelope;
+
+        protected class VoiceADSREnvelope {
+            public int AttackRate;
+            public int DecayRate;
+            public int SustainRate;
+            public int ReleaseRate;
+            public int AttackCurveType;
+            public int DecayCurveType;
+            public int SustainCurveType;
+            public int ReleaseCurveType;
+            public int SustainLevel;
+            public int height;
+
+            public VoiceADSREnvelope() {
+                AttackRate = 0;
+                DecayRate = 0;
+                SustainRate = 0;
+                ReleaseRate = 0;
+                SustainLevel = 0;
+                height = 0x10000000;
+            }
+        }
 
     	public pspVoice() {
     		outputDataLine = null;
@@ -169,6 +187,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     		buffer = null;
     		bufferIndex = 0;
             paused = false;
+            envelope = new VoiceADSREnvelope();
     	}
 
     	private float getSampleRate() {
@@ -200,7 +219,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             			outputDataLine.open(format);
             		}
     			} catch (LineUnavailableException e) {
-    				Modules.log.error("sceSasCore.pspVoice.init: " + e.toString());
+    				Modules.log.info("sceSasCore.pspVoice.init: " + e.toString());
     			}
             }
     	}
@@ -217,7 +236,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             	outputDataLine.start();
             }
 
-            return 0;	// TODO Check the return value
+            return 0;
     	}
 
     	public synchronized int off() {
@@ -225,7 +244,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     			outputDataLine.stop();
     		}
 
-    		return 0;	// TODO Check the return value
+    		return 0;
     	}
 
     	public synchronized boolean IsEnded() {
@@ -368,67 +387,68 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int numSamples = 0;
 
         // VAG address can be null. In this case, just return empty samples.
-        if(vagAddr != 0) {
-        int headerCheck = mem.read32(vagAddr);
-        if ((headerCheck & 0x00FFFFFF) == 0x00474156)	{ // VAGx
-        	vagAddr += 0x30;	// Skip the VAG header
-        }
+        if (vagAddr != 0) {
+            int headerCheck = mem.read32(vagAddr);
+            if ((headerCheck & 0x00FFFFFF) == 0x00474156) { // VAGx
+                vagAddr += 0x30;	// Skip the VAG header
+            }
 
-        int[] unpackedSamples = new int[28];
-        int hist1 = 0;
-        int hist2 = 0;
-        final double[][] VAG_f = {
-        		{   0.0       ,   0.0 },
-        		{  60.0 / 64.0,   0.0 },
-        		{ 115.0 / 64.0, -52.0 / 64.0 },
-        		{  98.0 / 64.0, -55.0 / 64.0 },
-        		{ 122.0 / 64.0, -60.0 / 64.0 }
-        		};
-        IMemoryReader memoryReader = MemoryReader.getMemoryReader(vagAddr, 1);
-        for (int i = 0; i <= (size - 16); i += 16) {
-        	int n = memoryReader.readNext();
-        	int predict_nr = n >> 4;
-        	if (predict_nr >= VAG_f.length) {
-        		// predict_nr is supposed to be included in [0..4].
-        		// TODO The game "Tenchu: TOTA" is using a value "predict_nr = 7", I could not find out how this value should be interpreted...
-        		Modules.log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
-        		// Avoid ArrayIndexOutOfBoundsException
-        		predict_nr = 0;
-        	}
-        	int shift_factor = n & 0x0F;
-        	int flag = memoryReader.readNext();
-        	if (flag == 0x07) {
-        		break;	// End of stream flag
-        	}
-        	for (int j = 0; j < 28; j += 2) {
-        		int d = memoryReader.readNext();
-        		int s = (short) ((d & 0x0F) << 12);
-        		unpackedSamples[j] = s >> shift_factor;
-        		s = (short) ((d & 0xF0) << 8);
-        		unpackedSamples[j + 1] = s >> shift_factor;
-        	}
+            int[] unpackedSamples = new int[28];
+            int hist1 = 0;
+            int hist2 = 0;
+            final double[][] VAG_f = {
+                {0.0, 0.0},
+                {60.0 / 64.0, 0.0},
+                {115.0 / 64.0, -52.0 / 64.0},
+                {98.0 / 64.0, -55.0 / 64.0},
+                {122.0 / 64.0, -60.0 / 64.0}
+            };
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(vagAddr, 1);
+            for (int i = 0; i <= (size - 16); i += 16) {
+                int n = memoryReader.readNext();
+                int predict_nr = n >> 4;
+                if (predict_nr >= VAG_f.length) {
+                    if (predict_nr == 7) {
+                        break; // A predict_nr of 7 indicates the end of audio data.
+                    } else {
+                        Modules.log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
+                        predict_nr = 0;
+                    }
+                }
+                int shift_factor = n & 0x0F;
+                int flag = memoryReader.readNext();
+                if (flag == 0x07) {
+                    break;	// End of stream flag
+                }
+                for (int j = 0; j < 28; j += 2) {
+                    int d = memoryReader.readNext();
+                    int s = (short) ((d & 0x0F) << 12);
+                    unpackedSamples[j] = s >> shift_factor;
+                    s = (short) ((d & 0xF0) << 8);
+                    unpackedSamples[j + 1] = s >> shift_factor;
+                }
 
-        	for (int j = 0; j < 28; j++) {
-        		int sample = (int) (unpackedSamples[j] + hist1 * VAG_f[predict_nr][0] + hist2 * VAG_f[predict_nr][1]);
-        		hist2 = hist1;
-        		hist1 = sample;
+                for (int j = 0; j < 28; j++) {
+                    int sample = (int) (unpackedSamples[j] + hist1 * VAG_f[predict_nr][0] + hist2 * VAG_f[predict_nr][1]);
+                    hist2 = hist1;
+                    hist1 = sample;
 
-        		if (sample < -32768) {
-        			samples[numSamples] = -32768;
-        		} else if (sample > 0x7FFF) {
-        			samples[numSamples] = 0x7FFF;
-        		} else {
-        			samples[numSamples] = (short) sample;
-        		}
-        		numSamples++;
-        	}
-        }
+                    if (sample < -32768) {
+                        samples[numSamples] = -32768;
+                    } else if (sample > 0x7FFF) {
+                        samples[numSamples] = 0x7FFF;
+                    } else {
+                        samples[numSamples] = (short) sample;
+                    }
+                    numSamples++;
+                }
+            }
 
-        if (samples.length != numSamples) {
-        	short[] resizedSamples = new short[numSamples];
-        	System.arraycopy(samples, 0, resizedSamples, 0, numSamples);
-        	samples = resizedSamples;
-        }
+            if (samples.length != numSamples) {
+                short[] resizedSamples = new short[numSamples];
+                System.arraycopy(samples, 0, resizedSamples, 0, numSamples);
+                samples = resizedSamples;
+            }
         }
 
         return samples;
@@ -440,25 +460,28 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int unk     = cpu.gpr[6];   // 8, 0xf
+        int flag    = cpu.gpr[6];   // Bitfield to set each envelope on or off.
         int attack  = cpu.gpr[7];   // ADSR Envelope's attack.
         int decay   = cpu.gpr[8];   // ADSR Envelope's decay.
         int sustain = cpu.gpr[9];   // ADSR Envelope's sustain.
         int release = cpu.gpr[10];  // ADSR Envelope's release.
 
-        // TODO: Apply this envelope when processing this voice.
-        // This should also allow calculating the real final envelope height.
-        voices[voice].ADSREnvAttack  = attack;
-        voices[voice].ADSREnvDecay   = decay;
-        voices[voice].ADSREnvSustain = sustain;
-        voices[voice].ADSREnvRelease = release;
 
-        Modules.log.warn("IGNORING: __sceSasSetADSR "
-            + String.format("sasCore=%08x, voice=%d %08x %08x %08x %08x %08x",
-            sasCore, voice, cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9], cpu.gpr[10]));
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetADSR "
+                    + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
+                    sasCore, voice, flag, attack, decay, sustain, release));
+        }
 
         if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
+            if((flag & 0x1) == 0x1) voices[voice].envelope.AttackRate  = attack;
+            if((flag & 0x2) == 0x2) voices[voice].envelope.DecayRate  = decay;
+            if((flag & 0x4) == 0x4) voices[voice].envelope.SustainRate = sustain;
+            if((flag & 0x8) == 0x8) voices[voice].envelope.ReleaseRate = release;
+
             cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -466,13 +489,15 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int unk1 = cpu.gpr[5]; // 0, 64
-        int unk2 = cpu.gpr[6]; // 0, 64
+        int unk1 = cpu.gpr[5];
+        int unk2 = cpu.gpr[6];
 
         Modules.log.warn("IGNORING:__sceSasRevParam("+ String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
 
         if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
             cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -492,6 +517,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         		Modules.log.debug("__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(pauseFlag));
         	}
             cpu.gpr[2] = pauseFlag;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -499,24 +526,11 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-
-        // -1 = any?
-        // 0 = ?
-        // 1 = ?
-        // 2 = ?
-        // 3 = ?
-        // 4 = ?
-        // 5 = ?
-        // 6 = ?
         int type = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // unused or 1 or the return code from some other function (0xdeadc0de)
-        //int unk3 = cpu.gpr[7]; // unused or 0, 1, 0x1000
 
         Modules.log.warn("IGNORING:__sceSasRevType(type=" + type + ") " + makeLogParams(cpu));
 
-        if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
-            cpu.gpr[2] = 0;
-        }
+        cpu.gpr[2] = 0;
     }
 
     public void __sceSasInit(Processor processor) {
@@ -561,6 +575,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 	        voices[voice].rightVolume = rightVolume << 3;	// 0 - 0x8000
 
 	        cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -582,6 +598,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         } else if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
             mem.memset(sasOut, (byte)0, waveformBufMaxSize);  // Empty waveform.
             cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;  // SAS is not initialized.
         }
     }
 
@@ -590,12 +608,19 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int unk = cpu.gpr[6];
+        int level = cpu.gpr[6];  // Sustain level.
 
-        Modules.log.warn("IGNORING: __sceSasSetSL: "
-                + String.format("sasCore=0x%08x, voice=0x%08x, unk=0x%08x", sasCore, voice, unk));
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetSL: "
+                    + String.format("sasCore=0x%08x, voice=0x%08x, unk=0x%08x", sasCore, voice, level));
+        }
 
-        cpu.gpr[2] = 0;
+        if (isSasHandleGood(sasCore, "__sceSasSetSL", cpu)) {
+            voices[voice].envelope.SustainLevel  = level;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
+        }
     }
 
     public void __sceSasGetEndFlag(Processor processor) {
@@ -604,7 +629,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int sasCore = cpu.gpr[4];
 
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
-        	// Returns a 32 bits bitfield (tested using "if (result & (1 << n))")
         	int endFlag = 0;
         	for (int i = 0; i < voices.length; i++) {
         		if (voices[i].IsEnded()) {
@@ -615,6 +639,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         		Modules.log.debug("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(endFlag));
         	}
             cpu.gpr[2] = endFlag;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -627,7 +653,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         Modules.log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
 
-        cpu.gpr[2] = voices[voice].BASE_ENVELOPE_HEIGHT;
+        cpu.gpr[2] = voices[voice].envelope.height;
     }
 
     public void __sceSasSetKeyOn(Processor processor) {
@@ -637,13 +663,15 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int voice = cpu.gpr[5];
 
         if (Modules.log.isDebugEnabled()) {
-	        Modules.log.debug("PARTIAL __sceSasSetKeyOn: "
+	        Modules.log.debug("__sceSasSetKeyOn: "
 	            + String.format("sasCore=%08x, voice=%d",
 	            sasCore, voice));
         }
 
         if (isSasHandleGood(sasCore, "__sceSasSetKeyOn", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOn", cpu)) {
         	cpu.gpr[2] = voices[voice].on();
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -663,6 +691,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         		Modules.log.debug("__sceSasSetPause(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(voice_bit));
         	}
             cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -671,45 +701,53 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int vagAddr = cpu.gpr[6]; // may have uncached bit set
+        int vagAddr = cpu.gpr[6];
         int size = cpu.gpr[7];
         int loopmode = cpu.gpr[8];
 
-        Modules.log.info("PARTIAL __sceSasSetVoice: "
-            + String.format("sasCore=0x%08x, voice=%d, vagAddr=0x%08x, size=0x%08x, loopmode=%d",
-            sasCore, voice, vagAddr, size, loopmode));
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetVoice: "
+                    + String.format("sasCore=0x%08x, voice=%d, vagAddr=0x%08x, size=0x%08x, loopmode=%d",
+                    sasCore, voice, vagAddr, size, loopmode));
+        }
 
         if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
             voices[voice].samples = decodeSamples(processor, vagAddr, size);
             voices[voice].loopMode = loopmode;
 
             cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
-
     }
 
     public void __sceSasSetADSRmode(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int sasCore = cpu.gpr[4];
-        int voice = cpu.gpr[5];
-        int unk          = cpu.gpr[6];    // 8/0xf
-        int attackFlag   = cpu.gpr[7];   // Sets attack on or off.
-        int decayFlag    = cpu.gpr[8];   // Sets decay on or off.
-        int sustainFlag  = cpu.gpr[9];   // Sets sustain on or off.
-        int releaseFlag  = cpu.gpr[10];  // Sets release on or off.
+        int sasCore      = cpu.gpr[4];
+        int voice        = cpu.gpr[5];
+        int flag         = cpu.gpr[6];   // Bitfield to set each envelope on or off.
+        int attackType   = cpu.gpr[7];   // ADSR Envelope's attack curve shape.
+        int decayType    = cpu.gpr[8];   // ADSR Envelope's decay curve shape.
+        int sustainType  = cpu.gpr[9];   // ADSR Envelope's sustain curve shape.
+        int releaseType  = cpu.gpr[10];  // ADSR Envelope's release curve shape.
 
-        // The parameters seem to follow a bit shift pattern.
-        // Attack:  0 - Off / 1 - On (0001)
-        // Decay:   0 - Off / 2 - On (0010)
-        // Sustain: 0 - Off / 4 - On (0100)
-        // Release: 0 - Off / 8 - On (1000)
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.warn("__sceSasSetADSRmode"
+                    + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
+                    sasCore, voice, flag, attackType, decayType, sustainType, releaseType));
+        }
 
-        Modules.log.warn("IGNORING: __sceSasSetADSRmode"
-            + String.format("%08x %08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9], cpu.gpr[10]));
+        if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
+            if((flag & 0x1) == 0x1) voices[voice].envelope.AttackCurveType  = attackType;
+            if((flag & 0x2) == 0x2) voices[voice].envelope.DecayCurveType  = decayType;
+            if((flag & 0x4) == 0x4) voices[voice].envelope.SustainCurveType = sustainType;
+            if((flag & 0x8) == 0x8) voices[voice].envelope.ReleaseCurveType = releaseType;
 
-        cpu.gpr[2] = 0;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
+        }
     }
 
     public void __sceSasSetKeyOff(Processor processor) {
@@ -719,13 +757,15 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int voice = cpu.gpr[5];
 
         if (Modules.log.isDebugEnabled()) {
-	        Modules.log.debug("PARTIAL __sceSasSetKeyOff: "
+	        Modules.log.debug("__sceSasSetKeyOff: "
 	                + String.format("sasCore=%08x, voice=%d",
 	                sasCore, voice));
         }
 
         if (isSasHandleGood(sasCore, "__sceSasSetKeyOff", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOff", cpu)) {
         	cpu.gpr[2] = voices[voice].off();
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -754,6 +794,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         } else if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
             mem.memset(sasOut, (byte)0, waveformBufMaxSize);  // Empty waveform.
             cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -762,15 +804,19 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int pitch = cpu.gpr[6]; // 0x6e4/0x800/0x1000/0x2000 large values may be clamped
+        int pitch = cpu.gpr[6];
 
-        Modules.log.info("PARTIAL __sceSasSetPitch: "
-            + String.format("sasCore=%08x, voice=%d, pitch=0x%04x",
-            sasCore, voice, pitch));
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetPitch: "
+                    + String.format("sasCore=%08x, voice=%d, pitch=0x%04x",
+                    sasCore, voice, pitch));
+        }
 
         if (isSasHandleGood(sasCore, "__sceSasSetPitch", cpu) && isVoiceNumberGood(voice, "__sceSasSetPitch", cpu)) {
         	voices[voice].pitch = pitch;
         	cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -781,13 +827,17 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int voice = cpu.gpr[5];
         int freq = cpu.gpr[6];
 
-        Modules.log.info("IGNORING:__sceSasSetNoise: "
-            + String.format("sasCore=%08x, voice=%d, freq=0x%04x",
-            sasCore, voice, freq));
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetNoise: "
+                    + String.format("sasCore=%08x, voice=%d, freq=0x%04x",
+                    sasCore, voice, freq));
+        }
 
         if (isSasHandleGood(sasCore, "__sceSasSetNoise", cpu) && isVoiceNumberGood(voice, "__sceSasSetNoise", cpu)) {
         	voices[voice].noise = freq;
         	cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
         }
     }
 
@@ -798,10 +848,14 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         if (Modules.log.isDebugEnabled()) {
             Modules.log.debug("__sceSasGetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples="
-                        + grainSamples);
-        	}
+                    + grainSamples);
+        }
 
-        cpu.gpr[2] = grainSamples;
+        if (isSasHandleGood(sasCore, "__sceSasGetGrain", cpu)) {
+            cpu.gpr[2] = grainSamples;
+        } else {
+            cpu.gpr[2] = 0x80420100;
+        }
     }
 
     public void __sceSasSetSimpleADSR(Processor processor) {
@@ -809,39 +863,61 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int ADSREnv1  = cpu.gpr[6]; // 4-byte representation of an ADSR envelope.
-        int ADSREnv2 = cpu.gpr[7];  // Follows the same pattern. Another envelope?
+        int ADSREnv1  = cpu.gpr[6];
+        int ADSREnv2 = cpu.gpr[7];
 
-        Modules.log.warn("IGNORING:__sceSasSetSimpleADSR " + makeLogParams(cpu));
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasSetSimpleADSR " + makeLogParams(cpu));
+        }
 
-        cpu.gpr[2] = 0;
+        // Only the low-order 16 bits are valid for both parameters.
+        int env1Bitfield = (ADSREnv1 & 0xFFFF);
+        int env2Bitfield = (ADSREnv2 & 0xFFFF);
+
+        if (isSasHandleGood(sasCore, "__sceSasSetSimpleADSR", cpu)) {
+            // The bitfields represent every value except for the decay curve shape,
+            // which seems to be unchanged in simple mode.
+            voices[voice].envelope.SustainLevel        = (env1Bitfield & 0xF);
+            voices[voice].envelope.DecayRate           = (env1Bitfield >> 4) & 0xF;
+            voices[voice].envelope.AttackRate          = (env1Bitfield >> 8) & 0x7F;
+            voices[voice].envelope.AttackCurveType     = (env1Bitfield >> 15);
+
+            voices[voice].envelope.ReleaseRate         = (env2Bitfield & 0x1F);
+            voices[voice].envelope.ReleaseCurveType    = (env1Bitfield >> 5) & 0x1;
+            voices[voice].envelope.SustainRate         = (env1Bitfield >> 6) & 0xFF;
+            voices[voice].envelope.SustainCurveType    = (env1Bitfield >> 14);
+
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
+        }
     }
 
     public void __sceSasSetGrain(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int grain = cpu.gpr[5]; // 0x400
-
-        // Sets the global ammount of grain samples (TODO: consider this when processing sound).
-        if (isSasHandleGood(sasCore, "__sceSasSetGrain", cpu)) {
-            grainSamples = grain;
-        }
+        int grain = cpu.gpr[5];
 
         if (Modules.log.isDebugEnabled()) {
             Modules.log.debug("__sceSasSetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples="
-                        + grain);
-        	}
+                    + grain);
+        }
 
-        cpu.gpr[2] = 0;
+        if (isSasHandleGood(sasCore, "__sceSasSetGrain", cpu)) {
+            grainSamples = grain;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
+        }
     }
 
     public void __sceSasRevEVOL(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int left = cpu.gpr[5]; // left channel volume 0 - 0x1000
-        int right = cpu.gpr[6]; // right channel volume 0 - 0x1000
+        int left = cpu.gpr[5];
+        int right = cpu.gpr[6];
 
         Modules.log.debug("IGNORING:__sceSasRevEVOL("
             + String.format("sasCore=0x%08x,left=0x%04x,right=0x%04x)", sasCore, left, right));
@@ -861,15 +937,18 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int mode = cpu.gpr[5]; // 0, 1 (most common), 0x1f
+        int mode = cpu.gpr[5];
 
-        // Similar to sceAudio (STEREO/MONO)?
         if (Modules.log.isDebugEnabled()) {
             Modules.log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode="
-                        + mode);
-        	}
+                    + mode);
+        }
 
-        cpu.gpr[2] = outputMode;
+        if (isSasHandleGood(sasCore, "__sceSasGetOutputmode", cpu)) {
+            cpu.gpr[2] = outputMode;
+        } else {
+            cpu.gpr[2] = 0x80420100;
+        }
     }
 
     public void __sceSasSetOutputmode(Processor processor) {
@@ -878,24 +957,25 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int sasCore = cpu.gpr[4];
         int mode = cpu.gpr[5];
 
-        if (isSasHandleGood(sasCore, "__sceSasSetOutputmode", cpu)) {
-            outputMode = mode;
-        }
-
         if (Modules.log.isDebugEnabled()) {
             Modules.log.debug("__sceSasSetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode="
-                        + mode);
-        	}
+                    + mode);
+        }
 
-        cpu.gpr[2] = 0;
+        if (isSasHandleGood(sasCore, "__sceSasGetOutputmode", cpu)) {
+            outputMode = mode;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0x80420100;
+        }
     }
 
     public void __sceSasRevVON(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int unk1 = cpu.gpr[5]; // set to 1
-        int unk2 = cpu.gpr[6]; // 0 or 1
+        int unk1 = cpu.gpr[5];
+        int unk2 = cpu.gpr[6];
 
         Modules.log.debug("IGNORING:__sceSasRevVON("
             + String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
@@ -908,17 +988,16 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
 
-        Modules.log.debug("PARTIAL:__sceSasGetAllEnvelopeHeights("
-            + String.format("sasCore=0x%08x)", sasCore));
-
-        // TODO: Should it return a sum of all voices' envelope heights,
-        // or a globally defined one?
+        if (Modules.log.isDebugEnabled()) {
+            Modules.log.debug("__sceSasGetAllEnvelopeHeights("
+                    + String.format("sasCore=0x%08x)", sasCore));
+        }
 
         int res = 0;
 
         for(int i = 0; i < voices.length; i++) {
             if(!voices[i].IsEnded()) {
-                res += voices[i].BASE_ENVELOPE_HEIGHT;
+                res += voices[i].envelope.height;
             }
         }
 
