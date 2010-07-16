@@ -4010,7 +4010,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(gl);
                     }
-                    bindBuffers(useVertexColor, useTexture, false, numberOfWeightsForShader);
+                    bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, numberOfWeightsForShader);
                     gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
                     break;
@@ -4127,7 +4127,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(gl);
                     }
-                    bindBuffers(useVertexColor, useTexture, false, 0);
+                    bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, 0);
                     gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
                     gl.glPopAttrib();
                     break;
@@ -4622,7 +4622,7 @@ public class VideoEngine {
         }
     }
 
-    private void bindBuffers(boolean useVertexColor, boolean useTexture, boolean doBindBuffer, int numberOfWeightsForShader) {
+    private void bindBuffers(boolean useVertexColor, boolean useTexture, boolean useNormal, boolean doBindBuffer, int numberOfWeightsForShader) {
         int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos1 = 0, wpos2 = 0;
 
         if (vinfo.texture != 0 || useTexture) {
@@ -4633,7 +4633,7 @@ public class VideoEngine {
             stride += BufferUtil.SIZEOF_FLOAT * 4;
             npos = vpos = stride;
         }
-        if (vinfo.normal != 0) {
+        if (useNormal) {
             stride += BufferUtil.SIZEOF_FLOAT * 3;
             vpos = stride;
         }
@@ -5818,27 +5818,16 @@ public class VideoEngine {
 
     private void drawSpline(int ucount, int vcount, int utype, int vtype) {
         if (ucount < 4 || vcount < 4) {
-            log.warn("Unsupported Spline parameters uc=" + ucount + " vc=" + vcount);
+            log.warn("Unsupported spline parameters uc=" + ucount + " vc=" + vcount);
             return;
         }
 
         boolean useVertexColor = initRendering();
-        boolean useTexture = true;
+        boolean useTexture = vinfo.texture != 0 || textureFlag.isEnabled();
+        boolean useNormal = lightingFlag.isEnabled();
 
         // Generate control points.
-        VertexState[][] ctrlpoints = new VertexState[ucount][vcount];
-        Memory mem = Memory.getInstance();
-        int pointIndex = 0;
-        for (int v = 0; v < vcount; v++) {
-            for (int u = 0; u < ucount; u++) {
-                int addr = vinfo.getAddress(mem, pointIndex++);
-                VertexState vs = vinfo.readVertex(mem, addr);
-                if (isLogDebugEnabled) {
-                    log.debug("drawSpline  vertex#" + u + "," + v + " p(" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ") t(" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + " c(" + ((float) vs.c[0]) + "," + ((float) vs.c[1]) + "," + ((float) vs.c[2]) + ")");
-                }
-                ctrlpoints[u][v] = vs;
-            }
-        }
+        VertexState[][] ctrlpoints = getControlPoints(ucount, vcount);
 
         // GE capture.
         if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
@@ -5848,11 +5837,6 @@ public class VideoEngine {
 
         // Generate patch VertexState.
         VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
-        for(int i = 0; i < patch.length; i++) {
-            for(int j = 0; j < patch[i].length; j++) {
-                patch[i][j] = new VertexState();
-            }
-        }
 
         // Calculate knot arrays.
         int n = ucount - 1;
@@ -5870,85 +5854,59 @@ public class VideoEngine {
 
         	for(int i = 0; i <= patch_div_s; i++) {
         		float u = (float)i * (float)(n - limit) / (float)patch_div_s;
+        		
+        		patch[i][j] = new VertexState();
+        		VertexState p = patch[i][j];
 
         		for(int ii = 0; ii <= n; ii++) {
         			for(int jj = 0; jj <= m; jj++) {
         				float f = spline_n(ii, 3, u, knot_u) * spline_n(jj, 3, v, knot_v);
         				if(f != 0) {
-        					patch[i][j].p[0] += f * ctrlpoints[ii][jj].p[0];
-        					patch[i][j].p[1] += f * ctrlpoints[ii][jj].p[1];
-        					patch[i][j].p[2] += f * ctrlpoints[ii][jj].p[2];
-        					if(vinfo.texture != 0) {
-        						patch[i][j].t[0] += f * ctrlpoints[ii][jj].t[0];
-        						patch[i][j].t[1] += f * ctrlpoints[ii][jj].t[1];
-        					}
-        					if(useVertexColor) {
-        						patch[i][j].c[0] += f * ctrlpoints[ii][jj].c[0];
-        						patch[i][j].c[1] += f * ctrlpoints[ii][jj].c[1];
-        						patch[i][j].c[2] += f * ctrlpoints[ii][jj].c[2];
-        					}
-        					if(vinfo.normal != 0) {
-        						patch[i][j].n[0] += f * ctrlpoints[ii][jj].n[0];
-        						patch[i][j].n[1] += f * ctrlpoints[ii][jj].n[1];
-        						patch[i][j].n[2] += f * ctrlpoints[ii][jj].n[2];
-        					}
+        					pointMultAdd(p, ctrlpoints[ii][jj], f, useVertexColor, useTexture, useNormal);
         				}
         			}
         		}
-        		if(vinfo.texture == 0) {
-        			patch[i][j].t[0] = u;
-        			patch[i][j].t[1] = v;
+        		if(useTexture && vinfo.texture == 0) {
+        			p.t[0] = u;
+        			p.t[1] = v;
         		}
         	}
         }
 
-        bindBuffers(useVertexColor, useTexture, true, 0);
-
-        for(int j = 0; j <= patch_div_t - 1; j++) {
-        	vboFloatBuffer.clear();
-
-        	for(int i = 0; i <= patch_div_s; i++) {
-        		VertexState v1 = patch[i][j];
-                VertexState v2 = patch[i][j + 1];
-
-        		vboFloatBuffer.put(v1.t);
-        		if(useVertexColor) vboFloatBuffer.put(v1.c);
-        		if(vinfo.normal != 0) vboFloatBuffer.put(v1.n);
-        		vboFloatBuffer.put(v1.p);
-
-        		vboFloatBuffer.put(v2.t);
-        		if(useVertexColor) vboFloatBuffer.put(v2.c);
-        		if(vinfo.normal != 0) vboFloatBuffer.put(v2.n);
-        		vboFloatBuffer.put(v2.p);
-        	}
-
-        	glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-            gl.glDrawArrays(patch_prim_types[patch_prim], 0, (patch_div_s + 1) * 2);
-        }
-
-        endRendering(useVertexColor, useTexture, ucount * vcount);
+        drawCurvedSurface(patch, ucount, vcount, useVertexColor, useTexture, useNormal);
     }
 
+	private void pointMultAdd(VertexState dest, VertexState src, float f, boolean useVertexColor, boolean useTexture, boolean useNormal) {
+		dest.p[0] += f * src.p[0];
+		dest.p[1] += f * src.p[1];
+		dest.p[2] += f * src.p[2];
+		if(useTexture) {
+			dest.t[0] += f * src.t[0];
+			dest.t[1] += f * src.t[1];
+		}
+		if(useVertexColor) {
+			dest.c[0] += f * src.c[0];
+			dest.c[1] += f * src.c[1];
+			dest.c[2] += f * src.c[2];
+		}
+		if(useNormal) {
+			dest.n[0] += f * src.n[0];
+			dest.n[1] += f * src.n[1];
+			dest.n[2] += f * src.n[2];
+		}
+	}
+    
     private void drawBezier(int ucount, int vcount) {
-        if (ucount != 4 && vcount != 4) {
-            log.warn("Unsupported Bezier parameters");
+        if ((ucount - 1) % 3 != 0 && (vcount - 1) % 3 != 0) {
+            log.warn("Unsupported bezier parameters ucount=" + ucount + " vcount=" + vcount);
             return;
         }
 
         boolean useVertexColor = initRendering();
+        boolean useTexture = vinfo.texture != 0 || textureFlag.isEnabled();
+        boolean useNormal = lightingFlag.isEnabled();
 
-        VertexState[][] anchors = new VertexState[ucount][vcount];
-        Memory mem = Memory.getInstance();
-        for (int u = 0; u < ucount; u++) {
-            for (int v = 0; v < vcount; v++) {
-                int addr = vinfo.getAddress(mem, u * vcount + v);
-                VertexState vs = vinfo.readVertex(mem, addr);
-                if (isLogDebugEnabled) {
-                    log("drawBezier  vertex#" + u + "," + v + " (" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + ") at (" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ")");
-                }
-                anchors[u][v] = vs;
-            }
-        }
+        VertexState[][] anchors = getControlPoints(ucount, vcount);
 
         // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
         // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
@@ -5957,142 +5915,118 @@ public class VideoEngine {
             CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * ucount * vcount);
         }
 
-        int udivs = patch_div_s;
-        int vdivs = patch_div_t;
+        // Generate patch VertexState.
+        VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
+        
+        // Number of patches in the U and V directions
+        int upcount = ucount / 3;
+        int vpcount = vcount / 3;
 
-        //
-        // Based on
-        //    http://nehe.gamedev.net/data/lessons/lesson.asp?lesson=28
-        //
-        // TODO Check this behavior:
-        //  - X & Y coordinates seems to be swapped. Currently only if vinfo.texture != 0, is this correct?
-        //  - (Y,X) has to be mapped to (1-Y,1-X) so that the texture is displayed like on PSP
-        //
-        VertexState[] temp = new VertexState[ucount];
-        for (int i = 0; i < temp.length; i++) {
-            temp[i] = new VertexState();
+        float[][] ucoeff = new float[patch_div_s + 1][];
+        
+        for(int j = 0; j <= patch_div_t; j++) {
+        	float vglobal = (float)j * vpcount / (float)patch_div_t;
+        	
+        	int vpatch = (int)vglobal; // Patch number
+        	float v = vglobal - vpatch;
+        	if(j == patch_div_t) {
+    			vpatch--;
+    			v = 1.f;
+    		}
+        	float[] vcoeff = BernsteinCoeff(v);
+
+        	for(int i = 0; i <= patch_div_s; i++) {
+        		float uglobal = (float)i * upcount / (float)patch_div_s;
+        		int upatch = (int)uglobal;
+        		float u = uglobal - upatch;
+        		if(i == patch_div_s) {
+        			upatch--;
+        			u = 1.f;
+        		}
+        		ucoeff[i] = BernsteinCoeff(u);
+        		
+        		patch[i][j] = new VertexState();
+        		VertexState p = patch[i][j];
+        		
+        		for(int ii = 0; ii < 4; ++ii) {
+        			for(int jj = 0; jj < 4; ++jj) {
+        				pointMultAdd(p,
+        						anchors[3 * upatch + ii][3 * vpatch + jj],
+        						ucoeff[i][ii] * vcoeff[jj],
+        						useVertexColor, useTexture, useNormal);
+        			}
+        		}
+        		
+        		if(useTexture && vinfo.texture == 0) {
+        			p.t[0] = uglobal;
+        			p.t[1] = vglobal;
+        		}
+        	}
         }
-        VertexState[] last = new VertexState[vdivs + 1];
-        for (int i = 0; i < last.length; i++) {
-            last[i] = new VertexState();
-        }
 
-        // The First Derived Curve (Along X-Axis)
-        for (int u = 0; u < ucount; u++) {
-            pointCopy(temp[u], anchors[u][vcount - 1]);
-        }
+        drawCurvedSurface(patch, ucount, vcount, useVertexColor, useTexture, useNormal);
+    }
 
-        // Create The First Line Of Points
-        for (int v = 0; v <= vdivs; v++) {
-            // Percent Along Y-Axis
-            float px = ((float) v) / ((float) vdivs);
-            // Use The 4 Points From The Derived Curve To Calculate The Points Along That Curve
-            Bernstein(last[v], px, temp);
-        }
+	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
+			boolean useVertexColor, boolean useTexture, boolean useNormal) {
+		// TODO: Compute the normals
+		bindBuffers(useVertexColor, useTexture, useNormal, true, 0);
 
-        boolean useTexture = true;
-        bindBuffers(useVertexColor, useTexture, true, 0);
+        for(int j = 0; j <= patch_div_t - 1; j++) {
+        	vboFloatBuffer.clear();
 
-        float pyold = 0;
-        for (int u = 1; u <= udivs; u++) {
-            // Percent Along Y-Axis
-            float py = ((float) u) / ((float) udivs);
+        	for(int i = 0; i <= patch_div_s; i++) {
+        		VertexState v1 = patch[i][j];
+                VertexState v2 = patch[i][j + 1];
 
-            // Calculate New Bezier Points
-            for (int i = 0; i < ucount; i++) {
-                Bernstein(temp[i], py, anchors[i]);
-            }
+        		if(useTexture)     vboFloatBuffer.put(v1.t);
+        		if(useVertexColor) vboFloatBuffer.put(v1.c);
+        		if(useNormal)      vboFloatBuffer.put(v1.n);
+        		vboFloatBuffer.put(v1.p);
 
-            vboFloatBuffer.clear();
+        		if(useTexture)     vboFloatBuffer.put(v2.t);
+        		if(useVertexColor) vboFloatBuffer.put(v2.c);
+        		if(useNormal)      vboFloatBuffer.put(v2.n);
+        		vboFloatBuffer.put(v2.p);
+        	}
 
-            for (int v = 0; v <= vdivs; v++) {
-                // Percent Along The X-Axis
-                float px = ((float) v) / ((float) vdivs);
-
-                // Apply The Old Texture Coords
-                if (vinfo.texture != 0) {
-                    vboFloatBuffer.put(last[v].t);
-                } else {
-                    vboFloatBuffer.put(1 - pyold);
-                    vboFloatBuffer.put(1 - px);
-                }
-                // Old Point
-                vboFloatBuffer.put(last[v].p);
-
-                // Generate New Point
-                Bernstein(last[v], px, temp);
-
-                // Apply The New Texture Coords
-                if (vinfo.texture != 0) {
-                    vboFloatBuffer.put(last[v].t);
-                } else {
-                    vboFloatBuffer.put(1 - py);
-                    vboFloatBuffer.put(1 - px);
-                }
-                // New Point
-                vboFloatBuffer.put(last[v].p);
-            }
-
-            glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-            gl.glDrawArrays(patch_prim_types[patch_prim], 0, (vdivs + 1) * 2);
-
-            pyold = py;
+        	glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+            gl.glDrawArrays(patch_prim_types[patch_prim], 0, (patch_div_s + 1) * 2);
         }
 
         endRendering(useVertexColor, useTexture, ucount * vcount);
-    }
+	}
 
-    private void pointAdd(VertexState result, VertexState p, VertexState q) {
-        result.p[0] = p.p[0] + q.p[0];
-        result.p[1] = p.p[1] + q.p[1];
-        result.p[2] = p.p[2] + q.p[2];
-        if (vinfo.texture != 0) {
-            result.t[0] = p.t[0] + q.t[0];
-            result.t[1] = p.t[1] + q.t[1];
+	private VertexState[][] getControlPoints(int ucount, int vcount) {
+		VertexState[][] controlPoints = new VertexState[ucount][vcount];
+		
+		Memory mem = Memory.getInstance();
+        for (int u = 0; u < ucount; u++) {
+            for (int v = 0; v < vcount; v++) {
+                int addr = vinfo.getAddress(mem, v * ucount + u);
+                VertexState vs = vinfo.readVertex(mem, addr);
+                if (isLogDebugEnabled) {
+                	log(String.format("control point #%d,%d p(%f,%f,%f) t(%f,%f), c(%f,%f,%f)",
+                			u, v,
+                			vs.p[0], vs.p[1], vs.p[2],
+                			vs.t[0], vs.t[1],
+                			vs.c[0], vs.c[1], vs.c[2]));
+                }
+                controlPoints[u][v] = vs;
+            }
         }
-    }
+        return controlPoints; 
+	}
 
-    private void pointTimes(VertexState result, float c, VertexState p) {
-        result.p[0] = p.p[0] * c;
-        result.p[1] = p.p[1] * c;
-        result.p[2] = p.p[2] * c;
-        if (vinfo.texture != 0) {
-            result.t[0] = p.t[0] * c;
-            result.t[1] = p.t[1] * c;
-        }
-    }
-
-    private void pointCopy(VertexState result, VertexState p) {
-        result.p[0] = p.p[0];
-        result.p[1] = p.p[1];
-        result.p[2] = p.p[2];
-        if (vinfo.texture != 0) {
-            result.t[0] = p.t[0];
-            result.t[1] = p.t[1];
-        }
-    }
-    // Temporary variables for Bernstein()
-    private VertexState bernsteinA = new VertexState();
-    private VertexState bernsteinB = new VertexState();
-    private VertexState bernsteinC = new VertexState();
-    private VertexState bernsteinD = new VertexState();
-
-    private void Bernstein(VertexState result, float u, VertexState[] p) {
+    private float[] BernsteinCoeff(float u) {
         float uPow2 = u * u;
         float uPow3 = uPow2 * u;
         float u1 = 1 - u;
         float u1Pow2 = u1 * u1;
         float u1Pow3 = u1Pow2 * u1;
-        pointTimes(bernsteinA, uPow3, p[0]);
-        pointTimes(bernsteinB, 3 * uPow2 * u1, p[1]);
-        pointTimes(bernsteinC, 3 * u * u1Pow2, p[2]);
-        pointTimes(bernsteinD, u1Pow3, p[3]);
-
-        pointAdd(bernsteinA, bernsteinA, bernsteinB);
-        pointAdd(bernsteinC, bernsteinC, bernsteinD);
-        pointAdd(result, bernsteinA, bernsteinC);
+        return new float[] {u1Pow3, 3 * u * u1Pow2, 3 * uPow2 * u1, uPow3 };
     }
-
+    
     private Buffer getTexture32BitBuffer(int texaddr, int level) {
         Buffer final_buffer = null;
 
