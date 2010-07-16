@@ -1247,7 +1247,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mem.write32(detailAddr + 20, 0);                      // Frame crop rect (right).
             mem.write32(detailAddr + 24, 0);                      // Frame crop rect (top).
             mem.write32(detailAddr + 28, 0);                      // Frame crop rect (bottom).
-            mem.write32(detailAddr + 32, 0);                      // Show current frame number.
+            mem.write32(detailAddr + 32, 1);                      // Status of the last decoded frame.
             cpu.gpr[2] = 0;
         }
     }
