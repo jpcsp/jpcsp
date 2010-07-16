@@ -2463,12 +2463,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void sceKernelPollSema(Processor processor) {
         CpuState cpu = processor.cpu;
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.semas.sceKernelPollSema(cpu.gpr[4], cpu.gpr[5]);
-        }
+        Managers.semas.sceKernelPollSema(cpu.gpr[4], cpu.gpr[5]);
     }
 
     public void sceKernelCancelSema(Processor processor) {

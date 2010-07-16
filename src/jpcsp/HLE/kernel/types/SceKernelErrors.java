@@ -37,6 +37,8 @@ public class SceKernelErrors {
      *      -> 0x002 - Kernel.
      *      -> 0x011 - Utility.
      *      -> 0x026 - Audio.
+     *      -> 0x061 - PSMF.
+     *      -> 0x063 - ATRAC.
      *
      * Bits 15 to 0 (E): Represent the error code itself (different for each area).
      *      -> E.g.: 0x80110001 - Error -> Utility -> Some unknown error.
@@ -258,4 +260,14 @@ public class SceKernelErrors {
     public final static int ERROR_PSMF_NOT_FOUND                                = 0x80615025;
     public final static int ERROR_PSMF_INVALID_PSMF                             = 0x80615501;
     public final static int ERROR_PSMF_INVALID_VALUE                            = 0x806151FE;
+
+    public final static int ERROR_ATRAC_NO_ID                                   = 0x80630003;
+    public final static int ERROR_ATRAC_INVALID_CODEC                           = 0x80630004;
+    public final static int ERROR_ATRAC_BAD_ID                                  = 0x80630005;
+    public final static int ERROR_ATRAC_ALL_DATA_LOADED                         = 0x80630009;
+    public final static int ERROR_ATRAC_NO_DATA                                 = 0x80630010;
+    public final static int ERROR_ATRAC_SECOND_BUFFER_NEEDED                    = 0x80630012;
+    public final static int ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED                = 0x80630022;
+    public final static int ERROR_ATRAC_BUFFER_IS_EMPTY                         = 0x80630023;
+    public final static int ERROR_ATRAC_ALL_DATA_DECODED                        = 0x80630024;
 }

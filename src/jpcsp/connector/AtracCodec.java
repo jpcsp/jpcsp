@@ -227,6 +227,14 @@ public class AtracCodec {
 		return atracEndSample;
 	}
 
+    public int getNextDecodePosition() {
+        try {
+            return (int)decodedStream.getFilePointer();
+        } catch (Exception e) {
+            return -1;
+        }
+	}
+
 	protected void displayInstructions() {
 		if (instructionsDisplayed) {
 			return;

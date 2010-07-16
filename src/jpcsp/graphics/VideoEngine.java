@@ -4914,7 +4914,14 @@ public class VideoEngine {
                 log.debug("TBIAS_MODE_SLOPE " + tex_mipmap_bias_int);
             }
 
-            for (int level = 0; level <= numberMipmaps && level < texture_base_pointer.length; ++level) {
+            // Clamp to range [0..7].
+            if(numberMipmaps > 7) {
+                numberMipmaps = 7;
+            } else if(numberMipmaps < 0) {
+                numberMipmaps = 0;
+            }
+
+            for (int level = 0; level <= numberMipmaps; level++) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
                 texaddr = texture_base_pointer[level];
@@ -5233,15 +5240,9 @@ public class VideoEngine {
                 }
 
                 // Upload texture to openGL.
+                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
 
-                // Tested on PSP:
-                // The MIN filter is only triggered if the number of mipmaps (texture's level) is superior to 0.
-                if(numberMipmaps > 0) {
-                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
-                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
-                } else {
-                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
-                }
                 gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
                 gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
 
@@ -5283,8 +5284,8 @@ public class VideoEngine {
             checkTextureMinFilter(compressedTexture, numberMipmaps);
         } else {
             boolean compressedTexture = (texture_storage >= TPSM_PIXEL_STORAGE_MODE_DXT1 && texture_storage <= TPSM_PIXEL_STORAGE_MODE_DXT5);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
             checkTextureMinFilter(compressedTexture, texture_num_mip_maps);
 
             if (isLogDebugEnabled) {

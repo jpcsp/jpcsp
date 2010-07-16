@@ -102,10 +102,23 @@ public class sceAudio implements HLEModule, HLEThread {
     		return sampleRate;
     	}
 
-    	private void init() {
+        private void init() {
     		float wantedSampleRate = getSampleRate();
     		int wantedBufferSize = 0;
     		if (outputDataLine == null) {
+                //
+                // The PSP is using a buffer equal to the sampleSize.
+                // However, the Java sound system is not nicely handling buffer
+                // underflows, causing discontinuities in the audio
+                // that are perceived as "clicks".
+                //
+                // So, allocate a large buffer: 10 times the sampleSize is an
+                // empirical value.
+                // This has the disadvantage to introduce a small delay when playing
+                // a new sound: a PSP application is typically sending continuously
+                // sound data, even when nothing can be heard ("0" values are sent).
+                // And we have first to play these buffered blanks before hearing
+                // the real sound itself.
     			wantedBufferSize = allocatedSamples * 4 * 10;
     		} else {
     			wantedBufferSize = outputDataLine.getBufferSize();
