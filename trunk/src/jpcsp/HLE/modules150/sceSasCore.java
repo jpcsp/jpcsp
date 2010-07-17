@@ -651,7 +651,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int voice = cpu.gpr[5];
         int unk1 = cpu.gpr[6]; // set to 1
 
-        Modules.log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
+        }
 
         cpu.gpr[2] = voices[voice].envelope.height;
     }
