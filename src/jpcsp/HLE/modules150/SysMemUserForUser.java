@@ -176,7 +176,23 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     		this.size = size;
     	}
 
-		@Override
+    	/**
+    	 * Check if the memoryChunk has enough space to allocate a block.
+    	 *
+    	 * @param availableSize size of the requested block
+    	 * @param addrAlignment base address alignment of the requested block
+    	 * @return              true if the chunk is large enough to allocate the block
+    	 *                      false if the chunk is too small for the requested block
+    	 */
+    	public boolean isAvailable(int availableSize, int addrAlignment) {
+    		if (alignUp(addr, addrAlignment) + availableSize <= addr + size) {
+    			return true;
+    		}
+
+    		return false;
+    	}
+
+    	@Override
 		public String toString() {
 			return String.format("[addr=0x%08X-0x%08X, size=0x%X]", addr, addr + size, size);
 		}
@@ -222,43 +238,30 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     	 * Allocate a memory from the MemoryChunk, at its lowest address.
     	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
     	 *
-    	 * @param memoryChunk the MemoryChunk where the memory should be allocated
-    	 * @param size        the size of the memory to be allocated
-    	 * @return            the base address of the allocated memory
+    	 * @param memoryChunk   the MemoryChunk where the memory should be allocated
+    	 * @param size          the size of the memory to be allocated
+    	 * @param addrAlignment base address alignment of the requested block
+    	 * @return              the base address of the allocated memory
     	 */
-    	public int allocLow(MemoryChunk memoryChunk, int size) {
-    		int allocatedAddr = memoryChunk.addr;
+    	public int allocLow(MemoryChunk memoryChunk, int size, int addrAlignment) {
+    		int addr = alignUp(memoryChunk.addr, addrAlignment);
 
-    		if (memoryChunk.size == size) {
-				remove(memoryChunk);
-			} else {
-				memoryChunk.size -= size;
-				memoryChunk.addr += size;
-			}
-
-			return allocatedAddr;
+    		return alloc(memoryChunk, addr, size);
     	}
 
     	/**
     	 * Allocate a memory from the MemoryChunk, at its highest address.
     	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
     	 *
-    	 * @param memoryChunk the MemoryChunk where the memory should be allocated
-    	 * @param size        the size of the memory to be allocated
-    	 * @return            the base address of the allocated memory
+    	 * @param memoryChunk   the MemoryChunk where the memory should be allocated
+    	 * @param size          the size of the memory to be allocated
+    	 * @param addrAlignment base address alignment of the requested block
+    	 * @return              the base address of the allocated memory
     	 */
-    	public int allocHigh(MemoryChunk memoryChunk, int size) {
-    		int allocatedAddr;
+    	public int allocHigh(MemoryChunk memoryChunk, int size, int addrAlignment) {
+			int addr = alignDown(memoryChunk.addr + memoryChunk.size, addrAlignment) - size;
 
-    		if (memoryChunk.size == size) {
-				allocatedAddr = memoryChunk.addr;
-				freeMemoryChunks.remove(memoryChunk);
-			} else {
-				memoryChunk.size -= size;
-				allocatedAddr = memoryChunk.addr + memoryChunk.size;
-			}
-
-    		return allocatedAddr;
+			return alloc(memoryChunk, addr, size);
     	}
 
     	/**
@@ -273,16 +276,21 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     	 * @return            the base address of the allocated memory, or 0
     	 *                    if the MemoryChunk is too small to allocate the desired size.
     	 */
-    	public int allocInside(MemoryChunk memoryChunk, int addr, int size) {
-    		if (memoryChunk.addr == addr) {
+    	public int alloc(MemoryChunk memoryChunk, int addr, int size) {
+    		if (addr < memoryChunk.addr || memoryChunk.addr + memoryChunk.size < addr + size) {
+    			// The MemoryChunk is too small to allocate the desired size
+    			// are the requested address is outside the MemoryChunk
+    			return 0;
+    		} else if (memoryChunk.size == size) {
+    			// Allocate the complete MemoryChunk
+    			remove(memoryChunk);
+    		} else if (memoryChunk.addr == addr) {
     			// Allocate at the lowest address
-    			return allocLow(memoryChunk, size);
+				memoryChunk.size -= size;
+				memoryChunk.addr += size;
     		} else if (memoryChunk.addr + memoryChunk.size == addr + size) {
     			// Allocate at the highest address
-    			return allocHigh(memoryChunk, size);
-    		} else if (memoryChunk.addr + memoryChunk.size < addr + size) {
-    			// The MemoryChunk is too small to allocate the desired size
-    			return 0;
+				memoryChunk.size -= size;
     		} else {
     			// Allocate in the middle of a MemoryChunk: it must be split
     			// in 2 parts: one for lowest part and one for the highest part.
@@ -459,6 +467,14 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         setFirmwareVersion(firmwareVersion);
     }
 
+    private static int alignUp(int value, int alignment) {
+    	return alignDown(value + alignment, alignment);
+    }
+
+    private static int alignDown(int value, int alignment) {
+    	return value & ~alignment;
+    }
+
     // Allocates to 256-byte alignment
     public int malloc(int partitionid, int type, int size, int addr) {
         int allocatedAddress = 0;
@@ -468,14 +484,14 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
             // Use the alignment provided in the addr parameter
             alignment = addr - 1;
         }
-        size = (size + alignment) & ~alignment;
+        size = alignUp(size, alignment);
 
         switch (type) {
         	case PSP_SMEM_Low:
         	case PSP_SMEM_LowAligned:
         		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-        			if (memoryChunk.size >= size) {
-        				allocatedAddress = freeMemoryChunks.allocLow(memoryChunk, size);
+        			if (memoryChunk.isAvailable(size, alignment)) {
+        				allocatedAddress = freeMemoryChunks.allocLow(memoryChunk, size, alignment);
         				break;
         			}
         		}
@@ -483,8 +499,8 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         	case PSP_SMEM_High:
         	case PSP_SMEM_HighAligned:
         		for (MemoryChunk memoryChunk = freeMemoryChunks.high; memoryChunk != null; memoryChunk = memoryChunk.previous) {
-        			if (memoryChunk.size >= size) {
-        				allocatedAddress = freeMemoryChunks.allocHigh(memoryChunk, size);
+        			if (memoryChunk.isAvailable(size, alignment)) {
+        				allocatedAddress = freeMemoryChunks.allocHigh(memoryChunk, size, alignment);
         				break;
         			}
         		}
@@ -492,7 +508,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         	case PSP_SMEM_Addr:
         		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
         			if (memoryChunk.addr <= addr && addr < memoryChunk.addr + memoryChunk.size) {
-        				allocatedAddress = freeMemoryChunks.allocInside(memoryChunk, addr, size);
+        				allocatedAddress = freeMemoryChunks.alloc(memoryChunk, addr, size);
         			}
         		}
         		break;
@@ -505,7 +521,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 		}
 
 		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(0), size, addr, allocatedAddress));
+			Modules.log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(type), size, addr, allocatedAddress));
 			if (Modules.log.isTraceEnabled()) {
 				Modules.log.trace("Free list after malloc: " + freeMemoryChunks);
 			}
