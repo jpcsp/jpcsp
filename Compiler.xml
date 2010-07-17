@@ -2324,6 +2324,21 @@
 088AAD94:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcmpSequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcmp</Class>
+		<IsReturning>true</IsReturning>
+		<Parameters>$a0,$a1,16,$v0,1,0</Parameters>
+		<CodeInstructions><![CDATA[
+   08B596E4:[D8800000]: lv.q       C000.q, 0($a0)
+   08B596E8:[D8A10000]: lv.q       C010.q, 0($a1)
+   08B596EC:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+   08B596F0:[6C018081]: vcmp.q     EQ, C000.q, C010.q
+   08B596F4:[49170001]: bvtl       5, 0x08B596FC
+   08B596F8:[24020001]: addiu      $v0, $zr, 1 <=> li $v0, 1
+   08B596FC:[03E00008]: jr         $ra
+   08B59700:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="MatrixOperation1">
 		<!-- ULUS10336: CRISIS CORE -FINAL FANTASY VII- -->
 		<Class>jpcsp.Allegrex.compiler.nativeCode.MatrixOperation1</Class>
@@ -2422,6 +2437,29 @@
     088FC254:[AC86003C]: sw         $a2, 60($a0)
     088FC258:[03E00008]: jr         $ra
     088FC25C:[27BD0040]: addiu      $sp, $sp, 64
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="MathHalfFloatToFloat">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MathHalfFloatToFloat</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08AE89A8:[27BDFFF0]: addiu      $sp, $sp, -16
+08AE89AC:[00042A83]: sra        $a1, $a0, 0x000A
+08AE89B0:[30A5001F]: andi       $a1, $a1, 31
+08AE89B4:[30867FFF]: andi       $a2, $a0, 32767
+08AE89B8:[54C00001]: bnel       $a2, $zr, 0x08AE89C0
+08AE89BC:[24A50070]: addiu      $a1, $a1, 112
+08AE89C0:[308603FF]: andi       $a2, $a0, 1023
+08AE89C4:[00063340]: sll        $a2, $a2, 0x000D
+08AE89C8:[30848000]: andi       $a0, $a0, -32768
+08AE89CC:[00042400]: sll        $a0, $a0, 0x0010
+08AE89D0:[00C42025]: or         $a0, $a2, $a0
+08AE89D4:[00052DC0]: sll        $a1, $a1, 0x0017
+08AE89D8:[00852025]: or         $a0, $a0, $a1
+08AE89DC:[AFA40000]: sw         $a0, 0($sp)
+08AE89E0:[C7A00000]: lwc1       $f0, 0($sp)
+08AE89E4:[03E00008]: jr         $ra
+08AE89E8:[27BD0010]: addiu      $sp, $sp, 16
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 </NativeCodeSequences>
