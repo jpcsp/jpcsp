@@ -158,6 +158,8 @@ public class UmdBrowser extends JDialog {
 			for (int i = 0; i < programs.length; ++i) {
 				umdInfoLoaded[i] = false;
 			}
+			// load the first row: its size is used to compute the table size
+			loadUmdInfo(0);
 
 			umdInfoLoader = new UmdInfoLoader();
 			umdInfoLoader.setName("Umd Browser - Umd Info Loader");
@@ -284,7 +286,7 @@ public class UmdBrowser extends JDialog {
 			width = comp.getPreferredSize().width;
 
 			// Get maximum width of column data
-			for (int r = 0; r < table.getRowCount(); r++) {
+			for (int r = 0; r < 1; r++) {
 				renderer = table.getCellRenderer(r, c);
 				comp = renderer.getTableCellRendererComponent(table, table
 						.getValueAt(r, c), false, false, r, c);
