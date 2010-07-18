@@ -2441,7 +2441,7 @@ public class VideoEngine {
 
             case TBIAS: {
                 tex_mipmap_mode = normalArgument & 0x3;
-                tex_mipmap_bias_int = (normalArgument >> 16) & 0xF;
+                tex_mipmap_bias_int = (int) (byte) (normalArgument >> 16); // Signed 8-bit integer
                 tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
                 if (isLogDebugEnabled) {
                     log.debug("sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
@@ -3499,9 +3499,9 @@ public class VideoEngine {
             }
 
             case TSLOPE: {
-                tslope_level = floatArgument(normalArgument & 0xFFF);
+                tslope_level = floatArgument(normalArgument);
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(TSYNC) + " waiting for drawing.");
+                    log(helper.getCommandString(TSLOPE) + " tslope_level=" + tslope_level);
                 }
                 break;
             }
@@ -4901,26 +4901,6 @@ public class VideoEngine {
             boolean compressedTexture = false;
 
             int numberMipmaps = texture_num_mip_maps;
-            if (tex_mipmap_mode == TBIAS_MODE_CONST) {
-                // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
-                numberMipmaps = tex_mipmap_bias_int;
-                log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
-            } else if(tex_mipmap_mode == TBIAS_MODE_AUTO) {
-                // TODO: TBIAS_MODE_AUTO.
-                log.debug("TBIAS_MODE_AUTO " + tex_mipmap_bias_int);
-            } else if(tex_mipmap_mode == TBIAS_MODE_SLOPE) {
-                // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
-                numberMipmaps = (int)((Math.log(tslope_level / texture_num_mip_maps) / Math.log(2)) + tex_mipmap_bias);
-                log.debug("TBIAS_MODE_SLOPE " + tex_mipmap_bias_int);
-            }
-
-            // Clamp to range [0..7].
-            if(numberMipmaps > 7) {
-                numberMipmaps = 7;
-            } else if(numberMipmaps < 0) {
-                numberMipmaps = 0;
-            }
-
             for (int level = 0; level <= numberMipmaps; level++) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
@@ -5735,7 +5715,39 @@ public class VideoEngine {
 
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, tex_wrap_s);
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, tex_wrap_t);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, texture_num_mip_maps);
+
+        int mipmapBaseLevel = 0;
+        int mipmapMaxLevel = texture_num_mip_maps;
+        if (tex_mipmap_mode == TBIAS_MODE_CONST) {
+            // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
+        	mipmapBaseLevel = tex_mipmap_bias_int;
+        	mipmapMaxLevel = tex_mipmap_bias_int;
+            if (isLogDebugEnabled) {
+            	log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
+            }
+        } else if(tex_mipmap_mode == TBIAS_MODE_AUTO) {
+            // TODO: TBIAS_MODE_AUTO.
+            if (isLogDebugEnabled) {
+            	log.debug("TBIAS_MODE_AUTO " + tex_mipmap_bias_int);
+            }
+        } else if(tex_mipmap_mode == TBIAS_MODE_SLOPE) {
+            // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
+        	mipmapBaseLevel = (int)((Math.log(tslope_level / texture_num_mip_maps) / Math.log(2)) + tex_mipmap_bias);
+        	mipmapMaxLevel = mipmapBaseLevel;
+            if (isLogDebugEnabled) {
+            	log.debug("TBIAS_MODE_SLOPE " + tex_mipmap_bias + ", slope=" + tslope_level);
+            }
+        }
+
+        // Clamp to [0..texture_num_mip_maps]
+        mipmapBaseLevel = Math.max(0, Math.min(mipmapBaseLevel, texture_num_mip_maps));
+        // Clamp to [mipmapBaseLevel..texture_num_mip_maps]
+        mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, texture_num_mip_maps));
+        if (isLogDebugEnabled) {
+        	log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + texture_num_mip_maps);
+        }
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_BASE_LEVEL, mipmapBaseLevel);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, mipmapMaxLevel);
 
         return useVertexColor;
     }
