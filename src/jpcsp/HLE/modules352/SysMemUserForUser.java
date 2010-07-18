@@ -91,44 +91,42 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
             Modules.log.warn("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
                     + ",addr=0x" + Integer.toHexString(addr) + ") unknown uid");
         } else {
-            Modules.log.debug("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
                     + ",addr=0x" + Integer.toHexString(addr) + ") addr 0x" + Integer.toHexString(info.addr));
+        	}
             Processor.memory.write32(addr, info.addr);
         }
         cpu.gpr[2] = 0;
 	}
-    
+
+	// Similar to sceKernelAllocPartitionMemory but with less parameters
 	public void SysMemUserForUser_FE707FDF(Processor processor) {
 		CpuState cpu = processor.cpu;
 		
-		int name_addr = cpu.gpr[4];
-		int unk2 = cpu.gpr[5];
+		int pname = cpu.gpr[4];
+		int type = cpu.gpr[5];
 		int size = cpu.gpr[6];
-		int unk4 = cpu.gpr[7];
+		int paramsAddr = cpu.gpr[7];
 
-		String name = readStringNZ(name_addr, 32);
-        String msg = "SysMemUserForUser_FE707FDF(name='" + name
-                + "',unk2=" + unk2
-                + ",size=" + size
-                + ",unk4=" + unk4 + ")";
+		String name = readStringNZ(pname, 32);
+		if (Modules.log.isDebugEnabled()) {
+	        Modules.log.debug(String.format("SysMemUserForUser_FE707FDF(name='%s', type=%s, size=0x%X, paramsAddr=0x%08X", name, getTypeName(type), size, paramsAddr));
+		}
 
-        // 256 byte aligned
-        size = (size + 0xFF) & ~0xFF;
+        if (paramsAddr != 0) {
+        	int length = Processor.memory.read32(paramsAddr);
+        	if (length != 4) {
+        		Modules.log.warn("SysMemUserForUser_FE707FDF: unknown parameters with length=" + length);
+        	}
+        }
 
-        int addr = malloc(2, PSP_SMEM_Low, size, 0);
+        final int partitionid = 2;
+        int addr = malloc(partitionid, type, size, 0);
         if (addr != 0) {
-            SysMemInfo info = new SysMemInfo(2, name, PSP_SMEM_Low, size, addr);
-
-            msg += " allocated uid " + Integer.toHexString(info.uid);
-            if (unk2 == 0 && unk4 == 0) {
-                Modules.log.debug(msg);
-            } else {
-                Modules.log.warn("PARTIAL:" + msg + " unimplemented parameters");
-            }
-
+            SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
             cpu.gpr[2] = info.uid;
         } else {
-            Modules.log.warn(msg + " failed");
             cpu.gpr[2] = SceKernelErrors.ERROR_FAILED_ALLOC_MEMBLOCK;
         }
 	}
