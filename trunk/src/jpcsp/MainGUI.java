@@ -1089,9 +1089,6 @@ private void installCompatibilitySettings()
     boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
     Modules.sceDisplayModule.setOnlyGEGraphics(onlyGEGraphics);
 
-    boolean useViewport = Settings.getInstance().readBool("emu.useViewport");
-    VideoEngine.getInstance().setUseViewport(useViewport);
-
     boolean useConnector = Settings.getInstance().readBool("emu.useConnector");
     sceMpeg.setEnableConnector(useConnector);
     sceAtrac3plus.setEnableConnector(useConnector);
@@ -1143,10 +1140,6 @@ public boolean installCompatibilityPatches(String filename)
         String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
         if (onlyGEGraphics != null)
             Modules.sceDisplayModule.setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
-
-        String useViewport = patchSettings.getProperty("emu.useViewport");
-        if (useViewport != null)
-            VideoEngine.getInstance().setUseViewport(Integer.parseInt(useViewport) != 0);
 
         String useConnector = patchSettings.getProperty("emu.useConnector");
         if (useConnector != null) {

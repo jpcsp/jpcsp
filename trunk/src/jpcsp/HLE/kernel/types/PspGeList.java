@@ -51,6 +51,7 @@ public class PspGeList
     public List<Integer> blockedThreadIds; // the threads we are blocking
     private boolean finished;
     private boolean paused;
+    private boolean ended;
     private boolean reset;
     private Semaphore sync; // Used for async display
 
@@ -67,6 +68,7 @@ public class PspGeList
     	finished = true;
     	paused = false;
     	reset = true;
+        ended = true;
     }
 
     public void init(int list_addr, int stall_addr, int cbid, int arg_addr) {
@@ -82,6 +84,7 @@ public class PspGeList
         status = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
     	finished = false;
     	reset = false;
+        ended = false;
 
     	sync = new Semaphore(0);
     }
@@ -135,10 +138,6 @@ public class PspGeList
     private void sync() {
 		if (sync != null) {
 			sync.release();
-
-			
-			// Test for single-core processor: force a context
-			//Thread.yield();
 		}
     }
 
@@ -204,8 +203,20 @@ public class PspGeList
     	return finished;
     }
 
+    public boolean isEnded() {
+        return ended;
+    }
+
     public void finishList() {
     	finished = true;
+    }
+
+    public void endList() {
+        if(isFinished()) {
+            ended = true;
+        } else {
+            ended = false;
+        }
     }
 
     public boolean isDone() {

@@ -449,8 +449,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void hleDisplaySetGeBuf(GL gl,
         int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory,
-        int width, int height)
-    {
+        int width, int height) {
         topaddr &= Memory.addressMask;
         // We can get the address relative to 0 or already relative to START_VRAM
         if (topaddr < MemoryMap.START_VRAM) {
@@ -545,28 +544,14 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 		heightGe      = height;
 
 		bottomaddrGe =
-		    topaddr + bufferwidthGe * heightGe *
+		    topaddrGe + bufferwidthGe * heightGe *
 		    getPixelFormatBytes(pixelformatGe);
 
-		// This is kind of interesting, we don't actually know the height
-		// of the buffer, we're only guessing it matches the display height,
-		// even then developers might be sneaky.
-		// The safe option is to set it to go from topaddrGe to MemoryMap.END_VRAM
-		// everytime, but we could be wasting time copying unnecessary pixels around.
-		// For now use height but clamp it to the valid area (fiveofhearts)
-		// update: I think we can get it from XSCALE/YSCALE GE command/sceGuViewport/hleDisplaySetGeMode
-		if (bottomaddrGe > MemoryMap.END_VRAM + 1 && !Memory.getInstance().isIgnoreInvalidMemoryAccess() && !VideoEngine.getInstance().isUseViewport()) {
-		    // We can probably remove this message since it's allowed on
-		    // real PSP but it's interesting to see what games do it.
-		    Modules.log.warn("clamping ge buf top=" + Integer.toHexString(topaddrGe)
-		        + " bottom=" + Integer.toHexString(bottomaddrGe)
-		        + " w=" + bufferwidthGe
-		        + " bpp=" + (getPixelFormatBytes(pixelformatGe) * 8));
-			heightGe = (MemoryMap.END_VRAM + 1 - topaddrGe) / (bufferwidthGe * getPixelFormatBytes(pixelformatGe));
-		    bottomaddrGe =
-		    	topaddrGe + bufferwidthGe * heightGe *
-		        getPixelFormatBytes(pixelformatGe);
-		}
+        // Tested on PSP:
+        // The height of the buffer always matches the display height.
+        // This data can be obtained from hleDisplaySetGeMode, since the width
+        // represents the display width in pixels, and the height represents
+        // the display height in lines.
 
 		pixelsGe = getPixels(topaddrGe, bottomaddrGe);
 
