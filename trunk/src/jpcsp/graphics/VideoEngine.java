@@ -234,9 +234,6 @@ public class VideoEngine {
     private int patch_div_t;
     private int patch_prim;
     private int[] patch_prim_types = {GL.GL_TRIANGLE_STRIP, GL.GL_LINE_STRIP, GL.GL_POINTS};
-    private boolean patch_face;
-    private boolean patch_cull;
-    private boolean rev_normal;
     private boolean tsync_wait = false;
     private float tslope_level;
     private boolean clutIsDirty;
@@ -276,7 +273,6 @@ public class VideoEngine {
     private short[] clut_buffer16 = new short[4096];
     private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
     private int tex_proj_map_mode = TMAP_TEXTURE_PROJECTION_MODE_POSITION;
-    private float colorDoubling;
     private boolean listHasEnded;
     private PspGeList currentList; // The currently executing list
     private boolean useVBO = true;
@@ -291,7 +287,6 @@ public class VideoEngine {
     private boolean useSkinningShaders = true; // Use Shaders for Skinning?
     private int shaderAttribWeights1;
     private int shaderAttribWeights2;
-    private boolean shaderCtestEnable;
     private int shaderCtestFunc;
     private int[] shaderCtestRef = { 0, 0, 0 };
     private int[] shaderCtestMsk = { 0, 0, 0 };
@@ -324,7 +319,7 @@ public class VideoEngine {
     };
     private final EnableDisableFlag lineSmoothFlag = new EnableDisableFlag("GU_LINE_SMOOTH", GL.GL_LINE_SMOOTH);
     private final EnableDisableFlag patchCullFaceFlag = new EnableDisableFlag("GU_PATCH_CULL_FACE");
-    private final EnableDisableFlag colorTestFlag = new EnableDisableFlag("GU_COLOR_TEST");
+    private final EnableDisableFlag colorTestFlag = new EnableDisableFlag("GU_COLOR_TEST", 0, false);
     private final EnableDisableFlag colorLogicOpFlag = new EnableDisableFlag("GU_COLOR_LOGIC_OP", GL.GL_COLOR_LOGIC_OP, false);
     private final EnableDisableFlag faceNormalReverseFlag = new EnableDisableFlag("GU_FACE_NORMAL_REVERSE");
     private final EnableDisableFlag patchFaceFlag = new EnableDisableFlag("GU_PATCH_FACE");
@@ -402,17 +397,13 @@ public class VideoEngine {
                     if (glFlag != 0) {
                         if (enabled) {
                             gl.glEnable(glFlag);
-
-                            if (isLogDebugEnabled) {
-                                log.debug("sceGuEnable(" + name + ")");
-                            }
                         } else {
                             gl.glDisable(glFlag);
-
-                            if (isLogDebugEnabled) {
-                                log.debug("sceGuDisable(" + name + ")");
-                            }
                         }
+                    }
+
+                    if (isLogDebugEnabled) {
+                    	log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
                     }
                 }
             }
@@ -3265,6 +3256,7 @@ public class VideoEngine {
                         log("Clip Plane Disable " + getArgumentLog(normalArgument));
                     }
                 }
+                clipPlanesFlag.setEnabled(normalArgument);
                 break;
 
             case DFIX: {
@@ -3442,48 +3434,29 @@ public class VideoEngine {
             }
 
             case PFACE: {
-                patch_face = (normalArgument & 0x1) == 1;
                 // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
-                if (isLogDebugEnabled) {
-                    if(patch_face)
-                        log(helper.getCommandString(PFACE) + " patch_face=counter clockwise");
-                    else
-                        log(helper.getCommandString(PFACE) + " patch_face=clockwise");
-                }
+            	patchFaceFlag.setEnabled(normalArgument);
                 break;
             }
 
             case PCE: {
-                patch_cull = (normalArgument & 0x1) == 1;
-                 // 0 - Disable / 1 - Enable.
-                if (isLogDebugEnabled) {
-                    if(patch_cull)
-                        log(helper.getCommandString(PCE) + " patch_cull=enabled");
-                    else
-                        log(helper.getCommandString(PCE) + " patch_cull=disabled");
-                }
+            	patchCullFaceFlag.setEnabled(normalArgument);
                 break;
             }
 
             case CTE: {
-                shaderCtestEnable = (normalArgument != 0);
-                if (!clearMode && useShaders) {
-                    gl.glUniform1i(Uniforms.ctestEnable.getId(), shaderCtestEnable ? 1 : 0);
+                if (colorTestFlag.setEnabled(normalArgument)) {
+                    if (useShaders) {
+                        gl.glUniform1i(Uniforms.ctestEnable.getId(), colorTestFlag.isEnabledInt());
+                    }
                 }
             	break;
             }
 
             case RNORM: {
-                rev_normal = (normalArgument & 0x1) == 1;
-                // 0 - Don't reverse normal / 1 - Reverse normal.
                 // This seems to be taked into account when calculating the lighting
                 // for the current normal.
-                if (isLogDebugEnabled) {
-                    if(rev_normal)
-                        log(helper.getCommandString(PFACE) + " rev_normal=yes");
-                    else
-                        log(helper.getCommandString(PFACE) + " rev_normal=no");
-                }
+            	faceNormalReverseFlag.setEnabled(normalArgument);
                 break;
             }
 
@@ -4332,7 +4305,7 @@ public class VideoEngine {
             gl.glUniform1f(Uniforms.zScale.getId(), zscale);
             gl.glUniform1i(Uniforms.texEnable.getId(), textureFlag.isEnabledInt());
             gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
-            gl.glUniform1i(Uniforms.ctestEnable.getId(), shaderCtestEnable ? 1 : 0);
+            gl.glUniform1i(Uniforms.ctestEnable.getId(), colorTestFlag.isEnabledInt());
         }
     }
 
