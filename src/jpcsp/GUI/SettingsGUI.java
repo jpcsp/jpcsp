@@ -84,9 +84,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
         onlyGEGraphicsCheck.setSelected(enabled);
 
-        enabled = Settings.getInstance().readBool("emu.useViewport");
-        useViewportCheck.setSelected(enabled);
-
         enabled = Settings.getInstance().readBool("emu.useConnector");
         useConnector.setSelected(enabled);
 
@@ -282,7 +279,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         disableGECheck = new javax.swing.JCheckBox();
         disableVBOCheck = new javax.swing.JCheckBox();
         onlyGEGraphicsCheck = new javax.swing.JCheckBox();
-        useViewportCheck = new javax.swing.JCheckBox();
         useVertexCache = new javax.swing.JCheckBox();
         jPanel3 = new javax.swing.JPanel();
         invalidMemoryCheck = new javax.swing.JCheckBox();
@@ -480,8 +476,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         onlyGEGraphicsCheck.setText(Resource.get("onlyGeGraphics"));
 
-        useViewportCheck.setText(Resource.get("useViewport"));
-
         useVertexCache.setText(Resource.get("usevertex"));
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -493,7 +487,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(disableGECheck)
                     .addComponent(disableVBOCheck)
                     .addComponent(onlyGEGraphicsCheck)
-                    .addComponent(useViewportCheck)
                     .addComponent(useVertexCache))
                 .addGap(194, 194, 194))
         );
@@ -506,10 +499,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(onlyGEGraphicsCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useViewportCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useVertexCache)
-                .addContainerGap(65, Short.MAX_VALUE))
+                .addContainerGap(88, Short.MAX_VALUE))
         );
 
         jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder("Memory"));
@@ -546,7 +537,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addGroup(compatibilityPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(compatibilityPanelLayout.createSequentialGroup()
-                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 301, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap())
@@ -1033,9 +1024,6 @@ public void RefreshWindow()
 	enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
 	onlyGEGraphicsCheck.setSelected(enabled);
 	
-	enabled = Settings.getInstance().readBool("emu.useViewport");
-	useViewportCheck.setSelected(enabled);
-	
 	enabled = Settings.getInstance().readBool("emu.useConnector");
 	useConnector.setSelected(enabled);
 
@@ -1084,7 +1072,6 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
-   Settings.getInstance().writeBool("emu.useViewport", useViewportCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
    Settings.getInstance().writeBool("emu.useMediaEngine",useMediaEngine.isSelected());
    Settings.getInstance().writeBool("emu.useVertexCache",useVertexCache.isSelected());
@@ -1269,7 +1256,6 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JCheckBox useConnector;
     private javax.swing.JCheckBox useMediaEngine;
     private javax.swing.JCheckBox useVertexCache;
-    private javax.swing.JCheckBox useViewportCheck;
     // End of variables declaration//GEN-END:variables
 
 }

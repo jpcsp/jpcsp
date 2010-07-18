@@ -150,7 +150,6 @@ public class VideoEngine {
     private boolean openGL1_5;
     private int errorCount;
     private static final int maxErrorCount = 5; // Abort list processing when detecting more errors
-    private boolean useViewport = false;
     private boolean isLogTraceEnabled;
     private boolean isLogDebugEnabled;
     private boolean isLogInfoEnabled;
@@ -401,9 +400,8 @@ public class VideoEngine {
                             gl.glDisable(glFlag);
                         }
                     }
-
                     if (isLogDebugEnabled) {
-                    	log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
+                        log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
                     }
                 }
             }
@@ -490,9 +488,6 @@ public class VideoEngine {
 
     private static void log(String msg) {
         log.debug(msg);
-        /*if (isDebugMode) {
-        System.out.println("sceGe DEBUG > " + msg);
-        }*/
     }
 
     public static VideoEngine getInstance() {
@@ -1102,13 +1097,11 @@ public class VideoEngine {
         // let DONE take priority over STALL_REACHED
         if (listHasEnded) {
             setTsync(false);
-            // for now testing, but maybe list is not DONE until we get a FINISH and an END?
-            // this could explain games trying to sync lists that have been discarded (fiveofhearts)
-            // No FINISH:
-            // - Virtua Tennis: World Tour (1 instruction: signal)
-            if (!currentList.isFinished()) {
-                currentList.status = PSP_GE_LIST_END_REACHED;
-            } else {
+            currentList.status = PSP_GE_LIST_END_REACHED;
+
+            // Tested on PSP:
+            // A list is only DONE after a combination of FINISH + END.
+            if (currentList.isEnded()) {
                 currentList.status = PSP_GE_LIST_DONE;
             }
         }
@@ -1512,20 +1505,116 @@ public class VideoEngine {
             commandStatistics[command].start();
         }
         switch (command) {
+            case NOP:
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(NOP));
+                }
+
+                // Check if we are not reading from an invalid memory region.
+                // Abort the list if this is the case.
+                // This is only done in the NOP command to not impact performance.
+                checkCurrentListPc();
+                break;
+
+            case VADDR:
+                vinfo.ptr_vertex = currentList.getAddress(normalArgument);
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
+                }
+                break;
+
+            case IADDR:
+                vinfo.ptr_index = currentList.getAddress(normalArgument);
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
+                }
+                break;
+
+            case PRIM:
+                executeCommandPRIM(normalArgument);
+                break;
+
+            case BEZIER:
+                int ucount = normalArgument & 0xFF;
+                int vcount = (normalArgument >> 8) & 0xFF;
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
+                }
+
+                updateGeBuf();
+                loadTexture();
+
+                drawBezier(ucount, vcount);
+                break;
+
+            case SPLINE: {
+                // Number of control points.
+                int sp_ucount = normalArgument & 0xFF;
+                int sp_vcount = (normalArgument >> 8) & 0xFF;
+                // Knot types.
+                int sp_utype = (normalArgument >> 16) & 0x3;
+                int sp_vtype = (normalArgument >> 18) & 0x3;
+
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(SPLINE) + " sp_ucount=" + sp_ucount + ", sp_vcount=" + sp_vcount +
+                            " sp_utype=" + sp_utype + ", sp_vtype=" + sp_vtype);
+                }
+
+                updateGeBuf();
+                loadTexture();
+
+                drawSpline(sp_ucount, sp_vcount, sp_utype, sp_vtype);
+                break;
+            }
+
+            case BBOX:
+                executeCommandBBOX(normalArgument);
+                break;
+
+            case JUMP: {
+                int oldPc = currentList.pc;
+                currentList.jump(normalArgument);
+                int newPc = currentList.pc;
+                if (isLogDebugEnabled) {
+                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
+                }
+                break;
+            }
+
+            case BJUMP:
+                executeCommandBJUMP(normalArgument);
+                break;
+
+            case CALL: {
+                int oldPc = currentList.pc;
+                currentList.call(normalArgument);
+                int newPc = currentList.pc;
+                if (isLogDebugEnabled) {
+                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
+                }
+                break;
+            }
+
+            case RET: {
+                int oldPc = currentList.pc;
+                currentList.ret();
+                int newPc = currentList.pc;
+                if (isLogDebugEnabled) {
+                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
+                }
+                break;
+            }
+
             case END:
+                // Try to end the current list.
+                // The list only ends (isEnded() == true) if FINISH was called previously.
+                // In SIGNAL + END cases, isEnded() still remains false.
+                currentList.endList();
                 currentList.pauseList();
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.pc));
                 }
                 updateGeBuf();
-                break;
-
-            case FINISH:
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
-                }
-                currentList.finishList();
-                currentList.pushFinishCallback(normalArgument);
                 break;
 
             case SIGNAL:
@@ -1541,42 +1630,20 @@ public class VideoEngine {
                 currentList.pushSignalCallback(currentList.id, behavior, signal);
                 break;
 
+            case FINISH:
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
+                }
+                currentList.finishList();
+                currentList.pushFinishCallback(normalArgument);
+                break;
+
             case BASE:
                 base = (normalArgument << 8) & 0xff000000;
                 // Bits of (normalArgument & 0x0000FFFF) are ignored
                 // (tested: "Ape Escape On the Loose")
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(BASE) + " " + String.format("%08x", base));
-                }
-                break;
-
-            case ORIGIN_ADDR:
-                baseOffset = currentList.pc - 4;
-                if (normalArgument != 0) {
-                    log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
-                } else if (isLogDebugEnabled) {
-                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, baseOffset));
-                }
-                break;
-
-            case OFFSET_ADDR:
-                baseOffset = normalArgument << 8;
-                if (isLogDebugEnabled) {
-                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), baseOffset));
-                }
-                break;
-
-            case IADDR:
-                vinfo.ptr_index = currentList.getAddress(normalArgument);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
-                }
-                break;
-
-            case VADDR:
-                vinfo.ptr_vertex = currentList.getAddress(normalArgument);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
                 break;
 
@@ -1611,14 +1678,30 @@ public class VideoEngine {
                 break;
             }
 
+            case OFFSET_ADDR:
+                baseOffset = normalArgument << 8;
+                if (isLogDebugEnabled) {
+                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), baseOffset));
+                }
+                break;
+
+            case ORIGIN_ADDR:
+                baseOffset = currentList.pc - 4;
+                if (normalArgument != 0) {
+                    log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
+                } else if (isLogDebugEnabled) {
+                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, baseOffset));
+                }
+                break;
+
             case REGION1:
                 region_x1 = normalArgument & 0x3ff;
-                region_y1 = normalArgument >> 10;
+                region_y1 = (normalArgument >> 10) & 0x3ff;
                 break;
 
             case REGION2:
                 region_x2 = normalArgument & 0x3ff;
-                region_y2 = normalArgument >> 10;
+                region_y2 = (normalArgument >> 10) & 0x3ff;
                 region_width = (region_x2 + 1) - region_x1;
                 region_height = (region_y2 + 1) - region_y1;
                 if (isLogDebugEnabled) {
@@ -1626,11 +1709,239 @@ public class VideoEngine {
                 }
                 break;
 
+            /*
+             * Lighting enable/disable
+             */
+            case LTE: {
+                if (lightingFlag.setEnabled(normalArgument)) {
+                    if (lightingFlag.isEnabled()) {
+                        lightingChanged = true;
+                    }
+
+                    if (useShaders) {
+                        gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
+                    }
+                }
+                break;
+            }
+
+            /*
+             * Individual lights enable/disable
+             */
+            case LTE0:
+            case LTE1:
+            case LTE2:
+            case LTE3: {
+                int lnum = command - LTE0;
+                EnableDisableFlag lightFlag = lightFlags[lnum];
+                if (lightFlag.setEnabled(normalArgument)) {
+                    if (lightFlag.isEnabled()) {
+                        lightingChanged = true;
+                    }
+
+                    if (useShaders) {
+                        light_enabled[lnum] = lightFlag.isEnabled() ? 1 : 0;
+                        gl.glUniform4iv(Uniforms.lightEnabled.getId(), 1, light_enabled, 0);
+                    }
+                }
+                break;
+            }
+
+            case CPE:
+                if (normalArgument != 0) {
+                    gl.glEnable(GL.GL_CLIP_PLANE0);
+                    gl.glEnable(GL.GL_CLIP_PLANE1);
+                    gl.glEnable(GL.GL_CLIP_PLANE2);
+                    gl.glEnable(GL.GL_CLIP_PLANE3);
+                    gl.glEnable(GL.GL_CLIP_PLANE4);
+                    gl.glEnable(GL.GL_CLIP_PLANE5);
+                    if (isLogDebugEnabled) {
+                        log("Clip Plane Enable " + getArgumentLog(normalArgument));
+                    }
+                } else {
+                    gl.glDisable(GL.GL_CLIP_PLANE0);
+                    gl.glDisable(GL.GL_CLIP_PLANE1);
+                    gl.glDisable(GL.GL_CLIP_PLANE2);
+                    gl.glDisable(GL.GL_CLIP_PLANE3);
+                    gl.glDisable(GL.GL_CLIP_PLANE4);
+                    gl.glDisable(GL.GL_CLIP_PLANE5);
+                    if (isLogDebugEnabled) {
+                        log("Clip Plane Disable " + getArgumentLog(normalArgument));
+                    }
+                }
+                clipPlanesFlag.setEnabled(normalArgument);
+                break;
+
+            case BCE:
+                cullFaceFlag.setEnabled(normalArgument);
+                break;
+
             case TME:
                 if (textureFlag.setEnabled(normalArgument)) {
                     if (useShaders) {
                         gl.glUniform1i(Uniforms.texEnable.getId(), textureFlag.isEnabledInt());
                     }
+                }
+                break;
+
+            case FGE:
+                if (fogFlag.setEnabled(normalArgument)) {
+                    if (fogFlag.isEnabled()) {
+                        gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
+                        gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
+                    }
+                }
+                break;
+
+            case DTE:
+                ditherFlag.setEnabled(normalArgument);
+                break;
+
+            case ABE:
+                blendFlag.setEnabled(normalArgument);
+                break;
+
+            case ATE:
+                alphaTestFlag.setEnabled(normalArgument);
+                break;
+
+            case ZTE:
+                if (depthTestFlag.setEnabled(normalArgument)) {
+                    if (depthTestFlag.isEnabled()) {
+                        // OpenGL requires the Depth parameters to be reloaded
+                        depthChanged = true;
+                    }
+                }
+                break;
+
+            case STE:
+                stencilTestFlag.setEnabled(normalArgument);
+                break;
+
+            case AAE:
+                if (lineSmoothFlag.setEnabled(normalArgument)) {
+                    if (lineSmoothFlag.isEnabled()) {
+                        gl.glHint(GL.GL_LINE_SMOOTH_HINT, GL.GL_NICEST);
+                    }
+                }
+                break;
+
+            case PCE: {
+                patchCullFaceFlag.setEnabled(normalArgument);
+                break;
+            }
+
+            case CTE: {
+                if (colorTestFlag.setEnabled(normalArgument)) {
+                    if (useShaders) {
+                        gl.glUniform1i(Uniforms.ctestEnable.getId(), colorTestFlag.isEnabledInt());
+                    }
+                }
+                break;
+            }
+
+            case LOE:
+                colorLogicOpFlag.setEnabled(normalArgument);
+                break;
+
+            /*
+             * Skinning
+             */
+            case BOFS: {
+                boneMatrixIndex = normalArgument;
+                if (isLogDebugEnabled) {
+                    log("bone matrix offset", normalArgument);
+                }
+                break;
+            }
+
+            case BONE: {
+                // Multiple BONE matrix can be loaded in sequence
+                // without having to issue a BOFS for each matrix.
+                int matrixIndex = boneMatrixIndex / 12;
+                int elementIndex = boneMatrixIndex % 12;
+                if (matrixIndex >= 8) {
+                    error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
+                } else {
+                    float floatArgument = floatArgument(normalArgument);
+                    bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
+                    if (useSkinningShaders) {
+                        boneMatrixForShader[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
+                        if (matrixIndex >= boneMatrixForShaderUpdatedMatrix) {
+                            boneMatrixForShaderUpdatedMatrix = matrixIndex + 1;
+                        }
+                    }
+                    boneMatrixIndex++;
+
+                    if (isLogDebugEnabled && (boneMatrixIndex % 12) == 0) {
+                        for (int x = 0; x < 3; x++) {
+                            log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
+                                    matrixIndex,
+                                    bone_uploaded_matrix[matrixIndex][x + 0],
+                                    bone_uploaded_matrix[matrixIndex][x + 3],
+                                    bone_uploaded_matrix[matrixIndex][x + 6],
+                                    bone_uploaded_matrix[matrixIndex][x + 9]));
+                        }
+                    }
+                }
+                break;
+            }
+
+            /*
+             * Morphing
+             */
+            case MW0:
+            case MW1:
+            case MW2:
+            case MW3:
+            case MW4:
+            case MW5:
+            case MW6:
+            case MW7: {
+                int index = command - MW0;
+                morph_weight[index] = floatArgument(normalArgument);
+                if (isLogDebugEnabled) {
+                    log("morph weight " + index, morph_weight[index]);
+                }
+                break;
+            }
+
+            case PSUB:
+                patch_div_s = normalArgument & 0xFF;
+                patch_div_t = (normalArgument >> 8) & 0xFF;
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(PSUB) + " patch_div_s=" + patch_div_s + ", patch_div_t=" + patch_div_t);
+                }
+                break;
+
+            case PPRIM: {
+                patch_prim = (normalArgument & 0x3);
+                // Primitive type to use in patch division:
+                // 0 - Triangle.
+                // 1 - Line.
+                // 2 - Point.
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(PPRIM) + " patch_prim=" + patch_prim);
+                }
+                break;
+            }
+
+            case PFACE: {
+                // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
+                patchFaceFlag.setEnabled(normalArgument);
+                break;
+            }
+
+            case MMS:
+                modelMatrixUpload.startUpload(normalArgument);
+                if (isLogDebugEnabled) {
+                    log("sceGumMatrixMode GU_MODEL " + normalArgument);
+                }
+                break;
+
+            case MODEL:
+                if (modelMatrixUpload.uploadValue(floatArgument(normalArgument))) {
+                    log("glLoadMatrixf", model_uploaded_matrix);
                 }
                 break;
 
@@ -1647,134 +1958,295 @@ public class VideoEngine {
                 }
                 break;
 
-            case MMS:
-                modelMatrixUpload.startUpload(normalArgument);
+            case PMS:
+                projectionMatrixUpload.startUpload(normalArgument);
                 if (isLogDebugEnabled) {
-                    log("sceGumMatrixMode GU_MODEL " + normalArgument);
+                    log("sceGumMatrixMode GU_PROJECTION " + normalArgument);
                 }
                 break;
 
-            case MODEL:
-                if (modelMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", model_uploaded_matrix);
+            case PROJ:
+                if (projectionMatrixUpload.uploadValue(floatArgument(normalArgument))) {
+                    log("glLoadMatrixf", proj_uploaded_matrix);
                 }
                 break;
+
+            case TMS:
+                textureMatrixUpload.startUpload(normalArgument);
+                if (isLogDebugEnabled) {
+                    log("sceGumMatrixMode GU_TEXTURE " + normalArgument);
+                }
+                break;
+
+            case TMATRIX:
+                if (textureMatrixUpload.uploadValue(floatArgument(normalArgument))) {
+                    log("glLoadMatrixf", texture_uploaded_matrix);
+                }
+                break;
+
+            case XSCALE: {
+                int old_viewport_width = viewport_width;
+                viewport_width = (int) floatArgument(normalArgument);
+                if (old_viewport_width != viewport_width) {
+                    viewportChanged = true;
+                }
+                break;
+            }
+
+            case YSCALE: {
+                int old_viewport_height = viewport_height;
+                viewport_height = (int) floatArgument(normalArgument);
+                if (old_viewport_height != viewport_height) {
+                    viewportChanged = true;
+                }
+                break;
+            }
+
+            case ZSCALE: {
+                float old_zscale = zscale;
+                float floatArgument = floatArgument(normalArgument);
+                zscale = floatArgument / 65535.f;
+                if (old_zscale != zscale) {
+                    depthChanged = true;
+                    if (useShaders) {
+                        gl.glUniform1f(Uniforms.zScale.getId(), zscale);
+                    }
+                }
+
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(ZSCALE) + " " + floatArgument);
+                }
+                break;
+            }
+
+            case XPOS: {
+                int old_viewport_cx = viewport_cx;
+                viewport_cx = (int) floatArgument(normalArgument);
+                if (old_viewport_cx != viewport_cx) {
+                    viewportChanged = true;
+                }
+                break;
+            }
+
+            case YPOS: {
+                int old_viewport_cy = viewport_cy;
+                viewport_cy = (int) floatArgument(normalArgument);
+                if (old_viewport_cy != viewport_cy) {
+                    viewportChanged = true;
+                }
+
+                // Log only on the last called command (always XSCALE -> YSCALE -> XPOS -> YPOS).
+                if (isLogDebugEnabled) {
+                    log.debug("sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", w=" + viewport_width + " h=" + viewport_height + ")");
+                }
+                break;
+            }
+
+            case ZPOS: {
+                float old_zpos = zpos;
+                float floatArgument = floatArgument(normalArgument);
+                zpos = floatArgument / 65535.f;
+                if (old_zpos != zpos) {
+                    depthChanged = true;
+                    if (useShaders) {
+                        gl.glUniform1f(Uniforms.zPos.getId(), zpos);
+                    }
+                }
+
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(ZPOS), floatArgument);
+                }
+                break;
+            }
 
             /*
-             *  Light attributes
+             * Texture transformations
              */
+            case USCALE: {
+                float old_tex_scale_x = tex_scale_x;
+                tex_scale_x = floatArgument(normalArgument);
 
-            // Position
-
-            case LXP0:
-            case LXP1:
-            case LXP2:
-            case LXP3:
-            case LYP0:
-            case LYP1:
-            case LYP2:
-            case LYP3:
-            case LZP0:
-            case LZP1:
-            case LZP2:
-            case LZP3: {
-                int lnum = (command - LXP0) / 3;
-                int component = (command - LXP0) % 3;
-                float old_light_pos = light_pos[lnum][component];
-                light_pos[lnum][component] = floatArgument(normalArgument);
-
-                if (old_light_pos != light_pos[lnum][component]) {
-                    lightingChanged = true;
+                if (old_tex_scale_x != tex_scale_x) {
+                    textureMatrixUpload.setChanged(true);
                 }
                 break;
             }
 
-            // Color
+            case VSCALE: {
+                float old_tex_scale_y = tex_scale_y;
+                tex_scale_y = floatArgument(normalArgument);
 
-            // Ambient
-            case ALC0:
-            case ALC1:
-            case ALC2:
-            case ALC3: {
-                int lnum = (command - ALC0) / 3;
-                lightAmbientColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                lightAmbientColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                lightAmbientColor[lnum][3] = 1.f;
-                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_AMBIENT, lightAmbientColor[lnum], 0);
-                log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
-                break;
-            }
-            // Diffuse
-            case DLC0:
-            case DLC1:
-            case DLC2:
-            case DLC3: {
-                int lnum = (command - DLC0) / 3;
-                lightDiffuseColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                lightDiffuseColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                lightDiffuseColor[lnum][3] = 1.f;
-                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_DIFFUSE, lightDiffuseColor[lnum], 0);
-                log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
-                break;
-            }
-
-            // Specular
-            case SLC0:
-            case SLC1:
-            case SLC2:
-            case SLC3: {
-                int lnum = (command - SLC0) / 3;
-                float old_lightSpecularColor0 = lightSpecularColor[lnum][0];
-                float old_lightSpecularColor1 = lightSpecularColor[lnum][1];
-                float old_lightSpecularColor2 = lightSpecularColor[lnum][2];
-                lightSpecularColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                lightSpecularColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                lightSpecularColor[lnum][3] = 1.f;
-
-                if (old_lightSpecularColor0 != lightSpecularColor[lnum][0]
-                        || old_lightSpecularColor1 != lightSpecularColor[lnum][1]
-                        || old_lightSpecularColor2 != lightSpecularColor[lnum][2]) {
-                    lightingChanged = true;
+                if (old_tex_scale_y != tex_scale_y) {
+                    textureMatrixUpload.setChanged(true);
                 }
-                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPECULAR, lightSpecularColor[lnum], 0);
-                log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
+
+                if (isLogDebugEnabled) {
+                    log("sceGuTexScale(u=" + tex_scale_x + ", v=" + tex_scale_y + ")");
+                }
                 break;
             }
 
-            // Light Attenuation
+            case UOFFSET: {
+                float old_tex_translate_x = tex_translate_x;
+                tex_translate_x = floatArgument(normalArgument);
 
-            // Constant
-            case LCA0:
-            case LCA1:
-            case LCA2:
-            case LCA3: {
-                int lnum = (command - LCA0) / 3;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_CONSTANT_ATTENUATION, floatArgument(normalArgument));
+                if (old_tex_translate_x != tex_translate_x) {
+                    textureMatrixUpload.setChanged(true);
+                }
                 break;
             }
 
-            // Linear
-            case LLA0:
-            case LLA1:
-            case LLA2:
-            case LLA3: {
-                int lnum = (command - LLA0) / 3;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_LINEAR_ATTENUATION, floatArgument(normalArgument));
+            case VOFFSET: {
+                float old_tex_translate_y = tex_translate_y;
+                tex_translate_y = floatArgument(normalArgument);
+
+                if (old_tex_translate_y != tex_translate_y) {
+                    textureMatrixUpload.setChanged(true);
+                }
+
+                if (isLogDebugEnabled) {
+                    log("sceGuTexOffset(u=" + tex_translate_x + ", v=" + tex_translate_y + ")");
+                }
                 break;
             }
 
-            // Quadratic
-            case LQA0:
-            case LQA1:
-            case LQA2:
-            case LQA3: {
-                int lnum = (command - LQA0) / 3;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_QUADRATIC_ATTENUATION, floatArgument(normalArgument));
+            case OFFSETX: {
+                int old_offset_x = offset_x;
+                offset_x = normalArgument >> 4;
+                if (old_offset_x != offset_x) {
+                    viewportChanged = true;
+                }
                 break;
             }
+
+            case OFFSETY: {
+                int old_offset_y = offset_y;
+                offset_y = normalArgument >> 4;
+                if (old_offset_y != offset_y) {
+                    viewportChanged = true;
+                }
+
+                if(isLogDebugEnabled) {
+                    log.debug("sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
+                }
+
+                break;
+            }
+
+            case SHADE: {
+                int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
+                gl.glShadeModel(SETTED_MODEL);
+                if (isLogDebugEnabled) {
+                    log("sceGuShadeModel(" + ((normalArgument != 0) ? "smooth" : "flat") + ")");
+                }
+                break;
+            }
+
+            case RNORM: {
+                // This seems to be taked into account when calculating the lighting
+                // for the current normal.
+                faceNormalReverseFlag.setEnabled(normalArgument);
+                break;
+            }
+
+            /*
+             * Material setup
+             */
+            case CMAT: {
+                int old_mat_flags = mat_flags;
+                mat_flags = normalArgument & 7;
+                if (old_mat_flags != mat_flags) {
+                    materialChanged = true;
+                }
+
+                if (isLogDebugEnabled) {
+                    log("sceGuColorMaterial " + mat_flags);
+                }
+                break;
+            }
+
+            case EMC:
+                mat_emissive[0] = ((normalArgument) & 255) / 255.f;
+                mat_emissive[1] = ((normalArgument >> 8) & 255) / 255.f;
+                mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
+                mat_emissive[3] = 1.f;
+                materialChanged = true;
+                gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
+                if (isLogDebugEnabled) {
+                    log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
+                }
+                break;
+
+            case AMC:
+                mat_ambient[0] = ((normalArgument) & 255) / 255.f;
+                mat_ambient[1] = ((normalArgument >> 8) & 255) / 255.f;
+                mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
+                materialChanged = true;
+                if (isLogDebugEnabled) {
+                    log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
+                }
+                break;
+
+            case DMC:
+                mat_diffuse[0] = ((normalArgument) & 255) / 255.f;
+                mat_diffuse[1] = ((normalArgument >> 8) & 255) / 255.f;
+                mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
+                mat_diffuse[3] = 1.f;
+                materialChanged = true;
+                if (isLogDebugEnabled) {
+                    log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
+                }
+                break;
+
+            case SMC:
+                mat_specular[0] = ((normalArgument) & 255) / 255.f;
+                mat_specular[1] = ((normalArgument >> 8) & 255) / 255.f;
+                mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
+                mat_specular[3] = 1.f;
+                materialChanged = true;
+                if (isLogDebugEnabled) {
+                    log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
+                }
+                break;
+
+            case AMA: {
+                mat_ambient[3] = ((normalArgument) & 255) / 255.f;
+                materialChanged = true;
+                if (isLogDebugEnabled) {
+                    log(String.format("material ambient a=%.1f (%02X)",
+                            mat_ambient[3], normalArgument & 255));
+                }
+                break;
+            }
+
+            case SPOW: {
+                float floatArgument = floatArgument(normalArgument);
+                gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
+                if (isLogDebugEnabled) {
+                    log("material shininess " + floatArgument);
+                }
+                break;
+            }
+
+            case ALC:
+                ambient_light[0] = ((normalArgument) & 255) / 255.f;
+                ambient_light[1] = ((normalArgument >> 8) & 255) / 255.f;
+                ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
+                gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
+                if (isLogDebugEnabled) {
+                    log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
+                }
+                break;
+
+            case ALA:
+                ambient_light[3] = ((normalArgument) & 255) / 255.f;
+                gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
+                break;
 
             case LMODE: {
                 int lightmode = (normalArgument != 0) ? GL.GL_SEPARATE_SPECULAR_COLOR : GL.GL_SINGLE_COLOR;
@@ -1792,37 +2264,9 @@ public class VideoEngine {
                 break;
             }
 
-            case LXD0:
-            case LXD1:
-            case LXD2:
-            case LXD3:
-            case LYD0:
-            case LYD1:
-            case LYD2:
-            case LYD3:
-            case LZD0:
-            case LZD1:
-            case LZD2:
-            case LZD3: {
-                int lnum = (command - LXD0) / 3;
-                int component = (command - LXD0) % 3;
-                float old_light_dir = light_dir[lnum][component];
-
-                // OpenGL requires a normal in the opposite direction as the PSP
-                light_dir[lnum][component] = -floatArgument(normalArgument);
-
-                if (old_light_dir != light_dir[lnum][component]) {
-                    lightingChanged = true;
-                }
-                // OpenGL parameter for light direction is set in initRendering
-                // because it depends on the model/view matrix
-                break;
-            }
-
             /*
              * Light types
              */
-
             case LT0:
             case LT1:
             case LT2:
@@ -1861,25 +2305,91 @@ public class VideoEngine {
                 }
                 break;
             }
-            /*
-             * Individual lights enable/disable
-             */
-            case LTE0:
-            case LTE1:
-            case LTE2:
-            case LTE3: {
-                int lnum = command - LTE0;
-                EnableDisableFlag lightFlag = lightFlags[lnum];
-                if (lightFlag.setEnabled(normalArgument)) {
-                    if (lightFlag.isEnabled()) {
-                        lightingChanged = true;
-                    }
 
-                    if (useShaders) {
-                        light_enabled[lnum] = lightFlag.isEnabled() ? 1 : 0;
-                        gl.glUniform4iv(Uniforms.lightEnabled.getId(), 1, light_enabled, 0);
-                    }
+            /*
+             *  Light attributes
+             */
+
+            // Position
+            case LXP0:
+            case LXP1:
+            case LXP2:
+            case LXP3:
+            case LYP0:
+            case LYP1:
+            case LYP2:
+            case LYP3:
+            case LZP0:
+            case LZP1:
+            case LZP2:
+            case LZP3: {
+                int lnum = (command - LXP0) / 3;
+                int component = (command - LXP0) % 3;
+                float old_light_pos = light_pos[lnum][component];
+                light_pos[lnum][component] = floatArgument(normalArgument);
+
+                if (old_light_pos != light_pos[lnum][component]) {
+                    lightingChanged = true;
                 }
+                break;
+            }
+
+            case LXD0:
+            case LXD1:
+            case LXD2:
+            case LXD3:
+            case LYD0:
+            case LYD1:
+            case LYD2:
+            case LYD3:
+            case LZD0:
+            case LZD1:
+            case LZD2:
+            case LZD3: {
+                int lnum = (command - LXD0) / 3;
+                int component = (command - LXD0) % 3;
+                float old_light_dir = light_dir[lnum][component];
+
+                // OpenGL requires a normal in the opposite direction as the PSP
+                light_dir[lnum][component] = -floatArgument(normalArgument);
+
+                if (old_light_dir != light_dir[lnum][component]) {
+                    lightingChanged = true;
+                }
+                // OpenGL parameter for light direction is set in initRendering
+                // because it depends on the model/view matrix
+                break;
+            }
+
+            // Light Attenuation
+
+            // Constant
+            case LCA0:
+            case LCA1:
+            case LCA2:
+            case LCA3: {
+                int lnum = (command - LCA0) / 3;
+                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_CONSTANT_ATTENUATION, floatArgument(normalArgument));
+                break;
+            }
+
+            // Linear
+            case LLA0:
+            case LLA1:
+            case LLA2:
+            case LLA3: {
+                int lnum = (command - LLA0) / 3;
+                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_LINEAR_ATTENUATION, floatArgument(normalArgument));
+                break;
+            }
+
+            // Quadratic
+            case LQA0:
+            case LQA1:
+            case LQA2:
+            case LQA3: {
+                int lnum = (command - LQA0) / 3;
+                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_QUADRATIC_ATTENUATION, floatArgument(normalArgument));
                 break;
             }
 
@@ -1933,150 +2443,124 @@ public class VideoEngine {
                 break;
             }
 
-            /*
-             * Lighting enable/disable
-             */
-            case LTE: {
-                if (lightingFlag.setEnabled(normalArgument)) {
-                    if (lightingFlag.isEnabled()) {
-                        lightingChanged = true;
-                    }
+            // Color
 
-                    if (useShaders) {
-                        gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
-                    }
+            // Ambient
+            case ALC0:
+            case ALC1:
+            case ALC2:
+            case ALC3: {
+                int lnum = (command - ALC0) / 3;
+                lightAmbientColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+                lightAmbientColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+                lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+                lightAmbientColor[lnum][3] = 1.f;
+                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_AMBIENT, lightAmbientColor[lnum], 0);
+                log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
+                break;
+            }
+
+            // Diffuse
+            case DLC0:
+            case DLC1:
+            case DLC2:
+            case DLC3: {
+                int lnum = (command - DLC0) / 3;
+                lightDiffuseColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+                lightDiffuseColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+                lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+                lightDiffuseColor[lnum][3] = 1.f;
+                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_DIFFUSE, lightDiffuseColor[lnum], 0);
+                log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
+                break;
+            }
+
+            // Specular
+            case SLC0:
+            case SLC1:
+            case SLC2:
+            case SLC3: {
+                int lnum = (command - SLC0) / 3;
+                float old_lightSpecularColor0 = lightSpecularColor[lnum][0];
+                float old_lightSpecularColor1 = lightSpecularColor[lnum][1];
+                float old_lightSpecularColor2 = lightSpecularColor[lnum][2];
+                lightSpecularColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+                lightSpecularColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+                lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+                lightSpecularColor[lnum][3] = 1.f;
+
+                if (old_lightSpecularColor0 != lightSpecularColor[lnum][0] || old_lightSpecularColor1 != lightSpecularColor[lnum][1] || old_lightSpecularColor2 != lightSpecularColor[lnum][2]) {
+                    lightingChanged = true;
+                }
+                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPECULAR, lightSpecularColor[lnum], 0);
+                log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
+                break;
+            }
+
+            case FFACE: {
+                int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
+                gl.glFrontFace(frontFace);
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 }
                 break;
             }
 
-            /*
-             * Material setup
-             */
-            case CMAT: {
-                int old_mat_flags = mat_flags;
-                mat_flags = normalArgument & 7;
-                if (old_mat_flags != mat_flags) {
-                    materialChanged = true;
+            case FBP:
+                // FBP can be called before or after FBW
+                fbp = (fbp & 0xff000000) | normalArgument;
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                }
+                geBufChanged = true;
+                break;
+
+            case FBW:
+                fbp = (fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+                fbw = normalArgument & 0xffff;
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                }
+                geBufChanged = true;
+                break;
+
+            case ZBP:
+                zbp = (zbp & 0xff000000) | normalArgument;
+                if (isLogDebugEnabled) {
+                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                }
+                break;
+
+            case ZBW:
+                zbp = (zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+                zbw = normalArgument & 0xffff;
+                if (isLogDebugEnabled) {
+                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                }
+                break;
+
+            case TBP0:
+            case TBP1:
+            case TBP2:
+            case TBP3:
+            case TBP4:
+            case TBP5:
+            case TBP6:
+            case TBP7: {
+                int level = command - TBP0;
+                int old_texture_base_pointer = texture_base_pointer[level];
+                texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
+
+                if (old_texture_base_pointer != texture_base_pointer[level]) {
+                    textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuColorMaterial " + mat_flags);
+                    log("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
                 break;
             }
 
-            case AMA: {
-                mat_ambient[3] = ((normalArgument) & 255) / 255.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log(String.format("material ambient a=%.1f (%02X)",
-                            mat_ambient[3], normalArgument & 255));
-                }
-                break;
-            }
-
-            case AMC:
-                mat_ambient[0] = ((normalArgument) & 255) / 255.f;
-                mat_ambient[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
-                }
-                break;
-
-            case DMC:
-                mat_diffuse[0] = ((normalArgument) & 255) / 255.f;
-                mat_diffuse[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
-                mat_diffuse[3] = 1.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
-                }
-                break;
-
-            case EMC:
-                mat_emissive[0] = ((normalArgument) & 255) / 255.f;
-                mat_emissive[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
-                mat_emissive[3] = 1.f;
-                materialChanged = true;
-                gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
-                if (isLogDebugEnabled) {
-                    log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
-                }
-                break;
-
-            case SMC:
-                mat_specular[0] = ((normalArgument) & 255) / 255.f;
-                mat_specular[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
-                mat_specular[3] = 1.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
-                }
-                break;
-
-            case ALC:
-                ambient_light[0] = ((normalArgument) & 255) / 255.f;
-                ambient_light[1] = ((normalArgument >> 8) & 255) / 255.f;
-                ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
-                gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
-                if (isLogDebugEnabled) {
-                    log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
-                }
-                break;
-
-            case ALA:
-                ambient_light[3] = ((normalArgument) & 255) / 255.f;
-                gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
-                break;
-
-            case SPOW: {
-                float floatArgument = floatArgument(normalArgument);
-                gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
-                if (isLogDebugEnabled) {
-                    log("material shininess " + floatArgument);
-                }
-                break;
-            }
-
-            case TMS:
-                textureMatrixUpload.startUpload(normalArgument);
-                if (isLogDebugEnabled) {
-                    log("sceGumMatrixMode GU_TEXTURE " + normalArgument);
-                }
-                break;
-
-            case TMATRIX:
-                if (textureMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", texture_uploaded_matrix);
-                }
-                break;
-
-            case PMS:
-                projectionMatrixUpload.startUpload(normalArgument);
-                if (isLogDebugEnabled) {
-                    log("sceGumMatrixMode GU_PROJECTION " + normalArgument);
-                }
-                break;
-
-            case PROJ:
-                if (projectionMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", proj_uploaded_matrix);
-                }
-                break;
-
-            /*
-             *
-             */
             case TBW0:
             case TBW1:
             case TBW2:
@@ -2101,27 +2585,61 @@ public class VideoEngine {
                 break;
             }
 
-            case TBP0:
-            case TBP1:
-            case TBP2:
-            case TBP3:
-            case TBP4:
-            case TBP5:
-            case TBP6:
-            case TBP7: {
-                int level = command - TBP0;
-                int old_texture_base_pointer = texture_base_pointer[level];
-                texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
+            case CBP: {
+                int old_tex_clut_addr = tex_clut_addr;
+                tex_clut_addr = (tex_clut_addr & 0xff000000) | normalArgument;
 
-                if (old_texture_base_pointer != texture_base_pointer[level]) {
+                clutIsDirty = true;
+                if (old_tex_clut_addr != tex_clut_addr) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
+                    log("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
                 }
                 break;
             }
+
+            case CBPH: {
+                int old_tex_clut_addr = tex_clut_addr;
+                tex_clut_addr = (tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
+
+                clutIsDirty = true;
+                if (old_tex_clut_addr != tex_clut_addr) {
+                    textureChanged = true;
+                }
+
+                if (isLogDebugEnabled) {
+                    log("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                }
+                break;
+            }
+
+            case TRXSBP:
+                textureTx_sourceAddress = (textureTx_sourceAddress & 0xFF000000) | normalArgument;
+                break;
+
+            case TRXSBW:
+                textureTx_sourceAddress = (textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
+                textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
+
+                // TODO Check when sx and sy are reset to 0. Here or after TRXKICK?
+                textureTx_sx = 0;
+                textureTx_sy = 0;
+                break;
+
+            case TRXDBP:
+                textureTx_destinationAddress = (textureTx_destinationAddress & 0xFF000000) | normalArgument;
+                break;
+
+            case TRXDBW:
+                textureTx_destinationAddress = (textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
+                textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
+
+                // TODO Check when dx and dy are reset to 0. Here or after TRXKICK?
+                textureTx_dx = 0;
+                textureTx_dy = 0;
+                break;
 
             case TSIZE0:
             case TSIZE1:
@@ -2152,6 +2670,41 @@ public class VideoEngine {
 
                 if (isLogDebugEnabled) {
                     log("sceGuTexImage(level=" + level + ", width=" + texture_width[level] + ", height=" + texture_height[level] + ", X, X)");
+                }
+                break;
+            }
+
+            case TMAP:
+                int old_tex_map_mode = tex_map_mode;
+                tex_map_mode = normalArgument & 3;
+                tex_proj_map_mode = (normalArgument >> 8) & 3;
+
+                if (old_tex_map_mode != tex_map_mode) {
+                    textureMatrixUpload.setChanged(true);
+                }
+
+                if (isLogDebugEnabled) {
+                    log("sceGuTexMapMode(mode=" + tex_map_mode + ", X, X)");
+                    log("sceGuTexProjMapMode(mode=" + tex_proj_map_mode + ")");
+                }
+                break;
+
+            case TEXTURE_ENV_MAP_MATRIX: {
+                tex_shade_u = (normalArgument >> 0) & 0x3;
+                tex_shade_v = (normalArgument >> 8) & 0x3;
+
+                if (useShaders) {
+                    gl.glUniform2i(Uniforms.texShade.getId(), tex_shade_u, tex_shade_v);
+                } else {
+                    for (int i = 0; i < 3; i++) {
+                        tex_envmap_matrix[i + 0] = light_pos[tex_shade_u][i];
+                        tex_envmap_matrix[i + 4] = light_pos[tex_shade_v][i];
+                    }
+                }
+
+                textureMatrixUpload.setChanged(true);
+                if (isLogDebugEnabled) {
+                    log("sceGuTexMapMode(X, " + tex_shade_u + ", " + tex_shade_v + ")");
                 }
                 break;
             }
@@ -2192,39 +2745,9 @@ public class VideoEngine {
                 break;
             }
 
-            case CBP: {
-                int old_tex_clut_addr = tex_clut_addr;
-                tex_clut_addr = (tex_clut_addr & 0xff000000) | normalArgument;
-
-                clutIsDirty = true;
-                if (old_tex_clut_addr != tex_clut_addr) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
-                }
-                break;
-            }
-
-            case CBPH: {
-                int old_tex_clut_addr = tex_clut_addr;
-                tex_clut_addr = (tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
-
-                clutIsDirty = true;
-                if (old_tex_clut_addr != tex_clut_addr) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
-                }
-                break;
-            }
-
             case CLOAD: {
                 int old_tex_clut_num_blocks = tex_clut_num_blocks;
-                tex_clut_num_blocks = normalArgument & 0x3F; // Checked.
+                tex_clut_num_blocks = normalArgument & 0x3F;
 
                 clutIsDirty = true;
                 if (old_tex_clut_num_blocks != tex_clut_num_blocks) {
@@ -2262,16 +2785,6 @@ public class VideoEngine {
 
                 if (isLogDebugEnabled) {
                     log("sceGuClutMode(cpsm=" + tex_clut_mode + "(" + getPsmName(tex_clut_mode) + "), shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
-                }
-                break;
-            }
-
-            case TFLUSH: {
-                // Do not load the texture right now, clut parameters can still be
-                // defined after the TFLUSH and before the PRIM command.
-                // Delay the texture loading until the PRIM command.
-                if (isLogDebugEnabled) {
-                    log("tflush (deferring to prim)");
                 }
                 break;
             }
@@ -2333,102 +2846,37 @@ public class VideoEngine {
                 break;
             }
 
-
-
-            /*
-             * Texture transformations
-             */
-            case UOFFSET: {
-                float old_tex_translate_x = tex_translate_x;
-                tex_translate_x = floatArgument(normalArgument);
-
-                if (old_tex_translate_x != tex_translate_x) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                // only log in VOFFSET, assume the commands are always paired
-                //if (isLogDebugEnabled) {
-                //    log ("sceGuTexOffset(u=" + tex_translate_x + ", X)");
-                //}
-                break;
-            }
-            case VOFFSET: {
-                float old_tex_translate_y = tex_translate_y;
-                tex_translate_y = floatArgument(normalArgument);
-
-                if (old_tex_translate_y != tex_translate_y) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexOffset(u=" + tex_translate_x + ", v=" + tex_translate_y + ")");
-                }
-                break;
-            }
-
-            case USCALE: {
-                float old_tex_scale_x = tex_scale_x;
-                tex_scale_x = floatArgument(normalArgument);
-
-                if (old_tex_scale_x != tex_scale_x) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                // only log in VSCALE, assume the commands are always paired
-                //if (isLogDebugEnabled) {
-                //    log ("sceGuTexScale(u=" + tex_scale_x + ", X)");
-                //}
-                break;
-            }
-            case VSCALE: {
-                float old_tex_scale_y = tex_scale_y;
-                tex_scale_y = floatArgument(normalArgument);
-
-                if (old_tex_scale_y != tex_scale_y) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexScale(u=" + tex_scale_x + ", v=" + tex_scale_y + ")");
-                }
-                break;
-            }
-
-            case TMAP:
-                int old_tex_map_mode = tex_map_mode;
-                tex_map_mode = normalArgument & 3;
-                tex_proj_map_mode = (normalArgument >> 8) & 3;
-
-                if (old_tex_map_mode != tex_map_mode) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexMapMode(mode=" + tex_map_mode + ", X, X)");
-                    log("sceGuTexProjMapMode(mode=" + tex_proj_map_mode + ")");
-                }
-                break;
-
-            case TEXTURE_ENV_MAP_MATRIX: {
-                // Checked.
-                tex_shade_u = (normalArgument >> 0) & 0x3;
-                tex_shade_v = (normalArgument >> 8) & 0x3;
-
-                if (useShaders) {
-                    gl.glUniform2i(Uniforms.texShade.getId(), tex_shade_u, tex_shade_v);
-                } else {
-                    for (int i = 0; i < 3; i++) {
-                        tex_envmap_matrix[i + 0] = light_pos[tex_shade_u][i];
-                        tex_envmap_matrix[i + 4] = light_pos[tex_shade_v][i];
+            case TWRAP:
+                int wrapModeS = normalArgument & 0xFF;
+                int wrapModeT = (normalArgument >> 8) & 0xFF;
+                switch (wrapModeS) {
+                    case TWRAP_WRAP_MODE_REPEAT: {
+                        tex_wrap_s = GL.GL_REPEAT;
+                        break;
+                    }
+                    case TWRAP_WRAP_MODE_CLAMP: {
+                        tex_wrap_s = GL.GL_CLAMP_TO_EDGE;
+                        break;
+                    }
+                    default: {
+                        log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeS);
                     }
                 }
 
-                textureMatrixUpload.setChanged(true);
-                if (isLogDebugEnabled) {
-                    log("sceGuTexMapMode(X, " + tex_shade_u + ", " + tex_shade_v + ")");
+                switch (wrapModeT) {
+                    case TWRAP_WRAP_MODE_REPEAT: {
+                        tex_wrap_t = GL.GL_REPEAT;
+                        break;
+                    }
+                    case TWRAP_WRAP_MODE_CLAMP: {
+                        tex_wrap_t = GL.GL_CLAMP_TO_EDGE;
+                        break;
+                    }
+                    default: {
+                        log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeT);
+                    }
                 }
                 break;
-            }
 
             case TBIAS: {
                 tex_mipmap_mode = normalArgument & 0x3;
@@ -2456,251 +2904,41 @@ public class VideoEngine {
                 }
                 break;
 
-            case XSCALE: {
-                int old_viewport_width = viewport_width;
-                viewport_width = (int) (floatArgument(normalArgument) * 2);
-                if (old_viewport_width != viewport_width) {
-                    viewportChanged = true;
-                }
-                break;
-            }
-            case YSCALE: {
-                int old_viewport_height = viewport_height;
-                viewport_height = (int) (-floatArgument(normalArgument) * 2);
-                if (old_viewport_height != viewport_height) {
-                    viewportChanged = true;
-                }
-
-                if (!useViewport && (viewport_width != 480 || viewport_height != 272)) {
-                    if (isLogWarnEnabled) {
-                        log.warn("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ") non-standard dimensions");
-                    }
-                } else if (isLogDebugEnabled) {
-                    log.debug("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ")");
-                }
-
-                if (!useViewport) {
-                    display.hleDisplaySetGeMode(viewport_width, viewport_height);
-                }
-                break;
-            }
-
-            case ZSCALE: {
-                float old_zscale = zscale;
-                float floatArgument = floatArgument(normalArgument);
-                zscale = floatArgument / 65535.f;
-                if (old_zscale != zscale) {
-                    depthChanged = true;
-                    if (useShaders) {
-                        gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-                    }
-                }
-
+            case TFLUSH: {
+                // Do not load the texture right now, clut parameters can still be
+                // defined after the TFLUSH and before the PRIM command.
+                // Delay the texture loading until the PRIM command.
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(ZSCALE) + " " + floatArgument);
+                    log("tflush (deferring to prim)");
                 }
                 break;
             }
 
-            case XPOS: {
-                int old_viewport_cx = viewport_cx;
-                viewport_cx = (int) floatArgument(normalArgument);
-                if (old_viewport_cx != viewport_cx) {
-                    viewportChanged = true;
-                }
-                break;
-            }
-            case YPOS: {
-                int old_viewport_cy = viewport_cy;
-                viewport_cy = (int) floatArgument(normalArgument);
-                if (old_viewport_cy != viewport_cy) {
-                    viewportChanged = true;
-                }
-
-                if (useViewport) {
-                    if (isLogDebugEnabled) {
-                        log.warn("sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X)");
-                    }
-                } else if (isLogWarnEnabled) {
-                    if (viewport_cx != 2048 || viewport_cy != 2048) {
-                        log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X) non-standard dimensions");
-                    } else {
-                        log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X)");
-                    }
+            case TSYNC: {
+                // Block texture reading until the current list is drawn.
+                // TODO: Currently just faking. Needs to be tested and compared
+                // in terms of speed.
+                setTsync(true);
+                if (isLogDebugEnabled) {
+                    log(helper.getCommandString(TSYNC) + " waiting for drawing.");
                 }
                 break;
             }
 
-            case ZPOS: {
-                float old_zpos = zpos;
-                float floatArgument = floatArgument(normalArgument);
-                zpos = floatArgument / 65535.f;
-                if (old_zpos != zpos) {
-                    depthChanged = true;
-                    if (useShaders) {
-                        gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-                    }
-                }
-
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(ZPOS), floatArgument);
-                }
-                break;
-            }
-
-            case OFFSETX: {
-                int old_offset_x = offset_x;
-                offset_x = normalArgument >> 4;
-                if (old_offset_x != offset_x) {
-                    viewportChanged = true;
-                }
-                break;
-            }
-            case OFFSETY: {
-                int old_offset_y = offset_y;
-                offset_y = normalArgument >> 4;
-                if (old_offset_y != offset_y) {
-                    viewportChanged = true;
-                }
-
-                if (useViewport) {
-                    if (isLogDebugEnabled) {
-                        log.debug("sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
-                    }
-                } else if (isLogWarnEnabled) {
-                    log.warn("Unimplemented sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
-                }
-                break;
-            }
-
-            case FBP:
-                // FBP can be called before or after FBW
-                fbp = (fbp & 0xff000000) | normalArgument;
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
-                }
-                geBufChanged = true;
-                break;
-            case FBW:
-                fbp = (fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-                fbw = normalArgument & 0xffff;
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
-                }
-                geBufChanged = true;
+            case FFAR:
+                fog_far = floatArgument(normalArgument);
                 break;
 
-            case ZBP:
-                zbp = (zbp & 0xff000000) | normalArgument;
-                if (isLogDebugEnabled) {
-                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
-                }
-                break;
-            case ZBW:
-                zbp = (zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-                zbw = normalArgument & 0xffff;
-                if (isLogDebugEnabled) {
-                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+            case FDIST:
+                fog_dist = floatArgument(normalArgument);
+                if ((fog_far != 0.0f) && (fog_dist != 0.0f)) {
+                    float end = fog_far;
+                    float start = end - (1 / fog_dist);
+                    gl.glFogf(GL.GL_FOG_START, start);
+                    gl.glFogf(GL.GL_FOG_END, end);
                 }
                 break;
 
-            case PSM:
-                psm = normalArgument;
-                if (isLogDebugEnabled) {
-                    log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
-                }
-                geBufChanged = true;
-                break;
-
-            case PRIM:
-                executeCommandPRIM(normalArgument);
-                break;
-
-            case ALPHA: {
-                int blend_mode = GL.GL_FUNC_ADD;
-                int old_blend_src = blend_src;
-                int old_blend_dst = blend_dst;
-                blend_src = normalArgument & 0xF;
-                blend_dst = (normalArgument >> 4) & 0xF;
-                int op = (normalArgument >> 8) & 0xF;
-
-                switch (op) {
-                    case ALPHA_SOURCE_BLEND_OPERATION_ADD:
-                        blend_mode = GL.GL_FUNC_ADD;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_SUBTRACT:
-                        blend_mode = GL.GL_FUNC_SUBTRACT;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_REVERSE_SUBTRACT:
-                        blend_mode = GL.GL_FUNC_REVERSE_SUBTRACT;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE:
-                        blend_mode = GL.GL_MIN;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE:
-                        blend_mode = GL.GL_MAX;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
-                        blend_mode = GL.GL_FUNC_ADD;
-                        break;
-
-                    default:
-                        error("Unhandled blend mode " + op);
-                        break;
-                }
-
-                try {
-                    gl.glBlendEquation(blend_mode);
-                } catch (GLException e) {
-                    log.warn("VideoEngine: " + e.getMessage());
-                }
-
-                if (old_blend_src != blend_src || old_blend_dst != blend_dst) {
-                    blendChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuBlendFunc(op=" + op + ", src=" + blend_src + ", dst=" + blend_dst + ")");
-                }
-                break;
-            }
-
-            case SHADE: {
-                int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
-                gl.glShadeModel(SETTED_MODEL);
-                if (isLogDebugEnabled) {
-                    log("sceGuShadeModel(" + ((normalArgument != 0) ? "smooth" : "flat") + ")");
-                }
-                break;
-            }
-
-            case FFACE: {
-                int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
-                gl.glFrontFace(frontFace);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
-                }
-                break;
-            }
-            case DTE:
-                ditherFlag.setEnabled(normalArgument);
-                break;
-            case BCE:
-                cullFaceFlag.setEnabled(normalArgument);
-                break;
-            case FGE:
-                if (fogFlag.setEnabled(normalArgument)) {
-                    if (fogFlag.isEnabled()) {
-                        gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
-                        gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
-                    }
-                }
-                break;
             case FCOL:
                 fog_color[0] = ((normalArgument) & 255) / 255.f;
                 fog_color[1] = ((normalArgument >> 8) & 255) / 255.f;
@@ -2712,88 +2950,75 @@ public class VideoEngine {
                     log(String.format("sceGuFog(X, X, color=%08X) (no alpha)", normalArgument));
                 }
                 break;
-            case FFAR:
-                fog_far = floatArgument(normalArgument);
-                break;
-            case FDIST:
-                fog_dist = floatArgument(normalArgument);
-                if ((fog_far != 0.0f) && (fog_dist != 0.0f)) {
-                    float end = fog_far;
-                    float start = end - (1 / fog_dist);
-                    gl.glFogf(GL.GL_FOG_START, start);
-                    gl.glFogf(GL.GL_FOG_END, end);
-                }
-                break;
-            case ABE:
-                blendFlag.setEnabled(normalArgument);
-                break;
-            case ATE:
-                alphaTestFlag.setEnabled(normalArgument);
-                break;
-            case ZTE:
-                if (depthTestFlag.setEnabled(normalArgument)) {
-                    if (depthTestFlag.isEnabled()) {
-                        // OpenGL requires the Depth parameters to be reloaded
-                        depthChanged = true;
-                    }
-                }
-                break;
-            case STE:
-                stencilTestFlag.setEnabled(normalArgument);
-                break;
-            case AAE:
-                if (lineSmoothFlag.setEnabled(normalArgument)) {
-                    if (lineSmoothFlag.isEnabled()) {
-                        gl.glHint(GL.GL_LINE_SMOOTH_HINT, GL.GL_NICEST);
-                    }
-                }
-                break;
-            case LOE:
-                colorLogicOpFlag.setEnabled(normalArgument);
-                break;
-            case JUMP: {
-                int oldPc = currentList.pc;
-                currentList.jump(normalArgument);
-                int newPc = currentList.pc;
+
+            case TSLOPE: {
+                tslope_level = floatArgument(normalArgument);
                 if (isLogDebugEnabled) {
-                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
-                }
-                break;
-            }
-            case CALL: {
-                int oldPc = currentList.pc;
-                currentList.call(normalArgument);
-                int newPc = currentList.pc;
-                if (isLogDebugEnabled) {
-                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
-                }
-                break;
-            }
-            case RET: {
-                int oldPc = currentList.pc;
-                currentList.ret();
-                int newPc = currentList.pc;
-                if (isLogDebugEnabled) {
-                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
+                    log(helper.getCommandString(TSLOPE) + " tslope_level=" + tslope_level);
                 }
                 break;
             }
 
-            case ZMSK: {
-                if (!clearMode) {
-                    // NOTE: PSP depth mask as 1 is meant to avoid depth writes,
-                    //		on pc it's the opposite
-                    if (normalArgument != 0) {
-                        gl.glDepthMask(false);
-                    } else {
-                        gl.glDepthMask(true);
-                        // OpenGL requires the Depth parameters to be reloaded
-                        depthChanged = true;
-                    }
+            case PSM:
+                psm = normalArgument;
+                if (isLogDebugEnabled) {
+                    log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
+                }
+                geBufChanged = true;
+                break;
 
+            case CLEAR:
+                executeCommandCLEAR(normalArgument);
+                break;
+
+            case SCISSOR1:
+                scissor_x1 = normalArgument & 0x3ff;
+                scissor_y1 = (normalArgument >> 10) & 0x3ff;
+                break;
+
+            case SCISSOR2:
+                scissor_x2 = normalArgument & 0x3ff;
+                scissor_y2 = (normalArgument >> 10) & 0x3ff;
+                scissor_width = 1 + scissor_x2 - scissor_x1;
+                scissor_height = 1 + scissor_y2 - scissor_y1;
+
+                if (isLogDebugEnabled) {
+                    log("sceGuScissor(" + scissor_x1 + "," + scissor_y1 + "," + scissor_width + "," + scissor_height + ")");
+                }
+                if (scissor_x1 >= 0 && scissor_y1 >= 0 && scissor_width <= region_width && scissor_height <= region_height) {
+                    scissorTestFlag.setEnabled(true);
+                    gl.glScissor(scissor_x1, scissor_y1, scissor_width, scissor_height);
                     if (isLogDebugEnabled) {
-                        log("sceGuDepthMask(" + (normalArgument != 0 ? "disableWrites" : "enableWrites") + ")");
+                        log("sceGuEnable(GU_SCISSOR_TEST)");
                     }
+                } else {
+                    scissorTestFlag.setEnabled(false);
+                }
+                break;
+
+            case NEARZ: {
+                float old_nearZ = nearZ;
+                nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+                if (old_nearZ != nearZ) {
+                    depthChanged = true;
+                }
+                break;
+            }
+
+            case FARZ: {
+                float old_farZ = farZ;
+                farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+                if (old_farZ != farZ) {
+                    // OpenGL requires the Depth parameters to be reloaded
+                    depthChanged = true;
+                }
+
+                if (depthChanged) {
+                    gl.glDepthRange(nearZ, farZ);
+                }
+
+                if (isLogDebugEnabled) {
+                    log.debug("sceGuDepthRange(" + nearZ + ", " + farZ + ")");
                 }
                 break;
             }
@@ -2801,28 +3026,28 @@ public class VideoEngine {
             case CTST: {
                 shaderCtestFunc = normalArgument & 3;
                 if (useShaders) {
-                	gl.glUniform1i(Uniforms.ctestFunc.getId(), shaderCtestFunc);
+                    gl.glUniform1i(Uniforms.ctestFunc.getId(), shaderCtestFunc);
                 }
                 break;
             }
 
             case CREF: {
-                shaderCtestRef[0] = (normalArgument      ) & 0xFF;
-                shaderCtestRef[1] = (normalArgument >>  8) & 0xFF;
+                shaderCtestRef[0] = (normalArgument) & 0xFF;
+                shaderCtestRef[1] = (normalArgument >> 8) & 0xFF;
                 shaderCtestRef[2] = (normalArgument >> 16) & 0xFF;
                 if (useShaders) {
-                	gl.glUniform1iv(Uniforms.ctestRef.getId(), 3, shaderCtestRef, 0);
+                    gl.glUniform1iv(Uniforms.ctestRef.getId(), 3, shaderCtestRef, 0);
                 }
 
                 break;
             }
 
             case CMSK: {
-                shaderCtestMsk[0] = (normalArgument      ) & 0xFF;
-                shaderCtestMsk[1] = (normalArgument >>  8) & 0xFF;
+                shaderCtestMsk[0] = (normalArgument) & 0xFF;
+                shaderCtestMsk[1] = (normalArgument >> 8) & 0xFF;
                 shaderCtestMsk[2] = (normalArgument >> 16) & 0xFF;
                 if (useShaders) {
-                	gl.glUniform1iv(Uniforms.ctestMsk.getId(), 3, shaderCtestMsk, 0);
+                    gl.glUniform1iv(Uniforms.ctestMsk.getId(), 3, shaderCtestMsk, 0);
                 }
 
                 break;
@@ -2926,6 +3151,15 @@ public class VideoEngine {
                 break;
             }
 
+            case SOP: {
+                int fail = getStencilOp(normalArgument & 0xFF);
+                int zfail = getStencilOp((normalArgument >> 8) & 0xFF);
+                int zpass = getStencilOp((normalArgument >> 16) & 0xFF);
+
+                gl.glStencilOp(fail, zfail, zpass);
+                break;
+            }
+
             case ZTST: {
                 int oldDepthFunc = depthFunc;
 
@@ -2968,315 +3202,60 @@ public class VideoEngine {
                 break;
             }
 
-            case SCISSOR1:
-                scissor_x1 = normalArgument & 0x3ff;
-                scissor_y1 = normalArgument >> 10; // & 0x3ff?
-                break;
+            case ALPHA: {
+                int blend_mode = GL.GL_FUNC_ADD;
+                int old_blend_src = blend_src;
+                int old_blend_dst = blend_dst;
+                blend_src = normalArgument & 0xF;
+                blend_dst = (normalArgument >> 4) & 0xF;
+                int op = (normalArgument >> 8) & 0xF;
 
-            case SCISSOR2:
-                scissor_x2 = normalArgument & 0x3ff;
-                scissor_y2 = normalArgument >> 10; // & 0x3ff?
-                scissor_width = 1 + scissor_x2 - scissor_x1;
-                scissor_height = 1 + scissor_y2 - scissor_y1;
-
-                // scissor enable/disable is determined by the scissor area matching the region area,
-                // there's a problem if the region coords change while the scissor coords stay constant.
-                // TODO
-                // - as a workaround can we keep gl scissor on all the time at no performance loss?
-                // - or we can just put extra checks in the region commands
-                if (isLogDebugEnabled) {
-                    log("sceGuScissor(" + scissor_x1 + "," + scissor_y1 + "," + scissor_width + "," + scissor_height + ")");
-                }
-
-                if (scissor_x1 != 0 || scissor_y1 != 0 || scissor_width != region_width || scissor_height != region_height) {
-                    scissorTestFlag.setEnabled(true);
-                    // old: gl.glScissor(scissor_x, scissor_y, scissor_width, scissor_height);
-                    // invert y coord (for open gl?)
-                    // TODO replace 272 with viewport_height?
-                    gl.glScissor(scissor_x1, 272 - scissor_y1 - scissor_height, scissor_width, scissor_height);
-
-                    if (isLogDebugEnabled) {
-                        log("sceGuEnable(GU_SCISSOR_TEST) actual y-coord " + (272 - scissor_y1 - scissor_height) + " (inverted)");
-                    }
-                } else {
-                    scissorTestFlag.setEnabled(false);
-                }
-                break;
-
-            case NEARZ: {
-                float old_nearZ = nearZ;
-                nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-                if (old_nearZ != nearZ) {
-                    depthChanged = true;
-                }
-                break;
-            }
-
-            case FARZ: {
-                float old_farZ = farZ;
-                farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-                if (old_farZ != farZ) {
-                    // OpenGL requires the Depth parameters to be reloaded
-                    depthChanged = true;
-                }
-
-                if (depthChanged) {
-                    gl.glDepthRange(nearZ, farZ);
-                }
-
-                if (isLogDebugEnabled) {
-                    log.debug("sceGuDepthRange(" + nearZ + ", " + farZ + ")");
-                }
-                break;
-            }
-
-            case SOP: {
-                int fail = getStencilOp(normalArgument & 0xFF);
-                int zfail = getStencilOp((normalArgument >> 8) & 0xFF);
-                int zpass = getStencilOp((normalArgument >> 16) & 0xFF);
-
-                gl.glStencilOp(fail, zfail, zpass);
-                break;
-            }
-
-            case CLEAR:
-                executeCommandCLEAR(normalArgument);
-                break;
-
-            case NOP:
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(NOP));
-                }
-
-                // Check if we are not reading from an invalid memory region.
-                // Abort the list if this is the case.
-                // This is only done in the NOP command to not impact performance.
-                checkCurrentListPc();
-                break;
-
-            /*
-             * Skinning
-             */
-            case BOFS: {
-                boneMatrixIndex = normalArgument;
-                if (isLogDebugEnabled) {
-                    log("bone matrix offset", normalArgument);
-                }
-                break;
-            }
-            case BONE: {
-                // Multiple BONE matrix can be loaded in sequence
-                // without having to issue a BOFS for each matrix.
-                int matrixIndex = boneMatrixIndex / 12;
-                int elementIndex = boneMatrixIndex % 12;
-                if (matrixIndex >= 8) {
-                    error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
-                } else {
-                    float floatArgument = floatArgument(normalArgument);
-                    bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
-                    if (useSkinningShaders) {
-                        boneMatrixForShader[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
-                        if (matrixIndex >= boneMatrixForShaderUpdatedMatrix) {
-                            boneMatrixForShaderUpdatedMatrix = matrixIndex + 1;
-                        }
-                    }
-                    boneMatrixIndex++;
-
-                    if (isLogDebugEnabled && (boneMatrixIndex % 12) == 0) {
-                        for (int x = 0; x < 3; x++) {
-                            log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
-                                    matrixIndex,
-                                    bone_uploaded_matrix[matrixIndex][x + 0],
-                                    bone_uploaded_matrix[matrixIndex][x + 3],
-                                    bone_uploaded_matrix[matrixIndex][x + 6],
-                                    bone_uploaded_matrix[matrixIndex][x + 9]));
-                        }
-                    }
-                }
-                break;
-            }
-
-            /*
-             * Morphing
-             */
-            case MW0:
-            case MW1:
-            case MW2:
-            case MW3:
-            case MW4:
-            case MW5:
-            case MW6:
-            case MW7: {
-                int index = command - MW0;
-                morph_weight[index] = floatArgument(normalArgument);
-                if (isLogDebugEnabled) {
-                    log("morph weight " + index, morph_weight[index]);
-                }
-                break;
-            }
-
-            case TRXSBP:
-                textureTx_sourceAddress = (textureTx_sourceAddress & 0xFF000000) | normalArgument;
-                break;
-
-            case TRXSBW:
-                textureTx_sourceAddress = (textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
-                textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
-
-                // TODO Check when sx and sy are reset to 0. Here or after TRXKICK?
-                textureTx_sx = 0;
-                textureTx_sy = 0;
-                break;
-
-            case TRXDBP:
-                textureTx_destinationAddress = (textureTx_destinationAddress & 0xFF000000) | normalArgument;
-                break;
-
-            case TRXDBW:
-                textureTx_destinationAddress = (textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
-                textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
-
-                // TODO Check when dx and dy are reset to 0. Here or after TRXKICK?
-                textureTx_dx = 0;
-                textureTx_dy = 0;
-                break;
-
-            case TRXSIZE:
-                textureTx_width = (normalArgument & 0x3FF) + 1;
-                textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
-                break;
-
-            case TRXPOS:
-                textureTx_sx = normalArgument & 0x1FF;
-                textureTx_sy = (normalArgument >> 10) & 0x1FF;
-                break;
-
-            case TRXDPOS:
-                textureTx_dx = normalArgument & 0x1FF;
-                textureTx_dy = (normalArgument >> 10) & 0x1FF;
-                break;
-
-            case TRXKICK:
-                executeCommandTRXKICK(normalArgument);
-                break;
-
-            case TWRAP:
-                int wrapModeS = normalArgument & 0xFF;
-                int wrapModeT = (normalArgument >> 8) & 0xFF;
-                switch (wrapModeS) {
-                    case TWRAP_WRAP_MODE_REPEAT: {
-                        tex_wrap_s = GL.GL_REPEAT;
+                switch (op) {
+                    case ALPHA_SOURCE_BLEND_OPERATION_ADD:
+                        blend_mode = GL.GL_FUNC_ADD;
                         break;
-                    }
-                    case TWRAP_WRAP_MODE_CLAMP: {
-                        tex_wrap_s = GL.GL_CLAMP_TO_EDGE;
+
+                    case ALPHA_SOURCE_BLEND_OPERATION_SUBTRACT:
+                        blend_mode = GL.GL_FUNC_SUBTRACT;
                         break;
-                    }
-                    default: {
-                        log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeS);
-                    }
-                }
 
-                switch (wrapModeT) {
-                    case TWRAP_WRAP_MODE_REPEAT: {
-                        tex_wrap_t = GL.GL_REPEAT;
+                    case ALPHA_SOURCE_BLEND_OPERATION_REVERSE_SUBTRACT:
+                        blend_mode = GL.GL_FUNC_REVERSE_SUBTRACT;
                         break;
-                    }
-                    case TWRAP_WRAP_MODE_CLAMP: {
-                        tex_wrap_t = GL.GL_CLAMP_TO_EDGE;
+
+                    case ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE:
+                        blend_mode = GL.GL_MIN;
                         break;
-                    }
-                    default: {
-                        log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeT);
-                    }
-                }
-                break;
 
-            case PSUB:
-                patch_div_s = normalArgument & 0xFF;
-                patch_div_t = (normalArgument >> 8) & 0xFF;
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(PSUB) + " patch_div_s=" + patch_div_s + ", patch_div_t=" + patch_div_t);
-                }
-                break;
+                    case ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE:
+                        blend_mode = GL.GL_MAX;
+                        break;
 
-            case BEZIER:
-                int ucount = normalArgument & 0xFF;
-                int vcount = (normalArgument >> 8) & 0xFF;
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
+                    case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
+                        blend_mode = GL.GL_FUNC_ADD;
+                        break;
+
+                    default:
+                        error("Unhandled blend mode " + op);
+                        break;
                 }
 
-                updateGeBuf();
-                loadTexture();
-
-                drawBezier(ucount, vcount);
-                break;
-
-            case SPLINE: {
-                // Number of control points.
-                int sp_ucount =  normalArgument & 0xFF;
-                int sp_vcount = (normalArgument >> 8) & 0xFF;
-                // Knot types.
-                int sp_utype =  (normalArgument >> 16) & 0x3;
-                int sp_vtype =  (normalArgument >> 18) & 0x3;
-
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(SPLINE) + " sp_ucount=" + sp_ucount + ", sp_vcount=" + sp_vcount +
-                            " sp_utype=" + sp_utype + ", sp_vtype=" + sp_vtype);
+                try {
+                    gl.glBlendEquation(blend_mode);
+                } catch (GLException e) {
+                    log.warn("VideoEngine: " + e.getMessage());
                 }
 
-                updateGeBuf();
-                loadTexture();
-
-                drawSpline(sp_ucount, sp_vcount, sp_utype, sp_vtype);
-                break;
-            }
-
-            case CPE: //Clip Plane Enable
-                //uggly trying ... don't break any demo (that I've tested)
-                if (normalArgument != 0) {
-                    gl.glEnable(GL.GL_CLIP_PLANE0);
-                    gl.glEnable(GL.GL_CLIP_PLANE1);
-                    gl.glEnable(GL.GL_CLIP_PLANE2);
-                    gl.glEnable(GL.GL_CLIP_PLANE3);
-                    gl.glEnable(GL.GL_CLIP_PLANE4);
-                    gl.glEnable(GL.GL_CLIP_PLANE5);
-                    if (isLogDebugEnabled) {
-                        log("Clip Plane Enable " + getArgumentLog(normalArgument));
-                    }
-                } else {
-                    gl.glDisable(GL.GL_CLIP_PLANE0);
-                    gl.glDisable(GL.GL_CLIP_PLANE1);
-                    gl.glDisable(GL.GL_CLIP_PLANE2);
-                    gl.glDisable(GL.GL_CLIP_PLANE3);
-                    gl.glDisable(GL.GL_CLIP_PLANE4);
-                    gl.glDisable(GL.GL_CLIP_PLANE5);
-                    if (isLogDebugEnabled) {
-                        log("Clip Plane Disable " + getArgumentLog(normalArgument));
-                    }
-                }
-                clipPlanesFlag.setEnabled(normalArgument);
-                break;
-
-            case DFIX: {
-                float old_dfix_color0 = dfix_color[0];
-                float old_dfix_color1 = dfix_color[1];
-                float old_dfix_color2 = dfix_color[2];
-                dfix_color[0] = ((normalArgument) & 255) / 255.f;
-                dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                dfix_color[3] = 1.f;
-
-                if (old_dfix_color0 != dfix_color[0] || old_dfix_color1 != dfix_color[1] || old_dfix_color2 != dfix_color[2]) {
+                if (old_blend_src != blend_src || old_blend_dst != blend_dst) {
                     blendChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
+                    log("sceGuBlendFunc(op=" + op + ", src=" + blend_src + ", dst=" + blend_dst + ")");
                 }
                 break;
             }
+
             case SFIX: {
                 float old_sfix_color0 = sfix_color[0];
                 float old_sfix_color1 = sfix_color[1];
@@ -3296,106 +3275,94 @@ public class VideoEngine {
                 break;
             }
 
+            case DFIX: {
+                float old_dfix_color0 = dfix_color[0];
+                float old_dfix_color1 = dfix_color[1];
+                float old_dfix_color2 = dfix_color[2];
+                dfix_color[0] = ((normalArgument) & 255) / 255.f;
+                dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+                dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+                dfix_color[3] = 1.f;
+
+                if (old_dfix_color0 != dfix_color[0] || old_dfix_color1 != dfix_color[1] || old_dfix_color2 != dfix_color[2]) {
+                    blendChanged = true;
+                }
+
+                if (isLogDebugEnabled) {
+                    log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
+                }
+                break;
+            }
+
+            case DTH0:
+                dither_matrix[0] = (normalArgument) & 0xF;
+                dither_matrix[1] = (normalArgument >> 4) & 0xF;
+                dither_matrix[2] = (normalArgument >> 8) & 0xF;
+                dither_matrix[3] = (normalArgument >> 12) & 0xF;
+                break;
+
+            case DTH1:
+                dither_matrix[4] = (normalArgument) & 0xF;
+                dither_matrix[5] = (normalArgument >> 4) & 0xF;
+                dither_matrix[6] = (normalArgument >> 8) & 0xF;
+                dither_matrix[7] = (normalArgument >> 12) & 0xF;
+                break;
+
+            case DTH2:
+                dither_matrix[8] = (normalArgument) & 0xF;
+                dither_matrix[9] = (normalArgument >> 4) & 0xF;
+                dither_matrix[10] = (normalArgument >> 8) & 0xF;
+                dither_matrix[11] = (normalArgument >> 12) & 0xF;
+                break;
+
+            case DTH3:
+                dither_matrix[12] = (normalArgument) & 0xF;
+                dither_matrix[13] = (normalArgument >> 4) & 0xF;
+                dither_matrix[14] = (normalArgument >> 8) & 0xF;
+                dither_matrix[15] = (normalArgument >> 12) & 0xF;
+
+                // The dither matrix's values can vary between -8 and 7.
+                // The most significant bit acts as sign bit.
+                // Translate and log only at the last command.
+
+                for (int i = 0; i < 16; i++) {
+                    if (dither_matrix[i] > 7) {
+                        dither_matrix[i] |= 0xFFFFFFF0;
+                    }
+                }
+
+                if (isLogDebugEnabled) {
+                    log.debug("DTH0:" + "  " + dither_matrix[0] + "  " + dither_matrix[1] + "  " + dither_matrix[2] + "  " + dither_matrix[3]);
+                    log.debug("DTH1:" + "  " + dither_matrix[4] + "  " + dither_matrix[5] + "  " + dither_matrix[6] + "  " + dither_matrix[7]);
+                    log.debug("DTH2:" + "  " + dither_matrix[8] + "  " + dither_matrix[9] + "  " + dither_matrix[10] + "  " + dither_matrix[11]);
+                    log.debug("DTH3:" + "  " + dither_matrix[12] + "  " + dither_matrix[13] + "  " + dither_matrix[14] + "  " + dither_matrix[15]);
+                }
+                break;
+
             case LOP:
                 int LogicOp = getLogicalOp(normalArgument & 0x0F);
                 gl.glLogicOp(LogicOp);
                 log.debug("sceGuLogicalOp( LogicOp = " + normalArgument + "(" + getLOpName(normalArgument) + ")");
                 break;
 
-            case DTH0:
-                dither_matrix[0] = (normalArgument) & 0x0F;
-                dither_matrix[1] = (normalArgument >> 4) & 0x0F;
-                dither_matrix[2] = (normalArgument >> 8) & 0x0F;
-                dither_matrix[3] = (normalArgument >> 12) & 0x0F;
+            case ZMSK: {
+                if (!clearMode) {
+                    // NOTE: PSP depth mask as 1 is meant to avoid depth writes,
+                    //		on pc it's the opposite
+                    if (normalArgument != 0) {
+                        gl.glDepthMask(false);
+                    } else {
+                        gl.glDepthMask(true);
+                        // OpenGL requires the Depth parameters to be reloaded
+                        depthChanged = true;
+                    }
 
-                //The dither matrix's values can vary between -4 and 4.
-                //Check for values superior to 4 and inferior to -4 and
-                //translate them properly.
-
-                for (int i = 0; i < 16; i++) {
-                    if (dither_matrix[i] > 4) {
-                        dither_matrix[i] -= 16;
-                    } else if (dither_matrix[i] < -4) {
-                        dither_matrix[i] += 16;
+                    if (isLogDebugEnabled) {
+                        log("sceGuDepthMask(" + (normalArgument != 0 ? "disableWrites" : "enableWrites") + ")");
                     }
                 }
-
-                if (isLogDebugEnabled) {
-                    log("DTH0:" + "  " + dither_matrix[0] + "  " + dither_matrix[1] + "  "
-                            + dither_matrix[2] + "  " + dither_matrix[3]);
-                }
-
                 break;
-
-            case DTH1:
-                dither_matrix[4] = (normalArgument) & 0x0F;
-                dither_matrix[5] = (normalArgument >> 4) & 0x0F;
-                dither_matrix[6] = (normalArgument >> 8) & 0x0F;
-                dither_matrix[7] = (normalArgument >> 12) & 0x0F;
-
-                for (int i = 0; i < 16; i++) {
-                    if (dither_matrix[i] > 4) {
-                        dither_matrix[i] -= 16;
-                    } else if (dither_matrix[i] < -4) {
-                        dither_matrix[i] += 16;
-                    }
-                }
-
-                if (isLogDebugEnabled) {
-                    log("DTH1:" + "  " + dither_matrix[4] + "  " + dither_matrix[5] + "  "
-                            + dither_matrix[6] + "  " + dither_matrix[7]);
-                }
-
-                break;
-
-            case DTH2:
-                dither_matrix[8] = (normalArgument) & 0x0F;
-                dither_matrix[9] = (normalArgument >> 4) & 0x0F;
-                dither_matrix[10] = (normalArgument >> 8) & 0x0F;
-                dither_matrix[11] = (normalArgument >> 12) & 0x0F;
-
-                for (int i = 0; i < 16; i++) {
-                    if (dither_matrix[i] > 4) {
-                        dither_matrix[i] -= 16;
-                    } else if (dither_matrix[i] < -4) {
-                        dither_matrix[i] += 16;
-                    }
-                }
-
-                if (isLogDebugEnabled) {
-                    log("DTH2:" + "  " + dither_matrix[8] + "  " + dither_matrix[9] + "  "
-                            + dither_matrix[10] + "  " + dither_matrix[11]);
-                }
-
-                break;
-
-            case DTH3:
-                dither_matrix[12] = (normalArgument) & 0x0F;
-                dither_matrix[13] = (normalArgument >> 4) & 0x0F;
-                dither_matrix[14] = (normalArgument >> 8) & 0x0F;
-                dither_matrix[15] = (normalArgument >> 12) & 0x0F;
-
-                for (int i = 0; i < 16; i++) {
-                    if (dither_matrix[i] > 4) {
-                        dither_matrix[i] -= 16;
-                    } else if (dither_matrix[i] < -4) {
-                        dither_matrix[i] += 16;
-                    }
-                }
-
-                if (isLogDebugEnabled) {
-                    log("DTH3:" + "  " + dither_matrix[12] + "  " + dither_matrix[13] + "  "
-                            + dither_matrix[14] + "  " + dither_matrix[15]);
-                }
-
-                break;
-
-            case BBOX:
-                executeCommandBBOX(normalArgument);
-                break;
-            case BJUMP:
-                executeCommandBJUMP(normalArgument);
-                break;
+            }
 
             case PMSKC: {
                 if (isLogDebugEnabled) {
@@ -3421,63 +3388,24 @@ public class VideoEngine {
                 break;
             }
 
-            case PPRIM: {
-                patch_prim = (normalArgument & 0x3);
-                // Primitive type to use in patch division:
-                // 0 - Triangle.
-                // 1 - Line.
-                // 2 - Point.
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(PPRIM) + " patch_prim=" + patch_prim);
-                }
+            case TRXKICK:
+                executeCommandTRXKICK(normalArgument);
                 break;
-            }
 
-            case PFACE: {
-                // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
-            	patchFaceFlag.setEnabled(normalArgument);
+            case TRXPOS:
+                textureTx_sx = normalArgument & 0x1FF;
+                textureTx_sy = (normalArgument >> 10) & 0x1FF;
                 break;
-            }
 
-            case PCE: {
-            	patchCullFaceFlag.setEnabled(normalArgument);
+            case TRXDPOS:
+                textureTx_dx = normalArgument & 0x1FF;
+                textureTx_dy = (normalArgument >> 10) & 0x1FF;
                 break;
-            }
 
-            case CTE: {
-                if (colorTestFlag.setEnabled(normalArgument)) {
-                    if (useShaders) {
-                        gl.glUniform1i(Uniforms.ctestEnable.getId(), colorTestFlag.isEnabledInt());
-                    }
-                }
-            	break;
-            }
-
-            case RNORM: {
-                // This seems to be taked into account when calculating the lighting
-                // for the current normal.
-            	faceNormalReverseFlag.setEnabled(normalArgument);
+            case TRXSIZE:
+                textureTx_width = (normalArgument & 0x3FF) + 1;
+                textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
                 break;
-            }
-
-            case TSYNC: {
-                // Block texture reading until the current list is drawn.
-                // TODO: Currently just faking. Needs to be tested and compared
-                // in terms of speed.
-                setTsync(true);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(TSYNC) + " waiting for drawing.");
-                }
-                break;
-            }
-
-            case TSLOPE: {
-                tslope_level = floatArgument(normalArgument);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(TSLOPE) + " tslope_level=" + tslope_level);
-                }
-                break;
-            }
 
             case UNKNOWNCOMMAND_0xFF: {
                 // This command always appears before a BOFS command and seems to have
@@ -4874,6 +4802,7 @@ public class VideoEngine {
             boolean compressedTexture = false;
 
             int numberMipmaps = texture_num_mip_maps;
+
             for (int level = 0; level <= numberMipmaps; level++) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
@@ -5432,7 +5361,10 @@ public class VideoEngine {
          */
         boolean loadOrtho2D = false;
         if (viewportChanged) {
-            if (useViewport) {
+            if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                // Load the ortho for 2D after the depth settings
+                loadOrtho2D = true;
+            } else {
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
                     if (viewport_cx == 0 && viewport_cy == 0 && viewport_height == 0 && viewport_width == 0) {
                         viewport_cx = 2048;
@@ -5440,16 +5372,12 @@ public class VideoEngine {
                         viewport_width = 480;
                         viewport_height = 272;
                     }
-                    gl.glViewport(viewport_cx - offset_x - viewport_width / 2, 272 - (viewport_cy - offset_y) - viewport_height / 2, viewport_width, viewport_height);
+                    gl.glViewport(viewport_cx - offset_x, viewport_cy - offset_y, viewport_width, viewport_height);
                 } else {
                     gl.glViewport(0, 0, 480, 272);
-
                     // Load the ortho for 2D after the depth settings
                     loadOrtho2D = true;
                 }
-            } else if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-                // Load the ortho for 2D after the depth settings
-                loadOrtho2D = true;
             }
             viewportChanged = false;
         }
@@ -5693,22 +5621,30 @@ public class VideoEngine {
         int mipmapMaxLevel = texture_num_mip_maps;
         if (tex_mipmap_mode == TBIAS_MODE_CONST) {
             // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
-        	mipmapBaseLevel = tex_mipmap_bias_int;
-        	mipmapMaxLevel = tex_mipmap_bias_int;
+            mipmapBaseLevel = tex_mipmap_bias_int;
+            mipmapMaxLevel = tex_mipmap_bias_int;
             if (isLogDebugEnabled) {
-            	log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
+                log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
             }
-        } else if(tex_mipmap_mode == TBIAS_MODE_AUTO) {
-            // TODO: TBIAS_MODE_AUTO.
+        } else if (tex_mipmap_mode == TBIAS_MODE_AUTO) {
+            // TBIAS_MODE_AUTO performs a comparison between the texture's weight and height at level 0.
+            int maxValue = Math.max(texture_width[0], texture_height[0]);
+
+            if(maxValue <= 1) {
+                mipmapBaseLevel = 0;
+            } else {
+                mipmapBaseLevel = (int) ((Math.log((Math.abs(maxValue) / Math.abs(zpos))) / Math.log(2)) + tex_mipmap_bias);
+            }
+            mipmapMaxLevel = mipmapBaseLevel;
             if (isLogDebugEnabled) {
-            	log.debug("TBIAS_MODE_AUTO " + tex_mipmap_bias_int);
+                log.debug("TBIAS_MODE_AUTO " + tex_mipmap_bias + ", param=" + maxValue);
             }
-        } else if(tex_mipmap_mode == TBIAS_MODE_SLOPE) {
+        } else if (tex_mipmap_mode == TBIAS_MODE_SLOPE) {
             // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
-        	mipmapBaseLevel = (int)((Math.log(tslope_level / texture_num_mip_maps) / Math.log(2)) + tex_mipmap_bias);
-        	mipmapMaxLevel = mipmapBaseLevel;
+            mipmapBaseLevel = (int) ((Math.log(Math.abs(tslope_level) / Math.abs(zpos)) / Math.log(2)) + tex_mipmap_bias);
+            mipmapMaxLevel = mipmapBaseLevel;
             if (isLogDebugEnabled) {
-            	log.debug("TBIAS_MODE_SLOPE " + tex_mipmap_bias + ", slope=" + tslope_level);
+                log.debug("TBIAS_MODE_SLOPE " + tex_mipmap_bias + ", slope=" + tslope_level);
             }
         }
 
@@ -5717,7 +5653,7 @@ public class VideoEngine {
         // Clamp to [mipmapBaseLevel..texture_num_mip_maps]
         mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, texture_num_mip_maps));
         if (isLogDebugEnabled) {
-        	log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + texture_num_mip_maps);
+            log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + texture_num_mip_maps);
         }
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_BASE_LEVEL, mipmapBaseLevel);
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, mipmapMaxLevel);
@@ -5763,7 +5699,7 @@ public class VideoEngine {
             }
         }
     }
-    
+
     float spline_n(int i, int j, float u, int[] knot) {
     	if(j == 0) {
     		if(knot[i] <= u && u < knot[i + 1])
@@ -5840,7 +5776,7 @@ public class VideoEngine {
 
         	for(int i = 0; i <= patch_div_s; i++) {
         		float u = (float)i * (float)(n - limit) / (float)patch_div_s;
-        		
+
         		patch[i][j] = new VertexState();
         		VertexState p = patch[i][j];
 
@@ -5881,7 +5817,7 @@ public class VideoEngine {
 			dest.n[2] += f * src.n[2];
 		}
 	}
-    
+
     private void drawBezier(int ucount, int vcount) {
         if ((ucount - 1) % 3 != 0 && (vcount - 1) % 3 != 0) {
             log.warn("Unsupported bezier parameters ucount=" + ucount + " vcount=" + vcount);
@@ -5903,16 +5839,16 @@ public class VideoEngine {
 
         // Generate patch VertexState.
         VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
-        
+
         // Number of patches in the U and V directions
         int upcount = ucount / 3;
         int vpcount = vcount / 3;
 
         float[][] ucoeff = new float[patch_div_s + 1][];
-        
+
         for(int j = 0; j <= patch_div_t; j++) {
         	float vglobal = (float)j * vpcount / (float)patch_div_t;
-        	
+
         	int vpatch = (int)vglobal; // Patch number
         	float v = vglobal - vpatch;
         	if(j == patch_div_t) {
@@ -5930,10 +5866,10 @@ public class VideoEngine {
         			u = 1.f;
         		}
         		ucoeff[i] = BernsteinCoeff(u);
-        		
+
         		patch[i][j] = new VertexState();
         		VertexState p = patch[i][j];
-        		
+
         		for(int ii = 0; ii < 4; ++ii) {
         			for(int jj = 0; jj < 4; ++jj) {
         				pointMultAdd(p,
@@ -5942,7 +5878,7 @@ public class VideoEngine {
         						useVertexColor, useTexture, useNormal);
         			}
         		}
-        		
+
         		if(useTexture && vinfo.texture == 0) {
         			p.t[0] = uglobal;
         			p.t[1] = vglobal;
@@ -5985,7 +5921,7 @@ public class VideoEngine {
 
 	private VertexState[][] getControlPoints(int ucount, int vcount) {
 		VertexState[][] controlPoints = new VertexState[ucount][vcount];
-		
+
 		Memory mem = Memory.getInstance();
         for (int u = 0; u < ucount; u++) {
             for (int v = 0; v < vcount; v++) {
@@ -6001,7 +5937,7 @@ public class VideoEngine {
                 controlPoints[u][v] = vs;
             }
         }
-        return controlPoints; 
+        return controlPoints;
 	}
 
     private float[] BernsteinCoeff(float u) {
@@ -6012,7 +5948,7 @@ public class VideoEngine {
         float u1Pow3 = u1Pow2 * u1;
         return new float[] {u1Pow3, 3 * u * u1Pow2, 3 * uPow2 * u1, uPow3 };
     }
-    
+
     private Buffer getTexture32BitBuffer(int texaddr, int level) {
         Buffer final_buffer = null;
 
@@ -6441,15 +6377,6 @@ public class VideoEngine {
         viewportChanged = true;
         depthChanged = true;
         materialChanged = true;
-    }
-
-    public boolean isUseViewport() {
-        return useViewport;
-    }
-
-    public void setUseViewport(boolean useViewport) {
-        this.useViewport = useViewport;
-        log.info("Use Viewport: " + useViewport);
     }
 
     public boolean isUsingTRXKICK() {
