@@ -427,7 +427,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 		}
     }
 
-    static private String getTypeName(int type) {
+    static protected String getTypeName(int type) {
         String typeName;
 
         switch (type) {
