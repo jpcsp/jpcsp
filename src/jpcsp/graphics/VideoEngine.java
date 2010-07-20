@@ -62,6 +62,8 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.graphics.RE.RenderingEngineFactory;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
@@ -132,6 +134,7 @@ public class VideoEngine {
     private static VideoEngine instance;
     private GL gl;
     private sceDisplay display;
+    private IRenderingEngine re;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
     private boolean useVertexCache = false;
@@ -226,7 +229,7 @@ public class VideoEngine {
     private int tex_clut_addr;
     private int tex_clut_num_blocks;
     private int tex_clut_mode, tex_clut_shift, tex_clut_mask, tex_clut_start;
-    private int tex_wrap_s = GL.GL_REPEAT, tex_wrap_t = GL.GL_REPEAT;
+    private int tex_wrap_s = TWRAP_WRAP_MODE_REPEAT, tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
     private int tex_shade_u = 0;
     private int tex_shade_v = 0;
     private int patch_div_s;
@@ -263,7 +266,7 @@ public class VideoEngine {
     private boolean depthChanged;
     private int[] dither_matrix = new int[16];
     private boolean takeConditionalJump;
-    private boolean glColorMask[];
+    private int colorMask[];
     // opengl needed information/buffers
     private int[] gl_texture_id = new int[1];
     private int[] tmp_texture_buffer32 = new int[1024 * 1024];
@@ -299,56 +302,47 @@ public class VideoEngine {
     private HashMap<Integer, Integer> currentCMDValues;
     private static int contextBitCount = 0;
     private final List<EnableDisableFlag> flags = new LinkedList<EnableDisableFlag>();
-    private final EnableDisableFlag alphaTestFlag = new EnableDisableFlag("GU_ALPHA_TEST", GL.GL_ALPHA_TEST, false);
-    private final EnableDisableFlag depthTestFlag = new EnableDisableFlag("GU_DEPTH_TEST", GL.GL_DEPTH_TEST, false);
-    private final EnableDisableFlag scissorTestFlag = new EnableDisableFlag("GU_SCISSOR_TEST", GL.GL_SCISSOR_TEST);
-    private final EnableDisableFlag stencilTestFlag = new EnableDisableFlag("GU_STENCIL_TEST", GL.GL_STENCIL_TEST, false);
-    private final EnableDisableFlag blendFlag = new EnableDisableFlag("GU_BLEND", GL.GL_BLEND, false);
-    private final EnableDisableFlag cullFaceFlag = new EnableDisableFlag("GU_CULL_FACE", GL.GL_CULL_FACE, false);
-    private final EnableDisableFlag ditherFlag = new EnableDisableFlag("GU_DITHER", GL.GL_DITHER);
-    private final EnableDisableFlag fogFlag = new EnableDisableFlag("GU_FOG", GL.GL_FOG, false);
-    private final EnableDisableFlag clipPlanesFlag = new EnableDisableFlag("GU_CLIP_PLANES");
-    private final EnableDisableFlag textureFlag = new EnableDisableFlag("GU_TEXTURE_2D", GL.GL_TEXTURE_2D, false);
-    private final EnableDisableFlag lightingFlag = new EnableDisableFlag("GU_LIGHTING", GL.GL_LIGHTING);
+    private final EnableDisableFlag alphaTestFlag = new EnableDisableFlag("GU_ALPHA_TEST", IRenderingEngine.GU_ALPHA_TEST, false);
+    private final EnableDisableFlag depthTestFlag = new EnableDisableFlag("GU_DEPTH_TEST", IRenderingEngine.GU_DEPTH_TEST, false);
+    private final EnableDisableFlag scissorTestFlag = new EnableDisableFlag("GU_SCISSOR_TEST", IRenderingEngine.GU_SCISSOR_TEST);
+    private final EnableDisableFlag stencilTestFlag = new EnableDisableFlag("GU_STENCIL_TEST", IRenderingEngine.GU_STENCIL_TEST, false);
+    private final EnableDisableFlag blendFlag = new EnableDisableFlag("GU_BLEND", IRenderingEngine.GU_BLEND, false);
+    private final EnableDisableFlag cullFaceFlag = new EnableDisableFlag("GU_CULL_FACE", IRenderingEngine.GU_CULL_FACE, false);
+    private final EnableDisableFlag ditherFlag = new EnableDisableFlag("GU_DITHER", IRenderingEngine.GU_DITHER);
+    private final EnableDisableFlag fogFlag = new EnableDisableFlag("GU_FOG", IRenderingEngine.GU_FOG, false);
+    private final EnableDisableFlag clipPlanesFlag = new EnableDisableFlag("GU_CLIP_PLANES", IRenderingEngine.GU_CLIP_PLANES);
+    private final EnableDisableFlag textureFlag = new EnableDisableFlag("GU_TEXTURE_2D", IRenderingEngine.GU_TEXTURE_2D, false);
+    private final EnableDisableFlag lightingFlag = new EnableDisableFlag("GU_LIGHTING", IRenderingEngine.GU_LIGHTING);
     private final EnableDisableFlag[] lightFlags = new EnableDisableFlag[]{
-        new EnableDisableFlag("GU_LIGHT0", GL.GL_LIGHT0),
-        new EnableDisableFlag("GU_LIGHT1", GL.GL_LIGHT1),
-        new EnableDisableFlag("GU_LIGHT2", GL.GL_LIGHT2),
-        new EnableDisableFlag("GU_LIGHT3", GL.GL_LIGHT3)
+        new EnableDisableFlag("GU_LIGHT0", IRenderingEngine.GU_LIGHT0),
+        new EnableDisableFlag("GU_LIGHT1", IRenderingEngine.GU_LIGHT1),
+        new EnableDisableFlag("GU_LIGHT2", IRenderingEngine.GU_LIGHT2),
+        new EnableDisableFlag("GU_LIGHT3", IRenderingEngine.GU_LIGHT3)
     };
-    private final EnableDisableFlag lineSmoothFlag = new EnableDisableFlag("GU_LINE_SMOOTH", GL.GL_LINE_SMOOTH);
-    private final EnableDisableFlag patchCullFaceFlag = new EnableDisableFlag("GU_PATCH_CULL_FACE");
-    private final EnableDisableFlag colorTestFlag = new EnableDisableFlag("GU_COLOR_TEST", 0, false);
-    private final EnableDisableFlag colorLogicOpFlag = new EnableDisableFlag("GU_COLOR_LOGIC_OP", GL.GL_COLOR_LOGIC_OP, false);
-    private final EnableDisableFlag faceNormalReverseFlag = new EnableDisableFlag("GU_FACE_NORMAL_REVERSE");
-    private final EnableDisableFlag patchFaceFlag = new EnableDisableFlag("GU_PATCH_FACE");
+    private final EnableDisableFlag lineSmoothFlag = new EnableDisableFlag("GU_LINE_SMOOTH", IRenderingEngine.GU_LINE_SMOOTH);
+    private final EnableDisableFlag patchCullFaceFlag = new EnableDisableFlag("GU_PATCH_CULL_FACE", IRenderingEngine.GU_PATCH_CULL_FACE);
+    private final EnableDisableFlag colorTestFlag = new EnableDisableFlag("GU_COLOR_TEST", IRenderingEngine.GU_COLOR_TEST, false);
+    private final EnableDisableFlag colorLogicOpFlag = new EnableDisableFlag("GU_COLOR_LOGIC_OP", IRenderingEngine.GU_COLOR_LOGIC_OP, false);
+    private final EnableDisableFlag faceNormalReverseFlag = new EnableDisableFlag("GU_FACE_NORMAL_REVERSE", IRenderingEngine.GU_FACE_NORMAL_REVERSE);
+    private final EnableDisableFlag patchFaceFlag = new EnableDisableFlag("GU_PATCH_FACE", IRenderingEngine.GU_PATCH_FACE);
 
     private class EnableDisableFlag {
-
         private boolean enabled;
-        private final int glFlag;
+        private final int reFlag;
         private final String name;
-        private GL gl;
         private final boolean validInClearMode;
         private int contextBit;
 
-        public EnableDisableFlag(String name) {
+        public EnableDisableFlag(String name, int reFlag) {
             this.name = name;
-            glFlag = 0;
+            this.reFlag = reFlag;
             validInClearMode = true;
             init();
         }
 
-        public EnableDisableFlag(String name, int glFlag) {
+        public EnableDisableFlag(String name, int reFlag, boolean validInClearMode) {
             this.name = name;
-            this.glFlag = glFlag;
-            validInClearMode = true;
-            init();
-        }
-
-        public EnableDisableFlag(String name, int glFlag, boolean validInClearMode) {
-            this.name = name;
-            this.glFlag = glFlag;
+            this.reFlag = reFlag;
             this.validInClearMode = validInClearMode;
             init();
         }
@@ -357,10 +351,6 @@ public class VideoEngine {
             enabled = false;
             contextBit = contextBitCount++;
             flags.add(this);
-        }
-
-        public void setGl(GL gl) {
-            this.gl = gl;
         }
 
         public boolean isEnabled() {
@@ -376,7 +366,7 @@ public class VideoEngine {
         }
 
         /**
-         * Enable/Disable the flag. Update the flag in OpenGL if necessary.
+         * Enable/Disable the flag. Update the flag in RenderingEngine.
          * Check if the flag can be changed when in CLEAR mode.
          *
          * @param enabled        new flag value
@@ -386,23 +376,20 @@ public class VideoEngine {
         public boolean setEnabled(boolean enabled) {
             boolean changed = false;
 
-            if (this.enabled != enabled) {
-                // Check if the flag can be changed when in CLEAR mode
-                if (validInClearMode || !clearMode) {
-                    this.enabled = enabled;
-                    changed = true;
+            // Check if the flag can be changed when in CLEAR mode
+            if (validInClearMode || !clearMode) {
+                this.enabled = enabled;
+                changed = true;
 
-                    // Update the flag in OpenGL
-                    if (glFlag != 0) {
-                        if (enabled) {
-                            gl.glEnable(glFlag);
-                        } else {
-                            gl.glDisable(glFlag);
-                        }
-                    }
-                    if (isLogDebugEnabled) {
-                        log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
-                    }
+                // Update the flag in RenderingEngine
+                if (enabled) {
+                	re.enableFlag(reFlag);
+                } else {
+                	re.disableFlag(reFlag);
+                }
+
+                if (isLogDebugEnabled) {
+                    log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
                 }
             }
 
@@ -510,7 +497,7 @@ public class VideoEngine {
         tex_mipmap_bias = 0.f;
         tex_mipmap_bias_int = 0;
         takeConditionalJump = false;
-        glColorMask = new boolean[]{true, true, true, true};
+        colorMask = new int[] { 0x00, 0x00, 0x00, 0x00 };
         mipmapShareClut = true;
         boneMatrixForShaderUpdatedMatrix = 8;
         base = 0;
@@ -604,6 +591,10 @@ public class VideoEngine {
         return lastList;
     }
 
+    public GL getGL() {
+    	return gl;
+    }
+
     public void setGL(GL gl) {
         this.gl = gl;
         display = Modules.sceDisplayModule;
@@ -635,10 +626,6 @@ public class VideoEngine {
 
         VideoEngine.log.info("OpenGL version: " + openGLVersion);
 
-        for (EnableDisableFlag flag : flags) {
-            flag.setGl(gl);
-        }
-
         if (useShaders) {
             if (useSkinningShaders) {
                 VideoEngine.log.info("Using shaders with Skinning");
@@ -664,6 +651,8 @@ public class VideoEngine {
             gl.glGenQueries(1, queryIds, 0);
             bboxQueryId = queryIds[0];
         }
+
+        re = RenderingEngineFactory.getRenderingEngine(useShaders);
     }
 
     private void buildVBO(GL gl) {
@@ -1208,59 +1197,21 @@ public class VideoEngine {
         return GL.GL_KEEP;
     }
 
-    private int getLogicalOp(int pspLOP) {
-        switch (pspLOP) {
-            case LOP_CLEAR:
-                return GL.GL_CLEAR;
-            case LOP_AND:
-                return GL.GL_AND;
-            case LOP_REVERSE_AND:
-                return GL.GL_AND_REVERSE;
-            case LOP_COPY:
-                return GL.GL_COPY;
-            case LOP_INVERTED_AND:
-                return GL.GL_AND_INVERTED;
-            case LOP_NO_OPERATION:
-                return GL.GL_NOOP;
-            case LOP_EXLUSIVE_OR:
-                return GL.GL_XOR;
-            case LOP_OR:
-                return GL.GL_OR;
-            case LOP_NEGATED_OR:
-                return GL.GL_NOR;
-            case LOP_EQUIVALENCE:
-                return GL.GL_EQUIV;
-            case LOP_INVERTED:
-                return GL.GL_INVERT;
-            case LOP_REVERSE_OR:
-                return GL.GL_OR_REVERSE;
-            case LOP_INVERTED_COPY:
-                return GL.GL_COPY_INVERTED;
-            case LOP_INVERTED_OR:
-                return GL.GL_OR_INVERTED;
-            case LOP_NEGATED_AND:
-                return GL.GL_NAND;
-            case LOP_SET:
-                return GL.GL_SET;
-        }
-        return GL.GL_COPY;
-    }
-
     private int getBlendFix(float[] fix_color) {
         if (fix_color[0] == 0 && fix_color[1] == 0 && fix_color[2] == 0) {
-            return GL.GL_ZERO;
+            return IRenderingEngine.GU_FIX_BLACK;
         } else if (fix_color[0] == 1 && fix_color[1] == 1 && fix_color[2] == 1) {
-            return GL.GL_ONE;
+            return IRenderingEngine.GU_FIX_WHITE;
         } else {
-            return GL.GL_CONSTANT_COLOR;
+            return IRenderingEngine.GU_FIX_BLEND_COLOR;
         }
     }
 
     private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
         float[] blend_color = null;
-        if (gl_blend_src == GL.GL_CONSTANT_COLOR) {
+        if (gl_blend_src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
             blend_color = sfix_color;
-            if (gl_blend_dst == GL.GL_CONSTANT_COLOR) {
+            if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
                 if (sfix_color[0] != dfix_color[0]
                         || sfix_color[1] != dfix_color[1]
                         || sfix_color[2] != dfix_color[2]
@@ -1268,7 +1219,7 @@ public class VideoEngine {
                     log.warn("UNSUPPORTED: Both different SFIX and DFIX are not supported");
                 }
             }
-        } else if (gl_blend_dst == GL.GL_CONSTANT_COLOR) {
+        } else if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
             blend_color = dfix_color;
         }
 
@@ -1277,94 +1228,28 @@ public class VideoEngine {
 
     // hack partially based on pspplayer
     private void setBlendFunc() {
-        int gl_blend_src = GL.GL_SRC_COLOR;
-        switch (blend_src) {
-            case 0:
-                gl_blend_src = GL.GL_DST_COLOR;
-                break;
-            case 1:
-                gl_blend_src = GL.GL_ONE_MINUS_DST_COLOR;
-                break;
-            case 2:
-                gl_blend_src = GL.GL_SRC_ALPHA;
-                break;
-            case 3:
-                gl_blend_src = GL.GL_ONE_MINUS_SRC_ALPHA;
-                break;
-            case 4:
-                gl_blend_src = GL.GL_DST_ALPHA;
-                break;
-            case 5:
-                gl_blend_src = GL.GL_ONE_MINUS_DST_ALPHA;
-                break;
-            case 6:
-                gl_blend_src = GL.GL_SRC_ALPHA;
-                break;
-            case 7:
-                gl_blend_src = GL.GL_ONE_MINUS_SRC_ALPHA;
-                break;
-            case 8:
-                gl_blend_src = GL.GL_DST_ALPHA;
-                break;
-            case 9:
-                gl_blend_src = GL.GL_ONE_MINUS_DST_ALPHA;
-                break;
-            case 10:
-                gl_blend_src = getBlendFix(sfix_color);
-                break;
-            default:
-                error("Unhandled alpha blend src used " + blend_src);
+    	int reBlendSrc = blend_src;
+    	if (blend_src < 0 || blend_src > 10) {
+            error("Unhandled alpha blend src used " + blend_src);
+            reBlendSrc = 0;
+    	} else if (blend_src == 10) { // GU_FIX
+    		reBlendSrc = getBlendFix(sfix_color);
+    	}
+
+    	int reBlendDst = blend_dst;
+    	if (blend_dst < 0 || blend_dst > 10) {
+            error("Unhandled alpha blend dst used " + blend_dst);
+            reBlendDst = 0;
+    	} else if (blend_dst == 10) { // GU_FIX
+    		reBlendDst = getBlendFix(dfix_color);
+    	}
+
+        float[] blend_color = getBlendColor(blend_src, blend_dst);
+        if (blend_color != null) {
+        	re.setBlendColor(blend_color);
         }
 
-        int gl_blend_dst = GL.GL_DST_COLOR;
-        switch (blend_dst) {
-            case 0:
-                gl_blend_dst = GL.GL_SRC_COLOR;
-                break;
-            case 1:
-                gl_blend_dst = GL.GL_ONE_MINUS_SRC_COLOR;
-                break;
-            case 2:
-                gl_blend_dst = GL.GL_SRC_ALPHA;
-                break;
-            case 3:
-                gl_blend_dst = GL.GL_ONE_MINUS_SRC_ALPHA;
-                break;
-            case 4:
-                gl_blend_dst = GL.GL_DST_ALPHA;
-                break;
-            case 5:
-                gl_blend_dst = GL.GL_ONE_MINUS_DST_ALPHA;
-                break;
-            case 6:
-                gl_blend_dst = GL.GL_SRC_ALPHA;
-                break;
-            case 7:
-                gl_blend_dst = GL.GL_ONE_MINUS_SRC_ALPHA;
-                break;
-            case 8:
-                gl_blend_dst = GL.GL_DST_ALPHA;
-                break;
-            case 9:
-                gl_blend_dst = GL.GL_ONE_MINUS_DST_ALPHA;
-                break;
-            case 10:
-                gl_blend_dst = getBlendFix(dfix_color);
-                break;
-            default:
-                error("Unhandled alpha blend dst used " + blend_dst);
-        }
-
-        try {
-            float[] blend_color = getBlendColor(gl_blend_src, gl_blend_dst);
-            if (blend_color != null) {
-                gl.glBlendColor(blend_color[0], blend_color[1], blend_color[2], blend_color[3]);
-            }
-
-            gl.glBlendFunc(gl_blend_src, gl_blend_dst);
-        } catch (GLException e) {
-            log.warn("VideoEngine: " + e.getMessage());
-        }
+        re.setBlendFunc(reBlendSrc, reBlendDst);
     }
 
     private int getClutAddr(int level, int clutNumEntries, int clutEntrySize) {
@@ -1465,21 +1350,6 @@ public class VideoEngine {
         }
 
         return IntBuffer.wrap(tmp_texture_buffer32);
-    }
-
-    private boolean getGLMask(String name, int bitMask) {
-        if (bitMask == 0x00) {
-            return true;
-        } else if (bitMask == 0xFF) {
-            return false;
-        } else {
-            log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
-            return true;
-        }
-    }
-
-    private void setGLColorMask() {
-        gl.glColorMask(glColorMask[0], glColorMask[1], glColorMask[2], glColorMask[3]);
     }
 
     private String getArgumentLog(int normalArgument) {
@@ -1717,10 +1587,6 @@ public class VideoEngine {
                     if (lightingFlag.isEnabled()) {
                         lightingChanged = true;
                     }
-
-                    if (useShaders) {
-                        gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
-                    }
                 }
                 break;
             }
@@ -1737,11 +1603,6 @@ public class VideoEngine {
                 if (lightFlag.setEnabled(normalArgument)) {
                     if (lightFlag.isEnabled()) {
                         lightingChanged = true;
-                    }
-
-                    if (useShaders) {
-                        light_enabled[lnum] = lightFlag.isEnabled() ? 1 : 0;
-                        gl.glUniform4iv(Uniforms.lightEnabled.getId(), 1, light_enabled, 0);
                     }
                 }
                 break;
@@ -1777,11 +1638,7 @@ public class VideoEngine {
                 break;
 
             case TME:
-                if (textureFlag.setEnabled(normalArgument)) {
-                    if (useShaders) {
-                        gl.glUniform1i(Uniforms.texEnable.getId(), textureFlag.isEnabledInt());
-                    }
-                }
+                textureFlag.setEnabled(normalArgument);
                 break;
 
             case FGE:
@@ -1832,11 +1689,7 @@ public class VideoEngine {
             }
 
             case CTE: {
-                if (colorTestFlag.setEnabled(normalArgument)) {
-                    if (useShaders) {
-                        gl.glUniform1i(Uniforms.ctestEnable.getId(), colorTestFlag.isEnabledInt());
-                    }
-                }
+                colorTestFlag.setEnabled(normalArgument);
                 break;
             }
 
@@ -1871,6 +1724,7 @@ public class VideoEngine {
                             boneMatrixForShaderUpdatedMatrix = matrixIndex + 1;
                         }
                     }
+
                     boneMatrixIndex++;
 
                     if (isLogDebugEnabled && (boneMatrixIndex % 12) == 0) {
@@ -1899,9 +1753,11 @@ public class VideoEngine {
             case MW6:
             case MW7: {
                 int index = command - MW0;
-                morph_weight[index] = floatArgument(normalArgument);
+                float floatArgument = floatArgument(normalArgument);
+                morph_weight[index] = floatArgument;
+                re.setMorphWeight(index, floatArgument);
                 if (isLogDebugEnabled) {
-                    log("morph weight " + index, morph_weight[index]);
+                    log("morph weight " + index, floatArgument);
                 }
                 break;
             }
@@ -1909,6 +1765,7 @@ public class VideoEngine {
             case PSUB:
                 patch_div_s = normalArgument & 0xFF;
                 patch_div_t = (normalArgument >> 8) & 0xFF;
+                re.setPatchDiv(patch_div_s, patch_div_t);
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(PSUB) + " patch_div_s=" + patch_div_s + ", patch_div_t=" + patch_div_t);
                 }
@@ -1920,6 +1777,7 @@ public class VideoEngine {
                 // 0 - Triangle.
                 // 1 - Line.
                 // 2 - Point.
+                re.setPatchPrim(patch_prim);
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(PPRIM) + " patch_prim=" + patch_prim);
                 }
@@ -2008,9 +1866,6 @@ public class VideoEngine {
                 zscale = floatArgument / 65535.f;
                 if (old_zscale != zscale) {
                     depthChanged = true;
-                    if (useShaders) {
-                        gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-                    }
                 }
 
                 if (isLogDebugEnabled) {
@@ -2048,9 +1903,6 @@ public class VideoEngine {
                 zpos = floatArgument / 65535.f;
                 if (old_zpos != zpos) {
                     depthChanged = true;
-                    if (useShaders) {
-                        gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-                    }
                 }
 
                 if (isLogDebugEnabled) {
@@ -2134,8 +1986,7 @@ public class VideoEngine {
             }
 
             case SHADE: {
-                int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
-                gl.glShadeModel(SETTED_MODEL);
+                re.setShadeModel(normalArgument);
                 if (isLogDebugEnabled) {
                     log("sceGuShadeModel(" + ((normalArgument != 0) ? "smooth" : "flat") + ")");
                 }
@@ -2171,7 +2022,7 @@ public class VideoEngine {
                 mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
                 mat_emissive[3] = 1.f;
                 materialChanged = true;
-                gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
+                re.setMaterialEmissiveColor(mat_emissive);
                 if (isLogDebugEnabled) {
                     log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                             mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
@@ -2236,7 +2087,7 @@ public class VideoEngine {
                 ambient_light[0] = ((normalArgument) & 255) / 255.f;
                 ambient_light[1] = ((normalArgument >> 8) & 255) / 255.f;
                 ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
-                gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
+                re.setLightModelAmbientColor(ambient_light);
                 if (isLogDebugEnabled) {
                     log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                             ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
@@ -2245,21 +2096,17 @@ public class VideoEngine {
 
             case ALA:
                 ambient_light[3] = ((normalArgument) & 255) / 255.f;
-                gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
+                re.setLightModelAmbientColor(ambient_light);
                 break;
 
             case LMODE: {
-                int lightmode = (normalArgument != 0) ? GL.GL_SEPARATE_SPECULAR_COLOR : GL.GL_SINGLE_COLOR;
-                gl.glLightModeli(GL.GL_LIGHT_MODEL_COLOR_CONTROL, lightmode);
+                re.setLightMode(normalArgument);
                 if (isLogDebugEnabled) {
                     VideoEngine.log.info("sceGuLightMode(" + ((normalArgument != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
                 }
                 // Check if other values than 0 and 1 are set
                 if ((normalArgument & ~1) != 0) {
                     VideoEngine.log.warn(String.format("Unknown light mode sceGuLightMode(%06X)", normalArgument));
-                }
-                if (useShaders) {
-                    gl.glUniform1i(Uniforms.lightMode.getId(), (normalArgument & 1));
                 }
                 break;
             }
@@ -2286,7 +2133,7 @@ public class VideoEngine {
                         light_pos[lnum][3] = 0.f;
                         break;
                     case LIGHT_POINT:
-                        gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, 180);
+                    	re.setLightSpotCutoff(lnum, 180);
                         light_pos[lnum][3] = 1.f;
                         break;
                     case LIGHT_SPOT:
@@ -2295,10 +2142,7 @@ public class VideoEngine {
                     default:
                         error("Unknown light type : " + normalArgument);
                 }
-                if (useShaders) {
-                    gl.glUniform4iv(Uniforms.lightType.getId(), 1, light_type, 0);
-                    gl.glUniform4iv(Uniforms.lightKind.getId(), 1, light_kind, 0);
-                }
+                re.setLightType(lnum, light_type[lnum], light_kind[lnum]);
 
                 if (isLogDebugEnabled) {
                     log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
@@ -2369,7 +2213,7 @@ public class VideoEngine {
             case LCA2:
             case LCA3: {
                 int lnum = (command - LCA0) / 3;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_CONSTANT_ATTENUATION, floatArgument(normalArgument));
+                re.setLightConstantAttenuation(lnum, floatArgument(normalArgument));
                 break;
             }
 
@@ -2379,7 +2223,7 @@ public class VideoEngine {
             case LLA2:
             case LLA3: {
                 int lnum = (command - LLA0) / 3;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_LINEAR_ATTENUATION, floatArgument(normalArgument));
+                re.setLightLinearAttenuation(lnum, floatArgument(normalArgument));
                 break;
             }
 
@@ -2389,7 +2233,7 @@ public class VideoEngine {
             case LQA2:
             case LQA3: {
                 int lnum = (command - LQA0) / 3;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_QUADRATIC_ATTENUATION, floatArgument(normalArgument));
+                re.setLightQuadraticAttenuation(lnum, floatArgument(normalArgument));
                 break;
             }
 
@@ -2455,7 +2299,7 @@ public class VideoEngine {
                 lightAmbientColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
                 lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
                 lightAmbientColor[lnum][3] = 1.f;
-                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_AMBIENT, lightAmbientColor[lnum], 0);
+                re.setLightAmbientColor(lnum, lightAmbientColor[lnum]);
                 log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
                 break;
             }
@@ -2470,7 +2314,7 @@ public class VideoEngine {
                 lightDiffuseColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
                 lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
                 lightDiffuseColor[lnum][3] = 1.f;
-                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_DIFFUSE, lightDiffuseColor[lnum], 0);
+                re.setLightDiffuseColor(lnum, lightDiffuseColor[lnum]);
                 log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
                 break;
             }
@@ -2492,7 +2336,7 @@ public class VideoEngine {
                 if (old_lightSpecularColor0 != lightSpecularColor[lnum][0] || old_lightSpecularColor1 != lightSpecularColor[lnum][1] || old_lightSpecularColor2 != lightSpecularColor[lnum][2]) {
                     lightingChanged = true;
                 }
-                gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPECULAR, lightSpecularColor[lnum], 0);
+                re.setLightSpecularColor(lnum, lightDiffuseColor[lnum]);
                 log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
                 break;
             }
@@ -2693,13 +2537,9 @@ public class VideoEngine {
                 tex_shade_u = (normalArgument >> 0) & 0x3;
                 tex_shade_v = (normalArgument >> 8) & 0x3;
 
-                if (useShaders) {
-                    gl.glUniform2i(Uniforms.texShade.getId(), tex_shade_u, tex_shade_v);
-                } else {
-                    for (int i = 0; i < 3; i++) {
-                        tex_envmap_matrix[i + 0] = light_pos[tex_shade_u][i];
-                        tex_envmap_matrix[i + 4] = light_pos[tex_shade_v][i];
-                    }
+                for (int i = 0; i < 3; i++) {
+                    tex_envmap_matrix[i + 0] = light_pos[tex_shade_u][i];
+                    tex_envmap_matrix[i + 4] = light_pos[tex_shade_v][i];
                 }
 
                 textureMatrixUpload.setChanged(true);
@@ -2846,37 +2686,20 @@ public class VideoEngine {
                 break;
             }
 
-            case TWRAP:
-                int wrapModeS = normalArgument & 0xFF;
-                int wrapModeT = (normalArgument >> 8) & 0xFF;
-                switch (wrapModeS) {
-                    case TWRAP_WRAP_MODE_REPEAT: {
-                        tex_wrap_s = GL.GL_REPEAT;
-                        break;
-                    }
-                    case TWRAP_WRAP_MODE_CLAMP: {
-                        tex_wrap_s = GL.GL_CLAMP_TO_EDGE;
-                        break;
-                    }
-                    default: {
-                        log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeS);
-                    }
-                }
+            case TWRAP: {
+                tex_wrap_s = normalArgument & 0xFF;
+                tex_wrap_t = (normalArgument >> 8) & 0xFF;
 
-                switch (wrapModeT) {
-                    case TWRAP_WRAP_MODE_REPEAT: {
-                        tex_wrap_t = GL.GL_REPEAT;
-                        break;
-                    }
-                    case TWRAP_WRAP_MODE_CLAMP: {
-                        tex_wrap_t = GL.GL_CLAMP_TO_EDGE;
-                        break;
-                    }
-                    default: {
-                        log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeT);
-                    }
+                if (tex_wrap_s > TWRAP_WRAP_MODE_CLAMP) {
+                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + tex_wrap_s);
+                    tex_wrap_s = TWRAP_WRAP_MODE_REPEAT;
+                }
+                if (tex_wrap_t > TWRAP_WRAP_MODE_CLAMP) {
+                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + tex_wrap_t);
+                    tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
                 }
                 break;
+            }
 
             case TBIAS: {
                 tex_mipmap_mode = normalArgument & 0x3;
@@ -3014,7 +2837,7 @@ public class VideoEngine {
                 }
 
                 if (depthChanged) {
-                    gl.glDepthRange(nearZ, farZ);
+                    re.setDepthRange(zpos, zscale, nearZ, farZ);
                 }
 
                 if (isLogDebugEnabled) {
@@ -3025,9 +2848,7 @@ public class VideoEngine {
 
             case CTST: {
                 shaderCtestFunc = normalArgument & 3;
-                if (useShaders) {
-                    gl.glUniform1i(Uniforms.ctestFunc.getId(), shaderCtestFunc);
-                }
+                re.setColorTestFunc(shaderCtestFunc);
                 break;
             }
 
@@ -3035,10 +2856,7 @@ public class VideoEngine {
                 shaderCtestRef[0] = (normalArgument) & 0xFF;
                 shaderCtestRef[1] = (normalArgument >> 8) & 0xFF;
                 shaderCtestRef[2] = (normalArgument >> 16) & 0xFF;
-                if (useShaders) {
-                    gl.glUniform1iv(Uniforms.ctestRef.getId(), 3, shaderCtestRef, 0);
-                }
-
+                re.setColorTestReference(shaderCtestRef);
                 break;
             }
 
@@ -3046,10 +2864,7 @@ public class VideoEngine {
                 shaderCtestMsk[0] = (normalArgument) & 0xFF;
                 shaderCtestMsk[1] = (normalArgument >> 8) & 0xFF;
                 shaderCtestMsk[2] = (normalArgument >> 16) & 0xFF;
-                if (useShaders) {
-                    gl.glUniform1iv(Uniforms.ctestMsk.getId(), 3, shaderCtestMsk, 0);
-                }
-
+                re.setColorTestMask(shaderCtestMsk);
                 break;
             }
 
@@ -3060,7 +2875,9 @@ public class VideoEngine {
                 int glFunc = GL.GL_ALWAYS;
                 float glReferenceAlphaValue = guReferenceAlphaValue / 255.0f;
 
-                log("sceGuAlphaFunc(" + guFunc + "," + guReferenceAlphaValue + ")");
+                if (isLogDebugEnabled) {
+                	log("sceGuAlphaFunc(" + guFunc + "," + guReferenceAlphaValue + ")");
+                }
 
                 switch (guFunc) {
                     case ATST_NEVER_PASS_PIXEL:
@@ -3163,33 +2980,10 @@ public class VideoEngine {
             case ZTST: {
                 int oldDepthFunc = depthFunc;
 
-                depthFunc = GL.GL_LESS;
-
-                switch (normalArgument & 0xFF) {
-                    case ZTST_FUNCTION_NEVER_PASS_PIXEL:
-                        depthFunc = GL.GL_NEVER;
-                        break;
-                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL:
-                        depthFunc = GL.GL_ALWAYS;
-                        break;
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
-                        depthFunc = GL.GL_EQUAL;
-                        break;
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
-                        depthFunc = GL.GL_NOTEQUAL;
-                        break;
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
-                        depthFunc = GL.GL_LESS;
-                        break;
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
-                        depthFunc = GL.GL_LEQUAL;
-                        break;
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
-                        depthFunc = GL.GL_GREATER;
-                        break;
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
-                        depthFunc = GL.GL_GEQUAL;
-                        break;
+                depthFunc = normalArgument & 0xFF;
+                if (depthFunc > ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL) {
+                	error(String.format("%s unknown depth function %d", commandToString(ZTST), depthFunc));
+                	depthFunc = ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS;
                 }
 
                 if (oldDepthFunc != depthFunc) {
@@ -3339,11 +3133,13 @@ public class VideoEngine {
                 }
                 break;
 
-            case LOP:
-                int LogicOp = getLogicalOp(normalArgument & 0x0F);
-                gl.glLogicOp(LogicOp);
-                log.debug("sceGuLogicalOp( LogicOp = " + normalArgument + "(" + getLOpName(normalArgument) + ")");
+            case LOP: {
+            	re.setLogicOp(normalArgument & 0xF);
+            	if (isLogDebugEnabled) {
+            		log.debug("sceGuLogicalOp( LogicOp = " + normalArgument + "(" + getLOpName(normalArgument) + ")");
+            	}
                 break;
+            }
 
             case ZMSK: {
                 if (!clearMode) {
@@ -3368,11 +3164,11 @@ public class VideoEngine {
                 if (isLogDebugEnabled) {
                     log(String.format("%s color mask=0x%06X", helper.getCommandString(PMSKC), normalArgument));
                 }
-                glColorMask[0] = getGLMask("Red color mask", (normalArgument) & 0xFF);
-                glColorMask[1] = getGLMask("Green color mask", (normalArgument >> 8) & 0xFF);
-                glColorMask[2] = getGLMask("Blue color mask", (normalArgument >> 16) & 0xFF);
+                colorMask[0] = normalArgument & 0xFF;
+                colorMask[1] = (normalArgument >> 8) & 0xFF;
+                colorMask[2] = (normalArgument >> 16) & 0xFF;
                 if (!clearMode) {
-                    setGLColorMask();
+                	re.setColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
                 }
                 break;
             }
@@ -3381,9 +3177,9 @@ public class VideoEngine {
                 if (isLogDebugEnabled) {
                     log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
                 }
-                glColorMask[3] = getGLMask("Alpha color mask", normalArgument & 0xFF);
+                colorMask[3] = normalArgument & 0xFF;
                 if (!clearMode) {
-                    setGLColorMask();
+                	re.setColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
                 }
                 break;
             }
@@ -3497,7 +3293,7 @@ public class VideoEngine {
                 gl.glDepthMask(false);
             }
             clearModeDepthFunc = depthFunc;
-            depthFunc = GL.GL_ALWAYS;
+            depthFunc = ZTST_FUNCTION_ALWAYS_PASS_PIXEL;
             gl.glColorMask(color, color, color, alpha);
             if (isLogDebugEnabled) {
                 log("clear mode : " + (normalArgument >> 8));
@@ -3516,148 +3312,29 @@ public class VideoEngine {
     }
 
     private void executeCommandTFUNC(int normalArgument) {
-        int env_mode = GL.GL_MODULATE;
-        switch (normalArgument & 7) {
-            case 0:
-                env_mode = GL.GL_MODULATE;
-                break;
-            case 1:
-                env_mode = GL.GL_DECAL;
-                break;
-            case 2:
-                env_mode = GL.GL_BLEND;
-                break;
-            case 3:
-                env_mode = GL.GL_REPLACE;
-                break;
-            case 4:
-                env_mode = GL.GL_ADD;
-                break;
-            default:
-                VideoEngine.log.warn("Unimplemented tfunc mode " + (normalArgument & 7));
-        }
+    	int func = normalArgument & 0x7;
+    	if (func >= TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_UNKNOW1) {
+            VideoEngine.log.warn("Unimplemented tfunc mode " + func);
+            func = TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE;
+    	}
 
-        if (useShaders) {
-            gl.glUniform2i(Uniforms.texEnvMode.getId(), (normalArgument & 7), ((normalArgument >> 8) & 1));
-            gl.glUniform1f(Uniforms.colorDoubling.getId(), (normalArgument & 65536) == 0 ? 1.0f : 2.0f);
-            return;
-        }
-
-        int rgbScaleParam = (normalArgument >> 16) & 0xFF;
-        float rgbScale = 1;
-        if (rgbScaleParam == TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED) {
-            rgbScale = 2;
-        } else if (rgbScaleParam != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED) {
-            log.warn(String.format("sceGuTexFunc unknown RGB scale parameter %06X", normalArgument));
-        }
-
+        boolean alphaUsed = false;
         int alphaParam = (normalArgument >> 8) & 0xFF;
-        boolean alphaIsOne = false;
-        if (alphaParam == TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED) {
-            // DECAL mode with ignored Alpha is always using
-            // the equivalent of Alpha = 1.0 on PSP.
-            alphaIsOne = true;
+        if (alphaParam == TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
+            alphaUsed = true;
         } else if (alphaParam != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
             log.warn(String.format("sceGuTexFunc unknown alpha parameter %06X", normalArgument));
         }
 
-        if (rgbScale != 1 || alphaIsOne) {
-            // GL_RGB_SCALE is only used in OpenGL when GL_TEXTURE_ENV_MODE is GL_COMBINE
-            // See http://www.opengl.org/sdk/docs/man/xhtml/glTexEnv.xml
-            switch (env_mode) {
-                case GL.GL_MODULATE:
-                    // Cv = Cp * Cs
-                    // Av = Ap * As
-                    env_mode = GL.GL_COMBINE;
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_MODULATE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
-                    break;
-                case GL.GL_DECAL:
-                    env_mode = GL.GL_COMBINE;
-                    // Cv = Cs * As + Cp * (1 - As)
-                    // Av = Ap
-                    if (alphaIsOne) {
-                        // Simplified version when As == 1:
-                        // Cv = Cs
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-                    } else {
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
-                        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_ALPHA);
-                    }
-
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_PREVIOUS);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-                    break;
-                case GL.GL_BLEND:
-                    // Cv = Cc * Cs + Cp * (1 - Cs)
-                    // Av = As * Ap
-                    env_mode = GL.GL_COMBINE;
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_CONSTANT);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_COLOR);
-
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
-                    break;
-                case GL.GL_REPLACE:
-                    // Cv = Cs
-                    // Av = As
-                    env_mode = GL.GL_COMBINE;
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-                    break;
-                case GL.GL_ADD:
-                    // Cv = Cp + Cs
-                    // Av = Ap * As
-                    env_mode = GL.GL_COMBINE;
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_ADD);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
-                    break;
-                default:
-                    log.warn(String.format("Unimplemented sceGuTexFunc RGB doubled for env_mode=" + env_mode));
-                    break;
-            }
+        boolean colorDoubled = false;
+        int rgbScaleParam = (normalArgument >> 16) & 0xFF;
+        if (rgbScaleParam == TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED) {
+        	colorDoubled = true;
+        } else if (rgbScaleParam != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED) {
+            log.warn(String.format("sceGuTexFunc unknown RGB scale parameter %06X", normalArgument));
         }
-        gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, rgbScale);
-        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
+
+        re.setTextureFunc(func, alphaUsed, colorDoubled);
 
         if (isLogDebugEnabled) {
             log(String.format("sceGuTexFunc mode %06X", normalArgument)
@@ -3755,13 +3432,10 @@ public class VideoEngine {
         int numberOfWeightsForShader = 0;
         if (useSkinningShaders) {
             if (vinfo.weight != 0) {
-                gl.glUniform1i(Uniforms.numberBones.getId(), vinfo.skinningWeightCount);
-                if (boneMatrixForShaderUpdatedMatrix > 0) {
-                    gl.glUniformMatrix4fv(Uniforms.boneMatrix.getId(), boneMatrixForShaderUpdatedMatrix, false, boneMatrixForShader, 0);
-                }
+            	re.setBones(vinfo.skinningWeightCount, boneMatrixForShader);
                 numberOfWeightsForShader = (vinfo.skinningWeightCount <= 4 ? 4 : 8);
             } else {
-                gl.glUniform1i(Uniforms.numberBones.getId(), 0);
+            	re.setBones(0, null);
             }
         }
 
@@ -5344,11 +5018,10 @@ public class VideoEngine {
          * Apply projection matrix
          */
         if (projectionMatrixUpload.isChanged()) {
-            gl.glMatrixMode(GL.GL_PROJECTION);
             if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                gl.glLoadMatrixf(proj_uploaded_matrix, 0);
+            	re.setProjectionMatrixElements(proj_uploaded_matrix);
             } else {
-                gl.glLoadIdentity();
+            	re.setProjectionMatrixElements(null);
             }
             projectionMatrixUpload.setChanged(false);
 
@@ -5362,22 +5035,17 @@ public class VideoEngine {
         boolean loadOrtho2D = false;
         if (viewportChanged) {
             if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                re.setViewport(0, 0, 480, 272);
                 // Load the ortho for 2D after the depth settings
                 loadOrtho2D = true;
             } else {
-                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                    if (viewport_cx == 0 && viewport_cy == 0 && viewport_height == 0 && viewport_width == 0) {
-                        viewport_cx = 2048;
-                        viewport_cy = 2048;
-                        viewport_width = 480;
-                        viewport_height = 272;
-                    }
-                    gl.glViewport(viewport_cx - offset_x, viewport_cy - offset_y, viewport_width, viewport_height);
-                } else {
-                    gl.glViewport(0, 0, 480, 272);
-                    // Load the ortho for 2D after the depth settings
-                    loadOrtho2D = true;
+                if (viewport_cx == 0 && viewport_cy == 0 && viewport_height == 0 && viewport_width == 0) {
+                    viewport_cx = 2048;
+                    viewport_cy = 2048;
+                    viewport_width = 480;
+                    viewport_height = 272;
                 }
+                re.setViewport(viewport_cx - offset_x, viewport_cy - offset_y, viewport_width, viewport_height);
             }
             viewportChanged = false;
         }
@@ -5387,11 +5055,11 @@ public class VideoEngine {
          */
         if (depthChanged) {
             if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                gl.glDepthFunc(depthFunc);
-                gl.glDepthRange(zpos - zscale, zpos + zscale);
+            	re.setDepthFunc(depthFunc);
+                re.setDepthRange(zpos, zscale, zpos - zscale, zpos + zscale);
             } else {
-                gl.glDepthFunc(depthFunc);
-                gl.glDepthRange(0, 1);
+            	re.setDepthFunc(depthFunc);
+                re.setDepthRange(0.5f, 0.5f, 0, 1);
             }
             depthChanged = false;
         }
@@ -5400,7 +5068,23 @@ public class VideoEngine {
          * Load the 2D ortho (only after the depth settings
          */
         if (loadOrtho2D) {
-            gl.glOrtho(0, 480, 272, 0, 0, -0xFFFF);
+        	float left = 0;
+        	float right = 480;
+        	float bottom = 272;
+        	float top = 0;
+        	float near = 0;
+        	float far = -0xFFFF;
+
+        	float dx = right - left;
+        	float dy = top - bottom;
+        	float dz = far - near;
+        	float[] projectionMatrix = {
+            		2.f / dx, 0, 0, 0,
+            		0, 2.f / dy, 0, 0,
+            		0, 0, -2.f / dz, 0,
+            		-(right + left) / dx, -(top + bottom) / dy, -(far + near) / dz, 1
+            };
+            re.setProjectionMatrixElements(projectionMatrix);
         }
 
         /*
@@ -5435,12 +5119,10 @@ public class VideoEngine {
          * Apply view matrix
          */
         if (modelViewMatrixChanged) {
-            gl.glMatrixMode(GL.GL_MODELVIEW);
-
             if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                gl.glLoadMatrixf(view_uploaded_matrix, 0);
+            	re.setViewMatrixElements(view_uploaded_matrix);
             } else {
-                gl.glLoadIdentity();
+            	re.setViewMatrixElements(null);
             }
             viewMatrixUpload.setChanged(false);
         }
@@ -5451,25 +5133,25 @@ public class VideoEngine {
         if (loadLightingSettings || tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
             for (int i = 0; i < NUM_LIGHTS; i++) {
                 if (lightFlags[i].isEnabled() || (tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP && (tex_shade_u == i || tex_shade_v == i))) {
-                    gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_POSITION, light_pos[i], 0);
-                    gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_SPOT_DIRECTION, light_dir[i], 0);
+                	re.setLightPosition(i, light_pos[i]);
+                	re.setLightDirection(i, light_dir[i]);
 
                     if (light_type[i] == LIGHT_SPOT) {
-                        gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_EXPONENT, spotLightExponent[i]);
-                        gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_CUTOFF, spotLightCutoff[i]);
+                    	re.setLightSpotExponent(i, spotLightExponent[i]);
+                    	re.setLightSpotCutoff(i, spotLightCutoff[i]);
                     } else {
                         // uniform light distribution
-                        gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_EXPONENT, 0);
-                        gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_CUTOFF, 180);
+                    	re.setLightSpotExponent(i, 0);
+                    	re.setLightSpotCutoff(i, 180);
                     }
 
                     // Light kind:
                     //  LIGHT_DIFFUSE_SPECULAR: use ambient, diffuse and specular colors
                     //  all other light kinds: use ambient and diffuse colors (not specular)
                     if (light_kind[i] != LIGHT_AMBIENT_DIFFUSE) {
-                        gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_SPECULAR, lightSpecularColor[i], 0);
+                    	re.setLightSpecularColor(i, lightSpecularColor[i]);
                     } else {
-                        gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_SPECULAR, blackColor, 0);
+                    	re.setLightSpecularColor(i, blackColor);
                     }
                 }
             }
@@ -5481,7 +5163,7 @@ public class VideoEngine {
             // Apply model matrix
             if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
                 if (!modelMatrixUpload.isIdentity()) {
-                    gl.glMultMatrixf(model_uploaded_matrix, 0);
+                	re.setModelMatrixElements(model_uploaded_matrix);
                 }
             }
             modelMatrixUpload.setChanged(false);
@@ -5491,60 +5173,48 @@ public class VideoEngine {
          * Apply texture transforms
          */
         if (textureMatrixUpload.isChanged()) {
-            gl.glMatrixMode(GL.GL_TEXTURE);
-            gl.glLoadIdentity();
+        	float[] textureMatrix = new float[] {
+        		1, 0, 0, 0,
+        		0, 1, 0, 0,
+        		0, 0, 1, 0,
+        		0, 0, 0, 1
+        	};
 
             if (transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                if (useShaders) {
-                    gl.glUniform1i(Uniforms.texMapMode.getId(), TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV);
-                }
-                gl.glScalef(1.f / texture_width[0], 1.f / texture_height[0], 1.f);
+            	re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_POSITION);;
+            	textureMatrix[0] = 1.f / texture_width[0];
+            	textureMatrix[5] = 1.f / texture_height[0];
+                //gl.glScalef(1.f / texture_width[0], 1.f / texture_height[0], 1.f);
+            	re.setTextureMatrixElements(textureMatrix);
             } else {
-                if (useShaders) {
-                    gl.glUniform1i(Uniforms.texMapMode.getId(), tex_map_mode);
-                    gl.glUniform1i(Uniforms.texMapProj.getId(), tex_proj_map_mode);
-                    switch (tex_map_mode) {
-                        case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-                            gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
-                            gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
-                            break;
+            	re.setTextureEnvironmentMapping(tex_shade_u, tex_shade_v);
+            	re.setTextureMapMode(tex_map_mode, tex_proj_map_mode);
+                switch (tex_map_mode) {
+                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+                    	textureMatrix[0] = tex_scale_x;
+                    	textureMatrix[5] = tex_scale_y;
+                    	textureMatrix[3] = tex_translate_x;
+                    	textureMatrix[7] = tex_translate_y;
+                        //gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
+                        //gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
+                    	re.setTextureMatrixElements(textureMatrix);
+                        break;
 
-                        case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
-                            gl.glMultMatrixf(texture_uploaded_matrix, 0);
-                            break;
+                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
+                    	re.setTextureMatrixElements(texture_uploaded_matrix);
+                        //gl.glMultMatrixf(texture_uploaded_matrix, 0);
+                        break;
 
-                        case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-                            break;
-                        }
+                    case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
+                    	re.setTextureEnvironmentMapping(tex_shade_u, tex_shade_v);
+                        re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
+                        re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
+                    	re.setTextureMatrixElements(tex_envmap_matrix);
+                        break;
                     }
-                } else {
-                    switch (tex_map_mode) {
-                        case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-                            gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
-                            gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
-                            break;
 
-                        case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
-                            gl.glMultMatrixf(texture_uploaded_matrix, 0);
-                            break;
-
-                        case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-
-                            // First, setup texture uv generation
-                            gl.glTexGeni(GL.GL_S, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
-                            gl.glEnable(GL.GL_TEXTURE_GEN_S);
-
-                            gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
-                            gl.glEnable(GL.GL_TEXTURE_GEN_T);
-
-                            // Setup also texture matrix
-                            gl.glMultMatrixf(tex_envmap_matrix, 0);
-                            break;
-                        }
-
-                        default:
-                            log("Unhandled texture matrix mode " + tex_map_mode);
-                    }
+                    default:
+                        log("Unhandled texture matrix mode " + tex_map_mode);
                 }
             }
 
@@ -5553,69 +5223,46 @@ public class VideoEngine {
 
         boolean useVertexColor = false;
         if (!lightingFlag.isEnabled() || transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-            gl.glDisable(GL.GL_COLOR_MATERIAL);
+        	re.disableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
             if (vinfo.color != 0) {
                 useVertexColor = true;
             } else {
                 if (materialChanged) {
-                    gl.glColor4fv(mat_ambient, 0);
+                	re.setVertexColor(mat_ambient);
                     materialChanged = false;
                 }
             }
         } else if (vinfo.color != 0 && mat_flags != 0) {
             useVertexColor = true;
             if (materialChanged) {
-                if ((mat_flags & 1) == 0) {
-                    gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
+            	boolean ambient = (mat_flags & 1) != 0;
+            	boolean diffuse = (mat_flags & 2) != 0;
+            	boolean specular = (mat_flags & 4) != 0;
+                if (!ambient) {
+                	re.setMaterialAmbientColor(mat_ambient);
                 }
-                if ((mat_flags & 2) == 0) {
-                    gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
+                if (!diffuse) {
+                	re.setMaterialDiffuseColor(mat_diffuse);
                 }
-                if ((mat_flags & 4) == 0) {
-                    gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
+                if (!specular) {
+                	re.setMaterialSpecularColor(mat_specular);
                 }
-                if (useShaders) {
-                    int[] ivec3 = new int[3];
-                    ivec3[0] = (mat_flags & 1) >> 0; // GL.GL_AMBIENT
-                    ivec3[1] = (mat_flags & 2) >> 1; // GL.GL_DIFFUSE
-                    ivec3[2] = (mat_flags & 4) >> 2; // GL.GL_SPECULAR
-                    gl.glUniform3iv(Uniforms.matFlags.getId(), 1, ivec3, 0);
-                } else {
-                    int flags = 0;
-                    // TODO : Can't emulate this properly right now since we can't mix the properties like we want
-                    if ((mat_flags & 1) != 0 && (mat_flags & 2) != 0) {
-                        flags = GL.GL_AMBIENT_AND_DIFFUSE;
-                    } else if ((mat_flags & 1) != 0) {
-                        flags = GL.GL_AMBIENT;
-                    } else if ((mat_flags & 2) != 0) {
-                        flags = GL.GL_DIFFUSE;
-                    } else if ((mat_flags & 4) != 0) {
-                        flags = GL.GL_SPECULAR;
-                    }
-                    gl.glColorMaterial(GL.GL_FRONT_AND_BACK, flags);
-                    gl.glEnable(GL.GL_COLOR_MATERIAL);
-                }
+                re.setColorMaterial(ambient, diffuse, specular);
+            	re.enableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
                 materialChanged = false;
             }
         } else {
-            gl.glDisable(GL.GL_COLOR_MATERIAL);
+        	re.disableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
             if (materialChanged) {
-                gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-                gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
-                gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
-                if (useShaders) {
-                    int[] ivec3 = new int[3];
-                    ivec3[0] = 0; // GL.GL_AMBIENT
-                    ivec3[1] = 0; // GL.GL_DIFFUSE
-                    ivec3[2] = 0; // GL.GL_SPECULAR
-                    gl.glUniform3iv(Uniforms.matFlags.getId(), 1, ivec3, 0);
-                }
+            	re.setMaterialAmbientColor(mat_ambient);
+            	re.setMaterialDiffuseColor(mat_diffuse);
+            	re.setMaterialSpecularColor(mat_specular);
+            	re.setColorMaterial(false, false, false);
                 materialChanged = false;
             }
         }
 
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, tex_wrap_s);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, tex_wrap_t);
+        re.setTextureWrapMode(tex_wrap_s, tex_wrap_t);
 
         int mipmapBaseLevel = 0;
         int mipmapMaxLevel = texture_num_mip_maps;
@@ -5655,8 +5302,8 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + texture_num_mip_maps);
         }
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_BASE_LEVEL, mipmapBaseLevel);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, mipmapMaxLevel);
+        re.setTextureMipmapMinLevel(mipmapBaseLevel);
+        re.setTextureMipmapMaxLevel(mipmapMaxLevel);
 
         return useVertexColor;
     }
@@ -5675,8 +5322,8 @@ public class VideoEngine {
 
         switch (tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-                gl.glDisable(GL.GL_TEXTURE_GEN_S);
-                gl.glDisable(GL.GL_TEXTURE_GEN_T);
+                re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
+                re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
                 break;
             }
         }
@@ -6229,7 +5876,7 @@ public class VideoEngine {
         context.tex_map_mode = tex_map_mode;
         context.tex_proj_map_mode = tex_proj_map_mode;
 
-        System.arraycopy(glColorMask, 0, context.glColorMask, 0, glColorMask.length);
+        System.arraycopy(colorMask, 0, context.glColorMask, 0, colorMask.length);
 
         context.copyGLToContext(gl);
     }
@@ -6362,7 +6009,7 @@ public class VideoEngine {
         tex_map_mode = context.tex_map_mode;
         tex_proj_map_mode = context.tex_proj_map_mode;
 
-        System.arraycopy(context.glColorMask, 0, glColorMask, 0, glColorMask.length);
+        System.arraycopy(context.glColorMask, 0, colorMask, 0, colorMask.length);
 
         context.copyContextToGL(gl);
 
