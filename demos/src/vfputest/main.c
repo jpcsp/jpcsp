@@ -584,6 +584,244 @@ void __attribute__((noinline)) vi2uc(ScePspFVector4 *v0, ScePspFVector4 *v1)
    : "+m" (*v0) : "m" (*v1));
 }
 
+void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+    ScePspFVector4 v;
+
+	asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vone.s   S001\n"
+   "vcmp.s   NE, S000, S000\n"
+   "bvt      0, skip1\n"
+   "vmov.s   S000, S001\n"
+   "skip1:\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v0->x = v.x;
+
+	asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vone.s   S001\n"
+   "vcmp.s   EQ, S000, S000\n"
+   "bvt      0, skip2\n"
+   "vmov.s   S000, S001\n"
+   "skip2:\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v0->y = v.x;
+
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vone.s   S001\n"
+   "vcmp.s   EQ, S000, S000\n"
+   "bvtl     0, skip3\n"
+   "vmov.s   S000, S001\n"
+   "skip3:\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v0->z = v.x;
+
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vzero.s  S001\n"
+   "vzero.s  S100\n"
+   "vone.s   S101\n"
+   "vcmp.p   EQ, C000, C100\n"
+   "bvt      0, skip4\n"
+   "bvt      1, skip5\n"
+   "vadd.s   S000, S000, S101\n"
+   "skip4: vadd.s   S000, S000, S101\n"
+   "skip5: vadd.s   S000, S000, S101\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v0->w = v.x;
+
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vone.s   S001\n"
+   "vzero.s  S100\n"
+   "vone.s   S101\n"
+   "vcmp.p   EQ, C000, C100\n"
+   "bvt      0, skip6\n"
+   "bvt      1, skip7\n"
+   "vadd.s   S000, S000, S101\n"
+   "skip6: vadd.s   S000, S000, S101\n"
+   "skip7: vadd.s   S000, S000, S101\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v1->x = v.x;
+
+   /*
+    * S000 == S100, S001 == S101, S002 == S102, S003 == S103
+    */
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vone.s   S001\n"
+   "vzero.s  S002\n"
+   "vzero.s  S003\n"
+   "vzero.s  S100\n"
+   "vone.s   S101\n"
+   "vzero.s  S102\n"
+   "vzero.s  S103\n"
+   "vcmp.q   EQ, C000, C100\n"
+   "bvt      0, skip8\n"
+   "bvt      1, skip9\n"
+   "bvt      2, skip10\n"
+   "bvt      3, skip11\n"
+   "vadd.s   S000, S000, S101\n"
+   "skip8: vadd.s   S000, S000, S101\n"
+   "skip9: vadd.s   S000, S000, S101\n"
+   "skip10: vadd.s   S000, S000, S101\n"
+   "skip11: vadd.s   S000, S000, S101\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v1->y = v.x;
+
+   /*
+    * S000 != S100, S001 == S101, S002 == S102, S003 == S103
+    */
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vone.s   S001\n"
+   "vzero.s  S002\n"
+   "vzero.s  S003\n"
+   "vone.s   S100\n"
+   "vone.s   S101\n"
+   "vzero.s  S102\n"
+   "vzero.s  S103\n"
+   "vcmp.q   EQ, C000, C100\n"
+   "bvt      0, skip12\n"
+   "bvt      1, skip13\n"
+   "bvt      2, skip14\n"
+   "bvt      3, skip15\n"
+   "vadd.s   S000, S000, S101\n"
+   "skip12: vadd.s   S000, S000, S101\n"
+   "skip13: vadd.s   S000, S000, S101\n"
+   "skip14: vadd.s   S000, S000, S101\n"
+   "skip15: vadd.s   S000, S000, S101\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v1->z = v.x;
+
+   /*
+    * S000 != S100, S001 != S101, S002 == S102, S003 == S103
+    */
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vzero.s  S001\n"
+   "vzero.s  S002\n"
+   "vzero.s  S003\n"
+   "vone.s   S100\n"
+   "vone.s   S101\n"
+   "vzero.s  S102\n"
+   "vzero.s  S103\n"
+   "vcmp.q   EQ, C000, C100\n"
+   "bvt      0, skip16\n"
+   "bvt      1, skip17\n"
+   "bvt      2, skip18\n"
+   "bvt      3, skip19\n"
+   "vadd.s   S000, S000, S101\n"
+   "skip16: vadd.s   S000, S000, S101\n"
+   "skip17: vadd.s   S000, S000, S101\n"
+   "skip18: vadd.s   S000, S000, S101\n"
+   "skip19: vadd.s   S000, S000, S101\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v1->w = v.x;
+
+   /*
+    * S000 != S100, S001 != S101, S002 != S102, S003 == S103
+    */
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vzero.s  S001\n"
+   "vzero.s  S002\n"
+   "vzero.s  S003\n"
+   "vone.s   S100\n"
+   "vone.s   S101\n"
+   "vone.s   S102\n"
+   "vzero.s  S103\n"
+   "vcmp.q   EQ, C000, C100\n"
+   "bvt      0, skip20\n"
+   "bvt      1, skip21\n"
+   "bvt      2, skip22\n"
+   "bvt      3, skip23\n"
+   "vadd.s   S000, S000, S101\n"
+   "skip20: vadd.s   S000, S000, S101\n"
+   "skip21: vadd.s   S000, S000, S101\n"
+   "skip22: vadd.s   S000, S000, S101\n"
+   "skip23: vadd.s   S000, S000, S101\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v2->x = v.x;
+
+   /*
+    * S000 != S100, S001 != S101, S002 != S102, S003 != S103
+    */
+   asm volatile (
+   ".set push\n"
+   ".set noreorder\n"
+   "vzero.s  S000\n"
+   "vzero.s  S001\n"
+   "vzero.s  S002\n"
+   "vzero.s  S003\n"
+   "vone.s   S100\n"
+   "vone.s   S101\n"
+   "vone.s   S102\n"
+   "vone.s   S103\n"
+   "vcmp.q   EQ, C000, C100\n"
+   "bvt      0, skip24\n"
+   "bvt      1, skip25\n"
+   "bvt      2, skip26\n"
+   "bvt      3, skip27\n"
+   "vadd.s   S000, S000, S101\n"
+   "skip24: vadd.s   S000, S000, S101\n"
+   "skip25: vadd.s   S000, S000, S101\n"
+   "skip26: vadd.s   S000, S000, S101\n"
+   "skip27: vadd.s   S000, S000, S101\n"
+   "sv.s     S000, %0\n"
+   ".set pop\n"
+   : "+m" (v) : "m" (v));
+
+   v2->y = v.x;
+}
+
 
 
 ScePspFVector4 v0;
@@ -751,27 +989,27 @@ int main(int argc, char *argv[])
 
 			initValues();
 			vtfm4(&v0, &m1, &v1);
-			printf("vtfm4 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vtfm4  : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vhtfm4(&v0, &m1, &v1);
-			printf("vhtfm4: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vhtfm4 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vtfm3(&v0, &m1, &v1);
-			printf("vtfm3 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vtfm3  : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vhtfm3(&v0, &m1, &v1);
-			printf("vhtfm3: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vhtfm3 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vtfm2(&v0, &m1, &v1);
-			printf("vtfm2 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vtfm2  : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vhtfm2(&v0, &m1, &v1);
-			printf("vhtfm2: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vhtfm2 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vmmulq(&m0, &m1, &m2);
@@ -798,69 +1036,72 @@ int main(int argc, char *argv[])
 			v1.x = -1;
 			v1.y = 1;
 			vsrt3s(&v0, &v1);
-			printf("vsrt3.s : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.s: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 			v1.x = 0;
 			v1.y = -1;
 			vsrt3s(&v0, &v1);
-			printf("vsrt3.s : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.s: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 			v1.x = 1;
 			v1.y = -1;
 			vsrt3s(&v0, &v1);
-			printf("vsrt3.s : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.s: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 			v1.x = -100;
 			v1.y = 1;
 			vsrt3s(&v0, &v1);
-			printf("vsrt3.s : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.s: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 			v1.x = -11.51;
 			v1.y = 134.49;
 			v1.z = 1.57;
 			v1.w = 0.99;
 			vsrt3s(&v0, &v1);
-			printf("vsrt3.s : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.s: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			v1.x = 1;
 			v1.y = 2;
 			vsrt3p(&v0, &v1);
-			printf("vsrt3.p : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.p: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			v1.x = 2;
 			v1.y = 1;
 			vsrt3p(&v0, &v1);
-			printf("vsrt3.p : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.p: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			v1.x = 1;
 			v1.y = 2;
 			v1.z = 3;
 			vsrt3t(&v0, &v1);
-			printf("vsrt3.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.t: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			v1.x = 3;
 			v1.y = 2;
 			v1.z = 1;
 			vsrt3t(&v0, &v1);
-			printf("vsrt3.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.t: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			v1.x = 3;
 			v1.y = 1;
 			v1.z = 2;
 			vsrt3t(&v0, &v1);
-			printf("vsrt3.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.t: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			v1.x = -3;
 			v1.y = -1;
 			v1.z = -2;
 			vsrt3t(&v0, &v1);
-			printf("vsrt3.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.t: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 
 			initValues();
 			vsrt3q(&v0, &v1);
-			printf("vsrt3.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("vsrt3.q: %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			bvt(&v0, &v1, &v2);
+			printf("bvt: %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f, %.0f", v0.x, v0.y, v0.z, v0.w, v1.x, v1.y, v1.z, v1.w, v2.x, v2.y);
 		}
 
 		if (buttonDown & PSP_CTRL_SQUARE)
