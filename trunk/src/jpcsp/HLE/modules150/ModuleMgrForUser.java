@@ -225,12 +225,32 @@ public class ModuleMgrForUser implements HLEModule {
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
                 // TODO
-                // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
-                // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
-                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
-                int loadBase = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_Low, 256, 0) + 256;
-                Modules.SysMemUserForUserModule.addSysMemInfo(2, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Low, 256, loadBase);
-                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
+                // We need to get a load address so that we can allocate
+                // the memory required by the module.
+                // As we don't know yet how much space the module will require,
+                // estimate the requirement to the size of the file itself plus
+                // some space for the module header itself.
+                // We allocate the estimated size and free it immediately so that
+                // we know the load address.
+                final int partitionId = 2;
+                final int allocType = SysMemUserForUser.PSP_SMEM_Low;
+                final int moduleHeaderSize = 256;
+                final int totalAllocSize = moduleHeaderSize + moduleBytes.length;
+                int testBase = Modules.SysMemUserForUserModule.malloc(partitionId, allocType, totalAllocSize, 0);
+                Modules.SysMemUserForUserModule.free(partitionId, testBase, totalAllocSize);
+
+                // Allocate the memory for the memory header itself,
+                // the space required by the module will be allocated by the Loader.
+                int moduleBase = Modules.SysMemUserForUserModule.malloc(partitionId, SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
+                if (moduleBase != testBase) {
+                	Modules.log.error(String.format("Failed module allocation 0x%08X != 0x%08X", testBase, moduleBase));
+                	cpu.gpr[2] = -1;
+                	return;
+                }
+                Modules.SysMemUserForUserModule.addSysMemInfo(2, "ModuleMgr", allocType, moduleHeaderSize, moduleBase);
+
+                // Load the module
+                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize);
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
                     (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
