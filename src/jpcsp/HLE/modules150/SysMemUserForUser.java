@@ -567,11 +567,15 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     }
 
     protected void free(SysMemInfo info) {
-    	MemoryChunk memoryChunk = new MemoryChunk(info.addr, info.size);
+    	free(info.partitionid, info.addr, info.size);
+    }
+
+    public void free(int partitionid, int addr, int size) {
+    	MemoryChunk memoryChunk = new MemoryChunk(addr, size);
     	freeMemoryChunks.add(memoryChunk);
 
     	if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug("free " + info);
+    		Modules.log.debug(String.format("free partitionid=%d, addr=0x%08X, size=0x%08X", partitionid, addr, size));
     		if (Modules.log.isTraceEnabled()) {
     			Modules.log.trace("Free list after free: " + freeMemoryChunks.toString());
     		}
