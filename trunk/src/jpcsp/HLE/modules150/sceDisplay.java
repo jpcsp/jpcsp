@@ -1093,6 +1093,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     
 	@Override
 	public void display(GLAutoDrawable drawable) {
+        repaint();
+
 		if (statistics != null) {
             statistics.start();
         }
@@ -1107,7 +1109,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             }
             gl.glGenTextures(1, textures, 0);
             texFb = textures[0];
-            //Modules.log.debug("texFb = " + texFb);
 
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
 
@@ -1218,7 +1219,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
                 0, 0, bufferwidthFb, height,
                 getFormatGL(pixelformatFb),
                 pixelFormatGL, pixelsFb);
-            
+
             //Call the rotating function (if needed)
             if(ang != 4)
                 rotate(ang);

@@ -3319,15 +3319,15 @@ public class VideoEngine {
     	}
 
         boolean alphaUsed = false;
-        int alphaParam = (normalArgument >> 8) & 0xFF;
+        int alphaParam = (normalArgument >> 8) & 0x1;
         if (alphaParam == TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
             alphaUsed = true;
-        } else if (alphaParam != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
+        } else if (alphaParam != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED) {
             log.warn(String.format("sceGuTexFunc unknown alpha parameter %06X", normalArgument));
         }
 
         boolean colorDoubled = false;
-        int rgbScaleParam = (normalArgument >> 16) & 0xFF;
+        int rgbScaleParam = (normalArgument >> 16) & 0x1;
         if (rgbScaleParam == TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED) {
         	colorDoubled = true;
         } else if (rgbScaleParam != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED) {

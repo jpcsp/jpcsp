@@ -126,6 +126,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         grainSamples = 0x100; // Normal base value for sound processing.
         outputMode = 0; // Checked. 0 is default (STEREO).
+        sasVolLevel = 0;
 
         if (voicesCheckerThread == null) {
 	        voicesCheckerThread = new VoicesCheckerThread(500);
@@ -137,6 +138,40 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
     @Override
     public void stop() {
+    }
+
+    public void setAudioMuted(boolean muted) {
+    	audioMuted = muted;
+    }
+
+    public boolean isAudioMuted() {
+        return audioMuted;
+    }
+
+    public void setSasVolUp(){
+        if(sasVolLevel < sceAudio.PSP_AUDIO_VOLUME_MAX) {
+            sasVolLevel += 0x100;
+        }
+    }
+
+    public void setSasVolDown(){
+        if(sasVolLevel > -sceAudio.PSP_AUDIO_VOLUME_MAX) {
+            sasVolLevel -= 0x100;
+        }
+    }
+
+    private int processVolume(int vol) {
+        if (audioMuted) {
+            return 0;
+        } else {
+            if ((vol + sasVolLevel) > sceAudio.PSP_AUDIO_VOLUME_MAX) {
+                return sceAudio.PSP_AUDIO_VOLUME_MAX;
+            } else if ((vol + sasVolLevel) < 0) {
+                return 0;
+            } else {
+                return (vol + sasVolLevel);
+            }
+        }
     }
 
     protected class pspVoice {
@@ -278,8 +313,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     	private byte[] encodeSamples() {
         	int numSamples = samples.length;
             byte[] samplesBuffer = new byte[numSamples * 4];
-            int leftVol  = (audioMuted ? 0 : leftVolume );
-            int rightVol = (audioMuted ? 0 : rightVolume);
+            int leftVol  = processVolume(leftVolume);
+            int rightVol = processVolume(rightVolume);
             for (int i = 0; i < numSamples; i++) {
             	short sample = samples[i];
             	short lval = (short) ((sample * leftVol ) >> 16);
@@ -341,12 +376,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     protected boolean audioMuted;
     protected int grainSamples;
     protected int outputMode;
+    protected int sasVolLevel;
 
     protected static final int waveformBufMaxSize = 1024;  // 256 sound samples.
-
-    public void setAudioMuted(boolean muted) {
-    	audioMuted = muted;
-    }
 
     protected String makeLogParams(CpuState cpu) {
         return String.format("%08x %08x %08x %08x",
