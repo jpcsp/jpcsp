@@ -63,6 +63,7 @@ import jpcsp.GUI.CheatsGUI;
 import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.RecentElement;
 import jpcsp.GUI.SettingsGUI;
+import jpcsp.GUI.ControlsGUI;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
@@ -95,6 +96,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     LogWindow consolewin;
     ElfHeaderInfo elfheader;
     SettingsGUI setgui;
+    ControlsGUI ctrlgui;
     MemStickBrowser memstick;
     Emulator emulator;
     UmdBrowser umdbrowser;
@@ -169,17 +171,19 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OpenFile = new javax.swing.JMenuItem();
         OpenMemStick = new javax.swing.JMenuItem();
         RecentMenu = new javax.swing.JMenu();
-        ExitEmu = new javax.swing.JMenuItem();
-        EmulationMenu = new javax.swing.JMenu();
-        RunEmu = new javax.swing.JMenuItem();
-        PauseEmu = new javax.swing.JMenuItem();
-        ResetEmu = new javax.swing.JMenuItem();
-        OptionsMenu = new javax.swing.JMenu();
-        RotateItem = new javax.swing.JMenuItem();
-        SetttingsMenu = new javax.swing.JMenuItem();
-        ShotItem = new javax.swing.JMenuItem();
+        jSeparator2 = new javax.swing.JSeparator();
         SaveSnap = new javax.swing.JMenuItem();
         LoadSnap = new javax.swing.JMenuItem();
+        jSeparator1 = new javax.swing.JSeparator();
+        ExitEmu = new javax.swing.JMenuItem();
+        OptionsMenu = new javax.swing.JMenu();
+        VideoOpt = new javax.swing.JMenu();
+        ShotItem = new javax.swing.JMenuItem();
+        RotateItem = new javax.swing.JMenuItem();
+        AudioOpt = new javax.swing.JMenu();
+        MuteOpt = new javax.swing.JCheckBoxMenuItem();
+        ControlsConf = new javax.swing.JMenuItem();
+        SetttingsMenu = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
         ToolsSubMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
@@ -214,8 +218,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-			public void windowClosing(java.awt.event.WindowEvent evt) {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
@@ -264,13 +267,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
 
-        MenuBar.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-			public void mouseExited(java.awt.event.MouseEvent evt) {
-                MenuBarMouseExited(evt);
-            }
-        });
-
         FileMenu.setText(Resource.get("file"));
 
         openUmd.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
@@ -306,6 +302,28 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         RecentMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RecentIcon.png"))); // NOI18N
         RecentMenu.setText(Resource.get("loadrecent"));
         FileMenu.add(RecentMenu);
+        FileMenu.add(jSeparator2);
+
+        SaveSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
+        SaveSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
+        SaveSnap.setText(Resource.get("savesnapshot"));
+        SaveSnap.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SaveSnapActionPerformed(evt);
+            }
+        });
+        FileMenu.add(SaveSnap);
+
+        LoadSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.SHIFT_MASK));
+        LoadSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
+        LoadSnap.setText(Resource.get("loadsnapshot"));
+        LoadSnap.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                LoadSnapActionPerformed(evt);
+            }
+        });
+        FileMenu.add(LoadSnap);
+        FileMenu.add(jSeparator1);
 
         ExitEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_MASK));
         ExitEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/CloseIcon.png"))); // NOI18N
@@ -319,43 +337,21 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         MenuBar.add(FileMenu);
 
-        EmulationMenu.setText(Resource.get("emulation"));
-
-        RunEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
-        RunEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
-        RunEmu.setText(Resource.get("run"));
-        RunEmu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                RunEmuActionPerformed(evt);
-            }
-        });
-        EmulationMenu.add(RunEmu);
-
-        PauseEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F3, 0));
-        PauseEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
-        PauseEmu.setText(Resource.get("pause"));
-        PauseEmu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PauseEmuActionPerformed(evt);
-            }
-        });
-        EmulationMenu.add(PauseEmu);
-
-        ResetEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, 0));
-        ResetEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
-        ResetEmu.setText(Resource.get("reset"));
-        ResetEmu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ResetEmuActionPerformed(evt);
-            }
-        });
-        EmulationMenu.add(ResetEmu);
-
-        MenuBar.add(EmulationMenu);
-
         OptionsMenu.setText(Resource.get("options"));
 
-        RotateItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
+        VideoOpt.setText(Resource.get("video"));
+
+        ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
+        ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
+        ShotItem.setText(Resource.get("screenshot"));
+        ShotItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ShotItemActionPerformed(evt);
+            }
+        });
+        VideoOpt.add(ShotItem);
+
+        RotateItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F6, 0));
         RotateItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RotateIcon.png"))); // NOI18N
         RotateItem.setText(Resource.get("rotate"));
         RotateItem.addActionListener(new java.awt.event.ActionListener() {
@@ -363,7 +359,31 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 RotateItemActionPerformed(evt);
             }
         });
-        OptionsMenu.add(RotateItem);
+        VideoOpt.add(RotateItem);
+
+        OptionsMenu.add(VideoOpt);
+
+        AudioOpt.setText(Resource.get("audio"));
+
+        MuteOpt.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.SHIFT_MASK));
+        MuteOpt.setText("Mute");
+        MuteOpt.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                MuteOptActionPerformed(evt);
+            }
+        });
+        AudioOpt.add(MuteOpt);
+
+        OptionsMenu.add(AudioOpt);
+
+        ControlsConf.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
+        ControlsConf.setText("Controls");
+        ControlsConf.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ControlsConfActionPerformed(evt);
+            }
+        });
+        OptionsMenu.add(ControlsConf);
 
         SetttingsMenu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
         SetttingsMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
@@ -374,36 +394,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         OptionsMenu.add(SetttingsMenu);
-
-        ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
-        ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
-        ShotItem.setText(Resource.get("screenshot"));
-        ShotItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ShotItemActionPerformed(evt);
-            }
-        });
-        OptionsMenu.add(ShotItem);
-
-        SaveSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
-        SaveSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
-        SaveSnap.setText(Resource.get("savesnapshot"));
-        SaveSnap.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SaveSnapActionPerformed(evt);
-            }
-        });
-        OptionsMenu.add(SaveSnap);
-
-        LoadSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.SHIFT_MASK));
-        LoadSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
-        LoadSnap.setText(Resource.get("loadsnapshot"));
-        LoadSnap.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                LoadSnapActionPerformed(evt);
-            }
-        });
-        OptionsMenu.add(LoadSnap);
 
         MenuBar.add(OptionsMenu);
 
@@ -900,16 +890,7 @@ private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:e
     JOptionPane.showMessageDialog(this, message.toString(), MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
-private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunEmuActionPerformed
-   RunEmu();
-}//GEN-LAST:event_RunEmuActionPerformed
-
-private void PauseEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseEmuActionPerformed
-  PauseEmu();
-}//GEN-LAST:event_PauseEmuActionPerformed
-
 private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetttingsMenuActionPerformed
-
     if(setgui==null)
      {
       setgui = new SettingsGUI();
@@ -1186,10 +1167,6 @@ public boolean installCompatibilityPatches(String filename)
     return true;
 }
 
-private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
-    resetEmu();
-}//GEN-LAST:event_ResetEmuActionPerformed
-
 private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
     resetEmu();
 }//GEN-LAST:event_ResetButtonActionPerformed
@@ -1248,12 +1225,8 @@ private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 	Profiler.reset();
 }//GEN-LAST:event_ResetProfilerActionPerformed
 
-private void MenuBarMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_MenuBarMouseExited
-Modules.sceDisplayModule.repaint();
-}//GEN-LAST:event_MenuBarMouseExited
-
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
-    Modules.sceDisplayModule.getscreen = true;
+Modules.sceDisplayModule.getscreen = true;
 }//GEN-LAST:event_ShotItemActionPerformed
 
 private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RotateItemActionPerformed
@@ -1384,6 +1357,29 @@ changeLanguage("ru_RU");
 private void PolishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PolishActionPerformed
 changeLanguage("pl_PL");
 }//GEN-LAST:event_PolishActionPerformed
+
+private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ControlsConfActionPerformed
+    if(ctrlgui == null) {
+      ctrlgui = new ControlsGUI();
+      Point mainwindow = this.getLocation();
+      ctrlgui.setLocation(mainwindow.x+100, mainwindow.y+50);
+      ctrlgui.setVisible(true);
+      /* add a direct link to the main window*/
+      ctrlgui.setMainGUI(this);
+     } else {
+       ctrlgui.setVisible(true);
+     }
+}//GEN-LAST:event_ControlsConfActionPerformed
+
+private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
+if(MuteOpt.isSelected()){
+    Modules.sceAudioModule.setAudioMuted(true);
+    Modules.sceSasCoreModule.setAudioMuted(true);
+} else {
+    Modules.sceAudioModule.setAudioMuted(false);
+    Modules.sceSasCoreModule.setAudioMuted(false);
+}
+}//GEN-LAST:event_MuteOptActionPerformed
 
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
@@ -1529,16 +1525,17 @@ private void processArgs(String[] args) {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem About;
+    private javax.swing.JMenu AudioOpt;
     private javax.swing.JMenuItem Catalan;
     private javax.swing.JMenu CheatsMenu;
+    private javax.swing.JMenuItem ControlsConf;
     private javax.swing.JMenu DebugMenu;
     private javax.swing.JMenuItem DumpIso;
     private javax.swing.JMenuItem ElfHeaderViewer;
-    private javax.swing.JMenu EmulationMenu;
     private javax.swing.JMenuItem English;
     private javax.swing.JMenuItem EnterDebugger;
-    private javax.swing.JMenuItem EnterMemoryViewer;
     private javax.swing.JMenuItem EnterImageViewer;
+    private javax.swing.JMenuItem EnterMemoryViewer;
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenuItem FileLog;
     private javax.swing.JMenu FileMenu;
@@ -1551,21 +1548,19 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem Lithuanian;
     private javax.swing.JMenuItem LoadSnap;
     private javax.swing.JMenuBar MenuBar;
+    private javax.swing.JCheckBoxMenuItem MuteOpt;
     private javax.swing.JMenuItem OpenFile;
     private javax.swing.JMenuItem OpenMemStick;
     private javax.swing.JMenu OptionsMenu;
     private javax.swing.JToggleButton PauseButton;
-    private javax.swing.JMenuItem PauseEmu;
     private javax.swing.JMenuItem Polish;
     private javax.swing.JMenuItem Portuguese;
     private javax.swing.JMenuItem PortugueseBR;
     private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
-    private javax.swing.JMenuItem ResetEmu;
     private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
-    private javax.swing.JMenuItem RunEmu;
     private javax.swing.JMenuItem Russian;
     private javax.swing.JMenuItem SaveSnap;
     private javax.swing.JMenuItem SetttingsMenu;
@@ -1574,7 +1569,10 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JMenu ToolsSubMenu;
     private javax.swing.JMenuItem VfpuRegisters;
+    private javax.swing.JMenu VideoOpt;
     private javax.swing.JMenuItem cwcheat;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator2;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem openUmd;
     // End of variables declaration//GEN-END:variables
