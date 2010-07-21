@@ -291,6 +291,7 @@ public class sceAudio implements HLEModule, HLEThread {
     protected pspChannelInfo[] pspchannels;
     protected int SRCChannel;
     protected int sampleRate;
+    protected int audioVolLevel;
 
     protected boolean isAudioOutput2 = false;
 
@@ -344,6 +345,7 @@ public class sceAudio implements HLEModule, HLEThread {
         }
 
         sampleRate = 48000;
+        audioVolLevel = 0;
 
         if (channelsCheckerThread == null) {
 	        channelsCheckerThread = new ChannelsCheckerThread(500);
@@ -398,6 +400,41 @@ public class sceAudio implements HLEModule, HLEThread {
     protected boolean disableBlockingAudio;
     protected boolean audioMuted;
 
+    public void setAudioMuted(boolean muted) {
+    	audioMuted = muted;
+    }
+
+    public boolean isAudioMuted() {
+        return audioMuted;
+    }
+
+    public void setAudioVolUp(){
+        if(audioVolLevel < PSP_AUDIO_VOLUME_MAX) {
+            audioVolLevel += 0x100;
+        }
+    }
+
+    public void setAudioVolDown(){
+        if(audioVolLevel > -PSP_AUDIO_VOLUME_MAX) {
+            audioVolLevel -= 0x100;
+        }
+    }
+
+    private int processVolume(int vol) {
+        if (audioMuted) {
+            return 0;
+        } else {
+
+            if ((vol + audioVolLevel) > PSP_AUDIO_VOLUME_MAX) {
+                return PSP_AUDIO_VOLUME_MAX;
+            } else if ((vol + audioVolLevel) < 0) {
+                return 0;
+            } else {
+                return (vol + audioVolLevel);
+            }
+        }
+    }
+
     public void setChReserveEnabled(boolean enabled) {
         disableChReserve = !enabled;
         log.info("Audio ChReserve disabled: " + disableChReserve);
@@ -406,11 +443,6 @@ public class sceAudio implements HLEModule, HLEThread {
     public void setBlockingEnabled(boolean enabled) {
         disableBlockingAudio = !enabled;
         log.info("Audio Blocking disabled: " + disableBlockingAudio);
-    }
-
-    public void setAudioMuted(boolean muted) {
-    	audioMuted = muted;
-    	log.info("Audio muted: " + audioMuted);
     }
 
     @Override
@@ -452,8 +484,8 @@ public class sceAudio implements HLEModule, HLEThread {
             byte[] data = new byte[bytes];
 
             int nsamples = pspchannels[channel].allocatedSamples;
-            int leftVolume = (audioMuted ? 0 : pspchannels[channel].leftVolume);
-            int rightVolume = (audioMuted ? 0 : pspchannels[channel].rightVolume);
+            int leftVolume = processVolume(pspchannels[channel].leftVolume);
+            int rightVolume = processVolume(pspchannels[channel].rightVolume);
             if(channels == 1) {
             	IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nsamples * 2, 2);
                 for (int i = 0; i < nsamples; i++)

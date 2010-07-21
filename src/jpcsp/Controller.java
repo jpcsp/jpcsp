@@ -37,6 +37,8 @@ import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_UP;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
 
+import jpcsp.HLE.Modules;
+
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
 
@@ -85,6 +87,7 @@ public class Controller {
             return;
         }
 
+        processSpecialKeys();
         sceCtrlModule.setButtons(Lx, Ly, Buttons);
         lastUpdate = now;
     }
@@ -123,7 +126,6 @@ public class Controller {
             default: return;
         }
         lastKey = key;
-        //System.out.println("keyPressed!! " + this.Buttons);
     }
 
     public void keyReleased(KeyEvent arg0) {
@@ -162,13 +164,51 @@ public class Controller {
         lastKey = keyCode.RELEASED;
     }
 
-    // Check if a certain key is pressed.
-    public boolean isKeyPressed(keyCode key) {
+    private void processSpecialKeys() {
+        if (isSpecialKeyPressed(keyCode.VOLMIN)) {
+            Modules.sceAudioModule.setAudioVolDown();
+            Modules.sceSasCoreModule.setSasVolDown();
+        } else if (isSpecialKeyPressed(keyCode.VOLPLUS)) {
+            Modules.sceAudioModule.setAudioVolUp();
+            Modules.sceSasCoreModule.setSasVolUp();
+        }
+    }
+
+    // Check if a certain special key is pressed.
+    private boolean isSpecialKeyPressed(keyCode key) {
         boolean res = false;
-
-        if (key.ordinal() == Buttons)
-            res = true;
-
+        switch (key) {
+            case HOME:
+                if ((Buttons & PSP_CTRL_HOME) == PSP_CTRL_HOME) {
+                    res = true;
+                }
+                break;
+            case HOLD:
+                if ((Buttons & PSP_CTRL_HOLD) == PSP_CTRL_HOLD) {
+                    res = true;
+                }
+                break;
+            case VOLMIN:
+                if ((Buttons & PSP_CTRL_VOLDOWN) == PSP_CTRL_VOLDOWN) {
+                    res = true;
+                }
+                break;
+            case VOLPLUS:
+                if ((Buttons & PSP_CTRL_VOLUP) == PSP_CTRL_VOLUP) {
+                    res = true;
+                }
+                break;
+            case SCREEN:
+                if ((Buttons & PSP_CTRL_SCREEN) == PSP_CTRL_SCREEN) {
+                    res = true;
+                }
+                break;
+            case MUSIC:
+                if ((Buttons & PSP_CTRL_NOTE) == PSP_CTRL_NOTE) {
+                    res = true;
+                }
+                break;
+        }
         return res;
     }
 }
