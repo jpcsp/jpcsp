@@ -1093,8 +1093,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     
 	@Override
 	public void display(GLAutoDrawable drawable) {
-        repaint();
-
 		if (statistics != null) {
             statistics.start();
         }
