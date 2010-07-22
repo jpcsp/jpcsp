@@ -121,9 +121,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
     public int blend_src;
     public int blend_dst;
 
-    public boolean clearMode;
-    public int depthFuncClearMode;
-
     public int depthFunc;
 
     public int tex_map_mode;
@@ -302,9 +299,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		blend_src = read32();
 		blend_dst = read32();
 
-		clearMode = readBoolean();
-		depthFuncClearMode = read32();
-
 		depthFunc = read32();
 
 		tex_map_mode = read32();
@@ -474,9 +468,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		writeFloatArray(sfix_color);
 		write32(blend_src);
 		write32(blend_dst);
-
-		writeBoolean(clearMode);
-		write32(depthFuncClearMode);
 
 		write32(depthFunc);
 

@@ -28,11 +28,22 @@ import jpcsp.graphics.Uniforms;
  */
 public class StateProxy extends BaseRenderingEngineProxy {
 	protected boolean[] flags = new boolean[IRenderingEngine.RE_NUMBER_FLAGS];
+	protected float[][] matrix;
+	protected static final int RE_BONES_MATRIX = 4;
+	protected static final int matrix4Size = 4 * 4;
 	protected int maxUniformId;
 	protected int[] uniformInt;
 	protected int[][] uniformIntArray;
 	protected float[] uniformFloat;
 	protected float[][] uniformFloatArray;
+	protected boolean[] clientState;
+	protected boolean[] vertexAttribArray;
+	protected static final float[] identityMatrix = {
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
 
 	public StateProxy(IRenderingEngine proxy) {
 		super(proxy);
@@ -47,11 +58,22 @@ public class StateProxy extends BaseRenderingEngineProxy {
 				maxUniformId = id;
 			}
 		}
+		int numberUniforms = maxUniformId + 1;
 
-		uniformInt = new int[maxUniformId + 1];
-		uniformFloat = new float[maxUniformId + 1];
-		uniformIntArray = new int[maxUniformId + 1][];
-		uniformFloatArray = new float[maxUniformId + 1][];
+		uniformInt = new int[numberUniforms];
+		uniformFloat = new float[numberUniforms];
+		uniformIntArray = new int[numberUniforms][];
+		uniformFloatArray = new float[numberUniforms][];
+
+		matrix = new float[RE_BONES_MATRIX + 1][];
+		matrix[GU_PROJECTION] = new float[matrix4Size];
+		matrix[GU_VIEW] = new float[matrix4Size];
+		matrix[GU_MODEL] = new float[matrix4Size];
+		matrix[GU_TEXTURE] = new float[matrix4Size];
+		matrix[RE_BONES_MATRIX] = new float[8 * matrix4Size];
+
+		clientState = new boolean[4];
+		vertexAttribArray = new boolean[numberUniforms];
 	}
 
 	@Override
@@ -154,7 +176,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void setUniformMatrix4(int id, int count, float[] values) {
 		if (id >= 0 && id <= maxUniformId && count > 0) {
 			float[] oldValues = uniformFloatArray[id];
-			int length = count * 16;
+			int length = count * matrix4Size;
 			if (oldValues == null || oldValues.length < length) {
 				super.setUniformMatrix4(id, count, values);
 				oldValues = new float[length];
@@ -174,6 +196,90 @@ public class StateProxy extends BaseRenderingEngineProxy {
 					System.arraycopy(values, 0, oldValues, 0, length);
 				}
 			}
+		}
+	}
+
+	protected int matrixFirstUpdated(int id, float[] values) {
+		if (values == null) {
+			values = identityMatrix;
+		}
+
+		float[] oldValues = matrix[id];
+		for (int i = 0; i < values.length; i++) {
+			if (values[i] != oldValues[i]) {
+				// Update the remaining values
+				System.arraycopy(values, i, oldValues, i, values.length - i);
+				return i;
+			}
+		}
+
+		return values.length;
+	}
+
+	protected int matrixLastUpdated(int id, float[] values, int length) {
+		float[] oldValues = matrix[id];
+
+		if (values == null) {
+			values = identityMatrix;
+		}
+
+		for (int i = length - 1; i >= 0; i--) {
+			if (oldValues[i] != values[i]) {
+				// Update the remaining values
+				System.arraycopy(values, 0, oldValues, 0, i + 1);
+				return i;
+			}
+		}
+
+		return 0;
+	}
+
+	@Override
+	public void setMatrixElements(int type, float[] values) {
+		if (matrixFirstUpdated(type, values) < matrix4Size) {
+			super.setMatrixElements(type, values);
+		}
+	}
+
+	@Override
+	public void setBones(int count, float[] values) {
+		int lastUpdatedIndex = matrixLastUpdated(RE_BONES_MATRIX, values, count * matrix4Size);
+		count = (lastUpdatedIndex + matrix4Size - 1) / matrix4Size;
+
+		if (count > 0) {
+			super.setBones(count, values);
+		}
+	}
+
+	@Override
+	public void disableClientState(int type) {
+		if (clientState[type]) {
+			super.disableClientState(type);
+			clientState[type] = false;
+		}
+	}
+
+	@Override
+	public void enableClientState(int type) {
+		if (!clientState[type]) {
+			super.enableClientState(type);
+			clientState[type] = true;
+		}
+	}
+
+	@Override
+	public void disableVertexAttribArray(int id) {
+		if (vertexAttribArray[id]) {
+			super.disableVertexAttribArray(id);
+			vertexAttribArray[id] = false;
+		}
+	}
+
+	@Override
+	public void enableVertexAttribArray(int id) {
+		if (!vertexAttribArray[id]) {
+			super.enableVertexAttribArray(id);
+			vertexAttribArray[id] = true;
 		}
 	}
 }

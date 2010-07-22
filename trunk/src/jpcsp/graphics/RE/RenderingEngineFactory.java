@@ -23,13 +23,19 @@ import jpcsp.graphics.VideoEngine;
  *
  */
 public class RenderingEngineFactory {
-	public static IRenderingEngine getRenderingEngine(boolean useShaders) {
+	private static final boolean enableDebugProxy = false;
+
+	public static IRenderingEngine getRenderingEngine() {
 		// Build the rendering pipeline, from the last entry to the first one.
 
 		// The RenderingEngine actually performing the OpenGL calls
-		IRenderingEngine re = new RenderingEngineJogl(VideoEngine.getInstance().getGL());
+		IRenderingEngine re = RenderingEngineJogl.newInstance(VideoEngine.getInstance().getGL());
 
-		if (useShaders) {
+		if (enableDebugProxy) {
+			re = new DebugProxy(re);
+		}
+
+		if (REShader.useShaders(re)) {
 			// RenderingEngine using shaders
 			re = new REShader(re);
 		} else {

@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
-import javax.media.opengl.GL;
+import jpcsp.graphics.RE.IRenderingEngine;
 
 public enum Uniforms {
 	zPos("psp_zPos"),
@@ -25,7 +25,7 @@ public enum Uniforms {
 	lightEnabled("psp_lightEnabled"),
 	lightType("psp_lightType"),
 	lightKind("psp_lightKind"),
-        lightMode("colorAddition"),
+	lightMode("colorAddition"),
 	matFlags("psp_matFlags"),
 	tex("tex"),
 	texEnable("texEnable"),
@@ -33,27 +33,28 @@ public enum Uniforms {
 	texMapMode("texMapMode"),
 	texMapProj("texMapProj"),
 	texShade("texShade"),
-        colorDoubling("colorDoubling"),
-        ctestEnable("ctestEnable"),
-        ctestFunc("ctestFunc"),
-        ctestRef("ctestRef"),
-        ctestMsk("ctestMsk"),
+	colorDoubling("colorDoubling"),
+	ctestEnable("ctestEnable"),
+	ctestFunc("ctestFunc"),
+	ctestRef("ctestRef"),
+	ctestMsk("ctestMsk"),
+	invertedColorMask("invertedColorMask"),
 	boneMatrix("psp_boneMatrix"),
 	weights("psp_weights"),
 	numberBones("psp_numberBones");
 
 	String uniformString;
 	int uniformId;
-	
+
 	Uniforms(String uniformString) {
 		this.uniformString = uniformString;
 	}
-	
+
 	public int getId() {
 		return uniformId;
 	}
-	
-	void allocateId(GL gl, int shaderProgram) {
-		uniformId = gl.glGetUniformLocation(shaderProgram, uniformString);
+
+	public void allocateId(IRenderingEngine re, int shaderProgram) {
+		uniformId = re.getUniformLocation(shaderProgram, uniformString);
 	}
 }

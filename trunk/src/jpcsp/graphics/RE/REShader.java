@@ -16,7 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import java.io.IOException;
+
+import jpcsp.Settings;
 import jpcsp.graphics.Uniforms;
+import jpcsp.graphics.VideoEngine;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -28,13 +33,19 @@ import jpcsp.graphics.Uniforms;
  * This class is implemented as a Proxy, forwarding the non-relevant calls
  * to the proxy.
  */
-public class REShader extends BaseRenderingEngineProxy {
+public class REShader extends BaseRenderingEngineFunction {
 	protected final static int NO_UNIFORM_ID = -1;
 	protected final int[] flagToUniforms = new int[IRenderingEngine.RE_NUMBER_FLAGS];
 	protected final int[] lightEnabled = new int[4];
 	protected final int[] lightType = new int[4];
 	protected final int[] lightKind = new int[4];
 	protected final int[] matFlags = new int[3];
+	protected final int[] invertedColorMask = new int[4];
+	protected int shaderProgram;
+	protected int vertexShader;
+	protected int fragmentShader;
+	protected int shaderAttribWeights1;
+	protected int shaderAttribWeights2;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -43,14 +54,88 @@ public class REShader extends BaseRenderingEngineProxy {
 	}
 
 	protected void init() {
+        log.info("Using shaders with Skinning");
+
+		loadShaders();
+
+		for (Uniforms uniform : Uniforms.values()) {
+            uniform.allocateId(re, shaderProgram);
+        }
+
+        shaderAttribWeights1 = re.getAttribLocation(shaderProgram, "psp_weights1");
+        shaderAttribWeights2 = re.getAttribLocation(shaderProgram, "psp_weights2");
+
 		for (int i = 0; i < flagToUniforms.length; i++) {
 			flagToUniforms[i] = NO_UNIFORM_ID;
 		}
-
-		flagToUniforms[IRenderingEngine.GU_COLOR_TEST] = Uniforms.ctestEnable.getId();
+        flagToUniforms[IRenderingEngine.GU_COLOR_TEST] = Uniforms.ctestEnable.getId();
 		flagToUniforms[IRenderingEngine.GU_LIGHTING] = Uniforms.lightingEnable.getId();
 		flagToUniforms[IRenderingEngine.GU_TEXTURE_2D] = Uniforms.texEnable.getId();
 	}
+
+	protected void loadShaders() {
+        vertexShader = re.createShader(RE_VERTEX_SHADER);
+        fragmentShader = re.createShader(RE_FRAGMENT_SHADER);
+
+        String[] srcArray = new String[1];
+        final String shaderVert = "/jpcsp/graphics/shader.vert";
+        try {
+            srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderVert), true);
+        } catch (IOException e) {
+        	log.error(e);
+        }
+        re.compilerShader(vertexShader, srcArray);
+        printShaderInfoLog(vertexShader);
+        final String shaderFrag = "/jpcsp/graphics/shader.frag";
+        try {
+            srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderFrag), true);
+        } catch (IOException e) {
+        	log.error(e);
+        }
+        re.compilerShader(fragmentShader, srcArray);
+        printShaderInfoLog(fragmentShader);
+
+        shaderProgram = re.createProgram();
+        re.attachShader(shaderProgram, vertexShader);
+        re.attachShader(shaderProgram, fragmentShader);
+        re.linkProgram(shaderProgram);
+        printProgramInfoLog(shaderProgram);
+        re.validateProgram(shaderProgram);
+        printProgramInfoLog(shaderProgram);
+
+        re.useProgram(shaderProgram);
+
+        // TODO Remove this call
+        VideoEngine.getInstance().setShaderProgram(shaderProgram);
+	}
+
+	public static boolean useShaders(IRenderingEngine re) {
+		boolean useShaders = Settings.getInstance().readBool("emu.useshaders")
+		                     && re.isFunctionAvailable("glCreateShader")
+		                     && re.isFunctionAvailable("glShaderSource")
+		                     && re.isFunctionAvailable("glCompileShader")
+		                     && re.isFunctionAvailable("glCreateProgram")
+		                     && re.isFunctionAvailable("glAttachShader")
+		                     && re.isFunctionAvailable("glLinkProgram")
+		                     && re.isFunctionAvailable("glValidateProgram")
+		                     && re.isFunctionAvailable("glUseProgram");
+
+        return useShaders;
+	}
+
+	protected void printShaderInfoLog(int shader) {
+		String infoLog = re.getShaderInfoLog(shader);
+		if (infoLog != null) {
+			log.error("Shader info log: " + infoLog);
+		}
+	}
+
+    protected void printProgramInfoLog(int program) {
+		String infoLog = re.getProgramInfoLog(program);
+		if (infoLog != null) {
+			log.error("Program info log: " + infoLog);
+		}
+    }
 
 	protected void setShaderFlag(int flag, int value) {
 		if (flag >= IRenderingEngine.GU_LIGHT0 && flag <= IRenderingEngine.GU_LIGHT3) {
@@ -63,14 +148,18 @@ public class REShader extends BaseRenderingEngineProxy {
 
 	@Override
 	public void enableFlag(int flag) {
-		setShaderFlag(flag, 1);
-		super.enableFlag(flag);
+		if (canUpdateFlag(flag)) {
+			setShaderFlag(flag, 1);
+			super.enableFlag(flag);
+		}
 	}
 
 	@Override
 	public void disableFlag(int flag) {
-		setShaderFlag(flag, 0);
-		super.disableFlag(flag);
+		if (canUpdateFlag(flag)) {
+			setShaderFlag(flag, 0);
+			super.disableFlag(flag);
+		}
 	}
 
 	@Override
@@ -149,5 +238,15 @@ public class REShader extends BaseRenderingEngineProxy {
 		matFlags[2] = specular ? 1 : 0;
 		re.setUniform3(Uniforms.matFlags.getId(), matFlags);
 		super.setColorMaterial(ambient, diffuse, specular);
+	}
+
+	@Override
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+		invertedColorMask[0] = (~redMask  ) & 0xFF;
+		invertedColorMask[1] = (~greenMask) & 0xFF;
+		invertedColorMask[2] = (~blueMask ) & 0xFF;
+		invertedColorMask[3] = (~alphaMask) & 0xFF;
+		re.setUniform4(Uniforms.invertedColorMask.getId(), invertedColorMask);
+		super.setColorMask(redMask, greenMask, blueMask, alphaMask);
 	}
 }

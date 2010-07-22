@@ -22,8 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import javax.media.opengl.GL;
-
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.CacheStatistics;
 
 public class TextureCache {
@@ -68,11 +67,11 @@ public class TextureCache {
 		return cache.get(getKey(addr, clutAddr));
 	}
 
-	public void addTexture(GL gl, Texture texture) {
+	public void addTexture(IRenderingEngine re, Texture texture) {
 		Integer key = getKey(texture.getAddr(), texture.getClutAddr());
 		Texture previousTexture = cache.get(key);
 		if (previousTexture != null) {
-		    previousTexture.deleteTexture(gl);
+		    previousTexture.deleteTexture(re);
 		} else {
 			// Check if the cache is not growing too large
 			if (cache.size() >= cacheMaxSize) {
@@ -80,7 +79,7 @@ public class TextureCache {
 				Iterator<Map.Entry<Integer, Texture>> it = cache.entrySet().iterator();
 				if (it.hasNext()) {
 					Map.Entry<Integer, Texture> entry = it.next();
-					entry.getValue().deleteTexture(gl);
+					entry.getValue().deleteTexture(re);
 					it.remove();
 
 					statistics.entriesRemoved++;

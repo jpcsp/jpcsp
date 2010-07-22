@@ -32,7 +32,7 @@ import jpcsp.graphics.GeCommands;
  * of other RenderingEngines up in the pipeline (e.g. the proxy class removing
  * redundant calls).
  */
-public class REFixedFunction extends BaseRenderingEngineProxy {
+public class REFixedFunction extends BaseRenderingEngineFunction {
 	public REFixedFunction(IRenderingEngine proxy) {
 		super(proxy);
 	}
@@ -139,5 +139,49 @@ public class REFixedFunction extends BaseRenderingEngineProxy {
         re.setTexEnv(RE_TEXENV_ENV_MODE, texEnvMode);
 
         super.setTextureFunc(func, alphaUsed, colorDoubled);
+	}
+
+	@Override
+	public void disableFlag(int flag) {
+		if (canUpdateFlag(flag)) {
+			super.disableFlag(flag);
+		}
+	}
+
+	@Override
+	public void enableFlag(int flag) {
+		if (canUpdateFlag(flag)) {
+			super.enableFlag(flag);
+		}
+	}
+
+	protected static boolean getBooleanColorMask(String name, int bitMask) {
+		if (bitMask == 0xFF) {
+			return false;
+		} else if (bitMask != 0x00) {
+            log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
+        }
+
+        return true;
+	}
+
+    @Override
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+        boolean redWriteEnabled   = getBooleanColorMask("Red color mask", redMask);
+        boolean greenWriteEnabled = getBooleanColorMask("Green color mask", greenMask);
+        boolean blueWriteEnabled  = getBooleanColorMask("Blue color mask", blueMask);
+        boolean alphaWriteEnabled = getBooleanColorMask("Alpha mask", alphaMask);
+        re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
+        super.setColorMask(redMask, greenMask, blueMask, alphaMask);
+    }
+
+	@Override
+	public void enableVertexAttribArray(int id) {
+		// This call is used only by Shader
+	}
+
+	@Override
+	public void disableVertexAttribArray(int id) {
+		// This call is used only by Shader
 	}
 }

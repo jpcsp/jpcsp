@@ -20,9 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-import javax.media.opengl.GL;
-
 import jpcsp.Memory;
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Hash;
@@ -713,18 +712,16 @@ public class VertexInfo {
 		return true;
 	}
 
-	public void bindVertex(GL gl) {
-		VideoEngine.getInstance().glBindBuffer(glId);
+	public void bindVertex(IRenderingEngine re) {
+		re.bindBuffer(glId);
 	}
 
-	public void loadVertex(GL gl, FloatBuffer buffer, int size) {
+	public void loadVertex(IRenderingEngine re, FloatBuffer buffer, int size) {
 		if (glId == -1) {
-			int[] glIds = new int[1];
-			VideoEngine.getInstance().glGenBuffers(gl, glIds.length, glIds, 0);
-            glId = glIds[0];
+            glId = re.genBuffer();
 		}
 
-		bindVertex(gl);
+		bindVertex(re);
 
 		cachedBuffer = ByteBuffer.allocateDirect(size * BufferUtil.SIZEOF_FLOAT).order(ByteOrder.LITTLE_ENDIAN);
 		int oldLimit = buffer.limit();
@@ -734,14 +731,12 @@ public class VertexInfo {
 		buffer.rewind();
 		cachedBuffer.rewind();
 
-		VideoEngine.getInstance().glBufferData(GL.GL_ARRAY_BUFFER, size * BufferUtil.SIZEOF_FLOAT, cachedBuffer, GL.GL_STATIC_DRAW);
+		re.setBufferData(size * BufferUtil.SIZEOF_FLOAT, cachedBuffer, IRenderingEngine.RE_STATIC_DRAW);
 	}
 
-	public void deleteVertex(GL gl) {
+	public void deleteVertex(IRenderingEngine re) {
 		if (glId != -1) {
-			int[] glIds = new int[1];
-			glIds[0] = glId;
-			VideoEngine.getInstance().glDeleteBuffers(gl, glIds.length, glIds, 0);
+			re.deleteBuffer(glId);
             glId = -1;
 		}
 		cachedMorphWeights = null;

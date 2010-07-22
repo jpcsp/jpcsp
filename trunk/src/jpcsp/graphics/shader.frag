@@ -6,6 +6,7 @@ uniform bool      texEnable;
 uniform ivec2     texEnvMode;
 uniform int       texMapMode;
 uniform float     colorDoubling;
+uniform ivec4     invertedColorMask;
 
 uniform bool      ctestEnable;
 uniform int       ctestFunc;
@@ -80,6 +81,8 @@ void main()
             break;
         }
     }
+
+	Cf = (ivec4(Cf * 255) & invertedColorMask) / 255.0;
 
     gl_FragColor = Cf;
 }
