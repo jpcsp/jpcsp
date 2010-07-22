@@ -35,7 +35,6 @@ import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_VIEW;
 import static jpcsp.HLE.modules150.sceGe_user.PSP_GE_MATRIX_WORLD;
 import static jpcsp.graphics.GeCommands.*;
 
-import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -44,13 +43,10 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 import javax.media.opengl.GL;
-import javax.media.opengl.GLException;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -62,7 +58,9 @@ import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.graphics.RE.REShader;
 import jpcsp.graphics.RE.RenderingEngineFactory;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.Texture;
@@ -93,7 +91,6 @@ import com.sun.opengl.util.BufferUtil;
 public class VideoEngine {
 
     public static final int NUM_LIGHTS = 4;
-    private final int[] prim_mapping = new int[]{GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS};
     public final static String[] psm_names = new String[]{
         "PSM_5650",
         "PSM_5551",
@@ -125,16 +122,12 @@ public class VideoEngine {
         "LOP_NEGATED_AND",
         "LOP_SET"
     };
-    private static final int[] texturetype_mapping = {
-        GL.GL_UNSIGNED_SHORT_5_6_5_REV,
-        GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,
-        GL.GL_UNSIGNED_SHORT_4_4_4_4_REV,
-        GL.GL_UNSIGNED_BYTE,};
     private static final int[] textureByteAlignmentMapping = {2, 2, 2, 4};
     private static VideoEngine instance;
     private GL gl;
     private sceDisplay display;
     private IRenderingEngine re;
+    private GeContext context;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
     private boolean useVertexCache = false;
@@ -149,8 +142,6 @@ public class VideoEngine {
     private DurationStatistics textureCacheLookupStatistics = new DurationStatistics("Lookup in TextureCache");
     private DurationStatistics vertexCacheLookupStatistics = new DurationStatistics("Lookup in VertexCache");
     private DurationStatistics[] commandStatistics;
-    private boolean openGL1_2;
-    private boolean openGL1_5;
     private int errorCount;
     private static final int maxErrorCount = 5; // Abort list processing when detecting more errors
     private boolean isLogTraceEnabled;
@@ -158,127 +149,35 @@ public class VideoEngine {
     private boolean isLogInfoEnabled;
     private boolean isLogWarnEnabled;
     private int primCount;
-    private int base;
-    // The value of baseOffset has to be added (not ORed) to the base value.
-    // baseOffset is updated by the ORIGIN_ADDR and OFFSET_ADDR commands,
-    // and both commands share the same value field.
-    private int baseOffset;
-    private int fbp, fbw; // frame buffer pointer and width
-    private int zbp, zbw; // depth buffer pointer and width
-    private int psm; // pixel format
-    private int region_x1, region_y1, region_x2, region_y2;
-    private int region_width, region_height; // derived
-    private int scissor_x1, scissor_y1, scissor_x2, scissor_y2;
-    private int scissor_width, scissor_height; // derived
-    private int offset_x, offset_y;
-    private int viewport_width, viewport_height; // derived from xyscale
-    private int viewport_cx, viewport_cy;
     private boolean viewportChanged;
-    private float[] proj_uploaded_matrix = new float[4 * 4];
     private MatrixUpload projectionMatrixUpload;
-    private float[] texture_uploaded_matrix = new float[4 * 4];
     private MatrixUpload textureMatrixUpload;
-    private float[] model_uploaded_matrix = new float[4 * 4];
     private MatrixUpload modelMatrixUpload;
-    private float[] view_uploaded_matrix = new float[4 * 4];
     private MatrixUpload viewMatrixUpload;
     private int boneMatrixIndex;
-    private float[][] bone_uploaded_matrix = new float[8][4 * 3];
-    private float[] boneMatrixForShader = new float[8 * 4 * 4]; // Linearized version of bone_uploaded_matrix
     private int boneMatrixForShaderUpdatedMatrix; // number of updated matrix
-    private float[] morph_weight = new float[8];
-    private float[] tex_envmap_matrix = new float[4 * 4];
-    private float[][] light_pos = new float[NUM_LIGHTS][4];
-    private float[][] light_dir = new float[NUM_LIGHTS][3];
-    private int[] light_enabled = new int[NUM_LIGHTS];
-    private int[] light_type = new int[NUM_LIGHTS];
-    private int[] light_kind = new int[NUM_LIGHTS];
-    private float[][] lightAmbientColor = new float[NUM_LIGHTS][4];
-    private float[][] lightDiffuseColor = new float[NUM_LIGHTS][4];
-    private float[][] lightSpecularColor = new float[NUM_LIGHTS][4];
     private static final float[] blackColor = new float[]{0, 0, 0, 0};
-    private float[] spotLightExponent = new float[NUM_LIGHTS];
-    private float[] spotLightCutoff = new float[NUM_LIGHTS];
     private boolean lightingChanged;
-    private float[] fog_color = new float[4];
-    private float fog_far = 0.0f, fog_dist = 0.0f;
-    private float nearZ = 0.0f, farZ = 0.0f, zscale, zpos;
-    private int mat_flags = 0;
-    private float[] mat_ambient = new float[4];
-    private float[] mat_diffuse = new float[4];
-    private float[] mat_specular = new float[4];
-    private float[] mat_emissive = new float[4];
     private boolean materialChanged;
-    private float[] ambient_light = new float[4];
-    private int texture_storage, texture_num_mip_maps;
-    private boolean texture_swizzle;
-    private int[] texture_base_pointer = new int[8];
-    private int[] texture_width = new int[8];
-    private int[] texture_height = new int[8];
-    private int[] texture_buffer_width = new int[8];
     private boolean textureChanged;
-    private int tex_min_filter = GL.GL_NEAREST;
-    private int tex_mag_filter = GL.GL_NEAREST;
-    private int tex_mipmap_mode;
-    private float tex_mipmap_bias;
-    private int tex_mipmap_bias_int;
-    private boolean mipmapShareClut;
-    private float tex_translate_x = 0.f, tex_translate_y = 0.f;
-    private float tex_scale_x = 1.f, tex_scale_y = 1.f;
-    private float[] tex_env_color = new float[4];
-    private int tex_clut_addr;
-    private int tex_clut_num_blocks;
-    private int tex_clut_mode, tex_clut_shift, tex_clut_mask, tex_clut_start;
-    private int tex_wrap_s = TWRAP_WRAP_MODE_REPEAT, tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
-    private int tex_shade_u = 0;
-    private int tex_shade_v = 0;
-    private int patch_div_s;
-    private int patch_div_t;
-    private int patch_prim;
-    private int[] patch_prim_types = {GL.GL_TRIANGLE_STRIP, GL.GL_LINE_STRIP, GL.GL_POINTS};
+    private int[] patch_prim_types = { PRIM_TRIANGLE_STRIPS, PRIM_LINES_STRIPS, PRIM_POINT };
     private boolean tsync_wait = false;
-    private float tslope_level;
     private boolean clutIsDirty;
-    private int transform_mode;
-    private int textureTx_sourceAddress;
-    private int textureTx_sourceLineWidth;
-    private int textureTx_destinationAddress;
-    private int textureTx_destinationLineWidth;
-    private int textureTx_width;
-    private int textureTx_height;
-    private int textureTx_sx;
-    private int textureTx_sy;
-    private int textureTx_dx;
-    private int textureTx_dy;
-    private int textureTx_pixelSize;
     private boolean usingTRXKICK;
     private int maxSpriteHeight;
-    private float[] dfix_color = new float[4];
-    private float[] sfix_color = new float[4];
-    private int blend_src;
-    private int blend_dst;
     private boolean blendChanged;
-    private boolean clearMode;
-    private int clearModeDepthFunc;
-    private float[] clearModeRgbScale = new float[1];
-    private int[] clearModeTextureEnvMode = new int[1];
-    private int depthFunc;
     private boolean depthChanged;
-    private int[] dither_matrix = new int[16];
     private boolean takeConditionalJump;
-    private int colorMask[];
     // opengl needed information/buffers
-    private int[] gl_texture_id = new int[1];
+    private int textureId = -1;
     private int[] tmp_texture_buffer32 = new int[1024 * 1024];
     private short[] tmp_texture_buffer16 = new short[1024 * 1024];
     private int[] clut_buffer32 = new int[4096];
     private short[] clut_buffer16 = new short[4096];
-    private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
-    private int tex_proj_map_mode = TMAP_TEXTURE_PROJECTION_MODE_POSITION;
     private boolean listHasEnded;
     private PspGeList currentList; // The currently executing list
     private boolean useVBO = true;
-    private int[] vboBufferId = new int[1];
+    private int vboBufferId;
     private static final int vboBufferSize = 2 * 1024 * 1024 * BufferUtil.SIZEOF_FLOAT;
     private ByteBuffer vboBuffer = ByteBuffer.allocateDirect(vboBufferSize).order(ByteOrder.nativeOrder());
     private FloatBuffer vboFloatBuffer = vboBuffer.asFloatBuffer();
@@ -289,9 +188,6 @@ public class VideoEngine {
     private boolean useSkinningShaders = true; // Use Shaders for Skinning?
     private int shaderAttribWeights1;
     private int shaderAttribWeights2;
-    private int shaderCtestFunc;
-    private int[] shaderCtestRef = { 0, 0, 0 };
-    private int[] shaderCtestMsk = { 0, 0, 0 };
     private boolean glQueryAvailable;
     private int bboxQueryId;
     float[][] bboxVertices;
@@ -300,110 +196,6 @@ public class VideoEngine {
     private boolean geBufChanged;
     private IAction hleAction;
     private HashMap<Integer, Integer> currentCMDValues;
-    private static int contextBitCount = 0;
-    private final List<EnableDisableFlag> flags = new LinkedList<EnableDisableFlag>();
-    private final EnableDisableFlag alphaTestFlag = new EnableDisableFlag("GU_ALPHA_TEST", IRenderingEngine.GU_ALPHA_TEST, false);
-    private final EnableDisableFlag depthTestFlag = new EnableDisableFlag("GU_DEPTH_TEST", IRenderingEngine.GU_DEPTH_TEST, false);
-    private final EnableDisableFlag scissorTestFlag = new EnableDisableFlag("GU_SCISSOR_TEST", IRenderingEngine.GU_SCISSOR_TEST);
-    private final EnableDisableFlag stencilTestFlag = new EnableDisableFlag("GU_STENCIL_TEST", IRenderingEngine.GU_STENCIL_TEST, false);
-    private final EnableDisableFlag blendFlag = new EnableDisableFlag("GU_BLEND", IRenderingEngine.GU_BLEND, false);
-    private final EnableDisableFlag cullFaceFlag = new EnableDisableFlag("GU_CULL_FACE", IRenderingEngine.GU_CULL_FACE, false);
-    private final EnableDisableFlag ditherFlag = new EnableDisableFlag("GU_DITHER", IRenderingEngine.GU_DITHER);
-    private final EnableDisableFlag fogFlag = new EnableDisableFlag("GU_FOG", IRenderingEngine.GU_FOG, false);
-    private final EnableDisableFlag clipPlanesFlag = new EnableDisableFlag("GU_CLIP_PLANES", IRenderingEngine.GU_CLIP_PLANES);
-    private final EnableDisableFlag textureFlag = new EnableDisableFlag("GU_TEXTURE_2D", IRenderingEngine.GU_TEXTURE_2D, false);
-    private final EnableDisableFlag lightingFlag = new EnableDisableFlag("GU_LIGHTING", IRenderingEngine.GU_LIGHTING);
-    private final EnableDisableFlag[] lightFlags = new EnableDisableFlag[]{
-        new EnableDisableFlag("GU_LIGHT0", IRenderingEngine.GU_LIGHT0),
-        new EnableDisableFlag("GU_LIGHT1", IRenderingEngine.GU_LIGHT1),
-        new EnableDisableFlag("GU_LIGHT2", IRenderingEngine.GU_LIGHT2),
-        new EnableDisableFlag("GU_LIGHT3", IRenderingEngine.GU_LIGHT3)
-    };
-    private final EnableDisableFlag lineSmoothFlag = new EnableDisableFlag("GU_LINE_SMOOTH", IRenderingEngine.GU_LINE_SMOOTH);
-    private final EnableDisableFlag patchCullFaceFlag = new EnableDisableFlag("GU_PATCH_CULL_FACE", IRenderingEngine.GU_PATCH_CULL_FACE);
-    private final EnableDisableFlag colorTestFlag = new EnableDisableFlag("GU_COLOR_TEST", IRenderingEngine.GU_COLOR_TEST, false);
-    private final EnableDisableFlag colorLogicOpFlag = new EnableDisableFlag("GU_COLOR_LOGIC_OP", IRenderingEngine.GU_COLOR_LOGIC_OP, false);
-    private final EnableDisableFlag faceNormalReverseFlag = new EnableDisableFlag("GU_FACE_NORMAL_REVERSE", IRenderingEngine.GU_FACE_NORMAL_REVERSE);
-    private final EnableDisableFlag patchFaceFlag = new EnableDisableFlag("GU_PATCH_FACE", IRenderingEngine.GU_PATCH_FACE);
-
-    private class EnableDisableFlag {
-        private boolean enabled;
-        private final int reFlag;
-        private final String name;
-        private final boolean validInClearMode;
-        private int contextBit;
-
-        public EnableDisableFlag(String name, int reFlag) {
-            this.name = name;
-            this.reFlag = reFlag;
-            validInClearMode = true;
-            init();
-        }
-
-        public EnableDisableFlag(String name, int reFlag, boolean validInClearMode) {
-            this.name = name;
-            this.reFlag = reFlag;
-            this.validInClearMode = validInClearMode;
-            init();
-        }
-
-        private void init() {
-            enabled = false;
-            contextBit = contextBitCount++;
-            flags.add(this);
-        }
-
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        public int isEnabledInt() {
-            return enabled ? 1 : 0;
-        }
-
-        public boolean setEnabled(int enabledInt) {
-            return setEnabled(enabledInt != 0);
-        }
-
-        /**
-         * Enable/Disable the flag. Update the flag in RenderingEngine.
-         * Check if the flag can be changed when in CLEAR mode.
-         *
-         * @param enabled        new flag value
-         * @return               true if the flag value has really been changed
-         *                       false if the flag value has not been changed
-         */
-        public boolean setEnabled(boolean enabled) {
-            boolean changed = false;
-
-            // Check if the flag can be changed when in CLEAR mode
-            if (validInClearMode || !clearMode) {
-                this.enabled = enabled;
-                changed = true;
-
-                // Update the flag in RenderingEngine
-                if (enabled) {
-                	re.enableFlag(reFlag);
-                } else {
-                	re.disableFlag(reFlag);
-                }
-
-                if (isLogDebugEnabled) {
-                    log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
-                }
-            }
-
-            return changed;
-        }
-
-        public int save(int bits) {
-            return bits | (1 << contextBit);
-        }
-
-        public void restore(int bits) {
-            setEnabled((bits & (1 << contextBit)) != 0);
-        }
-    }
 
     private static class MatrixUpload {
 
@@ -486,28 +278,13 @@ public class VideoEngine {
     }
 
     private VideoEngine() {
-        modelMatrixUpload = new MatrixUpload(model_uploaded_matrix, 3, 4);
-        viewMatrixUpload = new MatrixUpload(view_uploaded_matrix, 3, 4);
-        textureMatrixUpload = new MatrixUpload(texture_uploaded_matrix, 3, 4);
-        projectionMatrixUpload = new MatrixUpload(proj_uploaded_matrix, 4, 4);
-        tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
-        light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
-        morph_weight[0] = 1.f;
-        tex_mipmap_mode = TBIAS_MODE_AUTO;
-        tex_mipmap_bias = 0.f;
-        tex_mipmap_bias_int = 0;
+        context = new GeContext();
+        modelMatrixUpload = new MatrixUpload(context.model_uploaded_matrix, 3, 4);
+        viewMatrixUpload = new MatrixUpload(context.view_uploaded_matrix, 3, 4);
+        textureMatrixUpload = new MatrixUpload(context.texture_uploaded_matrix, 3, 4);
+        projectionMatrixUpload = new MatrixUpload(context.proj_uploaded_matrix, 4, 4);
         takeConditionalJump = false;
-        colorMask = new int[] { 0x00, 0x00, 0x00, 0x00 };
-        mipmapShareClut = true;
         boneMatrixForShaderUpdatedMatrix = 8;
-        base = 0;
-        baseOffset = 0;
-
-        // Force a first load of these values
-        light_type[0] = light_type[1] = light_type[2] = light_type[3] = -1;
-        light_kind[0] = light_kind[1] = light_kind[2] = light_kind[3] = -1;
-        lightSpecularColor[0][0] = lightSpecularColor[1][0] = lightSpecularColor[2][0] = lightSpecularColor[3][0] = -1;
-        light_enabled[0] = light_enabled[1] = light_enabled[2] = light_enabled[3] = -1;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -599,41 +376,16 @@ public class VideoEngine {
         this.gl = gl;
         display = Modules.sceDisplayModule;
 
-        String openGLVersion = getOpenGLVersion(gl);
-        openGL1_2 = openGLVersion.compareTo("1.2") >= 0;
-        openGL1_5 = openGLVersion.compareTo("1.5") >= 0;
+        re = RenderingEngineFactory.getRenderingEngine();
+        re.setGeContext(context);
+        context.setRenderingEngine(re);
 
         useVBO = !Settings.getInstance().readBool("emu.disablevbo")
-                && gl.isFunctionAvailable("glGenBuffersARB")
-                && gl.isFunctionAvailable("glBindBufferARB")
-                && gl.isFunctionAvailable("glBufferDataARB")
-                && gl.isFunctionAvailable("glDeleteBuffersARB")
-                && gl.isFunctionAvailable("glGenBuffers");
-
-        useShaders = Settings.getInstance().readBool("emu.useshaders")
-                && gl.isFunctionAvailable("glCreateShader")
-                && gl.isFunctionAvailable("glShaderSource")
-                && gl.isFunctionAvailable("glCompileShader")
-                && gl.isFunctionAvailable("glCreateProgram")
-                && gl.isFunctionAvailable("glAttachShader")
-                && gl.isFunctionAvailable("glLinkProgram")
-                && gl.isFunctionAvailable("glValidateProgram")
-                && gl.isFunctionAvailable("glUseProgram");
-
-        if (!useShaders) {
-            useSkinningShaders = false;
-        }
-
-        VideoEngine.log.info("OpenGL version: " + openGLVersion);
-
-        if (useShaders) {
-            if (useSkinningShaders) {
-                VideoEngine.log.info("Using shaders with Skinning");
-            } else {
-                VideoEngine.log.info("Using shaders");
-            }
-            loadShaders(gl);
-        }
+                && re.isFunctionAvailable("glGenBuffersARB")
+                && re.isFunctionAvailable("glBindBufferARB")
+                && re.isFunctionAvailable("glBufferDataARB")
+                && re.isFunctionAvailable("glDeleteBuffersARB")
+                && re.isFunctionAvailable("glGenBuffers");
 
         if (useVBO) {
             VideoEngine.log.info("Using VBO");
@@ -652,113 +404,30 @@ public class VideoEngine {
             bboxQueryId = queryIds[0];
         }
 
-        re = RenderingEngineFactory.getRenderingEngine(useShaders);
-    }
+        useShaders = REShader.useShaders(re);
 
-    private void buildVBO(GL gl) {
-        glGenBuffers(gl, 1, vboBufferId, 0);
-        glBindBuffer();
-        glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize, vboFloatBuffer, GL.GL_STREAM_DRAW);
-    }
-
-    public void glGenBuffers(GL gl, int length, int[] ids, int offset) {
-        if (useVBO) {
-            if (openGL1_5) {
-                gl.glGenBuffers(length, ids, offset);
-            } else {
-                gl.glGenBuffersARB(length, ids, offset);
-            }
-        }
-    }
-
-    public void glDeleteBuffers(GL gl, int length, int[] ids, int offset) {
-        if (useVBO) {
-            if (openGL1_5) {
-                gl.glDeleteBuffers(length, ids, offset);
-            } else {
-                gl.glDeleteBuffersARB(length, ids, offset);
-            }
-        }
-    }
-
-    public void glBufferData(int target, int size, Buffer buffer, int type) {
-        if (useVBO) {
-            if (openGL1_5) {
-                gl.glBufferData(target, size, buffer, type);
-            } else {
-                gl.glBufferDataARB(target, size, buffer, type);
-            }
-        }
-    }
-
-    private void loadShaders(GL gl) {
-        int v = gl.glCreateShader(GL.GL_VERTEX_SHADER);
-        int f = gl.glCreateShader(GL.GL_FRAGMENT_SHADER);
-
-        String[] srcArray = new String[1];
-        final String shaderVert = "/jpcsp/graphics/shader.vert";
-        try {
-            srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderVert), true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        gl.glShaderSource(v, 1, srcArray, null, 0);
-        gl.glCompileShader(v);
-        printShaderInfoLog(gl, v);
-        final String shaderFrag = "/jpcsp/graphics/shader.frag";
-        try {
-            srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderFrag), true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        gl.glShaderSource(f, 1, srcArray, null, 0);
-        gl.glCompileShader(f);
-        printShaderInfoLog(gl, f);
-
-        shaderProgram = gl.glCreateProgram();
-        gl.glAttachShader(shaderProgram, v);
-        gl.glAttachShader(shaderProgram, f);
-        gl.glLinkProgram(shaderProgram);
-        printProgramInfoLog(gl, shaderProgram);
-        gl.glValidateProgram(shaderProgram);
-        printProgramInfoLog(gl, shaderProgram);
-
-        for (Uniforms uniform : Uniforms.values()) {
-            uniform.allocateId(gl, shaderProgram);
+        if (!useShaders) {
+            useSkinningShaders = false;
         }
 
         if (useSkinningShaders) {
-            shaderAttribWeights1 = gl.glGetAttribLocation(shaderProgram, "psp_weights1");
-            shaderAttribWeights2 = gl.glGetAttribLocation(shaderProgram, "psp_weights2");
+            shaderAttribWeights1 = re.getAttribLocation(shaderProgram, "psp_weights1");
+            shaderAttribWeights2 = re.getAttribLocation(shaderProgram, "psp_weights2");
         }
     }
 
-    void printShaderInfoLog(GL gl, int obj) {
-        int[] infologLength = new int[1];
-        int[] charsWritten = new int[1];
-        byte[] infoLog;
-
-        gl.glGetShaderiv(obj, GL.GL_INFO_LOG_LENGTH, infologLength, 0);
-
-        if (infologLength[0] > 1) {
-            infoLog = new byte[infologLength[0]];
-            gl.glGetShaderInfoLog(obj, infologLength[0], charsWritten, 0, infoLog, 0);
-            log.error("Shader info log : " + new String(infoLog));
-        }
+    public IRenderingEngine getRenderingEngine() {
+    	return re;
     }
 
-    void printProgramInfoLog(GL gl, int obj) {
-        int[] infologLength = new int[1];
-        int[] charsWritten = new int[1];
-        byte[] infoLog;
+    public void setShaderProgram(int shaderProgram) {
+    	this.shaderProgram = shaderProgram;
+    }
 
-        gl.glGetProgramiv(obj, GL.GL_INFO_LOG_LENGTH, infologLength, 0);
-
-        if (infologLength[0] > 1) {
-            infoLog = new byte[infologLength[0]];
-            gl.glGetProgramInfoLog(obj, infologLength[0], charsWritten, 0, infoLog, 0);
-            log.error("Program info log : " + new String(infoLog));
-        }
+    private void buildVBO(GL gl) {
+        vboBufferId = re.genBuffer();
+        bindBuffer();
+        re.setBufferData(vboBufferSize, vboFloatBuffer, IRenderingEngine.RE_STREAM_DRAW);
     }
 
     public static void exit() {
@@ -797,7 +466,7 @@ public class VideoEngine {
         }
 
         if (useShaders) {
-            gl.glUseProgram(shaderProgram);
+            re.useProgram(shaderProgram);
         }
 
         startUpdate();
@@ -832,7 +501,7 @@ public class VideoEngine {
         } while (list != null);
 
         if (useShaders) {
-            gl.glUseProgram(0);
+            re.useProgram(0);
         }
 
         if (State.captureGeNextFrame) {
@@ -1112,40 +781,26 @@ public class VideoEngine {
         float resmtx[] = new float[4 * 4];
         switch (mtxtype) {
             case PSP_GE_MATRIX_BONE0:
-                resmtx = bone_uploaded_matrix[0];
-                break;
             case PSP_GE_MATRIX_BONE1:
-                resmtx = bone_uploaded_matrix[1];
-                break;
             case PSP_GE_MATRIX_BONE2:
-                resmtx = bone_uploaded_matrix[2];
-                break;
             case PSP_GE_MATRIX_BONE3:
-                resmtx = bone_uploaded_matrix[3];
-                break;
             case PSP_GE_MATRIX_BONE4:
-                resmtx = bone_uploaded_matrix[4];
-                break;
             case PSP_GE_MATRIX_BONE5:
-                resmtx = bone_uploaded_matrix[5];
-                break;
             case PSP_GE_MATRIX_BONE6:
-                resmtx = bone_uploaded_matrix[6];
-                break;
             case PSP_GE_MATRIX_BONE7:
-                resmtx = bone_uploaded_matrix[7];
+                resmtx = context.bone_uploaded_matrix[mtxtype - PSP_GE_MATRIX_BONE0];
                 break;
             case PSP_GE_MATRIX_WORLD:
-                resmtx = model_uploaded_matrix;
+                resmtx = context.model_uploaded_matrix;
                 break;
             case PSP_GE_MATRIX_VIEW:
-                resmtx = view_uploaded_matrix;
+                resmtx = context.view_uploaded_matrix;
                 break;
             case PSP_GE_MATRIX_PROJECTION:
-                resmtx = proj_uploaded_matrix;
+                resmtx = context.proj_uploaded_matrix;
                 break;
             case PSP_GE_MATRIX_TEXGEN:
-                resmtx = texture_uploaded_matrix;
+                resmtx = context.texture_uploaded_matrix;
                 break;
         }
 
@@ -1173,28 +828,11 @@ public class VideoEngine {
     }
 
     private int getStencilOp(int pspOP) {
-        switch (pspOP) {
-            case SOP_KEEP_STENCIL_VALUE:
-                return GL.GL_KEEP;
+    	if (pspOP > SOP_DECREMENT_STENCIL_VALUE) {
+            log.warn("UNKNOWN stencil op " + pspOP);
+    	}
 
-            case SOP_ZERO_STENCIL_VALUE:
-                return GL.GL_ZERO;
-
-            case SOP_REPLACE_STENCIL_VALUE:
-                return GL.GL_REPLACE;
-
-            case SOP_INVERT_STENCIL_VALUE:
-                return GL.GL_INVERT;
-
-            case SOP_INCREMENT_STENCIL_VALUE:
-                return GL.GL_INCR;
-
-            case SOP_DECREMENT_STENCIL_VALUE:
-                return GL.GL_DECR;
-        }
-
-        log("UNKNOWN stencil op " + pspOP);
-        return GL.GL_KEEP;
+        return SOP_KEEP_STENCIL_VALUE;
     }
 
     private int getBlendFix(float[] fix_color) {
@@ -1210,17 +848,17 @@ public class VideoEngine {
     private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
         float[] blend_color = null;
         if (gl_blend_src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-            blend_color = sfix_color;
+            blend_color = context.sfix_color;
             if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-                if (sfix_color[0] != dfix_color[0]
-                        || sfix_color[1] != dfix_color[1]
-                        || sfix_color[2] != dfix_color[2]
-                        || sfix_color[3] != dfix_color[3]) {
+                if (context.sfix_color[0] != context.dfix_color[0]
+                        || context.sfix_color[1] != context.dfix_color[1]
+                        || context.sfix_color[2] != context.dfix_color[2]
+                        || context.sfix_color[3] != context.dfix_color[3]) {
                     log.warn("UNSUPPORTED: Both different SFIX and DFIX are not supported");
                 }
             }
         } else if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-            blend_color = dfix_color;
+            blend_color = context.dfix_color;
         }
 
         return blend_color;
@@ -1228,23 +866,23 @@ public class VideoEngine {
 
     // hack partially based on pspplayer
     private void setBlendFunc() {
-    	int reBlendSrc = blend_src;
-    	if (blend_src < 0 || blend_src > 10) {
-            error("Unhandled alpha blend src used " + blend_src);
+    	int reBlendSrc = context.blend_src;
+    	if (context.blend_src < 0 || context.blend_src > 10) {
+            error("Unhandled alpha blend src used " + context.blend_src);
             reBlendSrc = 0;
-    	} else if (blend_src == 10) { // GU_FIX
-    		reBlendSrc = getBlendFix(sfix_color);
+    	} else if (context.blend_src == 10) { // GU_FIX
+    		reBlendSrc = getBlendFix(context.sfix_color);
     	}
 
-    	int reBlendDst = blend_dst;
-    	if (blend_dst < 0 || blend_dst > 10) {
-            error("Unhandled alpha blend dst used " + blend_dst);
+    	int reBlendDst = context.blend_dst;
+    	if (context.blend_dst < 0 || context.blend_dst > 10) {
+            error("Unhandled alpha blend dst used " + context.blend_dst);
             reBlendDst = 0;
-    	} else if (blend_dst == 10) { // GU_FIX
-    		reBlendDst = getBlendFix(dfix_color);
+    	} else if (context.blend_dst == 10) { // GU_FIX
+    		reBlendDst = getBlendFix(context.dfix_color);
     	}
 
-        float[] blend_color = getBlendColor(blend_src, blend_dst);
+        float[] blend_color = getBlendColor(context.blend_src, context.blend_dst);
         if (blend_color != null) {
         	re.setBlendColor(blend_color);
         }
@@ -1253,7 +891,7 @@ public class VideoEngine {
     }
 
     private int getClutAddr(int level, int clutNumEntries, int clutEntrySize) {
-        return tex_clut_addr + tex_clut_start * clutEntrySize;
+        return context.tex_clut_addr + context.tex_clut_start * clutEntrySize;
     }
 
     private void readClut() {
@@ -1262,8 +900,8 @@ public class VideoEngine {
         }
 
         // Texture using clut?
-        if (texture_storage >= TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
-            if (tex_clut_mode == CMODE_FORMAT_32BIT_ABGR8888) {
+        if (context.texture_storage >= TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
+            if (context.tex_clut_mode == CMODE_FORMAT_32BIT_ABGR8888) {
                 readClut32(0);
             } else {
                 readClut16(0);
@@ -1272,13 +910,13 @@ public class VideoEngine {
     }
 
     private short[] readClut16(int level) {
-        int clutNumEntries = tex_clut_num_blocks * 16;
+        int clutNumEntries = context.tex_clut_num_blocks * 16;
 
         // Update the clut_buffer only if some clut parameters have been changed
         // since last update.
         if (clutIsDirty) {
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 2), (clutNumEntries - tex_clut_start) * 2, 2);
-            for (int i = tex_clut_start; i < clutNumEntries; i++) {
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 2), (clutNumEntries - context.tex_clut_start) * 2, 2);
+            for (int i = context.tex_clut_start; i < clutNumEntries; i++) {
                 clut_buffer16[i] = (short) memoryReader.readNext();
             }
             clutIsDirty = false;
@@ -1286,20 +924,20 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut16");
-            CaptureManager.captureRAM(tex_clut_addr, clutNumEntries * 2);
+            CaptureManager.captureRAM(context.tex_clut_addr, clutNumEntries * 2);
         }
 
         return clut_buffer16;
     }
 
     private int[] readClut32(int level) {
-        int clutNumEntries = tex_clut_num_blocks * 8;
+        int clutNumEntries = context.tex_clut_num_blocks * 8;
 
         // Update the clut_buffer only if some clut parameters have been changed
         // since last update.
         if (clutIsDirty) {
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 4), (clutNumEntries - tex_clut_start) * 4, 4);
-            for (int i = tex_clut_start; i < clutNumEntries; i++) {
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 4), (clutNumEntries - context.tex_clut_start) * 4, 4);
+            for (int i = context.tex_clut_start; i < clutNumEntries; i++) {
                 clut_buffer32[i] = memoryReader.readNext();
             }
             clutIsDirty = false;
@@ -1307,22 +945,22 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut32");
-            CaptureManager.captureRAM(tex_clut_addr, clutNumEntries * 4);
+            CaptureManager.captureRAM(context.tex_clut_addr, clutNumEntries * 4);
         }
 
         return clut_buffer32;
     }
 
     private int getClutIndex(int index) {
-        return ((tex_clut_start + index) >> tex_clut_shift) & tex_clut_mask;
+        return ((context.tex_clut_start + index) >> context.tex_clut_shift) & context.tex_clut_mask;
     }
 
     // UnSwizzling based on pspplayer
     private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel, int level) {
-        int rowWidth = (bytesPerPixel > 0) ? (texture_buffer_width[level] * bytesPerPixel) : (texture_buffer_width[level] / 2);
+        int rowWidth = (bytesPerPixel > 0) ? (context.texture_buffer_width[level] * bytesPerPixel) : (context.texture_buffer_width[level] / 2);
         int pitch = (rowWidth - 16) / 4;
         int bxc = rowWidth / 16;
-        int byc = (texture_height[level] + 7) / 8;
+        int byc = (context.texture_height[level] + 7) / 8;
 
         int ydest = 0;
 
@@ -1346,7 +984,7 @@ public class VideoEngine {
 
         if (State.captureGeNextFrame) {
             log.info("Capture unswizzleTextureFromMemory");
-            CaptureManager.captureRAM(texaddr, rowWidth * texture_height[level]);
+            CaptureManager.captureRAM(texaddr, rowWidth * context.texture_height[level]);
         }
 
         return IntBuffer.wrap(tmp_texture_buffer32);
@@ -1509,23 +1147,23 @@ public class VideoEngine {
                 break;
 
             case BASE:
-                base = (normalArgument << 8) & 0xff000000;
+            	context.base = (normalArgument << 8) & 0xff000000;
                 // Bits of (normalArgument & 0x0000FFFF) are ignored
                 // (tested: "Ape Escape On the Loose")
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(BASE) + " " + String.format("%08x", base));
+                    log(helper.getCommandString(BASE) + " " + String.format("%08x", context.base));
                 }
                 break;
 
             case VTYPE: {
-                int old_transform_mode = transform_mode;
+                int old_transform_mode = context.transform_mode;
                 boolean old_vertex_hasColor = vinfo.color != 0;
                 vinfo.processType(normalArgument);
-                transform_mode = (normalArgument >> 23) & 0x1;
+                context.transform_mode = (normalArgument >> 23) & 0x1;
                 boolean vertex_hasColor = vinfo.color != 0;
 
                 //Switching from 2D to 3D or 3D to 2D?
-                if (old_transform_mode != transform_mode) {
+                if (old_transform_mode != context.transform_mode) {
                     projectionMatrixUpload.setChanged(true);
                     modelMatrixUpload.setChanged(true);
                     viewMatrixUpload.setChanged(true);
@@ -1534,7 +1172,7 @@ public class VideoEngine {
                     depthChanged = true;
                     materialChanged = true;
                     // Switching from 2D to 3D?
-                    if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+                    if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
                         lightingChanged = true;
                     }
                 } else if (old_vertex_hasColor != vertex_hasColor) {
@@ -1549,33 +1187,33 @@ public class VideoEngine {
             }
 
             case OFFSET_ADDR:
-                baseOffset = normalArgument << 8;
+            	context.baseOffset = normalArgument << 8;
                 if (isLogDebugEnabled) {
-                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), baseOffset));
+                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), context.baseOffset));
                 }
                 break;
 
             case ORIGIN_ADDR:
-                baseOffset = currentList.pc - 4;
+            	context.baseOffset = currentList.pc - 4;
                 if (normalArgument != 0) {
                     log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
                 } else if (isLogDebugEnabled) {
-                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, baseOffset));
+                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, context.baseOffset));
                 }
                 break;
 
             case REGION1:
-                region_x1 = normalArgument & 0x3ff;
-                region_y1 = (normalArgument >> 10) & 0x3ff;
+            	context.region_x1 = normalArgument & 0x3ff;
+            	context.region_y1 = (normalArgument >> 10) & 0x3ff;
                 break;
 
             case REGION2:
-                region_x2 = normalArgument & 0x3ff;
-                region_y2 = (normalArgument >> 10) & 0x3ff;
-                region_width = (region_x2 + 1) - region_x1;
-                region_height = (region_y2 + 1) - region_y1;
+            	context.region_x2 = normalArgument & 0x3ff;
+            	context.region_y2 = (normalArgument >> 10) & 0x3ff;
+            	context.region_width = (context.region_x2 + 1) - context.region_x1;
+            	context.region_height = (context.region_y2 + 1) - context.region_y1;
                 if (isLogDebugEnabled) {
-                    log("drawRegion(" + region_x1 + "," + region_y1 + "," + region_width + "," + region_height + ")");
+                    log("drawRegion(" + context.region_x1 + "," + context.region_y1 + "," + context.region_width + "," + context.region_height + ")");
                 }
                 break;
 
@@ -1583,10 +1221,9 @@ public class VideoEngine {
              * Lighting enable/disable
              */
             case LTE: {
-                if (lightingFlag.setEnabled(normalArgument)) {
-                    if (lightingFlag.isEnabled()) {
-                        lightingChanged = true;
-                    }
+            	context.lightingFlag.setEnabled(normalArgument);
+                if (context.lightingFlag.isEnabled()) {
+                    lightingChanged = true;
                 }
                 break;
             }
@@ -1599,102 +1236,76 @@ public class VideoEngine {
             case LTE2:
             case LTE3: {
                 int lnum = command - LTE0;
-                EnableDisableFlag lightFlag = lightFlags[lnum];
-                if (lightFlag.setEnabled(normalArgument)) {
-                    if (lightFlag.isEnabled()) {
-                        lightingChanged = true;
-                    }
+                EnableDisableFlag lightFlag = context.lightFlags[lnum];
+                lightFlag.setEnabled(normalArgument);
+                if (lightFlag.isEnabled()) {
+                    lightingChanged = true;
                 }
                 break;
             }
 
             case CPE:
-                if (normalArgument != 0) {
-                    gl.glEnable(GL.GL_CLIP_PLANE0);
-                    gl.glEnable(GL.GL_CLIP_PLANE1);
-                    gl.glEnable(GL.GL_CLIP_PLANE2);
-                    gl.glEnable(GL.GL_CLIP_PLANE3);
-                    gl.glEnable(GL.GL_CLIP_PLANE4);
-                    gl.glEnable(GL.GL_CLIP_PLANE5);
-                    if (isLogDebugEnabled) {
-                        log("Clip Plane Enable " + getArgumentLog(normalArgument));
-                    }
-                } else {
-                    gl.glDisable(GL.GL_CLIP_PLANE0);
-                    gl.glDisable(GL.GL_CLIP_PLANE1);
-                    gl.glDisable(GL.GL_CLIP_PLANE2);
-                    gl.glDisable(GL.GL_CLIP_PLANE3);
-                    gl.glDisable(GL.GL_CLIP_PLANE4);
-                    gl.glDisable(GL.GL_CLIP_PLANE5);
-                    if (isLogDebugEnabled) {
-                        log("Clip Plane Disable " + getArgumentLog(normalArgument));
-                    }
-                }
-                clipPlanesFlag.setEnabled(normalArgument);
+            	context.clipPlanesFlag.setEnabled(normalArgument);
                 break;
 
             case BCE:
-                cullFaceFlag.setEnabled(normalArgument);
+            	context.cullFaceFlag.setEnabled(normalArgument);
                 break;
 
             case TME:
-                textureFlag.setEnabled(normalArgument);
+            	context.textureFlag.setEnabled(normalArgument);
                 break;
 
             case FGE:
-                if (fogFlag.setEnabled(normalArgument)) {
-                    if (fogFlag.isEnabled()) {
-                        gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
-                        gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
-                    }
+            	context.fogFlag.setEnabled(normalArgument);
+                if (context.fogFlag.isEnabled()) {
+                	re.setFogHint();
                 }
                 break;
 
             case DTE:
-                ditherFlag.setEnabled(normalArgument);
+            	context.ditherFlag.setEnabled(normalArgument);
                 break;
 
             case ABE:
-                blendFlag.setEnabled(normalArgument);
+            	context.blendFlag.setEnabled(normalArgument);
                 break;
 
             case ATE:
-                alphaTestFlag.setEnabled(normalArgument);
+            	context.alphaTestFlag.setEnabled(normalArgument);
                 break;
 
             case ZTE:
-                if (depthTestFlag.setEnabled(normalArgument)) {
-                    if (depthTestFlag.isEnabled()) {
-                        // OpenGL requires the Depth parameters to be reloaded
-                        depthChanged = true;
-                    }
+            	context.depthTestFlag.setEnabled(normalArgument);
+                if (context.depthTestFlag.isEnabled()) {
+                    // OpenGL requires the Depth parameters to be reloaded
+                    depthChanged = true;
                 }
                 break;
 
             case STE:
-                stencilTestFlag.setEnabled(normalArgument);
+            	context.stencilTestFlag.setEnabled(normalArgument);
                 break;
 
             case AAE:
-                if (lineSmoothFlag.setEnabled(normalArgument)) {
-                    if (lineSmoothFlag.isEnabled()) {
-                        gl.glHint(GL.GL_LINE_SMOOTH_HINT, GL.GL_NICEST);
-                    }
+            	context.lineSmoothFlag.setEnabled(normalArgument);
+                if (context.lineSmoothFlag.isEnabled()) {
+                	re.setLineSmoothHint();
                 }
                 break;
 
             case PCE: {
-                patchCullFaceFlag.setEnabled(normalArgument);
+            	context.patchCullFaceFlag.setEnabled(normalArgument);
                 break;
             }
 
             case CTE: {
-                colorTestFlag.setEnabled(normalArgument);
+            	context.colorTestFlag.setEnabled(normalArgument);
                 break;
             }
 
             case LOE:
-                colorLogicOpFlag.setEnabled(normalArgument);
+            	context.colorLogicOpFlag.setEnabled(normalArgument);
                 break;
 
             /*
@@ -1717,9 +1328,9 @@ public class VideoEngine {
                     error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
                 } else {
                     float floatArgument = floatArgument(normalArgument);
-                    bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
+                    context.bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
                     if (useSkinningShaders) {
-                        boneMatrixForShader[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
+                    	context.boneMatrixForShader[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
                         if (matrixIndex >= boneMatrixForShaderUpdatedMatrix) {
                             boneMatrixForShaderUpdatedMatrix = matrixIndex + 1;
                         }
@@ -1731,10 +1342,10 @@ public class VideoEngine {
                         for (int x = 0; x < 3; x++) {
                             log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
                                     matrixIndex,
-                                    bone_uploaded_matrix[matrixIndex][x + 0],
-                                    bone_uploaded_matrix[matrixIndex][x + 3],
-                                    bone_uploaded_matrix[matrixIndex][x + 6],
-                                    bone_uploaded_matrix[matrixIndex][x + 9]));
+                                    context.bone_uploaded_matrix[matrixIndex][x + 0],
+                                    context.bone_uploaded_matrix[matrixIndex][x + 3],
+                                    context.bone_uploaded_matrix[matrixIndex][x + 6],
+                                    context.bone_uploaded_matrix[matrixIndex][x + 9]));
                         }
                     }
                 }
@@ -1754,7 +1365,7 @@ public class VideoEngine {
             case MW7: {
                 int index = command - MW0;
                 float floatArgument = floatArgument(normalArgument);
-                morph_weight[index] = floatArgument;
+                context.morph_weight[index] = floatArgument;
                 re.setMorphWeight(index, floatArgument);
                 if (isLogDebugEnabled) {
                     log("morph weight " + index, floatArgument);
@@ -1763,30 +1374,30 @@ public class VideoEngine {
             }
 
             case PSUB:
-                patch_div_s = normalArgument & 0xFF;
-                patch_div_t = (normalArgument >> 8) & 0xFF;
-                re.setPatchDiv(patch_div_s, patch_div_t);
+            	context.patch_div_s = normalArgument & 0xFF;
+            	context.patch_div_t = (normalArgument >> 8) & 0xFF;
+                re.setPatchDiv(context.patch_div_s, context.patch_div_t);
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(PSUB) + " patch_div_s=" + patch_div_s + ", patch_div_t=" + patch_div_t);
+                    log(helper.getCommandString(PSUB) + " patch_div_s=" + context.patch_div_s + ", patch_div_t=" + context.patch_div_t);
                 }
                 break;
 
             case PPRIM: {
-                patch_prim = (normalArgument & 0x3);
+            	context.patch_prim = (normalArgument & 0x3);
                 // Primitive type to use in patch division:
                 // 0 - Triangle.
                 // 1 - Line.
                 // 2 - Point.
-                re.setPatchPrim(patch_prim);
+                re.setPatchPrim(context.patch_prim);
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(PPRIM) + " patch_prim=" + patch_prim);
+                    log(helper.getCommandString(PPRIM) + " patch_prim=" + context.patch_prim);
                 }
                 break;
             }
 
             case PFACE: {
                 // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
-                patchFaceFlag.setEnabled(normalArgument);
+            	context.patchFaceFlag.setEnabled(normalArgument);
                 break;
             }
 
@@ -1799,7 +1410,7 @@ public class VideoEngine {
 
             case MODEL:
                 if (modelMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", model_uploaded_matrix);
+                    log("glLoadMatrixf", context.model_uploaded_matrix);
                 }
                 break;
 
@@ -1812,7 +1423,7 @@ public class VideoEngine {
 
             case VIEW:
                 if (viewMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", view_uploaded_matrix);
+                    log("glLoadMatrixf", context.view_uploaded_matrix);
                 }
                 break;
 
@@ -1825,7 +1436,7 @@ public class VideoEngine {
 
             case PROJ:
                 if (projectionMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", proj_uploaded_matrix);
+                    log("glLoadMatrixf", context.proj_uploaded_matrix);
                 }
                 break;
 
@@ -1838,33 +1449,33 @@ public class VideoEngine {
 
             case TMATRIX:
                 if (textureMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", texture_uploaded_matrix);
+                    log("glLoadMatrixf", context.texture_uploaded_matrix);
                 }
                 break;
 
             case XSCALE: {
-                int old_viewport_width = viewport_width;
-                viewport_width = (int) floatArgument(normalArgument);
-                if (old_viewport_width != viewport_width) {
+                int old_viewport_width = context.viewport_width;
+                context.viewport_width = (int) floatArgument(normalArgument);
+                if (old_viewport_width != context.viewport_width) {
                     viewportChanged = true;
                 }
                 break;
             }
 
             case YSCALE: {
-                int old_viewport_height = viewport_height;
-                viewport_height = (int) floatArgument(normalArgument);
-                if (old_viewport_height != viewport_height) {
+                int old_viewport_height = context.viewport_height;
+                context.viewport_height = (int) floatArgument(normalArgument);
+                if (old_viewport_height != context.viewport_height) {
                     viewportChanged = true;
                 }
                 break;
             }
 
             case ZSCALE: {
-                float old_zscale = zscale;
+                float old_zscale = context.zscale;
                 float floatArgument = floatArgument(normalArgument);
-                zscale = floatArgument / 65535.f;
-                if (old_zscale != zscale) {
+                context.zscale = floatArgument / 65535.f;
+                if (old_zscale != context.zscale) {
                     depthChanged = true;
                 }
 
@@ -1875,33 +1486,33 @@ public class VideoEngine {
             }
 
             case XPOS: {
-                int old_viewport_cx = viewport_cx;
-                viewport_cx = (int) floatArgument(normalArgument);
-                if (old_viewport_cx != viewport_cx) {
+                int old_viewport_cx = context.viewport_cx;
+                context.viewport_cx = (int) floatArgument(normalArgument);
+                if (old_viewport_cx != context.viewport_cx) {
                     viewportChanged = true;
                 }
                 break;
             }
 
             case YPOS: {
-                int old_viewport_cy = viewport_cy;
-                viewport_cy = (int) floatArgument(normalArgument);
-                if (old_viewport_cy != viewport_cy) {
+                int old_viewport_cy = context.viewport_cy;
+                context.viewport_cy = (int) floatArgument(normalArgument);
+                if (old_viewport_cy != context.viewport_cy) {
                     viewportChanged = true;
                 }
 
                 // Log only on the last called command (always XSCALE -> YSCALE -> XPOS -> YPOS).
                 if (isLogDebugEnabled) {
-                    log.debug("sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", w=" + viewport_width + " h=" + viewport_height + ")");
+                    log.debug("sceGuViewport(cx=" + context.viewport_cx + ", cy=" + context.viewport_cy + ", w=" + context.viewport_width + " h=" + context.viewport_height + ")");
                 }
                 break;
             }
 
             case ZPOS: {
-                float old_zpos = zpos;
+                float old_zpos = context.zpos;
                 float floatArgument = floatArgument(normalArgument);
-                zpos = floatArgument / 65535.f;
-                if (old_zpos != zpos) {
+                context.zpos = floatArgument / 65535.f;
+                if (old_zpos != context.zpos) {
                     depthChanged = true;
                 }
 
@@ -1915,71 +1526,71 @@ public class VideoEngine {
              * Texture transformations
              */
             case USCALE: {
-                float old_tex_scale_x = tex_scale_x;
-                tex_scale_x = floatArgument(normalArgument);
+                float old_tex_scale_x = context.tex_scale_x;
+                context.tex_scale_x = floatArgument(normalArgument);
 
-                if (old_tex_scale_x != tex_scale_x) {
+                if (old_tex_scale_x != context.tex_scale_x) {
                     textureMatrixUpload.setChanged(true);
                 }
                 break;
             }
 
             case VSCALE: {
-                float old_tex_scale_y = tex_scale_y;
-                tex_scale_y = floatArgument(normalArgument);
+                float old_tex_scale_y = context.tex_scale_y;
+                context.tex_scale_y = floatArgument(normalArgument);
 
-                if (old_tex_scale_y != tex_scale_y) {
+                if (old_tex_scale_y != context.tex_scale_y) {
                     textureMatrixUpload.setChanged(true);
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexScale(u=" + tex_scale_x + ", v=" + tex_scale_y + ")");
+                    log("sceGuTexScale(u=" + context.tex_scale_x + ", v=" + context.tex_scale_y + ")");
                 }
                 break;
             }
 
             case UOFFSET: {
-                float old_tex_translate_x = tex_translate_x;
-                tex_translate_x = floatArgument(normalArgument);
+                float old_tex_translate_x = context.tex_translate_x;
+                context.tex_translate_x = floatArgument(normalArgument);
 
-                if (old_tex_translate_x != tex_translate_x) {
+                if (old_tex_translate_x != context.tex_translate_x) {
                     textureMatrixUpload.setChanged(true);
                 }
                 break;
             }
 
             case VOFFSET: {
-                float old_tex_translate_y = tex_translate_y;
-                tex_translate_y = floatArgument(normalArgument);
+                float old_tex_translate_y = context.tex_translate_y;
+                context.tex_translate_y = floatArgument(normalArgument);
 
-                if (old_tex_translate_y != tex_translate_y) {
+                if (old_tex_translate_y != context.tex_translate_y) {
                     textureMatrixUpload.setChanged(true);
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexOffset(u=" + tex_translate_x + ", v=" + tex_translate_y + ")");
+                    log("sceGuTexOffset(u=" + context.tex_translate_x + ", v=" + context.tex_translate_y + ")");
                 }
                 break;
             }
 
             case OFFSETX: {
-                int old_offset_x = offset_x;
-                offset_x = normalArgument >> 4;
-                if (old_offset_x != offset_x) {
+                int old_offset_x = context.offset_x;
+                context.offset_x = normalArgument >> 4;
+                if (old_offset_x != context.offset_x) {
                     viewportChanged = true;
                 }
                 break;
             }
 
             case OFFSETY: {
-                int old_offset_y = offset_y;
-                offset_y = normalArgument >> 4;
-                if (old_offset_y != offset_y) {
+                int old_offset_y = context.offset_y;
+                context.offset_y = normalArgument >> 4;
+                if (old_offset_y != context.offset_y) {
                     viewportChanged = true;
                 }
 
                 if(isLogDebugEnabled) {
-                    log.debug("sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
+                    log.debug("sceGuOffset(x=" + context.offset_x + ",y=" + context.offset_y + ")");
                 }
 
                 break;
@@ -1996,7 +1607,7 @@ public class VideoEngine {
             case RNORM: {
                 // This seems to be taked into account when calculating the lighting
                 // for the current normal.
-                faceNormalReverseFlag.setEnabled(normalArgument);
+            	context.faceNormalReverseFlag.setEnabled(normalArgument);
                 break;
             }
 
@@ -2004,79 +1615,79 @@ public class VideoEngine {
              * Material setup
              */
             case CMAT: {
-                int old_mat_flags = mat_flags;
-                mat_flags = normalArgument & 7;
-                if (old_mat_flags != mat_flags) {
+                int old_mat_flags = context.mat_flags;
+                context.mat_flags = normalArgument & 7;
+                if (old_mat_flags != context.mat_flags) {
                     materialChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuColorMaterial " + mat_flags);
+                    log("sceGuColorMaterial " + context.mat_flags);
                 }
                 break;
             }
 
             case EMC:
-                mat_emissive[0] = ((normalArgument) & 255) / 255.f;
-                mat_emissive[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
-                mat_emissive[3] = 1.f;
+            	context.mat_emissive[0] = ((normalArgument) & 255) / 255.f;
+            	context.mat_emissive[1] = ((normalArgument >> 8) & 255) / 255.f;
+            	context.mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
+            	context.mat_emissive[3] = 1.f;
                 materialChanged = true;
-                re.setMaterialEmissiveColor(mat_emissive);
+                re.setMaterialEmissiveColor(context.mat_emissive);
                 if (isLogDebugEnabled) {
                     log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
+                    		context.mat_emissive[0], context.mat_emissive[1], context.mat_emissive[2], normalArgument));
                 }
                 break;
 
             case AMC:
-                mat_ambient[0] = ((normalArgument) & 255) / 255.f;
-                mat_ambient[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.mat_ambient[0] = ((normalArgument) & 255) / 255.f;
+                context.mat_ambient[1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
                 materialChanged = true;
                 if (isLogDebugEnabled) {
                     log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
+                            context.mat_ambient[0], context.mat_ambient[1], context.mat_ambient[2], normalArgument));
                 }
                 break;
 
             case DMC:
-                mat_diffuse[0] = ((normalArgument) & 255) / 255.f;
-                mat_diffuse[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
-                mat_diffuse[3] = 1.f;
+                context.mat_diffuse[0] = ((normalArgument) & 255) / 255.f;
+                context.mat_diffuse[1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.mat_diffuse[3] = 1.f;
                 materialChanged = true;
                 if (isLogDebugEnabled) {
                     log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
+                            context.mat_diffuse[0], context.mat_diffuse[1], context.mat_diffuse[2], normalArgument));
                 }
                 break;
 
             case SMC:
-                mat_specular[0] = ((normalArgument) & 255) / 255.f;
-                mat_specular[1] = ((normalArgument >> 8) & 255) / 255.f;
-                mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
-                mat_specular[3] = 1.f;
+                context.mat_specular[0] = ((normalArgument) & 255) / 255.f;
+                context.mat_specular[1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.mat_specular[3] = 1.f;
                 materialChanged = true;
                 if (isLogDebugEnabled) {
                     log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
+                            context.mat_specular[0], context.mat_specular[1], context.mat_specular[2], normalArgument));
                 }
                 break;
 
             case AMA: {
-                mat_ambient[3] = ((normalArgument) & 255) / 255.f;
+                context.mat_ambient[3] = ((normalArgument) & 255) / 255.f;
                 materialChanged = true;
                 if (isLogDebugEnabled) {
                     log(String.format("material ambient a=%.1f (%02X)",
-                            mat_ambient[3], normalArgument & 255));
+                            context.mat_ambient[3], normalArgument & 255));
                 }
                 break;
             }
 
             case SPOW: {
                 float floatArgument = floatArgument(normalArgument);
-                gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
+                re.setMaterialShininess(floatArgument);
                 if (isLogDebugEnabled) {
                     log("material shininess " + floatArgument);
                 }
@@ -2084,19 +1695,19 @@ public class VideoEngine {
             }
 
             case ALC:
-                ambient_light[0] = ((normalArgument) & 255) / 255.f;
-                ambient_light[1] = ((normalArgument >> 8) & 255) / 255.f;
-                ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
-                re.setLightModelAmbientColor(ambient_light);
+            	context.ambient_light[0] = ((normalArgument) & 255) / 255.f;
+            	context.ambient_light[1] = ((normalArgument >> 8) & 255) / 255.f;
+            	context.ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
+                re.setLightModelAmbientColor(context.ambient_light);
                 if (isLogDebugEnabled) {
                     log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
+                    		context.ambient_light[0], context.ambient_light[1], context.ambient_light[2], normalArgument));
                 }
                 break;
 
             case ALA:
-                ambient_light[3] = ((normalArgument) & 255) / 255.f;
-                re.setLightModelAmbientColor(ambient_light);
+            	context.ambient_light[3] = ((normalArgument) & 255) / 255.f;
+                re.setLightModelAmbientColor(context.ambient_light);
                 break;
 
             case LMODE: {
@@ -2119,30 +1730,30 @@ public class VideoEngine {
             case LT2:
             case LT3: {
                 int lnum = command - LT0;
-                int old_light_type = light_type[lnum];
-                int old_light_kind = light_kind[lnum];
-                light_type[lnum] = (normalArgument >> 8) & 3;
-                light_kind[lnum] = normalArgument & 3;
+                int old_light_type = context.light_type[lnum];
+                int old_light_kind = context.light_kind[lnum];
+                context.light_type[lnum] = (normalArgument >> 8) & 3;
+                context.light_kind[lnum] = normalArgument & 3;
 
-                if (old_light_type != light_type[lnum] || old_light_kind != light_kind[lnum]) {
+                if (old_light_type != context.light_type[lnum] || old_light_kind != context.light_kind[lnum]) {
                     lightingChanged = true;
                 }
 
-                switch (light_type[lnum]) {
+                switch (context.light_type[lnum]) {
                     case LIGHT_DIRECTIONAL:
-                        light_pos[lnum][3] = 0.f;
+                    	context.light_pos[lnum][3] = 0.f;
                         break;
                     case LIGHT_POINT:
                     	re.setLightSpotCutoff(lnum, 180);
-                        light_pos[lnum][3] = 1.f;
+                    	context.light_pos[lnum][3] = 1.f;
                         break;
                     case LIGHT_SPOT:
-                        light_pos[lnum][3] = 1.f;
+                    	context.light_pos[lnum][3] = 1.f;
                         break;
                     default:
                         error("Unknown light type : " + normalArgument);
                 }
-                re.setLightType(lnum, light_type[lnum], light_kind[lnum]);
+                re.setLightType(lnum, context.light_type[lnum], context.light_kind[lnum]);
 
                 if (isLogDebugEnabled) {
                     log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
@@ -2169,10 +1780,10 @@ public class VideoEngine {
             case LZP3: {
                 int lnum = (command - LXP0) / 3;
                 int component = (command - LXP0) % 3;
-                float old_light_pos = light_pos[lnum][component];
-                light_pos[lnum][component] = floatArgument(normalArgument);
+                float old_light_pos = context.light_pos[lnum][component];
+                context.light_pos[lnum][component] = floatArgument(normalArgument);
 
-                if (old_light_pos != light_pos[lnum][component]) {
+                if (old_light_pos != context.light_pos[lnum][component]) {
                     lightingChanged = true;
                 }
                 break;
@@ -2192,12 +1803,12 @@ public class VideoEngine {
             case LZD3: {
                 int lnum = (command - LXD0) / 3;
                 int component = (command - LXD0) % 3;
-                float old_light_dir = light_dir[lnum][component];
+                float old_light_dir = context.light_dir[lnum][component];
 
                 // OpenGL requires a normal in the opposite direction as the PSP
-                light_dir[lnum][component] = -floatArgument(normalArgument);
+                context.light_dir[lnum][component] = -floatArgument(normalArgument);
 
-                if (old_light_dir != light_dir[lnum][component]) {
+                if (old_light_dir != context.light_dir[lnum][component]) {
                     lightingChanged = true;
                 }
                 // OpenGL parameter for light direction is set in initRendering
@@ -2245,15 +1856,15 @@ public class VideoEngine {
             case SLE2:
             case SLE3: {
                 int lnum = command - SLE0;
-                float old_spotLightExponent = spotLightExponent[lnum];
-                spotLightExponent[lnum] = floatArgument(normalArgument);
+                float old_spotLightExponent = context.spotLightExponent[lnum];
+                context.spotLightExponent[lnum] = floatArgument(normalArgument);
 
-                if (old_spotLightExponent != spotLightExponent[lnum]) {
+                if (old_spotLightExponent != context.spotLightExponent[lnum]) {
                     lightingChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + spotLightExponent[lnum] + ",X)");
+                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + context.spotLightExponent[lnum] + ",X)");
                 }
                 break;
             }
@@ -2266,15 +1877,15 @@ public class VideoEngine {
             case SLF2:
             case SLF3: {
                 int lnum = command - SLF0;
-                float old_spotLightCutoff = spotLightCutoff[lnum];
+                float old_spotLightCutoff = context.spotLightCutoff[lnum];
 
                 // PSP Cutoff is cosine of angle, OpenGL expects degrees
                 float floatArgument = floatArgument(normalArgument);
                 float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
                 if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
-                    spotLightCutoff[lnum] = degreeCutoff;
+                	context.spotLightCutoff[lnum] = degreeCutoff;
 
-                    if (old_spotLightCutoff != spotLightCutoff[lnum]) {
+                    if (old_spotLightCutoff != context.spotLightCutoff[lnum]) {
                         lightingChanged = true;
                     }
 
@@ -2295,11 +1906,11 @@ public class VideoEngine {
             case ALC2:
             case ALC3: {
                 int lnum = (command - ALC0) / 3;
-                lightAmbientColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                lightAmbientColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                lightAmbientColor[lnum][3] = 1.f;
-                re.setLightAmbientColor(lnum, lightAmbientColor[lnum]);
+                context.lightAmbientColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+                context.lightAmbientColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.lightAmbientColor[lnum][3] = 1.f;
+                re.setLightAmbientColor(lnum, context.lightAmbientColor[lnum]);
                 log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
                 break;
             }
@@ -2310,11 +1921,11 @@ public class VideoEngine {
             case DLC2:
             case DLC3: {
                 int lnum = (command - DLC0) / 3;
-                lightDiffuseColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                lightDiffuseColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                lightDiffuseColor[lnum][3] = 1.f;
-                re.setLightDiffuseColor(lnum, lightDiffuseColor[lnum]);
+                context.lightDiffuseColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+                context.lightDiffuseColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.lightDiffuseColor[lnum][3] = 1.f;
+                re.setLightDiffuseColor(lnum, context.lightDiffuseColor[lnum]);
                 log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
                 break;
             }
@@ -2325,25 +1936,24 @@ public class VideoEngine {
             case SLC2:
             case SLC3: {
                 int lnum = (command - SLC0) / 3;
-                float old_lightSpecularColor0 = lightSpecularColor[lnum][0];
-                float old_lightSpecularColor1 = lightSpecularColor[lnum][1];
-                float old_lightSpecularColor2 = lightSpecularColor[lnum][2];
-                lightSpecularColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                lightSpecularColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                lightSpecularColor[lnum][3] = 1.f;
+                float old_lightSpecularColor0 = context.lightSpecularColor[lnum][0];
+                float old_lightSpecularColor1 = context.lightSpecularColor[lnum][1];
+                float old_lightSpecularColor2 = context.lightSpecularColor[lnum][2];
+                context.lightSpecularColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+                context.lightSpecularColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.lightSpecularColor[lnum][3] = 1.f;
 
-                if (old_lightSpecularColor0 != lightSpecularColor[lnum][0] || old_lightSpecularColor1 != lightSpecularColor[lnum][1] || old_lightSpecularColor2 != lightSpecularColor[lnum][2]) {
+                if (old_lightSpecularColor0 != context.lightSpecularColor[lnum][0] || old_lightSpecularColor1 != context.lightSpecularColor[lnum][1] || old_lightSpecularColor2 != context.lightSpecularColor[lnum][2]) {
                     lightingChanged = true;
                 }
-                re.setLightSpecularColor(lnum, lightDiffuseColor[lnum]);
+                re.setLightSpecularColor(lnum, context.lightDiffuseColor[lnum]);
                 log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
                 break;
             }
 
             case FFACE: {
-                int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
-                gl.glFrontFace(frontFace);
+                re.setFrontFace(normalArgument != 0);
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 }
@@ -2352,34 +1962,34 @@ public class VideoEngine {
 
             case FBP:
                 // FBP can be called before or after FBW
-                fbp = (fbp & 0xff000000) | normalArgument;
+            	context.fbp = (context.fbp & 0xff000000) | normalArgument;
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                    log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(context.fbp) + ", fbw=" + context.fbw);
                 }
                 geBufChanged = true;
                 break;
 
             case FBW:
-                fbp = (fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-                fbw = normalArgument & 0xffff;
+            	context.fbp = (context.fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+            	context.fbw = normalArgument & 0xffff;
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                    log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(context.fbp) + ", fbw=" + context.fbw);
                 }
                 geBufChanged = true;
                 break;
 
             case ZBP:
-                zbp = (zbp & 0xff000000) | normalArgument;
+            	context.zbp = (context.zbp & 0xff000000) | normalArgument;
                 if (isLogDebugEnabled) {
-                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                    log("zbp=" + Integer.toHexString(context.zbp) + ", zbw=" +context. zbw);
                 }
                 break;
 
             case ZBW:
-                zbp = (zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-                zbw = normalArgument & 0xffff;
+            	context.zbp = (context.zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+                context.zbw = normalArgument & 0xffff;
                 if (isLogDebugEnabled) {
-                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                    log("zbp=" + Integer.toHexString(context.zbp) + ", zbw=" + context.zbw);
                 }
                 break;
 
@@ -2392,15 +2002,15 @@ public class VideoEngine {
             case TBP6:
             case TBP7: {
                 int level = command - TBP0;
-                int old_texture_base_pointer = texture_base_pointer[level];
-                texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
+                int old_texture_base_pointer = context.texture_base_pointer[level];
+                context.texture_base_pointer[level] = (context.texture_base_pointer[level] & 0xff000000) | normalArgument;
 
-                if (old_texture_base_pointer != texture_base_pointer[level]) {
+                if (old_texture_base_pointer != context.texture_base_pointer[level]) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
+                    log("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
                 }
                 break;
             }
@@ -2414,75 +2024,75 @@ public class VideoEngine {
             case TBW6:
             case TBW7: {
                 int level = command - TBW0;
-                int old_texture_base_pointer = texture_base_pointer[level];
-                int old_texture_buffer_width = texture_buffer_width[level];
-                texture_base_pointer[level] = (texture_base_pointer[level] & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-                texture_buffer_width[level] = normalArgument & 0xffff;
+                int old_texture_base_pointer = context.texture_base_pointer[level];
+                int old_texture_buffer_width = context.texture_buffer_width[level];
+                context.texture_base_pointer[level] = (context.texture_base_pointer[level] & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+                context.texture_buffer_width[level] = normalArgument & 0xffff;
 
-                if (old_texture_base_pointer != texture_base_pointer[level] || old_texture_buffer_width != texture_buffer_width[level]) {
+                if (old_texture_base_pointer != context.texture_base_pointer[level] || old_texture_buffer_width != context.texture_buffer_width[level]) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
+                    log("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + context.texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
                 }
                 break;
             }
 
             case CBP: {
-                int old_tex_clut_addr = tex_clut_addr;
-                tex_clut_addr = (tex_clut_addr & 0xff000000) | normalArgument;
+                int old_tex_clut_addr = context.tex_clut_addr;
+                context.tex_clut_addr = (context.tex_clut_addr & 0xff000000) | normalArgument;
 
                 clutIsDirty = true;
-                if (old_tex_clut_addr != tex_clut_addr) {
+                if (old_tex_clut_addr != context.tex_clut_addr) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                    log("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(context.tex_clut_addr) + "))");
                 }
                 break;
             }
 
             case CBPH: {
-                int old_tex_clut_addr = tex_clut_addr;
-                tex_clut_addr = (tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
+                int old_tex_clut_addr = context.tex_clut_addr;
+                context.tex_clut_addr = (context.tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
 
                 clutIsDirty = true;
-                if (old_tex_clut_addr != tex_clut_addr) {
+                if (old_tex_clut_addr != context.tex_clut_addr) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                    log("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(context.tex_clut_addr) + "))");
                 }
                 break;
             }
 
             case TRXSBP:
-                textureTx_sourceAddress = (textureTx_sourceAddress & 0xFF000000) | normalArgument;
+                context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0xFF000000) | normalArgument;
                 break;
 
             case TRXSBW:
-                textureTx_sourceAddress = (textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
-                textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
+                context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
+                context.textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
 
                 // TODO Check when sx and sy are reset to 0. Here or after TRXKICK?
-                textureTx_sx = 0;
-                textureTx_sy = 0;
+                context.textureTx_sx = 0;
+                context.textureTx_sy = 0;
                 break;
 
             case TRXDBP:
-                textureTx_destinationAddress = (textureTx_destinationAddress & 0xFF000000) | normalArgument;
+                context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0xFF000000) | normalArgument;
                 break;
 
             case TRXDBW:
-                textureTx_destinationAddress = (textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
-                textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
+                context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
+                context.textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
 
                 // TODO Check when dx and dy are reset to 0. Here or after TRXKICK?
-                textureTx_dx = 0;
-                textureTx_dy = 0;
+                context.textureTx_dx = 0;
+                context.textureTx_dy = 0;
                 break;
 
             case TSIZE0:
@@ -2494,103 +2104,103 @@ public class VideoEngine {
             case TSIZE6:
             case TSIZE7: {
                 int level = command - TSIZE0;
-                int old_texture_height = texture_height[level];
-                int old_texture_width = texture_width[level];
+                int old_texture_height = context.texture_height[level];
+                int old_texture_width = context.texture_width[level];
                 // Astonishia Story is using normalArgument = 0x1804
                 // -> use texture_height = 1 << 0x08 (and not 1 << 0x18)
                 //        texture_width  = 1 << 0x04
                 // The maximum texture size is 512x512: the exponent value must be [0..9]
                 int height_exp2 = Math.min((normalArgument >> 8) & 0x0F, 9);
                 int width_exp2 = Math.min((normalArgument) & 0x0F, 9);
-                texture_height[level] = 1 << height_exp2;
-                texture_width[level] = 1 << width_exp2;
+                context.texture_height[level] = 1 << height_exp2;
+                context.texture_width[level] = 1 << width_exp2;
 
-                if (old_texture_height != texture_height[level] || old_texture_width != texture_width[level]) {
-                    if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD && level == 0) {
+                if (old_texture_height != context.texture_height[level] || old_texture_width != context.texture_width[level]) {
+                    if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD && level == 0) {
                         textureMatrixUpload.setChanged(true);
                     }
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexImage(level=" + level + ", width=" + texture_width[level] + ", height=" + texture_height[level] + ", X, X)");
+                    log("sceGuTexImage(level=" + level + ", width=" + context.texture_width[level] + ", height=" + context.texture_height[level] + ", X, X)");
                 }
                 break;
             }
 
             case TMAP:
-                int old_tex_map_mode = tex_map_mode;
-                tex_map_mode = normalArgument & 3;
-                tex_proj_map_mode = (normalArgument >> 8) & 3;
+                int old_tex_map_mode = context.tex_map_mode;
+                context.tex_map_mode = normalArgument & 3;
+                context.tex_proj_map_mode = (normalArgument >> 8) & 3;
 
-                if (old_tex_map_mode != tex_map_mode) {
+                if (old_tex_map_mode != context.tex_map_mode) {
                     textureMatrixUpload.setChanged(true);
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexMapMode(mode=" + tex_map_mode + ", X, X)");
-                    log("sceGuTexProjMapMode(mode=" + tex_proj_map_mode + ")");
+                    log("sceGuTexMapMode(mode=" + context.tex_map_mode + ", X, X)");
+                    log("sceGuTexProjMapMode(mode=" + context.tex_proj_map_mode + ")");
                 }
                 break;
 
             case TEXTURE_ENV_MAP_MATRIX: {
-                tex_shade_u = (normalArgument >> 0) & 0x3;
-                tex_shade_v = (normalArgument >> 8) & 0x3;
+            	context.tex_shade_u = (normalArgument >> 0) & 0x3;
+            	context.tex_shade_v = (normalArgument >> 8) & 0x3;
 
                 for (int i = 0; i < 3; i++) {
-                    tex_envmap_matrix[i + 0] = light_pos[tex_shade_u][i];
-                    tex_envmap_matrix[i + 4] = light_pos[tex_shade_v][i];
+                	context.tex_envmap_matrix[i + 0] = context.light_pos[context.tex_shade_u][i];
+                	context.tex_envmap_matrix[i + 4] = context.light_pos[context.tex_shade_v][i];
                 }
 
                 textureMatrixUpload.setChanged(true);
                 if (isLogDebugEnabled) {
-                    log("sceGuTexMapMode(X, " + tex_shade_u + ", " + tex_shade_v + ")");
+                    log("sceGuTexMapMode(X, " + context.tex_shade_u + ", " + context.tex_shade_v + ")");
                 }
                 break;
             }
 
             case TMODE: {
-                int old_texture_num_mip_maps = texture_num_mip_maps;
-                boolean old_mipmapShareClut = mipmapShareClut;
-                boolean old_texture_swizzle = texture_swizzle;
-                texture_num_mip_maps = (normalArgument >> 16) & 0x7;
+                int old_texture_num_mip_maps = context.texture_num_mip_maps;
+                boolean old_mipmapShareClut = context.mipmapShareClut;
+                boolean old_texture_swizzle = context.texture_swizzle;
+                context.texture_num_mip_maps = (normalArgument >> 16) & 0x7;
                 // This parameter has only a meaning when
                 //  texture_storage == GU_PSM_T4 and texture_num_mip_maps > 0
                 // when parameter==0: all the mipmaps share the same clut entries (normal behavior)
                 // when parameter==1: each mipmap has its own clut table, 16 entries each, stored sequentially
-                mipmapShareClut = ((normalArgument >> 8) & 0x1) == 0;
-                texture_swizzle = ((normalArgument) & 0x1) != 0;
+                context.mipmapShareClut = ((normalArgument >> 8) & 0x1) == 0;
+                context.texture_swizzle = ((normalArgument) & 0x1) != 0;
 
-                if (old_texture_num_mip_maps != texture_num_mip_maps || old_mipmapShareClut != mipmapShareClut || old_texture_swizzle != texture_swizzle) {
+                if (old_texture_num_mip_maps != context.texture_num_mip_maps || old_mipmapShareClut != context.mipmapShareClut || old_texture_swizzle != context.texture_swizzle) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", mipmapShareClut=" + mipmapShareClut + ", swizzle=" + texture_swizzle + ")");
+                    log("sceGuTexMode(X, mipmaps=" + context.texture_num_mip_maps + ", mipmapShareClut=" + context.mipmapShareClut + ", swizzle=" + context.texture_swizzle + ")");
                 }
                 break;
             }
 
             case TPSM: {
-                int old_texture_storage = texture_storage;
-                texture_storage = normalArgument & 0xF; // Lower four bits.
+                int old_texture_storage = context.texture_storage;
+                context.texture_storage = normalArgument & 0xF; // Lower four bits.
 
-                if (old_texture_storage != texture_storage) {
+                if (old_texture_storage != context.texture_storage) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexMode(tpsm=" + texture_storage + "(" + getPsmName(texture_storage) + "), X, X, X)");
+                    log("sceGuTexMode(tpsm=" + context.texture_storage + "(" + getPsmName(context.texture_storage) + "), X, X, X)");
                 }
                 break;
             }
 
             case CLOAD: {
-                int old_tex_clut_num_blocks = tex_clut_num_blocks;
-                tex_clut_num_blocks = normalArgument & 0x3F;
+                int old_tex_clut_num_blocks = context.tex_clut_num_blocks;
+                context.tex_clut_num_blocks = normalArgument & 0x3F;
 
                 clutIsDirty = true;
-                if (old_tex_clut_num_blocks != tex_clut_num_blocks) {
+                if (old_tex_clut_num_blocks != context.tex_clut_num_blocks) {
                     textureChanged = true;
                 }
 
@@ -2603,110 +2213,75 @@ public class VideoEngine {
                 readClut();
 
                 if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(num_blocks=" + tex_clut_num_blocks + ", X)");
+                    log("sceGuClutLoad(num_blocks=" + context.tex_clut_num_blocks + ", X)");
                 }
                 break;
             }
 
             case CMODE: {
-                int old_tex_clut_mode = tex_clut_mode;
-                int old_tex_clut_shift = tex_clut_shift;
-                int old_tex_clut_mask = tex_clut_mask;
-                int old_tex_clut_start = tex_clut_start;
-                tex_clut_mode = normalArgument & 0x03;
-                tex_clut_shift = (normalArgument >> 2) & 0x1F;
-                tex_clut_mask = (normalArgument >> 8) & 0xFF;
-                tex_clut_start = (normalArgument >> 16) & 0x1F;
+                int old_tex_clut_mode = context.tex_clut_mode;
+                int old_tex_clut_shift = context.tex_clut_shift;
+                int old_tex_clut_mask = context.tex_clut_mask;
+                int old_tex_clut_start = context.tex_clut_start;
+                context.tex_clut_mode = normalArgument & 0x03;
+                context.tex_clut_shift = (normalArgument >> 2) & 0x1F;
+                context.tex_clut_mask = (normalArgument >> 8) & 0xFF;
+                context.tex_clut_start = (normalArgument >> 16) & 0x1F;
 
                 clutIsDirty = true;
-                if (old_tex_clut_mode != tex_clut_mode || old_tex_clut_shift != tex_clut_shift || old_tex_clut_mask != tex_clut_mask || old_tex_clut_start != tex_clut_start) {
+                if (old_tex_clut_mode != context.tex_clut_mode || old_tex_clut_shift != context.tex_clut_shift || old_tex_clut_mask != context.tex_clut_mask || old_tex_clut_start != context.tex_clut_start) {
                     textureChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuClutMode(cpsm=" + tex_clut_mode + "(" + getPsmName(tex_clut_mode) + "), shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
+                    log("sceGuClutMode(cpsm=" + context.tex_clut_mode + "(" + getPsmName(context.tex_clut_mode) + "), shift=" + context.tex_clut_shift + ", mask=0x" + Integer.toHexString(context.tex_clut_mask) + ", start=" + context.tex_clut_start + ")");
                 }
                 break;
             }
 
             case TFLT: {
-                int old_tex_mag_filter = tex_mag_filter;
-                int old_tex_min_filter = tex_min_filter;
+                int old_tex_mag_filter = context.tex_mag_filter;
+                int old_tex_min_filter = context.tex_min_filter;
+
+                context.tex_min_filter = normalArgument & 0x7;
+                context.tex_mag_filter = (normalArgument >> 8) & 0x1;
 
                 if (isLogDebugEnabled) {
-                    log("sceGuTexFilter(min=" + (normalArgument & 0x7) + ", mag=" + ((normalArgument >> 8) & 0x1) + ") (mm#" + texture_num_mip_maps + ")");
+                    log("sceGuTexFilter(min=" + context.tex_min_filter + ", mag=" + context.tex_mag_filter + ") (mm#" + context.texture_num_mip_maps + ")");
                 }
 
-                switch ((normalArgument >> 8) & 0x1) {
-                    case TFLT_NEAREST: {
-                        tex_mag_filter = GL.GL_NEAREST;
-                        break;
-                    }
-                    case TFLT_LINEAR: {
-                        tex_mag_filter = GL.GL_LINEAR;
-                        break;
-                    }
+                if (context.tex_min_filter == TFLT_UNKNOW1 || context.tex_min_filter == TFLT_UNKNOW2) {
+                    log.warn("Unknown minimizing filter " + (normalArgument & 0xFF));
+                    context.tex_min_filter = TFLT_NEAREST;
                 }
 
-                switch (normalArgument & 0x7) {
-                    case TFLT_NEAREST: {
-                        tex_min_filter = GL.GL_NEAREST;
-                        break;
-                    }
-                    case TFLT_LINEAR: {
-                        tex_min_filter = GL.GL_LINEAR;
-                        break;
-                    }
-                    case TFLT_NEAREST_MIPMAP_NEAREST: {
-                        tex_min_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
-                        break;
-                    }
-                    case TFLT_NEAREST_MIPMAP_LINEAR: {
-                        tex_min_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
-                        break;
-                    }
-                    case TFLT_LINEAR_MIPMAP_NEAREST: {
-                        tex_min_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
-                        break;
-                    }
-                    case TFLT_LINEAR_MIPMAP_LINEAR: {
-                        tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
-                        break;
-                    }
-
-                    default: {
-                        log.warn("Unknown minimizing filter " + (normalArgument & 0xFF));
-                        break;
-                    }
-                }
-
-                if (old_tex_mag_filter != tex_mag_filter || old_tex_min_filter != tex_min_filter) {
+                if (old_tex_mag_filter != context.tex_mag_filter || old_tex_min_filter != context.tex_min_filter) {
                     textureChanged = true;
                 }
                 break;
             }
 
             case TWRAP: {
-                tex_wrap_s = normalArgument & 0xFF;
-                tex_wrap_t = (normalArgument >> 8) & 0xFF;
+            	context.tex_wrap_s = normalArgument & 0xFF;
+            	context.tex_wrap_t = (normalArgument >> 8) & 0xFF;
 
-                if (tex_wrap_s > TWRAP_WRAP_MODE_CLAMP) {
-                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + tex_wrap_s);
-                    tex_wrap_s = TWRAP_WRAP_MODE_REPEAT;
+                if (context.tex_wrap_s > TWRAP_WRAP_MODE_CLAMP) {
+                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_s);
+                    context.tex_wrap_s = TWRAP_WRAP_MODE_REPEAT;
                 }
-                if (tex_wrap_t > TWRAP_WRAP_MODE_CLAMP) {
-                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + tex_wrap_t);
-                    tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
+                if (context.tex_wrap_t > TWRAP_WRAP_MODE_CLAMP) {
+                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_t);
+                    context.tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
                 }
                 break;
             }
 
             case TBIAS: {
-                tex_mipmap_mode = normalArgument & 0x3;
-                tex_mipmap_bias_int = (int) (byte) (normalArgument >> 16); // Signed 8-bit integer
-                tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
+            	context.tex_mipmap_mode = normalArgument & 0x3;
+            	context.tex_mipmap_bias_int = (int) (byte) (normalArgument >> 16); // Signed 8-bit integer
+            	context.tex_mipmap_bias = context.tex_mipmap_bias_int / 16.0f;
                 if (isLogDebugEnabled) {
-                    log.debug("sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
+                    log.debug("sceGuTexLevelMode(mode=" + context.tex_mipmap_mode + ", bias=" + context.tex_mipmap_bias + ")");
                 }
                 break;
             }
@@ -2715,17 +2290,18 @@ public class VideoEngine {
                 executeCommandTFUNC(normalArgument);
                 break;
 
-            case TEC:
-                tex_env_color[0] = ((normalArgument) & 255) / 255.f;
-                tex_env_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                tex_env_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                tex_env_color[3] = 1.f;
-                gl.glTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_COLOR, tex_env_color, 0);
+            case TEC: {
+            	context.tex_env_color[0] = ((normalArgument) & 255) / 255.f;
+            	context.tex_env_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+            	context.tex_env_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+            	context.tex_env_color[3] = 1.f;
+                re.setTextureEnvColor(context.tex_env_color);
 
                 if (isLogDebugEnabled) {
                     log(String.format("sceGuTexEnvColor %08X (no alpha)", normalArgument));
                 }
                 break;
+            }
 
             case TFLUSH: {
                 // Do not load the texture right now, clut parameters can still be
@@ -2749,25 +2325,24 @@ public class VideoEngine {
             }
 
             case FFAR:
-                fog_far = floatArgument(normalArgument);
+            	context.fog_far = floatArgument(normalArgument);
                 break;
 
             case FDIST:
-                fog_dist = floatArgument(normalArgument);
-                if ((fog_far != 0.0f) && (fog_dist != 0.0f)) {
-                    float end = fog_far;
-                    float start = end - (1 / fog_dist);
-                    gl.glFogf(GL.GL_FOG_START, start);
-                    gl.glFogf(GL.GL_FOG_END, end);
+            	context.fog_dist = floatArgument(normalArgument);
+                if ((context.fog_far != 0.0f) && (context.fog_dist != 0.0f)) {
+                    float end = context.fog_far;
+                    float start = end - (1 / context.fog_dist);
+                    re.setFogDist(start, end);
                 }
                 break;
 
             case FCOL:
-                fog_color[0] = ((normalArgument) & 255) / 255.f;
-                fog_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                fog_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                fog_color[3] = 1.f;
-                gl.glFogfv(GL.GL_FOG_COLOR, fog_color, 0);
+            	context.fog_color[0] = ((normalArgument) & 255) / 255.f;
+                context.fog_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.fog_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.fog_color[3] = 1.f;
+                re.setFogColor(context.fog_color);
 
                 if (isLogDebugEnabled) {
                     log(String.format("sceGuFog(X, X, color=%08X) (no alpha)", normalArgument));
@@ -2775,15 +2350,15 @@ public class VideoEngine {
                 break;
 
             case TSLOPE: {
-                tslope_level = floatArgument(normalArgument);
+            	context.tslope_level = floatArgument(normalArgument);
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(TSLOPE) + " tslope_level=" + tslope_level);
+                    log(helper.getCommandString(TSLOPE) + " tslope_level=" + context.tslope_level);
                 }
                 break;
             }
 
             case PSM:
-                psm = normalArgument;
+            	context.psm = normalArgument;
                 if (isLogDebugEnabled) {
                     log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
                 }
@@ -2795,198 +2370,132 @@ public class VideoEngine {
                 break;
 
             case SCISSOR1:
-                scissor_x1 = normalArgument & 0x3ff;
-                scissor_y1 = (normalArgument >> 10) & 0x3ff;
+            	context.scissor_x1 = normalArgument & 0x3ff;
+            	context.scissor_y1 = (normalArgument >> 10) & 0x3ff;
                 break;
 
             case SCISSOR2:
-                scissor_x2 = normalArgument & 0x3ff;
-                scissor_y2 = (normalArgument >> 10) & 0x3ff;
-                scissor_width = 1 + scissor_x2 - scissor_x1;
-                scissor_height = 1 + scissor_y2 - scissor_y1;
+            	context.scissor_x2 = normalArgument & 0x3ff;
+            	context.scissor_y2 = (normalArgument >> 10) & 0x3ff;
+            	context.scissor_width = 1 + context.scissor_x2 - context.scissor_x1;
+            	context.scissor_height = 1 + context.scissor_y2 - context.scissor_y1;
 
                 if (isLogDebugEnabled) {
-                    log("sceGuScissor(" + scissor_x1 + "," + scissor_y1 + "," + scissor_width + "," + scissor_height + ")");
+                    log("sceGuScissor(" + context.scissor_x1 + "," + context.scissor_y1 + "," + context.scissor_width + "," + context.scissor_height + ")");
                 }
-                if (scissor_x1 >= 0 && scissor_y1 >= 0 && scissor_width <= region_width && scissor_height <= region_height) {
-                    scissorTestFlag.setEnabled(true);
-                    gl.glScissor(scissor_x1, scissor_y1, scissor_width, scissor_height);
+                if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0 && context.scissor_width <= context.region_width && context.scissor_height <= context.region_height) {
+                	context.scissorTestFlag.setEnabled(true);
+                    re.setScissor(context.scissor_x1, context.scissor_y1, context.scissor_width, context.scissor_height);
                     if (isLogDebugEnabled) {
                         log("sceGuEnable(GU_SCISSOR_TEST)");
                     }
                 } else {
-                    scissorTestFlag.setEnabled(false);
+                	context.scissorTestFlag.setEnabled(false);
                 }
                 break;
 
             case NEARZ: {
-                float old_nearZ = nearZ;
-                nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-                if (old_nearZ != nearZ) {
+                float old_nearZ = context.nearZ;
+                context.nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+                if (old_nearZ != context.nearZ) {
                     depthChanged = true;
                 }
                 break;
             }
 
             case FARZ: {
-                float old_farZ = farZ;
-                farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-                if (old_farZ != farZ) {
+                float old_farZ = context.farZ;
+                context.farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+                if (old_farZ != context.farZ) {
                     // OpenGL requires the Depth parameters to be reloaded
                     depthChanged = true;
                 }
 
                 if (depthChanged) {
-                    re.setDepthRange(zpos, zscale, nearZ, farZ);
+                    re.setDepthRange(context.zpos, context.zscale, context.nearZ, context.farZ);
                 }
 
                 if (isLogDebugEnabled) {
-                    log.debug("sceGuDepthRange(" + nearZ + ", " + farZ + ")");
+                    log.debug("sceGuDepthRange(" + context.nearZ + ", " + context.farZ + ")");
                 }
                 break;
             }
 
             case CTST: {
-                shaderCtestFunc = normalArgument & 3;
-                re.setColorTestFunc(shaderCtestFunc);
+            	context.shaderCtestFunc = normalArgument & 3;
+                re.setColorTestFunc(context.shaderCtestFunc);
                 break;
             }
 
             case CREF: {
-                shaderCtestRef[0] = (normalArgument) & 0xFF;
-                shaderCtestRef[1] = (normalArgument >> 8) & 0xFF;
-                shaderCtestRef[2] = (normalArgument >> 16) & 0xFF;
-                re.setColorTestReference(shaderCtestRef);
+            	context.shaderCtestRef[0] = (normalArgument) & 0xFF;
+            	context.shaderCtestRef[1] = (normalArgument >> 8) & 0xFF;
+            	context.shaderCtestRef[2] = (normalArgument >> 16) & 0xFF;
+                re.setColorTestReference(context.shaderCtestRef);
                 break;
             }
 
             case CMSK: {
-                shaderCtestMsk[0] = (normalArgument) & 0xFF;
-                shaderCtestMsk[1] = (normalArgument >> 8) & 0xFF;
-                shaderCtestMsk[2] = (normalArgument >> 16) & 0xFF;
-                re.setColorTestMask(shaderCtestMsk);
+            	context.shaderCtestMsk[0] = (normalArgument) & 0xFF;
+                context.shaderCtestMsk[1] = (normalArgument >> 8) & 0xFF;
+                context.shaderCtestMsk[2] = (normalArgument >> 16) & 0xFF;
+                re.setColorTestMask(context.shaderCtestMsk);
                 break;
             }
 
             case ATST: {
-
-                int guFunc = normalArgument & 0xFF;
-                int guReferenceAlphaValue = (normalArgument >> 8) & 0xFF;
-                int glFunc = GL.GL_ALWAYS;
-                float glReferenceAlphaValue = guReferenceAlphaValue / 255.0f;
+                int func = normalArgument & 0xFF;
+                if (func > ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL) {
+                    log.warn("sceGuAlphaFunc unhandled func " + func);
+                    func = ATST_ALWAYS_PASS_PIXEL;
+                }
+                int ref = (normalArgument >> 8) & 0xFF;
+                re.setAlphaFunc(func, ref);
 
                 if (isLogDebugEnabled) {
-                	log("sceGuAlphaFunc(" + guFunc + "," + guReferenceAlphaValue + ")");
+                	log("sceGuAlphaFunc(" + func + "," + ref + ")");
                 }
-
-                switch (guFunc) {
-                    case ATST_NEVER_PASS_PIXEL:
-                        glFunc = GL.GL_NEVER;
-                        break;
-
-                    case ATST_ALWAYS_PASS_PIXEL:
-                        glFunc = GL.GL_ALWAYS;
-                        break;
-
-                    case ATST_PASS_PIXEL_IF_MATCHES:
-                        glFunc = GL.GL_EQUAL;
-                        break;
-
-                    case ATST_PASS_PIXEL_IF_DIFFERS:
-                        glFunc = GL.GL_NOTEQUAL;
-                        break;
-
-                    case ATST_PASS_PIXEL_IF_LESS:
-                        glFunc = GL.GL_LESS;
-                        break;
-
-                    case ATST_PASS_PIXEL_IF_LESS_OR_EQUAL:
-                        glFunc = GL.GL_LEQUAL;
-                        break;
-
-                    case ATST_PASS_PIXEL_IF_GREATER:
-                        glFunc = GL.GL_GREATER;
-                        break;
-
-                    case ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL:
-                        glFunc = GL.GL_GEQUAL;
-                        break;
-
-                    default:
-                        log.warn("sceGuAlphaFunc unhandled func " + guFunc);
-                        break;
-                }
-
-                gl.glAlphaFunc(glFunc, glReferenceAlphaValue);
-
                 break;
             }
 
             case STST: {
+            	context.stencilFunc = normalArgument & 0xFF;
+            	if (context.stencilFunc > STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL) {
+            		log.warn("Unknown stencil function " + context.stencilFunc);
+            		context.stencilFunc = STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST;
+            	}
+                context.stencilRef = (normalArgument >> 8) & 0xff;
+                context.stencilMask = (normalArgument >> 16) & 0xff;
+                re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilMask);
 
-                int func = GL.GL_ALWAYS;
-
-                switch (normalArgument & 0xFF) {
-                    case STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
-                        func = GL.GL_NEVER;
-                        break;
-
-                    case STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
-                        func = GL.GL_ALWAYS;
-                        break;
-
-                    case STST_FUNCTION_PASS_TEST_IF_MATCHES:
-                        func = GL.GL_EQUAL;
-                        break;
-
-                    case STST_FUNCTION_PASS_TEST_IF_DIFFERS:
-                        func = GL.GL_NOTEQUAL;
-                        break;
-
-                    case STST_FUNCTION_PASS_TEST_IF_LESS:
-                        func = GL.GL_LESS;
-                        break;
-
-                    case STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
-                        func = GL.GL_LEQUAL;
-                        break;
-
-                    case STST_FUNCTION_PASS_TEST_IF_GREATER:
-                        func = GL.GL_GREATER;
-                        break;
-
-                    case STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
-                        func = GL.GL_GEQUAL;
-                        break;
+                if (isLogDebugEnabled) {
+                	log("sceGuStencilFunc(func=" + (normalArgument & 0xFF) + ", ref=" + context.stencilRef + ", mask=" + context.stencilMask + ")");
                 }
-
-                int ref = (normalArgument >> 8) & 0xff;
-                int mask = (normalArgument >> 16) & 0xff;
-                gl.glStencilFunc(func, ref, mask);
-
-                log("sceGuStencilFunc(func=" + (normalArgument & 0xFF) + ", ref=" + ref + ", mask=" + mask + ")");
                 break;
             }
 
             case SOP: {
-                int fail = getStencilOp(normalArgument & 0xFF);
-                int zfail = getStencilOp((normalArgument >> 8) & 0xFF);
-                int zpass = getStencilOp((normalArgument >> 16) & 0xFF);
+                context.stencilOpFail = getStencilOp(normalArgument & 0xFF);
+                context.stencilOpZFail = getStencilOp((normalArgument >> 8) & 0xFF);
+                context.stencilOpZPass = getStencilOp((normalArgument >> 16) & 0xFF);
+                re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
 
-                gl.glStencilOp(fail, zfail, zpass);
+                if (isLogDebugEnabled) {
+                	log("sceGuStencilOp(fail=" + (normalArgument & 0xFF) + ", zfail=" + ((normalArgument >> 8) & 0xFF) + ", zpass=" + ((normalArgument >> 16) & 0xFF));
+                }
                 break;
             }
 
             case ZTST: {
-                int oldDepthFunc = depthFunc;
+                int oldDepthFunc = context.depthFunc;
 
-                depthFunc = normalArgument & 0xFF;
-                if (depthFunc > ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL) {
-                	error(String.format("%s unknown depth function %d", commandToString(ZTST), depthFunc));
-                	depthFunc = ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS;
+                context.depthFunc = normalArgument & 0xFF;
+                if (context.depthFunc > ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL) {
+                	error(String.format("%s unknown depth function %d", commandToString(ZTST), context.depthFunc));
+                	context.depthFunc = ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS;
                 }
 
-                if (oldDepthFunc != depthFunc) {
+                if (oldDepthFunc != context.depthFunc) {
                     depthChanged = true;
                 }
 
@@ -2997,69 +2506,38 @@ public class VideoEngine {
             }
 
             case ALPHA: {
-                int blend_mode = GL.GL_FUNC_ADD;
-                int old_blend_src = blend_src;
-                int old_blend_dst = blend_dst;
-                blend_src = normalArgument & 0xF;
-                blend_dst = (normalArgument >> 4) & 0xF;
+                int old_blend_src = context.blend_src;
+                int old_blend_dst = context.blend_dst;
+                context.blend_src = normalArgument & 0xF;
+                context.blend_dst = (normalArgument >> 4) & 0xF;
                 int op = (normalArgument >> 8) & 0xF;
-
-                switch (op) {
-                    case ALPHA_SOURCE_BLEND_OPERATION_ADD:
-                        blend_mode = GL.GL_FUNC_ADD;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_SUBTRACT:
-                        blend_mode = GL.GL_FUNC_SUBTRACT;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_REVERSE_SUBTRACT:
-                        blend_mode = GL.GL_FUNC_REVERSE_SUBTRACT;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE:
-                        blend_mode = GL.GL_MIN;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE:
-                        blend_mode = GL.GL_MAX;
-                        break;
-
-                    case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
-                        blend_mode = GL.GL_FUNC_ADD;
-                        break;
-
-                    default:
-                        error("Unhandled blend mode " + op);
-                        break;
+                if (op > ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE) {
+                    log.warn("Unhandled blend operation " + op);
+                    op = ALPHA_SOURCE_BLEND_OPERATION_ADD;
                 }
 
-                try {
-                    gl.glBlendEquation(blend_mode);
-                } catch (GLException e) {
-                    log.warn("VideoEngine: " + e.getMessage());
-                }
+                re.setBlendEquation(op);
 
-                if (old_blend_src != blend_src || old_blend_dst != blend_dst) {
+                if (old_blend_src != context.blend_src || old_blend_dst != context.blend_dst) {
                     blendChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuBlendFunc(op=" + op + ", src=" + blend_src + ", dst=" + blend_dst + ")");
+                    log("sceGuBlendFunc(op=" + op + ", src=" + context.blend_src + ", dst=" + context.blend_dst + ")");
                 }
                 break;
             }
 
             case SFIX: {
-                float old_sfix_color0 = sfix_color[0];
-                float old_sfix_color1 = sfix_color[1];
-                float old_sfix_color2 = sfix_color[2];
-                sfix_color[0] = ((normalArgument) & 255) / 255.f;
-                sfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                sfix_color[3] = 1.f;
+                float old_sfix_color0 = context.sfix_color[0];
+                float old_sfix_color1 = context.sfix_color[1];
+                float old_sfix_color2 = context.sfix_color[2];
+                context.sfix_color[0] = ((normalArgument) & 255) / 255.f;
+                context.sfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.sfix_color[3] = 1.f;
 
-                if (old_sfix_color0 != sfix_color[0] || old_sfix_color1 != sfix_color[1] || old_sfix_color2 != sfix_color[2]) {
+                if (old_sfix_color0 != context.sfix_color[0] || old_sfix_color1 != context.sfix_color[1] || old_sfix_color2 != context.sfix_color[2]) {
                     blendChanged = true;
                 }
 
@@ -3070,15 +2548,15 @@ public class VideoEngine {
             }
 
             case DFIX: {
-                float old_dfix_color0 = dfix_color[0];
-                float old_dfix_color1 = dfix_color[1];
-                float old_dfix_color2 = dfix_color[2];
-                dfix_color[0] = ((normalArgument) & 255) / 255.f;
-                dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                dfix_color[3] = 1.f;
+                float old_dfix_color0 = context.dfix_color[0];
+                float old_dfix_color1 = context.dfix_color[1];
+                float old_dfix_color2 = context.dfix_color[2];
+                context.dfix_color[0] = ((normalArgument) & 255) / 255.f;
+                context.dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+                context.dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+                context.dfix_color[3] = 1.f;
 
-                if (old_dfix_color0 != dfix_color[0] || old_dfix_color1 != dfix_color[1] || old_dfix_color2 != dfix_color[2]) {
+                if (old_dfix_color0 != context.dfix_color[0] || old_dfix_color1 != context.dfix_color[1] || old_dfix_color2 != context.dfix_color[2]) {
                     blendChanged = true;
                 }
 
@@ -3089,47 +2567,47 @@ public class VideoEngine {
             }
 
             case DTH0:
-                dither_matrix[0] = (normalArgument) & 0xF;
-                dither_matrix[1] = (normalArgument >> 4) & 0xF;
-                dither_matrix[2] = (normalArgument >> 8) & 0xF;
-                dither_matrix[3] = (normalArgument >> 12) & 0xF;
+            	context.dither_matrix[0] = (normalArgument) & 0xF;
+                context.dither_matrix[1] = (normalArgument >> 4) & 0xF;
+                context.dither_matrix[2] = (normalArgument >> 8) & 0xF;
+                context.dither_matrix[3] = (normalArgument >> 12) & 0xF;
                 break;
 
             case DTH1:
-                dither_matrix[4] = (normalArgument) & 0xF;
-                dither_matrix[5] = (normalArgument >> 4) & 0xF;
-                dither_matrix[6] = (normalArgument >> 8) & 0xF;
-                dither_matrix[7] = (normalArgument >> 12) & 0xF;
+            	context.dither_matrix[4] = (normalArgument) & 0xF;
+                context.dither_matrix[5] = (normalArgument >> 4) & 0xF;
+                context.dither_matrix[6] = (normalArgument >> 8) & 0xF;
+                context.dither_matrix[7] = (normalArgument >> 12) & 0xF;
                 break;
 
             case DTH2:
-                dither_matrix[8] = (normalArgument) & 0xF;
-                dither_matrix[9] = (normalArgument >> 4) & 0xF;
-                dither_matrix[10] = (normalArgument >> 8) & 0xF;
-                dither_matrix[11] = (normalArgument >> 12) & 0xF;
+            	context.dither_matrix[8] = (normalArgument) & 0xF;
+                context.dither_matrix[9] = (normalArgument >> 4) & 0xF;
+                context.dither_matrix[10] = (normalArgument >> 8) & 0xF;
+                context.dither_matrix[11] = (normalArgument >> 12) & 0xF;
                 break;
 
             case DTH3:
-                dither_matrix[12] = (normalArgument) & 0xF;
-                dither_matrix[13] = (normalArgument >> 4) & 0xF;
-                dither_matrix[14] = (normalArgument >> 8) & 0xF;
-                dither_matrix[15] = (normalArgument >> 12) & 0xF;
+            	context.dither_matrix[12] = (normalArgument) & 0xF;
+                context.dither_matrix[13] = (normalArgument >> 4) & 0xF;
+                context.dither_matrix[14] = (normalArgument >> 8) & 0xF;
+                context.dither_matrix[15] = (normalArgument >> 12) & 0xF;
 
                 // The dither matrix's values can vary between -8 and 7.
                 // The most significant bit acts as sign bit.
                 // Translate and log only at the last command.
 
                 for (int i = 0; i < 16; i++) {
-                    if (dither_matrix[i] > 7) {
-                        dither_matrix[i] |= 0xFFFFFFF0;
+                    if (context.dither_matrix[i] > 7) {
+                    	context.dither_matrix[i] |= 0xFFFFFFF0;
                     }
                 }
 
                 if (isLogDebugEnabled) {
-                    log.debug("DTH0:" + "  " + dither_matrix[0] + "  " + dither_matrix[1] + "  " + dither_matrix[2] + "  " + dither_matrix[3]);
-                    log.debug("DTH1:" + "  " + dither_matrix[4] + "  " + dither_matrix[5] + "  " + dither_matrix[6] + "  " + dither_matrix[7]);
-                    log.debug("DTH2:" + "  " + dither_matrix[8] + "  " + dither_matrix[9] + "  " + dither_matrix[10] + "  " + dither_matrix[11]);
-                    log.debug("DTH3:" + "  " + dither_matrix[12] + "  " + dither_matrix[13] + "  " + dither_matrix[14] + "  " + dither_matrix[15]);
+                    log.debug("DTH0:" + "  " + context.dither_matrix[0] + "  " + context.dither_matrix[1] + "  " + context.dither_matrix[2] + "  " + context.dither_matrix[3]);
+                    log.debug("DTH1:" + "  " + context.dither_matrix[4] + "  " + context.dither_matrix[5] + "  " + context.dither_matrix[6] + "  " + context.dither_matrix[7]);
+                    log.debug("DTH2:" + "  " + context.dither_matrix[8] + "  " + context.dither_matrix[9] + "  " + context.dither_matrix[10] + "  " + context.dither_matrix[11]);
+                    log.debug("DTH3:" + "  " + context.dither_matrix[12] + "  " + context.dither_matrix[13] + "  " + context.dither_matrix[14] + "  " + context.dither_matrix[15]);
                 }
                 break;
 
@@ -3142,44 +2620,39 @@ public class VideoEngine {
             }
 
             case ZMSK: {
-                if (!clearMode) {
-                    // NOTE: PSP depth mask as 1 is meant to avoid depth writes,
-                    //		on pc it's the opposite
-                    if (normalArgument != 0) {
-                        gl.glDepthMask(false);
-                    } else {
-                        gl.glDepthMask(true);
-                        // OpenGL requires the Depth parameters to be reloaded
-                        depthChanged = true;
-                    }
+                // NOTE: PSP depth mask as 1 is meant to avoid depth writes,
+                //       with OpenGL it's the opposite
+            	context.depthMask = (normalArgument == 0);
+            	re.setDepthMask(context.depthMask);
+            	if (context.depthMask) {
+                    // OpenGL requires the Depth parameters to be reloaded
+                    depthChanged = true;
+            	}
 
-                    if (isLogDebugEnabled) {
-                        log("sceGuDepthMask(" + (normalArgument != 0 ? "disableWrites" : "enableWrites") + ")");
-                    }
+                if (isLogDebugEnabled) {
+                    log("sceGuDepthMask(" + (normalArgument != 0 ? "disableWrites" : "enableWrites") + ")");
                 }
                 break;
             }
 
             case PMSKC: {
-                if (isLogDebugEnabled) {
+                context.colorMask[0] = normalArgument & 0xFF;
+                context.colorMask[1] = (normalArgument >> 8) & 0xFF;
+                context.colorMask[2] = (normalArgument >> 16) & 0xFF;
+            	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
+
+            	if (isLogDebugEnabled) {
                     log(String.format("%s color mask=0x%06X", helper.getCommandString(PMSKC), normalArgument));
-                }
-                colorMask[0] = normalArgument & 0xFF;
-                colorMask[1] = (normalArgument >> 8) & 0xFF;
-                colorMask[2] = (normalArgument >> 16) & 0xFF;
-                if (!clearMode) {
-                	re.setColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
                 }
                 break;
             }
 
             case PMSKA: {
+                context.colorMask[3] = normalArgument & 0xFF;
+            	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
+
                 if (isLogDebugEnabled) {
                     log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
-                }
-                colorMask[3] = normalArgument & 0xFF;
-                if (!clearMode) {
-                	re.setColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
                 }
                 break;
             }
@@ -3189,18 +2662,18 @@ public class VideoEngine {
                 break;
 
             case TRXPOS:
-                textureTx_sx = normalArgument & 0x1FF;
-                textureTx_sy = (normalArgument >> 10) & 0x1FF;
+                context.textureTx_sx = normalArgument & 0x1FF;
+                context.textureTx_sy = (normalArgument >> 10) & 0x1FF;
                 break;
 
             case TRXDPOS:
-                textureTx_dx = normalArgument & 0x1FF;
-                textureTx_dy = (normalArgument >> 10) & 0x1FF;
+                context.textureTx_dx = normalArgument & 0x1FF;
+                context.textureTx_dy = (normalArgument >> 10) & 0x1FF;
                 break;
 
             case TRXSIZE:
-                textureTx_width = (normalArgument & 0x3FF) + 1;
-                textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
+                context.textureTx_width = (normalArgument & 0x3FF) + 1;
+                context.textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
                 break;
 
             case UNKNOWNCOMMAND_0xFF: {
@@ -3239,62 +2712,18 @@ public class VideoEngine {
     }
 
     private void executeCommandCLEAR(int normalArgument) {
-        if (clearMode && (normalArgument & 1) == 0) {
-            clearMode = false;
-            depthFunc = clearModeDepthFunc;
-            gl.glPopAttrib();
-            // These attributes were not restored by glPopAttrib,
-            // restore saved copy.
-            gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale[0]);
-            gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode[0]);
-
-            enableShaders();
-            log("clear mode end");
-        } else if ((normalArgument & 1) != 0) {
-            clearMode = true;
-            // Save these attributes manually, they are not saved by glPushAttrib
-            gl.glGetTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale, 0);
-            gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode, 0);
-            gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
-            gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE);
-
-            gl.glPushAttrib(GL.GL_ENABLE_BIT | GL.GL_COLOR_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-//            gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
-            gl.glDisable(GL.GL_BLEND);
-            gl.glDisable(GL.GL_STENCIL_TEST);
-            gl.glDisable(GL.GL_LIGHTING);
-            gl.glDisable(GL.GL_TEXTURE_2D);
-            gl.glDisable(GL.GL_ALPHA_TEST);
-            gl.glDisable(GL.GL_FOG);
-            gl.glDisable(GL.GL_DEPTH_TEST);
-            gl.glDisable(GL.GL_LOGIC_OP);
-            gl.glDisable(GL.GL_CULL_FACE);
-            // TODO disable: scissor?
-
-            disableShaders();
-
+        if ((normalArgument & 1) == 0) {
+            re.endClearMode();
+            if (isLogDebugEnabled) {
+            	log("clear mode end");
+            }
+        } else {
             // TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
-            boolean color = false;
-            boolean alpha = false;
-            if ((normalArgument & 0x100) != 0) {
-                color = true;
-            }
-            if ((normalArgument & 0x200) != 0) {
-                alpha = true;
-                // TODO Stencil not perfect, pspsdk clear code is doing more things
-                gl.glEnable(GL.GL_STENCIL_TEST);
-                gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
-                gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_ZERO);
-            }
-            if ((normalArgument & 0x400) != 0) {
-                gl.glEnable(GL.GL_DEPTH_TEST);
-                gl.glDepthMask(true);
-            } else {
-                gl.glDepthMask(false);
-            }
-            clearModeDepthFunc = depthFunc;
-            depthFunc = ZTST_FUNCTION_ALWAYS_PASS_PIXEL;
-            gl.glColorMask(color, color, color, alpha);
+            boolean color = (normalArgument & 0x100) != 0;
+            boolean alpha = (normalArgument & 0x200) != 0;
+            boolean depth = (normalArgument & 0x400) != 0;
+
+            re.startClearMode(color, alpha, depth);
             if (isLogDebugEnabled) {
                 log("clear mode : " + (normalArgument >> 8));
             }
@@ -3312,29 +2741,16 @@ public class VideoEngine {
     }
 
     private void executeCommandTFUNC(int normalArgument) {
-    	int func = normalArgument & 0x7;
-    	if (func >= TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_UNKNOW1) {
-            VideoEngine.log.warn("Unimplemented tfunc mode " + func);
-            func = TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE;
+    	context.textureFunc = normalArgument & 0x7;
+    	if (context.textureFunc >= TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_UNKNOW1) {
+            VideoEngine.log.warn("Unimplemented tfunc mode " + context.textureFunc);
+            context.textureFunc = TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE;
     	}
 
-        boolean alphaUsed = false;
-        int alphaParam = (normalArgument >> 8) & 0x1;
-        if (alphaParam == TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
-            alphaUsed = true;
-        } else if (alphaParam != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED) {
-            log.warn(String.format("sceGuTexFunc unknown alpha parameter %06X", normalArgument));
-        }
+    	context.textureAlphaUsed = ((normalArgument >> 8) & 0x1) != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED;
+    	context.textureColorDoubled = ((normalArgument >> 16) & 0x1) != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED;
 
-        boolean colorDoubled = false;
-        int rgbScaleParam = (normalArgument >> 16) & 0x1;
-        if (rgbScaleParam == TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED) {
-        	colorDoubled = true;
-        } else if (rgbScaleParam != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED) {
-            log.warn(String.format("sceGuTexFunc unknown RGB scale parameter %06X", normalArgument));
-        }
-
-        re.setTextureFunc(func, alphaUsed, colorDoubled);
+        re.setTextureFunc(context.textureFunc, context.textureAlphaUsed, context.textureColorDoubled);
 
         if (isLogDebugEnabled) {
             log(String.format("sceGuTexFunc mode %06X", normalArgument)
@@ -3354,7 +2770,7 @@ public class VideoEngine {
             return;
         }
 
-        if (type >= prim_mapping.length) {
+        if (type > PRIM_SPRITES) {
             error(helper.getCommandString(PRIM) + " Type unhandled " + type);
             return;
         }
@@ -3402,12 +2818,12 @@ public class VideoEngine {
         boolean useTextureFromPosition = false;
         if (vinfo.texture != 0) {
             useTexture = true;
-        } else if (textureFlag.isEnabled() && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            switch (tex_proj_map_mode) {
+        } else if (context.textureFlag.isEnabled() && context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            switch (context.tex_proj_map_mode) {
                 // What is the difference between MODE_NORMAL and MODE_NORMALIZED_NORMAL?
                 case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
                 case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
-                    if (tex_proj_map_mode == TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL) {
+                    if (context.tex_proj_map_mode == TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL) {
                         log.warn("Texture mode TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL not tested");
                     }
                     if (vinfo.normal != 0) {
@@ -3426,13 +2842,13 @@ public class VideoEngine {
 
         vertexStatistics.start();
 
-        vinfo.setMorphWeights(morph_weight);
+        vinfo.setMorphWeights(context.morph_weight);
         vinfo.setDirty();
 
         int numberOfWeightsForShader = 0;
         if (useSkinningShaders) {
             if (vinfo.weight != 0) {
-            	re.setBones(vinfo.skinningWeightCount, boneMatrixForShader);
+            	re.setBones(vinfo.skinningWeightCount, context.boneMatrixForShader);
                 numberOfWeightsForShader = (vinfo.skinningWeightCount <= 4 ? 4 : 8);
             } else {
             	re.setBones(0, null);
@@ -3459,14 +2875,10 @@ public class VideoEngine {
             enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
 
             int stride = vertexInfoReader.getStride();
-            glBindBuffer();
+            bindBuffer();
             if (buffer != null) {
                 if (useVBO) {
-                    if (openGL1_5) {
-                        gl.glBufferData(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
-                    } else {
-                        gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
-                    }
+                    re.setBufferData(stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
                 } else {
                     vboBuffer.clear();
                     Utilities.putBuffer(vboBuffer, buffer, ByteOrder.nativeOrder());
@@ -3505,7 +2917,7 @@ public class VideoEngine {
             glNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), false, true);
             glVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), false, true);
 
-            gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
+            re.drawArrays(type, 0, numberOfVertex);
 
         } else {
             // Non-optimized VertexInfo reading
@@ -3513,7 +2925,7 @@ public class VideoEngine {
             VertexInfo cachedVertexInfo = null;
             if (useVertexCache) {
                 vertexCacheLookupStatistics.start();
-                cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+                cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForShader);
                 vertexCacheLookupStatistics.end();
             }
             vboFloatBuffer.clear();
@@ -3566,33 +2978,28 @@ public class VideoEngine {
                         if (useVBO) {
                             if (useVertexCache) {
                                 cachedVertexInfo = new VertexInfo(vinfo);
-                                VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForShader);
                                 int size = vboFloatBuffer.position();
                                 vboFloatBuffer.rewind();
-                                cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
+                                cachedVertexInfo.loadVertex(re, vboFloatBuffer, size);
                             } else {
-                                glBindBuffer();
-                                if (openGL1_5) {
-                                    gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-                                } else {
-                                    gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-                                }
+                                bindBuffer();
+                                re.setBufferData(vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
                             }
                         }
                     } else {
                         if (isLogDebugEnabled) {
                             log.debug("Reusing cached Vertex Data");
                         }
-                        cachedVertexInfo.bindVertex(gl);
+                        cachedVertexInfo.bindVertex(re);
                     }
                     bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, numberOfWeightsForShader);
-                    gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
+                    re.drawArrays(type, 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
                     break;
 
                 case PRIM_SPRITES:
-                    gl.glPushAttrib(GL.GL_ENABLE_BIT);
-                    gl.glDisable(GL.GL_CULL_FACE);
+                	re.disableFlag(context.cullFaceFlag.getReFlag());
                     if (cachedVertexInfo == null) {
                         for (int i = 0; i < numberOfVertex; i += 2) {
                             int addr1 = vinfo.getAddress(mem, i);
@@ -3614,7 +3021,7 @@ public class VideoEngine {
 
                             if (flippedTexture && isLogInfoEnabled) {
                                 log.info("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + +((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ") flipped");
-                            } else if (isLogDebugEnabled && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                            } else if (isLogDebugEnabled && context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
                                 log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + +((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
                             }
 
@@ -3683,28 +3090,26 @@ public class VideoEngine {
                         if (useVBO) {
                             if (useVertexCache) {
                                 cachedVertexInfo = new VertexInfo(vinfo);
-                                VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForShader);
                                 int size = vboFloatBuffer.position();
                                 vboFloatBuffer.rewind();
-                                cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
+                                cachedVertexInfo.loadVertex(re, vboFloatBuffer, size);
                             } else {
-                                glBindBuffer();
-                                if (openGL1_5) {
-                                    gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-                                } else {
-                                    gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-                                }
+                                bindBuffer();
+                                re.setBufferData(vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
                             }
                         }
                     } else {
                         if (isLogDebugEnabled) {
                             log.debug("Reusing cached Vertex Data");
                         }
-                        cachedVertexInfo.bindVertex(gl);
+                        cachedVertexInfo.bindVertex(re);
                     }
                     bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, 0);
-                    gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
-                    gl.glPopAttrib();
+                    re.drawArrays(PRIM_SPRITES, 0, numberOfVertex * 2);
+                    if (context.cullFaceFlag.isEnabled()) {
+                    	re.enableFlag(context.cullFaceFlag.getReFlag());
+                    }
                     break;
             }
         }
@@ -3725,25 +3130,25 @@ public class VideoEngine {
     }
 
     private void executeCommandTRXKICK(int normalArgument) {
-        textureTx_pixelSize = normalArgument & 0x1;
+    	context.textureTx_pixelSize = normalArgument & 0x1;
 
-        textureTx_sourceAddress &= Memory.addressMask;
-        textureTx_destinationAddress &= Memory.addressMask;
+    	context.textureTx_sourceAddress &= Memory.addressMask;
+    	context.textureTx_destinationAddress &= Memory.addressMask;
 
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height + ", pixelSize=" + textureTx_pixelSize);
+            log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(context.textureTx_sourceAddress) + "(" + context.textureTx_sx + "," + context.textureTx_sy + ") to 0x" + Integer.toHexString(context.textureTx_destinationAddress) + "(" + context.textureTx_dx + "," + context.textureTx_dy + "), width=" + context.textureTx_width + ", height=" + context.textureTx_height + ", pixelSize=" + context.textureTx_pixelSize);
         }
 
         usingTRXKICK = true;
         updateGeBuf();
 
-        int pixelFormatGe = psm;
-        int bpp = (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
+        int pixelFormatGe = context.psm;
+        int bpp = (context.textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
         int bppGe = sceDisplay.getPixelFormatBytes(pixelFormatGe);
 
         memoryForGEUpdated();
 
-        if (!display.isGeAddress(textureTx_destinationAddress) || bpp != bppGe) {
+        if (!display.isGeAddress(context.textureTx_destinationAddress) || bpp != bppGe) {
             if (isLogDebugEnabled) {
                 if (bpp != bppGe) {
                     log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
@@ -3751,13 +3156,13 @@ public class VideoEngine {
                     log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
                 }
             }
-            int width = textureTx_width;
-            int height = textureTx_height;
+            int width = context.textureTx_width;
+            int height = context.textureTx_height;
 
-            int srcAddress = textureTx_sourceAddress + (textureTx_sy * textureTx_sourceLineWidth + textureTx_sx) * bpp;
-            int dstAddress = textureTx_destinationAddress + (textureTx_dy * textureTx_destinationLineWidth + textureTx_dx) * bpp;
+            int srcAddress = context.textureTx_sourceAddress + (context.textureTx_sy * context.textureTx_sourceLineWidth + context.textureTx_sx) * bpp;
+            int dstAddress = context.textureTx_destinationAddress + (context.textureTx_dy * context.textureTx_destinationLineWidth + context.textureTx_dx) * bpp;
             Memory memory = Memory.getInstance();
-            if (textureTx_sourceLineWidth == width && textureTx_destinationLineWidth == width) {
+            if (context.textureTx_sourceLineWidth == width && context.textureTx_destinationLineWidth == width) {
                 // All the lines are adjacent in memory,
                 // copy them all in a single memcpy operation.
                 int copyLength = height * width * bpp;
@@ -3768,8 +3173,8 @@ public class VideoEngine {
             } else {
                 // The lines are not adjacent in memory: copy line by line.
                 int copyLength = width * bpp;
-                int srcLineLength = textureTx_sourceLineWidth * bpp;
-                int dstLineLength = textureTx_destinationLineWidth * bpp;
+                int srcLineLength = context.textureTx_sourceLineWidth * bpp;
+                int dstLineLength = context.textureTx_destinationLineWidth * bpp;
                 for (int y = 0; y < height; y++) {
                     if (isLogDebugEnabled) {
                         log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
@@ -3784,51 +3189,47 @@ public class VideoEngine {
                 log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
             }
         } else {
-            int width = textureTx_width;
-            int height = textureTx_height;
-            int dx = textureTx_dx;
-            int dy = textureTx_dy;
-            int lineWidth = textureTx_sourceLineWidth;
+            int width = context.textureTx_width;
+            int height = context.textureTx_height;
+            int dx = context.textureTx_dx;
+            int dy = context.textureTx_dy;
+            int lineWidth = context.textureTx_sourceLineWidth;
 
             int geAddr = display.getTopAddrGe();
-            dy += (textureTx_destinationAddress - geAddr) / (display.getBufferWidthGe() * bpp);
-            dx += ((textureTx_destinationAddress - geAddr) % (display.getBufferWidthGe() * bpp)) / bpp;
+            dy += (context.textureTx_destinationAddress - geAddr) / (display.getBufferWidthGe() * bpp);
+            dx += ((context.textureTx_destinationAddress - geAddr) % (display.getBufferWidthGe() * bpp)) / bpp;
 
             if (isLogDebugEnabled) {
                 log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height + ", lineWidth=" + lineWidth + ", bpp=" + bpp);
             }
 
-            int[] textures = new int[1];
-            gl.glGenTextures(1, textures, 0);
-            int texture = textures[0];
-            gl.glBindTexture(GL.GL_TEXTURE_2D, texture);
+            int texture = re.genTexture();
+            re.bindTexture(texture);
 
-            gl.glPushAttrib(GL.GL_ENABLE_BIT);
-            gl.glDisable(GL.GL_DEPTH_TEST);
-            gl.glDisable(GL.GL_BLEND);
-            gl.glDisable(GL.GL_ALPHA_TEST);
-            gl.glDisable(GL.GL_FOG);
-            gl.glDisable(GL.GL_LIGHTING);
-            gl.glDisable(GL.GL_LOGIC_OP);
-            gl.glDisable(GL.GL_STENCIL_TEST);
-            gl.glDisable(GL.GL_SCISSOR_TEST);
+            re.disableFlag(IRenderingEngine.GU_DEPTH_TEST);
+            re.disableFlag(IRenderingEngine.GU_BLEND);
+            re.disableFlag(IRenderingEngine.GU_ALPHA_TEST);
+            re.disableFlag(IRenderingEngine.GU_FOG);
+            re.disableFlag(IRenderingEngine.GU_LIGHTING);
+            re.disableFlag(IRenderingEngine.GU_COLOR_LOGIC_OP);
+            re.disableFlag(IRenderingEngine.GU_STENCIL_TEST);
+            re.disableFlag(IRenderingEngine.GU_SCISSOR_TEST);
+            re.enableFlag(IRenderingEngine.GU_TEXTURE_2D);
+            re.setTextureMipmapMinFilter(TFLT_NEAREST);
+            re.setTextureMipmapMagFilter(TFLT_NEAREST);
+            re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
 
-            gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bpp);
-            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, lineWidth);
+            re.setPixelStore(lineWidth, bpp);
 
-            gl.glMatrixMode(GL.GL_PROJECTION);
-            gl.glPushMatrix();
-            gl.glLoadIdentity();
-            gl.glOrtho(0, 480, 272, 0, -1, 1);
-            gl.glMatrixMode(GL.GL_MODELVIEW);
-            gl.glPushMatrix();
-            gl.glLoadIdentity();
+            re.setProjectionMatrixElements(getOrthoMatrix(0, 480, 272, 0, -1, 1));
+            re.setViewMatrixElements(null);
+            re.setModelMatrixElements(null);
 
-            Buffer buffer = Memory.getInstance().getBuffer(textureTx_sourceAddress, lineWidth * height * bpp);
+            Buffer buffer = Memory.getInstance().getBuffer(context.textureTx_sourceAddress, lineWidth * height * bpp);
 
             if (State.captureGeNextFrame) {
                 log.info("Capture TRXKICK");
-                CaptureManager.captureRAM(textureTx_sourceAddress, lineWidth * height * bpp);
+                CaptureManager.captureRAM(context.textureTx_sourceAddress, lineWidth * height * bpp);
             }
 
             //
@@ -3839,25 +3240,8 @@ public class VideoEngine {
             // This the reason why we are also using glTexSubImage2D.
             //
             int bufferHeight = Utilities.makePow2(height);
-            int pixelFormatGL = sceDisplay.getPixelFormatGL(pixelFormatGe);
-            int formatGL = sceDisplay.getFormatGL(pixelFormatGe);
-            gl.glTexImage2D(
-                    GL.GL_TEXTURE_2D, 0,
-                    GL.GL_RGBA,
-                    lineWidth, bufferHeight, 0,
-                    formatGL, pixelFormatGL, null);
-
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
-
-            gl.glTexSubImage2D(
-                    GL.GL_TEXTURE_2D, 0,
-                    textureTx_sx, textureTx_sy, width, height,
-                    formatGL, pixelFormatGL, buffer);
-
-            gl.glEnable(GL.GL_TEXTURE_2D);
+            re.setTexImage(0,pixelFormatGe, lineWidth, bufferHeight, pixelFormatGe, pixelFormatGe, null);
+            re.setTexSubImage(0, context.textureTx_sx, context.textureTx_sy, width, height, pixelFormatGe, pixelFormatGe, buffer);
 
             gl.glBegin(GL.GL_QUADS);
             gl.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -3879,14 +3263,21 @@ public class VideoEngine {
 
             gl.glEnd();
 
-            gl.glMatrixMode(GL.GL_MODELVIEW);
-            gl.glPopMatrix();
-            gl.glMatrixMode(GL.GL_PROJECTION);
-            gl.glPopMatrix();
+            projectionMatrixUpload.setChanged(true);
+            modelMatrixUpload.setChanged(true);
+            viewMatrixUpload.setChanged(true);
 
-            gl.glPopAttrib();
+            context.depthTestFlag.update();
+            context.blendFlag.update();
+            context.alphaTestFlag.update();
+            context.fogFlag.update();
+            context.lightingFlag.update();
+            context.colorLogicOpFlag.update();
+            context.stencilTestFlag.update();
+            context.scissorTestFlag.update();
+            context.textureFlag.update();
 
-            gl.glDeleteTextures(1, textures, 0);
+            re.deleteTexture(texture);
         }
     }
 
@@ -3903,11 +3294,11 @@ public class VideoEngine {
 
     public void enableShaders() {
         if (useShaders) {
-            gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-            gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-            gl.glUniform1i(Uniforms.texEnable.getId(), textureFlag.isEnabledInt());
-            gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
-            gl.glUniform1i(Uniforms.ctestEnable.getId(), colorTestFlag.isEnabledInt());
+            gl.glUniform1f(Uniforms.zPos.getId(), context.zpos);
+            gl.glUniform1f(Uniforms.zScale.getId(), context.zscale);
+            gl.glUniform1i(Uniforms.texEnable.getId(), context.textureFlag.isEnabledInt());
+            gl.glUniform1i(Uniforms.lightingEnable.getId(), context.lightingFlag.isEnabledInt());
+            gl.glUniform1i(Uniforms.ctestEnable.getId(), context.colorTestFlag.isEnabledInt());
         }
     }
 
@@ -4093,40 +3484,51 @@ public class VideoEngine {
 
     private void enableClientState(boolean useVertexColor, boolean useTexture, int numberOfWeightsForShader) {
         if (vinfo.texture != 0 || useTexture) {
-            gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+            re.enableClientState(IRenderingEngine.RE_TEXTURE);
+        } else {
+        	re.disableClientState(IRenderingEngine.RE_TEXTURE);
         }
         if (useVertexColor) {
-            gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+            re.enableClientState(IRenderingEngine.RE_COLOR);
+        } else {
+            re.disableClientState(IRenderingEngine.RE_COLOR);
         }
         if (vinfo.normal != 0) {
-            gl.glEnableClientState(GL.GL_NORMAL_ARRAY);
+        	re.enableClientState(IRenderingEngine.RE_NORMAL);
+        } else {
+        	re.disableClientState(IRenderingEngine.RE_NORMAL);
         }
         if (numberOfWeightsForShader > 0) {
-            gl.glEnableVertexAttribArray(shaderAttribWeights1);
+            re.enableVertexAttribArray(shaderAttribWeights1);
             if (numberOfWeightsForShader > 4) {
-                gl.glEnableVertexAttribArray(shaderAttribWeights2);
+            	re.enableVertexAttribArray(shaderAttribWeights2);
+            } else {
+            	re.disableVertexAttribArray(shaderAttribWeights2);
             }
+        } else {
+        	re.disableVertexAttribArray(shaderAttribWeights1);
+        	re.disableVertexAttribArray(shaderAttribWeights2);
         }
-        gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
+        re.enableClientState(IRenderingEngine.RE_VERTEX);
     }
 
     private void glTexCoordPointer(boolean useTexture, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
         if (vinfo.texture != 0 || useTexture) {
             if (isNative) {
                 if (doBindBuffer) {
-                    glBindBuffer(0);
+                    bindBuffer(0);
                 }
-                gl.glTexCoordPointer(2, type, vinfo.vertexSize, nativeBuffer.position(offset));
+                re.setTexCoordPointer(2, type, vinfo.vertexSize, nativeBuffer.position(offset));
             } else {
                 if (doBindBuffer) {
-                    glBindBuffer();
+                    bindBuffer();
                 }
                 if (useVBO) {
-                    gl.glTexCoordPointer(2, type, stride, offset);
+                	re.setTexCoordPointer(2, type, stride, offset);
                 } else if (useVboFloatBuffer) {
-                    gl.glTexCoordPointer(2, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+                	re.setTexCoordPointer(2, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
                 } else {
-                    gl.glTexCoordPointer(2, type, stride, vboBuffer.position(offset));
+                	re.setTexCoordPointer(2, type, stride, vboBuffer.position(offset));
                 }
             }
         }
@@ -4136,19 +3538,19 @@ public class VideoEngine {
         if (useVertexColor) {
             if (isNative) {
                 if (doBindBuffer) {
-                    glBindBuffer(0);
+                    bindBuffer(0);
                 }
-                gl.glColorPointer(4, type, vinfo.vertexSize, nativeBuffer.position(offset));
+                re.setColorPointer(4, type, vinfo.vertexSize, nativeBuffer.position(offset));
             } else {
                 if (doBindBuffer) {
-                    glBindBuffer();
+                    bindBuffer();
                 }
                 if (useVBO) {
-                    gl.glColorPointer(4, type, stride, offset);
+                	re.setColorPointer(4, type, stride, offset);
                 } else if (useVboFloatBuffer) {
-                    gl.glColorPointer(4, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+                	re.setColorPointer(4, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
                 } else {
-                    gl.glColorPointer(4, type, stride, vboBuffer.position(offset));
+                	re.setColorPointer(4, type, stride, vboBuffer.position(offset));
                 }
             }
         }
@@ -4157,19 +3559,19 @@ public class VideoEngine {
     private void glVertexPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
         if (isNative) {
             if (doBindBuffer) {
-                glBindBuffer(0);
+                bindBuffer(0);
             }
-            gl.glVertexPointer(3, type, vinfo.vertexSize, nativeBuffer.position(offset));
+            re.setVertexPointer(3, type, vinfo.vertexSize, nativeBuffer.position(offset));
         } else {
             if (doBindBuffer) {
-                glBindBuffer();
+                bindBuffer();
             }
             if (useVBO) {
-                gl.glVertexPointer(3, type, stride, offset);
+            	re.setVertexPointer(3, type, stride, offset);
             } else if (useVboFloatBuffer) {
-                gl.glVertexPointer(3, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+            	re.setVertexPointer(3, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
             } else {
-                gl.glVertexPointer(3, type, stride, vboBuffer.position(offset));
+            	re.setVertexPointer(3, type, stride, vboBuffer.position(offset));
             }
         }
 
@@ -4179,19 +3581,19 @@ public class VideoEngine {
         if (vinfo.normal != 0) {
             if (isNative) {
                 if (doBindBuffer) {
-                    glBindBuffer(0);
+                    bindBuffer(0);
                 }
-                gl.glNormalPointer(type, vinfo.vertexSize, nativeBuffer.position(offset));
+                re.setNormalPointer(type, vinfo.vertexSize, nativeBuffer.position(offset));
             } else {
                 if (doBindBuffer) {
-                    glBindBuffer();
+                    bindBuffer();
                 }
                 if (useVBO) {
-                    gl.glNormalPointer(type, stride, offset);
+                	re.setNormalPointer(type, stride, offset);
                 } else if (useVboFloatBuffer) {
-                    gl.glNormalPointer(type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+                	re.setNormalPointer(type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
                 } else {
-                    gl.glNormalPointer(type, stride, vboBuffer.position(offset));
+                	re.setNormalPointer(type, stride, vboBuffer.position(offset));
                 }
             }
         }
@@ -4224,38 +3626,38 @@ public class VideoEngine {
 
         enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
         if (doBindBuffer) {
-            glBindBuffer();
+            bindBuffer();
         }
-        glTexCoordPointer(useTexture, GL.GL_FLOAT, stride, 0, false, true, false);
-        glColorPointer(useVertexColor, GL.GL_FLOAT, stride, cpos, false, true, false);
-        glNormalPointer(GL.GL_FLOAT, stride, npos, false, true, false);
+        glTexCoordPointer(useTexture, IRenderingEngine.RE_FLOAT, stride, 0, false, true, false);
+        glColorPointer(useVertexColor, IRenderingEngine.RE_FLOAT, stride, cpos, false, true, false);
+        glNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false, true, false);
         if (numberOfWeightsForShader > 0) {
-            gl.glVertexAttribPointer(shaderAttribWeights1, 4, GL.GL_FLOAT, false, stride, wpos1);
+            re.setVertexAttribPointer(shaderAttribWeights1, 4, IRenderingEngine.RE_FLOAT, false, stride, wpos1);
             if (numberOfWeightsForShader > 4) {
-                gl.glVertexAttribPointer(shaderAttribWeights2, 4, GL.GL_FLOAT, false, stride, wpos2);
+                re.setVertexAttribPointer(shaderAttribWeights2, 4, IRenderingEngine.RE_FLOAT, false, stride, wpos2);
             }
         }
-        glVertexPointer(GL.GL_FLOAT, stride, vpos, false, true, false);
+        glVertexPointer(IRenderingEngine.RE_FLOAT, stride, vpos, false, true, false);
     }
 
     public void doPositionSkinning(VertexInfo vinfo, float[] boneWeights, float[] position) {
         float x = 0, y = 0, z = 0;
         for (int i = 0; i < vinfo.skinningWeightCount; i++) {
             if (boneWeights[i] != 0) {
-                x += (position[0] * bone_uploaded_matrix[i][0]
-                        + position[1] * bone_uploaded_matrix[i][3]
-                        + position[2] * bone_uploaded_matrix[i][6]
-                        + bone_uploaded_matrix[i][9]) * boneWeights[i];
+                x += (position[0] * context.bone_uploaded_matrix[i][0]
+                        + position[1] * context.bone_uploaded_matrix[i][3]
+                        + position[2] * context.bone_uploaded_matrix[i][6]
+                        + context.bone_uploaded_matrix[i][9]) * boneWeights[i];
 
-                y += (position[0] * bone_uploaded_matrix[i][1]
-                        + position[1] * bone_uploaded_matrix[i][4]
-                        + position[2] * bone_uploaded_matrix[i][7]
-                        + bone_uploaded_matrix[i][10]) * boneWeights[i];
+                y += (position[0] * context.bone_uploaded_matrix[i][1]
+                        + position[1] * context.bone_uploaded_matrix[i][4]
+                        + position[2] * context.bone_uploaded_matrix[i][7]
+                        + context.bone_uploaded_matrix[i][10]) * boneWeights[i];
 
-                z += (position[0] * bone_uploaded_matrix[i][2]
-                        + position[1] * bone_uploaded_matrix[i][5]
-                        + position[2] * bone_uploaded_matrix[i][8]
-                        + bone_uploaded_matrix[i][11]) * boneWeights[i];
+                z += (position[0] * context.bone_uploaded_matrix[i][2]
+                        + position[1] * context.bone_uploaded_matrix[i][5]
+                        + position[2] * context.bone_uploaded_matrix[i][8]
+                        + context.bone_uploaded_matrix[i][11]) * boneWeights[i];
             }
         }
 
@@ -4269,17 +3671,17 @@ public class VideoEngine {
         for (int i = 0; i < vinfo.skinningWeightCount; i++) {
             if (boneWeights[i] != 0) {
                 // Normals shouldn't be translated :)
-                nx += (normal[0] * bone_uploaded_matrix[i][0]
-                        + normal[1] * bone_uploaded_matrix[i][3]
-                        + normal[2] * bone_uploaded_matrix[i][6]) * boneWeights[i];
+                nx += (normal[0] * context.bone_uploaded_matrix[i][0]
+                        + normal[1] * context.bone_uploaded_matrix[i][3]
+                        + normal[2] * context.bone_uploaded_matrix[i][6]) * boneWeights[i];
 
-                ny += (normal[0] * bone_uploaded_matrix[i][1]
-                        + normal[1] * bone_uploaded_matrix[i][4]
-                        + normal[2] * bone_uploaded_matrix[i][7]) * boneWeights[i];
+                ny += (normal[0] * context.bone_uploaded_matrix[i][1]
+                        + normal[1] * context.bone_uploaded_matrix[i][4]
+                        + normal[2] * context.bone_uploaded_matrix[i][7]) * boneWeights[i];
 
-                nz += (normal[0] * bone_uploaded_matrix[i][2]
-                        + normal[1] * bone_uploaded_matrix[i][5]
-                        + normal[2] * bone_uploaded_matrix[i][8]) * boneWeights[i];
+                nz += (normal[0] * context.bone_uploaded_matrix[i][2]
+                        + normal[1] * context.bone_uploaded_matrix[i][5]
+                        + normal[2] * context.bone_uploaded_matrix[i][8]) * boneWeights[i];
             }
         }
 
@@ -4308,33 +3710,33 @@ public class VideoEngine {
         for (int i = 0; i < vinfo.skinningWeightCount; ++i) {
             if (v.boneWeights[i] != 0.f) {
 
-                x += (v.p[0] * bone_uploaded_matrix[i][0]
-                        + v.p[1] * bone_uploaded_matrix[i][3]
-                        + v.p[2] * bone_uploaded_matrix[i][6]
-                        + bone_uploaded_matrix[i][9]) * v.boneWeights[i];
+                x += (v.p[0] * context.bone_uploaded_matrix[i][0]
+                        + v.p[1] * context.bone_uploaded_matrix[i][3]
+                        + v.p[2] * context.bone_uploaded_matrix[i][6]
+                        + context.bone_uploaded_matrix[i][9]) * v.boneWeights[i];
 
-                y += (v.p[0] * bone_uploaded_matrix[i][1]
-                        + v.p[1] * bone_uploaded_matrix[i][4]
-                        + v.p[2] * bone_uploaded_matrix[i][7]
-                        + bone_uploaded_matrix[i][10]) * v.boneWeights[i];
+                y += (v.p[0] * context.bone_uploaded_matrix[i][1]
+                        + v.p[1] * context.bone_uploaded_matrix[i][4]
+                        + v.p[2] * context.bone_uploaded_matrix[i][7]
+                        + context.bone_uploaded_matrix[i][10]) * v.boneWeights[i];
 
-                z += (v.p[0] * bone_uploaded_matrix[i][2]
-                        + v.p[1] * bone_uploaded_matrix[i][5]
-                        + v.p[2] * bone_uploaded_matrix[i][8]
-                        + bone_uploaded_matrix[i][11]) * v.boneWeights[i];
+                z += (v.p[0] * context.bone_uploaded_matrix[i][2]
+                        + v.p[1] * context.bone_uploaded_matrix[i][5]
+                        + v.p[2] * context.bone_uploaded_matrix[i][8]
+                        + context.bone_uploaded_matrix[i][11]) * v.boneWeights[i];
 
                 // Normals shouldn't be translated :)
-                nx += (v.n[0] * bone_uploaded_matrix[i][0]
-                        + v.n[1] * bone_uploaded_matrix[i][3]
-                        + v.n[2] * bone_uploaded_matrix[i][6]) * v.boneWeights[i];
+                nx += (v.n[0] * context.bone_uploaded_matrix[i][0]
+                        + v.n[1] * context.bone_uploaded_matrix[i][3]
+                        + v.n[2] * context.bone_uploaded_matrix[i][6]) * v.boneWeights[i];
 
-                ny += (v.n[0] * bone_uploaded_matrix[i][1]
-                        + v.n[1] * bone_uploaded_matrix[i][4]
-                        + v.n[2] * bone_uploaded_matrix[i][7]) * v.boneWeights[i];
+                ny += (v.n[0] * context.bone_uploaded_matrix[i][1]
+                        + v.n[1] * context.bone_uploaded_matrix[i][4]
+                        + v.n[2] * context.bone_uploaded_matrix[i][7]) * v.boneWeights[i];
 
-                nz += (v.n[0] * bone_uploaded_matrix[i][2]
-                        + v.n[1] * bone_uploaded_matrix[i][5]
-                        + v.n[2] * bone_uploaded_matrix[i][8]) * v.boneWeights[i];
+                nz += (v.n[0] * context.bone_uploaded_matrix[i][2]
+                        + v.n[1] * context.bone_uploaded_matrix[i][5]
+                        + v.n[2] * context.bone_uploaded_matrix[i][8]) * v.boneWeights[i];
             }
         }
 
@@ -4381,26 +3783,6 @@ public class VideoEngine {
         }
     }
 
-    private String getOpenGLVersion(GL gl) {
-        return gl.glGetString(GL.GL_VERSION);
-    }
-
-    private void convertPixelType(short[] source, int[] destination,
-            int aMask, int aShift,
-            int rMask, int rShift,
-            int gMask, int gShift,
-            int bMask, int bShift,
-            int level) {
-        for (int i = 0; i < texture_buffer_width[level] * texture_height[level]; i++) {
-            int pixel = source[i];
-            int color = ((pixel & aMask) << aShift)
-                    | ((pixel & rMask) << rShift)
-                    | ((pixel & gMask) << gShift)
-                    | ((pixel & bMask) << bShift);
-            destination[i] = color;
-        }
-    }
-
     private void loadTexture() {
         // No need to reload or check the texture cache if no texture parameter
         // has been changed since last call loadTexture()
@@ -4410,99 +3792,97 @@ public class VideoEngine {
 
         // HACK: avoid texture uploads of null pointers
         // This can come from Sony's GE init code (pspsdk GE init is ok)
-        if (texture_base_pointer[0] == 0) {
+        if (context.texture_base_pointer[0] == 0) {
             return;
         }
 
-        // Texture not used in clear mode or when disabled.
-        if (clearMode || !textureFlag.isEnabled()) {
+        // Texture not used when disabled (automatically disabled in clear mode).
+        if (!context.textureFlag.isEnabled()) {
             return;
         }
 
         Texture texture;
-        int tex_addr = texture_base_pointer[0] & Memory.addressMask;
+        int tex_addr = context.texture_base_pointer[0] & Memory.addressMask;
         // Some games are storing compressed textures in VRAM (e.g. Skate Park City).
         // Force only a reload of textures that can be generated by the GE buffer,
         // i.e. when texture_storage is one of
         // BGR5650=0, ABGR5551=1, ABGR4444=2 or ABGR8888=3.
-        if (!useTextureCache || (isVRAM(tex_addr) && texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888)) {
+        if (!useTextureCache || (isVRAM(tex_addr) && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888)) {
             texture = null;
 
             // Generate a texture id if we don't have one
-            if (gl_texture_id[0] == 0) {
-                gl.glGenTextures(1, gl_texture_id, 0);
+            if (textureId == -1) {
+            	textureId = re.genTexture();
             }
 
-            gl.glBindTexture(GL.GL_TEXTURE_2D, gl_texture_id[0]);
+            re.bindTexture(textureId);
         } else {
             textureCacheLookupStatistics.start();
             // Check if the texture is in the cache
-            texture = TextureCache.getInstance().getTexture(texture_base_pointer[0], texture_buffer_width[0], texture_width[0], texture_height[0], texture_storage, tex_clut_addr, tex_clut_mode, tex_clut_start, tex_clut_shift, tex_clut_mask, tex_clut_num_blocks, texture_num_mip_maps, mipmapShareClut);
+            texture = TextureCache.getInstance().getTexture(context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_num_blocks, context.texture_num_mip_maps, context.mipmapShareClut);
             textureCacheLookupStatistics.end();
 
             // Create the texture if not yet in the cache
             if (texture == null) {
                 TextureCache textureCache = TextureCache.getInstance();
-                texture = new Texture(textureCache, texture_base_pointer[0], texture_buffer_width[0], texture_width[0], texture_height[0], texture_storage, tex_clut_addr, tex_clut_mode, tex_clut_start, tex_clut_shift, tex_clut_mask, tex_clut_num_blocks, texture_num_mip_maps, mipmapShareClut);
-                textureCache.addTexture(gl, texture);
+                texture = new Texture(textureCache, context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_num_blocks, context.texture_num_mip_maps, context.mipmapShareClut);
+                textureCache.addTexture(re, texture);
             }
 
-            texture.bindTexture(gl);
+            texture.bindTexture(re);
         }
 
         // Load the texture if not yet loaded
         if (texture == null || !texture.isLoaded() || State.captureGeNextFrame || State.replayGeNextFrame) {
             if (isLogDebugEnabled) {
                 log(helper.getCommandString(TFLUSH)
-                        + " " + String.format("0x%08X", texture_base_pointer[0])
-                        + ", buffer_width=" + texture_buffer_width[0]
-                        + " (" + texture_width[0] + "," + texture_height[0] + ")");
+                        + " " + String.format("0x%08X", context.texture_base_pointer[0])
+                        + ", buffer_width=" + context.texture_buffer_width[0]
+                        + " (" + context.texture_width[0] + "," + context.texture_height[0] + ")");
 
                 log(helper.getCommandString(TFLUSH)
-                        + " texture_storage=0x" + Integer.toHexString(texture_storage)
-                        + "(" + getPsmName(texture_storage)
-                        + "), tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode)
-                        + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr)
-                        + ", texture_swizzle=" + texture_swizzle);
+                        + " texture_storage=0x" + Integer.toHexString(context.texture_storage)
+                        + "(" + getPsmName(context.texture_storage)
+                        + "), tex_clut_mode=0x" + Integer.toHexString(context.tex_clut_mode)
+                        + ", tex_clut_addr=" + String.format("0x%08X", context.tex_clut_addr)
+                        + ", texture_swizzle=" + context.texture_swizzle);
             }
 
             Buffer final_buffer = null;
-            int texture_type = 0;
-            int texclut = tex_clut_addr;
+            int texclut = context.tex_clut_addr;
             int texaddr;
 
             int textureByteAlignment = 4;   // 32 bits
-            int texture_format = GL.GL_RGBA;
             boolean compressedTexture = false;
 
-            int numberMipmaps = texture_num_mip_maps;
+            int numberMipmaps = context.texture_num_mip_maps;
 
             for (int level = 0; level <= numberMipmaps; level++) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
-                texaddr = texture_base_pointer[level];
+                texaddr = context.texture_base_pointer[level];
                 texaddr &= Memory.addressMask;
-                texture_format = GL.GL_RGBA;
                 compressedTexture = false;
                 int compressedTextureSize = 0;
+                int buffer_storage = context.texture_storage;
 
-                switch (texture_storage) {
+                switch (context.texture_storage) {
                     case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
-                        switch (tex_clut_mode) {
+                        if (texclut == 0) {
+                            return;
+                        }
+
+                        buffer_storage = context.tex_clut_mode;
+                        switch (context.tex_clut_mode) {
                             case CMODE_FORMAT_16BIT_BGR5650:
                             case CMODE_FORMAT_16BIT_ABGR5551:
                             case CMODE_FORMAT_16BIT_ABGR4444: {
-                                if (texclut == 0) {
-                                    return;
-                                }
-
-                                texture_type = texturetype_mapping[tex_clut_mode];
                                 textureByteAlignment = 2;  // 16 bits
                                 short[] clut = readClut16(level);
-                                int clutSharingOffset = mipmapShareClut ? 0 : level * 16;
+                                int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
 
-                                if (!texture_swizzle) {
-                                    int length = texture_buffer_width[level] * texture_height[level];
+                                if (!context.texture_swizzle) {
+                                    int length = context.texture_buffer_width[level] * context.texture_height[level];
                                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
                                     for (int i = 0; i < length; i += 2) {
 
@@ -4519,7 +3899,7 @@ public class VideoEngine {
                                     }
                                 } else {
                                     unswizzleTextureFromMemory(texaddr, 0, level);
-                                    int pixels = texture_buffer_width[level] * texture_height[level];
+                                    int pixels = context.texture_buffer_width[level] * context.texture_height[level];
                                     for (int i = 0, j = 0; i < pixels; i += 8, j++) {
                                         int n = tmp_texture_buffer32[j];
                                         int index = n & 0xF;
@@ -4547,16 +3927,11 @@ public class VideoEngine {
                             }
 
                             case CMODE_FORMAT_32BIT_ABGR8888: {
-                                if (texclut == 0) {
-                                    return;
-                                }
-
-                                texture_type = GL.GL_UNSIGNED_BYTE;
                                 int[] clut = readClut32(level);
-                                int clutSharingOffset = mipmapShareClut ? 0 : level * 16;
+                                int clutSharingOffset = context.mipmapShareClut ? 0 : level * 16;
 
-                                if (!texture_swizzle) {
-                                    int length = texture_buffer_width[level] * texture_height[level];
+                                if (!context.texture_swizzle) {
+                                    int length = context.texture_buffer_width[level] * context.texture_height[level];
                                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
                                     for (int i = 0; i < length; i += 2) {
 
@@ -4573,7 +3948,7 @@ public class VideoEngine {
                                     }
                                 } else {
                                     unswizzleTextureFromMemory(texaddr, 0, level);
-                                    int pixels = texture_buffer_width[level] * texture_height[level];
+                                    int pixels = context.texture_buffer_width[level] * context.texture_height[level];
                                     for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
                                         int n = tmp_texture_buffer32[j];
                                         int index = n & 0xF;
@@ -4600,7 +3975,7 @@ public class VideoEngine {
                             }
 
                             default: {
-                                error("Unhandled clut4 texture mode " + tex_clut_mode);
+                                error("Unhandled clut4 texture mode " + context.tex_clut_mode);
                                 return;
                             }
                         }
@@ -4609,30 +3984,29 @@ public class VideoEngine {
                     }
                     case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
                         final_buffer = readIndexedTexture(level, texaddr, texclut, 1);
-                        texture_type = texturetype_mapping[tex_clut_mode];
-                        textureByteAlignment = textureByteAlignmentMapping[tex_clut_mode];
+                        buffer_storage = context.tex_clut_mode;
+                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
                         final_buffer = readIndexedTexture(level, texaddr, texclut, 2);
-                        texture_type = texturetype_mapping[tex_clut_mode];
-                        textureByteAlignment = textureByteAlignmentMapping[tex_clut_mode];
+                        buffer_storage = context.tex_clut_mode;
+                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
                         final_buffer = readIndexedTexture(level, texaddr, texclut, 4);
-                        texture_type = texturetype_mapping[tex_clut_mode];
-                        textureByteAlignment = textureByteAlignmentMapping[tex_clut_mode];
+                        buffer_storage = context.tex_clut_mode;
+                        textureByteAlignment = textureByteAlignmentMapping[context.tex_clut_mode];
                         break;
                     }
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
-                        texture_type = texturetype_mapping[texture_storage];
                         textureByteAlignment = 2;  // 16 bits
 
-                        if (!texture_swizzle) {
-                            int length = Math.max(texture_buffer_width[level], texture_width[level]) * texture_height[level];
+                        if (!context.texture_swizzle) {
+                            int length = Math.max(context.texture_buffer_width[level], context.texture_width[level]) * context.texture_height[level];
                             final_buffer = Memory.getInstance().getBuffer(texaddr, length * 2);
                             if (final_buffer == null) {
                                 IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
@@ -4656,12 +4030,6 @@ public class VideoEngine {
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
-                        if (openGL1_2) {
-                            texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;  // Only available from V1.2
-                        } else {
-                            texture_type = GL.GL_UNSIGNED_BYTE;
-                        }
-
                         final_buffer = getTexture32BitBuffer(texaddr, level);
                         break;
                     }
@@ -4670,19 +4038,18 @@ public class VideoEngine {
                         if (isLogDebugEnabled) {
                             log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT1 " + Integer.toHexString(texaddr));
                         }
-                        texture_type = GL.GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
                         compressedTexture = true;
                         compressedTextureSize = getCompressedTextureSize(level, 8);
                         IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
                         // PSP DXT1 hardware format reverses the colors and the per-pixel
                         // bits, and encodes the color in RGB 565 format
                         int i = 0;
-                        for (int y = 0; y < texture_height[level]; y += 4) {
-                            for (int x = 0; x < texture_buffer_width[level]; x += 4, i += 2) {
+                        for (int y = 0; y < context.texture_height[level]; y += 4) {
+                            for (int x = 0; x < context.texture_buffer_width[level]; x += 4, i += 2) {
                                 tmp_texture_buffer32[i + 1] = memoryReader.readNext();
                                 tmp_texture_buffer32[i + 0] = memoryReader.readNext();
                             }
-                            for (int x = texture_buffer_width[level]; x < texture_width[level]; x += 4, i += 2) {
+                            for (int x = context.texture_buffer_width[level]; x < context.texture_width[level]; x += 4, i += 2) {
                                 tmp_texture_buffer32[i + 0] = 0;
                                 tmp_texture_buffer32[i + 1] = 0;
                             }
@@ -4695,15 +4062,14 @@ public class VideoEngine {
                         if (isLogDebugEnabled) {
                             log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT3 " + Integer.toHexString(texaddr));
                         }
-                        texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
                         compressedTexture = true;
                         compressedTextureSize = getCompressedTextureSize(level, 4);
                         IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
                         // PSP DXT3 format reverses the alpha and color parts of each block,
                         // and reverses the color and per-pixel terms in the color part.
                         int i = 0;
-                        for (int y = 0; y < texture_height[level]; y += 4) {
-                            for (int x = 0; x < texture_buffer_width[level]; x += 4, i += 4) {
+                        for (int y = 0; y < context.texture_height[level]; y += 4) {
+                            for (int x = 0; x < context.texture_buffer_width[level]; x += 4, i += 4) {
                                 // Color
                                 tmp_texture_buffer32[i + 3] = memoryReader.readNext();
                                 tmp_texture_buffer32[i + 2] = memoryReader.readNext();
@@ -4711,7 +4077,7 @@ public class VideoEngine {
                                 tmp_texture_buffer32[i + 0] = memoryReader.readNext();
                                 tmp_texture_buffer32[i + 1] = memoryReader.readNext();
                             }
-                            for (int x = texture_buffer_width[level]; x < texture_width[level]; x += 4, i += 4) {
+                            for (int x = context.texture_buffer_width[level]; x < context.texture_width[level]; x += 4, i += 4) {
                                 tmp_texture_buffer32[i + 0] = 0;
                                 tmp_texture_buffer32[i + 1] = 0;
                                 tmp_texture_buffer32[i + 2] = 0;
@@ -4726,7 +4092,6 @@ public class VideoEngine {
                         if (isLogDebugEnabled) {
                             log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT5 " + Integer.toHexString(texaddr));
                         }
-                        texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
                         compressedTexture = true;
                         compressedTextureSize = getCompressedTextureSize(level, 4);
                         IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 2);
@@ -4735,8 +4100,8 @@ public class VideoEngine {
                         // the alpha part, the 2 reference alpha values are swapped with the
                         // alpha interpolation values.
                         int i = 0;
-                        for (int y = 0; y < texture_height[level]; y += 4) {
-                            for (int x = 0; x < texture_buffer_width[level]; x += 4, i += 8) {
+                        for (int y = 0; y < context.texture_height[level]; y += 4) {
+                            for (int x = 0; x < context.texture_buffer_width[level]; x += 4, i += 8) {
                                 // Color
                                 tmp_texture_buffer16[i + 6] = (short) memoryReader.readNext();
                                 tmp_texture_buffer16[i + 7] = (short) memoryReader.readNext();
@@ -4748,7 +4113,7 @@ public class VideoEngine {
                                 tmp_texture_buffer16[i + 3] = (short) memoryReader.readNext();
                                 tmp_texture_buffer16[i + 0] = (short) memoryReader.readNext();
                             }
-                            for (int x = texture_buffer_width[level]; x < texture_width[level]; x += 4, i += 8) {
+                            for (int x = context.texture_buffer_width[level]; x < context.texture_width[level]; x += 4, i += 8) {
                                 tmp_texture_buffer16[i + 0] = 0;
                                 tmp_texture_buffer16[i + 1] = 0;
                                 tmp_texture_buffer16[i + 2] = 0;
@@ -4764,68 +4129,39 @@ public class VideoEngine {
                     }
 
                     default: {
-                        error("Unhandled texture storage " + texture_storage);
+                        error("Unhandled texture storage " + context.texture_storage);
                         return;
                     }
                 }
 
-                // Some textureTypes are only supported from OpenGL v1.2.
-                // Try to convert to type supported in v1.
-                if (!openGL1_2) {
-                    if (texture_type == GL.GL_UNSIGNED_SHORT_4_4_4_4_REV) {
-                        convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0xF000, 16, 0x0F00, 12, 0x00F0, 8, 0x000F, 4, level);
-                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                        texture_type = GL.GL_UNSIGNED_BYTE;
-                        textureByteAlignment = 4;
-                    } else if (texture_type == GL.GL_UNSIGNED_SHORT_1_5_5_5_REV) {
-                        convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x8000, 16, 0x7C00, 9, 0x03E0, 6, 0x001F, 3, level);
-                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                        texture_type = GL.GL_UNSIGNED_BYTE;
-                        textureByteAlignment = 4;
-                    } else if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
-                        convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x0000, 0, 0xF800, 8, 0x07E0, 5, 0x001F, 3, level);
-                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                        texture_type = GL.GL_UNSIGNED_BYTE;
-                        textureByteAlignment = 4;
-                        texture_format = GL.GL_RGB;
-                    }
-                }
-
-                if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
-                    texture_format = GL.GL_RGB;
-                }
-
                 // Upload texture to openGL.
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
+                re.setTextureMipmapMagFilter(context.tex_mag_filter);
+                re.setTextureMipmapMinFilter(context.tex_min_filter);
 
-                gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
-                gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
+                re.setPixelStore(context.texture_buffer_width[level], textureByteAlignment);
 
                 if (compressedTexture) {
-                    gl.glCompressedTexImage2D(GL.GL_TEXTURE_2D,
+                    re.setCompressedTexImage(
                             level,
-                            texture_type,
-                            texture_width[level], texture_height[level],
-                            0,
+                            buffer_storage,
+                            context.texture_width[level], context.texture_height[level],
                             compressedTextureSize,
                             final_buffer);
                 } else {
-                    gl.glTexImage2D(GL.GL_TEXTURE_2D,
+                    re.setTexImage(
                             level,
-                            texture_format,
-                            texture_width[level], texture_height[level],
-                            0,
-                            texture_format,
-                            texture_type,
+                            buffer_storage,
+                            context.texture_width[level], context.texture_height[level],
+                            buffer_storage,
+                            buffer_storage,
                             final_buffer);
                 }
 
                 if (State.captureGeNextFrame) {
                     if (isVRAM(tex_addr)) {
-                        CaptureManager.captureImage(texaddr, level, final_buffer, texture_width[level], texture_height[level], texture_buffer_width[level], texture_type, compressedTexture, compressedTextureSize, false);
+                        CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false);
                     } else if (!CaptureManager.isImageCaptured(texaddr)) {
-                        CaptureManager.captureImage(texaddr, level, final_buffer, texture_width[level], texture_height[level], texture_buffer_width[level], texture_type, compressedTexture, compressedTextureSize, true);
+                        CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, true);
                     }
                 }
 
@@ -4839,10 +4175,10 @@ public class VideoEngine {
 
             checkTextureMinFilter(compressedTexture, numberMipmaps);
         } else {
-            boolean compressedTexture = (texture_storage >= TPSM_PIXEL_STORAGE_MODE_DXT1 && texture_storage <= TPSM_PIXEL_STORAGE_MODE_DXT5);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
-            checkTextureMinFilter(compressedTexture, texture_num_mip_maps);
+            boolean compressedTexture = (context.texture_storage >= TPSM_PIXEL_STORAGE_MODE_DXT1 && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_DXT5);
+            re.setTextureMipmapMagFilter(context.tex_mag_filter);
+            re.setTextureMipmapMinFilter(context.tex_min_filter);
+            checkTextureMinFilter(compressedTexture, context.texture_num_mip_maps);
 
             if (isLogDebugEnabled) {
                 log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
@@ -4857,14 +4193,17 @@ public class VideoEngine {
         // this restriction has been checked on NVIDIA GeForce 8500 GT and 9800 GT
         if (compressedTexture) {
             int new_tex_min_filter;
-            if (tex_min_filter == GL.GL_NEAREST_MIPMAP_LINEAR || tex_min_filter == GL.GL_NEAREST_MIPMAP_NEAREST) {
-                new_tex_min_filter = GL.GL_NEAREST;
+            if (context.tex_min_filter == TFLT_NEAREST || context.tex_min_filter == TFLT_NEAREST_MIPMAP_LINEAR || context.tex_min_filter == TFLT_NEAREST_MIPMAP_NEAREST) {
+                new_tex_min_filter = TFLT_NEAREST;
             } else {
-                new_tex_min_filter = GL.GL_LINEAR;
+                new_tex_min_filter = TFLT_LINEAR;
             }
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, new_tex_min_filter);
-            if (isLogDebugEnabled) {
-                log("Overwriting texture min filter, no mipmap was generated but filter was set to use mipmap");
+
+            if (new_tex_min_filter != context.tex_min_filter) {
+	            re.setTextureMipmapMinFilter(new_tex_min_filter);
+	            if (isLogDebugEnabled) {
+	                log("Overwriting texture min filter, no mipmap was generated but filter was set to use mipmap");
+	            }
             }
         }
     }
@@ -4872,8 +4211,8 @@ public class VideoEngine {
     private Buffer readIndexedTexture(int level, int texaddr, int texclut, int bytesPerIndex) {
         Buffer buffer = null;
 
-        int length = texture_buffer_width[level] * texture_height[level];
-        switch (tex_clut_mode) {
+        int length = context.texture_buffer_width[level] * context.texture_height[level];
+        switch (context.tex_clut_mode) {
             case CMODE_FORMAT_16BIT_BGR5650:
             case CMODE_FORMAT_16BIT_ABGR5551:
             case CMODE_FORMAT_16BIT_ABGR4444: {
@@ -4883,7 +4222,7 @@ public class VideoEngine {
 
                 short[] clut = readClut16(level);
 
-                if (!texture_swizzle) {
+                if (!context.texture_swizzle) {
                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
                     for (int i = 0; i < length; i++) {
                         int index = memoryReader.readNext();
@@ -4941,7 +4280,7 @@ public class VideoEngine {
 
                 int[] clut = readClut32(level);
 
-                if (!texture_swizzle) {
+                if (!context.texture_swizzle) {
                     IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
                     for (int i = 0; i < length; i++) {
                         int index = memoryReader.readNext();
@@ -4993,7 +4332,7 @@ public class VideoEngine {
             }
 
             default: {
-                error("Unhandled clut8 texture mode " + tex_clut_mode);
+                error("Unhandled clut8 texture mode " + context.tex_clut_mode);
                 break;
             }
         }
@@ -5018,8 +4357,8 @@ public class VideoEngine {
          * Apply projection matrix
          */
         if (projectionMatrixUpload.isChanged()) {
-            if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	re.setProjectionMatrixElements(proj_uploaded_matrix);
+            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            	re.setProjectionMatrixElements(context.proj_uploaded_matrix);
             } else {
             	re.setProjectionMatrixElements(null);
             }
@@ -5034,18 +4373,18 @@ public class VideoEngine {
          */
         boolean loadOrtho2D = false;
         if (viewportChanged) {
-            if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
                 re.setViewport(0, 0, 480, 272);
                 // Load the ortho for 2D after the depth settings
                 loadOrtho2D = true;
             } else {
-                if (viewport_cx == 0 && viewport_cy == 0 && viewport_height == 0 && viewport_width == 0) {
-                    viewport_cx = 2048;
-                    viewport_cy = 2048;
-                    viewport_width = 480;
-                    viewport_height = 272;
+                if (context.viewport_cx == 0 && context.viewport_cy == 0 && context.viewport_height == 0 && context.viewport_width == 0) {
+                	context.viewport_cx = 2048;
+                	context.viewport_cy = 2048;
+                	context.viewport_width = 480;
+                	context.viewport_height = 272;
                 }
-                re.setViewport(viewport_cx - offset_x, viewport_cy - offset_y, viewport_width, viewport_height);
+                re.setViewport(context.viewport_cx - context.offset_x, context.viewport_cy - context.offset_y, context.viewport_width, context.viewport_height);
             }
             viewportChanged = false;
         }
@@ -5054,11 +4393,11 @@ public class VideoEngine {
          * Apply depth handling
          */
         if (depthChanged) {
-            if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	re.setDepthFunc(depthFunc);
-                re.setDepthRange(zpos, zscale, zpos - zscale, zpos + zscale);
+            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            	re.setDepthFunc(context.depthFunc);
+                re.setDepthRange(context.zpos, context.zscale, context.zpos - context.zscale, context.zpos + context.zscale);
             } else {
-            	re.setDepthFunc(depthFunc);
+            	re.setDepthFunc(context.depthFunc);
                 re.setDepthRange(0.5f, 0.5f, 0, 1);
             }
             depthChanged = false;
@@ -5068,42 +4407,23 @@ public class VideoEngine {
          * Load the 2D ortho (only after the depth settings
          */
         if (loadOrtho2D) {
-        	float left = 0;
-        	float right = 480;
-        	float bottom = 272;
-        	float top = 0;
-        	float near = 0;
-        	float far = -0xFFFF;
-
-        	float dx = right - left;
-        	float dy = top - bottom;
-        	float dz = far - near;
-        	float[] projectionMatrix = {
-            		2.f / dx, 0, 0, 0,
-            		0, 2.f / dy, 0, 0,
-            		0, 0, -2.f / dz, 0,
-            		-(right + left) / dx, -(top + bottom) / dy, -(far + near) / dz, 1
-            };
-            re.setProjectionMatrixElements(projectionMatrix);
+            re.setProjectionMatrixElements(getOrthoMatrix(0, 480, 272, 0, 0, -0xFFFF));
         }
 
         /*
          * 2D mode handling
          */
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+        if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
             // 2D mode shouldn't be affected by the lighting and fog
-            gl.glPushAttrib(GL.GL_LIGHTING_BIT | GL.GL_FOG_BIT);
-            gl.glDisable(GL.GL_LIGHTING);
-            gl.glDisable(GL.GL_FOG);
-            if (useShaders) {
-                gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
-                gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-                gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-            }
+        	re.disableFlag(IRenderingEngine.GU_LIGHTING);
+        	re.disableFlag(IRenderingEngine.GU_FOG);
 
             // TODO I don't know why, but the GL_MODELVIEW matrix has to be reloaded
             // each time in 2D mode... Otherwise textures are not displayed.
             modelMatrixUpload.setChanged(true);
+        } else {
+        	context.lightingFlag.update();
+        	context.fogFlag.update();
         }
 
         /*
@@ -5112,15 +4432,15 @@ public class VideoEngine {
          * - view matrix changed
          * - lighting has to be reloaded
          */
-        boolean loadLightingSettings = (viewMatrixUpload.isChanged() || lightingChanged) && lightingFlag.isEnabled() && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD;
+        boolean loadLightingSettings = (viewMatrixUpload.isChanged() || lightingChanged) && context.lightingFlag.isEnabled() && context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD;
         boolean modelViewMatrixChanged = modelMatrixUpload.isChanged() || viewMatrixUpload.isChanged() || loadLightingSettings;
 
         /*
          * Apply view matrix
          */
         if (modelViewMatrixChanged) {
-            if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	re.setViewMatrixElements(view_uploaded_matrix);
+            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            	re.setViewMatrixElements(context.view_uploaded_matrix);
             } else {
             	re.setViewMatrixElements(null);
             }
@@ -5130,15 +4450,15 @@ public class VideoEngine {
         /*
          *  Setup lights on when view transformation is set up
          */
-        if (loadLightingSettings || tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
+        if (loadLightingSettings || context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
             for (int i = 0; i < NUM_LIGHTS; i++) {
-                if (lightFlags[i].isEnabled() || (tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP && (tex_shade_u == i || tex_shade_v == i))) {
-                	re.setLightPosition(i, light_pos[i]);
-                	re.setLightDirection(i, light_dir[i]);
+                if (context.lightFlags[i].isEnabled() || (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP && (context.tex_shade_u == i || context.tex_shade_v == i))) {
+                	re.setLightPosition(i, context.light_pos[i]);
+                	re.setLightDirection(i, context.light_dir[i]);
 
-                    if (light_type[i] == LIGHT_SPOT) {
-                    	re.setLightSpotExponent(i, spotLightExponent[i]);
-                    	re.setLightSpotCutoff(i, spotLightCutoff[i]);
+                    if (context.light_type[i] == LIGHT_SPOT) {
+                    	re.setLightSpotExponent(i, context.spotLightExponent[i]);
+                    	re.setLightSpotCutoff(i, context.spotLightCutoff[i]);
                     } else {
                         // uniform light distribution
                     	re.setLightSpotExponent(i, 0);
@@ -5148,8 +4468,8 @@ public class VideoEngine {
                     // Light kind:
                     //  LIGHT_DIFFUSE_SPECULAR: use ambient, diffuse and specular colors
                     //  all other light kinds: use ambient and diffuse colors (not specular)
-                    if (light_kind[i] != LIGHT_AMBIENT_DIFFUSE) {
-                    	re.setLightSpecularColor(i, lightSpecularColor[i]);
+                    if (context.light_kind[i] != LIGHT_AMBIENT_DIFFUSE) {
+                    	re.setLightSpecularColor(i, context.lightSpecularColor[i]);
                     } else {
                     	re.setLightSpecularColor(i, blackColor);
                     }
@@ -5161,9 +4481,9 @@ public class VideoEngine {
 
         if (modelViewMatrixChanged) {
             // Apply model matrix
-            if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
                 if (!modelMatrixUpload.isIdentity()) {
-                	re.setModelMatrixElements(model_uploaded_matrix);
+                	re.setModelMatrixElements(context.model_uploaded_matrix);
                 }
             }
             modelMatrixUpload.setChanged(false);
@@ -5180,41 +4500,40 @@ public class VideoEngine {
         		0, 0, 0, 1
         	};
 
-            if (transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            if (context.transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
             	re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_POSITION);;
-            	textureMatrix[0] = 1.f / texture_width[0];
-            	textureMatrix[5] = 1.f / texture_height[0];
-                //gl.glScalef(1.f / texture_width[0], 1.f / texture_height[0], 1.f);
+            	textureMatrix[0] = 1.f / context.texture_width[0];
+            	textureMatrix[5] = 1.f / context.texture_height[0];
             	re.setTextureMatrixElements(textureMatrix);
             } else {
-            	re.setTextureEnvironmentMapping(tex_shade_u, tex_shade_v);
-            	re.setTextureMapMode(tex_map_mode, tex_proj_map_mode);
-                switch (tex_map_mode) {
+            	re.setTextureMapMode(context.tex_map_mode, context.tex_proj_map_mode);
+                switch (context.tex_map_mode) {
                     case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-                    	textureMatrix[0] = tex_scale_x;
-                    	textureMatrix[5] = tex_scale_y;
-                    	textureMatrix[3] = tex_translate_x;
-                    	textureMatrix[7] = tex_translate_y;
-                        //gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
-                        //gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
+                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
+                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
+                    	textureMatrix[0] = context.tex_scale_x;
+                    	textureMatrix[5] = context.tex_scale_y;
+                    	textureMatrix[3] = context.tex_translate_x;
+                    	textureMatrix[7] = context.tex_translate_y;
                     	re.setTextureMatrixElements(textureMatrix);
                         break;
 
                     case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
-                    	re.setTextureMatrixElements(texture_uploaded_matrix);
-                        //gl.glMultMatrixf(texture_uploaded_matrix, 0);
+                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
+                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
+                    	re.setTextureMatrixElements(context.texture_uploaded_matrix);
                         break;
 
                     case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-                    	re.setTextureEnvironmentMapping(tex_shade_u, tex_shade_v);
+                    	re.setTextureEnvironmentMapping(context.tex_shade_u, context.tex_shade_v);
                         re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
                         re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
-                    	re.setTextureMatrixElements(tex_envmap_matrix);
+                    	re.setTextureMatrixElements(context.tex_envmap_matrix);
                         break;
                     }
 
                     default:
-                        log("Unhandled texture matrix mode " + tex_map_mode);
+                        log("Unhandled texture matrix mode " + context.tex_map_mode);
                 }
             }
 
@@ -5222,30 +4541,30 @@ public class VideoEngine {
         }
 
         boolean useVertexColor = false;
-        if (!lightingFlag.isEnabled() || transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+        if (!context.lightingFlag.isEnabled() || context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
         	re.disableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
             if (vinfo.color != 0) {
                 useVertexColor = true;
             } else {
                 if (materialChanged) {
-                	re.setVertexColor(mat_ambient);
+                	re.setVertexColor(context.mat_ambient);
                     materialChanged = false;
                 }
             }
-        } else if (vinfo.color != 0 && mat_flags != 0) {
+        } else if (vinfo.color != 0 && context.mat_flags != 0) {
             useVertexColor = true;
             if (materialChanged) {
-            	boolean ambient = (mat_flags & 1) != 0;
-            	boolean diffuse = (mat_flags & 2) != 0;
-            	boolean specular = (mat_flags & 4) != 0;
+            	boolean ambient = (context.mat_flags & 1) != 0;
+            	boolean diffuse = (context.mat_flags & 2) != 0;
+            	boolean specular = (context.mat_flags & 4) != 0;
                 if (!ambient) {
-                	re.setMaterialAmbientColor(mat_ambient);
+                	re.setMaterialAmbientColor(context.mat_ambient);
                 }
                 if (!diffuse) {
-                	re.setMaterialDiffuseColor(mat_diffuse);
+                	re.setMaterialDiffuseColor(context.mat_diffuse);
                 }
                 if (!specular) {
-                	re.setMaterialSpecularColor(mat_specular);
+                	re.setMaterialSpecularColor(context.mat_specular);
                 }
                 re.setColorMaterial(ambient, diffuse, specular);
             	re.enableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
@@ -5254,53 +4573,53 @@ public class VideoEngine {
         } else {
         	re.disableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
             if (materialChanged) {
-            	re.setMaterialAmbientColor(mat_ambient);
-            	re.setMaterialDiffuseColor(mat_diffuse);
-            	re.setMaterialSpecularColor(mat_specular);
+            	re.setMaterialAmbientColor(context.mat_ambient);
+            	re.setMaterialDiffuseColor(context.mat_diffuse);
+            	re.setMaterialSpecularColor(context.mat_specular);
             	re.setColorMaterial(false, false, false);
                 materialChanged = false;
             }
         }
 
-        re.setTextureWrapMode(tex_wrap_s, tex_wrap_t);
+        re.setTextureWrapMode(context.tex_wrap_s, context.tex_wrap_t);
 
         int mipmapBaseLevel = 0;
-        int mipmapMaxLevel = texture_num_mip_maps;
-        if (tex_mipmap_mode == TBIAS_MODE_CONST) {
+        int mipmapMaxLevel = context.texture_num_mip_maps;
+        if (context.tex_mipmap_mode == TBIAS_MODE_CONST) {
             // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
-            mipmapBaseLevel = tex_mipmap_bias_int;
-            mipmapMaxLevel = tex_mipmap_bias_int;
+            mipmapBaseLevel = context.tex_mipmap_bias_int;
+            mipmapMaxLevel = context.tex_mipmap_bias_int;
             if (isLogDebugEnabled) {
-                log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
+                log.debug("TBIAS_MODE_CONST " + context.tex_mipmap_bias_int);
             }
-        } else if (tex_mipmap_mode == TBIAS_MODE_AUTO) {
+        } else if (context.tex_mipmap_mode == TBIAS_MODE_AUTO) {
             // TBIAS_MODE_AUTO performs a comparison between the texture's weight and height at level 0.
-            int maxValue = Math.max(texture_width[0], texture_height[0]);
+            int maxValue = Math.max(context.texture_width[0], context.texture_height[0]);
 
             if(maxValue <= 1) {
                 mipmapBaseLevel = 0;
             } else {
-                mipmapBaseLevel = (int) ((Math.log((Math.abs(maxValue) / Math.abs(zpos))) / Math.log(2)) + tex_mipmap_bias);
+                mipmapBaseLevel = (int) ((Math.log((Math.abs(maxValue) / Math.abs(context.zpos))) / Math.log(2)) + context.tex_mipmap_bias);
             }
             mipmapMaxLevel = mipmapBaseLevel;
             if (isLogDebugEnabled) {
-                log.debug("TBIAS_MODE_AUTO " + tex_mipmap_bias + ", param=" + maxValue);
+                log.debug("TBIAS_MODE_AUTO " + context.tex_mipmap_bias + ", param=" + maxValue);
             }
-        } else if (tex_mipmap_mode == TBIAS_MODE_SLOPE) {
+        } else if (context.tex_mipmap_mode == TBIAS_MODE_SLOPE) {
             // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
-            mipmapBaseLevel = (int) ((Math.log(Math.abs(tslope_level) / Math.abs(zpos)) / Math.log(2)) + tex_mipmap_bias);
+            mipmapBaseLevel = (int) ((Math.log(Math.abs(context.tslope_level) / Math.abs(context.zpos)) / Math.log(2)) + context.tex_mipmap_bias);
             mipmapMaxLevel = mipmapBaseLevel;
             if (isLogDebugEnabled) {
-                log.debug("TBIAS_MODE_SLOPE " + tex_mipmap_bias + ", slope=" + tslope_level);
+                log.debug("TBIAS_MODE_SLOPE " + context.tex_mipmap_bias + ", slope=" + context.tslope_level);
             }
         }
 
         // Clamp to [0..texture_num_mip_maps]
-        mipmapBaseLevel = Math.max(0, Math.min(mipmapBaseLevel, texture_num_mip_maps));
+        mipmapBaseLevel = Math.max(0, Math.min(mipmapBaseLevel, context.texture_num_mip_maps));
         // Clamp to [mipmapBaseLevel..texture_num_mip_maps]
-        mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, texture_num_mip_maps));
+        mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, context.texture_num_mip_maps));
         if (isLogDebugEnabled) {
-            log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + texture_num_mip_maps);
+            log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + context.texture_num_mip_maps);
         }
         re.setTextureMipmapMinLevel(mipmapBaseLevel);
         re.setTextureMipmapMaxLevel(mipmapMaxLevel);
@@ -5320,31 +4639,27 @@ public class VideoEngine {
             vinfo.ptr_index += numberOfVertex * vinfo.index;
         }
 
-        switch (tex_map_mode) {
+        switch (context.tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
                 re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
                 re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
                 break;
             }
         }
+    }
 
-        gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
-        if (vinfo.texture != 0 || useTexture) {
-            gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
-        }
-        if (useVertexColor) {
-            gl.glDisableClientState(GL.GL_COLOR_ARRAY);
-        }
-        if (vinfo.normal != 0) {
-            gl.glDisableClientState(GL.GL_NORMAL_ARRAY);
-        }
+    private static float[] getOrthoMatrix(float left, float right, float bottom, float top, float near, float far) {
+    	float dx = right - left;
+    	float dy = top - bottom;
+    	float dz = far - near;
+    	float[] orthoMatrix = {
+        		2.f / dx, 0, 0, 0,
+        		0, 2.f / dy, 0, 0,
+        		0, 0, -2.f / dz, 0,
+        		-(right + left) / dx, -(top + bottom) / dy, -(far + near) / dz, 1
+        };
 
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-            gl.glPopAttrib();
-            if (useShaders) {
-                gl.glUniform1i(Uniforms.lightingEnable.getId(), lightingFlag.isEnabledInt());
-            }
-        }
+    	return orthoMatrix;
     }
 
     float spline_n(int i, int j, float u, int[] knot) {
@@ -5392,8 +4707,8 @@ public class VideoEngine {
         }
 
         boolean useVertexColor = initRendering();
-        boolean useTexture = vinfo.texture != 0 || textureFlag.isEnabled();
-        boolean useNormal = lightingFlag.isEnabled();
+        boolean useTexture = vinfo.texture != 0 || context.textureFlag.isEnabled();
+        boolean useNormal = context.lightingFlag.isEnabled();
 
         // Generate control points.
         VertexState[][] ctrlpoints = getControlPoints(ucount, vcount);
@@ -5405,7 +4720,7 @@ public class VideoEngine {
         }
 
         // Generate patch VertexState.
-        VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
+        VertexState[][] patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
 
         // Calculate knot arrays.
         int n = ucount - 1;
@@ -5418,11 +4733,11 @@ public class VideoEngine {
         float limit = 2.000001f;
 
         // Process spline vertexes with Cox-deBoor's algorithm.
-        for(int j = 0; j <= patch_div_t; j++) {
-        	float v = (float)j * (float)(m - limit) / (float)patch_div_t;
+        for(int j = 0; j <= context.patch_div_t; j++) {
+        	float v = (float)j * (float)(m - limit) / (float)context.patch_div_t;
 
-        	for(int i = 0; i <= patch_div_s; i++) {
-        		float u = (float)i * (float)(n - limit) / (float)patch_div_s;
+        	for(int i = 0; i <= context.patch_div_s; i++) {
+        		float u = (float)i * (float)(n - limit) / (float)context.patch_div_s;
 
         		patch[i][j] = new VertexState();
         		VertexState p = patch[i][j];
@@ -5472,8 +4787,8 @@ public class VideoEngine {
         }
 
         boolean useVertexColor = initRendering();
-        boolean useTexture = vinfo.texture != 0 || textureFlag.isEnabled();
-        boolean useNormal = lightingFlag.isEnabled();
+        boolean useTexture = vinfo.texture != 0 || context.textureFlag.isEnabled();
+        boolean useNormal = context.lightingFlag.isEnabled();
 
         VertexState[][] anchors = getControlPoints(ucount, vcount);
 
@@ -5485,30 +4800,30 @@ public class VideoEngine {
         }
 
         // Generate patch VertexState.
-        VertexState[][] patch = new VertexState[patch_div_s + 1][patch_div_t + 1];
+        VertexState[][] patch = new VertexState[context.patch_div_s + 1][context.patch_div_t + 1];
 
         // Number of patches in the U and V directions
         int upcount = ucount / 3;
         int vpcount = vcount / 3;
 
-        float[][] ucoeff = new float[patch_div_s + 1][];
+        float[][] ucoeff = new float[context.patch_div_s + 1][];
 
-        for(int j = 0; j <= patch_div_t; j++) {
-        	float vglobal = (float)j * vpcount / (float)patch_div_t;
+        for(int j = 0; j <= context.patch_div_t; j++) {
+        	float vglobal = (float)j * vpcount / (float)context.patch_div_t;
 
         	int vpatch = (int)vglobal; // Patch number
         	float v = vglobal - vpatch;
-        	if(j == patch_div_t) {
+        	if(j == context.patch_div_t) {
     			vpatch--;
     			v = 1.f;
     		}
         	float[] vcoeff = BernsteinCoeff(v);
 
-        	for(int i = 0; i <= patch_div_s; i++) {
-        		float uglobal = (float)i * upcount / (float)patch_div_s;
+        	for(int i = 0; i <= context.patch_div_s; i++) {
+        		float uglobal = (float)i * upcount / (float)context.patch_div_s;
         		int upatch = (int)uglobal;
         		float u = uglobal - upatch;
-        		if(i == patch_div_s) {
+        		if(i == context.patch_div_s) {
         			upatch--;
         			u = 1.f;
         		}
@@ -5541,10 +4856,10 @@ public class VideoEngine {
 		// TODO: Compute the normals
 		bindBuffers(useVertexColor, useTexture, useNormal, true, 0);
 
-        for(int j = 0; j <= patch_div_t - 1; j++) {
+        for(int j = 0; j <= context.patch_div_t - 1; j++) {
         	vboFloatBuffer.clear();
 
-        	for(int i = 0; i <= patch_div_s; i++) {
+        	for(int i = 0; i <= context.patch_div_s; i++) {
         		VertexState v1 = patch[i][j];
                 VertexState v2 = patch[i][j + 1];
 
@@ -5559,8 +4874,8 @@ public class VideoEngine {
         		vboFloatBuffer.put(v2.p);
         	}
 
-        	glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-            gl.glDrawArrays(patch_prim_types[patch_prim], 0, (patch_div_s + 1) * 2);
+        	re.setBufferData(vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+            re.drawArrays(patch_prim_types[context.patch_prim], 0, (context.patch_div_s + 1) * 2);
         }
 
         endRendering(useVertexColor, useTexture, ucount * vcount);
@@ -5599,12 +4914,12 @@ public class VideoEngine {
     private Buffer getTexture32BitBuffer(int texaddr, int level) {
         Buffer final_buffer = null;
 
-        if (!texture_swizzle) {
+        if (!context.texture_swizzle) {
             // texture_width might be larger than texture_buffer_width
-            int bufferlen = Math.max(texture_buffer_width[level], texture_width[level]) * texture_height[level] * 4;
+            int bufferlen = Math.max(context.texture_buffer_width[level], context.texture_width[level]) * context.texture_height[level] * 4;
             final_buffer = Memory.getInstance().getBuffer(texaddr, bufferlen);
             if (final_buffer == null) {
-                int length = texture_buffer_width[level] * texture_height[level];
+                int length = context.texture_buffer_width[level] * context.texture_height[level];
                 IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 4, 4);
                 for (int i = 0; i < length; i++) {
                     tmp_texture_buffer32[i] = memoryReader.readNext();
@@ -5636,7 +4951,7 @@ public class VideoEngine {
     }
 
     private int getCompressedTextureSize(int level, int compressionRatio) {
-        return getCompressedTextureSize(texture_width[level], texture_height[level], compressionRatio);
+        return getCompressedTextureSize(context.texture_width[level], context.texture_height[level], compressionRatio);
     }
 
     public static int getCompressedTextureSize(int width, int height, int compressionRatio) {
@@ -5647,23 +4962,17 @@ public class VideoEngine {
         return compressedTextureSize;
     }
 
-    private void glBindBuffer() {
-        glBindBuffer(vboBufferId[0]);
+    private void bindBuffer() {
+        bindBuffer(vboBufferId);
     }
 
-    public void glBindBuffer(int bufferId) {
-        if (useVBO) {
-            if (openGL1_5) {
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferId);
-            } else {
-                gl.glBindBufferARB(GL.GL_ARRAY_BUFFER, bufferId);
-            }
-        }
+    private void bindBuffer(int bufferId) {
+    	re.bindBuffer(bufferId);
     }
 
     private void updateGeBuf() {
         if (geBufChanged) {
-            display.hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
+            display.hleDisplaySetGeBuf(gl, context.fbp, context.fbw, context.psm, somethingDisplayed);
             geBufChanged = false;
 
             textureChanged = true;
@@ -5680,23 +4989,23 @@ public class VideoEngine {
     // For capture/replay
 
     public int getFBP() {
-        return fbp;
+        return context.fbp;
     }
 
     public int getFBW() {
-        return fbw;
+        return context.fbw;
     }
 
     public int getZBP() {
-        return zbp;
+        return context.zbp;
     }
 
     public int getZBW() {
-        return zbw;
+        return context.zbw;
     }
 
     public int getPSM() {
-        return psm;
+        return context.psm;
     }
 
     private boolean isVertexBufferEmbedded() {
@@ -5723,295 +5032,289 @@ public class VideoEngine {
         }
     }
 
-    public void hleSaveContext(pspGeContext context) {
+    public void hleSaveContext(pspGeContext pspContext) {
         // If we are rendering, we have to wait for a consistent state
         // before saving the context: let the display thread perform
         // the save when appropriate.
         if (hasDrawLists() || currentList != null) {
             Semaphore sync = new Semaphore(0);
-            hlePerformAction(new SaveContextAction(context, sync), sync);
+            hlePerformAction(new SaveContextAction(pspContext, sync), sync);
         } else {
-            saveContext(context);
+            saveContext(pspContext);
         }
     }
 
-    public void hleRestoreContext(pspGeContext context) {
+    public void hleRestoreContext(pspGeContext pspContext) {
         // If we are rendering, we have to wait for a consistent state
         // before restoring the context: let the display thread perform
         // the restore when appropriate.
         if (hasDrawLists() || currentList != null) {
             Semaphore sync = new Semaphore(0);
-            hlePerformAction(new RestoreContextAction(context, sync), sync);
+            hlePerformAction(new RestoreContextAction(pspContext, sync), sync);
         } else {
-            restoreContext(context);
+            restoreContext(pspContext);
         }
     }
 
-    private void saveContext(pspGeContext context) {
-        context.base = base;
-        context.baseOffset = baseOffset;
+    private void saveContext(pspGeContext pspContext) {
+        pspContext.base = context.base;
+        pspContext.baseOffset = context.baseOffset;
 
-        context.fbp = fbp;
-        context.fbw = fbw;
-        context.zbp = zbp;
-        context.zbw = zbw;
-        context.psm = psm;
+        pspContext.fbp = context.fbp;
+        pspContext.fbw = context.fbw;
+        pspContext.zbp = context.zbp;
+        pspContext.zbw = context.zbw;
+        pspContext.psm = context.psm;
 
-        context.flags = 0;
-        for (EnableDisableFlag flag : flags) {
-            context.flags = flag.save(context.flags);
+        pspContext.flags = 0;
+        for (EnableDisableFlag flag : context.flags) {
+            pspContext.flags = flag.save(pspContext.flags);
         }
 
-        context.region_x1 = region_x1;
-        context.region_y1 = region_y1;
-        context.region_x2 = region_x2;
-        context.region_y2 = region_y2;
-        context.region_width = region_width;
-        context.region_height = region_height;
-        context.scissor_x1 = scissor_x1;
-        context.scissor_y1 = scissor_y1;
-        context.scissor_x2 = scissor_x2;
-        context.scissor_y2 = scissor_y2;
-        context.scissor_width = scissor_width;
-        context.scissor_height = scissor_height;
-        context.offset_x = offset_x;
-        context.offset_y = offset_y;
-        context.viewport_width = viewport_width;
-        context.viewport_height = viewport_height;
-        context.viewport_cx = viewport_cx;
-        context.viewport_cy = viewport_cy;
+        pspContext.region_x1 = context.region_x1;
+        pspContext.region_y1 = context.region_y1;
+        pspContext.region_x2 = context.region_x2;
+        pspContext.region_y2 = context.region_y2;
+        pspContext.region_width = context.region_width;
+        pspContext.region_height = context.region_height;
+        pspContext.scissor_x1 = context.scissor_x1;
+        pspContext.scissor_y1 = context.scissor_y1;
+        pspContext.scissor_x2 = context.scissor_x2;
+        pspContext.scissor_y2 = context.scissor_y2;
+        pspContext.scissor_width = context.scissor_width;
+        pspContext.scissor_height = context.scissor_height;
+        pspContext.offset_x = context.offset_x;
+        pspContext.offset_y = context.offset_y;
+        pspContext.viewport_width = context.viewport_width;
+        pspContext.viewport_height = context.viewport_height;
+        pspContext.viewport_cx = context.viewport_cx;
+        pspContext.viewport_cy = context.viewport_cy;
 
-        System.arraycopy(proj_uploaded_matrix, 0, context.proj_uploaded_matrix, 0, proj_uploaded_matrix.length);
-        System.arraycopy(texture_uploaded_matrix, 0, context.texture_uploaded_matrix, 0, texture_uploaded_matrix.length);
-        System.arraycopy(model_uploaded_matrix, 0, context.model_uploaded_matrix, 0, model_uploaded_matrix.length);
-        System.arraycopy(view_uploaded_matrix, 0, context.view_uploaded_matrix, 0, view_uploaded_matrix.length);
-        System.arraycopy(morph_weight, 0, context.morph_weight, 0, morph_weight.length);
-        System.arraycopy(tex_envmap_matrix, 0, context.tex_envmap_matrix, 0, tex_envmap_matrix.length);
+        System.arraycopy(context.proj_uploaded_matrix, 0, pspContext.proj_uploaded_matrix, 0, context.proj_uploaded_matrix.length);
+        System.arraycopy(context.texture_uploaded_matrix, 0, pspContext.texture_uploaded_matrix, 0, context.texture_uploaded_matrix.length);
+        System.arraycopy(context.model_uploaded_matrix, 0, pspContext.model_uploaded_matrix, 0, context.model_uploaded_matrix.length);
+        System.arraycopy(context.view_uploaded_matrix, 0, pspContext.view_uploaded_matrix, 0, context.view_uploaded_matrix.length);
+        System.arraycopy(context.morph_weight, 0, pspContext.morph_weight, 0, context.morph_weight.length);
+        System.arraycopy(context.tex_envmap_matrix, 0, pspContext.tex_envmap_matrix, 0, context.tex_envmap_matrix.length);
         if (pspGeContext.fullVersion) {
-            for (int i = 0; i < bone_uploaded_matrix.length; i++) {
-                System.arraycopy(bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i], 0, bone_uploaded_matrix[i].length);
+            for (int i = 0; i < context.bone_uploaded_matrix.length; i++) {
+                System.arraycopy(context.bone_uploaded_matrix[i], 0, pspContext.bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i].length);
             }
         }
-        for (int i = 0; i < light_pos.length; i++) {
-            System.arraycopy(light_pos[i], 0, context.light_pos[i], 0, light_pos[i].length);
-            System.arraycopy(light_dir[i], 0, context.light_dir[i], 0, light_dir[i].length);
+        for (int i = 0; i < context.light_pos.length; i++) {
+            System.arraycopy(context.light_pos[i], 0, pspContext.light_pos[i], 0, context.light_pos[i].length);
+            System.arraycopy(context.light_dir[i], 0, pspContext.light_dir[i], 0, context.light_dir[i].length);
         }
 
-        System.arraycopy(light_enabled, 0, context.light_enabled, 0, light_enabled.length);
-        System.arraycopy(light_type, 0, context.light_type, 0, light_type.length);
-        System.arraycopy(light_kind, 0, context.light_kind, 0, light_kind.length);
-        System.arraycopy(spotLightExponent, 0, context.spotLightExponent, 0, spotLightExponent.length);
-        System.arraycopy(spotLightCutoff, 0, context.spotLightCutoff, 0, spotLightCutoff.length);
+        System.arraycopy(context.light_enabled, 0, pspContext.light_enabled, 0, context.light_enabled.length);
+        System.arraycopy(context.light_type, 0, pspContext.light_type, 0, context.light_type.length);
+        System.arraycopy(context.light_kind, 0, pspContext.light_kind, 0, context.light_kind.length);
+        System.arraycopy(context.spotLightExponent, 0, pspContext.spotLightExponent, 0, context.spotLightExponent.length);
+        System.arraycopy(context.spotLightCutoff, 0, pspContext.spotLightCutoff, 0, context.spotLightCutoff.length);
 
-        System.arraycopy(fog_color, 0, context.fog_color, 0, fog_color.length);
-        context.fog_far = fog_far;
-        context.fog_dist = fog_dist;
+        System.arraycopy(context.fog_color, 0, pspContext.fog_color, 0, context.fog_color.length);
+        pspContext.fog_far = context.fog_far;
+        pspContext.fog_dist = context.fog_dist;
 
-        context.nearZ = nearZ;
-        context.farZ = farZ;
-        context.zscale = zscale;
-        context.zpos = zpos;
+        pspContext.nearZ = context.nearZ;
+        pspContext.farZ = context.farZ;
+        pspContext.zscale = context.zscale;
+        pspContext.zpos = context.zpos;
 
-        context.mat_flags = mat_flags;
-        System.arraycopy(mat_ambient, 0, context.mat_ambient, 0, mat_ambient.length);
-        System.arraycopy(mat_diffuse, 0, context.mat_diffuse, 0, mat_diffuse.length);
-        System.arraycopy(mat_specular, 0, context.mat_specular, 0, mat_specular.length);
-        System.arraycopy(mat_emissive, 0, context.mat_emissive, 0, mat_emissive.length);
+        pspContext.mat_flags = context.mat_flags;
+        System.arraycopy(context.mat_ambient, 0, pspContext.mat_ambient, 0, context.mat_ambient.length);
+        System.arraycopy(context.mat_diffuse, 0, pspContext.mat_diffuse, 0, context.mat_diffuse.length);
+        System.arraycopy(context.mat_specular, 0, pspContext.mat_specular, 0, context.mat_specular.length);
+        System.arraycopy(context.mat_emissive, 0, pspContext.mat_emissive, 0, context.mat_emissive.length);
 
-        System.arraycopy(ambient_light, 0, context.ambient_light, 0, ambient_light.length);
+        System.arraycopy(context.ambient_light, 0, pspContext.ambient_light, 0, context.ambient_light.length);
 
-        context.texture_storage = texture_storage;
-        context.texture_num_mip_maps = texture_num_mip_maps;
-        context.texture_swizzle = texture_swizzle;
+        pspContext.texture_storage = context.texture_storage;
+        pspContext.texture_num_mip_maps = context.texture_num_mip_maps;
+        pspContext.texture_swizzle = context.texture_swizzle;
 
-        System.arraycopy(texture_base_pointer, 0, context.texture_base_pointer, 0, texture_base_pointer.length);
-        System.arraycopy(texture_width, 0, context.texture_width, 0, texture_width.length);
-        System.arraycopy(texture_height, 0, context.texture_height, 0, texture_height.length);
-        System.arraycopy(texture_buffer_width, 0, context.texture_buffer_width, 0, texture_buffer_width.length);
-        context.tex_min_filter = tex_min_filter;
-        context.tex_mag_filter = tex_mag_filter;
+        System.arraycopy(context.texture_base_pointer, 0, pspContext.texture_base_pointer, 0, context.texture_base_pointer.length);
+        System.arraycopy(context.texture_width, 0, pspContext.texture_width, 0, context.texture_width.length);
+        System.arraycopy(context.texture_height, 0, pspContext.texture_height, 0, context.texture_height.length);
+        System.arraycopy(context.texture_buffer_width, 0, pspContext.texture_buffer_width, 0, context.texture_buffer_width.length);
+        pspContext.tex_min_filter = context.tex_min_filter;
+        pspContext.tex_mag_filter = context.tex_mag_filter;
 
-        context.tex_translate_x = tex_translate_x;
-        context.tex_translate_y = tex_translate_y;
-        context.tex_scale_x = tex_scale_x;
-        context.tex_scale_y = tex_scale_y;
-        System.arraycopy(tex_env_color, 0, context.tex_env_color, 0, tex_env_color.length);
-        context.tex_enable = textureFlag.isEnabledInt();
+        pspContext.tex_translate_x = context.tex_translate_x;
+        pspContext.tex_translate_y = context.tex_translate_y;
+        pspContext.tex_scale_x = context.tex_scale_x;
+        pspContext.tex_scale_y = context.tex_scale_y;
+        System.arraycopy(context.tex_env_color, 0, pspContext.tex_env_color, 0, context.tex_env_color.length);
+        pspContext.tex_enable = context.textureFlag.isEnabledInt();
 
-        context.tex_clut_addr = tex_clut_addr;
-        context.tex_clut_num_blocks = tex_clut_num_blocks;
-        context.tex_clut_mode = tex_clut_mode;
-        context.tex_clut_shift = tex_clut_shift;
-        context.tex_clut_mask = tex_clut_mask;
-        context.tex_clut_start = tex_clut_start;
-        context.tex_wrap_s = tex_wrap_s;
-        context.tex_wrap_t = tex_wrap_t;
-        context.patch_div_s = patch_div_s;
-        context.patch_div_t = patch_div_t;
+        pspContext.tex_clut_addr = context.tex_clut_addr;
+        pspContext.tex_clut_num_blocks = context.tex_clut_num_blocks;
+        pspContext.tex_clut_mode = context.tex_clut_mode;
+        pspContext.tex_clut_shift = context.tex_clut_shift;
+        pspContext.tex_clut_mask = context.tex_clut_mask;
+        pspContext.tex_clut_start = context.tex_clut_start;
+        pspContext.tex_wrap_s = context.tex_wrap_s;
+        pspContext.tex_wrap_t = context.tex_wrap_t;
+        pspContext.patch_div_s = context.patch_div_s;
+        pspContext.patch_div_t = context.patch_div_t;
 
-        context.transform_mode = transform_mode;
+        pspContext.transform_mode = context.transform_mode;
 
-        context.textureTx_sourceAddress = textureTx_sourceAddress;
-        context.textureTx_sourceLineWidth = textureTx_sourceLineWidth;
-        context.textureTx_destinationAddress = textureTx_destinationAddress;
-        context.textureTx_destinationLineWidth = textureTx_destinationLineWidth;
-        context.textureTx_width = textureTx_width;
-        context.textureTx_height = textureTx_height;
-        context.textureTx_sx = textureTx_sx;
-        context.textureTx_sy = textureTx_sy;
-        context.textureTx_dx = textureTx_dx;
-        context.textureTx_dy = textureTx_dy;
-        context.textureTx_pixelSize = textureTx_pixelSize;
+        pspContext.textureTx_sourceAddress = context.textureTx_sourceAddress;
+        pspContext.textureTx_sourceLineWidth = context.textureTx_sourceLineWidth;
+        pspContext.textureTx_destinationAddress = context.textureTx_destinationAddress;
+        pspContext.textureTx_destinationLineWidth = context.textureTx_destinationLineWidth;
+        pspContext.textureTx_width = context.textureTx_width;
+        pspContext.textureTx_height = context.textureTx_height;
+        pspContext.textureTx_sx = context.textureTx_sx;
+        pspContext.textureTx_sy = context.textureTx_sy;
+        pspContext.textureTx_dx = context.textureTx_dx;
+        pspContext.textureTx_dy = context.textureTx_dy;
+        pspContext.textureTx_pixelSize = context.textureTx_pixelSize;
 
-        System.arraycopy(dfix_color, 0, context.dfix_color, 0, dfix_color.length);
-        System.arraycopy(sfix_color, 0, context.sfix_color, 0, sfix_color.length);
-        context.blend_src = blend_src;
-        context.blend_dst = blend_dst;
+        System.arraycopy(context.dfix_color, 0, pspContext.dfix_color, 0, context.dfix_color.length);
+        System.arraycopy(context.sfix_color, 0, pspContext.sfix_color, 0, context.sfix_color.length);
+        pspContext.blend_src = context.blend_src;
+        pspContext.blend_dst = context.blend_dst;
 
-        context.clearMode = clearMode;
-        context.depthFuncClearMode = clearModeDepthFunc;
+        pspContext.depthFunc = context.depthFunc;
 
-        context.depthFunc = depthFunc;
+        pspContext.tex_map_mode = context.tex_map_mode;
+        pspContext.tex_proj_map_mode = context.tex_proj_map_mode;
 
-        context.tex_map_mode = tex_map_mode;
-        context.tex_proj_map_mode = tex_proj_map_mode;
+        System.arraycopy(context.colorMask, 0, pspContext.glColorMask, 0, context.colorMask.length);
 
-        System.arraycopy(colorMask, 0, context.glColorMask, 0, colorMask.length);
-
-        context.copyGLToContext(gl);
+        pspContext.copyGLToContext(gl);
     }
 
-    private void restoreContext(pspGeContext context) {
-        base = context.base;
-        baseOffset = context.baseOffset;
+    private void restoreContext(pspGeContext pspContext) {
+    	context.base = pspContext.base;
+    	context.baseOffset = pspContext.baseOffset;
 
-        fbp = context.fbp;
-        fbw = context.fbw;
-        zbp = context.zbp;
-        zbw = context.zbw;
-        psm = context.psm;
+    	context.fbp = pspContext.fbp;
+    	context.fbw = pspContext.fbw;
+    	context.zbp = pspContext.zbp;
+    	context.zbw = pspContext.zbw;
+    	context.psm = pspContext.psm;
 
-        for (EnableDisableFlag flag : flags) {
-            flag.restore(context.flags);
+        for (EnableDisableFlag flag : context.flags) {
+            flag.restore(pspContext.flags);
         }
 
-        region_x1 = context.region_x1;
-        region_y1 = context.region_y1;
-        region_x2 = context.region_x2;
-        region_y2 = context.region_y2;
-        region_width = context.region_width;
-        region_height = context.region_height;
-        scissor_x1 = context.scissor_x1;
-        scissor_y1 = context.scissor_y1;
-        scissor_x2 = context.scissor_x2;
-        scissor_y2 = context.scissor_y2;
-        scissor_width = context.scissor_width;
-        scissor_height = context.scissor_height;
-        offset_x = context.offset_x;
-        offset_y = context.offset_y;
-        viewport_width = context.viewport_width;
-        viewport_height = context.viewport_height;
-        viewport_cx = context.viewport_cx;
-        viewport_cy = context.viewport_cy;
+        context.region_x1 = pspContext.region_x1;
+        context.region_y1 = pspContext.region_y1;
+        context.region_x2 = pspContext.region_x2;
+        context.region_y2 = pspContext.region_y2;
+        context.region_width = pspContext.region_width;
+        context.region_height = pspContext.region_height;
+        context.scissor_x1 = pspContext.scissor_x1;
+        context.scissor_y1 = pspContext.scissor_y1;
+        context.scissor_x2 = pspContext.scissor_x2;
+        context.scissor_y2 = pspContext.scissor_y2;
+        context.scissor_width = pspContext.scissor_width;
+        context.scissor_height = pspContext.scissor_height;
+        context.offset_x = pspContext.offset_x;
+        context.offset_y = pspContext.offset_y;
+        context.viewport_width = pspContext.viewport_width;
+        context.viewport_height = pspContext.viewport_height;
+        context.viewport_cx = pspContext.viewport_cx;
+        context.viewport_cy = pspContext.viewport_cy;
 
-        System.arraycopy(context.proj_uploaded_matrix, 0, proj_uploaded_matrix, 0, proj_uploaded_matrix.length);
-        System.arraycopy(context.texture_uploaded_matrix, 0, texture_uploaded_matrix, 0, texture_uploaded_matrix.length);
-        System.arraycopy(context.model_uploaded_matrix, 0, model_uploaded_matrix, 0, model_uploaded_matrix.length);
-        System.arraycopy(context.view_uploaded_matrix, 0, view_uploaded_matrix, 0, view_uploaded_matrix.length);
-        System.arraycopy(context.morph_weight, 0, morph_weight, 0, morph_weight.length);
-        System.arraycopy(context.tex_envmap_matrix, 0, tex_envmap_matrix, 0, tex_envmap_matrix.length);
+        System.arraycopy(pspContext.proj_uploaded_matrix, 0, context.proj_uploaded_matrix, 0, context.proj_uploaded_matrix.length);
+        System.arraycopy(pspContext.texture_uploaded_matrix, 0, context.texture_uploaded_matrix, 0, context.texture_uploaded_matrix.length);
+        System.arraycopy(pspContext.model_uploaded_matrix, 0, context.model_uploaded_matrix, 0, context.model_uploaded_matrix.length);
+        System.arraycopy(pspContext.view_uploaded_matrix, 0, context.view_uploaded_matrix, 0, context.view_uploaded_matrix.length);
+        System.arraycopy(pspContext.morph_weight, 0, context.morph_weight, 0, context.morph_weight.length);
+        System.arraycopy(pspContext.tex_envmap_matrix, 0, context.tex_envmap_matrix, 0, context.tex_envmap_matrix.length);
         if (pspGeContext.fullVersion) {
-            for (int i = 0; i < bone_uploaded_matrix.length; i++) {
-                System.arraycopy(context.bone_uploaded_matrix[i], 0, bone_uploaded_matrix[i], 0, bone_uploaded_matrix[i].length);
+            for (int i = 0; i < context.bone_uploaded_matrix.length; i++) {
+                System.arraycopy(pspContext.bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i].length);
             }
         }
-        for (int i = 0; i < light_pos.length; i++) {
-            System.arraycopy(context.light_pos[i], 0, light_pos[i], 0, light_pos[i].length);
-            System.arraycopy(context.light_dir[i], 0, light_dir[i], 0, light_dir[i].length);
+        for (int i = 0; i < context.light_pos.length; i++) {
+            System.arraycopy(pspContext.light_pos[i], 0, context.light_pos[i], 0, context.light_pos[i].length);
+            System.arraycopy(pspContext.light_dir[i], 0, context.light_dir[i], 0, context.light_dir[i].length);
         }
 
-        System.arraycopy(context.light_enabled, 0, light_enabled, 0, light_enabled.length);
-        System.arraycopy(context.light_type, 0, light_type, 0, light_type.length);
-        System.arraycopy(context.light_kind, 0, light_kind, 0, light_kind.length);
-        System.arraycopy(context.spotLightExponent, 0, spotLightExponent, 0, spotLightExponent.length);
-        System.arraycopy(context.spotLightCutoff, 0, spotLightCutoff, 0, spotLightCutoff.length);
+        System.arraycopy(pspContext.light_enabled, 0, context.light_enabled, 0, context.light_enabled.length);
+        System.arraycopy(pspContext.light_type, 0, context.light_type, 0, context.light_type.length);
+        System.arraycopy(pspContext.light_kind, 0, context.light_kind, 0, context.light_kind.length);
+        System.arraycopy(pspContext.spotLightExponent, 0, context.spotLightExponent, 0, context.spotLightExponent.length);
+        System.arraycopy(pspContext.spotLightCutoff, 0, context.spotLightCutoff, 0,context. spotLightCutoff.length);
 
-        System.arraycopy(context.fog_color, 0, fog_color, 0, fog_color.length);
-        fog_far = context.fog_far;
-        fog_dist = context.fog_dist;
+        System.arraycopy(pspContext.fog_color, 0, context.fog_color, 0, context.fog_color.length);
+        context.fog_far = pspContext.fog_far;
+        context.fog_dist = pspContext.fog_dist;
 
-        nearZ = context.nearZ;
-        farZ = context.farZ;
-        zscale = context.zscale;
-        zpos = context.zpos;
+        context.nearZ = pspContext.nearZ;
+        context.farZ = pspContext.farZ;
+        context.zscale = pspContext.zscale;
+        context.zpos = pspContext.zpos;
 
-        mat_flags = context.mat_flags;
-        System.arraycopy(context.mat_ambient, 0, mat_ambient, 0, mat_ambient.length);
-        System.arraycopy(context.mat_diffuse, 0, mat_diffuse, 0, mat_diffuse.length);
-        System.arraycopy(context.mat_specular, 0, mat_specular, 0, mat_specular.length);
-        System.arraycopy(context.mat_emissive, 0, mat_emissive, 0, mat_emissive.length);
+        context.mat_flags = pspContext.mat_flags;
+        System.arraycopy(pspContext.mat_ambient, 0, context.mat_ambient, 0, context.mat_ambient.length);
+        System.arraycopy(pspContext.mat_diffuse, 0, context.mat_diffuse, 0, context.mat_diffuse.length);
+        System.arraycopy(pspContext.mat_specular, 0, context.mat_specular, 0, context.mat_specular.length);
+        System.arraycopy(pspContext.mat_emissive, 0, context.mat_emissive, 0, context.mat_emissive.length);
 
-        System.arraycopy(context.ambient_light, 0, ambient_light, 0, ambient_light.length);
+        System.arraycopy(pspContext.ambient_light, 0, context.ambient_light, 0, context.ambient_light.length);
 
-        texture_storage = context.texture_storage;
-        texture_num_mip_maps = context.texture_num_mip_maps;
-        texture_swizzle = context.texture_swizzle;
+        context.texture_storage = pspContext.texture_storage;
+        context.texture_num_mip_maps = pspContext.texture_num_mip_maps;
+        context.texture_swizzle = pspContext.texture_swizzle;
 
-        System.arraycopy(context.texture_base_pointer, 0, texture_base_pointer, 0, texture_base_pointer.length);
-        System.arraycopy(context.texture_width, 0, texture_width, 0, texture_width.length);
-        System.arraycopy(context.texture_height, 0, texture_height, 0, texture_height.length);
-        System.arraycopy(context.texture_buffer_width, 0, texture_buffer_width, 0, texture_buffer_width.length);
-        tex_min_filter = context.tex_min_filter;
-        tex_mag_filter = context.tex_mag_filter;
+        System.arraycopy(pspContext.texture_base_pointer, 0, context.texture_base_pointer, 0, context.texture_base_pointer.length);
+        System.arraycopy(pspContext.texture_width, 0, context.texture_width, 0, context.texture_width.length);
+        System.arraycopy(pspContext.texture_height, 0, context.texture_height, 0, context.texture_height.length);
+        System.arraycopy(pspContext.texture_buffer_width, 0, context.texture_buffer_width, 0, context.texture_buffer_width.length);
+        context.tex_min_filter = pspContext.tex_min_filter;
+        context.tex_mag_filter = pspContext.tex_mag_filter;
 
-        tex_translate_x = context.tex_translate_x;
-        tex_translate_y = context.tex_translate_y;
-        tex_scale_x = context.tex_scale_x;
-        tex_scale_y = context.tex_scale_y;
-        System.arraycopy(context.tex_env_color, 0, tex_env_color, 0, tex_env_color.length);
-        textureFlag.setEnabled(context.tex_enable);
+        context.tex_translate_x = pspContext.tex_translate_x;
+        context.tex_translate_y = pspContext.tex_translate_y;
+        context.tex_scale_x = pspContext.tex_scale_x;
+        context.tex_scale_y = pspContext.tex_scale_y;
+        System.arraycopy(pspContext.tex_env_color, 0, context.tex_env_color, 0, context.tex_env_color.length);
+        context.textureFlag.setEnabled(pspContext.tex_enable);
 
-        tex_clut_addr = context.tex_clut_addr;
-        tex_clut_num_blocks = context.tex_clut_num_blocks;
-        tex_clut_mode = context.tex_clut_mode;
-        tex_clut_shift = context.tex_clut_shift;
-        tex_clut_mask = context.tex_clut_mask;
-        tex_clut_start = context.tex_clut_start;
-        tex_wrap_s = context.tex_wrap_s;
-        tex_wrap_t = context.tex_wrap_t;
-        patch_div_s = context.patch_div_s;
-        patch_div_t = context.patch_div_t;
+        context.tex_clut_addr = pspContext.tex_clut_addr;
+        context.tex_clut_num_blocks = pspContext.tex_clut_num_blocks;
+        context.tex_clut_mode = pspContext.tex_clut_mode;
+        context.tex_clut_shift = pspContext.tex_clut_shift;
+        context.tex_clut_mask = pspContext.tex_clut_mask;
+        context.tex_clut_start = pspContext.tex_clut_start;
+        context.tex_wrap_s = pspContext.tex_wrap_s;
+        context.tex_wrap_t = pspContext.tex_wrap_t;
+        context.patch_div_s = pspContext.patch_div_s;
+        context.patch_div_t = pspContext.patch_div_t;
 
-        transform_mode = context.transform_mode;
+        context.transform_mode = pspContext.transform_mode;
 
-        textureTx_sourceAddress = context.textureTx_sourceAddress;
-        textureTx_sourceLineWidth = context.textureTx_sourceLineWidth;
-        textureTx_destinationAddress = context.textureTx_destinationAddress;
-        textureTx_destinationLineWidth = context.textureTx_destinationLineWidth;
-        textureTx_width = context.textureTx_width;
-        textureTx_height = context.textureTx_height;
-        textureTx_sx = context.textureTx_sx;
-        textureTx_sy = context.textureTx_sy;
-        textureTx_dx = context.textureTx_dx;
-        textureTx_dy = context.textureTx_dy;
-        textureTx_pixelSize = context.textureTx_pixelSize;
+        context.textureTx_sourceAddress = pspContext.textureTx_sourceAddress;
+        context.textureTx_sourceLineWidth = pspContext.textureTx_sourceLineWidth;
+        context.textureTx_destinationAddress = pspContext.textureTx_destinationAddress;
+        context.textureTx_destinationLineWidth = pspContext.textureTx_destinationLineWidth;
+        context.textureTx_width = pspContext.textureTx_width;
+        context.textureTx_height = pspContext.textureTx_height;
+        context.textureTx_sx = pspContext.textureTx_sx;
+        context.textureTx_sy = pspContext.textureTx_sy;
+        context.textureTx_dx = pspContext.textureTx_dx;
+        context.textureTx_dy = pspContext.textureTx_dy;
+        context.textureTx_pixelSize = pspContext.textureTx_pixelSize;
 
-        System.arraycopy(context.dfix_color, 0, dfix_color, 0, dfix_color.length);
-        System.arraycopy(context.sfix_color, 0, sfix_color, 0, sfix_color.length);
-        blend_src = context.blend_src;
-        blend_dst = context.blend_dst;
+        System.arraycopy(pspContext.dfix_color, 0, context.dfix_color, 0, context.dfix_color.length);
+        System.arraycopy(pspContext.sfix_color, 0, context.sfix_color, 0, context.sfix_color.length);
+        context.blend_src = pspContext.blend_src;
+        context.blend_dst = pspContext.blend_dst;
 
-        clearMode = context.clearMode;
-        clearModeDepthFunc = context.depthFuncClearMode;
+        context.depthFunc = pspContext.depthFunc;
 
-        depthFunc = context.depthFunc;
+        context.tex_map_mode = pspContext.tex_map_mode;
+        context.tex_proj_map_mode = pspContext.tex_proj_map_mode;
 
-        tex_map_mode = context.tex_map_mode;
-        tex_proj_map_mode = context.tex_proj_map_mode;
+        System.arraycopy(pspContext.glColorMask, 0, context.colorMask, 0, context.colorMask.length);
 
-        System.arraycopy(context.glColorMask, 0, colorMask, 0, colorMask.length);
-
-        context.copyContextToGL(gl);
+        pspContext.copyContextToGL(gl);
 
         projectionMatrixUpload.setChanged(true);
         modelMatrixUpload.setChanged(true);
@@ -6045,19 +5348,19 @@ public class VideoEngine {
     }
 
     public int getBase() {
-        return base;
+        return context.base;
     }
 
     public void setBase(int base) {
-        this.base = base;
+    	context.base = base;
     }
 
     public int getBaseOffset() {
-        return baseOffset;
+        return context.baseOffset;
     }
 
     public void setBaseOffset(int baseOffset) {
-        this.baseOffset = baseOffset;
+    	context.baseOffset = baseOffset;
     }
 
     private class SaveContextAction implements IAction {

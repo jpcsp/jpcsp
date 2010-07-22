@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import java.nio.Buffer;
+
 import javax.media.opengl.GL;
 import javax.media.opengl.GLException;
 
@@ -24,10 +26,11 @@ import jpcsp.graphics.VideoEngine;
 /**
  * @author gid15
  *
- * A RenderingEngine implementing calls to OpenGL using jogl.
+ * An abstract RenderingEngine implementing calls to OpenGL using jogl.
  * The class contains no rendering logic, it just implements the interface to jogl.
  */
 public class RenderingEngineJogl extends BaseRenderingEngine {
+	protected final static int bufferTarget = GL.GL_ARRAY_BUFFER;
 	protected static final int[] flagToGL = {
 		GL.GL_ALPHA_TEST,     // GU_ALPHA_TEST
 		GL.GL_DEPTH_TEST,     // GU_DEPTH_TEST
@@ -175,11 +178,140 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 		GL.GL_SRC_ALPHA,           // RE_TEXENV_SRC_ALPHA
 		GL.GL_COMBINE              // RE_TEXENV_COMBINE
 	};
+	protected static final int[] shaderTypeToGL = {
+		GL.GL_VERTEX_SHADER,       // RE_VERTEX_SHADER
+		GL.GL_FRAGMENT_SHADER      // RE_FRAGMENT_SHADER
+	};
+	protected static final int[] primitiveToGL = {
+		GL.GL_POINTS,              // PRIM_POINT
+		GL.GL_LINES,               // PRIM_LINE
+		GL.GL_LINE_STRIP,          // PRIM_LINES_STRIPS
+		GL.GL_TRIANGLES,           // PRIM_TRIANGLE
+		GL.GL_TRIANGLE_STRIP,      // PRIM_TRIANGLE_STRIPS
+		GL.GL_TRIANGLE_FAN,        // PRIM_TRIANGLE_FANS
+		GL.GL_QUADS                // PRIM_SPRITES
+	};
+	protected static final int[] clientStateToGL = {
+		GL.GL_TEXTURE_COORD_ARRAY, // RE_TEXTURE
+		GL.GL_COLOR_ARRAY,         // RE_COLOR
+		GL.GL_NORMAL_ARRAY,        // RE_NORMAL
+		GL.GL_VERTEX_ARRAY         // RE_VERTEX
+	};
+	protected static final int[] pointerTypeToGL = {
+		GL.GL_BYTE,                // RE_BYTE
+		GL.GL_UNSIGNED_BYTE,       // RE_UNSIGNED_BYTE
+		GL.GL_SHORT,               // RE_SHORT
+		GL.GL_UNSIGNED_SHORT,      // RE_UNSIGNED_SHORT
+		GL.GL_INT,                 // RE_INT
+		GL.GL_UNSIGNED_INT,        // RE_UNSIGNED_INT
+		GL.GL_FLOAT,               // RE_FLOAT
+		GL.GL_DOUBLE               // RE_DOUBLE
+	};
+	protected static final int[] bufferUsageToGL = {
+		GL.GL_STREAM_DRAW,         // RE_STREAM_DRAW
+		GL.GL_STREAM_READ,         // RE_STREAM_READ
+		GL.GL_STREAM_COPY,         // RE_STREAM_COPY
+		GL.GL_STATIC_DRAW,         // RE_STATIC_DRAW
+		GL.GL_STATIC_READ,         // RE_STATIC_READ
+		GL.GL_STATIC_COPY,         // RE_STATIC_COPY
+		GL.GL_DYNAMIC_DRAW,        // RE_DYNAMIC_DRAW
+		GL.GL_DYNAMIC_READ,        // RE_DYNAMIC_READ
+		GL.GL_DYNAMIC_COPY         // RE_DYNAMIC_COPY
+	};
+	protected static final int[] mipmapFilterToGL = {
+		GL.GL_NEAREST,               // TFLT_NEAREST
+		GL.GL_LINEAR,                // TFLT_LINEAR
+		GL.GL_NEAREST,               // TFLT_UNKNOW1
+		GL.GL_NEAREST,               // TFLT_UNKNOW2
+		GL.GL_NEAREST_MIPMAP_NEAREST,// TFLT_NEAREST_MIPMAP_NEAREST
+		GL.GL_LINEAR_MIPMAP_NEAREST, // TFLT_LINEAR_MIPMAP_NEAREST
+		GL.GL_NEAREST_MIPMAP_LINEAR, // TFLT_NEAREST_MIPMAP_LINEAR
+		GL.GL_LINEAR_MIPMAP_LINEAR   // TFLT_LINEAR_MIPMAP_LINEAR
+	};
+	protected static final int[] textureFormatToGL = {
+		GL.GL_RGB,                           // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
+		GL.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
+		GL.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
+		GL.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        GL.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
+        GL.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
+        GL.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
+	};
+	protected static final int[] textureTypeToGL = {
+        GL.GL_UNSIGNED_SHORT_5_6_5_REV,      // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
+        GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,    // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
+        GL.GL_UNSIGNED_SHORT_4_4_4_4_REV,    // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
+        GL.GL_UNSIGNED_BYTE,                 // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        0,                                   // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        GL.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
+        GL.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
+        GL.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
+	};
+	protected static final int[] stencilOpToGL = {
+		GL.GL_KEEP,                // SOP_KEEP_STENCIL_VALUE
+		GL.GL_ZERO,                // SOP_ZERO_STENCIL_VALUE
+		GL.GL_REPLACE,             // SOP_REPLACE_STENCIL_VALUE
+		GL.GL_INVERT,              // SOP_INVERT_STENCIL_VALUE
+		GL.GL_INCR,                // SOP_INCREMENT_STENCIL_VALUE
+		GL.GL_DECR                 // SOP_DECREMENT_STENCIL_VALUE
+	};
+	protected static final int[] stencilFuncToGL = {
+		GL.GL_NEVER,               // STST_FUNCTION_NEVER_PASS_STENCIL_TEST
+		GL.GL_ALWAYS,              // STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST
+		GL.GL_EQUAL,               // STST_FUNCTION_PASS_TEST_IF_MATCHES
+		GL.GL_NOTEQUAL,            // STST_FUNCTION_PASS_TEST_IF_DIFFERS
+		GL.GL_LESS,                // STST_FUNCTION_PASS_TEST_IF_LESS
+		GL.GL_LEQUAL,              // STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL
+		GL.GL_GREATER,             // STST_FUNCTION_PASS_TEST_IF_GREATER
+		GL.GL_GEQUAL               // STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL
+	};
+	protected static final int[] alphaFuncToGL = {
+		GL.GL_NEVER,               // ATST_NEVER_PASS_PIXEL
+		GL.GL_ALWAYS,              // ATST_ALWAYS_PASS_PIXEL
+		GL.GL_EQUAL,               // ATST_PASS_PIXEL_IF_MATCHES
+		GL.GL_NOTEQUAL,            // ATST_PASS_PIXEL_IF_DIFFERS
+		GL.GL_LESS,                // ATST_PASS_PIXEL_IF_LESS
+		GL.GL_LEQUAL,              // ATST_PASS_PIXEL_IF_LESS_OR_EQUAL
+		GL.GL_GREATER,             // ATST_PASS_PIXEL_IF_GREATER
+		GL.GL_GEQUAL               // ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL
+	};
+	protected static final int[] blendModeToGL = {
+		GL.GL_FUNC_ADD,            // ALPHA_SOURCE_BLEND_OPERATION_ADD
+		GL.GL_FUNC_SUBTRACT,       // ALPHA_SOURCE_BLEND_OPERATION_SUBTRACT
+		GL.GL_FUNC_REVERSE_SUBTRACT,// ALPHA_SOURCE_BLEND_OPERATION_REVERSE_SUBTRACT
+		GL.GL_MIN,                 // ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE
+		GL.GL_MAX,                 // ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE
+		GL.GL_FUNC_ADD             // ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE
+	};
 
 	protected GL gl;
 
+	public static IRenderingEngine newInstance(GL gl) {
+		String openGLVersion = gl.glGetString(GL.GL_VERSION);
+		if (openGLVersion.compareTo("1.5") >= 0) {
+			return new RenderingEngineJogl15(gl);
+		} else if (openGLVersion.compareTo("1.2") >= 0) {
+			return new RenderingEngineJogl12(gl);
+		}
+
+		return new RenderingEngineJogl(gl);
+	}
+
 	public RenderingEngineJogl(GL gl) {
 		this.gl = gl;
+		init();
+	}
+
+	protected void init() {
+		String openGLVersion = gl.glGetString(GL.GL_VERSION);
+        log.info("OpenGL version: " + openGLVersion);
 	}
 
 	@Override
@@ -350,26 +482,15 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
         gl.glLogicOp(logicOpToGL[logicOp]);
 	}
 
-    private static boolean getBooleanColorMask(String name, int bitMask) {
-        if (bitMask == 0x00) {
-            return true;
-        } else if (bitMask == 0xFF) {
-            return false;
-        } else {
-            VideoEngine.log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
-            return true;
-        }
-    }
-
-    @Override
-	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
-        boolean redWriteEnabled   = getBooleanColorMask("Red color mask", redMask);
-        boolean greenWriteEnabled = getBooleanColorMask("Green color mask", greenMask);
-        boolean blueWriteEnabled  = getBooleanColorMask("Blue color mask", blueMask);
-        boolean alphaWriteEnabled = getBooleanColorMask("Alpha mask", alphaMask);
-
+	@Override
+	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
         gl.glColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
 	}
+
+	@Override
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+    	// Not supported, nothing to do
+    }
 
 	@Override
 	public void setDepthMask(boolean depthWriteEnabled) {
@@ -390,6 +511,16 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	@Override
 	public void setTextureMipmapMaxLevel(int level) {
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, level);
+	}
+
+	@Override
+	public void setTextureMipmapMinFilter(int filter) {
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, mipmapFilterToGL[filter]);
+	}
+
+	@Override
+	public void setTextureMipmapMagFilter(int filter) {
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, mipmapFilterToGL[filter]);
 	}
 
 	@Override
@@ -476,5 +607,305 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	@Override
 	public void setTexEnv(int name, float param) {
 		gl.glTexEnvf(GL.GL_TEXTURE_ENV, texEnvNameToGL[name], param);
+	}
+
+	@Override
+	public void endClearMode() {
+		// Nothing to do
+	}
+
+	@Override
+	public void startClearMode(boolean color, boolean stencil, boolean depth) {
+		// Nothing to do
+	}
+
+	@Override
+	public void attachShader(int program, int shader) {
+		gl.glAttachShader(program, shader);
+	}
+
+	@Override
+	public void compilerShader(int shader, String[] source) {
+		gl.glShaderSource(shader, 1, source, null, 0);
+		gl.glCompileShader(shader);
+	}
+
+	@Override
+	public int createProgram() {
+		return gl.glCreateProgram();
+	}
+
+	@Override
+	public void useProgram(int program) {
+		gl.glUseProgram(program);
+	}
+
+	@Override
+	public int createShader(int type) {
+		return gl.glCreateShader(shaderTypeToGL[type]);
+	}
+
+	@Override
+	public int getAttribLocation(int program, String name) {
+		return gl.glGetAttribLocation(program, name);
+	}
+
+	@Override
+	public int getUniformLocation(int program, String name) {
+		return gl.glGetUniformLocation(program, name);
+	}
+
+	@Override
+	public void linkProgram(int program) {
+		gl.glLinkProgram(program);
+	}
+
+	@Override
+	public void validateProgram(int program) {
+		gl.glValidateProgram(program);
+	}
+
+	@Override
+	public String getProgramInfoLog(int program) {
+		int[] infoLogLength = new int[1];
+		int[] charsWritten = new int[1];
+
+		gl.glGetProgramiv(program, GL.GL_INFO_LOG_LENGTH, infoLogLength, 0);
+
+		int length = infoLogLength[0];
+		if (length <= 1) {
+			return null;
+		}
+
+		byte[] infoLog = new byte[length];
+        gl.glGetProgramInfoLog(program, length, charsWritten, 0, infoLog, 0);
+
+        return new String(infoLog, 0, length - 1);
+	}
+
+	@Override
+	public String getShaderInfoLog(int shader) {
+		int[] infoLogLength = new int[1];
+		int[] charsWritten = new int[1];
+
+		gl.glGetShaderiv(shader, GL.GL_INFO_LOG_LENGTH, infoLogLength, 0);
+
+		int length = infoLogLength[0];
+		if (length <= 1) {
+			return null;
+		}
+
+		byte[] infoLog = new byte[length];
+        gl.glGetShaderInfoLog(shader, length, charsWritten, 0, infoLog, 0);
+
+        return new String(infoLog, 0, length - 1);
+	}
+
+	@Override
+	public boolean isFunctionAvailable(String name) {
+		return gl.isFunctionAvailable(name);
+	}
+
+	@Override
+	public void drawArrays(int primitive, int first, int count) {
+		gl.glDrawArrays(primitiveToGL[primitive], first, count);
+	}
+
+	@Override
+	public void deleteBuffer(int buffer) {
+		int[] buffers = new int[] { buffer };
+		gl.glDeleteBuffersARB(1, buffers, 0);
+	}
+
+	@Override
+	public int genBuffer() {
+		int[] buffers = new int[1];
+		gl.glGenBuffersARB(1, buffers, 0);
+		return buffers[0];
+	}
+
+	@Override
+	public void setBufferData(int size, Buffer buffer, int usage) {
+		gl.glBufferDataARB(bufferTarget, size, buffer, bufferUsageToGL[usage]);
+	}
+
+	@Override
+	public void bindBuffer(int buffer) {
+		gl.glBindBufferARB(bufferTarget, buffer);
+	}
+
+	@Override
+	public void enableClientState(int type) {
+		gl.glEnableClientState(clientStateToGL[type]);
+	}
+
+	@Override
+	public void enableVertexAttribArray(int id) {
+		gl.glEnableVertexAttribArray(id);
+	}
+
+	@Override
+	public void disableClientState(int type) {
+		gl.glDisableClientState(clientStateToGL[type]);
+	}
+
+	@Override
+	public void disableVertexAttribArray(int id) {
+		gl.glDisableVertexAttribArray(id);
+	}
+
+	@Override
+	public void setColorPointer(int size, int type, int stride, long offset) {
+		gl.glColorPointer(size, pointerTypeToGL[type], stride, offset);
+	}
+
+	@Override
+	public void setColorPointer(int size, int type, int stride, Buffer buffer) {
+		gl.glColorPointer(size, pointerTypeToGL[type], stride, buffer);
+	}
+
+	@Override
+	public void setNormalPointer(int type, int stride, long offset) {
+		gl.glNormalPointer(pointerTypeToGL[type], stride, offset);
+	}
+
+	@Override
+	public void setNormalPointer(int type, int stride, Buffer buffer) {
+		gl.glNormalPointer(pointerTypeToGL[type], stride, buffer);
+	}
+
+	@Override
+	public void setTexCoordPointer(int size, int type, int stride, long offset) {
+		gl.glTexCoordPointer(size, pointerTypeToGL[type], stride, offset);
+	}
+
+	@Override
+	public void setTexCoordPointer(int size, int type, int stride, Buffer buffer) {
+		gl.glTexCoordPointer(size, pointerTypeToGL[type], stride, buffer);
+	}
+
+	@Override
+	public void setVertexPointer(int size, int type, int stride, long offset) {
+		gl.glVertexPointer(size, pointerTypeToGL[type], stride, offset);
+	}
+
+	@Override
+	public void setVertexPointer(int size, int type, int stride, Buffer buffer) {
+		gl.glVertexPointer(size, pointerTypeToGL[type], stride, buffer);
+	}
+
+	@Override
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, long offset) {
+		gl.glVertexAttribPointer(id, size, pointerTypeToGL[type], normalized, stride, offset);
+	}
+
+	@Override
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, Buffer buffer) {
+		gl.glVertexAttribPointer(id, size, pointerTypeToGL[type], normalized, stride, buffer);
+	}
+
+	@Override
+	public void setPixelStore(int rowLength, int alignment) {
+        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, alignment);
+        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, rowLength);
+	}
+
+	@Override
+	public int genTexture() {
+		int[] textures = new int[1];
+		gl.glGenTextures(1, textures, 0);
+		return textures[0];
+	}
+
+	@Override
+	public void bindTexture(int texture) {
+		gl.glBindTexture(GL.GL_TEXTURE_2D, texture);
+	}
+
+	@Override
+	public void deleteTexture(int texture) {
+		int[] textures = new int[] { texture };
+		gl.glDeleteTextures(1, textures, 0);
+	}
+
+	@Override
+	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
+		gl.glCompressedTexImage2D(GL.GL_TEXTURE_2D, level, textureFormatToGL[internalFormat], width, height, 0, compressedSize, buffer);
+	}
+
+	@Override
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, Buffer buffer) {
+		gl.glTexImage2D(GL.GL_TEXTURE_2D, level, textureFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], buffer);
+	}
+
+	@Override
+	public void setTexSubImage(int level, int xOffset, int yOoffset, int width, int height, int format, int type, Buffer buffer) {
+		gl.glTexSubImage2D(GL.GL_TEXTURE_2D, level, xOffset, yOoffset, width, height, textureFormatToGL[format], textureTypeToGL[type], buffer);
+	}
+
+	@Override
+	public void setStencilOp(int fail, int zfail, int zpass) {
+		gl.glStencilOp(stencilOpToGL[fail], stencilOpToGL[zfail], stencilOpToGL[zpass]);
+	}
+
+	@Override
+	public void setStencilFunc(int func, int ref, int mask) {
+		gl.glStencilFunc(stencilFuncToGL[func], ref, mask);
+	}
+
+	@Override
+	public void setAlphaFunc(int func, int ref) {
+		gl.glAlphaFunc(alphaFuncToGL[func], ref / 255.0f);
+	}
+
+	@Override
+	public void setFogColor(float[] color) {
+		gl.glFogfv(GL.GL_FOG_COLOR, color, 0);
+	}
+
+	@Override
+	public void setFogDist(float start, float end) {
+        gl.glFogf(GL.GL_FOG_START, start);
+        gl.glFogf(GL.GL_FOG_END, end);
+	}
+
+	@Override
+	public void setTextureEnvColor(float[] color) {
+        gl.glTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_COLOR, color, 0);
+	}
+
+	@Override
+	public void setFrontFace(boolean cw) {
+		gl.glFrontFace(cw ? GL.GL_CW : GL.GL_CCW);
+	}
+
+	@Override
+	public void setScissor(int x, int y, int width, int height) {
+		gl.glScissor(x, y, width, height);
+	}
+
+	@Override
+	public void setBlendEquation(int mode) {
+        try {
+            gl.glBlendEquation(blendModeToGL[mode]);
+        } catch (GLException e) {
+            log.warn("VideoEngine: " + e.getMessage());
+        }
+	}
+
+	@Override
+	public void setFogHint() {
+        gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
+        gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
+	}
+
+	@Override
+	public void setLineSmoothHint() {
+        gl.glHint(GL.GL_LINE_SMOOTH_HINT, GL.GL_NICEST);
+	}
+
+	@Override
+	public void setMaterialShininess(float shininess) {
+        gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, shininess);
 	}
 }

@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import java.nio.Buffer;
+
+import jpcsp.graphics.GeContext;
+
 /**
  * @author gid15
  *
@@ -110,7 +114,39 @@ public interface IRenderingEngine {
 	public static final int RE_TEXENV_SRC_ALPHA    = 11;
 	public static final int RE_TEXENV_COMBINE      = 12;
 
+	// Shader types:
+	public static final int RE_VERTEX_SHADER       = 0;
+	public static final int RE_FRAGMENT_SHADER     = 1;
+
+	// Client State types:
+	public static final int RE_TEXTURE             = 0;
+	public static final int RE_COLOR               = 1;
+	public static final int RE_NORMAL              = 2;
+	public static final int RE_VERTEX              = 3;
+
+	// Pointer types:
+	public static final int RE_BYTE                = 0;
+	public static final int RE_UNSIGNED_BYTE       = 1;
+	public static final int RE_SHORT               = 2;
+	public static final int RE_UNSIGNED_SHORT      = 3;
+	public static final int RE_INT                 = 4;
+	public static final int RE_UNSIGNED_INT        = 5;
+	public static final int RE_FLOAT               = 6;
+	public static final int RE_DOUBLE              = 7;
+
+	// Buffer usage:
+	public static final int RE_STREAM_DRAW         = 0;
+	public static final int RE_STREAM_READ         = 1;
+	public static final int RE_STREAM_COPY         = 2;
+	public static final int RE_STATIC_DRAW         = 3;
+	public static final int RE_STATIC_READ         = 4;
+	public static final int RE_STATIC_COPY         = 5;
+	public static final int RE_DYNAMIC_DRAW        = 6;
+	public static final int RE_DYNAMIC_READ        = 7;
+	public static final int RE_DYNAMIC_COPY        = 8;
+
 	public void setRenderingEngine(IRenderingEngine re);
+	public void setGeContext(GeContext context);
 	public void enableFlag(int flag);
 	public void disableFlag(int flag);
 	public void setMorphWeight(int index, float value);
@@ -130,6 +166,7 @@ public interface IRenderingEngine {
 	public void setMaterialAmbientColor(float[] color);
 	public void setMaterialDiffuseColor(float[] color);
 	public void setMaterialSpecularColor(float[] color);
+	public void setMaterialShininess(float shininess);
 	public void setLightModelAmbientColor(float[] color);
 	public void setLightMode(int mode);
 	public void setLightPosition(int light, float[] position);
@@ -149,9 +186,12 @@ public interface IRenderingEngine {
 	public void setLogicOp(int logicOp);
 	public void setDepthMask(boolean depthWriteEnabled);
 	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask);
+	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled);
 	public void setTextureWrapMode(int s, int t);
 	public void setTextureMipmapMinLevel(int level);
 	public void setTextureMipmapMaxLevel(int level);
+	public void setTextureMipmapMinFilter(int filter);
+	public void setTextureMipmapMagFilter(int filter);
 	public void setColorMaterial(boolean ambient, boolean diffuse, boolean specular);
 	public void setTextureMapMode(int mode, int proj);
 	public void setTextureEnvironmentMapping(int u, int v);
@@ -167,7 +207,57 @@ public interface IRenderingEngine {
 	public void setColorTestMask(int[] values);
 	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled);
 	public void setBones(int count, float[] values);
-
 	public void setTexEnv(int name, int param);
 	public void setTexEnv(int name, float param);
+	public void startClearMode(boolean color, boolean stencil, boolean depth);
+	public void endClearMode();
+	public int createShader(int type);
+	public void compilerShader(int shader, String[] source);
+	public int createProgram();
+	public void useProgram(int program);
+	public void attachShader(int program, int shader);
+	public void linkProgram(int program);
+	public void validateProgram(int program);
+	public int getUniformLocation(int program, String name);
+	public int getAttribLocation(int program, String name);
+	public String getShaderInfoLog(int shader);
+	public String getProgramInfoLog(int program);
+	public boolean isFunctionAvailable(String name);
+	public void drawArrays(int type, int first, int count);
+	public int genBuffer();
+	public void deleteBuffer(int buffer);
+	public void setBufferData(int size, Buffer buffer, int usage);
+	public void bindBuffer(int buffer);
+	public void enableClientState(int type);
+	public void disableClientState(int type);
+	public void enableVertexAttribArray(int id);
+	public void disableVertexAttribArray(int id);
+	public void setTexCoordPointer(int size, int type, int stride, long offset);
+	public void setTexCoordPointer(int size, int type, int stride, Buffer buffer);
+	public void setColorPointer(int size, int type, int stride, long offset);
+	public void setColorPointer(int size, int type, int stride, Buffer buffer);
+	public void setVertexPointer(int size, int type, int stride, long offset);
+	public void setVertexPointer(int size, int type, int stride, Buffer buffer);
+	public void setNormalPointer(int type, int stride, long offset);
+	public void setNormalPointer(int type, int stride, Buffer buffer);
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, long offset);
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, Buffer buffer);
+	public void setPixelStore(int rowLength, int alignment);
+	public int genTexture();
+	public void bindTexture(int texture);
+	public void deleteTexture(int texture);
+	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer);
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, Buffer buffer);
+	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, Buffer buffer);
+	public void setStencilOp(int fail, int zfail, int zpass);
+	public void setStencilFunc(int func, int ref, int mask);
+	public void setAlphaFunc(int func, int ref);
+	public void setFogHint();
+	public void setFogColor(float[] color);
+	public void setFogDist(float start, float end);
+	public void setTextureEnvColor(float[] color);
+	public void setFrontFace(boolean cw);
+	public void setScissor(int x, int y, int width, int height);
+	public void setBlendEquation(int mode);
+	public void setLineSmoothHint();
 }

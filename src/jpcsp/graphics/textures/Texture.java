@@ -16,10 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
-import javax.media.opengl.GL;
-
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.Hash;
 
 public class Texture {
@@ -153,21 +152,17 @@ public class Texture {
 		return true;
 	}
 
-	public void bindTexture(GL gl) {
+	public void bindTexture(IRenderingEngine re) {
 		if (glId == -1) {
-			int[] glIds = new int[1];
-            gl.glGenTextures(glIds.length, glIds, 0);
-            glId = glIds[0];
+			glId = re.genTexture();
 		}
 
-        gl.glBindTexture(GL.GL_TEXTURE_2D, glId);
+		re.bindTexture(glId);
 	}
 
-	public void deleteTexture(GL gl) {
+	public void deleteTexture(IRenderingEngine re) {
 		if (glId != -1) {
-			int[] glIds = new int[1];
-			glIds[0] = glId;
-            gl.glDeleteTextures(glIds.length, glIds, 0);
+			re.deleteTexture(glId);
             glId = -1;
 		}
 

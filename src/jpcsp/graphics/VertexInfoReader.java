@@ -20,8 +20,7 @@ import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-import javax.media.opengl.GL;
-
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.BufferedMemoryReader;
 import jpcsp.memory.ImageReader;
 
@@ -52,12 +51,12 @@ public class VertexInfoReader {
 	private float[] position = new float[3];
 
 	// OpenGL types
-	public final static int typeNone = 0;
-	public final static int typeUInt8 = GL.GL_UNSIGNED_BYTE;
-	public final static int typeInt8  = GL.GL_BYTE;
-	public final static int typeInt16 = GL.GL_SHORT;
-	public final static int typeInt32 = GL.GL_INT;
-	public final static int typeFloat = GL.GL_FLOAT;
+	public final static int typeNone = -1;
+	public final static int typeUInt8 = IRenderingEngine.RE_UNSIGNED_BYTE;
+	public final static int typeInt8  = IRenderingEngine.RE_BYTE;
+	public final static int typeInt16 = IRenderingEngine.RE_SHORT;
+	public final static int typeInt32 = IRenderingEngine.RE_INT;
+	public final static int typeFloat = IRenderingEngine.RE_FLOAT;
 
 	// Readers skipping the padding at the end of a vertex element,
 	// indexed by the alignment (1 = byte-aligned, 2 = short-aligned, 4 = int-aligned)

@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import jpcsp.graphics.GeContext;
+import jpcsp.graphics.VideoEngine;
+
+import org.apache.log4j.Logger;
+
 /**
  * @author gid15
  *
@@ -37,11 +42,18 @@ package jpcsp.graphics.RE;
  *   This class performs the mapping between the 2 equivalent sets of methods.
  */
 public abstract class BaseRenderingEngine implements IRenderingEngine {
+	protected final static Logger log = VideoEngine.log;
 	protected IRenderingEngine re = this;
+	protected GeContext context;
 
 	@Override
 	public void setRenderingEngine(IRenderingEngine re) {
 		this.re = re;
+	}
+
+	@Override
+	public void setGeContext(GeContext context) {
+		this.context = context;
 	}
 
 	//

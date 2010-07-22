@@ -22,8 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import javax.media.opengl.GL;
-
+import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.CacheStatistics;
 
 public class VertexCache {
@@ -66,11 +65,11 @@ public class VertexCache {
 		return cache.get(getKey(vertexInfo));
 	}
 
-	public void addVertex(GL gl, VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForShader) {
+	public void addVertex(IRenderingEngine re, VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForShader) {
 		Integer key = getKey(vertexInfo);
 		VertexInfo previousVertex = cache.get(key);
 		if (previousVertex != null) {
-		    previousVertex.deleteVertex(gl);
+		    previousVertex.deleteVertex(re);
 		} else {
 			// Check if the cache is not growing too large
 			if (cache.size() >= cacheMaxSize) {
@@ -78,7 +77,7 @@ public class VertexCache {
 				Iterator<Map.Entry<Integer, VertexInfo>> it = cache.entrySet().iterator();
 				if (it.hasNext()) {
 					Map.Entry<Integer, VertexInfo> entry = it.next();
-					entry.getValue().deleteVertex(gl);
+					entry.getValue().deleteVertex(re);
 					it.remove();
 
 					statistics.entriesRemoved++;
