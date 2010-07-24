@@ -109,7 +109,6 @@
 				<include name="flash0/**" />
 				<include name="ms0/**" />
 				<include name="patches/**" />
-				<include name="tmp/**" />
 				<include name="umdimages/**" />
 				<include name="gpl.txt" />
 				<include name="Compiler.xml" />

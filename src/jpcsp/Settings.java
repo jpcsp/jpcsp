@@ -100,15 +100,6 @@ public class Settings {
         }
 	}
 
-	public String readLanguage() {
-		return loadedSettings.getProperty("emu.language");
-	}
-
-	public void writeLanguage(String language) {
-		loadedSettings.setProperty("emu.language", language);
-		writeSettings();
-	}
-
 	public Point readWindowPos(String windowname) {
 		String x = loadedSettings.getProperty("gui.windows." + windowname + ".x");
 		String y = loadedSettings.getProperty("gui.windows." + windowname + ".y");

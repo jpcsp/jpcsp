@@ -109,15 +109,27 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
     public final static String windowNameForSettings = "mainwindow";
 
+    private final static String[] userDir = {
+    	"ms0/PSP/SAVEDATA",
+    	"ms0/PSP/GAME",
+    	"tmp"
+    };
+
     /** Creates new form MainGUI */
     public MainGUI() {
         DOMConfigurator.configure("LogSettings.xml");
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("misc"), Level.INFO)));
         consolewin = new LogWindow();
 
+        // Create needed user directories
+        for(String dirName : userDir) {
+	        File dir = new File(dirName);
+	        if(!dir.exists()) dir.mkdirs();
+        }
+        
         emulator = new Emulator(this);
 
-        Resource.add("jpcsp.languages." + Settings.getInstance().readLanguage());
+        Resource.add("jpcsp.languages." + Settings.getInstance().readString("emu.language"));
 
         /*next two lines are for overlay menus over joglcanvas*/
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
@@ -621,7 +633,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     private void changeLanguage(String language) {
          Resource.add("jpcsp.languages." + language);
-         Settings.getInstance().writeLanguage(language);
+         Settings.getInstance().writeString("emu.language", language);
          initComponents();
     }
 
