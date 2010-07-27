@@ -552,7 +552,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                         }
                         inputBufferOffset += consumedInputBytes;
                         if (consumedInputBytes == 0 && inputFileOffset < inputFileSize) {
-                            result = 0x80630023; // No more data in input buffer
+                            result = SceKernelErrors.ERROR_ATRAC_BUFFER_IS_EMPTY;
                         }
                     }
 
@@ -587,6 +587,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             }
             cpu.gpr[2] = result;
         }
+        Modules.ThreadManForUserModule.hleKernelDelayThread(1000, false);
     }
 
     public void sceAtracGetRemainFrame(Processor processor) {
@@ -816,7 +817,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
             // Writes the number of used channels (1 - MONO / 2 - STEREO).
-            mem.write32(channelAddr, 2);
+            mem.write32(channelAddr, 0);
             cpu.gpr[2] = 0;
         }
     }
