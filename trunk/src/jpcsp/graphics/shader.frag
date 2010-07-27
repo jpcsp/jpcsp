@@ -82,7 +82,11 @@ void main()
         }
     }
 
-	Cf = (ivec4(Cf * 255) & invertedColorMask) / 255.0;
+	// TODO: ColorMask implementation has to mix the color
+	// from the already rendered buffer with the fragment color:
+	//   ivec4 Cs = ivec4(Cf * 255.0)
+	//   ivec4 Cd = color from rendered buffer (how to access it?)
+	//   Cf = ((Cd & colorMask) | (Cs & ~colorMask)) / 255.0
 
     gl_FragColor = Cf;
 }
