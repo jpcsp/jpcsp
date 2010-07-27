@@ -37,6 +37,8 @@ public class SceKernelErrors {
      *      -> 0x002 - Kernel.
      *      -> 0x011 - Utility.
      *      -> 0x026 - Audio.
+     *      -> 0x042 - SAS.
+     *      -> 0x044 - WAVE.
      *      -> 0x061 - PSMF.
      *      -> 0x063 - ATRAC.
      *
@@ -254,6 +256,15 @@ public class SceKernelErrors {
     public final static int ERROR_AUDIO_INVALID_FORMAT                          = 0x80260007;
     public final static int ERROR_AUDIO_CHANNEL_NOT_RESERVED                    = 0x80260008;
     public final static int ERROR_AUDIO_NOT_OUTPUT                              = 0x80260009;
+
+    public final static int ERROR_SAS_BUSY                                      = 0x80420030;
+    public final static int ERROR_SAS_NOT_INIT                                  = 0x80420100;
+
+    public final static int ERROR_WAVE_NOT_INIT                                 = 0x80440001;
+    public final static int ERROR_WAVE_FAILED_EXIT                              = 0x80440002;
+    public final static int ERROR_WAVE_BAD_VOL                                  = 0x8044000a;
+    public final static int ERROR_WAVE_INVALID_CHANNEL                          = 0x80440010;
+    public final static int ERROR_WAVE_INVALID_SAMPLE_COUNT                     = 0x80440011;
 
     public final static int ERROR_PSMF_NOT_INITIALIZED                          = 0x80615001;
     public final static int ERROR_PSMF_BAD_VERSION                              = 0x80615002;
