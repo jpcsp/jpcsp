@@ -1061,7 +1061,7 @@ public void loadUMD(File file) {
             throw new GeneralJpcspException(Resource.get("encryptedBoot"));
         }
     } catch (GeneralJpcspException e) {
-        JpcspDialogManager.showError(this, Resource.get("generalError")+" : " + e.getMessage());
+        JpcspDialogManager.showError(this, e.getMessage());
     } catch (IOException e) {
         e.printStackTrace();
         JpcspDialogManager.showError(this, Resource.get("ioError")+" : " + e.getMessage());
