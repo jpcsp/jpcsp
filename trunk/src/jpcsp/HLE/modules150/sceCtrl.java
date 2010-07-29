@@ -337,7 +337,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int available = getNumberOfAvailableSamples();
         int readIndex;
         if (available > count) {
-        	readIndex = incrementSampleIndex(currentSamplingIndex, count - available);
+        	readIndex = incrementSampleIndex(currentSamplingIndex, -count);
         } else {
         	count = available;
         	readIndex = currentReadingIndex;
