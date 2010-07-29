@@ -25,6 +25,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -195,11 +197,7 @@ public class UmdBrowser extends JDialog {
 				case 0:
 					return icons[rowIndex];
 				case 1:
-					String title;
-					if (psfs[rowIndex] == null || (title = psfs[rowIndex].getString("TITLE")) == null) {
-						// No PSF TITLE, get the parent directory name
-						title =  programs[rowIndex].getParentFile().getName();
-					}
+					String title = getTitle(rowIndex);
 
 					String discid;
 					if (psfs[rowIndex] == null || (discid = psfs[rowIndex].getString("DISC_ID")) == null) {
@@ -268,6 +266,22 @@ public class UmdBrowser extends JDialog {
 			public void mouseClicked(MouseEvent arg0) {
 				if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
 					loadSelectedfile();
+			}
+		});
+		table.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				// Nothing to do
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// Nothing to do
+			}
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+				scrollTo(e.getKeyChar());
 			}
 		});
 
@@ -458,6 +472,35 @@ public class UmdBrowser extends JDialog {
 		pic0Label.setIcon(pic0Icon);
 		pic1Label.setIcon(pic1Icon);
 		icon0Label.setIcon(icon0Icon);
+	}
+
+	private String getTitle(int rowIndex) {
+		String title;
+		if (psfs[rowIndex] == null || (title = psfs[rowIndex].getString("TITLE")) == null) {
+			// No PSF TITLE, get the parent directory name
+			title =  programs[rowIndex].getParentFile().getName();
+		}
+
+		return title;
+	}
+
+	private void scrollTo(char c) {
+		c = Character.toLowerCase(c);
+		int scrollToRow = -1;
+		for (int rowIndex = 0; rowIndex < programs.length; rowIndex++) {
+			String title = getTitle(rowIndex);
+			if (title != null && title.length() > 0) {
+				char firstChar = Character.toLowerCase(title.charAt(0));
+				if (firstChar == c) {
+					scrollToRow = rowIndex;
+					break;
+				}
+			}
+		}
+
+		if (scrollToRow >= 0) {
+			table.scrollRectToVisible(table.getCellRect(scrollToRow, 0, true));
+		}
 	}
 
 	private void stopVideo() {
