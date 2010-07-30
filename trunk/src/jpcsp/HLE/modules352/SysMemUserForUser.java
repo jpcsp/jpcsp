@@ -122,9 +122,8 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
         }
 
         final int partitionid = 2;
-        int addr = malloc(partitionid, type, size, 0);
-        if (addr != 0) {
-            SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
+        SysMemInfo info = malloc(partitionid, name, type, size, 0);
+        if (info != null) {
             cpu.gpr[2] = info.uid;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_FAILED_ALLOC_MEMBLOCK;

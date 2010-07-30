@@ -56,7 +56,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     protected static HashMap<Integer, SysMemInfo> blockList;
     protected static MemoryChunkList freeMemoryChunks;
     protected int firmwareVersion = 150;
-    protected static final int defaultSizeAlignment = 256;
+    public static final int defaultSizeAlignment = 256;
 
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
@@ -123,22 +123,23 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 	public void stop() {
 		started = false;
 	}
-	
-    protected static class SysMemInfo implements Comparable<SysMemInfo> {
+
+    public static class SysMemInfo implements Comparable<SysMemInfo> {
 
         public final int uid;
         public final int partitionid;
         public final String name;
         public final int type;
         public final int size;
+        public final int allocatedSize;
         public final int addr;
 
-        public SysMemInfo(int partitionid, String name, int type,
-                int size, int addr) {
+        public SysMemInfo(int partitionid, String name, int type, int size, int allocatedSize, int addr) {
             this.partitionid = partitionid;
             this.name = name;
             this.type = type;
             this.size = size;
+            this.allocatedSize = allocatedSize;
             this.addr = addr;
 
             uid = SceUidManager.getNewUid("SysMem");
@@ -147,7 +148,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
         @Override
         public String toString() {
-            return String.format("SysMemInfo[uid=%x, partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X]", uid, partitionid, name, getTypeName(type), size, addr);
+            return String.format("SysMemInfo[uid=%x, partition=%d, name='%s', type=%s, size=0x%X (allocated=0x%X), addr=0x%08X-0x%08X]", uid, partitionid, name, getTypeName(type), size, allocatedSize, addr, addr + allocatedSize);
         }
 
         @Override
@@ -160,7 +161,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         }
     }
 
-    static class MemoryChunk {
+    protected static class MemoryChunk {
     	// Start address of this MemoryChunk
     	public int addr;
     	// Size of this MemoryChunk: it extends from addr to (addr + size -1)
@@ -198,7 +199,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 		}
     }
 
-    static class MemoryChunkList {
+    protected static class MemoryChunkList {
     	// The MemoryChunk objects are linked and kept sorted by address.
     	//
     	// low: MemoryChunk with the lowest address.
@@ -476,7 +477,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     }
 
     // Allocates to 256-byte alignment
-    public int malloc(int partitionid, int type, int size, int addr) {
+    public SysMemInfo malloc(int partitionid, String name, int type, int size, int addr) {
         int allocatedAddress = 0;
 
         int alignment = defaultSizeAlignment - 1;
@@ -484,14 +485,14 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
             // Use the alignment provided in the addr parameter
             alignment = addr - 1;
         }
-        size = alignUp(size, alignment);
+        int allocatedSize = alignUp(size, alignment);
 
         switch (type) {
         	case PSP_SMEM_Low:
         	case PSP_SMEM_LowAligned:
         		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-        			if (memoryChunk.isAvailable(size, alignment)) {
-        				allocatedAddress = freeMemoryChunks.allocLow(memoryChunk, size, alignment);
+        			if (memoryChunk.isAvailable(allocatedSize, alignment)) {
+        				allocatedAddress = freeMemoryChunks.allocLow(memoryChunk, allocatedSize, alignment);
         				break;
         			}
         		}
@@ -499,8 +500,8 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         	case PSP_SMEM_High:
         	case PSP_SMEM_HighAligned:
         		for (MemoryChunk memoryChunk = freeMemoryChunks.high; memoryChunk != null; memoryChunk = memoryChunk.previous) {
-        			if (memoryChunk.isAvailable(size, alignment)) {
-        				allocatedAddress = freeMemoryChunks.allocHigh(memoryChunk, size, alignment);
+        			if (memoryChunk.isAvailable(allocatedSize, alignment)) {
+        				allocatedAddress = freeMemoryChunks.allocHigh(memoryChunk, allocatedSize, alignment);
         				break;
         			}
         		}
@@ -508,7 +509,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         	case PSP_SMEM_Addr:
         		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
         			if (memoryChunk.addr <= addr && addr < memoryChunk.addr + memoryChunk.size) {
-        				allocatedAddress = freeMemoryChunks.alloc(memoryChunk, addr, size);
+        				allocatedAddress = freeMemoryChunks.alloc(memoryChunk, addr, allocatedSize);
         			}
         		}
         		break;
@@ -516,69 +517,39 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     			Modules.log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
         }
 
+        SysMemInfo sysMemInfo;
 		if (allocatedAddress == 0) {
             Modules.log.warn(String.format("malloc cannot allocate partition=%d, type=%s, size=0x%X, addr=0x%08X", partitionid, getTypeName(type), size, addr));
-		}
+			sysMemInfo = null;
+		} else {
+			sysMemInfo = new SysMemInfo(partitionid, name, type, size, allocatedSize, allocatedAddress);
 
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(type), size, addr, allocatedAddress));
-			if (Modules.log.isTraceEnabled()) {
-				Modules.log.trace("Free list after malloc: " + freeMemoryChunks);
+			if (Modules.log.isDebugEnabled()) {
+				Modules.log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(type), size, addr, allocatedAddress));
+				if (Modules.log.isTraceEnabled()) {
+					Modules.log.trace("Free list after malloc: " + freeMemoryChunks);
+				}
 			}
 		}
 
-		return allocatedAddress;
+		return sysMemInfo;
     }
 
-    public int addSysMemInfo(int partitionid, String name, int type, int size, int addr) {
-        SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
-
-        return info.uid;
+    public String getDebugFreeMem() {
+    	return freeMemoryChunks.toString();
     }
 
-    /**
-     * For internal use, example: ThreadMan allocating stack space
-     * Also removes the associated SysMemInfo (if found) from blockList
-     * @param uidFastPath can be <= 0 to disable the fast path
-     * @param memAddress slower, but due to low cohesion or "fake" allocations
-     * sometimes necessary
-     */
-    public void free(int uidFastPath, int memAddress) {
-        SysMemInfo info = null;
-        if (uidFastPath > 0) {
-            info = blockList.remove(uidFastPath);
-        } else {
-            for (Iterator<SysMemInfo> it = blockList.values().iterator(); it.hasNext();) {
-                SysMemInfo i = it.next();
-                if (i.addr == memAddress) {
-                    it.remove();
-                    info = i;
-                    break;
-                }
-            }
-        }
+    public void free(SysMemInfo info) {
+    	if (info != null) {
+	    	MemoryChunk memoryChunk = new MemoryChunk(info.addr, info.allocatedSize);
+	    	freeMemoryChunks.add(memoryChunk);
 
-        if (info == null) {
-            // HLE modules using malloc should also call addSysMemInfo
-            Modules.log.warn("pspSysMem.free(addr) failed to find SysMemInfo with uid:" + uidFastPath);
-        } else {
-            free(info);
-        }
-    }
-
-    protected void free(SysMemInfo info) {
-    	free(info.partitionid, info.addr, info.size);
-    }
-
-    public void free(int partitionid, int addr, int size) {
-    	MemoryChunk memoryChunk = new MemoryChunk(addr, size);
-    	freeMemoryChunks.add(memoryChunk);
-
-    	if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug(String.format("free partitionid=%d, addr=0x%08X, size=0x%08X", partitionid, addr, size));
-    		if (Modules.log.isTraceEnabled()) {
-    			Modules.log.trace("Free list after free: " + freeMemoryChunks.toString());
-    		}
+	    	if (Modules.log.isDebugEnabled()) {
+	    		Modules.log.debug(String.format("free %s", info.toString()));
+	    		if (Modules.log.isTraceEnabled()) {
+	    			Modules.log.trace("Free list after free: " + freeMemoryChunks.toString());
+	    		}
+	    	}
     	}
     }
 
@@ -701,9 +672,8 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned) {
             cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
         } else {
-            addr = malloc(partitionid, type, size, addr);
-            if (addr != 0) {
-                SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
+            SysMemInfo info = malloc(partitionid, name, type, size, addr);
+            if (info != null) {
                 cpu.gpr[2] = info.uid;
             } else {
                 cpu.gpr[2] = SceKernelErrors.ERROR_FAILED_ALLOC_MEMBLOCK;

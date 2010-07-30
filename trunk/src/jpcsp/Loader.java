@@ -32,6 +32,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32EntHeader;
@@ -560,21 +561,18 @@ public class Loader {
 
     private void LoadELFReserveMemory(SceModule module) {
         // Mark the area of memory the module loaded into as used
-        Memory.log.debug("Reserving " + (module.loadAddressHigh - module.loadAddressLow) + " bytes at "
-            + String.format("%08x", module.loadAddressLow)
-            + " for module '" + module.pspfilename + "'");
+    	if (Modules.log.isDebugEnabled()) {
+    		Memory.log.debug(String.format("Reserving 0x%X bytes at 0x%08X for module '%s'", module.loadAddressHigh - module.loadAddressLow, module.loadAddressLow, module.pspfilename));
+    	}
 
-        int address = module.loadAddressLow & ~0xFF; // Round down to nearest 256-bytes to match sysmem allocations
+        int address = module.loadAddressLow & ~(SysMemUserForUser.defaultSizeAlignment - 1); // Round down to match sysmem allocations
         int size = module.loadAddressHigh - address;
 
-        int allocatedAddress = Modules.SysMemUserForUserModule.malloc(2, SysMemUserForUser.PSP_SMEM_Addr, size, address);
-        if (allocatedAddress != address) {
-            Memory.log.warn("Failed to properly reserve memory consumed by module " + module.modname
-                + " at address 0x" + Integer.toHexString(address)
-                + " size " + size
-                + " new address 0x" + Integer.toHexString(allocatedAddress));
+        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(2, module.modname, SysMemUserForUser.PSP_SMEM_Addr, size, address);
+        if (info == null || info.addr != address) {
+            Memory.log.warn(String.format("Failed to properly reserve memory consumed by module %s at address 0x%08X, size 0x%X: allocated %s", module.modname, address, size, info));
         }
-        Modules.SysMemUserForUserModule.addSysMemInfo(2, module.modname, SysMemUserForUser.PSP_SMEM_Low, size, allocatedAddress);
+        module.addAllocatedMemory(info);
     }
 
     /** Loads from memory */

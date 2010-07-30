@@ -35,6 +35,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.util.Utilities;
@@ -235,19 +236,29 @@ public class ModuleMgrForUser implements HLEModule {
                 final int partitionId = 2;
                 final int allocType = SysMemUserForUser.PSP_SMEM_Low;
                 final int moduleHeaderSize = 256;
-                final int totalAllocSize = moduleHeaderSize + moduleBytes.length;
-                int testBase = Modules.SysMemUserForUserModule.malloc(partitionId, allocType, totalAllocSize, 0);
-                Modules.SysMemUserForUserModule.free(partitionId, testBase, totalAllocSize);
-
-                // Allocate the memory for the memory header itself,
-                // the space required by the module will be allocated by the Loader.
-                int moduleBase = Modules.SysMemUserForUserModule.malloc(partitionId, SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
-                if (moduleBase != testBase) {
-                	Modules.log.error(String.format("Failed module allocation 0x%08X != 0x%08X", testBase, moduleBase));
+                int totalAllocSize = moduleHeaderSize + moduleBytes.length;
+                final int maxFreeMemSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
+                if (totalAllocSize > maxFreeMemSize) {
+                	totalAllocSize = maxFreeMemSize;
+                }
+                SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr-TestInfo", allocType, totalAllocSize, 0);
+                if (testInfo == null) {
+                	Modules.log.error(String.format("Failed module allocation of size 0x%08X for '%s%'", totalAllocSize, name));
                 	cpu.gpr[2] = -1;
                 	return;
                 }
-                Modules.SysMemUserForUserModule.addSysMemInfo(2, "ModuleMgr", allocType, moduleHeaderSize, moduleBase);
+                int testBase = testInfo.addr;
+                Modules.SysMemUserForUserModule.free(testInfo);
+
+                // Allocate the memory for the memory header itself,
+                // the space required by the module will be allocated by the Loader.
+                SysMemInfo moduleInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
+                if (moduleInfo == null || moduleInfo.addr != testBase) {
+                	Modules.log.error(String.format("Failed module allocation 0x%08X != 0x%08X for '%s'", testBase, moduleInfo.addr, name));
+                	cpu.gpr[2] = -1;
+                	return;
+                }
+                int moduleBase = moduleInfo.addr;
 
                 // Load the module
                 SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize);
@@ -262,6 +273,7 @@ public class ModuleMgrForUser implements HLEModule {
                     Managers.modules.addModule(fakeModule);
                     cpu.gpr[2] = fakeModule.modid;
                 } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                	module.addAllocatedMemory(moduleInfo);
                     cpu.gpr[2] = module.modid;
                 } else {
                     // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
