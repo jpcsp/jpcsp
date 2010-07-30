@@ -53,6 +53,7 @@ public class PspGeList
     private boolean paused;
     private boolean ended;
     private boolean reset;
+    private boolean restarted;
     private Semaphore sync; // Used for async display
 
     public PspGeList(int id) {
@@ -69,6 +70,7 @@ public class PspGeList
     	paused = false;
     	reset = true;
         ended = true;
+        restarted = false;
     }
 
     public void init(int list_addr, int stall_addr, int cbid, int arg_addr) {
@@ -192,7 +194,20 @@ public class PspGeList
 
     public void restartList() {
     	paused = false;
+    	restarted = true;
     	sync();
+    }
+
+    public void clearRestart() {
+    	restarted = false;
+    }
+
+    public void clearPaused() {
+    	paused = false;
+    }
+
+    public boolean isRestarted() {
+    	return restarted;
     }
 
     public boolean isPaused() {

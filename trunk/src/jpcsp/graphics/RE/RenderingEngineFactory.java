@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import jpcsp.graphics.VideoEngine;
+import javax.media.opengl.GL;
 
 /**
  * @author gid15
@@ -25,11 +25,11 @@ import jpcsp.graphics.VideoEngine;
 public class RenderingEngineFactory {
 	private static final boolean enableDebugProxy = false;
 
-	public static IRenderingEngine getRenderingEngine() {
+	public static IRenderingEngine createRenderingEngine(GL gl) {
 		// Build the rendering pipeline, from the last entry to the first one.
 
 		// The RenderingEngine actually performing the OpenGL calls
-		IRenderingEngine re = RenderingEngineJogl.newInstance(VideoEngine.getInstance().getGL());
+		IRenderingEngine re = RenderingEngineJogl.newInstance(gl);
 
 		if (enableDebugProxy) {
 			re = new DebugProxy(re);
@@ -49,6 +49,19 @@ public class RenderingEngineFactory {
 		re = new StateProxy(re);
 
 		// Return the first entry in the pipeline
+		return re;
+	}
+
+	/**
+	 * Create a rendering engine to be used when the HLE modules have not yet
+	 * been started.
+	 * 
+	 * @param gl
+	 * @return the initial rendering engine
+	 */
+	public static IRenderingEngine createInitialRenderingEngine(GL gl) {
+		IRenderingEngine re = RenderingEngineJogl.newInstance(gl);
+
 		return re;
 	}
 }

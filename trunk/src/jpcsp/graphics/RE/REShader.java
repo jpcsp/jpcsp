@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import java.io.IOException;
+import java.nio.Buffer;
 
 import jpcsp.Settings;
 import jpcsp.graphics.Uniforms;
@@ -40,21 +41,20 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected final int[] lightType = new int[4];
 	protected final int[] lightKind = new int[4];
 	protected final int[] matFlags = new int[3];
-	protected final int[] invertedColorMask = new int[4];
 	protected int shaderProgram;
 	protected int vertexShader;
 	protected int fragmentShader;
 	protected int shaderAttribWeights1;
 	protected int shaderAttribWeights2;
+	protected int numberOfWeightsForShader;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
-
-		init();
+		initShader();
 	}
 
-	protected void init() {
-        log.info("Using shaders with Skinning");
+	protected void initShader() {
+		log.info("Using shaders with Skinning");
 
 		loadShaders();
 
@@ -71,6 +71,8 @@ public class REShader extends BaseRenderingEngineFunction {
         flagToUniforms[IRenderingEngine.GU_COLOR_TEST] = Uniforms.ctestEnable.getId();
 		flagToUniforms[IRenderingEngine.GU_LIGHTING] = Uniforms.lightingEnable.getId();
 		flagToUniforms[IRenderingEngine.GU_TEXTURE_2D] = Uniforms.texEnable.getId();
+
+		re.setUniform(Uniforms.colorDoubling.getId(), 1.0f);
 	}
 
 	protected void loadShaders() {
@@ -104,23 +106,24 @@ public class REShader extends BaseRenderingEngineFunction {
         printProgramInfoLog(shaderProgram);
 
         re.useProgram(shaderProgram);
-
-        // TODO Remove this call
-        VideoEngine.getInstance().setShaderProgram(shaderProgram);
 	}
 
 	public static boolean useShaders(IRenderingEngine re) {
-		boolean useShaders = Settings.getInstance().readBool("emu.useshaders")
-		                     && re.isFunctionAvailable("glCreateShader")
-		                     && re.isFunctionAvailable("glShaderSource")
-		                     && re.isFunctionAvailable("glCompileShader")
-		                     && re.isFunctionAvailable("glCreateProgram")
-		                     && re.isFunctionAvailable("glAttachShader")
-		                     && re.isFunctionAvailable("glLinkProgram")
-		                     && re.isFunctionAvailable("glValidateProgram")
-		                     && re.isFunctionAvailable("glUseProgram");
+		boolean useShaders = Settings.getInstance().readBool("emu.useshaders");
+		boolean availableShaders = re.isFunctionAvailable("glCreateShader")
+		                        && re.isFunctionAvailable("glShaderSource")
+		                        && re.isFunctionAvailable("glCompileShader")
+		                        && re.isFunctionAvailable("glCreateProgram")
+		                        && re.isFunctionAvailable("glAttachShader")
+		                        && re.isFunctionAvailable("glLinkProgram")
+		                        && re.isFunctionAvailable("glValidateProgram")
+		                        && re.isFunctionAvailable("glUseProgram");
 
-        return useShaders;
+		if (useShaders && !availableShaders) {
+			log.info("Shaders are not available on your computer. They have been automatically disabled.");
+		}
+
+		return useShaders && availableShaders;
 	}
 
 	protected void printShaderInfoLog(int shader) {
@@ -216,12 +219,17 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setBones(int count, float[] values) {
+	public int setBones(int count, float[] values) {
 		re.setUniform(Uniforms.numberBones.getId(), count);
 		if (count > 0) {
 			re.setUniformMatrix4(Uniforms.boneMatrix.getId(), count, values);
+            numberOfWeightsForShader = (count <= 4 ? 4 : 8);
+		} else {
+			numberOfWeightsForShader = 0;
 		}
 		super.setBones(count, values);
+
+		return numberOfWeightsForShader; // Number of weights to be copied into the VBO
 	}
 
 	@Override
@@ -241,12 +249,52 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
-		invertedColorMask[0] = (~redMask  ) & 0xFF;
-		invertedColorMask[1] = (~greenMask) & 0xFF;
-		invertedColorMask[2] = (~blueMask ) & 0xFF;
-		invertedColorMask[3] = (~alphaMask) & 0xFF;
-		re.setUniform4(Uniforms.invertedColorMask.getId(), invertedColorMask);
-		super.setColorMask(redMask, greenMask, blueMask, alphaMask);
+	public void startDisplay() {
+        re.useProgram(shaderProgram);
+		super.startDisplay();
+	}
+
+	@Override
+	public void endDisplay() {
+        re.useProgram(0);
+		super.endDisplay();
+	}
+
+	@Override
+	public void enableClientState(int type) {
+		if (type == RE_VERTEX) {
+			if (numberOfWeightsForShader > 0) {
+	            re.enableVertexAttribArray(shaderAttribWeights1);
+	            if (numberOfWeightsForShader > 4) {
+	            	re.enableVertexAttribArray(shaderAttribWeights2);
+	            } else {
+	            	re.disableVertexAttribArray(shaderAttribWeights2);
+	            }
+			} else {
+	        	re.disableVertexAttribArray(shaderAttribWeights1);
+	        	re.disableVertexAttribArray(shaderAttribWeights2);
+			}
+		}
+		super.enableClientState(type);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
+		if (size > 0) {
+            re.setVertexAttribPointer(shaderAttribWeights1, 4, IRenderingEngine.RE_FLOAT, false, stride, buffer);
+            if (size > 4) {
+                re.setVertexAttribPointer(shaderAttribWeights2, 4, IRenderingEngine.RE_FLOAT, false, stride, buffer);
+            }
+		}
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, long offset) {
+		if (size > 0) {
+            re.setVertexAttribPointer(shaderAttribWeights1, 4, IRenderingEngine.RE_FLOAT, false, stride, offset);
+            if (size > 4) {
+                re.setVertexAttribPointer(shaderAttribWeights2, 4, IRenderingEngine.RE_FLOAT, false, stride, offset + VideoEngine.SIZEOF_FLOAT * 4);
+            }
+		}
 	}
 }

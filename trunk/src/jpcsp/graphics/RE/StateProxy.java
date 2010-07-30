@@ -27,7 +27,7 @@ import jpcsp.graphics.Uniforms;
  * This class implements no rendering logic, it just skips unnecessary calls.
  */
 public class StateProxy extends BaseRenderingEngineProxy {
-	protected boolean[] flags = new boolean[IRenderingEngine.RE_NUMBER_FLAGS];
+	protected boolean[] flags;
 	protected float[][] matrix;
 	protected static final int RE_BONES_MATRIX = 4;
 	protected static final int matrix4Size = 4 * 4;
@@ -38,12 +38,29 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[][] uniformFloatArray;
 	protected boolean[] clientState;
 	protected boolean[] vertexAttribArray;
-	protected static final float[] identityMatrix = {
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1
-	};
+	protected int textureMipmapMinFilter;
+	protected int textureMipmapMagFilter;
+	protected int textureMipmapMinLevel;
+	protected int textureWrapModeS;
+	protected int textureWrapModeT;
+	protected boolean colorMaskRed;
+	protected boolean colorMaskGreen;
+	protected boolean colorMaskBlue;
+	protected boolean colorMaskAlpha;
+	protected int[] colorMask;
+	protected boolean depthMask;
+	protected int textureFunc;
+	protected boolean textureFuncAlpha;
+	protected boolean textureFuncColorDouble;
+	protected boolean frontFace;
+	protected int stencilFunc;
+	protected int stencilFuncRef;
+	protected int stencilFuncMask;
+	protected int stencilOpFail;
+	protected int stencilOpZFail;
+	protected int stencilOpZPass;
+	protected int depthFunc;
+	protected int bindTexture = -1;
 
 	public StateProxy(IRenderingEngine proxy) {
 		super(proxy);
@@ -51,6 +68,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	protected void init() {
+		flags = new boolean[RE_NUMBER_FLAGS];
+
 		maxUniformId = 0;
 		for (Uniforms uniform : Uniforms.values()) {
 			int id = uniform.getId();
@@ -74,6 +93,48 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 		clientState = new boolean[4];
 		vertexAttribArray = new boolean[numberUniforms];
+		colorMask = new int[4];
+	}
+
+	@Override
+	public void startDisplay() {
+		// The following properties are lost when starting a new display
+		for (int i = 0; i < clientState.length; i++) {
+			clientState[i] = false;
+		}
+
+		for (int i = 0; i < flags.length; i++) {
+			flags[i] = true;
+		}
+
+		System.arraycopy(identityMatrix, 0, matrix[GU_PROJECTION], 0, matrix4Size);
+		System.arraycopy(identityMatrix, 0, matrix[GU_VIEW], 0, matrix4Size);
+		System.arraycopy(identityMatrix, 0, matrix[GU_MODEL], 0, matrix4Size);
+		System.arraycopy(identityMatrix, 0, matrix[GU_TEXTURE], 0, matrix4Size);
+		textureMipmapMinFilter = -1;
+		textureMipmapMagFilter = -1;
+		textureMipmapMinLevel = 0;
+		textureWrapModeS = -1;
+		textureWrapModeT = -1;
+		colorMaskRed = true;
+		colorMaskGreen = true;
+		colorMaskBlue = true;
+		colorMaskAlpha = true;
+		depthMask = true;
+		textureFunc = -1;
+		textureFuncAlpha = true;
+		textureFuncColorDouble = false;
+		frontFace = true;
+		stencilFunc = -1;
+		stencilFuncRef = -1;
+		stencilFuncMask = -1;
+		stencilOpFail = -1;
+		stencilOpZFail = -1;
+		stencilOpZPass = -1;
+		depthFunc = -1;
+		bindTexture = -1;
+
+		super.startDisplay();
 	}
 
 	@Override
@@ -234,20 +295,33 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		return 0;
 	}
 
-	@Override
-	public void setMatrixElements(int type, float[] values) {
-		if (matrixFirstUpdated(type, values) < matrix4Size) {
-			super.setMatrixElements(type, values);
+	protected boolean isIdentityMatrix(float[] values) {
+		if (values == null) {
+			return true;
 		}
+
+		if (values.length != identityMatrix.length) {
+			return false;
+		}
+
+		for (int i = 0; i < identityMatrix.length; i++) {
+			if (values[i] != identityMatrix[i]) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	@Override
-	public void setBones(int count, float[] values) {
-		int lastUpdatedIndex = matrixLastUpdated(RE_BONES_MATRIX, values, count * matrix4Size);
-		count = (lastUpdatedIndex + matrix4Size - 1) / matrix4Size;
-
-		if (count > 0) {
-			super.setBones(count, values);
+	public void setMatrix(int type, float[] values) {
+		if (matrixFirstUpdated(type, values) < matrix4Size) {
+			if (isIdentityMatrix(values)) {
+				// Identity Matrix is identified by the special value "null"
+				super.setMatrix(type, null);
+			} else {
+				super.setMatrix(type, values);
+			}
 		}
 	}
 
@@ -261,7 +335,9 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void enableClientState(int type) {
-		if (!clientState[type]) {
+		// enableClientState(RE_VERTEX) cannot be cached: it is required each time
+		// by OpenGL and seems to trigger the correct Vertex generation.
+		if (!clientState[type] || type == RE_VERTEX) {
 			super.enableClientState(type);
 			clientState[type] = true;
 		}
@@ -269,17 +345,154 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void disableVertexAttribArray(int id) {
-		if (vertexAttribArray[id]) {
-			super.disableVertexAttribArray(id);
-			vertexAttribArray[id] = false;
+		if (id >= 0 && id <= maxUniformId) {
+			if (vertexAttribArray[id]) {
+				super.disableVertexAttribArray(id);
+				vertexAttribArray[id] = false;
+			}
 		}
 	}
 
 	@Override
 	public void enableVertexAttribArray(int id) {
-		if (!vertexAttribArray[id]) {
-			super.enableVertexAttribArray(id);
-			vertexAttribArray[id] = true;
+		if (id >= 0 && id <= maxUniformId) {
+			if (!vertexAttribArray[id]) {
+				super.enableVertexAttribArray(id);
+				vertexAttribArray[id] = true;
+			}
 		}
+	}
+
+	@Override
+	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
+		if (redWriteEnabled != colorMaskRed || greenWriteEnabled != colorMaskGreen || blueWriteEnabled != colorMaskBlue || alphaWriteEnabled != colorMaskAlpha) {
+			super.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
+			colorMaskRed = redWriteEnabled;
+			colorMaskGreen = greenWriteEnabled;
+			colorMaskBlue = blueWriteEnabled;
+			colorMaskAlpha = alphaWriteEnabled;
+			colorMask[0] = redWriteEnabled ? 0x00 : 0xFF;
+			colorMask[1] = greenWriteEnabled ? 0x00 : 0xFF;
+			colorMask[2] = blueWriteEnabled ? 0x00 : 0xFF;
+			colorMask[3] = alphaWriteEnabled ? 0x00 : 0xFF;
+		}
+	}
+
+	@Override
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+		if (redMask != colorMask[0] || greenMask != colorMask[1] || blueMask != colorMask[2] || alphaMask != colorMask[3]) {
+			super.setColorMask(redMask, greenMask, blueMask, alphaMask);
+			colorMask[0] = redMask;
+			colorMask[1] = greenMask;
+			colorMask[2] = blueMask;
+			colorMask[3] = alphaMask;
+		}
+	}
+
+	@Override
+	public void setDepthMask(boolean depthWriteEnabled) {
+		if (depthWriteEnabled != depthMask) {
+			super.setDepthMask(depthWriteEnabled);
+			depthMask = depthWriteEnabled;
+		}
+	}
+
+	@Override
+	public void setFrontFace(boolean cw) {
+		if (cw != frontFace) {
+			super.setFrontFace(cw);
+			frontFace = cw;
+		}
+	}
+
+	@Override
+	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
+		if (func != textureFunc || alphaUsed != textureFuncAlpha || colorDoubled != textureFuncColorDouble) {
+			super.setTextureFunc(func, alphaUsed, colorDoubled);
+			textureFunc = func;
+			textureFuncAlpha = alphaUsed;
+			textureFuncColorDouble = colorDoubled;
+		}
+	}
+
+	@Override
+	public void setTextureMipmapMinFilter(int filter) {
+		if (filter != textureMipmapMinFilter) {
+			super.setTextureMipmapMinFilter(filter);
+			textureMipmapMinFilter = filter;
+		}
+	}
+
+	@Override
+	public void setTextureMipmapMagFilter(int filter) {
+		if (filter != textureMipmapMagFilter) {
+			super.setTextureMipmapMagFilter(filter);
+			textureMipmapMagFilter = filter;
+		}
+	}
+
+	@Override
+	public void setTextureMipmapMinLevel(int level) {
+		if (level != textureMipmapMinLevel) {
+			super.setTextureMipmapMinLevel(level);
+			textureMipmapMinLevel = level;
+		}
+	}
+
+	@Override
+	public void setTextureWrapMode(int s, int t) {
+		if (s != textureWrapModeS || t != textureWrapModeT) {
+			super.setTextureWrapMode(s, t);
+			textureWrapModeS = s;
+			textureWrapModeT = t;
+		}
+	}
+
+	@Override
+	public void bindTexture(int texture) {
+		if (texture != bindTexture) {
+			super.bindTexture(texture);
+			bindTexture = texture;
+			// Binding a new texture can change the OpenGL texture wrap mode
+			textureWrapModeS = -1;
+			textureWrapModeT = -1;
+		}
+	}
+
+	@Override
+	public void setDepthFunc(int func) {
+		if (func != depthFunc) {
+			super.setDepthFunc(func);
+			depthFunc = func;
+		}
+	}
+
+	@Override
+	public void setStencilFunc(int func, int ref, int mask) {
+		if (func != stencilFunc || ref != stencilFuncRef || mask != stencilFuncMask) {
+			super.setStencilFunc(func, ref, mask);
+			stencilFunc = func;
+			stencilFuncRef = ref;
+			stencilFuncMask = mask;
+		}
+	}
+
+	@Override
+	public void setStencilOp(int fail, int zfail, int zpass) {
+		if (fail != stencilOpFail || zfail != stencilOpZFail || zpass != stencilOpZPass) {
+			super.setStencilOp(fail, zfail, zpass);
+			stencilOpFail = fail;
+			stencilOpZFail = zfail;
+			stencilOpZPass = zpass;
+		}
+	}
+
+	@Override
+	public void deleteTexture(int texture) {
+		// When deleting the current texture binding, it is reset to 0
+		if (texture == bindTexture) {
+			bindTexture = 0;
+		}
+		super.deleteTexture(texture);
 	}
 }

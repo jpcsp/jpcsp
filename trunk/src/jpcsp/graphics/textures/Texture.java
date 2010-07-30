@@ -37,7 +37,7 @@ public class Texture {
 	private int mipmapLevels;
 	private boolean mipmapShareClut;
 	private boolean hashCodeComputed = false;
-	private int glId = -1;	// id created by glGenTextures
+	private int textureId = -1;	// id created by genTexture
 	private boolean loaded = false;	// is the texture already loaded?
 	private TextureCache textureCache;
 	private final static int hashStride = 64 + 8;
@@ -153,17 +153,17 @@ public class Texture {
 	}
 
 	public void bindTexture(IRenderingEngine re) {
-		if (glId == -1) {
-			glId = re.genTexture();
+		if (textureId == -1) {
+			textureId = re.genTexture();
 		}
 
-		re.bindTexture(glId);
+		re.bindTexture(textureId);
 	}
 
 	public void deleteTexture(IRenderingEngine re) {
-		if (glId != -1) {
-			re.deleteTexture(glId);
-            glId = -1;
+		if (textureId != -1) {
+			re.deleteTexture(textureId);
+            textureId = -1;
 		}
 
 		setLoaded(false);
@@ -190,7 +190,7 @@ public class Texture {
 	}
 
 	public int getGlId() {
-		return glId;
+		return textureId;
 	}
 	
 	public int getMipmapLevels() {

@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
+import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 import javax.media.opengl.DebugGL;
-import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLCapabilities;
@@ -52,7 +54,10 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.graphics.RE.RenderingEngineFactory;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.util.DurationStatistics;
@@ -63,10 +68,10 @@ import com.sun.opengl.util.Screenshot;
 public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, HLEStartModule {
 	private static final long serialVersionUID = 2267866365228834812L;
 
-    private static final boolean useGlReadPixels = true;
+    private static final boolean useReadPixels = true;
     private boolean onlyGEGraphics = false;
     private static final boolean useDebugGL = false;
-    private static final int internalTextureFormat = GL.GL_RGBA;
+    private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 
     // sceDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
@@ -79,6 +84,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     public static final int PSP_DISPLAY_SETBUF_NEXTFRAME = 1;
 
     public boolean disableGE;
+
+    // current Rendering Engine
+    private IRenderingEngine re;
+    private boolean startModules;
 
     // current display mode
     private int mode;
@@ -139,12 +148,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     private int vcount;
     private long lastVblankMicroTime;
     private DisplayVblankAction displayVblankAction;
-
-    // Texture state
-    private float[] texRgbScale = new float[2];
-    private int[] texMode = new int[2];
-    private int[] texSrc0Alpha = new int[2];
-    private int texStackIndex = 0;
 
     public DurationStatistics statistics;
     public DurationStatistics statisticsCopyGeToMemory;
@@ -307,6 +310,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         setSize(480, 272);
         addGLEventListener(this);
         texFb = -1;
+        startModules = false;
     }
 
     @Override
@@ -367,14 +371,21 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     		displayVblankAction = new DisplayVblankAction();
     		IntrManager.getInstance().addVBlankAction(displayVblankAction);
     	}
+
+    	// The VideoEngine needs to be started when a valid GL is available.
+    	// Start the VideoEngine at the next display(GLAutoDrawable).
+    	startModules = true;
+    	re = null;
     }
-    
+
     @Override
     public void stop() {
     	if (asyncDisplayThread != null) {
     		asyncDisplayThread.exit();
     		asyncDisplayThread = null;
     	}
+    	re = null;
+    	startModules = false;
     }
 
     public void exit() {
@@ -425,6 +436,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             displayDirty = true;
     }
 
+    public IRenderingEngine getRenderingEngine() {
+    	return re;
+    }
+
     public void setGeDirty(boolean dirty) {
         geDirty = dirty;
     }
@@ -443,13 +458,11 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         }
     }
 
-    public void hleDisplaySetGeBuf(GL gl, int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory) {
-    	hleDisplaySetGeBuf(gl, topaddr, bufferwidth, pixelformat, copyGEToMemory, widthGe, heightGe);
+    public void hleDisplaySetGeBuf(int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory) {
+    	hleDisplaySetGeBuf(topaddr, bufferwidth, pixelformat, copyGEToMemory, widthGe, heightGe);
     }
 
-    public void hleDisplaySetGeBuf(GL gl,
-        int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory,
-        int width, int height) {
+    public void hleDisplaySetGeBuf(int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory, int width, int height) {
         topaddr &= Memory.addressMask;
         // We can get the address relative to 0 or already relative to START_VRAM
         if (topaddr < MemoryMap.START_VRAM) {
@@ -514,23 +527,17 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 				statisticsCopyGeToMemory.start();
 			}
 
-			VideoEngine.getInstance().disableShaders();
-
 			// Set texFb as the current texture
-		    gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+		    re.bindTexture(texFb);
 
 		    // Copy screen to the current texture
-		    gl.glCopyTexSubImage2D(
-		        GL.GL_TEXTURE_2D, 0,
-		        0, 0, 0, 0, widthGe, heightGe);
+		    re.copyTexSubImage(0, 0, 0, 0, 0, widthGe, heightGe);
 
 		    // Re-render GE/current texture upside down
-		    drawFrameBuffer(gl, true, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+		    drawFrameBuffer(true, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 
-		    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+		    copyScreenToPixels(pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 		    loadGEToScreen = true;
-
-			VideoEngine.getInstance().enableShaders();
 
 			if (statisticsCopyGeToMemory != null) {
 				statisticsCopyGeToMemory.end();
@@ -564,57 +571,30 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 				statisticsCopyMemoryToGe.start();
 			}
 
-			VideoEngine.getInstance().disableShaders();
-
 			// Set texFb as the current texture
-			gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+			re.bindTexture(texFb);
 
 			// Define the texture from the GE Memory
-		    gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformatGe));
-		    gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidthGe);
-		    int pixelFormatGL = getPixelFormatGL(pixelformatGe);
-			gl.glTexSubImage2D(
-		        GL.GL_TEXTURE_2D, 0,
-		        0, 0, bufferwidthGe, heightGe,
-		        getFormatGL(pixelformatGe),
-		        pixelFormatGL, pixelsGe);
+		    re.setPixelStore(bufferwidthGe, getPixelFormatBytes(pixelformatGe));
+			re.setTexSubImage(0, 0, 0, bufferwidthGe, heightGe, pixelformatGe, pixelformatGe, pixelsGe);
 
 			// Draw the GE
-		    drawFrameBuffer(gl, false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
-
-			VideoEngine.getInstance().enableShaders();
+		    drawFrameBuffer(false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 
 			if (statisticsCopyMemoryToGe != null) {
 				statisticsCopyMemoryToGe.end();
 			}
 
 			if (State.captureGeNextFrame) {
-		    	captureGeImage(gl);
+		    	captureGeImage();
 		    }
 		}
 
         setGeBufCalledAtLeastOnce = true;
     }
 
-    public static int getFormatGL(int pixelformat) {
-    	return pixelformat == PSP_DISPLAY_PIXEL_FORMAT_565 ? GL.GL_RGB : GL.GL_RGBA;
-    }
-
     public static int getPixelFormatBytes(int pixelformat) {
         return pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888 ? 4 : 2;
-    }
-
-    public static int getPixelFormatGL(int pixelformat) {
-        switch (pixelformat) {
-        case PSP_DISPLAY_PIXEL_FORMAT_565:
-            return GL.GL_UNSIGNED_SHORT_5_6_5_REV;
-        case PSP_DISPLAY_PIXEL_FORMAT_5551:
-            return GL.GL_UNSIGNED_SHORT_1_5_5_5_REV;
-        case PSP_DISPLAY_PIXEL_FORMAT_4444:
-            return GL.GL_UNSIGNED_SHORT_4_4_4_4_REV;
-        default:
-            return GL.GL_UNSIGNED_BYTE;
-        }
     }
 
     private Buffer getPixels(int topaddr, int bottomaddr) {
@@ -706,8 +686,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     //Testing screenshot taking function (using disc id)
     public void savescreen(GLAutoDrawable drawable)
     {
-        final GL gl = drawable.getGL();
-
         int tag = 0;
 
         File screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
@@ -722,7 +700,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             }
         }
 
-        gl.glReadBuffer(mode);
         BufferedImage img = Screenshot.readToBufferedImage(width, height);
         try{
             ImageIO.write(img, "png", screenshot);
@@ -758,47 +735,36 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     	return new BufferInfo(topaddrFb, bottomaddrFb, width, height, bufferwidthFb, pixelformatFb);
     }
 
-    public void captureGeImage(GL gl) {
+    public void captureGeImage() {
     	// Create a GE texture (the texture texFb might not have the right size)
-        int[] textures = new int[1];
-        gl.glGenTextures(1, textures, 0);
-        int texGe = textures[0];
+        int texGe = re.genTexture();
 
-        int pixelFormatGL = getPixelFormatGL(pixelformatGe);
-        int formatGL = getFormatGL(pixelformatGe);
-
-        gl.glBindTexture(GL.GL_TEXTURE_2D, texGe);
-        gl.glTexImage2D(
-            GL.GL_TEXTURE_2D, 0,
+        re.bindTexture(texGe);
+        re.setTexImage(0,
             internalTextureFormat,
-            bufferwidthGe, Utilities.makePow2(heightGe), 0,
-            formatGL,
-            pixelFormatGL, null);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_BASE_LEVEL, 0);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, 0);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
-        gl.glPixelStorei(GL.GL_PACK_ALIGNMENT, getPixelFormatBytes(pixelformatGe));
-        gl.glPixelStorei(GL.GL_PACK_ROW_LENGTH, bufferwidthGe);
+            bufferwidthGe, Utilities.makePow2(heightGe),
+            pixelformatGe,
+            pixelformatGe, null);
+
+        re.setTextureMipmapMinFilter(TFLT_NEAREST);
+        re.setTextureMipmapMagFilter(TFLT_NEAREST);
+        re.setTextureMipmapMinLevel(0);
+        re.setTextureMipmapMaxLevel(0);
+        re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+        re.setPixelStore(bufferwidthGe, getPixelFormatBytes(pixelformatGe));
 
         // Copy screen to the GE texture
-        gl.glCopyTexSubImage2D(
-            GL.GL_TEXTURE_2D, 0,
-            0, 0, 0, 0, widthGe, heightGe);
+        re.copyTexSubImage(0, 0, 0, 0, 0, widthGe, heightGe);
 
         // Copy the GE texture into temp buffer
         temp.clear();
-        gl.glGetTexImage(
-            GL.GL_TEXTURE_2D, 0, formatGL,
-            pixelFormatGL, temp);
+        re.getTexImage(0, pixelformatGe, pixelformatGe, temp);
 
         // Capture the GE image
-        CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, pixelFormatGL, false, 0, false);
+        CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, pixelformatGe, false, 0, false);
 
     	// Delete the GE texture
-        gl.glDeleteTextures(1, textures, 0);
+        re.deleteTexture(texGe);
     }
 
     public boolean tryLockDisplay() {
@@ -858,23 +824,9 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         }
     }
 
-    public void pushTexEnv(final GL gl) {
-        gl.glGetTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, texRgbScale, texStackIndex);
-        gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, texMode, texStackIndex);
-        gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, texSrc0Alpha, texStackIndex);
-        texStackIndex++;
-    }
-
-    public void popTexEnv(final GL gl) {
-        texStackIndex--;
-        gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, texRgbScale[texStackIndex]);
-        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, texMode[texStackIndex]);
-        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, texSrc0Alpha[texStackIndex]);
-    }
-
     /** @param first : true  = draw as psp size
      *                 false = draw as window size */
-    private void drawFrameBuffer(final GL gl, boolean first, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
+    private void drawFrameBuffer(boolean first, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
         if(!isrotating){
 
             texS1 = texS4 = texS;
@@ -883,129 +835,68 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             texS2 = texS3 = texT3 = texT4 = 0.0f;
         }
 
-        gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
+    	re.startDirectRendering(true, false, true, true, !invert, width, height);
+        if (first) {
+            re.setViewport(0, 0, width, height);
+        } else {
+            re.setViewport(0, 0, canvasWidth, canvasHeight);
+        }
 
-        if (first)
-            gl.glViewport(0, 0, width, height);
-        else
-            gl.glViewport(0, 0, canvasWidth, canvasHeight);
+        re.setPixelStore(bufferwidth, getPixelFormatBytes(pixelformat));
+        re.bindTexture(texFb);
+        re.beginDraw(GeCommands.PRIM_SPRITES);
 
-        gl.glDisable(GL.GL_DEPTH_TEST);
-        gl.glDisable(GL.GL_BLEND);
-        gl.glDisable(GL.GL_ALPHA_TEST);
-        gl.glDisable(GL.GL_FOG);
-        gl.glDisable(GL.GL_LIGHTING);
-        gl.glDisable(GL.GL_LOGIC_OP);
-        gl.glDisable(GL.GL_STENCIL_TEST);
-        gl.glDisable(GL.GL_SCISSOR_TEST);
-        // Write RGB color and alpha
-        gl.glColorMask(true, true, true, true);
+        re.drawColor(1.0f, 1.0f, 1.0f);
 
-        pushTexEnv(gl);
-        gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
-        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE);
+        re.drawTexCoord(texS1, texT1);
+        re.drawVertex(width, height);
 
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformat));
-        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidth);
+        re.drawTexCoord(texS2, texT2);
+        re.drawVertex(0.0f, height);
 
-    	gl.glMatrixMode(GL.GL_PROJECTION);
-        gl.glPushMatrix();
-        gl.glLoadIdentity();
+        re.drawTexCoord(texS3, texT3);
+        re.drawVertex(0.0f, 0.0f);
 
-        if (invert)
-            gl.glOrtho(0.0, width, height, 0.0, -1.0, 1.0);
-        else
-            gl.glOrtho(0.0, width, 0.0, height, -1.0, 1.0);
+        re.drawTexCoord(texS4, texT4);
+        re.drawVertex(width, 0.0f);
 
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPushMatrix();
-        gl.glLoadIdentity();
-
-        gl.glMatrixMode(GL.GL_TEXTURE);
-        gl.glPushMatrix();
-        gl.glLoadIdentity();
-
-        gl.glEnable(GL.GL_TEXTURE_2D);
-        gl.glFrontFace(GL.GL_CW);
-        gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
-        gl.glBegin(GL.GL_QUADS);
-
-        gl.glColor3f(1.0f, 1.0f, 1.0f);
-
-        gl.glTexCoord2f(texS1, texT1);
-        gl.glVertex2f(width, height);
-
-        gl.glTexCoord2f(texS2, texT2);
-        gl.glVertex2f(0.0f, height);
-
-        gl.glTexCoord2f(texS3, texT3);
-        gl.glVertex2f(0.0f, 0.0f);
-
-        gl.glTexCoord2f(texS4, texT4);
-        gl.glVertex2f(width, 0.0f);
-
-        gl.glEnd();
-
-        gl.glMatrixMode(GL.GL_TEXTURE);
-        gl.glPopMatrix();
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPopMatrix();
-        gl.glMatrixMode(GL.GL_PROJECTION);
-        gl.glPopMatrix();
-        gl.glPopAttrib();
-
-        popTexEnv(gl);
+        re.endDraw();
+        re.endDirectRendering();
 
         isrotating = false;
 
     }
 
-    private void copyScreenToPixels(GL gl, Buffer pixels, int bufferwidth, int pixelformat, int width, int height) {
-    	gl.glMatrixMode(GL.GL_PROJECTION);
-        gl.glPushMatrix();
-        gl.glLoadIdentity();
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPushMatrix();
-        gl.glLoadIdentity();
-        gl.glMatrixMode(GL.GL_TEXTURE);
-        gl.glPushMatrix();
-        gl.glLoadIdentity();
+    private void copyScreenToPixels(Buffer pixels, int bufferwidth, int pixelformat, int width, int height) {
+    	re.setModelViewMatrix(null);
+    	re.setTextureMatrix(null);
 
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
-        if (useGlReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
-            gl.glMatrixMode(GL.GL_PROJECTION);
-            gl.glOrtho(0.0, width, height, 0.0, -1.0, 1.0);
+        if (useReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
+            re.setProjectionMatrix(VideoEngine.getOrthoMatrix(0, width, height, 0, -1, 1));
             int bufferStep = bufferwidth * getPixelFormatBytes(pixelformat);
-            int pixelFormatGL = getPixelFormatGL(pixelformat);
             int widthToRead = Math.min(width, bufferwidth);
-            int formatGL = getFormatGL(pixelformat);
             // Y-Axis on PSP is flipped against OpenGL, so we have to copy row by row
             for (int y = 0, bufferPos = 0; y < height; y++, bufferPos += bufferStep) {
             	Utilities.bytePositionBuffer(pixels, bufferPos); // this uses reflection -> slow(?)
-                gl.glReadPixels(0, y, widthToRead, 1, formatGL, pixelFormatGL, pixels);
+                re.readPixels(0, y, widthToRead, 1, pixelformat, pixelformat, pixels);
             }
         } else {
-            // Set texFb as the current texture
-            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+        	re.setProjectionMatrix(null);
 
-            gl.glPixelStorei(GL.GL_PACK_ALIGNMENT, getPixelFormatBytes(pixelformat));
-            gl.glPixelStorei(GL.GL_PACK_ROW_LENGTH, bufferwidth);
+        	// Set texFb as the current texture
+            re.bindTexture(texFb);
+
+            re.setPixelStore(bufferwidth, getPixelFormatBytes(pixelformat));
 
             // Copy screen to the current texture
-            gl.glCopyTexSubImage2D(
-                GL.GL_TEXTURE_2D, 0,
-                0, 0, 0, 0, width, height);
+            re.copyTexSubImage(0, 0, 0, 0, 0, width, height);
 
             // Copy the current texture into memory
             temp.clear();
-            int pixelFormatGL = getPixelFormatGL(pixelformat);
-            gl.glGetTexImage(
-                GL.GL_TEXTURE_2D, 0, getFormatGL(pixelformat),
-                pixelFormatGL, temp);
+            re.getTexImage(0, pixelformat, pixelformat, temp);
 
             // Copy temp into pixels, temp is probably square and pixels is less,
             // a smaller rectangle, otherwise we could copy straight into pixels.
@@ -1050,13 +941,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             }
             // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
         }
-
-        gl.glMatrixMode(GL.GL_TEXTURE);
-        gl.glPopMatrix();
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPopMatrix();
-        gl.glMatrixMode(GL.GL_PROJECTION);
-        gl.glPopMatrix();
+        // re.setProjectionMatrix(context.proj_uploaded_matrix);
+        // re.setTextureMatrix(context.texture_uploaded_matrix);
+        // re.setViewMatrix(context.view_uploaded_matrix);
+        // re.setModelMatrix(context.model_uploaded_matrix);
     }
     
     protected void blockCurrentThreadOnVblank(boolean doCallbacks) {
@@ -1090,25 +978,33 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     	return (microTimeSinceLastVblank <= 731);
     }
-    
+
 	@Override
 	public void display(GLAutoDrawable drawable) {
-		if (statistics != null) {
+    	if (statistics != null) {
             statistics.start();
         }
 
-        final GL gl = drawable.getGL();
+    	if (re == null) {
+    		if (startModules) {
+    			re = RenderingEngineFactory.createRenderingEngine(drawable.getGL());
+    		} else {
+    			re = RenderingEngineFactory.createInitialRenderingEngine(drawable.getGL());
+    		}
+    	}
+
+    	if (startModules) {
+    		VideoEngine.getInstance().start();
+    		startModules = false;
+    	}
 
         if (createTex) {
-            int[] textures = new int[1];
             if (texFb != -1) {
-                textures[0] = texFb;
-                gl.glDeleteTextures(1, textures, 0);
+            	re.deleteTexture(texFb);
             }
-            gl.glGenTextures(1, textures, 0);
-            texFb = textures[0];
+            texFb = re.genTexture();
 
-            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+            re.bindTexture(texFb);
 
             //
             // The format of the frame (or GE) buffer is
@@ -1122,18 +1018,16 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             // GU_PSM_5551 : ABBBBBGGGGGRRRRR
             // GU_PSM_5650 : BBBBBGGGGGGRRRRR
             //
-            gl.glTexImage2D(
-                GL.GL_TEXTURE_2D, 0,
+            re.setTexImage(0,
                 internalTextureFormat,
-                bufferwidthFb, Utilities.makePow2(height), 0,
-                getFormatGL(pixelformatFb),
-                getPixelFormatGL(pixelformatFb), null);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_BASE_LEVEL, 0);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAX_LEVEL, 0);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
-            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
+                bufferwidthFb, Utilities.makePow2(height),
+                pixelformatFb,
+                pixelformatFb, null);
+            re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
+            re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
+            re.setTextureMipmapMinLevel(0);
+            re.setTextureMipmapMaxLevel(0);
+            re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
 
             if (Memory.getInstance().getMainMemoryByteBuffer() instanceof IntBuffer) {
             	temp = IntBuffer.allocate(
@@ -1149,31 +1043,29 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         }
 
         if (texFb == -1) {
-            gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            gl.glClear(GL.GL_COLOR_BUFFER_BIT);
+        	re.clear(0.0f, 0.0f, 0.0f, 0.0f);
             return;
         }
 
         if (disableGE) {
             pixelsFb.clear();
-            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
-            gl.glTexSubImage2D(
-                GL.GL_TEXTURE_2D, 0,
+            re.bindTexture(texFb);
+            re.setTexSubImage(0,
                 0, 0, bufferwidthFb, height,
-                GL.GL_RGBA, getPixelFormatGL(pixelformatFb), pixelsFb);
+                pixelformatFb, pixelformatFb, pixelsFb);
 
-            drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
+            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
         } else if (onlyGEGraphics) {
             VideoEngine.getInstance().update();
         } else {
             // Render GE
-            gl.glViewport(0, 0, width, height);
+            re.setViewport(0, 0, width, height);
 
             // If the GE is not at the same address as the FrameBuffer,
             // redisplay the GE so that the VideoEngine can update it
             if (bottomaddrGe != bottomaddrFb) {
 	            pixelsGe.clear();
-	            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+	            re.bindTexture(texFb);
 
 	            // An alternative to glTexSubImage2D would be to use glDrawPixels to
 	            // render the frame buffer.
@@ -1181,48 +1073,42 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 	            // against glTexSubImage2D.
 
 	            // Use format without alpha channel if the source buffer doesn't have one
-	            int pixelFormatGL = getPixelFormatGL(pixelformatGe);
-				gl.glTexSubImage2D(
-	                GL.GL_TEXTURE_2D, 0,
+				re.setTexSubImage(0,
 	                0, 0, bufferwidthGe, heightGe,
-	                getFormatGL(pixelformatGe),
-	                pixelFormatGL, pixelsGe);
+	                pixelformatGe,
+	                pixelformatGe, pixelsGe);
 
-	            drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
+	            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
             }
 
             if (VideoEngine.getInstance().update()) {
                 // Update VRAM only if GE actually drew something
                 // Set texFb as the current texture
-                gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+                re.bindTexture(texFb);
 
                 // Copy screen to the current texture
-                gl.glCopyTexSubImage2D(
-                    GL.GL_TEXTURE_2D, 0,
-                    0, 0, 0, 0, widthGe, heightGe);
+                re.copyTexSubImage(0, 0, 0, 0, 0, widthGe, heightGe);
 
                 // Re-render GE/current texture upside down
-                drawFrameBuffer(gl, true, true, bufferwidthFb, pixelformatFb, width, height);
+                drawFrameBuffer(true, true, bufferwidthFb, pixelformatFb, width, height);
 
                 // Save GE/current texture to vram
-                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+                copyScreenToPixels(pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
             }
 
             // Render FB
             pixelsFb.clear();
-            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
-            int pixelFormatGL = getPixelFormatGL(pixelformatFb);
-            gl.glTexSubImage2D(
-                GL.GL_TEXTURE_2D, 0,
+            re.bindTexture(texFb);
+            re.setTexSubImage(0,
                 0, 0, bufferwidthFb, height,
-                getFormatGL(pixelformatFb),
-                pixelFormatGL, pixelsFb);
+                pixelformatFb,
+                pixelformatFb, pixelsFb);
 
             //Call the rotating function (if needed)
             if(ang != 4)
                 rotate(ang);
 
-            drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
+            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
         }
 
         reportFPSStats();
@@ -1249,9 +1135,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     	if (useDebugGL) {
     		drawable.setGL(new DebugGL(drawable.getGL()));
     	}
-        final GL gl = drawable.getGL();
-        VideoEngine.getInstance().setGL(gl); // Initialize shaders on startup
-        gl.setSwapInterval(1);
+        drawable.getGL().setSwapInterval(1);
 	}
 
 	@Override

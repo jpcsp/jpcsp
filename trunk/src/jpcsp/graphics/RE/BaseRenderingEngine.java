@@ -60,41 +60,41 @@ public abstract class BaseRenderingEngine implements IRenderingEngine {
 	// Equivalence between setMatrixElements() and setXXXMatrixElements()
 	//
 	@Override
-	public void setMatrixElements(int type, float[] values) {
+	public void setMatrix(int type, float[] values) {
 		switch (type) {
 			case GU_PROJECTION:
-				setProjectionMatrixElements(values);
+				setProjectionMatrix(values);
 				break;
 			case GU_MODEL:
-				setModelMatrixElements(values);
+				setModelMatrix(values);
 				break;
 			case GU_VIEW:
-				setViewMatrixElements(values);
+				setViewMatrix(values);
 				break;
 			case GU_TEXTURE:
-				setTextureMatrixElements(values);
+				setTextureMatrix(values);
 				break;
 		}
 	}
 
 	@Override
-	public void setProjectionMatrixElements(float[] values) {
-		setMatrixElements(GU_PROJECTION, values);
+	public void setProjectionMatrix(float[] values) {
+		setMatrix(GU_PROJECTION, values);
 	}
 
 	@Override
-	public void setViewMatrixElements(float[] values) {
-		setMatrixElements(GU_VIEW, values);
+	public void setViewMatrix(float[] values) {
+		setMatrix(GU_VIEW, values);
 	}
 
 	@Override
-	public void setModelMatrixElements(float[] values) {
-		setMatrixElements(GU_MODEL, values);
+	public void setModelMatrix(float[] values) {
+		setMatrix(GU_MODEL, values);
 	}
 
 	@Override
-	public void setTextureMatrixElements(float[] values) {
-		setMatrixElements(GU_TEXTURE, values);
+	public void setTextureMatrix(float[] values) {
+		setMatrix(GU_TEXTURE, values);
 	}
 
 	//

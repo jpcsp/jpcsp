@@ -315,6 +315,26 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
+	public void endDirectRendering() {
+		// Nothing to do
+	}
+
+	@Override
+	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height) {
+		// Nothing to do
+	}
+
+	@Override
+	public void startDisplay() {
+		// Nothing to do
+	}
+
+	@Override
+	public void endDisplay() {
+		// Nothing to do
+	}
+
+	@Override
 	public void disableFlag(int flag) {
 		int glFlag = flagToGL[flag];
 		if (glFlag != 0) {
@@ -371,7 +391,7 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setProjectionMatrixElements(float[] values) {
+	public void setProjectionMatrix(float[] values) {
         gl.glMatrixMode(GL.GL_PROJECTION);
         if (values != null) {
         	gl.glLoadMatrixf(values, 0);
@@ -381,7 +401,8 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setViewMatrixElements(float[] values) {
+	public void setViewMatrix(float[] values) {
+		// The View matrix has always to be set BEFORE the Model matrix
         gl.glMatrixMode(GL.GL_MODELVIEW);
         if (values != null) {
         	gl.glLoadMatrixf(values, 0);
@@ -391,7 +412,8 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setModelMatrixElements(float[] values) {
+	public void setModelMatrix(float[] values) {
+		// The Model matrix has always to be set AFTER the View matrix
         gl.glMatrixMode(GL.GL_MODELVIEW);
         if (values != null) {
         	gl.glMultMatrixf(values, 0);
@@ -399,7 +421,22 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setTextureMatrixElements(float[] values) {
+	public void endModelViewMatrixUpdate() {
+		// Nothing to do
+	}
+
+	@Override
+	public void setModelViewMatrix(float[] values) {
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        if (values != null) {
+        	gl.glLoadMatrixf(values, 0);
+        } else {
+        	gl.glLoadIdentity();
+        }
+	}
+
+	@Override
+	public void setTextureMatrix(float[] values) {
         gl.glMatrixMode(GL.GL_TEXTURE);
         if (values != null) {
         	gl.glLoadMatrixf(values, 0);
@@ -590,8 +627,8 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setBones(int count, float[] values) {
-		// Nothing to do
+	public int setBones(int count, float[] values) {
+		return 0; // Bones are not supported
 	}
 
 	@Override
@@ -907,5 +944,133 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	@Override
 	public void setMaterialShininess(float shininess) {
         gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, shininess);
+	}
+
+	@Override
+	public void beginDraw(int primitive) {
+		gl.glBegin(primitiveToGL[primitive]);
+	}
+
+	@Override
+	public void beginQuery(int id) {
+		gl.glBeginQuery(GL.GL_SAMPLES_PASSED, id);
+	}
+
+	@Override
+	public void drawVertex3(float[] values) {
+		gl.glVertex3fv(values, 0);
+	}
+
+	@Override
+	public void endDraw() {
+		gl.glEnd();
+	}
+
+	@Override
+	public void endQuery() {
+		gl.glEndQuery(GL.GL_SAMPLES_PASSED);
+	}
+
+	@Override
+	public void drawColor(float value1, float value2, float value3) {
+		gl.glColor3f(value1, value2, value3);
+	}
+
+	@Override
+	public void drawColor(float value1, float value2, float value3, float value4) {
+		gl.glColor4f(value1, value2, value3, value4);
+	}
+
+	@Override
+	public void drawTexCoord(float value1, float value2) {
+		gl.glTexCoord2f(value1, value2);
+	}
+
+	@Override
+	public void drawVertex(int value1, int value2) {
+		gl.glVertex2i(value1, value2);
+	}
+
+	@Override
+	public void drawVertex(float value1, float value2) {
+		gl.glVertex2f(value1, value2);
+	}
+
+	@Override
+	public int genQuery() {
+		int[] queries = new int[1];
+		gl.glGenQueries(1, queries, 0);
+		return queries[0];
+	}
+
+	@Override
+	public void drawBoundingBox(float[][] values) {
+		// Nothing to do
+	}
+
+	@Override
+	public void endBoundingBox() {
+		// Nothing to do
+	}
+
+	@Override
+	public void beginBoundingBox() {
+		// Nothing to do
+	}
+
+	@Override
+	public boolean hasBoundingBox() {
+		return true;
+	}
+
+	@Override
+	public boolean isBoundingBoxVisible() {
+		return true;
+	}
+
+	@Override
+	public boolean getQueryResultAvailable(int id) {
+        int[] result = new int[1];
+        gl.glGetQueryObjectiv(id, GL.GL_QUERY_RESULT_AVAILABLE, result, 0);
+        // 0 means result not yet available, 1 means result available
+		return result[0] != 0;
+	}
+
+	@Override
+	public int getQueryResult(int id) {
+        int[] result = new int[1];
+        gl.glGetQueryObjectiv(id, GL.GL_QUERY_RESULT, result, 0);
+		return result[0];
+	}
+
+	@Override
+	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height) {
+		gl.glCopyTexSubImage2D(GL.GL_TEXTURE_2D, level, xOffset, yOffset, x, y, width, height);
+	}
+
+	@Override
+	public void getTexImage(int level, int format, int type, Buffer buffer) {
+		gl.glGetTexImage(GL.GL_TEXTURE_2D, level, textureFormatToGL[format], textureTypeToGL[type], buffer);
+	}
+
+	@Override
+	public void readPixels(int x, int y, int width, int height, int format,	int type, Buffer buffer) {
+		gl.glReadPixels(x, y, width, height, textureFormatToGL[format], textureTypeToGL[type], buffer);
+	}
+
+	@Override
+	public void clear(float red, float green, float blue, float alpha) {
+        gl.glClearColor(red, green, blue, alpha);
+        gl.glClear(GL.GL_COLOR_BUFFER_BIT);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, long offset) {
+		// Nothing to do
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
+		// Nothing to do
 	}
 }
