@@ -61,4 +61,9 @@ public class SceKernelMutexInfo {
         mem.write32(address + 44, locked);
         mem.write32(address + 48, threadid);
     }
+
+	@Override
+	public String toString() {
+		return String.format("SceKernelMutexInfo(uid=%x, name=%s, locked=%d, numWaitThreads=%d, attr=0x%X", uid, name, locked, numWaitThreads, attr);
+	}
 }

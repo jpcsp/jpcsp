@@ -282,7 +282,10 @@ public class MutexManager {
                 thread.wait.Mutex_id == info.uid &&
                 (wakeMultiple || tryLockMutex(info, thread.wait.Mutex_count, allowSameThread))) {
 
-                // Update numWaitThreads
+            	// New thread is taking control of Mutex
+            	info.threadid = thread.uid;
+
+            	// Update numWaitThreads
                 info.numWaitThreads--;
 
                 // Untrack
@@ -462,7 +465,9 @@ public class MutexManager {
 
         int uid = mem.read32(uid_addr);
 
-        Modules.log.debug("sceKernelUnlockLwMutex(uid=" + Integer.toHexString(uid) + ",count=" + count + ")");
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceKernelUnlockLwMutex(uid=" + Integer.toHexString(uid) + ",count=" + count + ")");
+        }
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
