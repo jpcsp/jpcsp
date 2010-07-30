@@ -102,8 +102,10 @@ public class MutexManager {
         }
     }
 
-    private boolean tryLockMutex(SceKernelMutexInfo info, int count) {
-        if (info.locked == 0) {
+    private boolean tryLockMutex(SceKernelMutexInfo info, int count, SceKernelThreadInfo thread) {
+    	// Allow Mutex locking when not locked or when already being locked by the same thread
+        if (info.locked == 0 || info.threadid == thread.uid) {
+        	info.threadid = thread.uid;
             info.locked += count;
             return true;
         }
@@ -121,8 +123,6 @@ public class MutexManager {
                 if (thread.waitType == PSP_WAIT_MUTEX &&
                         thread.wait.waitingOnMutex &&
                         thread.wait.Mutex_id == info.uid) {
-                    // New thread is taking control of Mutex
-                    info.threadid = thread.uid;
                     // Update numWaitThreads
                     info.numWaitThreads--;
                     // Untrack
@@ -133,6 +133,8 @@ public class MutexManager {
                     Modules.ThreadManForUserModule.hleChangeThreadState(thread, PSP_THREAD_READY);
                 }
             }
+            // No thread is having control of Mutex
+            info.threadid = -1;
         } else {
 
             if ((info.attr & PSP_MUTEX_ATTR_WAKE_SINGLE_FIFO) == PSP_MUTEX_ATTR_WAKE_SINGLE_FIFO) {
@@ -140,9 +142,8 @@ public class MutexManager {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_MUTEX &&
                             thread.wait.waitingOnMutex &&
-                            thread.wait.Mutex_id == info.uid) {
-                        // New thread is taking control of Mutex
-                        info.threadid = thread.uid;
+                            thread.wait.Mutex_id == info.uid &&
+                            tryLockMutex(info, thread.wait.Mutex_count, thread)) {
                         // Update numWaitThreads
                         info.numWaitThreads--;
                         // Untrack
@@ -159,9 +160,8 @@ public class MutexManager {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_MUTEX &&
                             thread.wait.waitingOnMutex &&
-                            thread.wait.Mutex_id == info.uid) {
-                        // New thread is taking control of Mutex
-                        info.threadid = thread.uid;
+                            thread.wait.Mutex_id == info.uid &&
+                            tryLockMutex(info, thread.wait.Mutex_count, thread)) {
                         // Update numWaitThreads
                         info.numWaitThreads--;
                         // Untrack
@@ -269,7 +269,7 @@ public class MutexManager {
         	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
-            if (!tryLockMutex(info, count)) {
+            if (!tryLockMutex(info, count, currentThread)) {
             	if (Modules.log.isDebugEnabled()) {
             		Modules.log.debug(message + " - '" + info.name + "' fast check failed");
             	}
@@ -303,7 +303,6 @@ public class MutexManager {
                 }
             } else {
                 Modules.log.debug(message + " - '" + info.name + "' fast check succeeded");
-                info.threadid = currentThread.uid;
                 cpu.gpr[2] = 0;
             }
             threadMan.hleRescheduleCurrentThread(doCallbacks);
@@ -547,7 +546,7 @@ public class MutexManager {
 			}
 
 			// Check the mutex
-            if (!tryLockMutex(info, wait.Mutex_count)) {
+            if (!tryLockMutex(info, wait.Mutex_count, thread)) {
                 info.numWaitThreads--;
                 thread.cpuContext.gpr[2] = 0;
                 return false;
