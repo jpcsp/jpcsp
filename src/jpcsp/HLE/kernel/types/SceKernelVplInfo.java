@@ -21,6 +21,7 @@ import java.util.HashMap;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 /*
@@ -41,7 +42,7 @@ public class SceKernelVplInfo {
     public int freeSize;
     public int numWaitThreads;
 
-    private final int sysMemUID;
+    private final SysMemInfo sysMemInfo;
     // Internal info
     public final int uid;
     public final int partitionid;
@@ -74,10 +75,10 @@ public class SceKernelVplInfo {
         // Reserve psp memory
         int alignedSize = (size + 7) & ~7; // 8-byte align
         int totalVplSize = alignedSize;
-        int addr = Modules.SysMemUserForUserModule.malloc(partitionid, memType, totalVplSize, 0);
-        if (addr == 0)
+        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-Vpl", memType, totalVplSize, 0);
+        if (sysMemInfo == null)
             throw new RuntimeException("SceKernelVplInfo: not enough free mem");
-        sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-Vpl", memType, totalVplSize, addr);
+        int addr = sysMemInfo.addr;
 
         // 24 byte header, probably not necessary to mimick this
         Memory mem = Memory.getInstance();
@@ -110,7 +111,7 @@ public class SceKernelVplInfo {
     }
 
     public void deleteSysMemInfo() {
-        Modules.SysMemUserForUserModule.free(sysMemUID, allocAddress);
+        Modules.SysMemUserForUserModule.free(sysMemInfo);
     }
 
     public void read(Memory mem, int address) {

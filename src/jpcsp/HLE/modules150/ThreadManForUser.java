@@ -79,6 +79,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.Utilities;
 
@@ -527,7 +528,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             | ((sceKernelDelayThreadFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // This memory is always reserved on a real PSP
-        int reservedMem = Modules.SysMemUserForUserModule.malloc(1, SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
+        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(1, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
+        int reservedMem = info.addr;
 
         mem.write32(IDLE_THREAD_ADDRESS + 0,  instruction_addiu);
         mem.write32(IDLE_THREAD_ADDRESS + 4,  instruction_lui);

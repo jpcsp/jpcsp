@@ -23,6 +23,7 @@ import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;
@@ -57,6 +58,7 @@ public class SceModule {
     public int text_size;
     public int data_size;
     public int bss_size;
+    private List<SysMemInfo> allocatedMemory;
     public int nsegment; // usually just 1 segment
     public int[] segmentaddr = new int[4]; // static memory footprint of the module
     public int[] segmentsize = new int[4]; // static memory footprint of the module
@@ -121,13 +123,21 @@ public class SceModule {
         stubtextsection = new int[2];
         unresolvedImports = new LinkedList<DeferredStub>();
         importFixupAttempts = 0;
+        allocatedMemory = new LinkedList<SysMemInfo>();
     }
 
     /** For use when unloading modules. */
     public void free() {
-        for (int i = 0; i < nsegment; i++) {
-        	Modules.SysMemUserForUserModule.free(-1, segmentaddr[i]);
-        }
+    	for (SysMemInfo sysMemInfo : allocatedMemory) {
+    		Modules.SysMemUserForUserModule.free(sysMemInfo);
+    	}
+    	allocatedMemory.clear();
+    }
+
+    public void addAllocatedMemory(SysMemInfo sysMemInfo) {
+    	if (sysMemInfo != null) {
+    		allocatedMemory.add(sysMemInfo);
+    	}
     }
 
     public void write(Memory mem, int address) {

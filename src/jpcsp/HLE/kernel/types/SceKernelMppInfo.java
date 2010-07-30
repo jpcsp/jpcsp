@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 public class SceKernelMppInfo {
@@ -32,7 +33,7 @@ public class SceKernelMppInfo {
     public int numSendWaitThreads;
     public int numReceiveWaitThreads;
 
-    private final int sysMemUID;
+    private final SysMemInfo sysMemInfo;
     // Internal info
     public final int uid;
     public final int partitionid;
@@ -57,12 +58,11 @@ public class SceKernelMppInfo {
         if ((attr & MSGPIPE_ATTR_ADDR_HIGH) == MSGPIPE_ATTR_ADDR_HIGH)
             memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 
-        int alignedSize = (size + 0xFF) & ~0xFF; // 256 byte align (or is this stage done by pspsysmem? aren't we using 64-bytes in pspsysmem?)
-        address = Modules.SysMemUserForUserModule.malloc(partitionid, memType, alignedSize, 0);
-        if (address == 0)
+        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-MsgPipe", memType, size, 0);
+        if (sysMemInfo == null)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
 
-        sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-MsgPipe", memType, alignedSize, address);
+        address = sysMemInfo.addr;
         uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
         this.partitionid = partitionid;
         head = 0;
@@ -114,7 +114,7 @@ public class SceKernelMppInfo {
     }
 
     public void deleteSysMemInfo() {
-        Modules.SysMemUserForUserModule.free(sysMemUID, address);
+        Modules.SysMemUserForUserModule.free(sysMemInfo);
     }
 
     // this will clobber itself if used carelessly but won't overflow outside of its allocated memory

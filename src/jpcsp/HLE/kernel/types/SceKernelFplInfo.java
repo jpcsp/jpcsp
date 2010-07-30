@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 /*
@@ -37,7 +38,7 @@ public class SceKernelFplInfo {
     public int freeBlocks;
     public int numWaitThreads;
 
-    private final int sysMemUID;
+    private final SysMemInfo sysMemInfo;
     // Internal info
     public final int uid;
     public final int partitionid;
@@ -74,14 +75,13 @@ public class SceKernelFplInfo {
         // Reserve psp memory
         int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
         int totalFplSize = alignedBlockSize * numBlocks;
-        int addr = Modules.SysMemUserForUserModule.malloc(partitionid, memType, totalFplSize, 0);
-        if (addr == 0)
+        sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-Fpl", memType, totalFplSize, 0);
+        if (sysMemInfo == null)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
-        sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(partitionid, "ThreadMan-Fpl", memType, totalFplSize, addr);
 
         // Initialise the block addresses
         for (int i = 0; i < numBlocks; i++) {
-            blockAddress[i] = addr + alignedBlockSize * i;
+            blockAddress[i] = sysMemInfo.addr + alignedBlockSize * i;
         }
     }
 
@@ -167,6 +167,6 @@ public class SceKernelFplInfo {
     }
 
     public void deleteSysMemInfo() {
-    	Modules.SysMemUserForUserModule.free(sysMemUID, blockAddress[0]);
+    	Modules.SysMemUserForUserModule.free(sysMemInfo);
     }
 }

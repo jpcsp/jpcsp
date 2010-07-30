@@ -26,6 +26,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
@@ -91,7 +92,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int threadPreemptCount;
     public int releaseCount;
 
-    private int sysMemUID = -1;
+    private SysMemInfo stackSysMemInfo;
     // internal variables
     public final int uid;
     public int moduleid;
@@ -134,10 +135,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         // setup the stack
         if (stackSize > 0) {
-            stack_addr = Modules.SysMemUserForUserModule.malloc(2, jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
-            if (stack_addr != 0) {
-                sysMemUID = Modules.SysMemUserForUserModule.addSysMemInfo(2, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, stack_addr);
-            }
+        	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(2, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
+        	if (stackSysMemInfo == null) {
+        		stack_addr = 0;
+        	} else {
+        		stack_addr = stackSysMemInfo.addr;
+        	}
         } else {
             stack_addr = 0;
         }
@@ -257,6 +260,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 	}
 
     public void deleteSysMemInfo() {
-        Modules.SysMemUserForUserModule.free(sysMemUID, stack_addr);
+        Modules.SysMemUserForUserModule.free(stackSysMemInfo);
     }
 }
