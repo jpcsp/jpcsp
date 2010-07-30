@@ -587,7 +587,6 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             }
             cpu.gpr[2] = result;
         }
-        Modules.ThreadManForUserModule.hleKernelDelayThread(1000, false);
     }
 
     public void sceAtracGetRemainFrame(Processor processor) {
@@ -817,7 +816,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
             // Writes the number of used channels (1 - MONO / 2 - STEREO).
-            mem.write32(channelAddr, 0);
+            mem.write32(channelAddr, 2);
             cpu.gpr[2] = 0;
         }
     }

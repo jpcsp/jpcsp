@@ -46,6 +46,11 @@ public class MbxManager {
     private HashMap<Integer, SceKernelMbxInfo> mbxMap;
     private MbxWaitStateChecker mbxWaitStateChecker;
 
+    private final static int PSP_MBX_ATTR_FIFO = 0;
+    private final static int PSP_MBX_ATTR_PRIORITY = 0x100;
+    private final static int PSP_MBX_ATTR_MSG_FIFO = 0;           // Add new messages by FIFO.
+    private final static int PSP_MBX_ATTR_MSG_PRIORITY = 0x400;   // Add new messages by MsgPacket priority.
+
 	public void reset() {
         mbxMap = new HashMap<Integer, SceKernelMbxInfo>();
         mbxWaitStateChecker = new MbxWaitStateChecker();
@@ -85,26 +90,50 @@ public class MbxManager {
     }
 
     private void updateWaitingMbxReceive(SceKernelMbxInfo info) {
-    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
-            SceKernelThreadInfo thread = it.next();
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        if ((info.attr & PSP_MBX_ATTR_FIFO) == PSP_MBX_ATTR_FIFO) {
+            for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
+                SceKernelThreadInfo thread = it.next();
 
-            if (thread.waitType == PSP_WAIT_MBX &&
-                thread.wait.waitingOnMbxReceive &&
-                thread.wait.Mbx_id == info.uid &&
-                info.hasMessage()) {
-            	if (Modules.log.isDebugEnabled()) {
-            		Modules.log.debug(String.format("updateWaitingMbxReceive waking thread %s", thread.toString()));
-            	}
+                if (thread.waitType == PSP_WAIT_MBX &&
+                        thread.wait.waitingOnMbxReceive &&
+                        thread.wait.Mbx_id == info.uid &&
+                        info.hasMessage()) {
+                    if (Modules.log.isDebugEnabled()) {
+                        Modules.log.debug(String.format("updateWaitingMbxReceive waking thread %s", thread.toString()));
+                    }
 
-                Memory mem = Memory.getInstance();
-                int msgAddr = info.removeMsg(mem);
-                mem.write32(thread.wait.Mbx_resultAddr, msgAddr);
-                info.numWaitThreads--;
+                    Memory mem = Memory.getInstance();
+                    int msgAddr = info.removeMsg(mem);
+                    mem.write32(thread.wait.Mbx_resultAddr, msgAddr);
+                    info.numWaitThreads--;
 
-            	thread.wait.waitingOnMbxReceive = false;
-                thread.cpuContext.gpr[2] = 0;
-                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    thread.wait.waitingOnMbxReceive = false;
+                    thread.cpuContext.gpr[2] = 0;
+                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                }
+            }
+        } else if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_PRIORITY) {
+            for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
+                SceKernelThreadInfo thread = it.next();
+
+                if (thread.waitType == PSP_WAIT_MBX &&
+                        thread.wait.waitingOnMbxReceive &&
+                        thread.wait.Mbx_id == info.uid &&
+                        info.hasMessage()) {
+                    if (Modules.log.isDebugEnabled()) {
+                        Modules.log.debug(String.format("updateWaitingMbxReceive waking thread %s", thread.toString()));
+                    }
+
+                    Memory mem = Memory.getInstance();
+                    int msgAddr = info.removeMsg(mem);
+                    mem.write32(thread.wait.Mbx_resultAddr, msgAddr);
+                    info.numWaitThreads--;
+
+                    thread.wait.waitingOnMbxReceive = false;
+                    thread.cpuContext.gpr[2] = 0;
+                    threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                }
             }
         }
     }
@@ -134,10 +163,6 @@ public class MbxManager {
         	Modules.log.debug("sceKernelCreateMbx(name=" + name
         			+ ",attr=0x" + Integer.toHexString(attr)
         			+ ",opt=0x" + Integer.toHexString(opt_addr) + ")");
-        }
-
-        if (attr != 0) {
-        	Modules.log.warn("UNIMPLEMENTED:sceKernelCreateMbx attr value 0x" + Integer.toHexString(attr));
         }
 
         if (mem.isAddressGood(opt_addr)) {

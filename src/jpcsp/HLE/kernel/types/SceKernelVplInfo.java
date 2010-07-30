@@ -24,16 +24,7 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
-/*
- * TODO list:
- * 1. Implement a queue to receive blocks waiting for allocation and process
- * memory events for them (onFreeVpl).
- *
- * 2. Implement proper malloc in tryAllocate.
- */
-
 public class SceKernelVplInfo {
-
     // PSP info
     public int size = 52;
     public String name;
@@ -51,11 +42,7 @@ public class SceKernelVplInfo {
     public int freeHighAddress;
     public HashMap<Integer, Integer> dataBlockMap;  //Hash map to store each data address and respective size.
 
-    public static final int VPL_ATTR_MASK = 0x41FF; // anything outside this mask is an illegal attr
-    public static final int VPL_ATTR_UNKNOWN = 0x100;
-    public static final int VPL_ATTR_ADDR_HIGH = 0x4000; // create() the vpl in hi-mem, and start alloc() from high addresses
-
-    private SceKernelVplInfo(String name, int partitionid, int attr, int size) {
+    private SceKernelVplInfo(String name, int partitionid, int attr, int size, int memType) {
         this.name = name;
         this.attr = attr;
         poolSize = size - 32; // 32 byte overhead per VPL
@@ -67,10 +54,6 @@ public class SceKernelVplInfo {
 
         uid = SceUidManager.getNewUid("ThreadMan-Vpl");
         this.partitionid = partitionid;
-
-        int memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
-        if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH)
-            memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
 
         // Reserve psp memory
         int alignedSize = (size + 7) & ~7; // 8-byte align
@@ -95,14 +78,14 @@ public class SceKernelVplInfo {
         freeHighAddress = addr + totalVplSize;
     }
 
-    public static SceKernelVplInfo tryCreateVpl(String name, int partitionid, int attr, int size) {
+    public static SceKernelVplInfo tryCreateVpl(String name, int partitionid, int attr, int size, int memType) {
         SceKernelVplInfo info = null;
         int alignedSize = (size + 7) & ~7; // 8-byte align
         int totalVplSize = alignedSize;
         int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
 
         if (totalVplSize <= maxFreeSize) {
-            info = new SceKernelVplInfo(name, partitionid, attr, totalVplSize);
+            info = new SceKernelVplInfo(name, partitionid, attr, totalVplSize, memType);
         } else {
             Modules.log.warn("tryCreateVpl not enough free mem (want=" + totalVplSize + ",free=" + maxFreeSize + ",diff=" + (totalVplSize - maxFreeSize) + ")");
         }
@@ -132,41 +115,18 @@ public class SceKernelVplInfo {
         mem.write32(address + 48, numWaitThreads);
     }
 
-    /** @return the address or 0 on failure */
-    public int tryAllocate(int size) {
-        int addr = 0;
-        int alignedSize = (size + 7) & ~7; // 8-byte align
-        if (alignedSize + 8 <= freeSize) {
-            if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH) {
-                addr = freeHighAddress - alignedSize;
-                freeHighAddress -= alignedSize + 8;
-            } else {
-                addr = freeLowAddress + 8;
-                freeLowAddress += alignedSize + 8;
-            }
-
-            // write block header
-            Memory mem = Memory.getInstance();
-            mem.write32(addr - 8, allocAddress);
-            mem.write32(addr - 4, 0); // magic?
-
-            freeSize -= alignedSize + 8;
-        }
-        dataBlockMap.put(addr, alignedSize);
-        return addr;
-    }
-
     /** @return true on success */
     public boolean free(int addr) {
         Memory mem = Memory.getInstance();
         if (mem.isAddressGood(addr - 8)) {
-            // check block header
+            // Check block header.
             int top = mem.read32(addr - 8);
             if (top != allocAddress) {
                 Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
                 return false;
              }
-			//Recover free size from deallocated block.
+
+			// Recover free size from deallocated block.
 			int deallocSize = (dataBlockMap.get(addr) + 8);
 			freeSize += deallocSize;
 			dataBlockMap.remove(addr);
@@ -176,7 +136,7 @@ public class SceKernelVplInfo {
 
 			return true;
         }
-		// address is not in valid range
+		// Address is not in valid range.
 		Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
 		return false;
     }
