@@ -46,8 +46,6 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
-import javax.media.opengl.GL;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -60,8 +58,6 @@ import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.IRenderingEngine;
-import jpcsp.graphics.RE.REShader;
-import jpcsp.graphics.RE.RenderingEngineFactory;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
@@ -72,8 +68,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-
-import com.sun.opengl.util.BufferUtil;
 
 //
 // Ideas for Optimization:
@@ -91,6 +85,7 @@ import com.sun.opengl.util.BufferUtil;
 public class VideoEngine {
 
     public static final int NUM_LIGHTS = 4;
+    public static final int SIZEOF_FLOAT = 4;
     public final static String[] psm_names = new String[]{
         "PSM_5650",
         "PSM_5551",
@@ -124,7 +119,6 @@ public class VideoEngine {
     };
     private static final int[] textureByteAlignmentMapping = {2, 2, 2, 4};
     private static VideoEngine instance;
-    private GL gl;
     private sceDisplay display;
     private IRenderingEngine re;
     private GeContext context;
@@ -150,24 +144,22 @@ public class VideoEngine {
     private boolean isLogWarnEnabled;
     private int primCount;
     private boolean viewportChanged;
-    private MatrixUpload projectionMatrixUpload;
-    private MatrixUpload textureMatrixUpload;
-    private MatrixUpload modelMatrixUpload;
-    private MatrixUpload viewMatrixUpload;
+    public MatrixUpload projectionMatrixUpload;
+    public MatrixUpload modelMatrixUpload;
+    public MatrixUpload viewMatrixUpload;
+    public MatrixUpload textureMatrixUpload;
     private int boneMatrixIndex;
-    private int boneMatrixForShaderUpdatedMatrix; // number of updated matrix
+    private int boneMatrixLinearUpdatedMatrix; // number of updated matrix
     private static final float[] blackColor = new float[]{0, 0, 0, 0};
     private boolean lightingChanged;
     private boolean materialChanged;
     private boolean textureChanged;
     private int[] patch_prim_types = { PRIM_TRIANGLE_STRIPS, PRIM_LINES_STRIPS, PRIM_POINT };
-    private boolean tsync_wait = false;
     private boolean clutIsDirty;
     private boolean usingTRXKICK;
     private int maxSpriteHeight;
     private boolean blendChanged;
     private boolean depthChanged;
-    private boolean takeConditionalJump;
     // opengl needed information/buffers
     private int textureId = -1;
     private int[] tmp_texture_buffer32 = new int[1024 * 1024];
@@ -178,18 +170,11 @@ public class VideoEngine {
     private PspGeList currentList; // The currently executing list
     private boolean useVBO = true;
     private int vboBufferId;
-    private static final int vboBufferSize = 2 * 1024 * 1024 * BufferUtil.SIZEOF_FLOAT;
+    private static final int vboBufferSize = 2 * 1024 * 1024 * SIZEOF_FLOAT;
     private ByteBuffer vboBuffer = ByteBuffer.allocateDirect(vboBufferSize).order(ByteOrder.nativeOrder());
     private FloatBuffer vboFloatBuffer = vboBuffer.asFloatBuffer();
     private static final int nativeBufferSize = vboBufferSize;
     private ByteBuffer nativeBuffer = ByteBuffer.allocateDirect(nativeBufferSize).order(ByteOrder.LITTLE_ENDIAN);
-    private boolean useShaders = true;
-    private int shaderProgram;
-    private boolean useSkinningShaders = true; // Use Shaders for Skinning?
-    private int shaderAttribWeights1;
-    private int shaderAttribWeights2;
-    private boolean glQueryAvailable;
-    private int bboxQueryId;
     float[][] bboxVertices;
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
@@ -197,7 +182,7 @@ public class VideoEngine {
     private IAction hleAction;
     private HashMap<Integer, Integer> currentCMDValues;
 
-    private static class MatrixUpload {
+    public static class MatrixUpload {
 
         private final float[] matrix;
         private final int matrixWidth;
@@ -256,13 +241,6 @@ public class VideoEngine {
         public void setChanged(boolean changed) {
             this.changed = changed;
         }
-
-        public boolean isIdentity() {
-            return matrix[0] == 1 && matrix[1] == 0 && matrix[2] == 0 && matrix[3] == 0
-                    && matrix[4] == 0 && matrix[5] == 1 && matrix[6] == 0 && matrix[7] == 0
-                    && matrix[8] == 0 && matrix[9] == 0 && matrix[10] == 1 && matrix[11] == 0
-                    && matrix[12] == 0 && matrix[13] == 0 && matrix[14] == 0 && matrix[15] == 1;
-        }
     }
 
     private static void log(String msg) {
@@ -283,8 +261,7 @@ public class VideoEngine {
         viewMatrixUpload = new MatrixUpload(context.view_uploaded_matrix, 3, 4);
         textureMatrixUpload = new MatrixUpload(context.texture_uploaded_matrix, 3, 4);
         projectionMatrixUpload = new MatrixUpload(context.proj_uploaded_matrix, 4, 4);
-        takeConditionalJump = false;
-        boneMatrixForShaderUpdatedMatrix = 8;
+        boneMatrixLinearUpdatedMatrix = 8;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -368,51 +345,25 @@ public class VideoEngine {
         return lastList;
     }
 
-    public GL getGL() {
-    	return gl;
-    }
-
-    public void setGL(GL gl) {
-        this.gl = gl;
+    public void start() {
         display = Modules.sceDisplayModule;
-
-        re = RenderingEngineFactory.getRenderingEngine();
+        re = display.getRenderingEngine();
         re.setGeContext(context);
         context.setRenderingEngine(re);
 
         useVBO = !Settings.getInstance().readBool("emu.disablevbo")
-                && re.isFunctionAvailable("glGenBuffersARB")
-                && re.isFunctionAvailable("glBindBufferARB")
-                && re.isFunctionAvailable("glBufferDataARB")
-                && re.isFunctionAvailable("glDeleteBuffersARB")
-                && re.isFunctionAvailable("glGenBuffers");
+              && re.isFunctionAvailable("glGenBuffersARB")
+              && re.isFunctionAvailable("glBindBufferARB")
+              && re.isFunctionAvailable("glBufferDataARB")
+              && re.isFunctionAvailable("glDeleteBuffersARB")
+              && re.isFunctionAvailable("glGenBuffers");
 
         if (useVBO) {
             VideoEngine.log.info("Using VBO");
-            buildVBO(gl);
+            buildVBO();
         } else {
             // VertexCache is relying on VBO
             useVertexCache = false;
-        }
-
-        glQueryAvailable = gl.isFunctionAvailable("glGenQueries")
-                && gl.isFunctionAvailable("glBeginQuery")
-                && gl.isFunctionAvailable("glEndQuery");
-        if (glQueryAvailable) {
-            int[] queryIds = new int[1];
-            gl.glGenQueries(1, queryIds, 0);
-            bboxQueryId = queryIds[0];
-        }
-
-        useShaders = REShader.useShaders(re);
-
-        if (!useShaders) {
-            useSkinningShaders = false;
-        }
-
-        if (useSkinningShaders) {
-            shaderAttribWeights1 = re.getAttribLocation(shaderProgram, "psp_weights1");
-            shaderAttribWeights2 = re.getAttribLocation(shaderProgram, "psp_weights2");
         }
     }
 
@@ -420,11 +371,11 @@ public class VideoEngine {
     	return re;
     }
 
-    public void setShaderProgram(int shaderProgram) {
-    	this.shaderProgram = shaderProgram;
+    public GeContext getContext() {
+    	return context;
     }
 
-    private void buildVBO(GL gl) {
+    private void buildVBO() {
         vboBufferId = re.genBuffer();
         bindBuffer();
         re.setBufferData(vboBufferSize, vboFloatBuffer, IRenderingEngine.RE_STREAM_DRAW);
@@ -465,10 +416,6 @@ public class VideoEngine {
             return false;
         }
 
-        if (useShaders) {
-            re.useProgram(shaderProgram);
-        }
-
         startUpdate();
 
         if (State.captureGeNextFrame) {
@@ -499,10 +446,6 @@ public class VideoEngine {
             }
             list = drawListQueue.poll();
         } while (list != null);
-
-        if (useShaders) {
-            re.useProgram(0);
-        }
 
         if (State.captureGeNextFrame) {
             // Can't end capture until we get a sceDisplaySetFrameBuf after the list has executed
@@ -547,6 +490,8 @@ public class VideoEngine {
     private void startUpdate() {
         statistics.start();
 
+        re.startDisplay();
+
         logLevelUpdated();
         memoryForGEUpdated();
         somethingDisplayed = false;
@@ -565,24 +510,12 @@ public class VideoEngine {
         usingTRXKICK = false;
         maxSpriteHeight = 0;
         primCount = 0;
-
-        gl.glMatrixMode(GL.GL_PROJECTION);
-        gl.glPushMatrix();
-        gl.glMatrixMode(GL.GL_TEXTURE);
-        gl.glPushMatrix();
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPushMatrix();
     }
 
     private void endUpdate() {
-        gl.glMatrixMode(GL.GL_TEXTURE);
-        gl.glPopMatrix();
-        gl.glMatrixMode(GL.GL_PROJECTION);
-        gl.glPopMatrix();
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPopMatrix();
+    	re.endDisplay();
 
-        if (useVertexCache) {
+    	if (useVertexCache) {
             if (primCount > VertexCache.cacheMaxSize) {
                 log.warn(String.format("VertexCache size (%d) too small to execute %d PRIM commands", VertexCache.cacheMaxSize, primCount));
             }
@@ -692,6 +625,10 @@ public class VideoEngine {
 				}
 
 				executeHleAction();
+				if (currentList.isRestarted()) {
+					currentList.clearRestart();
+					currentList.clearPaused();
+				}
 				if (!currentList.isPaused()) {
 				    currentList.status = PSP_GE_LIST_DRAWING;
 				}
@@ -754,7 +691,6 @@ public class VideoEngine {
 
         // let DONE take priority over STALL_REACHED
         if (listHasEnded) {
-            setTsync(false);
             currentList.status = PSP_GE_LIST_END_REACHED;
 
             // Tested on PSP:
@@ -998,10 +934,6 @@ public class VideoEngine {
         return String.format("(hex=%08X,int=%d,float=%f)", normalArgument, normalArgument, floatArgument(normalArgument));
     }
 
-    public void setTsync(boolean status) {
-        tsync_wait = status;
-    }
-
     public void executeCommand(int instruction) {
         int normalArgument = intArgument(instruction);
         // Compute floatArgument only on demand, most commands do not use it.
@@ -1135,6 +1067,7 @@ public class VideoEngine {
                 } else if (isLogDebugEnabled) {
                     log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
                 }
+                currentList.clearRestart();
                 currentList.pushSignalCallback(currentList.id, behavior, signal);
                 break;
 
@@ -1329,11 +1262,9 @@ public class VideoEngine {
                 } else {
                     float floatArgument = floatArgument(normalArgument);
                     context.bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
-                    if (useSkinningShaders) {
-                    	context.boneMatrixForShader[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
-                        if (matrixIndex >= boneMatrixForShaderUpdatedMatrix) {
-                            boneMatrixForShaderUpdatedMatrix = matrixIndex + 1;
-                        }
+                	context.boneMatrixLinear[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
+                    if (matrixIndex >= boneMatrixLinearUpdatedMatrix) {
+                        boneMatrixLinearUpdatedMatrix = matrixIndex + 1;
                     }
 
                     boneMatrixIndex++;
@@ -1953,7 +1884,8 @@ public class VideoEngine {
             }
 
             case FFACE: {
-                re.setFrontFace(normalArgument != 0);
+            	context.frontFaceCw = normalArgument != 0;
+                re.setFrontFace(context.frontFaceCw);
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 }
@@ -2314,10 +2246,8 @@ public class VideoEngine {
             }
 
             case TSYNC: {
-                // Block texture reading until the current list is drawn.
-                // TODO: Currently just faking. Needs to be tested and compared
-                // in terms of speed.
-                setTsync(true);
+                // Probably synchronizing the GE when a drawing result
+            	// is used as a texture. Currently ignored.
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(TSYNC) + " waiting for drawing.");
                 }
@@ -2422,24 +2352,24 @@ public class VideoEngine {
             }
 
             case CTST: {
-            	context.shaderCtestFunc = normalArgument & 3;
-                re.setColorTestFunc(context.shaderCtestFunc);
+            	context.colorTestFunc = normalArgument & 3;
+                re.setColorTestFunc(context.colorTestFunc);
                 break;
             }
 
             case CREF: {
-            	context.shaderCtestRef[0] = (normalArgument) & 0xFF;
-            	context.shaderCtestRef[1] = (normalArgument >> 8) & 0xFF;
-            	context.shaderCtestRef[2] = (normalArgument >> 16) & 0xFF;
-                re.setColorTestReference(context.shaderCtestRef);
+            	context.colorTestRef[0] = (normalArgument) & 0xFF;
+            	context.colorTestRef[1] = (normalArgument >> 8) & 0xFF;
+            	context.colorTestRef[2] = (normalArgument >> 16) & 0xFF;
+                re.setColorTestReference(context.colorTestRef);
                 break;
             }
 
             case CMSK: {
-            	context.shaderCtestMsk[0] = (normalArgument) & 0xFF;
-                context.shaderCtestMsk[1] = (normalArgument >> 8) & 0xFF;
-                context.shaderCtestMsk[2] = (normalArgument >> 16) & 0xFF;
-                re.setColorTestMask(context.shaderCtestMsk);
+            	context.colorTestMsk[0] = (normalArgument) & 0xFF;
+                context.colorTestMsk[1] = (normalArgument >> 8) & 0xFF;
+                context.colorTestMsk[2] = (normalArgument >> 16) & 0xFF;
+                re.setColorTestMask(context.colorTestMsk);
                 break;
             }
 
@@ -2723,6 +2653,7 @@ public class VideoEngine {
             boolean alpha = (normalArgument & 0x200) != 0;
             boolean depth = (normalArgument & 0x400) != 0;
 
+            updateGeBuf();
             re.startClearMode(color, alpha, depth);
             if (isLogDebugEnabled) {
                 log("clear mode : " + (normalArgument >> 8));
@@ -2845,14 +2776,11 @@ public class VideoEngine {
         vinfo.setMorphWeights(context.morph_weight);
         vinfo.setDirty();
 
-        int numberOfWeightsForShader = 0;
-        if (useSkinningShaders) {
-            if (vinfo.weight != 0) {
-            	re.setBones(vinfo.skinningWeightCount, context.boneMatrixForShader);
-                numberOfWeightsForShader = (vinfo.skinningWeightCount <= 4 ? 4 : 8);
-            } else {
-            	re.setBones(0, null);
-            }
+        int numberOfWeightsForVBO;
+        if (vinfo.weight != 0) {
+        	numberOfWeightsForVBO = re.setBones(vinfo.skinningWeightCount, context.boneMatrixLinear);
+        } else {
+        	numberOfWeightsForVBO = re.setBones(0, null);
         }
 
         // Do not use optimized VertexInfo reading when tracing is enabled,
@@ -2872,7 +2800,7 @@ public class VideoEngine {
             //
             Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex);
 
-            enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
+            enableClientState(useVertexColor, useTexture);
 
             int stride = vertexInfoReader.getStride();
             bindBuffer();
@@ -2925,7 +2853,7 @@ public class VideoEngine {
             VertexInfo cachedVertexInfo = null;
             if (useVertexCache) {
                 vertexCacheLookupStatistics.start();
-                cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForShader);
+                cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForVBO);
                 vertexCacheLookupStatistics.end();
             }
             vboFloatBuffer.clear();
@@ -2944,7 +2872,7 @@ public class VideoEngine {
                             VertexState v = vinfo.readVertex(mem, addr);
 
                             // Do skinning first as it modifies v.p and v.n
-                            if (vinfo.weight != 0 && vinfo.position != 0 && !useSkinningShaders) {
+                            if (vinfo.weight != 0 && vinfo.position != 0 && numberOfWeightsForVBO == 0) {
                                 doSkinning(vinfo, v);
                             }
 
@@ -2964,8 +2892,8 @@ public class VideoEngine {
                             if (vinfo.position != 0) {
                                 vboFloatBuffer.put(v.p);
                             }
-                            if (numberOfWeightsForShader > 0) {
-                                vboFloatBuffer.put(v.boneWeights, 0, numberOfWeightsForShader);
+                            if (numberOfWeightsForVBO > 0) {
+                                vboFloatBuffer.put(v.boneWeights, 0, numberOfWeightsForVBO);
                             }
 
                             if (isLogTraceEnabled) {
@@ -2978,13 +2906,13 @@ public class VideoEngine {
                         if (useVBO) {
                             if (useVertexCache) {
                                 cachedVertexInfo = new VertexInfo(vinfo);
-                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForShader);
+                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForVBO);
                                 int size = vboFloatBuffer.position();
                                 vboFloatBuffer.rewind();
                                 cachedVertexInfo.loadVertex(re, vboFloatBuffer, size);
                             } else {
                                 bindBuffer();
-                                re.setBufferData(vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+                                re.setBufferData(vboFloatBuffer.position() * SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
                             }
                         }
                     } else {
@@ -2993,13 +2921,13 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, numberOfWeightsForShader);
+                    bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, numberOfWeightsForVBO);
                     re.drawArrays(type, 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
                     break;
 
                 case PRIM_SPRITES:
-                	re.disableFlag(context.cullFaceFlag.getReFlag());
+                	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
                     if (cachedVertexInfo == null) {
                         for (int i = 0; i < numberOfVertex; i += 2) {
                             int addr1 = vinfo.getAddress(mem, i);
@@ -3090,13 +3018,13 @@ public class VideoEngine {
                         if (useVBO) {
                             if (useVertexCache) {
                                 cachedVertexInfo = new VertexInfo(vinfo);
-                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForShader);
+                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForVBO);
                                 int size = vboFloatBuffer.position();
                                 vboFloatBuffer.rewind();
                                 cachedVertexInfo.loadVertex(re, vboFloatBuffer, size);
                             } else {
                                 bindBuffer();
-                                re.setBufferData(vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+                                re.setBufferData(vboFloatBuffer.position() * SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
                             }
                         }
                     } else {
@@ -3107,9 +3035,7 @@ public class VideoEngine {
                     }
                     bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, 0);
                     re.drawArrays(PRIM_SPRITES, 0, numberOfVertex * 2);
-                    if (context.cullFaceFlag.isEnabled()) {
-                    	re.enableFlag(context.cullFaceFlag.getReFlag());
-                    }
+                    context.cullFaceFlag.updateEnabled();
                     break;
             }
         }
@@ -3123,7 +3049,8 @@ public class VideoEngine {
 	            log.info("Capture PRIM");
 	            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
     		}
-            display.captureGeImage(gl);
+            display.captureGeImage();
+            textureChanged = true;
         }
 
         endRendering(useVertexColor, useTexture, numberOfVertex);
@@ -3206,24 +3133,8 @@ public class VideoEngine {
             int texture = re.genTexture();
             re.bindTexture(texture);
 
-            re.disableFlag(IRenderingEngine.GU_DEPTH_TEST);
-            re.disableFlag(IRenderingEngine.GU_BLEND);
-            re.disableFlag(IRenderingEngine.GU_ALPHA_TEST);
-            re.disableFlag(IRenderingEngine.GU_FOG);
-            re.disableFlag(IRenderingEngine.GU_LIGHTING);
-            re.disableFlag(IRenderingEngine.GU_COLOR_LOGIC_OP);
-            re.disableFlag(IRenderingEngine.GU_STENCIL_TEST);
-            re.disableFlag(IRenderingEngine.GU_SCISSOR_TEST);
-            re.enableFlag(IRenderingEngine.GU_TEXTURE_2D);
-            re.setTextureMipmapMinFilter(TFLT_NEAREST);
-            re.setTextureMipmapMagFilter(TFLT_NEAREST);
-            re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
-
+            re.startDirectRendering(true, false, true, true, false, 480, 272);
             re.setPixelStore(lineWidth, bpp);
-
-            re.setProjectionMatrixElements(getOrthoMatrix(0, 480, 272, 0, -1, 1));
-            re.setViewMatrixElements(null);
-            re.setModelMatrixElements(null);
 
             Buffer buffer = Memory.getInstance().getBuffer(context.textureTx_sourceAddress, lineWidth * height * bpp);
 
@@ -3243,62 +3154,28 @@ public class VideoEngine {
             re.setTexImage(0,pixelFormatGe, lineWidth, bufferHeight, pixelFormatGe, pixelFormatGe, null);
             re.setTexSubImage(0, context.textureTx_sx, context.textureTx_sy, width, height, pixelFormatGe, pixelFormatGe, buffer);
 
-            gl.glBegin(GL.GL_QUADS);
-            gl.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+            re.beginDraw(PRIM_SPRITES);
+            re.drawColor(1.0f, 1.0f, 1.0f, 1.0f);
 
             float texCoordX = width / (float) lineWidth;
             float texCoordY = height / (float) bufferHeight;
 
-            gl.glTexCoord2f(0.0f, 0.0f);
-            gl.glVertex2i(dx, dy);
+            re.drawTexCoord(0.0f, 0.0f);
+            re.drawVertex(dx, dy);
 
-            gl.glTexCoord2f(texCoordX, 0.0f);
-            gl.glVertex2i(dx + width, dy);
+            re.drawTexCoord(texCoordX, 0.0f);
+            re.drawVertex(dx + width, dy);
 
-            gl.glTexCoord2f(texCoordX, texCoordY);
-            gl.glVertex2i(dx + width, dy + height);
+            re.drawTexCoord(texCoordX, texCoordY);
+            re.drawVertex(dx + width, dy + height);
 
-            gl.glTexCoord2f(0.0f, texCoordY);
-            gl.glVertex2i(dx, dy + height);
+            re.drawTexCoord(0.0f, texCoordY);
+            re.drawVertex(dx, dy + height);
 
-            gl.glEnd();
+            re.endDraw();
 
-            projectionMatrixUpload.setChanged(true);
-            modelMatrixUpload.setChanged(true);
-            viewMatrixUpload.setChanged(true);
-
-            context.depthTestFlag.update();
-            context.blendFlag.update();
-            context.alphaTestFlag.update();
-            context.fogFlag.update();
-            context.lightingFlag.update();
-            context.colorLogicOpFlag.update();
-            context.stencilTestFlag.update();
-            context.scissorTestFlag.update();
-            context.textureFlag.update();
-
+            re.endDirectRendering();
             re.deleteTexture(texture);
-        }
-    }
-
-    public void disableShaders() {
-        if (useShaders) {
-            gl.glUniform1f(Uniforms.zPos.getId(), 0);
-            gl.glUniform1f(Uniforms.zScale.getId(), 0);
-            gl.glUniform1i(Uniforms.texEnable.getId(), 0);
-            gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
-            gl.glUniform1i(Uniforms.numberBones.getId(), 0);
-            gl.glUniform1i(Uniforms.ctestEnable.getId(), 0);
-        }
-    }
-
-    public void enableShaders() {
-        if (useShaders) {
-            gl.glUniform1f(Uniforms.zPos.getId(), context.zpos);
-            gl.glUniform1f(Uniforms.zScale.getId(), context.zscale);
-            gl.glUniform1i(Uniforms.texEnable.getId(), context.textureFlag.isEnabledInt());
-            gl.glUniform1i(Uniforms.lightingEnable.getId(), context.lightingFlag.isEnabledInt());
-            gl.glUniform1i(Uniforms.ctestEnable.getId(), context.colorTestFlag.isEnabledInt());
         }
     }
 
@@ -3308,7 +3185,7 @@ public class VideoEngine {
         if (vinfo.position == 0) {
             log.warn(helper.getCommandString(BBOX) + " no positions for vertex!");
             return;
-        } else if (!glQueryAvailable) {
+        } else if (!re.hasBoundingBox()) {
             log.info("Not supported by your OpenGL version (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
             return;
         } else if ((numberOfVertexBoundingBox % 8) != 0) {
@@ -3321,32 +3198,7 @@ public class VideoEngine {
         Memory mem = Memory.getInstance();
         boolean useVertexColor = initRendering();
 
-        // Bounding box should not be displayed, disable all drawings
-        gl.glPushAttrib(GL.GL_ENABLE_BIT | GL.GL_COLOR_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-        gl.glColorMask(false, false, false, false);
-        gl.glDepthMask(false);
-        gl.glDisable(GL.GL_BLEND);
-        gl.glDisable(GL.GL_STENCIL_TEST);
-        gl.glDisable(GL.GL_LIGHTING);
-        gl.glDisable(GL.GL_TEXTURE_2D);
-        gl.glDisable(GL.GL_ALPHA_TEST);
-        gl.glDisable(GL.GL_FOG);
-        gl.glDisable(GL.GL_DEPTH_TEST);
-        gl.glDisable(GL.GL_LOGIC_OP);
-        gl.glDisable(GL.GL_CULL_FACE);
-        gl.glDisable(GL.GL_SCISSOR_TEST);
-
-        disableShaders();
-
-        gl.glBeginQuery(GL.GL_SAMPLES_PASSED, bboxQueryId);
-        //
-        // The bounding box is a cube defined by 8 vertices.
-        // It is not clear if the vertices have to be listed in a pre-defined order.
-        // Which primitive should be used?
-        // - GL_TRIANGLE_STRIP: we only draw 3 faces of the cube
-        // - GL_QUADS: how are organized the 8 vertices to draw all the cube faces?
-        //
-        gl.glBegin(GL.GL_QUADS);
+        re.beginBoundingBox();
         for (int i = 0; i < numberOfVertexBoundingBox; i++) {
             int addr = vinfo.getAddress(mem, i);
 
@@ -3361,111 +3213,19 @@ public class VideoEngine {
             bboxVertices[vertexIndex][2] = v.p[2];
 
             if (vertexIndex == 7) {
-                //
-                // Cube from BBOX:
-                //
-                // BBOX Front face:
-                //  2---3
-                //  |   |
-                //  |   |
-                //  0---1
-                //
-                // BBOX Back face:
-                //  6---7
-                //  |   |
-                //  |   |
-                //  4---5
-                //
-                // OpenGL QUAD:
-                //  3---2
-                //  |   |
-                //  |   |
-                //  0---1
-                //
-
-                // Front face
-                gl.glVertex3fv(bboxVertices[0], 0);
-                gl.glVertex3fv(bboxVertices[1], 0);
-                gl.glVertex3fv(bboxVertices[3], 0);
-                gl.glVertex3fv(bboxVertices[2], 0);
-
-                // Back face
-                gl.glVertex3fv(bboxVertices[4], 0);
-                gl.glVertex3fv(bboxVertices[5], 0);
-                gl.glVertex3fv(bboxVertices[7], 0);
-                gl.glVertex3fv(bboxVertices[6], 0);
-
-                // Right face
-                gl.glVertex3fv(bboxVertices[1], 0);
-                gl.glVertex3fv(bboxVertices[5], 0);
-                gl.glVertex3fv(bboxVertices[7], 0);
-                gl.glVertex3fv(bboxVertices[3], 0);
-
-                // Left face
-                gl.glVertex3fv(bboxVertices[0], 0);
-                gl.glVertex3fv(bboxVertices[4], 0);
-                gl.glVertex3fv(bboxVertices[6], 0);
-                gl.glVertex3fv(bboxVertices[2], 0);
-
-                // Top face
-                gl.glVertex3fv(bboxVertices[2], 0);
-                gl.glVertex3fv(bboxVertices[3], 0);
-                gl.glVertex3fv(bboxVertices[7], 0);
-                gl.glVertex3fv(bboxVertices[6], 0);
-
-                // Bottom face
-                gl.glVertex3fv(bboxVertices[0], 0);
-                gl.glVertex3fv(bboxVertices[1], 0);
-                gl.glVertex3fv(bboxVertices[5], 0);
-                gl.glVertex3fv(bboxVertices[4], 0);
+            	re.drawBoundingBox(bboxVertices);
             }
         }
-        gl.glEnd();
-        gl.glEndQuery(GL.GL_SAMPLES_PASSED);
-        gl.glPopAttrib();
-
-        enableShaders();
+        re.endBoundingBox();
 
         endRendering(useVertexColor, false, numberOfVertexBoundingBox);
     }
 
     private void executeCommandBJUMP(int normalArgument) {
-        takeConditionalJump = false;
+        boolean takeConditionalJump = false;
 
-        if (glQueryAvailable) {
-            int[] result = new int[1];
-            boolean resultAvailable = false;
-
-            // Wait for query result available
-            for (int i = 0; i < 10000; i++) {
-                gl.glGetQueryObjectiv(bboxQueryId, GL.GL_QUERY_RESULT_AVAILABLE, result, 0);
-                if (isLogTraceEnabled) {
-                    log.trace("glGetQueryObjectiv result available " + result[0]);
-                }
-
-                // 0 means result not yet available, 1 means result available
-                if (result[0] != 0) {
-                    resultAvailable = true;
-
-                    // Retrieve query result (number of visible samples)
-                    gl.glGetQueryObjectiv(bboxQueryId, GL.GL_QUERY_RESULT, result, 0);
-                    if (isLogTraceEnabled) {
-                        log.trace("glGetQueryObjectiv result " + result[0]);
-                    }
-
-                    // 0 samples visible means the bounding box was occluded (not visible)
-                    if (result[0] == 0) {
-                        takeConditionalJump = true;
-                    }
-                    break;
-                }
-            }
-
-            if (!resultAvailable) {
-                if (isLogWarnEnabled) {
-                    log.warn(helper.getCommandString(BJUMP) + " glQuery result not available in due time");
-                }
-            }
+        if (re.hasBoundingBox()) {
+        	takeConditionalJump = !re.isBoundingBoxVisible();
         }
 
         if (takeConditionalJump) {
@@ -3477,12 +3237,12 @@ public class VideoEngine {
             }
         } else {
             if (isLogDebugEnabled) {
-                log(helper.getCommandString(BJUMP) + " not taking Conditional Jump");
+                log(String.format("%s not taking Conditional Jump", helper.getCommandString(BJUMP)));
             }
         }
     }
 
-    private void enableClientState(boolean useVertexColor, boolean useTexture, int numberOfWeightsForShader) {
+    private void enableClientState(boolean useVertexColor, boolean useTexture) {
         if (vinfo.texture != 0 || useTexture) {
             re.enableClientState(IRenderingEngine.RE_TEXTURE);
         } else {
@@ -3497,17 +3257,6 @@ public class VideoEngine {
         	re.enableClientState(IRenderingEngine.RE_NORMAL);
         } else {
         	re.disableClientState(IRenderingEngine.RE_NORMAL);
-        }
-        if (numberOfWeightsForShader > 0) {
-            re.enableVertexAttribArray(shaderAttribWeights1);
-            if (numberOfWeightsForShader > 4) {
-            	re.enableVertexAttribArray(shaderAttribWeights2);
-            } else {
-            	re.disableVertexAttribArray(shaderAttribWeights2);
-            }
-        } else {
-        	re.disableVertexAttribArray(shaderAttribWeights1);
-        	re.disableVertexAttribArray(shaderAttribWeights2);
         }
         re.enableClientState(IRenderingEngine.RE_VERTEX);
     }
@@ -3526,7 +3275,7 @@ public class VideoEngine {
                 if (useVBO) {
                 	re.setTexCoordPointer(2, type, stride, offset);
                 } else if (useVboFloatBuffer) {
-                	re.setTexCoordPointer(2, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+                	re.setTexCoordPointer(2, type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
                 } else {
                 	re.setTexCoordPointer(2, type, stride, vboBuffer.position(offset));
                 }
@@ -3548,7 +3297,7 @@ public class VideoEngine {
                 if (useVBO) {
                 	re.setColorPointer(4, type, stride, offset);
                 } else if (useVboFloatBuffer) {
-                	re.setColorPointer(4, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+                	re.setColorPointer(4, type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
                 } else {
                 	re.setColorPointer(4, type, stride, vboBuffer.position(offset));
                 }
@@ -3569,7 +3318,7 @@ public class VideoEngine {
             if (useVBO) {
             	re.setVertexPointer(3, type, stride, offset);
             } else if (useVboFloatBuffer) {
-            	re.setVertexPointer(3, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+            	re.setVertexPointer(3, type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
             } else {
             	re.setVertexPointer(3, type, stride, vboBuffer.position(offset));
             }
@@ -3591,7 +3340,7 @@ public class VideoEngine {
                 if (useVBO) {
                 	re.setNormalPointer(type, stride, offset);
                 } else if (useVboFloatBuffer) {
-                	re.setNormalPointer(type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+                	re.setNormalPointer(type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
                 } else {
                 	re.setNormalPointer(type, stride, vboBuffer.position(offset));
                 }
@@ -3599,44 +3348,35 @@ public class VideoEngine {
         }
     }
 
-    private void bindBuffers(boolean useVertexColor, boolean useTexture, boolean useNormal, boolean doBindBuffer, int numberOfWeightsForShader) {
-        int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos1 = 0, wpos2 = 0;
+    private void bindBuffers(boolean useVertexColor, boolean useTexture, boolean useNormal, boolean doBindBuffer, int numberOfWeightsForVBO) {
+        int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos = 0;
 
         if (vinfo.texture != 0 || useTexture) {
-            stride += BufferUtil.SIZEOF_FLOAT * 2;
+            stride += SIZEOF_FLOAT * 2;
             cpos = npos = vpos = stride;
         }
         if (useVertexColor) {
-            stride += BufferUtil.SIZEOF_FLOAT * 4;
+            stride += SIZEOF_FLOAT * 4;
             npos = vpos = stride;
         }
         if (useNormal) {
-            stride += BufferUtil.SIZEOF_FLOAT * 3;
+            stride += SIZEOF_FLOAT * 3;
             vpos = stride;
         }
-        stride += BufferUtil.SIZEOF_FLOAT * 3;
-        if (numberOfWeightsForShader > 0) {
-            wpos1 = stride;
-            stride += BufferUtil.SIZEOF_FLOAT * 4;
-            if (numberOfWeightsForShader > 4) {
-                wpos2 = stride;
-                stride += BufferUtil.SIZEOF_FLOAT * 4;
-            }
+        stride += SIZEOF_FLOAT * 3;
+        if (numberOfWeightsForVBO > 0) {
+            wpos = stride;
+            stride += SIZEOF_FLOAT * numberOfWeightsForVBO;
         }
 
-        enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
+        enableClientState(useVertexColor, useTexture);
         if (doBindBuffer) {
             bindBuffer();
         }
         glTexCoordPointer(useTexture, IRenderingEngine.RE_FLOAT, stride, 0, false, true, false);
         glColorPointer(useVertexColor, IRenderingEngine.RE_FLOAT, stride, cpos, false, true, false);
         glNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false, true, false);
-        if (numberOfWeightsForShader > 0) {
-            re.setVertexAttribPointer(shaderAttribWeights1, 4, IRenderingEngine.RE_FLOAT, false, stride, wpos1);
-            if (numberOfWeightsForShader > 4) {
-                re.setVertexAttribPointer(shaderAttribWeights2, 4, IRenderingEngine.RE_FLOAT, false, stride, wpos2);
-            }
-        }
+        re.setWeightPointer(numberOfWeightsForVBO, IRenderingEngine.RE_FLOAT, stride, wpos);
         glVertexPointer(IRenderingEngine.RE_FLOAT, stride, vpos, false, true, false);
     }
 
@@ -4358,9 +4098,9 @@ public class VideoEngine {
          */
         if (projectionMatrixUpload.isChanged()) {
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	re.setProjectionMatrixElements(context.proj_uploaded_matrix);
+            	re.setProjectionMatrix(context.proj_uploaded_matrix);
             } else {
-            	re.setProjectionMatrixElements(null);
+            	re.setProjectionMatrix(null);
             }
             projectionMatrixUpload.setChanged(false);
 
@@ -4407,7 +4147,7 @@ public class VideoEngine {
          * Load the 2D ortho (only after the depth settings
          */
         if (loadOrtho2D) {
-            re.setProjectionMatrixElements(getOrthoMatrix(0, 480, 272, 0, 0, -0xFFFF));
+            re.setProjectionMatrix(getOrthoMatrix(0, 480, 272, 0, 0, -0xFFFF));
         }
 
         /*
@@ -4440,9 +4180,9 @@ public class VideoEngine {
          */
         if (modelViewMatrixChanged) {
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	re.setViewMatrixElements(context.view_uploaded_matrix);
+            	re.setViewMatrix(context.view_uploaded_matrix);
             } else {
-            	re.setViewMatrixElements(null);
+            	re.setViewMatrix(null);
             }
             viewMatrixUpload.setChanged(false);
         }
@@ -4482,53 +4222,57 @@ public class VideoEngine {
         if (modelViewMatrixChanged) {
             // Apply model matrix
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                if (!modelMatrixUpload.isIdentity()) {
-                	re.setModelMatrixElements(context.model_uploaded_matrix);
-                }
+            	re.setModelMatrix(context.model_uploaded_matrix);
+            } else {
+            	re.setModelMatrix(null);
             }
             modelMatrixUpload.setChanged(false);
+            re.endModelViewMatrixUpdate();
         }
 
         /*
          * Apply texture transforms
          */
         if (textureMatrixUpload.isChanged()) {
-        	float[] textureMatrix = new float[] {
-        		1, 0, 0, 0,
-        		0, 1, 0, 0,
-        		0, 0, 1, 0,
-        		0, 0, 0, 1
-        	};
-
             if (context.transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
             	re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_POSITION);;
-            	textureMatrix[0] = 1.f / context.texture_width[0];
-            	textureMatrix[5] = 1.f / context.texture_height[0];
-            	re.setTextureMatrixElements(textureMatrix);
+
+            	float[] textureMatrix = new float[] {
+            			1.f / context.texture_width[0], 0, 0, 0,
+                		0, 1.f / context.texture_height[0], 0, 0,
+                		0, 0, 1, 0,
+                		0, 0, 0, 1
+                	};
+            	re.setTextureMatrix(textureMatrix);
             } else {
             	re.setTextureMapMode(context.tex_map_mode, context.tex_proj_map_mode);
                 switch (context.tex_map_mode) {
-                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV: {
                         re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
                         re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
-                    	textureMatrix[0] = context.tex_scale_x;
-                    	textureMatrix[5] = context.tex_scale_y;
-                    	textureMatrix[3] = context.tex_translate_x;
-                    	textureMatrix[7] = context.tex_translate_y;
-                    	re.setTextureMatrixElements(textureMatrix);
-                        break;
 
-                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
+                        float[] textureMatrix = new float[] {
+                        		context.tex_scale_x, 0, 0, 0,
+                        		0, context.tex_scale_y, 0, 0,
+                        		0, 0, 1, 0,
+                        		-context.tex_translate_x, -context.tex_translate_y, 0, 1
+                        	};
+                    	re.setTextureMatrix(textureMatrix);
+                        break;
+                    }
+
+                    case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
                         re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
                         re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
-                    	re.setTextureMatrixElements(context.texture_uploaded_matrix);
+                    	re.setTextureMatrix(context.texture_uploaded_matrix);
                         break;
+                    }
 
                     case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
                     	re.setTextureEnvironmentMapping(context.tex_shade_u, context.tex_shade_v);
                         re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
                         re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
-                    	re.setTextureMatrixElements(context.tex_envmap_matrix);
+                    	re.setTextureMatrix(context.tex_envmap_matrix);
                         break;
                     }
 
@@ -4593,18 +4337,19 @@ public class VideoEngine {
                 log.debug("TBIAS_MODE_CONST " + context.tex_mipmap_bias_int);
             }
         } else if (context.tex_mipmap_mode == TBIAS_MODE_AUTO) {
+        	// TODO implement TBIAS_MODE_AUTO. The following is not correct
             // TBIAS_MODE_AUTO performs a comparison between the texture's weight and height at level 0.
-            int maxValue = Math.max(context.texture_width[0], context.texture_height[0]);
-
-            if(maxValue <= 1) {
-                mipmapBaseLevel = 0;
-            } else {
-                mipmapBaseLevel = (int) ((Math.log((Math.abs(maxValue) / Math.abs(context.zpos))) / Math.log(2)) + context.tex_mipmap_bias);
-            }
-            mipmapMaxLevel = mipmapBaseLevel;
-            if (isLogDebugEnabled) {
-                log.debug("TBIAS_MODE_AUTO " + context.tex_mipmap_bias + ", param=" + maxValue);
-            }
+            // int maxValue = Math.max(context.texture_width[0], context.texture_height[0]);
+        	//
+            // if(maxValue <= 1) {
+            //     mipmapBaseLevel = 0;
+            // } else {
+            //     mipmapBaseLevel = (int) ((Math.log((Math.abs(maxValue) / Math.abs(context.zpos))) / Math.log(2)) + context.tex_mipmap_bias);
+            // }
+            // mipmapMaxLevel = mipmapBaseLevel;
+            // if (isLogDebugEnabled) {
+            //     log.debug("TBIAS_MODE_AUTO " + context.tex_mipmap_bias + ", param=" + maxValue);
+            // }
         } else if (context.tex_mipmap_mode == TBIAS_MODE_SLOPE) {
             // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
             mipmapBaseLevel = (int) ((Math.log(Math.abs(context.tslope_level) / Math.abs(context.zpos)) / Math.log(2)) + context.tex_mipmap_bias);
@@ -4648,7 +4393,7 @@ public class VideoEngine {
         }
     }
 
-    private static float[] getOrthoMatrix(float left, float right, float bottom, float top, float near, float far) {
+    public static float[] getOrthoMatrix(float left, float right, float bottom, float top, float near, float far) {
     	float dx = right - left;
     	float dy = top - bottom;
     	float dz = far - near;
@@ -4874,7 +4619,7 @@ public class VideoEngine {
         		vboFloatBuffer.put(v2.p);
         	}
 
-        	re.setBufferData(vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+        	re.setBufferData(vboFloatBuffer.position() * SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
             re.drawArrays(patch_prim_types[context.patch_prim], 0, (context.patch_div_s + 1) * 2);
         }
 
@@ -4972,7 +4717,7 @@ public class VideoEngine {
 
     private void updateGeBuf() {
         if (geBufChanged) {
-            display.hleDisplaySetGeBuf(gl, context.fbp, context.fbw, context.psm, somethingDisplayed);
+            display.hleDisplaySetGeBuf(context.fbp, context.fbw, context.psm, somethingDisplayed);
             geBufChanged = false;
 
             textureChanged = true;
@@ -5184,7 +4929,7 @@ public class VideoEngine {
 
         System.arraycopy(context.colorMask, 0, pspContext.glColorMask, 0, context.colorMask.length);
 
-        pspContext.copyGLToContext(gl);
+        pspContext.copyGLToContext(display.getGL());
     }
 
     private void restoreContext(pspGeContext pspContext) {
@@ -5314,7 +5059,7 @@ public class VideoEngine {
 
         System.arraycopy(pspContext.glColorMask, 0, context.colorMask, 0, context.colorMask.length);
 
-        pspContext.copyContextToGL(gl);
+        pspContext.copyContextToGL(display.getGL());
 
         projectionMatrixUpload.setChanged(true);
         modelMatrixUpload.setChanged(true);

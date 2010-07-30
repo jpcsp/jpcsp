@@ -38,7 +38,6 @@ public enum Uniforms {
 	ctestFunc("ctestFunc"),
 	ctestRef("ctestRef"),
 	ctestMsk("ctestMsk"),
-	invertedColorMask("invertedColorMask"),
 	boneMatrix("psp_boneMatrix"),
 	weights("psp_weights"),
 	numberBones("psp_numberBones");

@@ -26,8 +26,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
-import javax.media.opengl.GL;
-
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
@@ -43,32 +42,32 @@ public class CaptureImage {
 	private int width;
 	private int height;
 	private int bufferWidth;
-	private int imageType;
+	private int bufferStorage;
 	private boolean compressedImage;
 	private int compressedImageSize;
 	private boolean overwriteFile;
 
-	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize) {
+	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize) {
 		this.imageaddr = imageaddr;
 		this.level = level;
 		this.buffer = buffer;
 		this.width = width;
 		this.height = height;
 		this.bufferWidth = bufferWidth;
-		this.imageType = imageType;
+		this.bufferStorage = bufferStorage;
 		this.compressedImage = compressedImage;
 		this.compressedImageSize = compressedImageSize;
 		this.overwriteFile = false;
 	}
 
-	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize, boolean overwriteFile) {
+	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean overwriteFile) {
 		this.imageaddr = imageaddr;
 		this.level = level;
 		this.buffer = buffer;
 		this.width = width;
 		this.height = height;
 		this.bufferWidth = bufferWidth;
-		this.imageType = imageType;
+		this.bufferStorage = bufferStorage;
 		this.compressedImage = compressedImage;
 		this.compressedImageSize = compressedImageSize;
 		this.overwriteFile = overwriteFile;
@@ -133,7 +132,7 @@ public class CaptureImage {
 		outBmp.write(dibHeader);
 		byte[] rowPadBytes = new byte[rowPad];
 		byte[] pixelBytes = new byte[3];
-		boolean imageType32Bit = imageType == GL.GL_UNSIGNED_BYTE || imageType == GL.GL_UNSIGNED_INT_8_8_8_8_REV;
+		boolean imageType32Bit = bufferStorage == GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     	if (buffer instanceof IntBuffer && imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
@@ -164,9 +163,9 @@ public class CaptureImage {
 				for (int x = 0; x < width; x += 2) {
 					try {
 						int twoPixels = intBuffer.get();
-						getPixelBytes((short) twoPixels, imageType, pixelBytes);
+						getPixelBytes((short) twoPixels, bufferStorage, pixelBytes);
 						outBmp.write(pixelBytes);
-						getPixelBytes((short) (twoPixels >>> 16), imageType, pixelBytes);
+						getPixelBytes((short) (twoPixels >>> 16), bufferStorage, pixelBytes);
 						outBmp.write(pixelBytes);
 					} catch (BufferUnderflowException e) {
 						pixelBytes[0] = pixelBytes[1] = pixelBytes[2] = 0;
@@ -188,7 +187,7 @@ public class CaptureImage {
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					short pixel = shortBuffer.get();
-					getPixelBytes(pixel, imageType, pixelBytes);
+					getPixelBytes(pixel, bufferStorage, pixelBytes);
 					outBmp.write(pixelBytes);
 				}
 				outBmp.write(rowPadBytes);
@@ -216,7 +215,7 @@ public class CaptureImage {
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					short pixel = (short) memoryReader.readNext();
-					getPixelBytes(pixel, imageType, pixelBytes);
+					getPixelBytes(pixel, bufferStorage, pixelBytes);
 					outBmp.write(pixelBytes);
 				}
 				outBmp.write(rowPadBytes);
@@ -245,17 +244,17 @@ public class CaptureImage {
 
     private void getPixelBytes(short pixel, int imageType, byte[] pixelBytes) {
     	switch (imageType) {
-    	case GL.GL_UNSIGNED_SHORT_5_6_5_REV:
+    	case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
     		pixelBytes[0] = (byte) ((pixel >> 8) & 0xF8);
     		pixelBytes[1] = (byte) ((pixel >> 3) & 0xFC);
     		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8);
     		break;
-    	case GL.GL_UNSIGNED_SHORT_1_5_5_5_REV:
+    	case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
     		pixelBytes[0] = (byte) ((pixel >> 7) & 0xF8);
     		pixelBytes[1] = (byte) ((pixel >> 2) & 0xF8);
     		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8);
     		break;
-    	case GL.GL_UNSIGNED_SHORT_4_4_4_4_REV:
+    	case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
     		pixelBytes[0] = (byte) ((pixel >> 4) & 0xF0);
     		pixelBytes[1] = (byte) ((pixel     ) & 0xF0);
     		pixelBytes[2] = (byte) ((pixel << 4) & 0xF0);
@@ -351,28 +350,28 @@ public class CaptureImage {
 		compressedImage = false;
 		buffer = decompressedBuffer;
 		bufferWidth = width;
-		imageType = GL.GL_UNSIGNED_BYTE;
+		bufferStorage = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     }
 
     private void decompressImage() {
-    	switch (imageType) {
-		case GL.GL_COMPRESSED_RGB_S3TC_DXT1_EXT: {
+    	switch (bufferStorage) {
+		case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1: {
 			decompressImageDXT(1);
 			break;
 		}
 
-		case GL.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT: {
+		case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3: {
 			decompressImageDXT(3);
 			break;
 		}
 
-		case GL.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT: {
+		case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5: {
 			decompressImageDXT(5);
 			break;
 		}
 
 		default:
-			VideoEngine.log.warn("Unsupported compressed image type " + imageType);
+			VideoEngine.log.warn("Unsupported compressed buffer storage " + bufferStorage);
 			break;
 		}
     }

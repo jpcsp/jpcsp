@@ -155,26 +155,6 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
 		}
 	}
 
-	protected static boolean getBooleanColorMask(String name, int bitMask) {
-		if (bitMask == 0xFF) {
-			return false;
-		} else if (bitMask != 0x00) {
-            log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
-        }
-
-        return true;
-	}
-
-    @Override
-	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
-        boolean redWriteEnabled   = getBooleanColorMask("Red color mask", redMask);
-        boolean greenWriteEnabled = getBooleanColorMask("Green color mask", greenMask);
-        boolean blueWriteEnabled  = getBooleanColorMask("Blue color mask", blueMask);
-        boolean alphaWriteEnabled = getBooleanColorMask("Alpha mask", alphaMask);
-        re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
-        super.setColorMask(redMask, greenMask, blueMask, alphaMask);
-    }
-
 	@Override
 	public void enableVertexAttribArray(int id) {
 		// This call is used only by Shader

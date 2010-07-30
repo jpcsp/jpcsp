@@ -34,6 +34,12 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	protected IRenderingEngine re;
 	protected IRenderingEngine proxy;
 	protected GeContext context;
+	protected static final float[] identityMatrix = {
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
 
 	public BaseRenderingEngineProxy(IRenderingEngine proxy) {
 		this.proxy = proxy;
@@ -51,6 +57,26 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void setGeContext(GeContext context) {
 		this.context = context;
 		proxy.setGeContext(context);
+	}
+
+	@Override
+	public void endDirectRendering() {
+		proxy.endDirectRendering();
+	}
+
+	@Override
+	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height) {
+		proxy.startDirectRendering(textureEnabled, depthWriteEnabled, colorWriteEnabled, setOrthoMatrix, orthoInverted, width, height);
+	}
+
+	@Override
+	public void startDisplay() {
+		proxy.startDisplay();
+	}
+
+	@Override
+	public void endDisplay() {
+		proxy.endDisplay();
 	}
 
 	@Override
@@ -204,13 +230,23 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setMatrixElements(int type, float[] values) {
-		proxy.setMatrixElements(type, values);
+	public void setMatrix(int type, float[] values) {
+		proxy.setMatrix(type, values);
 	}
 
 	@Override
-	public void setModelMatrixElements(float[] values) {
-		proxy.setModelMatrixElements(values);
+	public void setModelMatrix(float[] values) {
+		proxy.setModelMatrix(values);
+	}
+
+	@Override
+	public void endModelViewMatrixUpdate() {
+		proxy.endModelViewMatrixUpdate();
+	}
+
+	@Override
+	public void setModelViewMatrix(float[] values) {
+		proxy.setModelViewMatrix(values);
 	}
 
 	@Override
@@ -229,8 +265,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setProjectionMatrixElements(float[] values) {
-		proxy.setProjectionMatrixElements(values);
+	public void setProjectionMatrix(float[] values) {
+		proxy.setProjectionMatrix(values);
 	}
 
 	@Override
@@ -244,8 +280,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setTextureMatrixElements(float[] values) {
-		proxy.setTextureMatrixElements(values);
+	public void setTextureMatrix(float[] values) {
+		proxy.setTextureMatrix(values);
 	}
 
 	@Override
@@ -279,8 +315,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setViewMatrixElements(float[] values) {
-		proxy.setViewMatrixElements(values);
+	public void setViewMatrix(float[] values) {
+		proxy.setViewMatrix(values);
 	}
 
 	@Override
@@ -339,8 +375,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setBones(int count, float[] values) {
-		proxy.setBones(count, values);
+	public int setBones(int count, float[] values) {
+		return proxy.setBones(count, values);
 	}
 
 	@Override
@@ -554,8 +590,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setStencilOp(int fail, int zfail, int pass) {
-		proxy.setStencilOp(fail, zfail, pass);
+	public void setStencilOp(int fail, int zfail, int zpass) {
+		proxy.setStencilOp(fail, zfail, zpass);
 	}
 
 	@Override
@@ -616,5 +652,125 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, Buffer buffer) {
 		proxy.setTexSubImage(level, xOffset, yOffset, width, height, format, type, buffer);
+	}
+
+	@Override
+	public void beginDraw(int type) {
+		proxy.beginDraw(type);
+	}
+
+	@Override
+	public void beginQuery(int id) {
+		proxy.beginQuery(id);
+	}
+
+	@Override
+	public void drawColor(float value1, float value2, float value3) {
+		proxy.drawColor(value1, value2, value3);
+	}
+
+	@Override
+	public void drawColor(float value1, float value2, float value3, float value4) {
+		proxy.drawColor(value1, value2, value3, value4);
+	}
+
+	@Override
+	public void drawTexCoord(float value1, float value2) {
+		proxy.drawTexCoord(value1, value2);
+	}
+
+	@Override
+	public void drawVertex(int value1, int value2) {
+		proxy.drawVertex(value1, value2);
+	}
+
+	@Override
+	public void drawVertex(float value1, float value2) {
+		proxy.drawVertex(value1, value2);
+	}
+
+	@Override
+	public void drawVertex3(float[] values) {
+		proxy.drawVertex3(values);
+	}
+
+	@Override
+	public void endDraw() {
+		proxy.endDraw();
+	}
+
+	@Override
+	public void endQuery() {
+		proxy.endQuery();
+	}
+
+	@Override
+	public int genQuery() {
+		return proxy.genQuery();
+	}
+
+	@Override
+	public void drawBoundingBox(float[][] values) {
+		proxy.drawBoundingBox(values);
+	}
+
+	@Override
+	public void endBoundingBox() {
+		proxy.endBoundingBox();
+	}
+
+	@Override
+	public void beginBoundingBox() {
+		proxy.beginBoundingBox();
+	}
+
+	@Override
+	public boolean hasBoundingBox() {
+		return proxy.hasBoundingBox();
+	}
+
+	@Override
+	public boolean isBoundingBoxVisible() {
+		return proxy.isBoundingBoxVisible();
+	}
+
+	@Override
+	public int getQueryResult(int id) {
+		return proxy.getQueryResult(id);
+	}
+
+	@Override
+	public boolean getQueryResultAvailable(int id) {
+		return proxy.getQueryResultAvailable(id);
+	}
+
+	@Override
+	public void clear(float red, float green, float blue, float alpha) {
+		proxy.clear(red, green, blue, alpha);
+	}
+
+	@Override
+	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height) {
+		proxy.copyTexSubImage(level, xOffset, yOffset, x, y, width, height);
+	}
+
+	@Override
+	public void getTexImage(int level, int format, int type, Buffer buffer) {
+		proxy.getTexImage(level, format, type, buffer);
+	}
+
+	@Override
+	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer) {
+		proxy.readPixels(x, y, width, height, format, type, buffer);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, long offset) {
+		proxy.setWeightPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
+		proxy.setWeightPointer(size, type, stride, buffer);
 	}
 }

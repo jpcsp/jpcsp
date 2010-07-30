@@ -58,7 +58,7 @@ public class GeContext {
     public float[] model_uploaded_matrix = new float[4 * 4];
     public float[] view_uploaded_matrix = new float[4 * 4];
     public float[][] bone_uploaded_matrix = new float[8][4 * 3];
-    public float[] boneMatrixForShader = new float[8 * 4 * 4]; // Linearized version of bone_uploaded_matrix
+    public float[] boneMatrixLinear = new float[8 * 4 * 4]; // Linearized version of bone_uploaded_matrix
 	public boolean depthMask;
     public int colorMask[] = new int[] { 0x00, 0x00, 0x00, 0x00 };
 	public int stencilFunc;
@@ -70,6 +70,7 @@ public class GeContext {
     public int textureFunc;
     public boolean textureColorDoubled;
     public boolean textureAlphaUsed;
+    public boolean frontFaceCw;
     public int depthFunc;
     public float[] morph_weight = new float[8];
     public float[] tex_envmap_matrix = new float[4 * 4];
@@ -136,9 +137,9 @@ public class GeContext {
     public int[] dither_matrix = new int[16];
     public int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
     public int tex_proj_map_mode = TMAP_TEXTURE_PROJECTION_MODE_POSITION;
-    public int shaderCtestFunc;
-    public int[] shaderCtestRef = { 0, 0, 0 };
-    public int[] shaderCtestMsk = { 0, 0, 0 };
+    public int colorTestFunc;
+    public int[] colorTestRef = { 0, 0, 0 };
+    public int[] colorTestMsk = { 0, 0, 0 };
     public final List<EnableDisableFlag> flags = new LinkedList<EnableDisableFlag>();
     public final EnableDisableFlag alphaTestFlag = new EnableDisableFlag("GU_ALPHA_TEST", IRenderingEngine.GU_ALPHA_TEST);
     public final EnableDisableFlag depthTestFlag = new EnableDisableFlag("GU_DEPTH_TEST", IRenderingEngine.GU_DEPTH_TEST);
@@ -237,6 +238,12 @@ public class GeContext {
             } else {
             	re.disableFlag(reFlag);
             }
+        }
+
+        public void updateEnabled() {
+        	if (enabled) {
+        		re.enableFlag(reFlag);
+        	}
         }
 
         public int save(int bits) {

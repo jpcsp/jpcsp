@@ -675,7 +675,7 @@ public class VertexInfo {
     	return hashCode;
     }
 
-    public boolean equals(VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForShader) {
+    public boolean equals(VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForVBO) {
 		if (param != vertexInfo.param ||
 		    cachedNumberOfVertex != numberOfVertex ||
 		    ptr_index != vertexInfo.ptr_index) {
@@ -689,7 +689,7 @@ public class VertexInfo {
 		}
 
 		// Check if the bone matrix has changed, only if not using Skinning Shaders
-		if (weight != 0 && numberOfWeightsForShader == 0) {
+		if (weight != 0 && numberOfWeightsForVBO > 0) {
 			for (int i = 0; i < skinningWeightCount; i++) {
 				for (int j = 0; j < 12; j++) {
 					if (cachedBoneMatrix[i][j] != boneMatrix[i][j]) {
@@ -744,14 +744,14 @@ public class VertexInfo {
 		cachedBuffer = null;
     }
 
-	public void prepareForCache(VertexCache vertexCache, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForShader) {
+	public void prepareForCache(VertexCache vertexCache, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForVBO) {
 		this.vertexCache = vertexCache;
 		cachedNumberOfVertex = numberOfVertex;
 
 		cachedMorphWeights = new float[morphingVertexCount];
 		System.arraycopy(morph_weight, 0, cachedMorphWeights, 0, morphingVertexCount);
 
-		if (weight != 0 && numberOfWeightsForShader == 0) {
+		if (weight != 0 && numberOfWeightsForVBO > 0) {
 			cachedBoneMatrix = new float[skinningWeightCount][];
 			for (int i = 0; i < skinningWeightCount; i++) {
 				cachedBoneMatrix[i] = new float[12];

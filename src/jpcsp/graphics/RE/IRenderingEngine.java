@@ -147,16 +147,22 @@ public interface IRenderingEngine {
 
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
+	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height);
+	public void endDirectRendering();
+	public void startDisplay();
+	public void endDisplay();
 	public void enableFlag(int flag);
 	public void disableFlag(int flag);
 	public void setMorphWeight(int index, float value);
 	public void setPatchDiv(int s, int t);
 	public void setPatchPrim(int prim);
-	public void setMatrixElements(int type, float[] values);
-	public void setProjectionMatrixElements(float[] values);
-	public void setViewMatrixElements(float[] values);
-	public void setModelMatrixElements(float[] values);
-	public void setTextureMatrixElements(float[] values);
+	public void setMatrix(int type, float[] values);
+	public void setProjectionMatrix(float[] values);
+	public void setViewMatrix(float[] values);
+	public void setModelMatrix(float[] values);
+	public void setModelViewMatrix(float[] values);
+	public void setTextureMatrix(float[] values);
+	public void endModelViewMatrixUpdate();
 	public void setViewport(int x, int y, int width, int height);
 	public void setDepthRange(float zpos, float zscale, float near, float far);
 	public void setDepthFunc(int func);
@@ -206,7 +212,7 @@ public interface IRenderingEngine {
 	public void setColorTestReference(int[] values);
 	public void setColorTestMask(int[] values);
 	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled);
-	public void setBones(int count, float[] values);
+	public int setBones(int count, float[] values);
 	public void setTexEnv(int name, int param);
 	public void setTexEnv(int name, float param);
 	public void startClearMode(boolean color, boolean stencil, boolean depth);
@@ -223,7 +229,7 @@ public interface IRenderingEngine {
 	public String getShaderInfoLog(int shader);
 	public String getProgramInfoLog(int program);
 	public boolean isFunctionAvailable(String name);
-	public void drawArrays(int type, int first, int count);
+	public void drawArrays(int primitive, int first, int count);
 	public int genBuffer();
 	public void deleteBuffer(int buffer);
 	public void setBufferData(int size, Buffer buffer, int usage);
@@ -240,6 +246,8 @@ public interface IRenderingEngine {
 	public void setVertexPointer(int size, int type, int stride, Buffer buffer);
 	public void setNormalPointer(int type, int stride, long offset);
 	public void setNormalPointer(int type, int stride, Buffer buffer);
+	public void setWeightPointer(int size, int type, int stride, long offset);
+	public void setWeightPointer(int size, int type, int stride, Buffer buffer);
 	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, long offset);
 	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, Buffer buffer);
 	public void setPixelStore(int rowLength, int alignment);
@@ -249,6 +257,8 @@ public interface IRenderingEngine {
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer);
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, Buffer buffer);
 	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, Buffer buffer);
+	public void getTexImage(int level, int format, int type, Buffer buffer);
+	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height);
 	public void setStencilOp(int fail, int zfail, int zpass);
 	public void setStencilFunc(int func, int ref, int mask);
 	public void setAlphaFunc(int func, int ref);
@@ -260,4 +270,24 @@ public interface IRenderingEngine {
 	public void setScissor(int x, int y, int width, int height);
 	public void setBlendEquation(int mode);
 	public void setLineSmoothHint();
+	public boolean hasBoundingBox();
+	public void beginBoundingBox();
+	public void drawBoundingBox(float[][] values);
+	public void endBoundingBox();
+	public boolean isBoundingBoxVisible();
+	public int genQuery();
+	public void beginQuery(int id);
+	public void endQuery();
+	public boolean getQueryResultAvailable(int id);
+	public int getQueryResult(int id);
+	public void beginDraw(int type);
+	public void endDraw();
+	public void drawVertex3(float[] values);
+	public void drawVertex(int value1, int value2);
+	public void drawVertex(float value1, float value2);
+	public void drawTexCoord(float value1, float value2);
+	public void drawColor(float value1, float value2, float value3);
+	public void drawColor(float value1, float value2, float value3, float value4);
+	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer);
+	public void clear(float red, float green, float blue, float alpha);
 }

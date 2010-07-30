@@ -164,7 +164,7 @@ public class CaptureDisplayDetails {
 
         // This is almost side effect free, but replay is going to trash the emulator state anyway
         display.hleDisplaySetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb, sync);
-        display.hleDisplaySetGeBuf(null, fbp, fbw, psm, false);
+        display.hleDisplaySetGeBuf(fbp, fbw, psm, false);
 
         if (captureRenderTargets) {
             drawBuffer.commit();

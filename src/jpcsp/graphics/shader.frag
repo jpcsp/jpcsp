@@ -6,7 +6,6 @@ uniform bool      texEnable;
 uniform ivec2     texEnvMode;
 uniform int       texMapMode;
 uniform float     colorDoubling;
-uniform ivec4     invertedColorMask;
 
 uniform bool      ctestEnable;
 uniform int       ctestFunc;
@@ -17,11 +16,11 @@ vec4 getFragColor()
 {
     vec4 Cp = gl_Color;
     vec4 Cs = gl_SecondaryColor;
-    vec4 Cd = vec4(1.0); // vec4(vec3(colorDoubling), 1.0);
+    vec4 Cd = vec4(vec3(colorDoubling), 1.0);
 
     if (!texEnable)
     {
-        return Cp + Cs;
+        return clamp(Cp + Cs, 0.0, 1.0);
     }
     else
     {
@@ -54,9 +53,7 @@ vec4 getFragColor()
             break;
         }
 
-        Cp = clamp(Cp, 0.0, 1.0);
-
-        return Cd * (Cp + Cs);
+        return clamp(Cd * (Cp + Cs), 0.0, 1.0);
     }
 }
 
