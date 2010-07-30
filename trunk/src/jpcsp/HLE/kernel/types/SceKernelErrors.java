@@ -210,7 +210,7 @@ public class SceKernelErrors {
     public final static int ERROR_THREAD_IS_NOT_DORMANT                         = 0x800201a4;
     public final static int ERROR_THREAD_IS_NOT_SUSPEND                         = 0x800201a5;
     public final static int ERROR_THREAD_IS_NOT_WAIT                            = 0x800201a6;
-    public final static int ERROR_NOW_DISPATCH_DISABLED                         = 0x800201a7;
+    public final static int ERROR_WAIT_CAN_NOT_WAIT                             = 0x800201a7;
     public final static int ERROR_WAIT_TIMEOUT                                  = 0x800201a8;
     public final static int ERROR_WAIT_CANCELLED                                = 0x800201a9;
     public final static int ERROR_WAIT_STATUS_RELEASED                          = 0x800201aa;

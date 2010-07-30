@@ -67,10 +67,21 @@ public class ThreadWaitInfo {
     public int MsgPipe_waitMode;
     public int MsgPipe_resultSize_addr;
 
-     //Mbx
+    //Mbx
     public boolean waitingOnMbxReceive;
     public int Mbx_id;
     public int Mbx_resultAddr;
+
+    //FPL
+    public boolean waitingOnFpl;
+    public int Fpl_id;
+    public int Fpl_dataAddr;
+
+    //VPL
+    public boolean waitingOnVpl;
+    public int Vpl_id;
+    public int Vpl_size;
+    public int Vpl_dataAddr;
 
     public void copy(ThreadWaitInfo that) {
     	forever = that.forever;
@@ -113,5 +124,14 @@ public class ThreadWaitInfo {
     	waitingOnMbxReceive = that.waitingOnMbxReceive;
     	Mbx_id = that.Mbx_id;
     	Mbx_resultAddr = that.Mbx_resultAddr;
+
+        waitingOnFpl = that.waitingOnFpl;
+        Fpl_id = that.Fpl_id;
+        Fpl_dataAddr = that.Fpl_dataAddr;
+
+        waitingOnVpl = that.waitingOnVpl;
+        Vpl_id = that.Vpl_id;
+        Vpl_size = that.Vpl_size;
+        Vpl_dataAddr = that.Vpl_dataAddr;
     }
 }

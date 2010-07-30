@@ -41,9 +41,7 @@ public class SceKernelMppInfo {
     private int head; // relative to address
     private int tail; // relative to address
 
-    public static final int MSGPIPE_ATTR_ADDR_HIGH = 0x1100;
-
-    private SceKernelMppInfo(String name, int partitionid, int attr, int size) {
+    private SceKernelMppInfo(String name, int partitionid, int attr, int size, int memType) {
         this.name = name;
         this.attr = attr;
 
@@ -52,24 +50,18 @@ public class SceKernelMppInfo {
         numSendWaitThreads = 0;
         numReceiveWaitThreads = 0;
 
-        int memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
-
-        // Checked. 0x1100 means PSP_SMEM_High.
-        if ((attr & MSGPIPE_ATTR_ADDR_HIGH) == MSGPIPE_ATTR_ADDR_HIGH)
-            memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
-
         sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-MsgPipe", memType, size, 0);
         if (sysMemInfo == null)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
-
         address = sysMemInfo.addr;
+
         uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
         this.partitionid = partitionid;
         head = 0;
         tail = 0;
     }
 
-    public static SceKernelMppInfo tryCreateMpp(String name, int partitionid, int attr, int size) {
+    public static SceKernelMppInfo tryCreateMpp(String name, int partitionid, int attr, int size, int memType) {
         SceKernelMppInfo info = null;
         int alignedSize = (size + 0xFF) & ~0xFF; // 256 byte align (or is this stage done by pspsysmem? aren't we using 64-bytes in pspsysmem?)
         int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
@@ -79,7 +71,7 @@ public class SceKernelMppInfo {
         } else if (alignedSize > maxFreeSize) {
             Modules.log.warn("tryCreateMpp not enough free mem (want=" + alignedSize + ",free=" + maxFreeSize + ",diff=" + (alignedSize - maxFreeSize) + ")");
         } else {
-            info = new SceKernelMppInfo(name, partitionid, attr, size);
+            info = new SceKernelMppInfo(name, partitionid, attr, size, memType);
         }
 
         return info;

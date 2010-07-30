@@ -22,12 +22,6 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
-/*
- * TODO list:
- * 1. Implement a queue to receive blocks waiting for allocation and process
- * memory events for them (onFreeFpl).
- */
-
 public class SceKernelFplInfo {
     // PSP info
     public int size = 56;
@@ -45,13 +39,9 @@ public class SceKernelFplInfo {
     public int[] blockAddress;
     public boolean[] blockAllocated;
 
-    public static final int FPL_ATTR_MASK = 0x41FF; // anything outside this mask is an illegal attr
-    public static final int FPL_ATTR_UNKNOWN = 0x100;
-    public static final int FPL_ATTR_ADDR_HIGH = 0x4000; // create() the fpl in hi-mem, but start alloc() from low addresses
-
     /** do not instantiate unless there is enough free mem.
      * use the static helper function tryCreateFpl. */
-    private SceKernelFplInfo(String name, int partitionid, int attr, int blockSize, int numBlocks) {
+    private SceKernelFplInfo(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType) {
         this.name = name;
         this.attr = attr;
         this.blockSize = blockSize;
@@ -68,10 +58,6 @@ public class SceKernelFplInfo {
             blockAllocated[i] = false;
         }
 
-        int memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
-        if ((attr & FPL_ATTR_ADDR_HIGH) == FPL_ATTR_ADDR_HIGH)
-            memType = jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
-
         // Reserve psp memory
         int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
         int totalFplSize = alignedBlockSize * numBlocks;
@@ -85,14 +71,14 @@ public class SceKernelFplInfo {
         }
     }
 
-    public static SceKernelFplInfo tryCreateFpl(String name, int partitionid, int attr, int blockSize, int numBlocks) {
+    public static SceKernelFplInfo tryCreateFpl(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType) {
         SceKernelFplInfo info = null;
         int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
         int totalFplSize = alignedBlockSize * numBlocks;
         int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
 
         if (totalFplSize <= maxFreeSize) {
-            info = new SceKernelFplInfo(name, partitionid, attr, blockSize, numBlocks);
+            info = new SceKernelFplInfo(name, partitionid, attr, blockSize, numBlocks, memType);
         } else {
             Modules.log.warn("tryCreateFpl not enough free mem (want=" + totalFplSize + ",free=" + maxFreeSize + ",diff=" + (totalFplSize - maxFreeSize) + ")");
         }

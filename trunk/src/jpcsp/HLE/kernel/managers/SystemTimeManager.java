@@ -27,7 +27,7 @@ public class SystemTimeManager {
 
     /**
      * Convert a number of sysclocks into microseconds.
-     * 
+     *
      * @param sysclocks	- number of sysclocks
      * @return microseconds
      */
@@ -39,7 +39,7 @@ public class SystemTimeManager {
     /**
      * Convert a number of sysclocks into microseconds,
      * truncating to 32 bits.
-     * 
+     *
      * @param sysclocks	- number of sysclocks
      * @return microseconds (truncated to 32 bits)
      *         Integer.MAX_VALUE or MIN_VALUE in case of truncation overflow.
@@ -138,9 +138,6 @@ public class SystemTimeManager {
     	return Emulator.getClock().microTime();
     }
 
-    /** SceKernelSysClock time_addr http://psp.jim.sh/pspsdk-doc/structSceKernelSysClock.html
-     * +1mil every second
-     * high 32-bits never set on real psp? */
     public void sceKernelGetSystemTime(int time_addr) {
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("sceKernelGetSystemTime pointer=0x" + Integer.toHexString(time_addr));
@@ -167,12 +164,9 @@ public class SystemTimeManager {
 
     public void sceKernelGetSystemTimeLow() {
         long systemTime = getSystemTime();
-        int low = (int)(systemTime & 0x7fffffffL); // check, don't use msb?
-        //Modules.log.debug("sceKernelGetSystemTimeLow return:" + low);
+        int low = (int)(systemTime & 0xffffffffL);
         Emulator.getProcessor().cpu.gpr[2] = low;
     }
-
-    // -------------------------- singleton --------------------------
 
     public static final SystemTimeManager singleton;
 

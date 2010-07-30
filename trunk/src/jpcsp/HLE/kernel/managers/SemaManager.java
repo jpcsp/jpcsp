@@ -20,7 +20,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_COUNT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_SEMAPHORE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SEMA_ZERO;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UNKNOWN_UID;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
@@ -59,7 +58,6 @@ public class SemaManager {
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
         // Untrack
         thread.wait.waitingOnSemaphore = false;
-
         // Update numWaitThreads
         SceKernelSemaInfo sema = semaMap.get(thread.wait.Semaphore_id);
         if (sema != null) {
@@ -70,10 +68,8 @@ public class SemaManager {
                     + ", sema " + Integer.toHexString(sema.uid) + " numWaitThreads underflowed");
                 sema.numWaitThreads = 0;
             }
-
             return true;
         }
-
         return false;
     }
 
@@ -85,7 +81,6 @@ public class SemaManager {
             thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
         } else {
             Modules.log.warn("Sema deleted while we were waiting for it! (timeout expired)");
-
             // Return WAIT_DELETE
             thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
         }
@@ -96,6 +91,15 @@ public class SemaManager {
             // decrement numWaitThreads
             removeWaitingThread(thread);
         }
+    }
+
+    private boolean tryWaitSemaphore(SceKernelSemaInfo sema, int signal) {
+        boolean success = false;
+        if (sema.currentCount >= signal) {
+            sema.currentCount -= signal;
+            success = true;
+        }
+        return success;
     }
 
     public void sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) {
@@ -160,32 +164,15 @@ public class SemaManager {
                         thread.wait.Semaphore_id == semaid) {
                         // Untrack
                         thread.wait.waitingOnSemaphore = false;
-
                         // Return WAIT_DELETE
                         thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
-
                         // Wakeup
                         threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     }
                 }
             }
-
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
-    }
-
-    /** May modify sema.currentCount
-     * @return true on success */
-    private boolean tryWaitSemaphore(SceKernelSemaInfo sema, int signal)
-    {
-        boolean success = false;
-
-        if (sema.currentCount >= signal) {
-            sema.currentCount -= signal;
-            success = true;
-        }
-
-        return success;
     }
 
     private void hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean doCallbacks) {
@@ -207,12 +194,6 @@ public class SemaManager {
         if (signal <= 0) {
             Modules.log.warn("hleKernelWaitSema - bad signal " + signal);
             Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
-            return;
-        }
-
-        if (semaid <= 0) {
-            Modules.log.warn("hleKernelWaitSema bad id=0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
             return;
         }
 
@@ -291,7 +272,7 @@ public class SemaManager {
 
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
-            if(sema.attr == PSP_SEMA_ATTR_FIFO) {
+            if((sema.attr & PSP_SEMA_ATTR_FIFO) == PSP_SEMA_ATTR_FIFO) {
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
                     SceKernelThreadInfo thread = it.next();
 
@@ -315,7 +296,7 @@ public class SemaManager {
                         }
                     }
                 }
-            } else if (sema.attr == PSP_SEMA_ATTR_PRIORITY) {
+            } else if ((sema.attr & PSP_SEMA_ATTR_PRIORITY) == PSP_SEMA_ATTR_PRIORITY) {
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext(); ) {
                     SceKernelThreadInfo thread = it.next();
 

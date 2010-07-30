@@ -932,6 +932,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             Managers.mbx.onThreadWaitTimeout(thread);
         }
 
+        //Fpl
+        else if(thread.wait.waitingOnFpl) {
+            Managers.fpl.onThreadWaitTimeout(thread);
+        }
+
+        //Vpl
+        else if(thread.wait.waitingOnVpl) {
+            Managers.vpl.onThreadWaitTimeout(thread);
+        }
+
         // IO has no timeout, it's always forever
     }
 
@@ -976,6 +986,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         Managers.mutex.onThreadDeleted(thread);
         Managers.msgPipes.onThreadDeleted(thread);
         Managers.mbx.onThreadDeleted(thread);
+        Managers.fpl.onThreadDeleted(thread);
+        Managers.vpl.onThreadDeleted(thread);
         Modules.sceUmdUserModule.onThreadDeleted(thread);
         RuntimeContext.onThreadDeleted(thread);
         // TODO blocking audio?
