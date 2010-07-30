@@ -111,16 +111,13 @@ public class MutexManager {
     }
 
     private void wakeWaitMutexThreads(SceKernelMutexInfo info, boolean wakeAll) {
-        if (info.numWaitThreads == 0) {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("wakeWaitMutexThreads(numWaitThreads == 0)");
-            }
+        if (info.numWaitThreads <= 0) {
             return;
         }
 
         if (wakeAll) {
-            SceKernelThreadInfo thread = null;
-            for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); thread = it.next()) {
+            for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); ) {
+                SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_MUTEX &&
                         thread.wait.waitingOnMutex &&
                         thread.wait.Mutex_id == info.uid) {
@@ -139,8 +136,8 @@ public class MutexManager {
         } else {
 
             if ((info.attr & PSP_MUTEX_ATTR_WAKE_SINGLE_FIFO) == PSP_MUTEX_ATTR_WAKE_SINGLE_FIFO) {
-                SceKernelThreadInfo thread = null;
-                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); thread = it.next()) {
+                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); ) {
+                    SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_MUTEX &&
                             thread.wait.waitingOnMutex &&
                             thread.wait.Mutex_id == info.uid) {
@@ -158,8 +155,8 @@ public class MutexManager {
                     }
                 }
             } else if ((info.attr & PSP_MUTEX_ATTR_WAKE_SINGLE_PRIORITY) == PSP_MUTEX_ATTR_WAKE_SINGLE_PRIORITY) {
-                SceKernelThreadInfo thread = null;
-                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iteratorByPriority(); it.hasNext(); thread = it.next()) {
+                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iteratorByPriority(); it.hasNext(); ) {
+                    SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_MUTEX &&
                             thread.wait.waitingOnMutex &&
                             thread.wait.Mutex_id == info.uid) {
@@ -177,8 +174,8 @@ public class MutexManager {
                     }
                 }
             } else if ((info.attr & PSP_MUTEX_ATTR_WAKE_MULTIPLE_FIFO) == PSP_MUTEX_ATTR_WAKE_MULTIPLE_FIFO) {
-                SceKernelThreadInfo thread = null;
-                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); thread = it.next()) {
+                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext(); ) {
+                    SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_MUTEX &&
                             thread.wait.waitingOnMutex &&
                             thread.wait.Mutex_id == info.uid) {
@@ -195,8 +192,8 @@ public class MutexManager {
                     }
                 }
             } else if ((info.attr & PSP_MUTEX_ATTR_WAKE_MULTIPLE_PRIORITY) == PSP_MUTEX_ATTR_WAKE_MULTIPLE_PRIORITY) {
-                SceKernelThreadInfo thread = null;
-                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iteratorByPriority(); it.hasNext(); thread = it.next()) {
+                for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iteratorByPriority(); it.hasNext(); ) {
+                    SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_MUTEX &&
                             thread.wait.waitingOnMutex &&
                             thread.wait.Mutex_id == info.uid) {
