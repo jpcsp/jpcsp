@@ -461,4 +461,12 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.setTextureMapMode(mode, proj);
 	}
+
+	@Override
+	public void setFrontFace(boolean cw) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setFrontFace %s", cw ? "clockwise" : "counter-clockwise"));
+		}
+		super.setFrontFace(cw);
+	}
 }
