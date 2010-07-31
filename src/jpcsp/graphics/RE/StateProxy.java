@@ -133,6 +133,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		stencilOpZPass = -1;
 		depthFunc = -1;
 		bindTexture = -1;
+		frontFace = false;
 
 		super.startDisplay();
 	}
