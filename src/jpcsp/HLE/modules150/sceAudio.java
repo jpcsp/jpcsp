@@ -472,6 +472,23 @@ public class sceAudio implements HLEModule, HLEThread {
                 }
             }
         }
+        if (pspSRCChannel.waitingThreadId >= 0) {
+            if (!pspSRCChannel.isOutputBlocking()) {
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                int waitingThreadId = pspSRCChannel.waitingThreadId;
+                SceKernelThreadInfo waitingThread = threadMan.getThreadById(waitingThreadId);
+                if (waitingThread != null) {
+                    if (pspSRCChannel.waitingAudioDataAddr != 0) {
+                        changeChannelVolume(pspSRCChannel, pspSRCChannel.waitingVolumeLeft, pspSRCChannel.waitingVolumeRight);
+                        int ret = doAudioOutput(pspSRCChannel, pspSRCChannel.waitingAudioDataAddr);
+                        waitingThread.cpuContext.gpr[2] = ret;
+                    }
+                    threadMan.hleUnblockThread(waitingThreadId);
+                }
+                pspSRCChannel.waitingThreadId = -1;
+                pspSRCChannel.waitingAudioDataAddr = 0;
+            }
+        }
     }
 
     protected int doAudioOutput(pspChannelInfo channel, int pvoid_buf) {
