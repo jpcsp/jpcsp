@@ -2411,7 +2411,7 @@ public class VideoEngine {
                 re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
 
                 if (isLogDebugEnabled) {
-                	log("sceGuStencilOp(fail=" + (normalArgument & 0xFF) + ", zfail=" + ((normalArgument >> 8) & 0xFF) + ", zpass=" + ((normalArgument >> 16) & 0xFF));
+                	log("sceGuStencilOp(fail=" + (normalArgument & 0xFF) + ", zfail=" + ((normalArgument >> 8) & 0xFF) + ", zpass=" + ((normalArgument >> 16) & 0xFF) + ")");
                 }
                 break;
             }
@@ -4255,7 +4255,7 @@ public class VideoEngine {
                         		context.tex_scale_x, 0, 0, 0,
                         		0, context.tex_scale_y, 0, 0,
                         		0, 0, 1, 0,
-                        		-context.tex_translate_x, -context.tex_translate_y, 0, 1
+                        		context.tex_translate_x, context.tex_translate_y, 0, 1
                         	};
                     	re.setTextureMatrix(textureMatrix);
                         break;
