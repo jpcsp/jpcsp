@@ -582,7 +582,15 @@ public class Loader {
         Elf32ProgramHeader phdr = elf.getProgramHeader(0);
         Elf32SectionHeader shdr = elf.getSectionHeader(".rodata.sceModuleInfo");
 
-        if (elf.getHeader().isPRXDetected()) {
+        if (!elf.getHeader().isPRXDetected() && shdr == null) {
+            Emulator.log.warn("ELF is not PRX, but has no section headers!");
+            int memOffset = (int)(phdr.getP_vaddr() + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
+            Emulator.log.warn("Manually locating ModuleInfo at address: 0x" + Integer.toHexString(memOffset));
+
+            PSPModuleInfo moduleInfo = new PSPModuleInfo();
+            moduleInfo.read(Memory.getInstance(), memOffset);
+            module.copy(moduleInfo);
+        } else if (elf.getHeader().isPRXDetected()) {
             int memOffset = (int)(baseAddress + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
 
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
