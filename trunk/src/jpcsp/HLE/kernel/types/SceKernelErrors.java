@@ -37,6 +37,7 @@ public class SceKernelErrors {
      *      -> 0x002 - Kernel.
      *      -> 0x011 - Utility.
      *      -> 0x026 - Audio.
+     *      -> 0x02b - Power.
      *      -> 0x042 - SAS.
      *      -> 0x044 - WAVE.
      *      -> 0x061 - PSMF.
@@ -90,44 +91,6 @@ public class SceKernelErrors {
     public final static int ERROR_INVALID_MEDIUM                                = 0x8001007C;
     public final static int ERROR_FILE_QUOTA_EXCEEDED                           = 0x80010084;
 
-    public final static int ERROR_FILE_READ_ERROR                               = 0x80020130;
-    public final static int ERROR_TOO_MANY_OPEN_FILES                           = 0x80020320;
-    public final static int ERROR_NO_SUCH_DEVICE                                = 0x80020321;
-    public final static int ERROR_BAD_FILE_DESCRIPTOR                           = 0x80020323;
-    public final static int ERROR_UNSUPPORTED_OPERATION                         = 0x80020325;
-    public final static int ERROR_NOCWD                                         = 0x8002032c;
-    public final static int ERROR_FILENAME_TOO_LONG                             = 0x8002032d;
-    public final static int ERROR_ASYNC_BUSY                                    = 0x80020329;
-    public final static int ERROR_NO_ASYNC_OP                                   = 0x8002032a;
-
-    public static final int ERROR_SAVEDATA_LOAD_NO_MEMSTICK                     = 0x80110301;
-    public static final int ERROR_SAVEDATA_LOAD_MEMSTICK_REMOVED                = 0x80110302;
-    public static final int ERROR_SAVEDATA_LOAD_ACCESS_ERROR                    = 0x80110305;
-    public static final int ERROR_SAVEDATA_LOAD_DATA_BROKEN                     = 0x80110306;
-    public static final int ERROR_SAVEDATA_LOAD_NO_DATA                         = 0x80110307;
-    public static final int ERROR_SAVEDATA_LOAD_BAD_PARAMS                      = 0x80110308;
-    public static final int ERROR_SAVEDATA_LOAD_NO_UMD                          = 0x80110309;
-
-    public static final int ERROR_SAVEDATA_RW_ACCESS_ERROR                      = 0x80110325;
-    public static final int ERROR_SAVEDATA_RW_DATA_BROKEN                       = 0x80110326;
-    public static final int ERROR_SAVEDATA_RW_NO_DATA                           = 0x80110327;
-
-    public static final int ERROR_SAVEDATA_SAVE_NO_MEMSTICK                     = 0x80110381;
-    public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_REMOVED                = 0x80110382;
-    public static final int ERROR_SAVEDATA_SAVE_NO_SPACE                        = 0x80110383;
-    public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_PROTECTED              = 0x80110384;
-    public static final int ERROR_SAVEDATA_SAVE_ACCESS_ERROR                    = 0x80110385;
-    public static final int ERROR_SAVEDATA_SAVE_BAD_PARAMS                      = 0x80110388;
-    public static final int ERROR_SAVEDATA_SAVE_NO_UMD                          = 0x80110389;
-    public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD                       = 0x8011038a;
-
-    public static final int ERROR_SAVEDATA_SIZES_NO_MEMSTICK                    = 0x801103c1;
-    public static final int ERROR_SAVEDATA_SIZES_MEMSTICK_REMOVED               = 0x801103c2;
-    public static final int ERROR_SAVEDATA_SIZES_ACCESS_ERROR                   = 0x801103c5;
-    public static final int ERROR_SAVEDATA_SIZES_DATA_BROKEN                    = 0x801103c6;
-    public static final int ERROR_SAVEDATA_SIZES_NO_DATA                        = 0x801103c7;
-    public static final int ERROR_SAVEDATA_SIZES_BAD_PARAMS                     = 0x801103c8;
-
     public final static int ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT               = 0x80020064;
     public final static int ERROR_UNKNOWN_UID                                   = 0x800200cb;
     public final static int ERROR_UNMATCH_TYPE_UID                              = 0x800200cc;
@@ -156,7 +119,7 @@ public class SceKernelErrors {
     public final static int ERROR_ILLEGAL_OBJECT_FORMAT                         = 0x8002012d;
     public final static int ERROR_UNKNOWN_MODULE                                = 0x8002012e;
     public final static int ERROR_UNKNOWN_MODULE_FILE                           = 0x8002012f;
-    public final static int ERROR_MODULE_FILE_READ_ERROR                        = 0x80020130;
+    public final static int ERROR_FILE_READ_ERROR                               = 0x80020130;
     public final static int ERROR_MEMORY_IN_USE                                 = 0x80020131;
     public final static int ERROR_PARTITION_MISMATCH                            = 0x80020132;
     public final static int ERROR_MODULE_ALREADY_STARTED                        = 0x80020133;
@@ -245,6 +208,43 @@ public class SceKernelErrors {
 
     public final static int ERROR_CANNOT_CANCEL                                 = 0x80020261;
 
+    public final static int ERROR_TOO_MANY_OPEN_FILES                           = 0x80020320;
+    public final static int ERROR_NO_SUCH_DEVICE                                = 0x80020321;
+    public final static int ERROR_BAD_FILE_DESCRIPTOR                           = 0x80020323;
+    public final static int ERROR_UNSUPPORTED_OPERATION                         = 0x80020325;
+    public final static int ERROR_NOCWD                                         = 0x8002032c;
+    public final static int ERROR_FILENAME_TOO_LONG                             = 0x8002032d;
+    public final static int ERROR_ASYNC_BUSY                                    = 0x80020329;
+    public final static int ERROR_NO_ASYNC_OP                                   = 0x8002032a;
+
+    public static final int ERROR_SAVEDATA_LOAD_NO_MEMSTICK                     = 0x80110301;
+    public static final int ERROR_SAVEDATA_LOAD_MEMSTICK_REMOVED                = 0x80110302;
+    public static final int ERROR_SAVEDATA_LOAD_ACCESS_ERROR                    = 0x80110305;
+    public static final int ERROR_SAVEDATA_LOAD_DATA_BROKEN                     = 0x80110306;
+    public static final int ERROR_SAVEDATA_LOAD_NO_DATA                         = 0x80110307;
+    public static final int ERROR_SAVEDATA_LOAD_BAD_PARAMS                      = 0x80110308;
+    public static final int ERROR_SAVEDATA_LOAD_NO_UMD                          = 0x80110309;
+
+    public static final int ERROR_SAVEDATA_RW_ACCESS_ERROR                      = 0x80110325;
+    public static final int ERROR_SAVEDATA_RW_DATA_BROKEN                       = 0x80110326;
+    public static final int ERROR_SAVEDATA_RW_NO_DATA                           = 0x80110327;
+
+    public static final int ERROR_SAVEDATA_SAVE_NO_MEMSTICK                     = 0x80110381;
+    public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_REMOVED                = 0x80110382;
+    public static final int ERROR_SAVEDATA_SAVE_NO_SPACE                        = 0x80110383;
+    public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_PROTECTED              = 0x80110384;
+    public static final int ERROR_SAVEDATA_SAVE_ACCESS_ERROR                    = 0x80110385;
+    public static final int ERROR_SAVEDATA_SAVE_BAD_PARAMS                      = 0x80110388;
+    public static final int ERROR_SAVEDATA_SAVE_NO_UMD                          = 0x80110389;
+    public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD                       = 0x8011038a;
+
+    public static final int ERROR_SAVEDATA_SIZES_NO_MEMSTICK                    = 0x801103c1;
+    public static final int ERROR_SAVEDATA_SIZES_MEMSTICK_REMOVED               = 0x801103c2;
+    public static final int ERROR_SAVEDATA_SIZES_ACCESS_ERROR                   = 0x801103c5;
+    public static final int ERROR_SAVEDATA_SIZES_DATA_BROKEN                    = 0x801103c6;
+    public static final int ERROR_SAVEDATA_SIZES_NO_DATA                        = 0x801103c7;
+    public static final int ERROR_SAVEDATA_SIZES_BAD_PARAMS                     = 0x801103c8;
+
     public final static int ERROR_DEVCTL_BAD_PARAMS                             = 0x80220081;
 
     public final static int ERROR_AUDIO_CHANNEL_NOT_INIT                        = 0x80260001;
@@ -256,6 +256,8 @@ public class SceKernelErrors {
     public final static int ERROR_AUDIO_INVALID_FORMAT                          = 0x80260007;
     public final static int ERROR_AUDIO_CHANNEL_NOT_RESERVED                    = 0x80260008;
     public final static int ERROR_AUDIO_NOT_OUTPUT                              = 0x80260009;
+
+    public final static int ERROR_POWER_VMEM_IN_USE                             = 0x802b0200;
 
     public final static int ERROR_SAS_BUSY                                      = 0x80420030;
     public final static int ERROR_SAS_NOT_INIT                                  = 0x80420100;

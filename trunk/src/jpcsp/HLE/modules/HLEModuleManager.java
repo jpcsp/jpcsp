@@ -71,6 +71,7 @@ public class HLEModuleManager {
     	IoFileMgrForUser(Modules.IoFileMgrForUserModule),
     	ThreadManForUser(Modules.ThreadManForUserModule),
     	SysMemUserForUser(Modules.SysMemUserForUserModule),
+        SysMemForKernel(Modules.SysMemForKernelModule),
     	InterruptManager(Modules.InterruptManagerModule),
     	LoadExecForUser(Modules.LoadExecForUserModule),
         StdioForUser(Modules.StdioForUserModule),
@@ -294,7 +295,7 @@ public class HLEModuleManager {
         func.setSyscallCode(code);
         syscallCodeToFunction.put(code, func);
     }
-    
+
     public void addHLEFunction(HLEModuleFunction func) {
         func.setNid(-1);
 
@@ -343,7 +344,7 @@ public class HLEModuleManager {
         }
 		return false;
     }
-    
+
     public String functionName(int code) {
     	HLEModuleFunction func = syscallCodeToFunction.get(code);
         if (func != null) {
@@ -359,7 +360,7 @@ public class HLEModuleManager {
 			}
 		}
 	}
-	
+
 	public static void stopModules() {
 		for(DefaultModule defaultModule : DefaultModule.values()) {
 			if(defaultModule.module instanceof HLEStartModule) {
