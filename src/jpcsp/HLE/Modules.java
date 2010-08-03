@@ -27,6 +27,7 @@ import jpcsp.HLE.modules.LoadExecForUser;
 import jpcsp.HLE.modules.ModuleMgrForUser;
 import jpcsp.HLE.modules.StdioForUser;
 import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules.SysMemForKernel;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.UtilsForUser;
 import jpcsp.HLE.modules.sceAtrac3plus;
@@ -57,6 +58,7 @@ public class Modules {
     public static IoFileMgrForUser IoFileMgrForUserModule = new IoFileMgrForUser();
     public static ThreadManForUser ThreadManForUserModule = new ThreadManForUser();
     public static SysMemUserForUser SysMemUserForUserModule = new SysMemUserForUser();
+    public static SysMemForKernel SysMemForKernelModule = new SysMemForKernel();
     public static InterruptManager InterruptManagerModule = new InterruptManager();
     public static LoadExecForUser LoadExecForUserModule = new LoadExecForUser();
     public static StdioForUser StdioForUserModule = new StdioForUser();

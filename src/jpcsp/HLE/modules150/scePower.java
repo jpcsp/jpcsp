@@ -17,8 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -173,9 +175,21 @@ public class scePower implements HLEModule {
 	// unknown
 	public static final int PSP_POWER_CB_BATTPOWER       = 0x0000007F;
 
-	private int cpuClock = 222;
-    private int busClock = 111;
+    // PLL clock:
+    // Operates at fixed rates of 148MHz, 190MHz, 222MHz, 266MHz, 333MHz.
+    // Starts at 222MHz.
     private int pllClock = 222;
+    // CPU clock:
+    // Operates at variable rates from 1MHz to 333MHz.
+    // Starts at 222MHz.
+    // Note: Cannot have a higher frequency than the PLL clock's frequency.
+	private int cpuClock = 222;
+    // BUS clock:
+    // Operates at variable rates from 37MHz to 166MHz.
+    // Starts at 111MHz.
+    // Note: Cannot have a higher frequency than 1/2 of the PLL clock's frequency
+    // or lower than 1/4 of the PLL clock's frequency.
+    private int busClock = 111;
 
     private static final int backlightMaximum = 4;
 
@@ -507,17 +521,19 @@ public class scePower implements HLEModule {
         int slot = cpu.gpr[4];
         int uid = cpu.gpr[5];
 
-        Modules.log.warn("UNIMPLEMENTED:scePowerRegisterCallback slot=" + slot + " SceUID=" + Integer.toHexString(uid));
+        Modules.log.info("scePowerRegisterCallback slot=" + slot + " SceUID=" + Integer.toHexString(uid));
 
-		cpu.gpr[2] = 0; // Return success for now
+		cpu.gpr[2] = 0;
 	}
 
 	public void scePowerUnregisterCallback(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerUnregisterCallback [0xDFA8BAF8]");
+        int slot = cpu.gpr[4];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		Modules.log.info("scePowerUnregisterCallback slot=" + slot);
+
+		cpu.gpr[2] = 0;
 	}
 
 	public void scePowerUnregitserCallback(Processor processor) {
@@ -531,21 +547,29 @@ public class scePower implements HLEModule {
 	public void scePowerSetCpuClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		cpuClock = cpu.gpr[4];
+        int freq = cpu.gpr[4];
 
-		Modules.log.debug("scePowerSetCpuClockFrequency : " + cpuClock);
-
-		cpu.gpr[2] = 0;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Modules.log.debug("scePowerSetCpuClockFrequency : " + freq);
+            cpuClock = freq;
+            cpu.gpr[2] = 0;
+        }
 	}
 
 	public void scePowerSetBusClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		busClock = cpu.gpr[4];
+        int freq = cpu.gpr[4];
 
-		Modules.log.debug("scePowerSetBusClockFrequency : " + busClock);
-
-		cpu.gpr[2] = 0;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+        } else {
+            Modules.log.debug("scePowerSetBusClockFrequency : " + freq);
+            busClock = freq;
+            cpu.gpr[2] = 0;
+        }
 	}
 
 	public void scePowerGetCpuClockFrequency(Processor processor) {
@@ -583,9 +607,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetPllClockFrequencyInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug("scePowerGetPllClockFrequencyInt ret:" + pllClock);
-		}
+		Modules.log.debug("scePowerGetPllClockFrequencyInt ret:" + pllClock);
 
 		cpu.gpr[2] = pllClock;
 	}
@@ -593,35 +615,32 @@ public class scePower implements HLEModule {
 	public void scePowerGetCpuClockFrequencyFloat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetCpuClockFrequencyFloat [0xB1A52C83]");
+		Modules.log.debug("scePowerGetCpuClockFrequencyFloat ret:" + Float.intBitsToFloat(cpuClock));
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = cpuClock;
 	}
 
 	public void scePowerGetBusClockFrequencyFloat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetBusClockFrequencyFloat [0x9BADB3EB]");
+		Modules.log.debug("scePowerGetBusClockFrequencyInt ret:" + Float.intBitsToFloat(busClock));
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = busClock;
 	}
 
 	public void scePowerGetPllClockFrequencyFloat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetPllClockFrequencyFloat [0xEA382A27]");
+		Modules.log.debug("scePowerGetPllClockFrequencyInt ret:" + Float.intBitsToFloat(pllClock));
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = pllClock;
 	}
 
 	public void scePowerSetClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		//valid from 19 - 333
 		pllClock = cpu.gpr[4];
-		//valid from 1-333
 		cpuClock = cpu.gpr[5];
-		//valid from 1-167
 		busClock = cpu.gpr[6];
 
 		Modules.log.debug("scePowerSetClockFrequency pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
@@ -633,12 +652,11 @@ public class scePower implements HLEModule {
 		CpuState cpu = processor.cpu;
 
         // Identical to scePowerSetClockFrequency.
-
-		int pplClock = cpu.gpr[4];
+		pllClock = cpu.gpr[4];
 		cpuClock = cpu.gpr[5];
 		busClock = cpu.gpr[6];
 
-		Modules.log.debug("scePower_EBD177D6 ppl:" + pplClock + " cpu:" + cpuClock + " bus:" + busClock);
+		Modules.log.debug("scePower_EBD177D6 pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
 
 		cpu.gpr[2] = 0;
 	}
@@ -1214,4 +1232,4 @@ public class scePower implements HLEModule {
 			return "jpcsp.HLE.Modules.scePowerModule.scePower_EBD177D6(processor);";
 		}
 	};
-};
+}
