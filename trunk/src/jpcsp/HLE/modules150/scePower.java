@@ -175,6 +175,7 @@ public class scePower implements HLEModule {
 
 	private int cpuClock = 222;
     private int busClock = 111;
+    private int pllClock = 222;
 
     private static final int backlightMaximum = 4;
 
@@ -582,9 +583,11 @@ public class scePower implements HLEModule {
 	public void scePowerGetPllClockFrequencyInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetPllClockFrequencyInt [0x34F9C463]");
+		if (Modules.log.isDebugEnabled()) {
+			Modules.log.debug("scePowerGetPllClockFrequencyInt ret:" + pllClock);
+		}
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = pllClock;
 	}
 
 	public void scePowerGetCpuClockFrequencyFloat(Processor processor) {
@@ -615,13 +618,13 @@ public class scePower implements HLEModule {
 		CpuState cpu = processor.cpu;
 
 		//valid from 19 - 333
-		int pplClock = cpu.gpr[4];
+		pllClock = cpu.gpr[4];
 		//valid from 1-333
 		cpuClock = cpu.gpr[5];
 		//valid from 1-167
 		busClock = cpu.gpr[6];
 
-		Modules.log.debug("scePowerSetClockFrequency ppl:" + pplClock + " cpu:" + cpuClock + " bus:" + busClock);
+		Modules.log.debug("scePowerSetClockFrequency pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
 
 		cpu.gpr[2] = 0;
 	}
