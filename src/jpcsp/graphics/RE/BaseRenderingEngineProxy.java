@@ -20,6 +20,7 @@ import java.nio.Buffer;
 
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.buffer.IREBufferManager;
 
 import org.apache.log4j.Logger;
 
@@ -772,5 +773,10 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
 		proxy.setWeightPointer(size, type, stride, buffer);
+	}
+
+	@Override
+	public IREBufferManager getBufferManager() {
+		return proxy.getBufferManager();
 	}
 }

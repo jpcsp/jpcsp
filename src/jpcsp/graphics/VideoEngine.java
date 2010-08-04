@@ -37,7 +37,6 @@ import static jpcsp.graphics.GeCommands.*;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -49,7 +48,6 @@ import java.util.concurrent.Semaphore;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
@@ -58,6 +56,7 @@ import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
@@ -122,6 +121,7 @@ public class VideoEngine {
     private sceDisplay display;
     private IRenderingEngine re;
     private GeContext context;
+    private IREBufferManager bufferManager;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
     private boolean useVertexCache = false;
@@ -168,13 +168,9 @@ public class VideoEngine {
     private short[] clut_buffer16 = new short[4096];
     private boolean listHasEnded;
     private PspGeList currentList; // The currently executing list
-    private boolean useVBO = true;
-    private int vboBufferId;
-    private static final int vboBufferSize = 2 * 1024 * 1024 * SIZEOF_FLOAT;
-    private ByteBuffer vboBuffer = ByteBuffer.allocateDirect(vboBufferSize).order(ByteOrder.nativeOrder());
-    private FloatBuffer vboFloatBuffer = vboBuffer.asFloatBuffer();
-    private static final int nativeBufferSize = vboBufferSize;
-    private ByteBuffer nativeBuffer = ByteBuffer.allocateDirect(nativeBufferSize).order(ByteOrder.LITTLE_ENDIAN);
+    private static final int drawBufferSize = 2 * 1024 * 1024 * SIZEOF_FLOAT;
+    private int bufferId;
+    private int nativeBufferId;
     float[][] bboxVertices;
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
@@ -350,21 +346,15 @@ public class VideoEngine {
         re = display.getRenderingEngine();
         re.setGeContext(context);
         context.setRenderingEngine(re);
+        bufferManager = re.getBufferManager();
 
-        useVBO = !Settings.getInstance().readBool("emu.disablevbo")
-              && re.isFunctionAvailable("glGenBuffersARB")
-              && re.isFunctionAvailable("glBindBufferARB")
-              && re.isFunctionAvailable("glBufferDataARB")
-              && re.isFunctionAvailable("glDeleteBuffersARB")
-              && re.isFunctionAvailable("glGenBuffers");
-
-        if (useVBO) {
-            VideoEngine.log.info("Using VBO");
-            buildVBO();
-        } else {
+        if (!re.getBufferManager().useVBO()) {
             // VertexCache is relying on VBO
             useVertexCache = false;
         }
+
+        bufferId = bufferManager.genBuffer(IRenderingEngine.RE_FLOAT, drawBufferSize / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
+        nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -373,12 +363,6 @@ public class VideoEngine {
 
     public GeContext getContext() {
     	return context;
-    }
-
-    private void buildVBO() {
-        vboBufferId = re.genBuffer();
-        bindBuffer();
-        re.setBufferData(vboBufferSize, vboFloatBuffer, IRenderingEngine.RE_STREAM_DRAW);
     }
 
     public static void exit() {
@@ -2776,11 +2760,11 @@ public class VideoEngine {
         vinfo.setMorphWeights(context.morph_weight);
         vinfo.setDirty();
 
-        int numberOfWeightsForVBO;
+        int numberOfWeightsForBuffer;
         if (vinfo.weight != 0) {
-        	numberOfWeightsForVBO = re.setBones(vinfo.skinningWeightCount, context.boneMatrixLinear);
+        	numberOfWeightsForBuffer = re.setBones(vinfo.skinningWeightCount, context.boneMatrixLinear);
         } else {
-        	numberOfWeightsForVBO = re.setBones(0, null);
+        	numberOfWeightsForBuffer = re.setBones(0, null);
         }
 
         // Do not use optimized VertexInfo reading when tracing is enabled,
@@ -2803,22 +2787,16 @@ public class VideoEngine {
             enableClientState(useVertexColor, useTexture);
 
             int stride = vertexInfoReader.getStride();
-            bindBuffer();
             if (buffer != null) {
-                if (useVBO) {
-                    re.setBufferData(stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
-                } else {
-                    vboBuffer.clear();
-                    Utilities.putBuffer(vboBuffer, buffer, ByteOrder.nativeOrder());
-                }
+            	bufferManager.setBufferData(bufferId, stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
             }
 
             if (vertexInfoReader.hasNative()) {
                 // Copy the VertexInfo from Memory to the nativeBuffer
                 // (a direct buffer is required by glXXXPointer())
-                nativeBuffer.clear();
-                Buffer memBuffer = mem.getBuffer(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
-                Utilities.putBuffer(nativeBuffer, memBuffer, ByteOrder.LITTLE_ENDIAN);
+            	int size = vinfo.vertexSize * numberOfVertex;
+            	Buffer vertexData = mem.getBuffer(vinfo.ptr_vertex, size);
+            	bufferManager.setBufferData(nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
             }
 
             if (vinfo.texture != 0 || useTexture) {
@@ -2838,12 +2816,12 @@ public class VideoEngine {
                     textureOffset = vertexInfoReader.getTextureOffset();
                     textureType = vertexInfoReader.getTextureType();
                 }
-                glTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative, false, true);
+                setTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative);
             }
 
-            glColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), false, true);
-            glNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), false, true);
-            glVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), false, true);
+            setColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative());
+            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative());
+            setVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative());
 
             re.drawArrays(type, 0, numberOfVertex);
 
@@ -2853,10 +2831,13 @@ public class VideoEngine {
             VertexInfo cachedVertexInfo = null;
             if (useVertexCache) {
                 vertexCacheLookupStatistics.start();
-                cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForVBO);
+                cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
                 vertexCacheLookupStatistics.end();
             }
-            vboFloatBuffer.clear();
+
+            ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
+            FloatBuffer floatBuffer = byteBuffer.asFloatBuffer();
+            floatBuffer.clear();
 
             switch (type) {
                 case PRIM_POINT:
@@ -2872,28 +2853,28 @@ public class VideoEngine {
                             VertexState v = vinfo.readVertex(mem, addr);
 
                             // Do skinning first as it modifies v.p and v.n
-                            if (vinfo.weight != 0 && vinfo.position != 0 && numberOfWeightsForVBO == 0) {
+                            if (vinfo.weight != 0 && vinfo.position != 0 && numberOfWeightsForBuffer == 0) {
                                 doSkinning(vinfo, v);
                             }
 
                             if (vinfo.texture != 0) {
-                                vboFloatBuffer.put(v.t);
+                                floatBuffer.put(v.t);
                             } else if (useTextureFromNormal) {
-                                vboFloatBuffer.put(v.n, 0, 2);
+                                floatBuffer.put(v.n, 0, 2);
                             } else if (useTextureFromPosition) {
-                                vboFloatBuffer.put(v.p, 0, 2);
+                                floatBuffer.put(v.p, 0, 2);
                             }
                             if (useVertexColor) {
-                                vboFloatBuffer.put(v.c);
+                                floatBuffer.put(v.c);
                             }
                             if (vinfo.normal != 0) {
-                                vboFloatBuffer.put(v.n);
+                                floatBuffer.put(v.n);
                             }
                             if (vinfo.position != 0) {
-                                vboFloatBuffer.put(v.p);
+                                floatBuffer.put(v.p);
                             }
-                            if (numberOfWeightsForVBO > 0) {
-                                vboFloatBuffer.put(v.boneWeights, 0, numberOfWeightsForVBO);
+                            if (numberOfWeightsForBuffer > 0) {
+                                floatBuffer.put(v.boneWeights, 0, numberOfWeightsForBuffer);
                             }
 
                             if (isLogTraceEnabled) {
@@ -2903,17 +2884,14 @@ public class VideoEngine {
                             }
                         }
 
-                        if (useVBO) {
-                            if (useVertexCache) {
-                                cachedVertexInfo = new VertexInfo(vinfo);
-                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForVBO);
-                                int size = vboFloatBuffer.position();
-                                vboFloatBuffer.rewind();
-                                cachedVertexInfo.loadVertex(re, vboFloatBuffer, size);
-                            } else {
-                                bindBuffer();
-                                re.setBufferData(vboFloatBuffer.position() * SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
-                            }
+                        if (useVertexCache) {
+                            cachedVertexInfo = new VertexInfo(vinfo);
+                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
+                            int size = floatBuffer.position();
+                            floatBuffer.rewind();
+                            cachedVertexInfo.loadVertex(re, floatBuffer, size);
+                        } else {
+                            bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
                         }
                     } else {
                         if (isLogDebugEnabled) {
@@ -2921,7 +2899,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, numberOfWeightsForVBO);
+                    setDataPointers(useVertexColor, useTexture, vinfo.normal != 0, numberOfWeightsForBuffer);
                     re.drawArrays(type, 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
                     break;
@@ -2955,77 +2933,74 @@ public class VideoEngine {
 
                             // V1
                             if (vinfo.texture != 0) {
-                                vboFloatBuffer.put(v1.t);
+                                floatBuffer.put(v1.t);
                             }
                             if (useVertexColor) {
-                                vboFloatBuffer.put(v2.c);
+                                floatBuffer.put(v2.c);
                             }
                             if (vinfo.normal != 0) {
-                                vboFloatBuffer.put(v2.n);
+                                floatBuffer.put(v2.n);
                             }
                             if (vinfo.position != 0) {
-                                vboFloatBuffer.put(v1.p);
+                                floatBuffer.put(v1.p);
                             }
 
                             if (vinfo.texture != 0) {
                                 if (flippedTexture) {
-                                    vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
                                 } else {
-                                    vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
                                 }
                             }
                             if (useVertexColor) {
-                                vboFloatBuffer.put(v2.c);
+                                floatBuffer.put(v2.c);
                             }
                             if (vinfo.normal != 0) {
-                                vboFloatBuffer.put(v2.n);
+                                floatBuffer.put(v2.n);
                             }
                             if (vinfo.position != 0) {
-                                vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+                                floatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
                             }
 
                             // V2
                             if (vinfo.texture != 0) {
-                                vboFloatBuffer.put(v2.t);
+                                floatBuffer.put(v2.t);
                             }
                             if (useVertexColor) {
-                                vboFloatBuffer.put(v2.c);
+                                floatBuffer.put(v2.c);
                             }
                             if (vinfo.normal != 0) {
-                                vboFloatBuffer.put(v2.n);
+                                floatBuffer.put(v2.n);
                             }
                             if (vinfo.position != 0) {
-                                vboFloatBuffer.put(v2.p);
+                                floatBuffer.put(v2.p);
                             }
 
                             if (vinfo.texture != 0) {
                                 if (flippedTexture) {
-                                    vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+                                    floatBuffer.put(v1.t[0]).put(v2.t[1]);
                                 } else {
-                                    vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+                                    floatBuffer.put(v2.t[0]).put(v1.t[1]);
                                 }
                             }
                             if (useVertexColor) {
-                                vboFloatBuffer.put(v2.c);
+                                floatBuffer.put(v2.c);
                             }
                             if (vinfo.normal != 0) {
-                                vboFloatBuffer.put(v2.n);
+                                floatBuffer.put(v2.n);
                             }
                             if (vinfo.position != 0) {
-                                vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+                                floatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
                             }
                         }
-                        if (useVBO) {
-                            if (useVertexCache) {
-                                cachedVertexInfo = new VertexInfo(vinfo);
-                                VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForVBO);
-                                int size = vboFloatBuffer.position();
-                                vboFloatBuffer.rewind();
-                                cachedVertexInfo.loadVertex(re, vboFloatBuffer, size);
-                            } else {
-                                bindBuffer();
-                                re.setBufferData(vboFloatBuffer.position() * SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
-                            }
+                        if (useVertexCache) {
+                            cachedVertexInfo = new VertexInfo(vinfo);
+                            VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
+                            int size = floatBuffer.position();
+                            floatBuffer.rewind();
+                            cachedVertexInfo.loadVertex(re, floatBuffer, size);
+                        } else {
+                            bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
                         }
                     } else {
                         if (isLogDebugEnabled) {
@@ -3033,7 +3008,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    bindBuffers(useVertexColor, useTexture, vinfo.normal != 0, false, 0);
+                    setDataPointers(useVertexColor, useTexture, vinfo.normal != 0, 0);
                     re.drawArrays(PRIM_SPRITES, 0, numberOfVertex * 2);
                     context.cullFaceFlag.updateEnabled();
                     break;
@@ -3261,94 +3236,45 @@ public class VideoEngine {
         re.enableClientState(IRenderingEngine.RE_VERTEX);
     }
 
-    private void glTexCoordPointer(boolean useTexture, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
+    private void setTexCoordPointer(boolean useTexture, int type, int stride, int offset, boolean isNative) {
         if (vinfo.texture != 0 || useTexture) {
             if (isNative) {
-                if (doBindBuffer) {
-                    bindBuffer(0);
-                }
-                re.setTexCoordPointer(2, type, vinfo.vertexSize, nativeBuffer.position(offset));
+            	bufferManager.setTexCoordPointer(nativeBufferId, 2, type, vinfo.vertexSize, offset);
             } else {
-                if (doBindBuffer) {
-                    bindBuffer();
-                }
-                if (useVBO) {
-                	re.setTexCoordPointer(2, type, stride, offset);
-                } else if (useVboFloatBuffer) {
-                	re.setTexCoordPointer(2, type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
-                } else {
-                	re.setTexCoordPointer(2, type, stride, vboBuffer.position(offset));
-                }
+            	bufferManager.setTexCoordPointer(bufferId, 2, type, stride, offset);
             }
         }
     }
 
-    private void glColorPointer(boolean useVertexColor, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
+    private void setColorPointer(boolean useVertexColor, int type, int stride, int offset, boolean isNative) {
         if (useVertexColor) {
             if (isNative) {
-                if (doBindBuffer) {
-                    bindBuffer(0);
-                }
-                re.setColorPointer(4, type, vinfo.vertexSize, nativeBuffer.position(offset));
+                bufferManager.setColorPointer(nativeBufferId, 4, type, vinfo.vertexSize, offset);
             } else {
-                if (doBindBuffer) {
-                    bindBuffer();
-                }
-                if (useVBO) {
-                	re.setColorPointer(4, type, stride, offset);
-                } else if (useVboFloatBuffer) {
-                	re.setColorPointer(4, type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
-                } else {
-                	re.setColorPointer(4, type, stride, vboBuffer.position(offset));
-                }
+            	bufferManager.setColorPointer(bufferId, 4, type, stride, offset);
             }
         }
     }
 
-    private void glVertexPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
+    private void setVertexPointer(int type, int stride, int offset, boolean isNative) {
         if (isNative) {
-            if (doBindBuffer) {
-                bindBuffer(0);
-            }
-            re.setVertexPointer(3, type, vinfo.vertexSize, nativeBuffer.position(offset));
+            bufferManager.setVertexPointer(nativeBufferId, 3, type, vinfo.vertexSize, offset);
         } else {
-            if (doBindBuffer) {
-                bindBuffer();
-            }
-            if (useVBO) {
-            	re.setVertexPointer(3, type, stride, offset);
-            } else if (useVboFloatBuffer) {
-            	re.setVertexPointer(3, type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
-            } else {
-            	re.setVertexPointer(3, type, stride, vboBuffer.position(offset));
-            }
+        	bufferManager.setVertexPointer(bufferId, 3, type, stride, offset);
         }
-
     }
 
-    private void glNormalPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
+    private void setNormalPointer(int type, int stride, int offset, boolean isNative) {
         if (vinfo.normal != 0) {
             if (isNative) {
-                if (doBindBuffer) {
-                    bindBuffer(0);
-                }
-                re.setNormalPointer(type, vinfo.vertexSize, nativeBuffer.position(offset));
+                bufferManager.setNormalPointer(nativeBufferId, type, vinfo.vertexSize, offset);
             } else {
-                if (doBindBuffer) {
-                    bindBuffer();
-                }
-                if (useVBO) {
-                	re.setNormalPointer(type, stride, offset);
-                } else if (useVboFloatBuffer) {
-                	re.setNormalPointer(type, stride, vboFloatBuffer.position(offset / SIZEOF_FLOAT));
-                } else {
-                	re.setNormalPointer(type, stride, vboBuffer.position(offset));
-                }
+            	bufferManager.setNormalPointer(bufferId, type, stride, offset);
             }
         }
     }
 
-    private void bindBuffers(boolean useVertexColor, boolean useTexture, boolean useNormal, boolean doBindBuffer, int numberOfWeightsForVBO) {
+    private void setDataPointers(boolean useVertexColor, boolean useTexture, boolean useNormal, int numberOfWeightsForBuffer) {
         int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos = 0;
 
         if (vinfo.texture != 0 || useTexture) {
@@ -3364,20 +3290,17 @@ public class VideoEngine {
             vpos = stride;
         }
         stride += SIZEOF_FLOAT * 3;
-        if (numberOfWeightsForVBO > 0) {
+        if (numberOfWeightsForBuffer > 0) {
             wpos = stride;
-            stride += SIZEOF_FLOAT * numberOfWeightsForVBO;
+            stride += SIZEOF_FLOAT * numberOfWeightsForBuffer;
         }
 
         enableClientState(useVertexColor, useTexture);
-        if (doBindBuffer) {
-            bindBuffer();
-        }
-        glTexCoordPointer(useTexture, IRenderingEngine.RE_FLOAT, stride, 0, false, true, false);
-        glColorPointer(useVertexColor, IRenderingEngine.RE_FLOAT, stride, cpos, false, true, false);
-        glNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false, true, false);
-        re.setWeightPointer(numberOfWeightsForVBO, IRenderingEngine.RE_FLOAT, stride, wpos);
-        glVertexPointer(IRenderingEngine.RE_FLOAT, stride, vpos, false, true, false);
+        setTexCoordPointer(useTexture, IRenderingEngine.RE_FLOAT, stride, 0, false);
+        setColorPointer(useVertexColor, IRenderingEngine.RE_FLOAT, stride, cpos, false);
+        setNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false);
+        re.setWeightPointer(numberOfWeightsForBuffer, IRenderingEngine.RE_FLOAT, stride, wpos);
+        setVertexPointer(IRenderingEngine.RE_FLOAT, stride, vpos, false);
     }
 
     public void doPositionSkinning(VertexInfo vinfo, float[] boneWeights, float[] position) {
@@ -4599,27 +4522,29 @@ public class VideoEngine {
 	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
 			boolean useVertexColor, boolean useTexture, boolean useNormal) {
 		// TODO: Compute the normals
-		bindBuffers(useVertexColor, useTexture, useNormal, true, 0);
+		setDataPointers(useVertexColor, useTexture, useNormal, 0);
 
+		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
+		FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
         for(int j = 0; j <= context.patch_div_t - 1; j++) {
-        	vboFloatBuffer.clear();
+        	drawFloatBuffer.clear();
 
         	for(int i = 0; i <= context.patch_div_s; i++) {
         		VertexState v1 = patch[i][j];
                 VertexState v2 = patch[i][j + 1];
 
-        		if(useTexture)     vboFloatBuffer.put(v1.t);
-        		if(useVertexColor) vboFloatBuffer.put(v1.c);
-        		if(useNormal)      vboFloatBuffer.put(v1.n);
-        		vboFloatBuffer.put(v1.p);
+        		if(useTexture)     drawFloatBuffer.put(v1.t);
+        		if(useVertexColor) drawFloatBuffer.put(v1.c);
+        		if(useNormal)      drawFloatBuffer.put(v1.n);
+        		drawFloatBuffer.put(v1.p);
 
-        		if(useTexture)     vboFloatBuffer.put(v2.t);
-        		if(useVertexColor) vboFloatBuffer.put(v2.c);
-        		if(useNormal)      vboFloatBuffer.put(v2.n);
-        		vboFloatBuffer.put(v2.p);
+        		if(useTexture)     drawFloatBuffer.put(v2.t);
+        		if(useVertexColor) drawFloatBuffer.put(v2.c);
+        		if(useNormal)      drawFloatBuffer.put(v2.n);
+        		drawFloatBuffer.put(v2.p);
         	}
 
-        	re.setBufferData(vboFloatBuffer.position() * SIZEOF_FLOAT, vboFloatBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+        	bufferManager.setBufferData(bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
             re.drawArrays(patch_prim_types[context.patch_prim], 0, (context.patch_div_s + 1) * 2);
         }
 
@@ -4705,14 +4630,6 @@ public class VideoEngine {
         int compressedTextureSize = compressedTextureWidth * compressedTextureHeight * 4 / compressionRatio;
 
         return compressedTextureSize;
-    }
-
-    private void bindBuffer() {
-        bindBuffer(vboBufferId);
-    }
-
-    private void bindBuffer(int bufferId) {
-    	re.bindBuffer(bufferId);
     }
 
     private void updateGeBuf() {
@@ -5084,11 +5001,13 @@ public class VideoEngine {
 
     public void setUseVertexCache(boolean useVertexCache) {
         // VertexCache is relying on VBO
-        if (useVBO) {
-            this.useVertexCache = useVertexCache;
-            if (useVertexCache) {
-                VideoEngine.log.info("Using Vertex Cache");
-            }
+    	if (bufferManager != null && !bufferManager.useVBO()) {
+    		useVertexCache = false;
+    	}
+
+        this.useVertexCache = useVertexCache;
+        if (useVertexCache) {
+            VideoEngine.log.info("Using Vertex Cache");
         }
     }
 

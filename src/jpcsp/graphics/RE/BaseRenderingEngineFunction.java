@@ -19,12 +19,17 @@ package jpcsp.graphics.RE;
 import static jpcsp.graphics.GeCommands.PRIM_SPRITES;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
+
+import java.nio.FloatBuffer;
 
 import org.apache.log4j.Level;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
+import jpcsp.graphics.RE.buffer.BufferManagerFactory;
+import jpcsp.graphics.RE.buffer.IREBufferManager;
 
 /**
  * @author gid15
@@ -39,10 +44,13 @@ import jpcsp.graphics.GeContext.EnableDisableFlag;
  * - mapping of setColorMask(int, int, int, int) to setColorMask(bool, bool, bool, bool)
  */
 public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
+	protected IREBufferManager bufferManager;
 	protected boolean clearMode;
 	ClearModeContext clearModeContext = new ClearModeContext();
 	protected boolean directMode;
 	protected boolean directModeSetOrthoMatrix;
+	protected int bboxBuffer;
+	protected int bboxNumberVertex;
 	protected static final boolean[] flagsValidInClearMode = new boolean[] {
 		false, // GU_ALPHA_TEST
 		false, // GU_DEPTH_TEST
@@ -96,12 +104,25 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	}
 
 	protected void init() {
+        bufferManager = BufferManagerFactory.createBufferManager(re);
+        bufferManager.setRenderingEngine(re);
+
         queryAvailable = re.isFunctionAvailable("glGenQueries")
                       && re.isFunctionAvailable("glBeginQuery")
                       && re.isFunctionAvailable("glEndQuery");
         if (queryAvailable) {
         	bboxQueryId = re.genQuery();
+
+        	// We need 24 * vertex (having 3 floats each) for one BBOX.
+        	// We reserve space for 10 bboxes.
+        	bboxBuffer = bufferManager.genBuffer(RE_FLOAT, 10 * 24 * 3, RE_DYNAMIC_DRAW);
         }
+	}
+
+	@Override
+	public void setRenderingEngine(IRenderingEngine re) {
+		bufferManager.setRenderingEngine(re);
+		super.setRenderingEngine(re);
 	}
 
 	protected void setFlag(EnableDisableFlag flag) {
@@ -372,14 +393,9 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         re.startDirectRendering(false, false, false, false, false, 0, 0);
 
         re.beginQuery(bboxQueryId);
-        //
-        // The bounding box is a cube defined by 8 vertices.
-        // It is not clear if the vertices have to be listed in a pre-defined order.
-        // Which primitive should be used?
-        // - GL_TRIANGLE_STRIP: we only draw 3 faces of the cube
-        // - GL_QUADS: how are organized the 8 vertices to draw all the cube faces?
-        //
-        re.beginDraw(PRIM_SPRITES);
+
+        bufferManager.getBuffer(bboxBuffer).clear();
+        bboxNumberVertex = 0;
 
         super.beginBoundingBox();
 	}
@@ -387,6 +403,14 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	@Override
 	public void drawBoundingBox(float[][] values) {
         //
+        // The bounding box is a cube defined by 8 vertices.
+        // It is not clear if the vertices have to be listed in a pre-defined order.
+        // Which primitive should be used?
+        // - GL_TRIANGLE_STRIP: we only draw 3 faces of the cube
+        // - GL_QUADS: how are organized the 8 vertices to draw all the cube faces?
+        //
+
+		//
         // Cube from BBOX:
         //
         // BBOX Front face:
@@ -408,48 +432,60 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         //  0---1
         //
 
-        // Front face
-        re.drawVertex3(values[0]);
-        re.drawVertex3(values[1]);
-        re.drawVertex3(values[3]);
-        re.drawVertex3(values[2]);
+		FloatBuffer bboxVertexBuffer = bufferManager.getBuffer(bboxBuffer).asFloatBuffer();
+
+		// Front face
+        bboxVertexBuffer.put(values[0]);
+        bboxVertexBuffer.put(values[1]);
+        bboxVertexBuffer.put(values[3]);
+        bboxVertexBuffer.put(values[2]);
 
         // Back face
-        re.drawVertex3(values[4]);
-        re.drawVertex3(values[5]);
-        re.drawVertex3(values[7]);
-        re.drawVertex3(values[6]);
+        bboxVertexBuffer.put(values[4]);
+        bboxVertexBuffer.put(values[5]);
+        bboxVertexBuffer.put(values[7]);
+        bboxVertexBuffer.put(values[6]);
 
         // Right face
-        re.drawVertex3(values[1]);
-        re.drawVertex3(values[5]);
-        re.drawVertex3(values[7]);
-        re.drawVertex3(values[3]);
+        bboxVertexBuffer.put(values[1]);
+        bboxVertexBuffer.put(values[5]);
+        bboxVertexBuffer.put(values[7]);
+        bboxVertexBuffer.put(values[3]);
 
         // Left face
-        re.drawVertex3(values[0]);
-        re.drawVertex3(values[4]);
-        re.drawVertex3(values[6]);
-        re.drawVertex3(values[2]);
+        bboxVertexBuffer.put(values[0]);
+        bboxVertexBuffer.put(values[4]);
+        bboxVertexBuffer.put(values[6]);
+        bboxVertexBuffer.put(values[2]);
 
         // Top face
-        re.drawVertex3(values[2]);
-        re.drawVertex3(values[3]);
-        re.drawVertex3(values[7]);
-        re.drawVertex3(values[6]);
+        bboxVertexBuffer.put(values[2]);
+        bboxVertexBuffer.put(values[3]);
+        bboxVertexBuffer.put(values[7]);
+        bboxVertexBuffer.put(values[6]);
 
         // Bottom face
-        re.drawVertex3(values[0]);
-        re.drawVertex3(values[1]);
-        re.drawVertex3(values[5]);
-        re.drawVertex3(values[4]);
+        bboxVertexBuffer.put(values[0]);
+        bboxVertexBuffer.put(values[1]);
+        bboxVertexBuffer.put(values[5]);
+        bboxVertexBuffer.put(values[4]);
+
+        bboxNumberVertex += 6 * 4;
 
         super.drawBoundingBox(values);
 	}
 
 	@Override
 	public void endBoundingBox() {
-        re.endDraw();
+		re.bindBuffer(0);
+        re.disableClientState(IRenderingEngine.RE_TEXTURE);
+        re.disableClientState(IRenderingEngine.RE_COLOR);
+        re.disableClientState(IRenderingEngine.RE_NORMAL);
+        re.enableClientState(IRenderingEngine.RE_VERTEX);
+        bufferManager.setVertexPointer(bboxBuffer, 3, IRenderingEngine.RE_FLOAT, 3 * SIZEOF_FLOAT, 0);
+        bufferManager.setBufferData(bboxBuffer, bboxNumberVertex * 3 * SIZEOF_FLOAT, bufferManager.getBuffer(bboxBuffer).rewind(), RE_DYNAMIC_DRAW);
+        re.drawArrays(PRIM_SPRITES, 0, bboxNumberVertex);
+
         re.endQuery();
         re.endDirectRendering();
 
@@ -490,5 +526,10 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         }
 
         return isVisible && super.isBoundingBoxVisible();
+	}
+
+	@Override
+	public IREBufferManager getBufferManager() {
+		return bufferManager;
 	}
 }
