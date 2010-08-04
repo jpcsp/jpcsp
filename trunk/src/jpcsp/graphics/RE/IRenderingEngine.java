@@ -19,6 +19,7 @@ package jpcsp.graphics.RE;
 import java.nio.Buffer;
 
 import jpcsp.graphics.GeContext;
+import jpcsp.graphics.RE.buffer.IREBufferManager;
 
 /**
  * @author gid15
@@ -290,4 +291,5 @@ public interface IRenderingEngine {
 	public void drawColor(float value1, float value2, float value3, float value4);
 	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer);
 	public void clear(float red, float green, float blue, float alpha);
+	public IREBufferManager getBufferManager();
 }

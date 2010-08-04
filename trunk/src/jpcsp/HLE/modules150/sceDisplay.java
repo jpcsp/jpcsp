@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
+import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +60,7 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.RenderingEngineFactory;
+import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.util.DurationStatistics;
@@ -88,6 +91,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     // current Rendering Engine
     private IRenderingEngine re;
     private boolean startModules;
+    private int drawBuffer;
 
     // current display mode
     private int mode;
@@ -844,23 +848,40 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
         re.setPixelStore(bufferwidth, getPixelFormatBytes(pixelformat));
         re.bindTexture(texFb);
-        re.beginDraw(GeCommands.PRIM_SPRITES);
 
-        re.drawColor(1.0f, 1.0f, 1.0f);
+        IREBufferManager bufferManager = re.getBufferManager();
+        ByteBuffer drawByteBuffer = bufferManager.getBuffer(drawBuffer);
+        FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
+        drawFloatBuffer.clear();
+        drawFloatBuffer.put(texS1);
+        drawFloatBuffer.put(texT1);
+        drawFloatBuffer.put(width);
+        drawFloatBuffer.put(height);
 
-        re.drawTexCoord(texS1, texT1);
-        re.drawVertex(width, height);
+        drawFloatBuffer.put(texS2);
+        drawFloatBuffer.put(texT2);
+        drawFloatBuffer.put(0);
+        drawFloatBuffer.put(height);
 
-        re.drawTexCoord(texS2, texT2);
-        re.drawVertex(0.0f, height);
+        drawFloatBuffer.put(texS3);
+        drawFloatBuffer.put(texT3);
+        drawFloatBuffer.put(0);
+        drawFloatBuffer.put(0);
 
-        re.drawTexCoord(texS3, texT3);
-        re.drawVertex(0.0f, 0.0f);
+        drawFloatBuffer.put(texS4);
+        drawFloatBuffer.put(texT4);
+        drawFloatBuffer.put(width);
+        drawFloatBuffer.put(0);
 
-        re.drawTexCoord(texS4, texT4);
-        re.drawVertex(width, 0.0f);
+        re.enableClientState(IRenderingEngine.RE_TEXTURE);
+        re.disableClientState(IRenderingEngine.RE_COLOR);
+        re.disableClientState(IRenderingEngine.RE_NORMAL);
+        re.enableClientState(IRenderingEngine.RE_VERTEX);
+        bufferManager.setTexCoordPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
+        bufferManager.setVertexPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
+        bufferManager.setBufferData(drawBuffer, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
+        re.drawArrays(GeCommands.PRIM_SPRITES, 0, 4);
 
-        re.endDraw();
         re.endDirectRendering();
 
         isrotating = false;
@@ -995,7 +1016,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     	if (startModules) {
     		VideoEngine.getInstance().start();
-    		startModules = false;
+        	drawBuffer = re.getBufferManager().genBuffer(IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
+	    	startModules = false;
     	}
 
         if (createTex) {

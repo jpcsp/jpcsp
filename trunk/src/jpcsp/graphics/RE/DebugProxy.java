@@ -469,4 +469,100 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.setFrontFace(cw);
 	}
+
+	@Override
+	public void setColorPointer(int size, int type, int stride, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+		}
+		super.setColorPointer(size, type, stride, buffer);
+	}
+
+	@Override
+	public void setColorPointer(int size, int type, int stride, long offset) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setColorPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setNormalPointer(int type, int stride, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setNormalPointer type=%d, stride=%d, buffer offset=%d", type, stride, buffer.position()));
+		}
+		super.setNormalPointer(type, stride, buffer);
+	}
+
+	@Override
+	public void setNormalPointer(int type, int stride, long offset) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setNormalPointer type=%d, stride=%d, offset=%d", type, stride, offset));
+		}
+		super.setNormalPointer(type, stride, offset);
+	}
+
+	@Override
+	public void setTexCoordPointer(int size, int type, int stride, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+		}
+		super.setTexCoordPointer(size, type, stride, buffer);
+	}
+
+	@Override
+	public void setTexCoordPointer(int size, int type, int stride, long offset) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setTexCoordPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setVertexPointer(int size, int type, int stride, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+		}
+		super.setVertexPointer(size, type, stride, buffer);
+	}
+
+	@Override
+	public void setVertexPointer(int size, int type, int stride, long offset) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setVertexPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+		}
+		super.setWeightPointer(size, type, stride, buffer);
+	}
+
+	@Override
+	public void setWeightPointer(int size, int type, int stride, long offset) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
+		}
+		super.setWeightPointer(size, type, stride, offset);
+	}
+
+	@Override
+	public void setBufferData(int size, Buffer buffer, int usage) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setBufferData size=%d, buffer size=%d, usage=%d", size, buffer.capacity(), usage));
+		}
+		super.setBufferData(size, buffer, usage);
+	}
+
+	@Override
+	public void bindBuffer(int buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("bindBuffer %d", buffer));
+		}
+		super.bindBuffer(buffer);
+	}
 }

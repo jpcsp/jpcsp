@@ -60,7 +60,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int stencilOpZFail;
 	protected int stencilOpZPass;
 	protected int depthFunc;
-	protected int bindTexture = -1;
+	protected int bindTexture;
+	protected int bindBuffer;
 
 	public StateProxy(IRenderingEngine proxy) {
 		super(proxy);
@@ -133,6 +134,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		stencilOpZPass = -1;
 		depthFunc = -1;
 		bindTexture = -1;
+		bindBuffer = -1;
 		frontFace = false;
 
 		super.startDisplay();
@@ -490,10 +492,27 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void deleteTexture(int texture) {
-		// When deleting the current texture binding, it is reset to 0
+		// When deleting the current texture, the current binding is reset to 0
 		if (texture == bindTexture) {
 			bindTexture = 0;
 		}
 		super.deleteTexture(texture);
+	}
+
+	@Override
+	public void bindBuffer(int buffer) {
+		if (bindBuffer != buffer) {
+			super.bindBuffer(buffer);
+			bindBuffer = buffer;
+		}
+	}
+
+	@Override
+	public void deleteBuffer(int buffer) {
+		// When deleting the current buffer, the current binding is reset to 0
+		if (buffer == bindBuffer) {
+			bindBuffer = 0;
+		}
+		super.deleteBuffer(buffer);
 	}
 }

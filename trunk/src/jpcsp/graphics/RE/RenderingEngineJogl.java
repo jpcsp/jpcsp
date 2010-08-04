@@ -22,6 +22,7 @@ import javax.media.opengl.GL;
 import javax.media.opengl.GLException;
 
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.buffer.IREBufferManager;
 
 /**
  * @author gid15
@@ -502,7 +503,11 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 
 	@Override
 	public void setBlendColor(float[] color) {
-		gl.glBlendColor(color[0], color[1], color[2], color[3]);
+		try {
+			gl.glBlendColor(color[0], color[1], color[2], color[3]);
+		} catch (GLException e) {
+			VideoEngine.log.warn(e);
+		}
 	}
 
 	@Override
@@ -510,7 +515,7 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 		try {
 			gl.glBlendFunc(blendSrcToGL[src], blendDstToGL[dst]);
 		} catch (GLException e) {
-			VideoEngine.log.warn(e.toString());
+			VideoEngine.log.warn(e);
 		}
 	}
 
@@ -1072,5 +1077,11 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	@Override
 	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
 		// Nothing to do
+	}
+
+	@Override
+	public IREBufferManager getBufferManager() {
+		// Nothing to do
+		return null;
 	}
 }
