@@ -617,7 +617,8 @@ public class scePower implements HLEModule {
 
 		Modules.log.debug("scePowerGetCpuClockFrequencyFloat ret:" + Float.intBitsToFloat(cpuClock));
 
-		cpu.gpr[2] = cpuClock;
+        // Return float value in $f0
+		cpu.fpr[0] = cpuClock;
 	}
 
 	public void scePowerGetBusClockFrequencyFloat(Processor processor) {
@@ -625,7 +626,8 @@ public class scePower implements HLEModule {
 
 		Modules.log.debug("scePowerGetBusClockFrequencyInt ret:" + Float.intBitsToFloat(busClock));
 
-		cpu.gpr[2] = busClock;
+        // Return float value in $f0
+		cpu.fpr[0] = busClock;
 	}
 
 	public void scePowerGetPllClockFrequencyFloat(Processor processor) {
@@ -633,7 +635,8 @@ public class scePower implements HLEModule {
 
 		Modules.log.debug("scePowerGetPllClockFrequencyInt ret:" + Float.intBitsToFloat(pllClock));
 
-		cpu.gpr[2] = pllClock;
+        // Return float value in $f0
+		cpu.fpr[0] = pllClock;
 	}
 
 	public void scePowerSetClockFrequency(Processor processor) {
