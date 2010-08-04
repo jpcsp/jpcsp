@@ -1350,6 +1350,37 @@
 08934228:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+    08894544:[00804025]: or         $t0, $a0, $zr <=> move $t0, $a0
+    08894548:[31070003]: andi       $a3, $t0, 3
+    0889454C:[14E0000E]: bne        $a3, $zr, 0x08894588
+    08894550:[00053A00]: sll        $a3, $a1, 0x0008
+    08894554:[00054E00]: sll        $t1, $a1, 0x0018
+    08894558:[00055400]: sll        $t2, $a1, 0x0010
+    0889455C:[00E53825]: or         $a3, $a3, $a1
+    08894560:[012A4825]: or         $t1, $t1, $t2
+    08894564:[00E93825]: or         $a3, $a3, $t1
+    08894568:[2CC90004]: sltiu      $t1, $a2, 4
+    0889456C:[15200006]: bne        $t1, $zr, 0x08894588
+    08894570:[00000000]: nop
+    08894574:[AD070000]: sw         $a3, 0($t0)
+    08894578:[24C6FFFC]: addiu      $a2, $a2, -4
+    0889457C:[2CC90004]: sltiu      $t1, $a2, 4
+    08894580:[1120FFFC]: beq        $t1, $zr, 0x08894574
+    08894584:[25080004]: addiu      $t0, $t0, 4
+    08894588:[10C00005]: beq        $a2, $zr, 0x088945A0
+    0889458C:[00000000]: nop
+    08894590:[A1050000]: sb         $a1, 0($t0)
+    08894594:[24C6FFFF]: addiu      $a2, $a2, -1
+    08894598:[14C0FFFD]: bne        $a2, $zr, 0x08894590
+    0889459C:[25080001]: addiu      $t0, $t0, 1
+    088945A0:[03E00008]: jr         $ra
+    088945A4:[00801025]: or         $v0, $a0, $zr <=> move $v0, $a0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="bzero">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
