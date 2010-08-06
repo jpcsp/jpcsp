@@ -28,6 +28,7 @@ public class NativeCodeSequence {
 	private int branchInstruction = -1;
 	private boolean isReturning = false;
 	private boolean wholeCodeBlock = false;
+	private String methodName = "call";
 
 	public NativeCodeSequence(String name, Class<INativeCodeSequence> nativeCodeSequenceClass) {
 		this.name = name;
@@ -152,5 +153,13 @@ public class NativeCodeSequence {
 
 	public void setWholeCodeBlock(boolean wholeCodeBlock) {
 		this.wholeCodeBlock = wholeCodeBlock;
+	}
+
+	public String getMethodName() {
+		return methodName;
+	}
+
+	public void setMethodName(String methodName) {
+		this.methodName = methodName;
 	}
 }

@@ -1528,7 +1528,7 @@ public class CompilerContext implements ICompilerContext {
     		methodSignature.append("I");
     	}
     	methodSignature.append(")V");
-	    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(nativeCodeSequence.getNativeCodeSequenceClass()), "call", methodSignature.toString());
+	    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(nativeCodeSequence.getNativeCodeSequenceClass()), nativeCodeSequence.getMethodName(), methodSignature.toString());
 
 	    if (nativeCodeSequence.hasBranchInstruction()) {
 	    	int branchInstructionAddress = getCodeInstruction().getAddress() + nativeCodeSequence.getBranchInstructionAddressOffset();
