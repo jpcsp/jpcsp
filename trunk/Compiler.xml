@@ -1031,6 +1031,85 @@
 0880E82C:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpy">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcpy</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+    0880DE20:[00A41025]: or         $v0, $a1, $a0
+    0880DE24:[30420003]: andi       $v0, $v0, 3
+    0880DE28:[00805821]: addu       $t3, $a0, $zr <=> move $t3, $a0
+    0880DE2C:[14400027]: bne        $v0, $zr, 0x0880DECC
+    0880DE30:[00A03821]: addu       $a3, $a1, $zr <=> move $a3, $a1
+    0880DE34:[00065102]: srl        $t2, $a2, 0x0004
+    0880DE38:[30CC000F]: andi       $t4, $a2, 15
+    0880DE3C:[1140000E]: beq        $t2, $zr, 0x0880DE78
+    0880DE40:[00804021]: addu       $t0, $a0, $zr <=> move $t0, $a0
+    0880DE44:[00004821]: addu       $t1, $zr, $zr <=> li $t1, 0
+    0880DE48:[8CE30004]: lw         $v1, 4($a3)
+    0880DE4C:[8CE40008]: lw         $a0, 8($a3)
+    0880DE50:[8CE5000C]: lw         $a1, 12($a3)
+    0880DE54:[8CE20000]: lw         $v0, 0($a3)
+    0880DE58:[25290001]: addiu      $t1, $t1, 1
+    0880DE5C:[AD030004]: sw         $v1, 4($t0)
+    0880DE60:[24E70010]: addiu      $a3, $a3, 16
+    0880DE64:[AD020000]: sw         $v0, 0($t0)
+    0880DE68:[AD040008]: sw         $a0, 8($t0)
+    0880DE6C:[AD05000C]: sw         $a1, 12($t0)
+    0880DE70:[152AFFF5]: bne        $t1, $t2, 0x0880DE48
+    0880DE74:[25080010]: addiu      $t0, $t0, 16
+    0880DE78:[000C5082]: srl        $t2, $t4, 0x0002
+    0880DE7C:[11400008]: beq        $t2, $zr, 0x0880DEA0
+    0880DE80:[30C30003]: andi       $v1, $a2, 3
+    0880DE84:[00004821]: addu       $t1, $zr, $zr <=> li $t1, 0
+    0880DE88:[8CE20000]: lw         $v0, 0($a3)
+    0880DE8C:[25290001]: addiu      $t1, $t1, 1
+    0880DE90:[24E70004]: addiu      $a3, $a3, 4
+    0880DE94:[AD020000]: sw         $v0, 0($t0)
+    0880DE98:[1549FFFB]: bne        $t2, $t1, 0x0880DE88
+    0880DE9C:[25080004]: addiu      $t0, $t0, 4
+    0880DEA0:[18600008]: blez       $v1, 0x0880DEC4
+    0880DEA4:[00E02821]: addu       $a1, $a3, $zr <=> move $a1, $a3
+    0880DEA8:[01003821]: addu       $a3, $t0, $zr <=> move $a3, $t0
+    0880DEAC:[01031821]: addu       $v1, $t0, $v1
+    0880DEB0:[90A20000]: lbu        $v0, 0($a1)
+    0880DEB4:[A0E20000]: sb         $v0, 0($a3)
+    0880DEB8:[24E70001]: addiu      $a3, $a3, 1
+    0880DEBC:[14E3FFFC]: bne        $a3, $v1, 0x0880DEB0
+    0880DEC0:[24A50001]: addiu      $a1, $a1, 1
+    0880DEC4:[03E00008]: jr         $ra
+    0880DEC8:[01601021]: addu       $v0, $t3, $zr <=> move $v0, $t3
+    0880DECC:[00062FC3]: sra        $a1, $a2, 0x001F
+    0880DED0:[00052F82]: srl        $a1, $a1, 0x001E
+    0880DED4:[28C30000]: slti       $v1, $a2, 0
+    0880DED8:[24C40003]: addiu      $a0, $a2, 3
+    0880DEDC:[00C3200A]: movz       $a0, $a2, $v1
+    0880DEE0:[00C51021]: addu       $v0, $a2, $a1
+    0880DEE4:[30420003]: andi       $v0, $v0, 3
+    0880DEE8:[00042083]: sra        $a0, $a0, 0x0002
+    0880DEEC:[00451823]: subu       $v1, $v0, $a1
+    0880DEF0:[00E02821]: addu       $a1, $a3, $zr <=> move $a1, $a3
+    0880DEF4:[1080000A]: beq        $a0, $zr, 0x0880DF20
+    0880DEF8:[01603821]: addu       $a3, $t3, $zr <=> move $a3, $t3
+    0880DEFC:[00004021]: addu       $t0, $zr, $zr <=> li $t0, 0
+    0880DF00:[25080001]: addiu      $t0, $t0, 1
+    0880DF04:[88A20003]: lwl        $v0, 3($a1)
+    0880DF08:[98A20000]: lwr        $v0, 0($a1)
+    0880DF0C:[24A50004]: addiu      $a1, $a1, 4
+    0880DF10:[A8E20003]: swl        $v0, 3($a3)
+    0880DF14:[B8E20000]: swr        $v0, 0($a3)
+    0880DF18:[1488FFF9]: bne        $a0, $t0, 0x0880DF00
+    0880DF1C:[24E70004]: addiu      $a3, $a3, 4
+    0880DF20:[1860FFE8]: blez       $v1, 0x0880DEC4
+    0880DF24:[00E31821]: addu       $v1, $a3, $v1
+    0880DF28:[90A20000]: lbu        $v0, 0($a1)
+    0880DF2C:[A0E20000]: sb         $v0, 0($a3)
+    0880DF30:[24E70001]: addiu      $a3, $a3, 1
+    0880DF34:[14E3FFFC]: bne        $a3, $v1, 0x0880DF28
+    0880DF38:[24A50001]: addiu      $a1, $a1, 1
+    0880DF3C:[03E00008]: jr         $ra
+    0880DF40:[01601021]: addu       $v0, $t3, $zr <=> move $v0, $t3
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
@@ -2330,6 +2409,36 @@
 088DFDA8:[AD4B0118]: sw         $t3, 280($t2)
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Parameters>$a2,$a3,$a1,2</Parameters>
+		<Method>callWithStep</Method>
+		<CodeInstructions><![CDATA[
+08916960:[80E30000]: lb         $v1, 0($a3)
+08916964:[80E20001]: lb         $v0, 1($a3)
+08916968:[24A5FFFF]: addiu      $a1, $a1, -1
+0891696C:[A0C30000]: sb         $v1, 0($a2)
+08916970:[A0C20001]: sb         $v0, 1($a2)
+08916974:[24E70002]: addiu      $a3, $a3, 2
+08916978:[1CA0FFF9]: bgtz       $a1, 0x08916960
+0891697C:[24C60002]: addiu      $a2, $a2, 2
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Parameters>$t0,$t1,$a3,2</Parameters>
+		<Method>callWithStep</Method>
+		<CodeInstructions><![CDATA[
+088ABFBC:[81260000]: lb         $a2, 0($t1)
+088ABFC0:[81230001]: lb         $v1, 1($t1)
+088ABFC4:[24E7FFFF]: addiu      $a3, $a3, -1
+088ABFC8:[A1060000]: sb         $a2, 0($t0)
+088ABFCC:[A1030001]: sb         $v1, 1($t0)
+088ABFD0:[25290002]: addiu      $t1, $t1, 2
+088ABFD4:[1CE0FFF9]: bgtz       $a3, 0x088ABFBC
+088ABFD8:[25080002]: addiu      $t0, $t0, 2
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="sleep">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Sleep</Class>
 		<Parameters>$a2,$a3</Parameters>
@@ -2396,6 +2505,26 @@
 08992BAC:[0107582B]: sltu       $t3, $t0, $a3
 08992BB0:[1560FFFC]: bne        $t3, $zr, 0x08992BA4
 08992BB4:[254A0004]: addiu      $t2, $t2, 4
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="bzeroSequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<Parameters>$t1,$zr,$a0</Parameters>
+		<CodeInstructions><![CDATA[
+08834158:[A1200000]: sb         $zr, 0($t1)
+0883415C:[2484FFFF]: addiu      $a0, $a0, -1
+08834160:[1480FFFD]: bne        $a0, $zr, 0x08834158
+08834164:[25290001]: addiu      $t1, $t1, 1
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="bzeroSequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<Parameters>$v1,$zr,$v0</Parameters>
+		<CodeInstructions><![CDATA[
+0882E9B4:[A0600000]: sb         $zr, 0($v1)
+0882E9B8:[2442FFFF]: addiu      $v0, $v0, -1
+0882E9BC:[1440FFFD]: bne        $v0, $zr, 0x0882E9B4
+0882E9C0:[24630001]: addiu      $v1, $v1, 1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memcmpSequence">

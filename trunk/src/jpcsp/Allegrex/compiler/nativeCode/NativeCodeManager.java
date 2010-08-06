@@ -194,6 +194,11 @@ public class NativeCodeManager {
 			}
 		}
 
+		String methodName = getContent(element.getElementsByTagName("Method"));
+		if (methodName != null) {
+			nativeCodeSequence.setMethodName(methodName);
+		}
+
 		String codeInstructions = getContent(element.getElementsByTagName("CodeInstructions"));
 		loadNativeCodeOpcodes(nativeCodeSequence, codeInstructions);
 
