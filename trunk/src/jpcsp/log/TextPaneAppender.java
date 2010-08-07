@@ -1,4 +1,20 @@
-/* modified */
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -108,7 +124,6 @@ public class TextPaneAppender extends AppenderSkeleton {
 	}
 
 	public void close() {
-
 	}
 
 	private void createAttributes() {
@@ -129,25 +144,6 @@ public class TextPaneAppender extends AppenderSkeleton {
 
 	private void createIcons() {
 		icons = new Hashtable<Level, ImageIcon>();
-		/*for (int i = 0; i < levels.length; i++) {
-			if (levels[i].equals(Level.FATAL))
-				icons
-						.put(levels[i], new ImageIcon(
-								loadIcon("icons/RedFlag.gif")));
-			if (levels[i].equals(Level.ERROR))
-				icons
-						.put(levels[i], new ImageIcon(
-								loadIcon("icons/RedFlag.gif")));
-			if (levels[i].equals(Level.WARN))
-				icons.put(levels[i],
-						new ImageIcon(loadIcon("icons/BlueFlag.gif")));
-			if (levels[i].equals(Level.INFO))
-				icons.put(levels[i], new ImageIcon(
-						loadIcon("icons/GreenFlag.gif")));
-			if (levels[i].equals(Level.DEBUG))
-				icons.put(levels[i], new ImageIcon(
-						loadIcon("icons/GreenFlag.gif")));
-		}*/
 	}
 
 	@Override
@@ -232,9 +228,6 @@ public class TextPaneAppender extends AppenderSkeleton {
 		Color c = StyleConstants.getForeground(attributes.get(p));
 		return c == null ? null : colorToString(c);
 	}
-
-	// ///////////////////////////////////////////////////////////////////
-	// option setters and getters
 
 	public void setLabel(String label) {
 		this.label = label;
@@ -329,5 +322,4 @@ public class TextPaneAppender extends AppenderSkeleton {
 	public boolean requiresLayout() {
 		return true;
 	}
-} // TextPaneAppender
-
+}

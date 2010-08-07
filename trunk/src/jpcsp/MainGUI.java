@@ -64,6 +64,7 @@ import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.RecentElement;
 import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.ControlsGUI;
+import jpcsp.GUI.LogGUI;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
@@ -97,6 +98,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     ElfHeaderInfo elfheader;
     SettingsGUI setgui;
     ControlsGUI ctrlgui;
+    LogGUI loggui;
     MemStickBrowser memstick;
     Emulator emulator;
     UmdBrowser umdbrowser;
@@ -198,6 +200,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         SetttingsMenu = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
         ToolsSubMenu = new javax.swing.JMenu();
+        LoggerMenu = new javax.swing.JMenu();
+        ToggleLogger = new javax.swing.JCheckBoxMenuItem();
+        CustomLogger = new javax.swing.JMenuItem();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
         EnterImageViewer = new javax.swing.JMenuItem();
@@ -205,7 +210,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ElfHeaderViewer = new javax.swing.JMenuItem();
         FileLog = new javax.swing.JMenuItem();
         InstructionCounter = new javax.swing.JMenuItem();
-        ToggleConsole = new javax.swing.JMenuItem();
         DumpIso = new javax.swing.JMenuItem();
         ResetProfiler = new javax.swing.JMenuItem();
         CheatsMenu = new javax.swing.JMenu();
@@ -413,6 +417,26 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         ToolsSubMenu.setText(Resource.get("toolsmenu"));
 
+        LoggerMenu.setText("Logger");
+
+        ToggleLogger.setText("Show Logger");
+        ToggleLogger.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ToggleLoggerActionPerformed(evt);
+            }
+        });
+        LoggerMenu.add(ToggleLogger);
+
+        CustomLogger.setText("Customize...");
+        CustomLogger.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CustomLoggerActionPerformed(evt);
+            }
+        });
+        LoggerMenu.add(CustomLogger);
+
+        ToolsSubMenu.add(LoggerMenu);
+
         EnterDebugger.setText(Resource.get("enterdebugger"));
         EnterDebugger.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -470,14 +494,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ToolsSubMenu.add(InstructionCounter);
 
         DebugMenu.add(ToolsSubMenu);
-
-        ToggleConsole.setText(Resource.get("toggleconsole"));
-        ToggleConsole.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ToggleConsoleActionPerformed(evt);
-            }
-        });
-        DebugMenu.add(ToggleConsole);
 
         DumpIso.setText(Resource.get("dumpisotoisoindex"));
         DumpIso.addActionListener(new java.awt.event.ActionListener() {
@@ -666,14 +682,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             RecentMenu.add(item);
         }
     }
-
-private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
-    if (!consolewin.isVisible() && snapConsole) {
-        mainwindowPos = this.getLocation();
-        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
-    }
-    consolewin.setVisible(!consolewin.isVisible());
-}//GEN-LAST:event_ToggleConsoleActionPerformed
 
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
     PauseEmu();
@@ -1393,6 +1401,28 @@ if(MuteOpt.isSelected()){
 }
 }//GEN-LAST:event_MuteOptActionPerformed
 
+private void ToggleLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleLoggerActionPerformed
+    if (!consolewin.isVisible() && snapConsole) {
+        mainwindowPos = this.getLocation();
+        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+    }
+    consolewin.setVisible(!consolewin.isVisible());
+    ToggleLogger.setSelected(consolewin.isVisible());
+}//GEN-LAST:event_ToggleLoggerActionPerformed
+
+private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CustomLoggerActionPerformed
+    if(loggui == null) {
+      loggui = new LogGUI();
+      Point mainwindow = this.getLocation();
+      loggui.setLocation(mainwindow.x+100, mainwindow.y+50);
+      loggui.setVisible(true);
+      /* add a direct link to the main window*/
+      loggui.setMainGUI(this);
+     } else {
+       loggui.setVisible(true);
+     }
+}//GEN-LAST:event_CustomLoggerActionPerformed
+
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1527,8 +1557,10 @@ private void processArgs(String[] args) {
                 MainGUI maingui = new MainGUI();
                 maingui.setVisible(true);
 
-                if (Settings.getInstance().readBool("gui.openLogwindow"))
+                if (Settings.getInstance().readBool("gui.openLogwindow")) {
                     maingui.consolewin.setVisible(true);
+                    maingui.ToggleLogger.setSelected(true);
+                }
 
                 maingui.processArgs(fargs);
             }
@@ -1541,6 +1573,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem Catalan;
     private javax.swing.JMenu CheatsMenu;
     private javax.swing.JMenuItem ControlsConf;
+    private javax.swing.JMenuItem CustomLogger;
     private javax.swing.JMenu DebugMenu;
     private javax.swing.JMenuItem DumpIso;
     private javax.swing.JMenuItem ElfHeaderViewer;
@@ -1559,6 +1592,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu LanguageMenu;
     private javax.swing.JMenuItem Lithuanian;
     private javax.swing.JMenuItem LoadSnap;
+    private javax.swing.JMenu LoggerMenu;
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JCheckBoxMenuItem MuteOpt;
     private javax.swing.JMenuItem OpenFile;
@@ -1578,7 +1612,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem Spanish;
-    private javax.swing.JMenuItem ToggleConsole;
+    private javax.swing.JCheckBoxMenuItem ToggleLogger;
     private javax.swing.JMenu ToolsSubMenu;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JMenu VideoOpt;

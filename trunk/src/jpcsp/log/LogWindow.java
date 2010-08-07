@@ -1,3 +1,37 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package jpcsp.log;
 
 import java.awt.event.ActionEvent;
@@ -33,7 +67,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 public class LogWindow extends JFrame {
 
 	private static final long serialVersionUID = 1L;
-	
+	private static String confFile = "LogSettings.xml";
 	private String[] loglevels = {"ALL","TRACE","DEBUG","INFO","WARN","ERROR","FATAL","OFF" };
 	private JTextPane textPane;
 
@@ -45,9 +79,8 @@ public class LogWindow extends JFrame {
 			@Override
 			public void windowDeactivated(WindowEvent e) {
 				if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+                    // Save window's size and position.
 					Settings.getInstance().writeWindowPos("logwindow", getLocation());
-
-					/* save window size */
 					Settings.getInstance().writeWindowSize("logwindow", getSize());
 				}
 			}});
@@ -66,43 +99,6 @@ public class LogWindow extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				clearScreenMessages();
 			}});
-		JButton saveButton = new JButton("Save to file...");
-		saveButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        JFileChooser m_fileChooser = new JFileChooser();
-                        m_fileChooser.setSelectedFile(new File("logoutput.txt"));
-                        m_fileChooser.setDialogTitle("Save logging output");
-                        m_fileChooser.setCurrentDirectory(new java.io.File("."));
-                        int returnVal = m_fileChooser.showSaveDialog(LogWindow.this);
-                        if (returnVal != JFileChooser.APPROVE_OPTION) {
-                            return;
-                        }
-                        File f = m_fileChooser.getSelectedFile();
-                        BufferedWriter out = null;
-                        try {
-                            if (f.exists()) {
-                                int res = JOptionPane.showConfirmDialog(
-                                        LogWindow.this,
-                                        "File '" + f.getName() + "' already Exists! Do you want to override?",
-                                        "Save Log Output",
-                                        JOptionPane.YES_NO_OPTION,
-                                        JOptionPane.WARNING_MESSAGE);
-
-                                if (res != JOptionPane.YES_OPTION) {
-                                    return;
-                                }
-                            }
-
-                            out = new BufferedWriter(new FileWriter(f));
-                            out.write(textPane.getText());
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        } finally {
-                            Utilities.close(out);
-                        }
-                    }
-		});
         JLabel loglevellabel = new JLabel("Choose Log Level");
         final JComboBox loglevelcombo = new JComboBox(loglevels);
         final Logger rootLogger = Logger.getRootLogger();
@@ -155,17 +151,14 @@ public class LogWindow extends JFrame {
             }
         });
 
-
 		GroupLayout layout = new GroupLayout(getRootPane());
 		layout.setAutoCreateGaps(true);
-		//layout.setAutoCreateContainerGaps(true);
 
 		layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING)
 				.addComponent(scrollPane)
 				.addGroup(layout.createSequentialGroup()
                         .addComponent(loglevellabel)
                         .addComponent(loglevelcombo)
-						.addComponent(saveButton)
 						.addComponent(clearButton)));
 
 		layout.setVerticalGroup(layout.createSequentialGroup()
@@ -173,12 +166,16 @@ public class LogWindow extends JFrame {
 				.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                         .addComponent(loglevellabel)
                         .addComponent(loglevelcombo)
-						.addComponent(saveButton)
 						.addComponent(clearButton)));
 
 		setSize(Settings.getInstance().readWindowSize("logwindow", 500, 300));
 		getRootPane().setLayout(layout);
 	}
+
+
+    public static void setConfXMLFile(String path) {
+        confFile = path;
+    }
 
 	/**
 	 * @param args
@@ -189,8 +186,8 @@ public class LogWindow extends JFrame {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.setProperty("log4j.properties", "LogSettings.xml");
-		DOMConfigurator.configure("LogSettings.xml");
+		System.setProperty("log4j.properties", confFile);
+		DOMConfigurator.configure(confFile);
 
 		System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("sysout"), Level.INFO)));
 		new LogWindow().setVisible(true);
@@ -201,5 +198,4 @@ public class LogWindow extends JFrame {
 			textPane.setText("");
 		}
 	}
-
 }
