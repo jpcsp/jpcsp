@@ -1,13 +1,30 @@
 /*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,11 +42,11 @@ import org.apache.log4j.spi.LoggingEvent;
 
 /**
  * This layout outputs events in a HTML table.
- * 
+ *
  * Appenders using this layout should have their encoding set to UTF-8 or
  * UTF-16, otherwise events containing non ASCII characters could result in
  * corrupted log files.
- * 
+ *
  * @author Ceki G&uuml;lc&uuml;
  * @modified Florent Castelli
  */
@@ -47,10 +64,10 @@ public class HTMLLayout extends Layout {
 	 * A string constant used in naming the option for setting the the location
 	 * information flag. Current value of this string constant is
 	 * <b>LocationInfo</b>.
-	 * 
+	 *
 	 * <p>
 	 * Note that all option keys are case sensitive.
-	 * 
+	 *
 	 * @deprecated Options are now handled using the JavaBeans paradigm. This
 	 *             constant is not longer needed and will be removed in the
 	 *             <em>near</em> term.
@@ -75,7 +92,7 @@ public class HTMLLayout extends Layout {
 	 * this layout. If the the option is set to true, then the file name and
 	 * line number of the statement at the origin of the log statement will be
 	 * output.
-	 * 
+	 *
 	 * <p>
 	 * If you are embedding this layout within an
 	 * {@link org.apache.log4j.net.SMTPAppender} then make sure to set the
@@ -95,7 +112,7 @@ public class HTMLLayout extends Layout {
 	/**
 	 * The <b>Title</b> option takes a String value. This option sets the
 	 * document title of the generated HTML document.
-	 * 
+	 *
 	 * <p>
 	 * Defaults to 'Log4J Log Messages'.
 	 */
