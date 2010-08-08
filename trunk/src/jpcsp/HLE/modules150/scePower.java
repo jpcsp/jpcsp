@@ -27,7 +27,11 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.hardware.Battery;
 
+import org.apache.log4j.Logger;
+
 public class scePower implements HLEModule {
+    private static Logger log = Modules.getLogger("scePower");
+
 	@Override
 	public String getName() { return "scePower"; }
 
@@ -196,7 +200,7 @@ public class scePower implements HLEModule {
 	public void scePower_2B51FE2F(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePower_2B51FE2F [0x2B51FE2F]");
+		log.warn("Unimplemented NID function scePower_2B51FE2F [0x2B51FE2F]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -204,7 +208,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBacklightMaximum(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBacklightMaximum backlightMaxium=" + backlightMaximum);
+		log.debug("scePowerGetBacklightMaximum backlightMaxium=" + backlightMaximum);
 
 		cpu.gpr[2] = backlightMaximum;
 	}
@@ -212,7 +216,7 @@ public class scePower implements HLEModule {
 	public void scePowerTick(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function scePowerTick [0xEFD3C963]");
+		log.debug("Unimplemented NID function scePowerTick [0xEFD3C963]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -220,7 +224,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetIdleTimer(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetIdleTimer [0xEDC13FE5]");
+		log.warn("Unimplemented NID function scePowerGetIdleTimer [0xEDC13FE5]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -228,7 +232,7 @@ public class scePower implements HLEModule {
 	public void scePowerIdleTimerEnable(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerIdleTimerEnable [0x7F30B3B1]");
+		log.warn("Unimplemented NID function scePowerIdleTimerEnable [0x7F30B3B1]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -236,7 +240,7 @@ public class scePower implements HLEModule {
 	public void scePowerIdleTimerDisable(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerIdleTimerDisable [0x972CE941]");
+		log.warn("Unimplemented NID function scePowerIdleTimerDisable [0x972CE941]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -244,7 +248,7 @@ public class scePower implements HLEModule {
 	public void scePowerBatteryUpdateInfo(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerBatteryUpdateInfo [0x27F3292C]");
+		log.warn("Unimplemented NID function scePowerBatteryUpdateInfo [0x27F3292C]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -253,7 +257,7 @@ public class scePower implements HLEModule {
 		CpuState cpu = processor.cpu;
 
 		int forceSuspendCapacity = (Battery.getForceSuspendPercent() * Battery.getFullCapacity()) / 100;
-		Modules.log.debug("scePowerGetForceSuspendCapacity " + forceSuspendCapacity + "mAh");
+		log.debug("scePowerGetForceSuspendCapacity " + forceSuspendCapacity + "mAh");
 
 		cpu.gpr[2] = forceSuspendCapacity;
 	}
@@ -262,7 +266,7 @@ public class scePower implements HLEModule {
 		CpuState cpu = processor.cpu;
 
 		int lowBatteryCapacity = (Battery.getLowPercent() * Battery.getFullCapacity()) / 100;
-		Modules.log.debug("scePowerGetLowBatteryCapacity " + lowBatteryCapacity + "mAh");
+		log.debug("scePowerGetLowBatteryCapacity " + lowBatteryCapacity + "mAh");
 
 		cpu.gpr[2] = lowBatteryCapacity;
 	}
@@ -270,7 +274,7 @@ public class scePower implements HLEModule {
 	public void scePowerIsPowerOnline(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerIsPowerOnline pluggedIn=" + Battery.isPluggedIn());
+		log.debug("scePowerIsPowerOnline pluggedIn=" + Battery.isPluggedIn());
 
 		cpu.gpr[2] = Battery.isPluggedIn() ? 1 : 0;
 	}
@@ -278,7 +282,7 @@ public class scePower implements HLEModule {
 	public void scePowerIsBatteryExist(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerIsBatteryExist batteryPresent=" + Battery.isPresent());
+		log.debug("scePowerIsBatteryExist batteryPresent=" + Battery.isPresent());
 
 		cpu.gpr[2] = Battery.isPresent() ? 1 : 0;
 	}
@@ -286,7 +290,7 @@ public class scePower implements HLEModule {
 	public void scePowerIsBatteryCharging(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerIsBatteryCharging batteryCharging=" + Battery.isCharging());
+		log.debug("scePowerIsBatteryCharging batteryCharging=" + Battery.isCharging());
 
 		cpu.gpr[2] = Battery.isCharging() ? 1 : 0;
 	}
@@ -306,7 +310,7 @@ public class scePower implements HLEModule {
 			status |= PSP_POWER_CB_BATTPOWER;
 		}
 
-		Modules.log.debug("scePowerGetBatteryChargingStatus status=0x" + Integer.toHexString(status));
+		log.debug("scePowerGetBatteryChargingStatus status=0x" + Integer.toHexString(status));
 
 		cpu.gpr[2] = status;
 	}
@@ -315,7 +319,7 @@ public class scePower implements HLEModule {
 		CpuState cpu = processor.cpu;
 
 		int isLow = (Battery.getCurrentPowerPercent() <= Battery.getLowPercent()) ? 1 : 0;
-		Modules.log.debug("scePowerIsLowBattery " + isLow);
+		log.debug("scePowerIsLowBattery " + isLow);
 
 		cpu.gpr[2] = isLow;
 	}
@@ -333,7 +337,7 @@ public class scePower implements HLEModule {
 		CpuState cpu = processor.cpu;
 
 		int isSuspendRequired = (Battery.getCurrentPowerPercent() <= Battery.getForceSuspendPercent() ? 1 : 0);
-		Modules.log.debug("scePowerIsSuspendRequired isSuspendRequired=" + isSuspendRequired);
+		log.debug("scePowerIsSuspendRequired isSuspendRequired=" + isSuspendRequired);
 
 		cpu.gpr[2] = isSuspendRequired;
 	}
@@ -342,7 +346,7 @@ public class scePower implements HLEModule {
 		CpuState cpu = processor.cpu;
 
 		int batteryRemainCapacity = (Battery.getCurrentPowerPercent() * Battery.getFullCapacity()) / 100;
-		Modules.log.debug("scePowerGetBatteryRemainCapacity " + batteryRemainCapacity + "mAh");
+		log.debug("scePowerGetBatteryRemainCapacity " + batteryRemainCapacity + "mAh");
 
 		cpu.gpr[2] = batteryRemainCapacity;
 	}
@@ -350,7 +354,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryFullCapacity(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryFullCapacity " + Battery.getFullCapacity() + "mAh");
+		log.debug("scePowerGetBatteryFullCapacity " + Battery.getFullCapacity() + "mAh");
 
 		cpu.gpr[2] = Battery.getFullCapacity();
 	}
@@ -358,7 +362,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryLifePercent(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryLifePercent percent=" + Battery.getCurrentPowerPercent());
+		log.debug("scePowerGetBatteryLifePercent percent=" + Battery.getCurrentPowerPercent());
 
 		cpu.gpr[2] = Battery.getCurrentPowerPercent();
 	}
@@ -366,7 +370,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryLifeTime(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryLifeTime batteryLifeTime=" + Battery.getLifeTime());
+		log.debug("scePowerGetBatteryLifeTime batteryLifeTime=" + Battery.getLifeTime());
 
 		cpu.gpr[2] = Battery.getLifeTime();
 	}
@@ -374,7 +378,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryTemp(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryTemp batteryTemp=" + Battery.getTemperature());
+		log.debug("scePowerGetBatteryTemp batteryTemp=" + Battery.getTemperature());
 
 		cpu.gpr[2] = Battery.getTemperature();
 	}
@@ -382,7 +386,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryElec(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetBatteryElec [0x862AE1A6]");
+		log.warn("Unimplemented NID function scePowerGetBatteryElec [0x862AE1A6]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -390,7 +394,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryVolt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryVolt batteryVoltage=" + Battery.getVoltage());
+		log.debug("scePowerGetBatteryVolt batteryVoltage=" + Battery.getVoltage());
 
 		cpu.gpr[2] = Battery.getVoltage();
 	}
@@ -398,7 +402,7 @@ public class scePower implements HLEModule {
 	public void scePower_23436A4A(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePower_23436A4A [0x23436A4A]");
+		log.warn("Unimplemented NID function scePower_23436A4A [0x23436A4A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -406,7 +410,7 @@ public class scePower implements HLEModule {
 	public void scePowerSetPowerSwMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerSetPowerSwMode [0x0CD21B1F]");
+		log.warn("Unimplemented NID function scePowerSetPowerSwMode [0x0CD21B1F]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -414,7 +418,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetPowerSwMode(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetPowerSwMode [0x165CE085]");
+		log.warn("Unimplemented NID function scePowerGetPowerSwMode [0x165CE085]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -422,7 +426,7 @@ public class scePower implements HLEModule {
 	public void scePowerVolatileMemLock(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerVolatileMemLock [0x23C31FFE]");
+		log.warn("Unimplemented NID function scePowerVolatileMemLock [0x23C31FFE]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -430,7 +434,7 @@ public class scePower implements HLEModule {
 	public void scePowerVolatileMemTryLock(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerVolatileMemTryLock [0xFA97A599]");
+		log.warn("Unimplemented NID function scePowerVolatileMemTryLock [0xFA97A599]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -438,7 +442,7 @@ public class scePower implements HLEModule {
 	public void scePowerVolatileMemUnlock(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerVolatileMemUnlock [0xB3EDD801]");
+		log.warn("Unimplemented NID function scePowerVolatileMemUnlock [0xB3EDD801]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -446,7 +450,7 @@ public class scePower implements HLEModule {
 	public void scePowerLock(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerLock [0xD6D016EF]");
+		log.warn("Unimplemented NID function scePowerLock [0xD6D016EF]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -454,7 +458,7 @@ public class scePower implements HLEModule {
 	public void scePowerUnlock(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerUnlock [0xCA3D34C1]");
+		log.warn("Unimplemented NID function scePowerUnlock [0xCA3D34C1]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -462,7 +466,7 @@ public class scePower implements HLEModule {
 	public void scePowerCancelRequest(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerCancelRequest [0xDB62C9CF]");
+		log.warn("Unimplemented NID function scePowerCancelRequest [0xDB62C9CF]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -470,7 +474,7 @@ public class scePower implements HLEModule {
 	public void scePowerIsRequest(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerIsRequest [0x7FA406DD]");
+		log.warn("Unimplemented NID function scePowerIsRequest [0x7FA406DD]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -478,7 +482,7 @@ public class scePower implements HLEModule {
 	public void scePowerRequestStandby(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerRequestStandby [0x2B7C7CF4]");
+		log.warn("Unimplemented NID function scePowerRequestStandby [0x2B7C7CF4]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -486,7 +490,7 @@ public class scePower implements HLEModule {
 	public void scePowerRequestSuspend(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerRequestSuspend [0xAC32C9CC]");
+		log.warn("Unimplemented NID function scePowerRequestSuspend [0xAC32C9CC]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -494,7 +498,7 @@ public class scePower implements HLEModule {
 	public void scePower_2875994B(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePower_2875994B [0x2875994B]");
+		log.warn("Unimplemented NID function scePower_2875994B [0x2875994B]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -502,7 +506,7 @@ public class scePower implements HLEModule {
 	public void scePowerWaitRequestCompletion(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerWaitRequestCompletion [0x3951AF53]");
+		log.warn("Unimplemented NID function scePowerWaitRequestCompletion [0x3951AF53]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -510,7 +514,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetResumeCount(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerGetResumeCount [0x0074EF9B]");
+		log.warn("Unimplemented NID function scePowerGetResumeCount [0x0074EF9B]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -521,7 +525,7 @@ public class scePower implements HLEModule {
         int slot = cpu.gpr[4];
         int uid = cpu.gpr[5];
 
-        Modules.log.info("scePowerRegisterCallback slot=" + slot + " SceUID=" + Integer.toHexString(uid));
+        log.info("scePowerRegisterCallback slot=" + slot + " SceUID=" + Integer.toHexString(uid));
 
 		cpu.gpr[2] = 0;
 	}
@@ -531,7 +535,7 @@ public class scePower implements HLEModule {
 
         int slot = cpu.gpr[4];
 
-		Modules.log.info("scePowerUnregisterCallback slot=" + slot);
+		log.info("scePowerUnregisterCallback slot=" + slot);
 
 		cpu.gpr[2] = 0;
 	}
@@ -539,7 +543,7 @@ public class scePower implements HLEModule {
 	public void scePowerUnregitserCallback(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		System.out.println("Unimplemented NID function scePowerUnregitserCallback [0xDB9D28DD]");
+		log.warn("Unimplemented NID function scePowerUnregitserCallback [0xDB9D28DD]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -552,7 +556,7 @@ public class scePower implements HLEModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.debug("scePowerSetCpuClockFrequency : " + freq);
+            log.debug("scePowerSetCpuClockFrequency : " + freq);
             cpuClock = freq;
             cpu.gpr[2] = 0;
         }
@@ -566,7 +570,7 @@ public class scePower implements HLEModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.debug("scePowerSetBusClockFrequency : " + freq);
+            log.debug("scePowerSetBusClockFrequency : " + freq);
             busClock = freq;
             cpu.gpr[2] = 0;
         }
@@ -575,7 +579,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetCpuClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetCpuClockFrequency ret:" + cpuClock);
+		log.debug("scePowerGetCpuClockFrequency ret:" + cpuClock);
 
 		cpu.gpr[2] = cpuClock;
 	}
@@ -583,7 +587,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBusClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBusClockFrequency ret:" + busClock);
+		log.debug("scePowerGetBusClockFrequency ret:" + busClock);
 
 		cpu.gpr[2] = busClock;
 	}
@@ -591,7 +595,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetCpuClockFrequencyInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetCpuClockFrequencyInt ret:" + cpuClock);
+		log.debug("scePowerGetCpuClockFrequencyInt ret:" + cpuClock);
 
 		cpu.gpr[2] = cpuClock;
 	}
@@ -599,7 +603,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBusClockFrequencyInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBusClockFrequencyInt ret:" + busClock);
+		log.debug("scePowerGetBusClockFrequencyInt ret:" + busClock);
 
 		cpu.gpr[2] = busClock;
 	}
@@ -607,7 +611,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetPllClockFrequencyInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetPllClockFrequencyInt ret:" + pllClock);
+		log.debug("scePowerGetPllClockFrequencyInt ret:" + pllClock);
 
 		cpu.gpr[2] = pllClock;
 	}
@@ -615,7 +619,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetCpuClockFrequencyFloat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetCpuClockFrequencyFloat ret:" + Float.intBitsToFloat(cpuClock));
+		log.debug("scePowerGetCpuClockFrequencyFloat ret:" + Float.intBitsToFloat(cpuClock));
 
         // Return float value in $f0
 		cpu.fpr[0] = cpuClock;
@@ -624,7 +628,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBusClockFrequencyFloat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBusClockFrequencyInt ret:" + Float.intBitsToFloat(busClock));
+		log.debug("scePowerGetBusClockFrequencyInt ret:" + Float.intBitsToFloat(busClock));
 
         // Return float value in $f0
 		cpu.fpr[0] = busClock;
@@ -633,7 +637,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetPllClockFrequencyFloat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetPllClockFrequencyInt ret:" + Float.intBitsToFloat(pllClock));
+		log.debug("scePowerGetPllClockFrequencyInt ret:" + Float.intBitsToFloat(pllClock));
 
         // Return float value in $f0
 		cpu.fpr[0] = pllClock;
@@ -646,7 +650,7 @@ public class scePower implements HLEModule {
 		cpuClock = cpu.gpr[5];
 		busClock = cpu.gpr[6];
 
-		Modules.log.debug("scePowerSetClockFrequency pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
+		log.debug("scePowerSetClockFrequency pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
 
 		cpu.gpr[2] = 0;
 	}
@@ -659,7 +663,7 @@ public class scePower implements HLEModule {
 		cpuClock = cpu.gpr[5];
 		busClock = cpu.gpr[6];
 
-		Modules.log.debug("scePower_EBD177D6 pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
+		log.debug("scePower_EBD177D6 pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
 
 		cpu.gpr[2] = 0;
 	}

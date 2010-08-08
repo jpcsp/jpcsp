@@ -24,7 +24,10 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.hardware.Interrupts;
 
+import org.apache.log4j.Logger;
+
 public class Kernel_Library implements HLEModule {
+    private static Logger log = Modules.getLogger("Kernel_Library");
 
     @Override
     public String getName() {
@@ -68,8 +71,8 @@ public class Kernel_Library implements HLEModule {
     public void sceKernelCpuSuspendIntr(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceKernelCpuSuspendIntr interruptsEnabled=" + Interrupts.isInterruptsEnabled());
+        if (log.isDebugEnabled()) {
+        	log.debug("sceKernelCpuSuspendIntr interruptsEnabled=" + Interrupts.isInterruptsEnabled());
         }
 
         if (Interrupts.isInterruptsEnabled()) {
@@ -89,8 +92,8 @@ public class Kernel_Library implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
 
         int flagInterrupts = cpu.gpr[4];
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceKernelCpuResumeIntr flag=" + flagInterrupts);
+        if (log.isDebugEnabled()) {
+        	log.debug("sceKernelCpuResumeIntr flag=" + flagInterrupts);
         }
 
         if (flagInterrupts == flagInterruptsEnabled) {
@@ -98,7 +101,7 @@ public class Kernel_Library implements HLEModule {
         } else if (flagInterrupts == flagInterruptsDisabled) {
         	Interrupts.disableInterrupts();
         } else {
-        	Modules.log.warn("sceKernelCpuResumeIntr unknown flag value " + flagInterrupts);
+        	log.warn("sceKernelCpuResumeIntr unknown flag value " + flagInterrupts);
         }
     }
 
@@ -108,8 +111,8 @@ public class Kernel_Library implements HLEModule {
      * @param flags - The value returned from ::sceKernelCpuSuspendIntr()
      */
     public void sceKernelCpuResumeIntrWithSync(Processor processor) {
-    	if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceKernelCpuResumeIntrWithSync redirecting to sceKernelCpuResumeIntr");
+    	if (log.isDebugEnabled()) {
+        	log.debug("sceKernelCpuResumeIntrWithSync redirecting to sceKernelCpuResumeIntr");
     	}
     	sceKernelCpuResumeIntr(processor);
     }
@@ -122,10 +125,10 @@ public class Kernel_Library implements HLEModule {
      * @returns 1 if flags indicate that interrupts were not suspended, 0 otherwise.
      */
     public void sceKernelIsCpuIntrSuspended(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+        CpuState cpu = processor.cpu;
 
         int flagInterrupts = cpu.gpr[4];
-    	Modules.log.warn("sceKernelIsCpuIntrSuspended flag=" + flagInterrupts);
+    	log.warn("sceKernelIsCpuIntrSuspended flag=" + flagInterrupts);
 
     	if (flagInterrupts == flagInterruptsDisabled) {
     		cpu.gpr[2] = 1;
@@ -140,10 +143,10 @@ public class Kernel_Library implements HLEModule {
      * @returns 1 if interrupts are currently enabled.
      */
     public void sceKernelIsCpuIntrEnable(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+        CpuState cpu = processor.cpu;
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceKernelIsCpuIntrEnable interruptsEnabled=" + Interrupts.isInterruptsEnabled());
+        if (log.isDebugEnabled()) {
+        	log.debug("sceKernelIsCpuIntrEnable interruptsEnabled=" + Interrupts.isInterruptsEnabled());
         }
 
         if (Interrupts.isInterruptsEnabled()) {
@@ -213,4 +216,4 @@ public class Kernel_Library implements HLEModule {
             return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelIsCpuIntrEnable(processor);";
         }
     };
-};
+}

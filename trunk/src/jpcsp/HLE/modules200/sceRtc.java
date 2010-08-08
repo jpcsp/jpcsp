@@ -59,7 +59,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 	public void sceRtcGetLastReincarnatedTime(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceRtcGetLastReincarnatedTime [0x203CEB0D]");
+		log.debug("Unimplemented NID function sceRtcGetLastReincarnatedTime [0x203CEB0D]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -67,7 +67,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 	public void sceRtcGetLastAdjustedTime(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceRtcGetLastAdjustedTime [0x62685E98]");
+		log.debug("Unimplemented NID function sceRtcGetLastAdjustedTime [0x62685E98]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -75,7 +75,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 	public void sceRtcSetTime64_t(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceRtcSetTime64_t [0x1909C99B]");
+		log.debug("Unimplemented NID function sceRtcSetTime64_t [0x1909C99B]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -93,11 +93,11 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
             Calendar cal = Calendar.getInstance();
             cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
             long unixtime = (cal.getTime().getTime() / 1000L);
-            Modules.log.debug("sceRtcGetTime_t psptime:" + dateTime + " unixtime:" + unixtime);
+            log.debug("sceRtcGetTime_t psptime:" + dateTime + " unixtime:" + unixtime);
             mem.write64(time_addr, unixtime);
             cpu.gpr[2] = 0;
         } else {
-            Modules.log.warn("sceRtcGetTime_t bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
+            log.warn("sceRtcGetTime_t bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
             cpu.gpr[2] = -1;
         }
 	}
@@ -145,4 +145,4 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetTime64_t(processor);";
 		}
 	};    
-};
+}

@@ -120,7 +120,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     /** Creates new form MainGUI */
     public MainGUI() {
         DOMConfigurator.configure("LogSettings.xml");
-        System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("misc"), Level.INFO)));
+        System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("emu"), Level.INFO)));
         consolewin = new LogWindow();
 
         // Create needed user directories

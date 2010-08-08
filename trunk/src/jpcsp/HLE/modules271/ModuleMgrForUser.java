@@ -51,7 +51,7 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
     public void ModuleMgrForUser_FEF27DC1(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn(String.format("UNIMPLEMENTED:ModuleMgrForUser_FEF27DC1"
+        log.warn(String.format("UNIMPLEMENTED:ModuleMgrForUser_FEF27DC1"
             + " %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 
         cpu.gpr[2] = 0;

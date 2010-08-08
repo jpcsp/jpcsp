@@ -27,17 +27,19 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Group type="102" alignment="1" attributes="0">
+          <Group type="102" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Group type="103" groupAlignment="1" attributes="0">
-                  <Component id="jTabbedPane1" alignment="0" pref="765" max="32767" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
+                      <Component id="saveButton" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="407" max="32767" attributes="0"/>
                       <Component id="jButtonOK" min="-2" pref="88" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jButtonCancel" min="-2" pref="94" max="-2" attributes="0"/>
                   </Group>
+                  <Component id="jTabbedPane1" alignment="0" pref="754" max="32767" attributes="0"/>
               </Group>
-              <EmptySpace min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -49,6 +51,7 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="jButtonOK" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jButtonCancel" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="saveButton" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -98,11 +101,11 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="0" attributes="0">
-                              <Component id="snapConsoleCheck" pref="748" max="32767" attributes="1"/>
+                              <Component id="snapConsoleCheck" pref="737" max="32767" attributes="1"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
-                              <Component id="openLogwindowCheck" pref="162" max="32767" attributes="1"/>
+                              <Component id="openLogwindowCheck" pref="151" max="32767" attributes="1"/>
                               <EmptySpace min="-2" pref="592" max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -155,21 +158,27 @@
                       <Component id="jScrollPane1" min="-2" pref="418" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="outputToText" alignment="0" pref="308" max="32767" attributes="1"/>
-                          <Component id="outputToHTML" alignment="0" pref="308" max="32767" attributes="1"/>
-                          <Group type="102" alignment="0" attributes="0">
-                              <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
+                          <Component id="outputToText" alignment="0" pref="297" max="32767" attributes="1"/>
+                          <Component id="outputToHTML" alignment="0" pref="297" max="32767" attributes="1"/>
+                          <Group type="102" attributes="0">
+                              <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="logoutpath" min="-2" pref="175" max="-2" attributes="0"/>
+                              <Component id="xmlpath" min="-2" pref="175" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="fileButton" min="-2" pref="23" max="-2" attributes="0"/>
                           </Group>
-                          <Group type="103" alignment="0" groupAlignment="1" attributes="0">
-                              <Component id="saveButton" alignment="1" min="-2" max="-2" attributes="0"/>
-                              <Group type="102" alignment="1" attributes="0">
-                                  <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+                          <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
+                              <Group type="102" attributes="1">
+                                  <Component id="jLabel5" min="-2" pref="94" max="-2" attributes="0"/>
+                                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                  <Component id="maxSizeSpinner" max="32767" attributes="0"/>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                                  <Component id="splitFilesBox" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="jLabel2" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="xmlpath" min="-2" pref="175" max="-2" attributes="0"/>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="fileButton" min="-2" pref="23" max="-2" attributes="0"/>
+                                  <Component id="logoutpath" min="-2" pref="175" max="-2" attributes="0"/>
                               </Group>
                           </Group>
                       </Group>
@@ -186,19 +195,23 @@
                               <Component id="outputToHTML" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="outputToText" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
                                   <Component id="jLabel2" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="logoutpath" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace min="-2" pref="39" max="-2" attributes="0"/>
+                              <EmptySpace min="-2" pref="25" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabel5" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="splitFilesBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="maxSizeSpinner" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace pref="158" max="32767" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
                                   <Component id="jLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="xmlpath" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="fileButton" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
-                              <EmptySpace pref="149" max="32767" attributes="0"/>
-                              <Component id="saveButton" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Component id="jScrollPane1" alignment="0" pref="302" max="32767" attributes="0"/>
                       </Group>
@@ -243,14 +256,6 @@
                 <Property name="text" type="java.lang.String" value="Settings file path:"/>
               </Properties>
             </Component>
-            <Component class="javax.swing.JButton" name="saveButton">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Generate new settings file"/>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="saveButtonActionPerformed"/>
-              </Events>
-            </Component>
             <Component class="javax.swing.JCheckBox" name="outputToHTML">
               <Properties>
                 <Property name="selected" type="boolean" value="true"/>
@@ -272,9 +277,665 @@
                 <Property name="text" type="java.lang.String" value="log"/>
               </Properties>
             </Component>
+            <Component class="javax.swing.JLabel" name="jLabel5">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Max. file size (KB) :"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JSpinner" name="maxSizeSpinner">
+              <Properties>
+                <Property name="model" type="javax.swing.SpinnerModel" editor="org.netbeans.modules.form.editors2.SpinnerModelEditor">
+                  <SpinnerModel initial="0" maximum="100000" minimum="0" numberType="java.lang.Integer" stepSize="1" type="number"/>
+                </Property>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="splitFilesBox" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="splitFilesBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Split files"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="splitFilesBoxActionPerformed"/>
+              </Events>
+            </Component>
+          </SubComponents>
+        </Container>
+        <Container class="javax.swing.JPanel" name="LoggerAdvancedPanel">
+          <Properties>
+            <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection component="jRadioButton6" name="isSelected" type="method"/>
+            </Property>
+          </Properties>
+          <Constraints>
+            <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
+              <JTabbedPaneConstraints tabName="Advanced">
+                <Property name="tabTitle" type="java.lang.String" value="Advanced"/>
+              </JTabbedPaneConstraints>
+            </Constraint>
+          </Constraints>
+
+          <Layout>
+            <DimensionLayout dim="0">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="102" alignment="1" attributes="0">
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Component id="jRadioButton4" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="jRadioButton5" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="jRadioButton6" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="jRadioButton3" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="jLabel3" alignment="0" min="-2" pref="114" max="-2" attributes="0"/>
+                          <Component id="jRadioButton2" min="-2" max="-2" attributes="0"/>
+                          <Component id="jRadioButton1" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace pref="20" max="32767" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
+                              <Component id="stdoutBox" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <Component id="stderrBox" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <Group type="103" alignment="0" groupAlignment="1" attributes="0">
+                              <Component id="jSeparator2" alignment="0" pref="566" max="32767" attributes="1"/>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="103" alignment="0" groupAlignment="1" attributes="0">
+                                          <Component id="interruptMgrBox" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="sysMemKernelBox" alignment="1" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="loadExecBox" min="-2" max="-2" attributes="0"/>
+                                      <Component id="audioBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="dmacBox" min="-2" max="-2" attributes="0"/>
+                                      <Component id="imposeBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="psmfBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="suspendBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace min="-2" pref="55" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Component id="ioFileMgrBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="moduleMgrBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="sysMemUserBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="ctrlBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="fontBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="mp3Box" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="psmfPlayerBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      <Component id="umdBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="102" alignment="0" attributes="0">
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Component id="geUserBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="defltBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="threadManBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="kernelLibBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="utilsBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="mpegBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="rtcBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          </Group>
+                                          <EmptySpace max="-2" attributes="0"/>
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Component id="sasBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="powerBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="hprmBox" min="-2" max="-2" attributes="0"/>
+                                              <Component id="displayBox" min="-2" max="-2" attributes="0"/>
+                                              <Component id="atracBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="loadCoreBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="stdioBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          </Group>
+                                      </Group>
+                                      <Component id="utilityBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
+                              <Component id="jSeparator1" alignment="1" pref="566" max="32767" attributes="1"/>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="cpuBox" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="31" max="-2" attributes="0"/>
+                                  <Component id="gpuBox" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace pref="35" max="32767" attributes="0"/>
+                                  <Component id="loaderBox" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                                  <Component id="runtimeBox" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                                  <Component id="compilerBox" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                                  <Component id="memBox" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace type="separate" max="-2" attributes="0"/>
+                                  <Component id="emuBox" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="17" max="-2" attributes="0"/>
+                              </Group>
+                              <Group type="102" alignment="0" attributes="0">
+                                  <Component id="jLabel4" min="-2" pref="183" max="-2" attributes="0"/>
+                                  <EmptySpace pref="383" max="32767" attributes="0"/>
+                              </Group>
+                          </Group>
+                      </Group>
+                      <EmptySpace min="-2" pref="39" max="-2" attributes="0"/>
+                  </Group>
+              </Group>
+            </DimensionLayout>
+            <DimensionLayout dim="1">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="102" alignment="0" attributes="0">
+                      <EmptySpace min="-2" pref="16" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabel3" alignment="3" min="-2" pref="18" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="cpuBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="emuBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="memBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="compilerBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="runtimeBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="loaderBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="gpuBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace min="-2" pref="5" max="-2" attributes="0"/>
+                              <Component id="jSeparator1" min="-2" pref="10" max="-2" attributes="0"/>
+                              <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="interruptMgrBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="ioFileMgrBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="kernelLibBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="loadCoreBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="moduleMgrBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="threadManBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="stdioBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="loadExecBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="sysMemKernelBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="sysMemUserBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="utilsBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="atracBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="audioBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="displayBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="ctrlBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="defltBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="fontBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="geUserBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="hprmBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="dmacBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="imposeBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="mp3Box" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="mpegBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="powerBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="psmfBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="psmfPlayerBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="rtcBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="sasBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="103" alignment="0" groupAlignment="3" attributes="0">
+                                      <Component id="suspendBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      <Component id="umdBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Component id="utilityBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                          </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <EmptySpace min="-2" pref="25" max="-2" attributes="0"/>
+                              <Component id="jRadioButton1" min="-2" pref="23" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Component id="jRadioButton2" min="-2" pref="20" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Component id="jRadioButton3" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="jRadioButton4" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="jRadioButton5" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="jRadioButton6" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                      </Group>
+                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                      <Component id="jSeparator2" min="-2" pref="10" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="stdoutBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="stderrBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace pref="13" max="32767" attributes="0"/>
+                  </Group>
+              </Group>
+            </DimensionLayout>
+          </Layout>
+          <SubComponents>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton1">
+              <Properties>
+                <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                  <ComponentRef name="buttonGroup1"/>
+                </Property>
+                <Property name="selected" type="boolean" value="true"/>
+                <Property name="text" type="java.lang.String" value="General Debug"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jRadioButton1ActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton2">
+              <Properties>
+                <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                  <ComponentRef name="buttonGroup1"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="CPU Debug"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jRadioButton2ActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton3">
+              <Properties>
+                <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                  <ComponentRef name="buttonGroup1"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="GPU Debug"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jRadioButton3ActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton4">
+              <Properties>
+                <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                  <ComponentRef name="buttonGroup1"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Core Debug"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jRadioButton4ActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton5">
+              <Properties>
+                <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                  <ComponentRef name="buttonGroup1"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Full Debug"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jRadioButton5ActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JRadioButton" name="jRadioButton6">
+              <Properties>
+                <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
+                  <ComponentRef name="buttonGroup1"/>
+                </Property>
+                <Property name="text" type="java.lang.String" value="Custom"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jRadioButton6ActionPerformed"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JLabel" name="jLabel3">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Logging method:"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="interruptMgrBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="InterruptManager"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="ioFileMgrBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="IoFileMgrForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="kernelLibBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Kernel_Library"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="loadCoreBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="LoadCoreForKernel"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="loadExecBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="LoadExecForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="moduleMgrBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="ModuleMgrForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="stdioBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="StdioForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="sysMemKernelBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="SysMemForKernel"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="sysMemUserBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="SysMemUserForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="threadManBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="ThreadManForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="utilsBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="UtilsForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="atracBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceAtrac3plus"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="audioBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceAudio"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="ctrlBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceCtrl"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="defltBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceDeflt"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="displayBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceDisplay"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="dmacBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceDmac"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="fontBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceFont"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="geUserBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceGe_user"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="hprmBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceHprm"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="imposeBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceImpose"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="mp3Box">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceMp3"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="mpegBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceMpeg"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="powerBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="scePower"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="psmfBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="scePsmf"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="psmfPlayerBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="scePsmfPlayer"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="rtcBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceRtc"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="sasBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceSasCore"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="suspendBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceSuspendForUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="umdBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceUmdUser"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="utilityBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="sceUtility"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="cpuBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="CPU"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="gpuBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="GPU"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="compilerBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Compiler"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="memBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Memory"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="emuBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Emulator"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JSeparator" name="jSeparator1">
+            </Component>
+            <Component class="javax.swing.JLabel" name="jLabel4">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Custom:"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="loaderBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Loader"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="runtimeBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Runtime"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="stdoutBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Stdout"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="stderrBox">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Stderr"/>
+                <Property name="enabled" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection component="jRadioButton6" name="isSelected" type="method"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JSeparator" name="jSeparator2">
+            </Component>
           </SubComponents>
         </Container>
       </SubComponents>
     </Container>
+    <Component class="javax.swing.JButton" name="saveButton">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Generate new settings file"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="saveButtonActionPerformed"/>
+      </Events>
+    </Component>
   </SubComponents>
 </Form>

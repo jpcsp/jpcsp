@@ -35,7 +35,11 @@ import jpcsp.format.PGF;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Logger;
+
 public class sceFont implements HLEModule, HLEStartModule {
+    private static Logger log = Modules.getLogger("sceFont");
+
 	@Override
 	public String getName() {
 		return "sceFont";
@@ -183,7 +187,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                         pgfFile.setFileNamez(files[i]);
                         PGFFilesMap.put(getFakeFontHandle(index), pgfFile);
 
-                        Modules.log.info("Found font file '" + files[i] + "'. Font='"
+                        log.info("Found font file '" + files[i] + "'. Font='"
                                 + pgfFile.getFontName() + "' Type='" + pgfFile.getFontType() + "'");
                     } catch (Exception e) {
                         // Can't open file.
@@ -242,7 +246,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 			public void execute() {
 				libBufAddr = Emulator.getProcessor().cpu.gpr[2];
 
-				Modules.log.info("FontLib's allocation callback (size=512, numFonts="
+				log.info("FontLib's allocation callback (size=512, numFonts="
                         + numFonts + ") returned 0x"
                         + Integer.toHexString(libBufAddr));
 			}
@@ -255,7 +259,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 
 		int paramsAddr = cpu.gpr[4];
 		int errorCodeAddr = cpu.gpr[5];
-		Modules.log.warn(String.format("PARTIAL: sceFontNewLib paramsAddr=0x%08X, errorCodeAddr=0x%08X", paramsAddr, errorCodeAddr));
+		log.warn(String.format("PARTIAL: sceFontNewLib paramsAddr=0x%08X, errorCodeAddr=0x%08X", paramsAddr, errorCodeAddr));
 
         FontLib fl = null;
         int handle = 0;
@@ -265,9 +269,9 @@ public class sceFont implements HLEModule, HLEStartModule {
             handle = makeFakeLibHandle();
             fontLibMap.put(handle, fl);
 
-			if (Modules.log.isDebugEnabled()) {
+			if (log.isDebugEnabled()) {
 				for (int i = 0; i < 44; i += 4) {
-					Modules.log.debug(String.format("         paramsAddr+%2d=0x%08X", i, mem.read32(paramsAddr + i)));
+					log.debug(String.format("         paramsAddr+%2d=0x%08X", i, mem.read32(paramsAddr + i)));
 				}
 			}
 		}
@@ -289,11 +293,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int mode = cpu.gpr[6];
 		int errorCodeAddr = cpu.gpr[7];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontOpenUserFile libHandle=0x%08X, fileName=%s, unknown=0x%08X, errorCodeAddr=0x%08X",
+		log.warn(String.format("PARTIAL: sceFontOpenUserFile libHandle=0x%08X, fileName=%s, unknown=0x%08X, errorCodeAddr=0x%08X",
                 libHandle, fileName, mode, errorCodeAddr));
 
 		if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             FontLib fLib = fontLibMap.get(libHandle);
@@ -317,11 +321,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int memoryFontLength = cpu.gpr[6];
 		int errorCodeAddr = cpu.gpr[7];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontOpenUserMemory libHandle=0x%08X, memoryFontAddr=0x%08X, memoryFontLength=%d, errorCodeAddr=0x%08X",
+		log.warn(String.format("PARTIAL: sceFontOpenUserMemory libHandle=0x%08X, memoryFontAddr=0x%08X, memoryFontLength=%d, errorCodeAddr=0x%08X",
                 libHandle, memoryFontAddr, memoryFontLength, errorCodeAddr));
 
 		if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             FontLib fLib = fontLibMap.get(libHandle);
@@ -331,7 +335,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 			if (mem.isAddressGood(memoryFontAddr)) {
 				int magic = mem.read32(memoryFontAddr + 4);
 				if (magic == PGF_MAGIC) {
-					Modules.log.info("sceFontOpenUserMemory: PGF format detected");
+					log.info("sceFontOpenUserMemory: PGF format detected");
 				}
 			}
 			if (mem.isAddressGood(errorCodeAddr)) {
@@ -349,11 +353,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int fontAddr = cpu.gpr[4];
 		int fontInfoAddr = cpu.gpr[5];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontGetFontInfo fontAddr=0x%08X, fontInfoAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontGetFontInfo fontAddr=0x%08X, fontInfoAddr=0x%08X"
                 , fontAddr, fontInfoAddr));
 
 		if (fontAddr != currentFontHandle) {
-			Modules.log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
+			log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
 			cpu.gpr[2] = -1;
 		} else {
 			if (mem.isAddressGood(fontInfoAddr)) {
@@ -447,11 +451,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int fontAddr = cpu.gpr[4];
 		int charCode = cpu.gpr[5];
 		int charInfoAddr = cpu.gpr[6];
-		Modules.log.warn(String.format("PARTIAL: sceFontGetCharInfo fontAddr=0x%08X, charCode=%04X (%c), charInfoAddr=%08X"
+		log.warn(String.format("PARTIAL: sceFontGetCharInfo fontAddr=0x%08X, charCode=%04X (%c), charInfoAddr=%08X"
                 , fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), charInfoAddr));
 
 		if (fontAddr != currentFontHandle && fontAddr != 0) {
-			Modules.log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
+			log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
 			cpu.gpr[2] = -1;
 		} else {
 			if (mem.isAddressGood(charInfoAddr)) {
@@ -528,11 +532,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int fontAddr = cpu.gpr[4];
 		int charCode = cpu.gpr[5];
 		int glyphImageAddr = cpu.gpr[6];
-		Modules.log.warn(String.format("PARTIAL: sceFontGetCharGlyphImage fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X"
+		log.warn(String.format("PARTIAL: sceFontGetCharGlyphImage fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X"
                 , fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr));
 
 		if (fontAddr != currentFontHandle && fontAddr != 0) {
-			Modules.log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
+			log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
 			cpu.gpr[2] = -1;
 		} else {
 			if (mem.isAddressGood(glyphImageAddr)) {
@@ -552,7 +556,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                 int xPosI = xPos64 >> 6;
                 int yPosI = yPos64 >> 6;
 
-                Modules.log.info("sceFontGetCharGlyphImage c=" + ((char) charCode)
+                log.info("sceFontGetCharGlyphImage c=" + ((char) charCode)
                         + ", xPos=" + xPosI + ", yPos=" + yPosI
                         + ", buffer=0x" + Integer.toHexString(buffer)
                         + ", bufWidth=" + bufWidth
@@ -586,7 +590,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontStyleAddr = cpu.gpr[5];
         int errorCodeAddr = cpu.gpr[6];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontFindOptimumFont libHandle=0x%08X, fontStyleAddr=0x%08X, errorCodeAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontFindOptimumFont libHandle=0x%08X, fontStyleAddr=0x%08X, errorCodeAddr=0x%08X"
                 , libHandle, fontStyleAddr, errorCodeAddr));
 
         int optimumFontIndex = 0;
@@ -609,7 +613,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontUnk2 = mem.read16(fontStyleAddr + 164);
 
         if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             // Return the first index.
@@ -628,7 +632,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 
         int fontAddr = cpu.gpr[4];  // The font handle to close.
 
-		Modules.log.warn(String.format("PARTIAL: sceFontClose fontAddr=0x%08X", fontAddr));
+		log.warn(String.format("PARTIAL: sceFontClose fontAddr=0x%08X", fontAddr));
 
         // Faking.
 		cpu.gpr[2] = 0;
@@ -639,10 +643,10 @@ public class sceFont implements HLEModule, HLEStartModule {
 
         int libHandle = cpu.gpr[4];
 
-        Modules.log.warn(String.format("PARTIAL: sceFontDoneLib libHandle=0x%08X", libHandle));
+        log.warn(String.format("PARTIAL: sceFontDoneLib libHandle=0x%08X", libHandle));
 
         if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             // Free the reserved font lib space.
@@ -661,7 +665,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int mode = cpu.gpr[6];
         int errorCodeAddr = cpu.gpr[7];
 
-        Modules.log.warn(String.format("PARTIAL: sceFontOpen libHandle=0x%08X, index=%d, unk=%d, errorCodeAddr=0x%08X"
+        log.warn(String.format("PARTIAL: sceFontOpen libHandle=0x%08X, index=%d, unk=%d, errorCodeAddr=0x%08X"
                 , libHandle, index, mode, errorCodeAddr));
 
         FontLib fLib = fontLibMap.get(libHandle);
@@ -670,7 +674,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
         PGF currentPGF = PGFFilesMap.get(currentFontHandle);
         if(currentPGF != null) {
-            Modules.log.info("Opening '"
+            log.info("Opening '"
                     + currentPGF.getFontName() + "' - '" + currentPGF.getFontType() + "'");
         }
         if (mem.isAddressGood(errorCodeAddr)) {
@@ -692,7 +696,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int clipWidth = cpu.gpr[9];
         int clipHeight = cpu.gpr[10];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontGetCharGlyphImage_Clip fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X" +
+		log.warn(String.format("PARTIAL: sceFontGetCharGlyphImage_Clip fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X" +
                 ", clipXPos=%d, clipYPos=%d, clipWidth=%d, clipHeight=%d,"
                 , fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr
                 , clipXPos, clipYPos, clipWidth, clipHeight));
@@ -700,7 +704,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
         // rectangle over the char.
 		if (fontAddr != currentFontHandle && fontAddr != 0) {
-			Modules.log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
+			log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
 			cpu.gpr[2] = -1;
 		} else {
 			if (mem.isAddressGood(glyphImageAddr)) {
@@ -717,7 +721,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                 int xPosI = xPos64 >> 6;
                 int yPosI = yPos64 >> 6;
 
-                Modules.log.info("sceFontGetCharGlyphImage_Clip c=" + ((char) charCode)
+                log.info("sceFontGetCharGlyphImage_Clip c=" + ((char) charCode)
                         + ", xPos=" + xPosI + ", yPos=" + yPosI
                         + ", buffer=0x" + Integer.toHexString(buffer)
                         + ", bufWidth=" + bufWidth
@@ -750,13 +754,13 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int libHandle = cpu.gpr[4];
 		int errorCodeAddr = cpu.gpr[5];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontGetNumFontList libHandle=0x%08X, errorCodeAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontGetNumFontList libHandle=0x%08X, errorCodeAddr=0x%08X"
                 , libHandle, errorCodeAddr));
 
         int numFonts = 0;
 
 		if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             // Get all the available fonts in this font lib.
@@ -777,7 +781,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int fontStyleAddr = cpu.gpr[5];
 		int numFonts = cpu.gpr[6];
 
-        Modules.log.warn(String.format("PARTIAL: sceFontGetFontList libHandle=0x%08X, fontListAddr=0x%08X, numFonts=%d"
+        log.warn(String.format("PARTIAL: sceFontGetFontList libHandle=0x%08X, fontListAddr=0x%08X, numFonts=%d"
                 , libHandle, fontStyleAddr, numFonts));
 
         // Font style parameters.
@@ -800,7 +804,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontUnk2 = mem.read16(fontStyleAddr + 164);
 
 		if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
 			cpu.gpr[2] = 0;
@@ -813,7 +817,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int libHandle = cpu.gpr[4];
         int charCode = cpu.gpr[5];
 
-		Modules.log.warn(String.format("IGNORING: sceFontSetAltCharacterCode libHandle=0x%08X, charCode=%04X"
+		log.warn(String.format("IGNORING: sceFontSetAltCharacterCode libHandle=0x%08X, charCode=%04X"
                 , libHandle, charCode));
 
         cpu.gpr[2] = 0;
@@ -827,7 +831,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int charCode = cpu.gpr[5];
 		int charRectAddr = cpu.gpr[6];
 
-		Modules.log.warn(String.format("IGNORING: sceFontGetCharImageRect fontAddr=0x%08X, charCode=%04X , charRectAddr=0x%08X"
+		log.warn(String.format("IGNORING: sceFontGetCharImageRect fontAddr=0x%08X, charCode=%04X , charRectAddr=0x%08X"
                 , fontAddr, charCode, charRectAddr));
 
         // This function retrieves the dimensions of a specific char.
@@ -846,7 +850,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int errorCodeAddr = cpu.gpr[6];
 
         float fontPointsHF = (float)fontPointsH;
-		Modules.log.warn(String.format("PARTIAL: sceFontPointToPixelH libHandle=0x%08X, fontPointsHF=%f , errorCodeAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontPointToPixelH libHandle=0x%08X, fontPointsHF=%f , errorCodeAddr=0x%08X"
                 , libHandle, fontPointsHF, errorCodeAddr));
 
         // Convert horizontal floating points to pixels (Points Per Inch to Pixels Per Inch).
@@ -867,11 +871,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 		int fontInfoAddr = cpu.gpr[5];
         int fontIndex = cpu.gpr[7];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontGetFontInfoByIndexNumber libHandle=0x%08X, fontInfoAddr=0x%08X, fontIndex=%d"
+		log.warn(String.format("PARTIAL: sceFontGetFontInfoByIndexNumber libHandle=0x%08X, fontInfoAddr=0x%08X, fontIndex=%d"
                 , libHandle, fontInfoAddr, fontIndex));
 
 		if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             FontLib currentFontLib = fontLibMap.get(libHandle);
@@ -970,7 +974,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         float hResf = (float)hRes;
         float vResf = (float)vRes;
 
-		Modules.log.warn(String.format("PARTIAL: sceFontSetResolution libHandle=0x%08X, hResf=%f, vResf=%f"
+		log.warn(String.format("PARTIAL: sceFontSetResolution libHandle=0x%08X, hResf=%f, vResf=%f"
                 , libHandle, hResf, vResf));
 
         globalFontHRes = hResf;
@@ -982,7 +986,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 	public void sceFontFlush(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn(String.format("Unimplemented sceFontFlush 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+		log.warn(String.format("Unimplemented sceFontFlush 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 		cpu.gpr[2] = 0;
 	}
 
@@ -994,7 +998,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontStyleAddr = cpu.gpr[5];
         int errorCodeAddr = cpu.gpr[6];
 
-		Modules.log.warn(String.format("PARTIAL: sceFontFindFont libHandle=0x%08X, fontStyleAddr=0x%08X, errorCodeAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontFindFont libHandle=0x%08X, fontStyleAddr=0x%08X, errorCodeAddr=0x%08X"
                 , libHandle, fontStyleAddr, errorCodeAddr));
 
         int fontIndex = 0;
@@ -1017,7 +1021,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontUnk2 = mem.read16(fontStyleAddr + 164);
 
         if (!fontLibMap.containsKey(libHandle)) {
-			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
 			cpu.gpr[2] = -1;
 		} else {
             // Return the first index.
@@ -1039,7 +1043,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int errorCodeAddr = cpu.gpr[6];
 
         float fontPointsVF = (float)fontPointsV;
-		Modules.log.warn(String.format("PARTIAL: sceFontPointToPixelV libHandle=0x%08X, fontPointsVF=%f , errorCodeAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontPointToPixelV libHandle=0x%08X, fontPointsVF=%f , errorCodeAddr=0x%08X"
                 , libHandle, fontPointsVF, errorCodeAddr));
 
         // Convert vertical floating points to pixels (Points Per Inch to Pixels Per Inch).
@@ -1060,7 +1064,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int errorCodeAddr = cpu.gpr[6];
 
         float fontPixelsHF = (float)fontPixelsH;
-		Modules.log.warn(String.format("PARTIAL: sceFontPixelToPointH libHandle=0x%08X, fontPixelsHF=%f , errorCodeAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontPixelToPointH libHandle=0x%08X, fontPixelsHF=%f , errorCodeAddr=0x%08X"
                 , libHandle, fontPixelsHF, errorCodeAddr));
 
         // Convert horizontal pixels to floating points (Pixels Per Inch to Points Per Inch).
@@ -1081,7 +1085,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int errorCodeAddr = cpu.gpr[6];
 
         float fontPixelsVF = (float)fontPixelsV;
-		Modules.log.warn(String.format("PARTIAL: sceFontPixelToPointV libHandle=0x%08X, fontPixelsVF=%f , errorCodeAddr=0x%08X"
+		log.warn(String.format("PARTIAL: sceFontPixelToPointV libHandle=0x%08X, fontPixelsVF=%f , errorCodeAddr=0x%08X"
                 , libHandle, fontPixelsVF, errorCodeAddr));
 
         // Convert vertical pixels to floating points (Pixels Per Inch to Points Per Inch).

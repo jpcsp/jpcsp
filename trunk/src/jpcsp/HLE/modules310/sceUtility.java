@@ -94,8 +94,6 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         return "PSP_MODULE_UNKNOWN_" + Integer.toHexString(module);
     }
 
-    // Export functions
-
     public void sceUtilityLoadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -103,9 +101,9 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         String moduleName = hleUtilityLoadModuleName(module);
         if (loadModule(module, moduleName)) {
-            Modules.log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+            log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
         } else {
-            Modules.log.info(String.format("IGNORING:sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
+            log.info(String.format("IGNORING:sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
         }
 
         cpu.gpr[2] = 0;
@@ -119,9 +117,9 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         String moduleName = hleUtilityLoadModuleName(module);
         if (loadModule(module, moduleName)) {
-            Modules.log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
+            log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
         } else {
-            Modules.log.info(String.format("IGNORING:sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
+            log.info(String.format("IGNORING:sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
         }
 
         cpu.gpr[2] = 0;

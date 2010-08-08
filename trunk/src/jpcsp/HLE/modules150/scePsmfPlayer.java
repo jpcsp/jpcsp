@@ -37,12 +37,15 @@ import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Logger;
+
 /*
  * TODO list:
- * 1. Resolve function scePsmfPlayer_2BEB1569's name.
+ * 1. Resolve functions scePsmfPlayer_2BEB1569 and scePsmfPlayer_58B83577's name.
  */
 
 public class scePsmfPlayer implements HLEModule {
+    private static Logger log = Modules.getLogger("scePsmfPlayer");
 
     @Override
     public String getName() {
@@ -52,6 +55,7 @@ public class scePsmfPlayer implements HLEModule {
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
+
             mm.addFunction(0x235D8787, scePsmfPlayerCreateFunction);
             mm.addFunction(0x9B71A274, scePsmfPlayerDeleteFunction);
             mm.addFunction(0x3D6D25A9, scePsmfPlayerSetPsmfFunction);
@@ -66,6 +70,7 @@ public class scePsmfPlayer implements HLEModule {
             mm.addFunction(0xDF089680, scePsmfPlayerGetPsmfInfoFunction);
             mm.addFunction(0x1E57A8E7, scePsmfPlayerConfigPlayerFunction);
             mm.addFunction(0x2BEB1569, scePsmfPlayer_2BEB1569Function);
+            mm.addFunction(0x58B83577, scePsmfPlayer_58B83577Function);
 
         }
     }
@@ -73,6 +78,7 @@ public class scePsmfPlayer implements HLEModule {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
+
             mm.removeFunction(scePsmfPlayerCreateFunction);
             mm.removeFunction(scePsmfPlayerDeleteFunction);
             mm.removeFunction(scePsmfPlayerSetPsmfFunction);
@@ -87,6 +93,7 @@ public class scePsmfPlayer implements HLEModule {
             mm.removeFunction(scePsmfPlayerGetPsmfInfoFunction);
             mm.removeFunction(scePsmfPlayerConfigPlayerFunction);
             mm.removeFunction(scePsmfPlayer_2BEB1569Function);
+            mm.removeFunction(scePsmfPlayer_58B83577Function);
 
         }
     }
@@ -223,7 +230,7 @@ public class scePsmfPlayer implements HLEModule {
         int psmfplayer = cpu.gpr[4];
         int buffer_addr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerCreate psmfplayer=0x" + Integer.toHexString(psmfplayer)
+        log.warn("PARTIAL: scePsmfPlayerCreate psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " buffer_addr=0x" + Integer.toHexString(buffer_addr));
 
         displayBuffer = mem.read32(buffer_addr);
@@ -240,7 +247,7 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerDelete psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("PARTIAL: scePsmfPlayerDelete psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         if(checkMediaEngineState()) {
             if(me != null) me.finish();
@@ -254,12 +261,11 @@ public class scePsmfPlayer implements HLEModule {
 
     public void scePsmfPlayerSetPsmf(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int psmfplayer = cpu.gpr[4];
         int file_addr = cpu.gpr[5];  //PMF file path.
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerSetPsmf psmfplayer=0x" + Integer.toHexString(psmfplayer)
+        log.warn("PARTIAL: scePsmfPlayerSetPsmf psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " file_addr=0x" + Integer.toHexString(file_addr));
 
         pmfFilePath = Utilities.readStringZ(file_addr);
@@ -270,7 +276,7 @@ public class scePsmfPlayer implements HLEModule {
             pmfFileData = new byte[(int)psmfFile.length()];
             psmfFile.readFully(pmfFileData);
 
-            Modules.log.info("'" + pmfFilePath + "' PSMF file loaded.");
+            log.info("'" + pmfFilePath + "' PSMF file loaded.");
 
             if(checkMediaEngineState()) {
                 pmfFileChannel = new PacketChannel();
@@ -289,7 +295,7 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerReleasePsmf psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("PARTIAL: scePsmfPlayerReleasePsmf psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         if(checkMediaEngineState()) {
             if(me != null) me.finish();
@@ -303,13 +309,12 @@ public class scePsmfPlayer implements HLEModule {
 
     public void scePsmfPlayerStart(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int psmfplayer = cpu.gpr[4];
         int unk = cpu.gpr[5];
         int init_status = cpu.gpr[6];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerStart psmfplayer=0x" + Integer.toHexString(psmfplayer)
+        log.warn("PARTIAL: scePsmfPlayerStart psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " unk=0x" + Integer.toHexString(unk) + " init_status=" + Integer.toHexString(init_status));
 
         psmfPlayerStatus = init_status;
@@ -331,7 +336,7 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerGetAudioOutSize psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("PARTIAL: scePsmfPlayerGetAudioOutSize psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         cpu.gpr[2] = audioSize;
     }
@@ -341,7 +346,7 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerStop psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("PARTIAL: scePsmfPlayerStop psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         if(checkMediaEngineState()) {
             if(me != null) me.finish();
@@ -359,7 +364,7 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerUpdate psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("PARTIAL: scePsmfPlayerUpdate psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         cpu.gpr[2] = 0;
     }
@@ -372,7 +377,7 @@ public class scePsmfPlayer implements HLEModule {
         int psmfplayer = cpu.gpr[4];
         int videoDataAddr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerGetVideoData psmfplayer=0x" + Integer.toHexString(psmfplayer)
+        log.warn("PARTIAL: scePsmfPlayerGetVideoData psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " videoDataAddr=0x" + Integer.toHexString(videoDataAddr));
 
         // Check if there's already a valid pointer at videoDataAddr.
@@ -413,7 +418,7 @@ public class scePsmfPlayer implements HLEModule {
         int psmfplayer = cpu.gpr[4];
         int audioDataAddr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerGetAudioData psmfplayer=0x" + Integer.toHexString(psmfplayer)
+        log.warn("PARTIAL: scePsmfPlayerGetAudioData psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " audioDataAddr=0x" + Integer.toHexString(audioDataAddr));
 
         // Update audio timestamp.
@@ -427,7 +432,7 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerGetCurrentStatus psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("PARTIAL: scePsmfPlayerGetCurrentStatus psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         cpu.gpr[2] = psmfPlayerStatus;
     }
@@ -439,7 +444,7 @@ public class scePsmfPlayer implements HLEModule {
         int psmfplayer = cpu.gpr[4];
         int psmfInfoAddr = cpu.gpr[5];
 
-        Modules.log.warn("IGNORING: scePsmfPlayerGetPsmfInfo psmfplayer=0x" + Integer.toHexString(psmfplayer)
+        log.warn("IGNORING: scePsmfPlayerGetPsmfInfo psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " psmfInfoAddr=0x" + Integer.toHexString(psmfInfoAddr));
 
         cpu.gpr[2] = 0;
@@ -454,7 +459,7 @@ public class scePsmfPlayer implements HLEModule {
         int stream_type = cpu.gpr[5];
         int setting = cpu.gpr[6];
 
-        Modules.log.warn("PARTIAL: scePsmfPlayerConfigPlayer psmfplayer=0x" + Integer.toHexString(psmfplayer)
+        log.warn("PARTIAL: scePsmfPlayerConfigPlayer psmfplayer=0x" + Integer.toHexString(psmfplayer)
                 + " stream_type=" + stream_type + " setting=" + setting);
 
         if(stream_type == 1) {           // Video.
@@ -462,7 +467,7 @@ public class scePsmfPlayer implements HLEModule {
         } else if (stream_type == 0) {   // Audio.
             audioChannelMode = setting;
         } else {
-            Modules.log.warn("scePsmfPlayerConfigPlayer unknown stream type.");
+            log.warn("scePsmfPlayerConfigPlayer unknown stream type.");
         }
 
         cpu.gpr[2] = 0;
@@ -473,11 +478,20 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfplayer = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: scePsmfPlayer_2BEB1569 psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("IGNORING: scePsmfPlayer_2BEB1569 psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         cpu.gpr[2] = 0;
     }
 
+    public void scePsmfPlayer_58B83577(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("IGNORING: scePsmfPlayer_58B83577 psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        cpu.gpr[2] = 0;
+    }
 
     public final HLEModuleFunction scePsmfPlayerCreateFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerCreate") {
 
@@ -658,6 +672,19 @@ public class scePsmfPlayer implements HLEModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayer_2BEB1569(processor);";
+        }
+    };
+
+    public final HLEModuleFunction scePsmfPlayer_58B83577Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayer_58B83577") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayer_58B83577(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayer_58B83577(processor);";
         }
     };
 }

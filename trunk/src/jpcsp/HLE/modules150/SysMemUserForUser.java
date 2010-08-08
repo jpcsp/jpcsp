@@ -51,6 +51,7 @@ import org.apache.log4j.Logger;
  * in sceKernelPrintf.
  */
 public class SysMemUserForUser implements HLEModule, HLEStartModule {
+    protected static Logger log = Modules.getLogger("SysMemUserForUser");
     protected static Logger stdout = Logger.getLogger("stdout");
     protected static HashMap<Integer, SysMemInfo> blockList;
     protected static MemoryChunkList freeMemoryChunks;
@@ -157,7 +158,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         @Override
         public int compareTo(SysMemInfo o) {
             if (addr == o.addr) {
-                Modules.log.warn("Set invariant broken for SysMemInfo " + this);
+                log.warn("Set invariant broken for SysMemInfo " + this);
                 return 0;
             }
             return addr < o.addr ? -1 : 1;
@@ -504,20 +505,20 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         		}
         		break;
     		default:
-    			Modules.log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
+    			log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
         }
 
         SysMemInfo sysMemInfo;
 		if (allocatedAddress == 0) {
-            Modules.log.warn(String.format("malloc cannot allocate partition=%d, type=%s, size=0x%X, addr=0x%08X", partitionid, getTypeName(type), size, addr));
+            log.warn(String.format("malloc cannot allocate partition=%d, type=%s, size=0x%X, addr=0x%08X", partitionid, getTypeName(type), size, addr));
 			sysMemInfo = null;
 		} else {
 			sysMemInfo = new SysMemInfo(partitionid, name, type, size, allocatedSize, allocatedAddress);
 
-			if (Modules.log.isDebugEnabled()) {
-				Modules.log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(type), size, addr, allocatedAddress));
-				if (Modules.log.isTraceEnabled()) {
-					Modules.log.trace("Free list after malloc: " + freeMemoryChunks);
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("malloc partition=%d, type=%s, size=0x%X, addr=0x%08X: returns 0x%08X", partitionid, getTypeName(type), size, addr, allocatedAddress));
+				if (log.isTraceEnabled()) {
+					log.trace("Free list after malloc: " + freeMemoryChunks);
 				}
 			}
 		}
@@ -534,10 +535,10 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 	    	MemoryChunk memoryChunk = new MemoryChunk(info.addr, info.allocatedSize);
 	    	freeMemoryChunks.add(memoryChunk);
 
-	    	if (Modules.log.isDebugEnabled()) {
-	    		Modules.log.debug(String.format("free %s", info.toString()));
-	    		if (Modules.log.isTraceEnabled()) {
-	    			Modules.log.trace("Free list after free: " + freeMemoryChunks.toString());
+	    	if (log.isDebugEnabled()) {
+	    		log.debug(String.format("free %s", info.toString()));
+	    		if (log.isTraceEnabled()) {
+	    			log.trace("Free list after free: " + freeMemoryChunks.toString());
 	    		}
 	    	}
     	}
@@ -626,8 +627,8 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         // Some games expect size to be rounded down in 16 bytes block
         maxFreeMemSize &= ~15;
 
-    	if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug(String.format("sceKernelMaxFreeMemSize %d(hex=0x%1$X)", maxFreeMemSize));
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelMaxFreeMemSize %d(hex=0x%1$X)", maxFreeMemSize));
     	}
         cpu.gpr[2] = maxFreeMemSize;
 	}
@@ -637,8 +638,8 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
 		int totalFreeMemSize = totalFreeMemSize();
 
-    	if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug(String.format("sceKernelTotalFreeMemSize %d(hex=0x%1$X)", totalFreeMemSize));
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceKernelTotalFreeMemSize %d(hex=0x%1$X)", totalFreeMemSize));
     	}
         cpu.gpr[2] = totalFreeMemSize;
 	}
@@ -655,8 +656,8 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         addr &= Memory.addressMask;
         String name = readStringZ(pname);
 
-        if (Modules.log.isDebugEnabled()) {
-	        Modules.log.debug(String.format("sceKernelAllocPartitionMemory(partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X", partitionid, name, getTypeName(type), size, addr));
+        if (log.isDebugEnabled()) {
+	        log.debug(String.format("sceKernelAllocPartitionMemory(partition=%d, name='%s', type=%s, size=0x%X, addr=0x%08X", partitionid, name, getTypeName(type), size, addr));
         }
 
         if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned) {
@@ -679,11 +680,11 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 		SceUidManager.checkUidPurpose(uid, "SysMem", true);
         SysMemInfo info = blockList.remove(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
+            log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_CHUNK_ID;
         } else {
-        	if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+        	if (log.isDebugEnabled()) {
+        		log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
         	}
             free(info);
             cpu.gpr[2] = 0;
@@ -698,11 +699,11 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 		SceUidManager.checkUidPurpose(uid, "SysMem", true);
         SysMemInfo info = blockList.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
+            log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
             cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_CHUNK_ID;
         } else {
-        	if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
+        	if (log.isDebugEnabled()) {
+        		log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
         	}
             cpu.gpr[2] = info.addr;
         }
@@ -714,8 +715,8 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 		int string_addr = cpu.gpr[4];
 
 		String msg = readStringNZ(string_addr, 256);
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceKernelPrintf(string_addr=0x%08X) '%s'", string_addr, msg));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelPrintf(string_addr=0x%08X) '%s'", string_addr, msg));
         }
 
         // Format and print the message to stdout
@@ -750,27 +751,11 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         int minor = (firmwareVersion / 10) % 10;
         int revision = firmwareVersion % 10;
         int devkitVersion = (major << 24) | (minor << 16) | (revision << 8) | 0x10;
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceKernelDevkitVersion return:0x%08X", devkitVersion));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelDevkitVersion return:0x%08X", devkitVersion));
         }
 
         cpu.gpr[2] = devkitVersion;
-	}
-
-	public void sceKernelMemset(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Memory.getInstance();
-
-		int dest_addr = cpu.gpr[4];
-		int data = cpu.gpr[5];
-		int size = cpu.gpr[6];
-
-        mem.memset(dest_addr, (byte)data, size);
-
-        Modules.log.debug("sceKernelMemset addr=0x" + Integer.toHexString(dest_addr)
-                + " data=" + data + " size=" + size);
-
-        cpu.gpr[2] = 0;
 	}
 
 	public final HLEModuleFunction sceKernelMaxFreeMemSizeFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelMaxFreeMemSize") {
