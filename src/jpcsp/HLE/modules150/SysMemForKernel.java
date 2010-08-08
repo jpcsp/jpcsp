@@ -26,7 +26,10 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
+import org.apache.log4j.Logger;
+
 public class SysMemForKernel implements HLEModule, HLEStartModule {
+    private static Logger log = Modules.getLogger("SysMemForKernel");
 
     @Override
     public String getName() {
@@ -65,7 +68,7 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
 
         mem.memset(dest_addr, (byte) data, size);
 
-        Modules.log.debug("sceKernelMemset addr=0x" + Integer.toHexString(dest_addr) + " data=" + data + " size=" + size);
+        log.debug("sceKernelMemset addr=0x" + Integer.toHexString(dest_addr) + " data=" + data + " size=" + size);
 
         cpu.gpr[2] = 0;
     }

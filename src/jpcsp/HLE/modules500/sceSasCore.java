@@ -45,7 +45,6 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
     /** based on __sceSasSetVoice, but it may have different parameters/behaviour (unchecked) */
     public void __sceSasSetVoicePCM(Processor processor) {
         CpuState cpu = processor.cpu;
-        //Memory mem = Memory.getInstance();
         
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
@@ -53,7 +52,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
         int size = cpu.gpr[7];
         int loopmode = cpu.gpr[8];
 
-        Modules.log.warn("UNIMPLEMENTED __sceSasSetVoicePCM "
+        log.warn("UNIMPLEMENTED __sceSasSetVoicePCM "
             + String.format("sasCore=0x%08x voice=%d vagAddr=0x%08x size=0x%08x loopmode=%d",
             sasCore, voice, vagAddr, size, loopmode));
 

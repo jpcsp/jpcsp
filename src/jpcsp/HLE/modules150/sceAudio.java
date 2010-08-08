@@ -40,8 +40,7 @@ import jpcsp.memory.MemoryReader;
 import org.apache.log4j.Logger;
 
 public class sceAudio implements HLEModule, HLEThread {
-
-    public static Logger log = Logger.getLogger("hle.audio");
+    private static Logger log = Modules.getLogger("sceAudio");
 
     protected class pspChannelInfo {
         public int index;

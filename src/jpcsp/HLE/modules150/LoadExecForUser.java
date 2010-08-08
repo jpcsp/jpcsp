@@ -38,7 +38,11 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Logger;
+
 public class LoadExecForUser implements HLEModule {
+    private static Logger log = Modules.getLogger("LoadExecForUser");
+
 	@Override
 	public String getName() { return "LoadExecForUser"; }
 
@@ -78,7 +82,7 @@ public class LoadExecForUser implements HLEModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
+            log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
 
             // Flush system memory to mimic a real PSP reset.
             Modules.SysMemUserForUserModule.reset();
@@ -89,7 +93,7 @@ public class LoadExecForUser implements HLEModule {
                 int argAddr = mem.read32(option_addr + 8);   // Pointer to a list of strings.
                 int keyAddr = mem.read32(option_addr + 12);  // Pointer to an encryption key (may not be used).
 
-                Modules.log.debug("sceKernelLoadExec params: optSize=" + optSize + ", argSize=" + argSize
+                log.debug("sceKernelLoadExec params: optSize=" + optSize + ", argSize=" + argSize
                         + ", argAddr=" + Integer.toHexString(argAddr) + ", keyAddr=" + Integer.toHexString(keyAddr));
             }
 
@@ -106,16 +110,16 @@ public class LoadExecForUser implements HLEModule {
                     if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
                         cpu.gpr[2] = 0;
                     } else {
-                        Modules.log.warn("sceKernelLoadExec - failed, target is not an ELF");
+                        log.warn("sceKernelLoadExec - failed, target is not an ELF");
                         cpu.gpr[2] = ERROR_ILLEGAL_LOADEXEC_FILENAME;
                     }
                     moduleInput.close();
                 }
             } catch (GeneralJpcspException e) {
-                Modules.log.error("General Error : " + e.getMessage());
+                log.error("General Error : " + e.getMessage());
                 Emulator.PauseEmu();
             } catch (IOException e) {
-                Modules.log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
+                log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
                 cpu.gpr[2] = ERROR_PROHIBIT_LOADEXEC_DEVICE;
             }
         }
@@ -129,7 +133,7 @@ public class LoadExecForUser implements HLEModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
+            log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
         }
     }
@@ -140,7 +144,7 @@ public class LoadExecForUser implements HLEModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.info("Program exit detected (sceKernelExitGame)");
+            log.info("Program exit detected (sceKernelExitGame)");
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
         }
     }
@@ -153,7 +157,7 @@ public class LoadExecForUser implements HLEModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.debug("IGNORING:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
+            log.debug("IGNORING:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
             cpu.gpr[2] = 0;
         }
     }

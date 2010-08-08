@@ -119,8 +119,6 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     	return true;
     }
 
-    // Export functions
-
     public void sceUtilityLoadNetModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -128,9 +126,9 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
         String moduleName = hleUtilityLoadNetModuleName(module);
         if (loadModule(module, moduleName)) {
-            Modules.log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
+            log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
         } else {
-            Modules.log.info(String.format("IGNORING:sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
+            log.info(String.format("IGNORING:sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
         }
 
         cpu.gpr[2] = 0;
@@ -144,9 +142,9 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
         String moduleName = hleUtilityLoadNetModuleName(module);
         if (loadModule(module, moduleName)) {
-            Modules.log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
+            log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
         } else {
-            Modules.log.info(String.format("IGNORING:sceUtilityUnloadNetModule(module=0x%04X) %s", module, moduleName));
+            log.info(String.format("IGNORING:sceUtilityUnloadNetModule(module=0x%04X) %s", module, moduleName));
         }
 
         cpu.gpr[2] = 0;

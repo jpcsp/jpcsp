@@ -69,7 +69,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	public void sceKernelDonateWakeupThread(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function sceKernelDonateWakeupThread [0x1AF94D03]");
+		log.debug("Unimplemented NID function sceKernelDonateWakeupThread [0x1AF94D03]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -77,7 +77,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	public void ThreadManForUser_31327F19(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function ThreadManForUser_31327F19 [0x31327F19]");
+		log.debug("Unimplemented NID function ThreadManForUser_31327F19 [0x31327F19]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -94,7 +94,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	public void ThreadManForUser_71040D5C(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function ThreadManForUser_71040D5C [0x71040D5C]");
+		log.debug("Unimplemented NID function ThreadManForUser_71040D5C [0x71040D5C]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -102,7 +102,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	public void ThreadManForUser_7CFF8CF3(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function ThreadManForUser_7CFF8CF3 [0x7CFF8CF3]");
+		log.debug("Unimplemented NID function ThreadManForUser_7CFF8CF3 [0x7CFF8CF3]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -110,7 +110,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	public void ThreadManForUser_BEED3A47(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("Unimplemented NID function ThreadManForUser_BEED3A47 [0xBEED3A47]");
+		log.debug("Unimplemented NID function ThreadManForUser_BEED3A47 [0xBEED3A47]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -202,4 +202,4 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 			return "jpcsp.HLE.Modules.ThreadManForUserModule.ThreadManForUser_BEED3A47(processor);";
 		}
 	};
-};
+}

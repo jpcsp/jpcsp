@@ -73,7 +73,11 @@ import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Logger;
+
 public class sceUtility implements HLEModule, HLEStartModule {
+    protected static Logger log = Modules.getLogger("sceUtility");
+
 	@Override
 	public String getName() { return "sceUtility"; }
 
@@ -259,15 +263,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
     		paramsAddr = cpu.gpr[4];
     		if (!mem.isAddressGood(paramsAddr)) {
-    			Modules.log.error(name + "InitStart bad address " + String.format("0x%08X", paramsAddr));
+    			log.error(name + "InitStart bad address " + String.format("0x%08X", paramsAddr));
     			cpu.gpr[2] = -1;
     		} else {
     			this.params = params;
 
     			params.read(mem, paramsAddr);
 
-	    		if (Modules.log.isInfoEnabled()) {
-					Modules.log.info("PARTIAL:" + name + "InitStart " + params.toString());
+	    		if (log.isInfoEnabled()) {
+					log.info("PARTIAL:" + name + "InitStart " + params.toString());
 				}
 
 	            // Start with INIT
@@ -280,8 +284,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     	public void executeGetStatus(Processor processor) {
     		CpuState cpu = processor.cpu;
 
-    		if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug(name + "GetStatus status " + status);
+    		if (log.isDebugEnabled()) {
+                log.debug(name + "GetStatus status " + status);
             }
 
             cpu.gpr[2] = status;
@@ -298,8 +302,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     	public void executeShutdownStart(Processor processor) {
             CpuState cpu = processor.cpu;
 
-            if (Modules.log.isDebugEnabled()) {
-            	Modules.log.debug(name + "ShutdownStart");
+            if (log.isDebugEnabled()) {
+            	log.debug(name + "ShutdownStart");
             }
 
             status = PSP_UTILITY_DIALOG_FINISHED;
@@ -311,8 +315,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     		CpuState cpu = processor.cpu;
 
             int unk = cpu.gpr[4];
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug(name + "Update unk=" + unk);
+            if (log.isDebugEnabled()) {
+                log.debug(name + "Update unk=" + unk);
             }
 
             boolean canDisplay = false;
@@ -334,8 +338,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		            	// (e.g. list processing is done, but still copying the graphics
 		            	//  to PSP memory in sceDisplay.display()).
 		            	// Wait a little bit and try again to lock the display.
-		            	if (Modules.log.isDebugEnabled()) {
-		            		Modules.log.debug(name + "Update : could not lock the display but VideoEngine not displayed, waiting a while...");
+		            	if (log.isDebugEnabled()) {
+		            		log.debug(name + "Update : could not lock the display but VideoEngine not displayed, waiting a while...");
 		            	}
 
 		            	try {
@@ -344,8 +348,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		                	// Ignore exception
 		                }
 		            } else {
-		            	if (Modules.log.isDebugEnabled()) {
-		            		Modules.log.debug(name + "Update : could not lock the display");
+		            	if (log.isDebugEnabled()) {
+		            		log.debug(name + "Update : could not lock the display");
 		            	}
 		            	break;
 		            }
@@ -386,7 +390,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     	public void executeInitStart(Processor processor, pspAbstractMemoryMappedStructure params) {
 			CpuState cpu = processor.cpu;
 
-			Modules.log.warn("Unimplemented: " + name + "InitStart");
+			log.warn("Unimplemented: " + name + "InitStart");
 
 			cpu.gpr[2] = 0xDEADC0DE;
 		}
@@ -395,7 +399,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		public void executeShutdownStart(Processor processor) {
 			CpuState cpu = processor.cpu;
 
-			Modules.log.warn("Unimplemented: " + name + "ShutdownStart");
+			log.warn("Unimplemented: " + name + "ShutdownStart");
 
 			cpu.gpr[2] = 0xDEADC0DE;
 		}
@@ -404,7 +408,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		public void executeGetStatus(Processor processor) {
 			CpuState cpu = processor.cpu;
 
-			Modules.log.warn("Unimplemented: " + name + "GetStatus");
+			log.warn("Unimplemented: " + name + "GetStatus");
 
 			cpu.gpr[2] = PSP_UTILITY_ERROR_NOT_INITED;
 		}
@@ -413,7 +417,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		public boolean tryUpdate(Processor processor) {
 			CpuState cpu = processor.cpu;
 
-			Modules.log.warn("Unimplemented: " + name + "Update");
+			log.warn("Unimplemented: " + name + "Update");
 
 			cpu.gpr[2] = 0xDEADC0DE;
 
@@ -805,7 +809,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
                 showSavedataList(validNames.toArray(new String[validNames.size()]));
                 if (saveListSelection == null) {
-                    Modules.log.warn("Savedata MODE_LISTLOAD no save selected");
+                    log.warn("Savedata MODE_LISTLOAD no save selected");
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                 } else {
                     savedataParams.saveName = saveListSelection.toString();
@@ -846,7 +850,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             case SceUtilitySavedataParam.MODE_LISTSAVE:
                 showSavedataList(savedataParams.saveNameList);
                 if (saveListSelection == null) {
-                    Modules.log.warn("Savedata MODE_LISTSAVE no save selected");
+                    log.warn("Savedata MODE_LISTSAVE no save selected");
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
                 }
 
@@ -870,12 +874,12 @@ public class sceUtility implements HLEModule, HLEStartModule {
                         String save = "ms0/PSP/SAVEDATA/" + (State.discId) +
                                 (savedataParams.saveNameList[i]);
                         if(deleteSavedataDir(save)) {
-                            Modules.log.debug("Savedata MODE_DELETE deleting " + save);
+                            log.debug("Savedata MODE_DELETE deleting " + save);
                         }
                     }
                     savedataParams.base.result = 0;
                 } else {
-                    Modules.log.warn("Savedata MODE_DELETE no saves found!");
+                    log.warn("Savedata MODE_DELETE no saves found!");
                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                 }
                 break;
@@ -914,7 +918,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             	//   size (32KB string) : "416 KB"
             	// error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
             	//
-                Modules.log.warn("PARTIAL:Savedata mode 8 (SCE_UTILITY_SAVEDATA_TYPE_SIZES)");
+                log.warn("PARTIAL:Savedata mode 8 (SCE_UTILITY_SAVEDATA_TYPE_SIZES)");
                 String gameName = savedataParams.gameName;
                 String saveName = savedataParams.saveName;
 
@@ -928,7 +932,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     mem.write32(buffer1Addr +  8, MemoryStick.getFreeSizeKb());
                     Utilities.writeStringNZ(mem, buffer1Addr +  12, 8, memoryStickFreeSpaceString);
 
-                    Modules.log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
+                    log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
                 }
 
                 // ms data size
@@ -966,7 +970,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     mem.write32(buffer3Addr + 16, memoryStickRequiredSpace32Kb);
                     Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpace32KbString);
 
-                    Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
+                    log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
                 }
 
             	if (savedataParams.isPresent(gameName, saveName)) {
@@ -978,7 +982,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             }
 
             case SceUtilitySavedataParam.MODE_LIST: {
-                Modules.log.debug("Savedata mode 11");
+                log.debug("Savedata mode 11");
                 int buffer4Addr = savedataParams.buffer4Addr;
                 if (mem.isAddressGood(buffer4Addr)) {
                 	int maxEntries = mem.read32(buffer4Addr + 0);
@@ -995,7 +999,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 	pattern = savedataParams.gameName + pattern;
 
                 	String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
-                	Modules.log.debug("Entries: " + entries);
+                	log.debug("Entries: " + entries);
                 	int numEntries = entries == null ? 0 : entries.length;
                 	numEntries = Math.min(numEntries, maxEntries);
                 	for (int i = 0; i < numEntries; i++) {
@@ -1130,13 +1134,13 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     File f = new File(save);
 
                     if(f != null) {
-                        Modules.log.debug("Savedata MODE_DELETEDATA deleting " + save);
+                        log.debug("Savedata MODE_DELETEDATA deleting " + save);
                         f = new File(save);
                         f.delete();
                     }
                     savedataParams.base.result = 0;
                 } else {
-                    Modules.log.warn("Savedata MODE_DELETEDATA no data found!");
+                    log.warn("Savedata MODE_DELETEDATA no data found!");
                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
                 }
                 break;
@@ -1194,15 +1198,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 break;
 
             default:
-                Modules.log.warn("Savedata - Unsupported mode " + savedataParams.mode);
+                log.warn("Savedata - Unsupported mode " + savedataParams.mode);
                 savedataParams.base.result = -1;
                 break;
         }
 
         savedataParams.errorStatus = 0;
         savedataParams.base.writeResult(mem);
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("hleUtilitySavedataDisplay savedResult:0x" + Integer.toHexString(savedataParams.base.result));
+        if (log.isDebugEnabled()) {
+            log.debug("hleUtilitySavedataDisplay savedResult:0x" + Integer.toHexString(savedataParams.base.result));
         }
     }
 
@@ -1230,7 +1234,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	public void sceUtility_2995D020(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
+        log.warn("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -1238,7 +1242,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	public void sceUtility_B62A4061(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn("Unimplemented NID function sceUtility_B62A4061 [0xB62A4061]");
+		log.warn("Unimplemented NID function sceUtility_B62A4061 [0xB62A4061]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -1246,7 +1250,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	public void sceUtility_ED0FAD38(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn("Unimplemented NID function sceUtility_ED0FAD38 [0xED0FAD38]");
+		log.warn("Unimplemented NID function sceUtility_ED0FAD38 [0xED0FAD38]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -1254,7 +1258,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	public void sceUtility_88BC7406(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn("Unimplemented NID function sceUtility_88BC7406 [0x88BC7406]");
+		log.warn("Unimplemented NID function sceUtility_88BC7406 [0x88BC7406]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -1306,7 +1310,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         oskParams.base.result = 0;
         oskParams.oskData.result = 2; // Unknown value, but required by "SEGA Rally"
         oskParams.write(mem);
-        Modules.log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
+        log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
     }
 
 	public void sceUtilityOskInitStart(Processor processor) {
@@ -1332,7 +1336,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	public void sceUtilitySetSystemParamInt(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn("Unimplemented NID function sceUtilitySetSystemParamInt [0x45C18506]");
+		log.warn("Unimplemented NID function sceUtilitySetSystemParamInt [0x45C18506]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -1340,7 +1344,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	public void sceUtilitySetSystemParamString(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn("Unimplemented NID function sceUtilitySetSystemParamString [0x41E30674]");
+		log.warn("Unimplemented NID function sceUtilitySetSystemParamString [0x41E30674]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
@@ -1353,10 +1357,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
         int value_addr = cpu.gpr[5];
 
         if (!mem.isAddressGood(value_addr)) {
-            Modules.log.warn("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
+            log.warn("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
             cpu.gpr[2] = -1;
         } else {
-            Modules.log.debug("PARTIAL:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
+            log.debug("PARTIAL:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
 
             cpu.gpr[2] = 0;
             switch(id) {
@@ -1381,7 +1385,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     break;
 
                 default:
-                    Modules.log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
+                    log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
                     cpu.gpr[2] = -1;
                     break;
             }
@@ -1397,10 +1401,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
         int len = cpu.gpr[6];
 
         if (!mem.isAddressGood(str_addr)) {
-            Modules.log.warn("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") bad address");
+            log.warn("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") bad address");
             cpu.gpr[2] = -1;
         } else {
-            Modules.log.debug("PARTIAL:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ")");
+            log.debug("PARTIAL:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ")");
 
             cpu.gpr[2] = 0;
             switch(id) {
@@ -1409,7 +1413,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     break;
 
                 default:
-                    Modules.log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") unhandled id");
+                    log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") unhandled id");
                     cpu.gpr[2] = -1;
                     break;
             }
@@ -1421,7 +1425,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 		int id = cpu.gpr[4];
 
-		Modules.log.warn("UNIMPLEMENTED:sceUtilityCheckNetParam(id=" + id + ")");
+		log.warn("UNIMPLEMENTED:sceUtilityCheckNetParam(id=" + id + ")");
 
 		cpu.gpr[2] = PSP_NETPARAM_ERROR_BAD_PARAM;
 	}
@@ -1429,7 +1433,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	public void sceUtilityGetNetParam(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn("Unimplemented NID function sceUtilityGetNetParam [0x434D4B3A]");
+		log.warn("Unimplemented NID function sceUtilityGetNetParam [0x434D4B3A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}

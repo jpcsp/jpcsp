@@ -34,7 +34,10 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
+import org.apache.log4j.Logger;
+
 public class sceCtrl implements HLEModule, HLEStartModule {
+    private static Logger log = Modules.getLogger("sceCtrl");
 
 	private int cycle;
     private int mode;
@@ -303,8 +306,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     }
 
     protected void hleCtrlExecuteSampling() {
-    	if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug("hleCtrlExecuteSampling");
+    	if (log.isDebugEnabled()) {
+    		log.debug("hleCtrlExecuteSampling");
     	}
 
     	latchSamplingCount++;
@@ -322,8 +325,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
 
     	if (!threadsWaitingForSampling.isEmpty()) {
     		ThreadWaitingForSampling wait = threadsWaitingForSampling.remove(0);
-    		if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug("hleExecuteSampling waiting up thread " + wait.thread);
+    		if (log.isDebugEnabled()) {
+        		log.debug("hleExecuteSampling waiting up thread " + wait.thread);
         	}
 			hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive, false);
 			Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
@@ -353,8 +356,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         	readIndex = incrementSampleIndex(readIndex);
         }
 
-        if (Modules.log.isDebugEnabled()) {
-    		Modules.log.debug(String.format("hleCtrlReadBufferImmediately(positive=%b, peek=%b) returning %d", positive, peek, count));
+        if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleCtrlReadBufferImmediately(positive=%b, peek=%b) returning %d", positive, peek, count));
     	}
 
         cpu.gpr[2] = count;
@@ -373,8 +376,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     		threadsWaitingForSampling.add(threadWaitingForSampling);
     		threadMan.hleBlockCurrentThread();
 
-    		if (Modules.log.isDebugEnabled()) {
-        		Modules.log.debug("hleCtrlReadBuffer waiting for sample");
+    		if (log.isDebugEnabled()) {
+        		log.debug("hleCtrlReadBuffer waiting for sample");
         	}
     	}
     }
@@ -384,8 +387,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
 
         int newCycle = cpu.gpr[4];
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
+        if (log.isDebugEnabled()) {
+        	log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -415,8 +418,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
 
         int newMode = cpu.gpr[4];
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
+        if (log.isDebugEnabled()) {
+        	log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
         }
 
         cpu.gpr[2] = mode;
@@ -438,8 +441,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
 
         int data_addr = cpu.gpr[4];
         int numBuf = cpu.gpr[5];
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceCtrlPeekBufferPositive(0x%08X, %d)", data_addr, numBuf));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceCtrlPeekBufferPositive(0x%08X, %d)", data_addr, numBuf));
         }
 
         hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, true, true);
@@ -450,8 +453,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
 
         int data_addr = cpu.gpr[4];
         int numBuf = cpu.gpr[5];
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceCtrlPeekBufferNegative(0x%08X, %d)", data_addr, numBuf));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceCtrlPeekBufferNegative(0x%08X, %d)", data_addr, numBuf));
         }
 
         hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, false, true);
@@ -463,8 +466,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int data_addr = cpu.gpr[4];
         int numBuf = cpu.gpr[5];
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceCtrlReadBufferPositive(0x%08X, %d)", data_addr, numBuf));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceCtrlReadBufferPositive(0x%08X, %d)", data_addr, numBuf));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -480,8 +483,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int data_addr = cpu.gpr[4];
         int numBuf = cpu.gpr[5];
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("sceCtrlReadBufferNegative(0x%08X, %d)", data_addr, numBuf));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceCtrlReadBufferNegative(0x%08X, %d)", data_addr, numBuf));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -524,7 +527,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         idlereset = cpu.gpr[4];
         idleback = cpu.gpr[5];
 
-        Modules.log.debug("sceCtrlSetIdleCancelThreshold(idlereset=" + idlereset + ",idleback=" + idleback + ")");
+        log.debug("sceCtrlSetIdleCancelThreshold(idlereset=" + idlereset + ",idleback=" + idleback + ")");
 
         cpu.gpr[2] = 0;
     }
@@ -536,7 +539,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int idlereset_addr = cpu.gpr[4];
         int idleback_addr = cpu.gpr[5];
 
-        Modules.log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr)
+        log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr)
             + ",idleback=0x" + Integer.toHexString(idleback_addr) + ")"
             + " returning idlereset=" + idlereset + " idleback=" + idleback);
 
@@ -554,7 +557,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     public void sceCtrl_348D99D4(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented NID function sceCtrl_348D99D4 [0x348D99D4]");
+        log.warn("Unimplemented NID function sceCtrl_348D99D4 [0x348D99D4]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -562,7 +565,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     public void sceCtrl_AF5960F3(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented NID function sceCtrl_AF5960F3 [0xAF5960F3]");
+        log.warn("Unimplemented NID function sceCtrl_AF5960F3 [0xAF5960F3]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -570,7 +573,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     public void sceCtrlClearRapidFire(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented NID function sceCtrlClearRapidFire [0xA68FD260]");
+        log.warn("Unimplemented NID function sceCtrlClearRapidFire [0xA68FD260]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -578,7 +581,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     public void sceCtrlSetRapidFire(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
+        log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }

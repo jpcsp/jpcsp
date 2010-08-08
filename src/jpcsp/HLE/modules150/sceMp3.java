@@ -28,7 +28,11 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
+import org.apache.log4j.Logger;
+
 public class sceMp3 implements HLEModule, HLEStartModule {
+    private static Logger log = Modules.getLogger("sceMp3");
+
 	@Override
 	public String getName() { return "sceMp3"; }
 
@@ -224,7 +228,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int streamHandle = stream.getMp3Handle();
         mp3Map.put(streamHandle, stream);
 
-        Modules.log.warn("PARTIAL: sceMp3ReserveMp3Handle "
+        log.warn("PARTIAL: sceMp3ReserveMp3Handle "
     			+ String.format("mp3args=0x%08x", cpu.gpr[4]));
 
         cpu.gpr[2] = streamHandle;
@@ -236,7 +240,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3handle = cpu.gpr[4];
         int size = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: sceMp3NotifyAddStreamData "
+        log.warn("PARTIAL: sceMp3NotifyAddStreamData "
     			+ String.format("mp3handle=0x%08x, size=%d", mp3handle, size));
 
         // New data has been written by the application.
@@ -251,7 +255,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3ResetPlayPosition "
+        log.warn("PARTIAL: sceMp3ResetPlayPosition "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         if(mp3Map.containsKey(mp3handle))
@@ -263,7 +267,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
     public void sceMp3InitResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("IGNORING: sceMp3InitResource");
+        log.warn("IGNORING: sceMp3InitResource");
 
         cpu.gpr[2] = 0;
     }
@@ -271,7 +275,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
     public void sceMp3TermResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("IGNORING: sceMp3TermResource");
+        log.warn("IGNORING: sceMp3TermResource");
 
         cpu.gpr[2] = 0;
     }
@@ -282,7 +286,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3handle = cpu.gpr[4];
         int loopNbr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: sceMp3SetLoopNum "
+        log.warn("PARTIAL: sceMp3SetLoopNum "
     			+ String.format("mp3handle=0x%08x, loopNbr=%d", mp3handle, loopNbr));
 
         if(mp3Map.containsKey(mp3handle))
@@ -296,7 +300,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3Init "
+        log.warn("IGNORING: sceMp3Init "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         cpu.gpr[2] = 0;
@@ -307,7 +311,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3GetMp3ChannelNum "
+        log.warn("PARTIAL: sceMp3GetMp3ChannelNum "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         int chNum = 0;
@@ -322,7 +326,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3GetSamplingRate "
+        log.warn("PARTIAL: sceMp3GetSamplingRate "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         int sampleRate = 0;
@@ -341,7 +345,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3BufToWriteAddr = cpu.gpr[6];
         int mp3PosAddr = cpu.gpr[7];
 
-        Modules.log.warn("PARTIAL: sceMp3GetInfoToAddStreamData "
+        log.warn("PARTIAL: sceMp3GetInfoToAddStreamData "
     			+ String.format("mp3handle=0x%08x, mp3BufAddr=0x%08x, mp3BufToWriteAddr=0x%08x, mp3PosAddr=0x%08x"
                 , mp3handle, mp3BufAddr, mp3BufToWriteAddr, mp3PosAddr));
 
@@ -371,7 +375,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3handle = cpu.gpr[4];
         int outPcmAddr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: sceMp3Decode "
+        log.warn("PARTIAL: sceMp3Decode "
     			+ String.format("mp3handle=0x%08x, outPcmAddr=0x%08x", mp3handle, outPcmAddr));
 
         // Should decode a portion of this mp3 stream.
@@ -393,7 +397,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3CheckStreamDataNeeded "
+        log.warn("PARTIAL: sceMp3CheckStreamDataNeeded "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         // 1 - Needs more data.
@@ -410,7 +414,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING: sceMp3ReleaseMp3Handle "
+        log.warn("IGNORING: sceMp3ReleaseMp3Handle "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         cpu.gpr[2] = 0;
@@ -421,7 +425,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3GetSumDecodedSample "
+        log.warn("PARTIAL: sceMp3GetSumDecodedSample "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         int samples = 0;
@@ -436,7 +440,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3GetBitRate "
+        log.warn("PARTIAL: sceMp3GetBitRate "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         int bitRate = 0;
@@ -451,7 +455,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3GetMaxOutputSample "
+        log.warn("PARTIAL: sceMp3GetMaxOutputSample "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         int maxSamples = 0;
@@ -466,7 +470,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: sceMp3GetLoopNum "
+        log.warn("PARTIAL: sceMp3GetLoopNum "
     			+ String.format("mp3handle=0x%08x", mp3handle));
 
         int loopNum = 0;

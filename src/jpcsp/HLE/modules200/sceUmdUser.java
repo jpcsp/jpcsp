@@ -48,12 +48,10 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
         }
     }
 
-    // Export functions
-
     public void sceUmdReplaceProhibit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("UNIMPLEMENTED:sceUmdReplaceProhibit");
+        log.warn("UNIMPLEMENTED:sceUmdReplaceProhibit");
 
         cpu.gpr[2] = 0;
     }
@@ -61,7 +59,7 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     public void sceUmdReplacePermit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn(String.format("UNIMPLEMENTED:sceUmdReplacePermit"
+        log.warn(String.format("UNIMPLEMENTED:sceUmdReplacePermit"
             + " %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 
         cpu.gpr[2] = 0;

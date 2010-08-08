@@ -60,7 +60,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         int atID = cpu.gpr[4];
         int outputChannelAddr = cpu.gpr[5];
 
-        Modules.log.warn(String.format("Unimplemented sceAtracGetOutputChannel: atracID = %d, outputChannelAddr = 0x%08X", atID, outputChannelAddr));
+        log.warn(String.format("Unimplemented sceAtracGetOutputChannel: atracID = %d, outputChannelAddr = 0x%08X", atID, outputChannelAddr));
 
         if (mem.isAddressGood(outputChannelAddr)) {
         	mem.write32(outputChannelAddr, 1);
@@ -74,7 +74,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
         int atID = cpu.gpr[4];
 
-        Modules.log.warn(String.format("IGNORING: sceAtracIsSecondBufferNeeded atracId=%d", atID));
+        log.warn(String.format("IGNORING: sceAtracIsSecondBufferNeeded atracId=%d", atID));
 
         // -1 -> Error.
         // 0 - > Second buffer isn't needed.
@@ -85,7 +85,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     public void sceAtracReinit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented function sceAtracReinit "
+        log.warn("Unimplemented function sceAtracReinit "
     			+ String.format("%08x %08x %08x %08x %08x %08x",
     					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
@@ -99,7 +99,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         int sample = cpu.gpr[5];
         int bufferInfoAddr = cpu.gpr[6];
 
-        Modules.log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, bufferInfoAddr));
+        log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, bufferInfoAddr));
         hleAtracGetBufferInfoForReseting(atID, sample, bufferInfoAddr);
 
         cpu.gpr[2] = 0;
@@ -108,7 +108,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     public void sceAtracSetMOutHalfwayBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("Unimplemented function sceAtracSetMOutHalfwayBuffer "
+        log.warn("Unimplemented function sceAtracSetMOutHalfwayBuffer "
     			+ String.format("%08x %08x %08x %08x %08x %08x",
     					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 

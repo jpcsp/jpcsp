@@ -29,7 +29,11 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
+import org.apache.log4j.Logger;
+
 public class scePsmf implements HLEModule, HLEStartModule {
+    private static Logger log = Modules.getLogger("scePsmf");
+
 	@Override
 	public String getName() { return "scePsmf"; }
 
@@ -183,7 +187,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             headerOffset = addr;
 
             if (mem.read32(addr) != sceMpeg.PSMF_MAGIC) {
-                Modules.log.warn("Invalid PSMF detected!");
+                log.warn("Invalid PSMF detected!");
             }
 
             version = mem.read32(addr + 4);
@@ -311,7 +315,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];         // PSMF struct.
         int buffer_addr = cpu.gpr[5];  // Actual PMF data.
 
-		Modules.log.warn("PARTIAL: scePsmfSetPsmf (psmf=0x" + Integer.toHexString(psmf)
+		log.warn("PARTIAL: scePsmfSetPsmf (psmf=0x" + Integer.toHexString(psmf)
                 + " buffer_addr=0x" + Integer.toHexString(buffer_addr) + ")");
 
         PSMFHeader header = new PSMFHeader(buffer_addr);
@@ -343,7 +347,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int type_addr = cpu.gpr[5];
         int num_addr = cpu.gpr[6];
 
-        Modules.log.warn("PARTIAL: scePsmfGetCurrentStreamType (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetCurrentStreamType (psmf=0x" + Integer.toHexString(psmf)
                 + " type_addr=0x" + Integer.toHexString(type_addr)
                 + " num_addr=0x" + Integer.toHexString(num_addr) + ")");
 
@@ -363,7 +367,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfGetCurrentStreamNumber psmf=0x" + Integer.toHexString(psmf));
+        log.warn("PARTIAL: scePsmfGetCurrentStreamNumber psmf=0x" + Integer.toHexString(psmf));
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -372,7 +376,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function scePsmfSpecifyStreamWithStreamType [0x1E6D9013]");
+        log.warn("Unimplemented NID function scePsmfSpecifyStreamWithStreamType [0x1E6D9013]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -381,7 +385,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function scePsmfSpecifyStream [0x4BC9BDE0]");
+        log.warn("Unimplemented NID function scePsmfSpecifyStream [0x4BC9BDE0]");
 
         cpu.gpr[2] = 0;
     }
@@ -393,7 +397,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];
         int startTimeAddr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfGetPresentationStartTime (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetPresentationStartTime (psmf=0x" + Integer.toHexString(psmf)
                 + " startTimeAddr=0x" + Integer.toHexString(startTimeAddr) + ")");
 
         if(psmfMap.containsKey(psmf)) {
@@ -413,7 +417,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];
         int endTimeAddr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfGetPresentationEndTime (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetPresentationEndTime (psmf=0x" + Integer.toHexString(psmf)
                 + " endTimeAddr=0x" + Integer.toHexString(endTimeAddr) + ")");
 
         if(psmfMap.containsKey(psmf)) {
@@ -431,7 +435,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
         int psmf = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL: scePsmfGetNumberOfStreams psmf=0x" + Integer.toHexString(psmf));
+        log.warn("PARTIAL: scePsmfGetNumberOfStreams psmf=0x" + Integer.toHexString(psmf));
 
         int res = 0;
         if(psmfMap.containsKey(psmf)) {
@@ -452,7 +456,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
         int psmf = cpu.gpr[4];
 
-		Modules.log.warn("PARTIAL: scePsmfGetNumberOfEPentries (psmf=0x" + Integer.toHexString(psmf) + ")");
+		log.warn("PARTIAL: scePsmfGetNumberOfEPentries (psmf=0x" + Integer.toHexString(psmf) + ")");
 
         int entries = 0;
         if(psmfMap.containsKey(psmf)) {
@@ -469,7 +473,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];
         int videoInfoAddr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfGetVideoInfo (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetVideoInfo (psmf=0x" + Integer.toHexString(psmf)
                 + " audioInfoAddr=0x" + Integer.toHexString(videoInfoAddr) + ")");
 
         if(psmfMap.containsKey(psmf)) {
@@ -489,7 +493,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];
         int audioInfoAddr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfGetAudioInfo (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetAudioInfo (psmf=0x" + Integer.toHexString(psmf)
                 + " audioInfoAddr=0x" + Integer.toHexString(audioInfoAddr) + ")");
 
         if(psmfMap.containsKey(psmf)) {
@@ -506,7 +510,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function scePsmfCheckEPmap [0x971A3A90]");
+        log.warn("Unimplemented NID function scePsmfCheckEPmap [0x971A3A90]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -519,7 +523,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int id = cpu.gpr[5];
         int out_addr = cpu.gpr[6];
 
-        Modules.log.warn("PARTIAL: scePsmfGetEPWithId (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetEPWithId (psmf=0x" + Integer.toHexString(psmf)
                 + " id=0x" + Integer.toHexString(id)
                 + " out_addr=0x" + Integer.toHexString(out_addr) + ")");
 
@@ -537,7 +541,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function scePsmfGetEPWithTimestamp [0x7C0E7AC3]");
+        log.warn("Unimplemented NID function scePsmfGetEPWithTimestamp [0x7C0E7AC3]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -546,7 +550,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function scePsmfGetEPidWithTimestamp [0x5F457515]");
+        log.warn("Unimplemented NID function scePsmfGetEPidWithTimestamp [0x5F457515]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -557,7 +561,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[4];
         int offset_addr = cpu.gpr[5];
 
-		Modules.log.warn("PARTIAL: scePsmfQueryStreamOffset (buffer_addr=0x" + Integer.toHexString(buffer_addr)
+		log.warn("PARTIAL: scePsmfQueryStreamOffset (buffer_addr=0x" + Integer.toHexString(buffer_addr)
                 + " offset_addr=0x" + Integer.toHexString(offset_addr) + ")");
 
         // Same as sceMpeg. Read the offset and write it at the output address.
@@ -574,7 +578,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[4];
         int size_addr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfQueryStreamSize (buffer_addr=0x" + Integer.toHexString(buffer_addr)
+        log.warn("PARTIAL: scePsmfQueryStreamSize (buffer_addr=0x" + Integer.toHexString(buffer_addr)
                 + " size_addr=0x" + Integer.toHexString(size_addr) + ")");
 
         // Same as sceMpeg. Read the size and write it at the output address.
@@ -594,7 +598,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];
         int stream = cpu.gpr[5];  // Stream type (same as sceMpeg).
 
-		Modules.log.warn("PARTIAL: scePsmfGetNumberOfSpecificStreams (psmf=0x" + Integer.toHexString(psmf)
+		log.warn("PARTIAL: scePsmfGetNumberOfSpecificStreams (psmf=0x" + Integer.toHexString(psmf)
                 + " stream=" + stream + ")");
 
         // Return at least one stream for each type (0 = video, 1 = audio).
@@ -605,7 +609,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.warn("Unimplemented NID function scePsmfSpecifyStreamWithStreamTypeNumber [0x0C120E1D]");
+        log.warn("Unimplemented NID function scePsmfSpecifyStreamWithStreamTypeNumber [0x0C120E1D]");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -615,7 +619,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
         int psmf = cpu.gpr[4];
 
-		Modules.log.warn("PARTIAL: scePsmfVerifyPsmf (psmf=0x" + Integer.toHexString(psmf) + ")");
+		log.warn("PARTIAL: scePsmfVerifyPsmf (psmf=0x" + Integer.toHexString(psmf) + ")");
 
         int res = 0;
         if(psmfMap.containsKey(psmf)) {
@@ -637,7 +641,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];
         int size_addr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfGetHeaderSize (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetHeaderSize (psmf=0x" + Integer.toHexString(psmf)
                 + " size_addr=0x" + size_addr + ")");
 
         int res = 0;
@@ -659,7 +663,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int psmf = cpu.gpr[4];
         int size_addr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL: scePsmfGetStreamSize (psmf=0x" + Integer.toHexString(psmf)
+        log.warn("PARTIAL: scePsmfGetStreamSize (psmf=0x" + Integer.toHexString(psmf)
                 + " size_addr=0x" + size_addr + ")");
 
         int res = 0;

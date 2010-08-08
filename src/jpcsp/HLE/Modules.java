@@ -89,6 +89,10 @@ public class Modules {
 
     public static Logger log = Logger.getLogger("hle");
 
+    public static Logger getLogger(String module) {
+        return Logger.getLogger("hle." + module);
+    }
+
     public void step() {
     }
 

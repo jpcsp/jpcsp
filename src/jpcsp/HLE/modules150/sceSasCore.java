@@ -35,7 +35,10 @@ import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
+import org.apache.log4j.Logger;
+
 public class sceSasCore implements HLEModule, HLEStartModule {
+    protected static Logger log = Modules.getLogger("sceSasCore");
 
     @Override
     public String getName() {
@@ -254,7 +257,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             			outputDataLine.open(format);
             		}
     			} catch (LineUnavailableException e) {
-    				Modules.log.info("sceSasCore.pspVoice.init: " + e.toString());
+    				log.info("sceSasCore.pspVoice.init: " + e.toString());
     			}
             }
     	}
@@ -399,9 +402,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     		if (Processor.memory.read32(sasCore) == sasCoreUid) {
     			return true;
     		}
-			Modules.log.warn(functionName + " bad sasCoreUid 0x" + Integer.toHexString(Processor.memory.read32(sasCore)));
+			log.warn(functionName + " bad sasCoreUid 0x" + Integer.toHexString(Processor.memory.read32(sasCore)));
     	} else {
-	        Modules.log.warn(functionName + " bad sasCore Address 0x" + Integer.toHexString(sasCore));
+	        log.warn(functionName + " bad sasCore Address 0x" + Integer.toHexString(sasCore));
     	}
         cpu.gpr[2] = -1;
 
@@ -413,7 +416,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     		return true;
     	}
 
-        Modules.log.warn(functionName + " bad voice number " + voice);
+        log.warn(functionName + " bad voice number " + voice);
         cpu.gpr[2] = -1;
         return false;
     }
@@ -450,7 +453,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                     if (predict_nr == 7) {
                         break; // A predict_nr of 7 indicates the end of audio data.
                     } else {
-                        Modules.log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
+                        log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
                         predict_nr = 0;
                     }
                 }
@@ -509,8 +512,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetADSR " + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetADSR " + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
                         sasCore, voice, flag, attack, decay, sustain, release));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
@@ -544,7 +547,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
             // Set waveform effect's delay and feedback levels.
-            Modules.log.debug("__sceSasRevParam(" + String.format("sasCore=0x%08x, delay=%d, feedback=%d)", sasCore, delay, feedback));
+            log.debug("__sceSasRevParam(" + String.format("sasCore=0x%08x, delay=%d, feedback=%d)", sasCore, delay, feedback));
             if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
                 waveformEffectDelay = delay;
                 waveformEffectFeedback = feedback;
@@ -570,8 +573,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                         pauseFlag |= (1 << i);
                     }
                 }
-                if (Modules.log.isDebugEnabled()) {
-                    Modules.log.debug("__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(pauseFlag));
+                if (log.isDebugEnabled()) {
+                    log.debug("__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(pauseFlag));
                 }
                 cpu.gpr[2] = pauseFlag;
             } else {
@@ -600,7 +603,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             // 6 -> Echo (uses feedback).
             // 7 -> Delay (uses delay).
             // 8 -> "Pipe" effect.
-            Modules.log.debug("__sceSasRevType(sasCore=" + sasCore + ", type=" + type + ")");
+            log.debug("__sceSasRevType(sasCore=" + sasCore + ", type=" + type + ")");
             if (isSasHandleGood(sasCore, "__sceSasRevType", cpu)) {
                 waveformEffectType = type;
                 cpu.gpr[2] = 0;
@@ -620,13 +623,13 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int unk3 = cpu.gpr[7]; // 0x00000000
         int sasSampleRate = cpu.gpr[8]; // 0x0000AC44 (44100 Hz)
 
-        Modules.log.info("PARTIAL __sceSasInit: " + String.format("sasCore=0x%08x, unk1=0x%08x, unk2=0x%08x, unk3=0x%08x, sampleRate=%d",
+        log.info("PARTIAL __sceSasInit: " + String.format("sasCore=0x%08x, unk1=0x%08x, unk2=0x%08x, unk3=0x%08x, sampleRate=%d",
                 sasCore, cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], sampleRate));
 
         // We support only 1 sascore instance at a time.
         // Currently, we overwrite the previous sascore...
         if (sasCoreUid != -1) {
-            Modules.log.warn("UNIMPLEMENTED:__sceSasInit multiple instances not yet supported");
+            log.warn("UNIMPLEMENTED:__sceSasInit multiple instances not yet supported");
         }
 
         if (mem.isAddressGood(sasCore)) {
@@ -668,7 +671,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int leftVol = cpu.gpr[6];
         int rightVol = cpu.gpr[7];
 
-        Modules.log.debug("__sceSasCoreWithMix " + makeLogParams(cpu));
+        log.debug("__sceSasCoreWithMix " + makeLogParams(cpu));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -690,8 +693,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetSL: " + String.format("sasCore=0x%08x, voice=0x%08x, unk=0x%08x", sasCore, voice, level));
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetSL: " + String.format("sasCore=0x%08x, voice=0x%08x, unk=0x%08x", sasCore, voice, level));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetSL", cpu)) {
                 voices[voice].envelope.SustainLevel = level;
@@ -717,8 +720,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                         endFlag |= (1 << i);
                     }
                 }
-                if (Modules.log.isDebugEnabled()) {
-                    Modules.log.debug("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(endFlag));
+                if (log.isDebugEnabled()) {
+                    log.debug("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(endFlag));
                 }
                 cpu.gpr[2] = endFlag;
             } else {
@@ -737,8 +740,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk=0x" + Integer.toHexString(unk) + ")");
+            if (log.isDebugEnabled()) {
+                log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk=0x" + Integer.toHexString(unk) + ")");
             }
             if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
                 cpu.gpr[2] = voices[voice].envelope.height;
@@ -757,8 +760,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetKeyOn: " + String.format("sasCore=%08x, voice=%d",
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetKeyOn: " + String.format("sasCore=%08x, voice=%d",
                         sasCore, voice));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetKeyOn", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOn", cpu)) {
@@ -784,8 +787,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                         voices[i].pause();
                     }
                 }
-                if (Modules.log.isDebugEnabled()) {
-                    Modules.log.debug("__sceSasSetPause(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(voice_bit));
+                if (log.isDebugEnabled()) {
+                    log.debug("__sceSasSetPause(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(voice_bit));
                 }
                 cpu.gpr[2] = 0;
             } else {
@@ -806,8 +809,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetVoice: " + String.format("sasCore=0x%08x, voice=%d, vagAddr=0x%08x, size=0x%08x, loopmode=%d",
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetVoice: " + String.format("sasCore=0x%08x, voice=%d, vagAddr=0x%08x, size=0x%08x, loopmode=%d",
                         sasCore, voice, vagAddr, size, loopmode));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
@@ -835,8 +838,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.warn("__sceSasSetADSRmode" + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
+            if (log.isDebugEnabled()) {
+                log.warn("__sceSasSetADSRmode" + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
                         sasCore, voice, flag, attackType, decayType, sustainType, releaseType));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
@@ -868,8 +871,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetKeyOff: " + String.format("sasCore=%08x, voice=%d",
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetKeyOff: " + String.format("sasCore=%08x, voice=%d",
                         sasCore, voice));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetKeyOff", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOff", cpu)) {
@@ -886,7 +889,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.warn("Unimplemented NID function __sceSasSetTrianglarWave [0xA232CBE6] " + makeLogParams(cpu));
+            log.warn("Unimplemented NID function __sceSasSetTrianglarWave [0xA232CBE6] " + makeLogParams(cpu));
             cpu.gpr[2] = 0xDEADC0DE;
         }
     }
@@ -898,7 +901,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int sasCore = cpu.gpr[4];
         int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
 
-        Modules.log.debug("__sceSasCore " + makeLogParams(cpu));
+        log.debug("__sceSasCore " + makeLogParams(cpu));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -920,8 +923,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetPitch: " + String.format("sasCore=%08x, voice=%d, pitch=0x%04x",
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetPitch: " + String.format("sasCore=%08x, voice=%d, pitch=0x%04x",
                         sasCore, voice, pitch));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetPitch", cpu) && isVoiceNumberGood(voice, "__sceSasSetPitch", cpu)) {
@@ -943,8 +946,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetNoise: " + String.format("sasCore=%08x, voice=%d, freq=0x%04x",
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetNoise: " + String.format("sasCore=%08x, voice=%d, freq=0x%04x",
                         sasCore, voice, freq));
             }
             if (isSasHandleGood(sasCore, "__sceSasSetNoise", cpu) && isVoiceNumberGood(voice, "__sceSasSetNoise", cpu)) {
@@ -964,8 +967,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasGetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples=" + grainSamples);
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasGetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples=" + grainSamples);
             }
             if (isSasHandleGood(sasCore, "__sceSasGetGrain", cpu)) {
                 cpu.gpr[2] = grainSamples;
@@ -986,8 +989,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetSimpleADSR " + makeLogParams(cpu));
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetSimpleADSR " + makeLogParams(cpu));
             }
 
             // Only the low-order 16 bits are valid for both parameters.
@@ -1023,8 +1026,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples=" + grain);
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetGrain(sasCore=0x" + Integer.toHexString(sasCore) + "): grain samples=" + grain);
             }
             if (isSasHandleGood(sasCore, "__sceSasSetGrain", cpu)) {
                 grainSamples = grain;
@@ -1046,7 +1049,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
             // Set waveform effect's volume.
-            Modules.log.debug("__sceSasRevEVOL(" + String.format("sasCore=0x%08x,leftVol=0x%04x,rightVol=0x%04x)", sasCore, leftVol, rightVol));
+            log.debug("__sceSasRevEVOL(" + String.format("sasCore=0x%08x,leftVol=0x%04x,rightVol=0x%04x)", sasCore, leftVol, rightVol));
             if (isSasHandleGood(sasCore, "__sceSasRevEVOL", cpu)) {
                 waveformEffectLeftVol = leftVol;
                 waveformEffectRightVol = rightVol;
@@ -1063,7 +1066,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            Modules.log.warn("Unimplemented NID function __sceSasSetSteepWave [0xD5EBBBCD] " + makeLogParams(cpu));
+            log.warn("Unimplemented NID function __sceSasSetSteepWave [0xD5EBBBCD] " + makeLogParams(cpu));
             cpu.gpr[2] = 0xDEADC0DE;
         }
     }
@@ -1077,8 +1080,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode=" + mode);
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode=" + mode);
             }
             if (isSasHandleGood(sasCore, "__sceSasGetOutputmode", cpu)) {
                 cpu.gpr[2] = outputMode;
@@ -1097,8 +1100,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasSetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode=" + mode);
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasSetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode=" + mode);
             }
             if (isSasHandleGood(sasCore, "__sceSasGetOutputmode", cpu)) {
                 outputMode = mode;
@@ -1120,7 +1123,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
             // Set waveform effect's dry and wet status.
-            Modules.log.debug("__sceSasRevVON(" + String.format("sasCore=0x%08x,dry=%d,wet=%d)", sasCore, dry, wet));
+            log.debug("__sceSasRevVON(" + String.format("sasCore=0x%08x,dry=%d,wet=%d)", sasCore, dry, wet));
             if (isSasHandleGood(sasCore, "__sceSasRevVON", cpu)) {
                 waveformEffectIsDryOn = (dry > 0);
                 waveformEffectIsWetOn = (wet > 0);
@@ -1139,8 +1142,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isDebugEnabled()) {
-                Modules.log.debug("__sceSasGetAllEnvelopeHeights(" + String.format("sasCore=0x%08x)", sasCore));
+            if (log.isDebugEnabled()) {
+                log.debug("__sceSasGetAllEnvelopeHeights(" + String.format("sasCore=0x%08x)", sasCore));
             }
             if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
                 int res = 0;

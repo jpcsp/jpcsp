@@ -30,7 +30,11 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 
+import org.apache.log4j.Logger;
+
 public class sceSuspendForUser implements HLEModule, HLEStartModule {
+    private static Logger log = Modules.getLogger("sceSuspendForUser");
+
     @Override
     public String getName() { return "sceSuspendForUser"; }
 
@@ -85,8 +89,8 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isTraceEnabled()) {
-                Modules.log.trace("IGNORING:sceKernelPowerLock type=" + type);
+            if (log.isTraceEnabled()) {
+                log.trace("IGNORING:sceKernelPowerLock type=" + type);
             }
         cpu.gpr[2] = 0;
         }
@@ -100,8 +104,8 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
-            if (Modules.log.isTraceEnabled()) {
-                Modules.log.trace("IGNORING:sceKernelPowerUnlock type=" + type);
+            if (log.isTraceEnabled()) {
+                log.trace("IGNORING:sceKernelPowerUnlock type=" + type);
             }
             cpu.gpr[2] = 0;
         }
@@ -117,22 +121,22 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         } else {
             switch (flag) {
                 case KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY:
-                    if (Modules.log.isTraceEnabled()) {
-                        Modules.log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY)");
+                    if (log.isTraceEnabled()) {
+                        log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY)");
                     }
                     break;
                 case KERNEL_POWER_TICK_SUSPEND:
-                    if (Modules.log.isTraceEnabled()) {
-                        Modules.log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND)");
+                    if (log.isTraceEnabled()) {
+                        log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND)");
                     }
                     break;
                 case KERNEL_POWER_TICK_DISPLAY:
-                    if (Modules.log.isTraceEnabled()) {
-                        Modules.log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_DISPLAY)");
+                    if (log.isTraceEnabled()) {
+                        log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_DISPLAY)");
                     }
                     break;
                 default:
-                    Modules.log.warn("IGNORING:sceKernelPowerTick(" + flag + ")");
+                    log.warn("IGNORING:sceKernelPowerTick(" + flag + ")");
                     break;
             }
             cpu.gpr[2] = 0;
@@ -147,12 +151,12 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         int paddr = cpu.gpr[5];
         int psize = cpu.gpr[6];
 
-        if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug(String.format("hleKernelVolatileMemLock type=%d, paddr=0x%08X, psize=0x%08X, trylock=%b", type, paddr, psize, trylock));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("hleKernelVolatileMemLock type=%d, paddr=0x%08X, psize=0x%08X, trylock=%b", type, paddr, psize, trylock));
         }
 
         if (type != 0) {
-            Modules.log.warn("hleKernelVolatileMemLock bad param: type != 0");
+            log.warn("hleKernelVolatileMemLock bad param: type != 0");
             cpu.gpr[2] = ERROR_ARGUMENT;
         } else {
             if (!volatileMemLocked) {
@@ -165,7 +169,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
                 }
                 cpu.gpr[2] = 0;
             } else {
-                Modules.log.warn("hleKernelVolatileMemLock already locked");
+                log.warn("hleKernelVolatileMemLock already locked");
                 if (trylock) {
                     cpu.gpr[2] = ERROR_POWER_VMEM_IN_USE;
                 } else {
@@ -194,13 +198,13 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
         int type = cpu.gpr[4];
 
-        Modules.log.debug("sceKernelVolatileMemUnlock(type=" + type + ")");
+        log.debug("sceKernelVolatileMemUnlock(type=" + type + ")");
 
         if (type != 0) {
-            Modules.log.warn("sceKernelVolatileMemUnlock bad param: type != 0");
+            log.warn("sceKernelVolatileMemUnlock bad param: type != 0");
             cpu.gpr[2] = ERROR_ARGUMENT;
         } else if (!volatileMemLocked) {
-            Modules.log.warn("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
+            log.warn("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
             cpu.gpr[2] = -1;
         } else {
             volatileMemLocked = false;

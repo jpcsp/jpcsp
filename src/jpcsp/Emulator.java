@@ -58,7 +58,7 @@ public class Emulator implements Runnable {
     public static boolean pause = false;
     private static MainGUI gui;
     private InstructionCounter instructionCounter;
-    public static Logger log = Logger.getLogger("misc");
+    public static Logger log = Logger.getLogger("emu");
     private SceModule module;
     private int firmwareVersion = 150;
 

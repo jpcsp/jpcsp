@@ -1,54 +1,48 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE log4j:configuration SYSTEM 'log4j.dtd'>
 
 <log4j:configuration>
 
-  <appender name="JpcspAppender" class="jpcsp.log.TextPaneAppender">
-    <layout class="org.apache.log4j.PatternLayout">
-      <param name="ConversionPattern" value="%r [%t] %-5p %c - %m\n" />
-    </layout>
-  </appender>
+<appender name='JpcspAppender' class='jpcsp.log.TextPaneAppender'>
+<layout class='org.apache.log4j.PatternLayout'>
+<param name='ConversionPattern' value='%r [%t] %-5p %c - %m%n' />
+</layout>
+</appender>
+<appender name='HTMLAppender' class='org.apache.log4j.FileAppender'>
+<param name='File' value='log.html' />
+<param name='Append' value='false' />
+<layout class='jpcsp.log.HTMLLayout'>
+<param name='Title' value='Jpcsp log file' />
+</layout>
+</appender>
+<appender name='ProfilerTxtAppender' class='org.apache.log4j.FileAppender'>
+<param name='File' value='profiler.txt' />
+<param name='Append' value='false' />
+<layout class='org.apache.log4j.PatternLayout'>
+<param name='ConversionPattern' value='%m%n' />
+</layout>
+</appender>
 
-  <appender name="HTMLAppender" class="org.apache.log4j.FileAppender">
-    <param name="File" value="log.html" />
-    <param name="Append" value="false" />
-    <layout class="jpcsp.log.HTMLLayout">
-      <param name="Title" value="Jpcsp log file" />
-    </layout>
-  </appender>
+<logger name='cpu' />
+<logger name='hle' />
+<logger name='memory' />
+<logger name='ge' />
+<logger name='emu' />
+<logger name='compiler' > <level value='off' /> </logger>
+<logger name='runtime' > <level value='off' /> </logger>
+<logger name='loader' > <level value='off' /> </logger>
+<logger name='stdout' />
+<logger name='stderr' />
+<!-- Output profiler info to 'profiler.txt' -->
+<logger name='profiler' additivity='false'>
+<level value='info' />
+<appender-ref ref='ProfilerTxtAppender' />
+</logger>
 
-  <appender name="TxtAppender" class="org.apache.log4j.FileAppender">
-    <param name="File" value="log.txt" />
-    <param name="Append" value="false" />
-    <layout class="org.apache.log4j.PatternLayout">
-      <param name="ConversionPattern" value="%d{HH:mm:ss} %5p %8c - %t - %m%n" />
-    </layout>
-  </appender>
-
-  <appender name="ProfilerTxtAppender" class="org.apache.log4j.FileAppender">
-    <param name="File" value="profiler.txt" />
-    <param name="Append" value="false" />
-    <layout class="org.apache.log4j.PatternLayout">
-      <param name="ConversionPattern" value="%m%n" />
-    </layout>
-  </appender>
-
-  <logger name="cpu" />
-  <logger name="hle" />
-  <logger name="memory" />
-  <logger name="ge" />
-  <logger name="misc" />
-
-  <!-- Output profiler info to "profiler.txt" -->
-  <logger name="profiler" additivity="false">
-    <level value="info" />
-    <appender-ref ref="ProfilerTxtAppender" />
-  </logger>
-
-  <root>
-    <level value ="off" />
-    <appender-ref ref="JpcspAppender" />
-    <appender-ref ref="HTMLAppender" />
-  </root>
+<root>
+<level value ='off' />
+<appender-ref ref='JpcspAppender' />
+<appender-ref ref='HTMLAppender' />
+</root>
 
 </log4j:configuration>

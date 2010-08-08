@@ -87,11 +87,65 @@ public class LogGUI extends javax.swing.JFrame {
         fileButton = new javax.swing.JButton();
         xmlpath = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
-        saveButton = new javax.swing.JButton();
         outputToHTML = new javax.swing.JCheckBox();
         outputToText = new javax.swing.JCheckBox();
         jLabel2 = new javax.swing.JLabel();
         logoutpath = new javax.swing.JTextField();
+        jLabel5 = new javax.swing.JLabel();
+        maxSizeSpinner = new javax.swing.JSpinner();
+        splitFilesBox = new javax.swing.JCheckBox();
+        LoggerAdvancedPanel = new javax.swing.JPanel();
+        jRadioButton1 = new javax.swing.JRadioButton();
+        jRadioButton2 = new javax.swing.JRadioButton();
+        jRadioButton3 = new javax.swing.JRadioButton();
+        jRadioButton4 = new javax.swing.JRadioButton();
+        jRadioButton5 = new javax.swing.JRadioButton();
+        jRadioButton6 = new javax.swing.JRadioButton();
+        jLabel3 = new javax.swing.JLabel();
+        interruptMgrBox = new javax.swing.JCheckBox();
+        ioFileMgrBox = new javax.swing.JCheckBox();
+        kernelLibBox = new javax.swing.JCheckBox();
+        loadCoreBox = new javax.swing.JCheckBox();
+        loadExecBox = new javax.swing.JCheckBox();
+        moduleMgrBox = new javax.swing.JCheckBox();
+        stdioBox = new javax.swing.JCheckBox();
+        sysMemKernelBox = new javax.swing.JCheckBox();
+        sysMemUserBox = new javax.swing.JCheckBox();
+        threadManBox = new javax.swing.JCheckBox();
+        utilsBox = new javax.swing.JCheckBox();
+        atracBox = new javax.swing.JCheckBox();
+        audioBox = new javax.swing.JCheckBox();
+        ctrlBox = new javax.swing.JCheckBox();
+        defltBox = new javax.swing.JCheckBox();
+        displayBox = new javax.swing.JCheckBox();
+        dmacBox = new javax.swing.JCheckBox();
+        fontBox = new javax.swing.JCheckBox();
+        geUserBox = new javax.swing.JCheckBox();
+        hprmBox = new javax.swing.JCheckBox();
+        imposeBox = new javax.swing.JCheckBox();
+        mp3Box = new javax.swing.JCheckBox();
+        mpegBox = new javax.swing.JCheckBox();
+        powerBox = new javax.swing.JCheckBox();
+        psmfBox = new javax.swing.JCheckBox();
+        psmfPlayerBox = new javax.swing.JCheckBox();
+        rtcBox = new javax.swing.JCheckBox();
+        sasBox = new javax.swing.JCheckBox();
+        suspendBox = new javax.swing.JCheckBox();
+        umdBox = new javax.swing.JCheckBox();
+        utilityBox = new javax.swing.JCheckBox();
+        cpuBox = new javax.swing.JCheckBox();
+        gpuBox = new javax.swing.JCheckBox();
+        compilerBox = new javax.swing.JCheckBox();
+        memBox = new javax.swing.JCheckBox();
+        emuBox = new javax.swing.JCheckBox();
+        jSeparator1 = new javax.swing.JSeparator();
+        jLabel4 = new javax.swing.JLabel();
+        loaderBox = new javax.swing.JCheckBox();
+        runtimeBox = new javax.swing.JCheckBox();
+        stdoutBox = new javax.swing.JCheckBox();
+        stderrBox = new javax.swing.JCheckBox();
+        jSeparator2 = new javax.swing.JSeparator();
+        saveButton = new javax.swing.JButton();
 
         setTitle("Customize Logger");
         setResizable(false);
@@ -122,10 +176,10 @@ public class LogGUI extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(LoggerGeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(LoggerGeneralPanelLayout.createSequentialGroup()
-                        .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 748, Short.MAX_VALUE)
+                        .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 737, Short.MAX_VALUE)
                         .addContainerGap())
                     .addGroup(LoggerGeneralPanelLayout.createSequentialGroup()
-                        .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 162, Short.MAX_VALUE)
+                        .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 151, Short.MAX_VALUE)
                         .addGap(592, 592, 592))))
         );
         LoggerGeneralPanelLayout.setVerticalGroup(
@@ -157,13 +211,6 @@ public class LogGUI extends javax.swing.JFrame {
 
         jLabel1.setText("Settings file path:");
 
-        saveButton.setText("Generate new settings file");
-        saveButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                saveButtonActionPerformed(evt);
-            }
-        });
-
         outputToHTML.setSelected(true);
         outputToHTML.setText("Output log results to HTML file");
 
@@ -172,6 +219,18 @@ public class LogGUI extends javax.swing.JFrame {
         jLabel2.setText("Output file name:");
 
         logoutpath.setText("log");
+
+        jLabel5.setText("Max. file size (KB) :");
+
+        maxSizeSpinner.setModel(new javax.swing.SpinnerNumberModel(0, 0, 100000, 1));
+        maxSizeSpinner.setEnabled(splitFilesBox.isSelected());
+
+        splitFilesBox.setText("Split files");
+        splitFilesBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                splitFilesBoxActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout LoggerSettingsPanelLayout = new javax.swing.GroupLayout(LoggerSettingsPanel);
         LoggerSettingsPanel.setLayout(LoggerSettingsPanelLayout);
@@ -182,20 +241,25 @@ public class LogGUI extends javax.swing.JFrame {
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 418, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(outputToText, javax.swing.GroupLayout.DEFAULT_SIZE, 308, Short.MAX_VALUE)
-                    .addComponent(outputToHTML, javax.swing.GroupLayout.DEFAULT_SIZE, 308, Short.MAX_VALUE)
+                    .addComponent(outputToText, javax.swing.GroupLayout.DEFAULT_SIZE, 297, Short.MAX_VALUE)
+                    .addComponent(outputToHTML, javax.swing.GroupLayout.DEFAULT_SIZE, 297, Short.MAX_VALUE)
                     .addGroup(LoggerSettingsPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel2)
+                        .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(logoutpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addComponent(saveButton)
+                        .addComponent(xmlpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(fileButton, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                         .addGroup(LoggerSettingsPanelLayout.createSequentialGroup()
-                            .addComponent(jLabel1)
+                            .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addComponent(maxSizeSpinner)
+                            .addGap(18, 18, 18)
+                            .addComponent(splitFilesBox))
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LoggerSettingsPanelLayout.createSequentialGroup()
+                            .addComponent(jLabel2)
                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(xmlpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(fileButton, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(logoutpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap())
         );
         LoggerSettingsPanelLayout.setVerticalGroup(
@@ -207,35 +271,399 @@ public class LogGUI extends javax.swing.JFrame {
                         .addComponent(outputToHTML)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(outputToText)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel2)
                             .addComponent(logoutpath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(39, 39, 39)
+                        .addGap(25, 25, 25)
+                        .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel5)
+                            .addComponent(splitFilesBox)
+                            .addComponent(maxSizeSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 158, Short.MAX_VALUE)
                         .addGroup(LoggerSettingsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel1)
                             .addComponent(xmlpath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fileButton))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 149, Short.MAX_VALUE)
-                        .addComponent(saveButton))
+                            .addComponent(fileButton)))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 302, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
         jTabbedPane1.addTab("Settings", LoggerSettingsPanel);
 
+        LoggerAdvancedPanel.setEnabled(jRadioButton6.isSelected());
+
+        buttonGroup1.add(jRadioButton1);
+        jRadioButton1.setSelected(true);
+        jRadioButton1.setText("General Debug");
+        jRadioButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton1ActionPerformed(evt);
+            }
+        });
+
+        buttonGroup1.add(jRadioButton2);
+        jRadioButton2.setText("CPU Debug");
+        jRadioButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton2ActionPerformed(evt);
+            }
+        });
+
+        buttonGroup1.add(jRadioButton3);
+        jRadioButton3.setText("GPU Debug");
+        jRadioButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton3ActionPerformed(evt);
+            }
+        });
+
+        buttonGroup1.add(jRadioButton4);
+        jRadioButton4.setText("Core Debug");
+        jRadioButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton4ActionPerformed(evt);
+            }
+        });
+
+        buttonGroup1.add(jRadioButton5);
+        jRadioButton5.setText("Full Debug");
+        jRadioButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton5ActionPerformed(evt);
+            }
+        });
+
+        buttonGroup1.add(jRadioButton6);
+        jRadioButton6.setText("Custom");
+        jRadioButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButton6ActionPerformed(evt);
+            }
+        });
+
+        jLabel3.setText("Logging method:");
+
+        interruptMgrBox.setText("InterruptManager");
+        interruptMgrBox.setEnabled(jRadioButton6.isSelected());
+
+        ioFileMgrBox.setText("IoFileMgrForUser");
+        ioFileMgrBox.setEnabled(jRadioButton6.isSelected());
+
+        kernelLibBox.setText("Kernel_Library");
+        kernelLibBox.setEnabled(jRadioButton6.isSelected());
+
+        loadCoreBox.setText("LoadCoreForKernel");
+        loadCoreBox.setEnabled(jRadioButton6.isSelected());
+
+        loadExecBox.setText("LoadExecForUser");
+        loadExecBox.setEnabled(jRadioButton6.isSelected());
+
+        moduleMgrBox.setText("ModuleMgrForUser");
+        moduleMgrBox.setEnabled(jRadioButton6.isSelected());
+
+        stdioBox.setText("StdioForUser");
+        stdioBox.setEnabled(jRadioButton6.isSelected());
+
+        sysMemKernelBox.setText("SysMemForKernel");
+        sysMemKernelBox.setEnabled(jRadioButton6.isSelected());
+
+        sysMemUserBox.setText("SysMemUserForUser");
+        sysMemUserBox.setEnabled(jRadioButton6.isSelected());
+
+        threadManBox.setText("ThreadManForUser");
+        threadManBox.setEnabled(jRadioButton6.isSelected());
+
+        utilsBox.setText("UtilsForUser");
+        utilsBox.setEnabled(jRadioButton6.isSelected());
+
+        atracBox.setText("sceAtrac3plus");
+        atracBox.setEnabled(jRadioButton6.isSelected());
+
+        audioBox.setText("sceAudio");
+        audioBox.setEnabled(jRadioButton6.isSelected());
+
+        ctrlBox.setText("sceCtrl");
+        ctrlBox.setEnabled(jRadioButton6.isSelected());
+
+        defltBox.setText("sceDeflt");
+        defltBox.setEnabled(jRadioButton6.isSelected());
+
+        displayBox.setText("sceDisplay");
+        displayBox.setEnabled(jRadioButton6.isSelected());
+
+        dmacBox.setText("sceDmac");
+        dmacBox.setEnabled(jRadioButton6.isSelected());
+
+        fontBox.setText("sceFont");
+        fontBox.setEnabled(jRadioButton6.isSelected());
+
+        geUserBox.setText("sceGe_user");
+        geUserBox.setEnabled(jRadioButton6.isSelected());
+
+        hprmBox.setText("sceHprm");
+        hprmBox.setEnabled(jRadioButton6.isSelected());
+
+        imposeBox.setText("sceImpose");
+        imposeBox.setEnabled(jRadioButton6.isSelected());
+
+        mp3Box.setText("sceMp3");
+        mp3Box.setEnabled(jRadioButton6.isSelected());
+
+        mpegBox.setText("sceMpeg");
+        mpegBox.setEnabled(jRadioButton6.isSelected());
+
+        powerBox.setText("scePower");
+        powerBox.setEnabled(jRadioButton6.isSelected());
+
+        psmfBox.setText("scePsmf");
+        psmfBox.setEnabled(jRadioButton6.isSelected());
+
+        psmfPlayerBox.setText("scePsmfPlayer");
+        psmfPlayerBox.setEnabled(jRadioButton6.isSelected());
+
+        rtcBox.setText("sceRtc");
+        rtcBox.setEnabled(jRadioButton6.isSelected());
+
+        sasBox.setText("sceSasCore");
+        sasBox.setEnabled(jRadioButton6.isSelected());
+
+        suspendBox.setText("sceSuspendForUser");
+        suspendBox.setEnabled(jRadioButton6.isSelected());
+
+        umdBox.setText("sceUmdUser");
+        umdBox.setEnabled(jRadioButton6.isSelected());
+
+        utilityBox.setText("sceUtility");
+        utilityBox.setEnabled(jRadioButton6.isSelected());
+
+        cpuBox.setText("CPU");
+        cpuBox.setEnabled(jRadioButton6.isSelected());
+
+        gpuBox.setText("GPU");
+        gpuBox.setEnabled(jRadioButton6.isSelected());
+
+        compilerBox.setText("Compiler");
+        compilerBox.setEnabled(jRadioButton6.isSelected());
+
+        memBox.setText("Memory");
+        memBox.setEnabled(jRadioButton6.isSelected());
+
+        emuBox.setText("Emulator");
+        emuBox.setEnabled(jRadioButton6.isSelected());
+
+        jLabel4.setText("Custom:");
+
+        loaderBox.setText("Loader");
+        loaderBox.setEnabled(jRadioButton6.isSelected());
+
+        runtimeBox.setText("Runtime");
+        runtimeBox.setEnabled(jRadioButton6.isSelected());
+
+        stdoutBox.setText("Stdout");
+        stdoutBox.setEnabled(jRadioButton6.isSelected());
+
+        stderrBox.setText("Stderr");
+        stderrBox.setEnabled(jRadioButton6.isSelected());
+
+        javax.swing.GroupLayout LoggerAdvancedPanelLayout = new javax.swing.GroupLayout(LoggerAdvancedPanel);
+        LoggerAdvancedPanel.setLayout(LoggerAdvancedPanelLayout);
+        LoggerAdvancedPanelLayout.setHorizontalGroup(
+            LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, LoggerAdvancedPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jRadioButton4)
+                    .addComponent(jRadioButton5)
+                    .addComponent(jRadioButton6)
+                    .addComponent(jRadioButton3)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 114, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jRadioButton2)
+                    .addComponent(jRadioButton1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 20, Short.MAX_VALUE)
+                .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
+                        .addComponent(stdoutBox)
+                        .addGap(18, 18, 18)
+                        .addComponent(stderrBox))
+                    .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addComponent(jSeparator2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 566, Short.MAX_VALUE)
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LoggerAdvancedPanelLayout.createSequentialGroup()
+                            .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(interruptMgrBox)
+                                    .addComponent(sysMemKernelBox))
+                                .addComponent(loadExecBox)
+                                .addComponent(audioBox)
+                                .addComponent(dmacBox)
+                                .addComponent(imposeBox)
+                                .addComponent(psmfBox)
+                                .addComponent(suspendBox))
+                            .addGap(55, 55, 55)
+                            .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(ioFileMgrBox)
+                                .addComponent(moduleMgrBox)
+                                .addComponent(sysMemUserBox)
+                                .addComponent(ctrlBox)
+                                .addComponent(fontBox)
+                                .addComponent(mp3Box)
+                                .addComponent(psmfPlayerBox)
+                                .addComponent(umdBox))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
+                                    .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(geUserBox)
+                                        .addComponent(defltBox)
+                                        .addComponent(threadManBox)
+                                        .addComponent(kernelLibBox)
+                                        .addComponent(utilsBox)
+                                        .addComponent(mpegBox)
+                                        .addComponent(rtcBox))
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(sasBox)
+                                        .addComponent(powerBox)
+                                        .addComponent(hprmBox)
+                                        .addComponent(displayBox)
+                                        .addComponent(atracBox)
+                                        .addComponent(loadCoreBox)
+                                        .addComponent(stdioBox)))
+                                .addComponent(utilityBox)))
+                        .addComponent(jSeparator1, javax.swing.GroupLayout.DEFAULT_SIZE, 566, Short.MAX_VALUE)
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LoggerAdvancedPanelLayout.createSequentialGroup()
+                            .addComponent(cpuBox)
+                            .addGap(31, 31, 31)
+                            .addComponent(gpuBox)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 35, Short.MAX_VALUE)
+                            .addComponent(loaderBox)
+                            .addGap(18, 18, 18)
+                            .addComponent(runtimeBox)
+                            .addGap(18, 18, 18)
+                            .addComponent(compilerBox)
+                            .addGap(18, 18, 18)
+                            .addComponent(memBox)
+                            .addGap(18, 18, 18)
+                            .addComponent(emuBox)
+                            .addGap(17, 17, 17))
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, LoggerAdvancedPanelLayout.createSequentialGroup()
+                            .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 183, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 383, Short.MAX_VALUE))))
+                .addGap(39, 39, 39))
+        );
+        LoggerAdvancedPanelLayout.setVerticalGroup(
+            LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
+                .addGap(16, 16, 16)
+                .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 18, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(cpuBox)
+                            .addComponent(emuBox)
+                            .addComponent(memBox)
+                            .addComponent(compilerBox)
+                            .addComponent(runtimeBox)
+                            .addComponent(loaderBox)
+                            .addComponent(gpuBox))
+                        .addGap(5, 5, 5)
+                        .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(3, 3, 3)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(interruptMgrBox)
+                            .addComponent(ioFileMgrBox)
+                            .addComponent(kernelLibBox)
+                            .addComponent(loadCoreBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(moduleMgrBox)
+                            .addComponent(threadManBox)
+                            .addComponent(stdioBox)
+                            .addComponent(loadExecBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(sysMemKernelBox)
+                            .addComponent(sysMemUserBox)
+                            .addComponent(utilsBox)
+                            .addComponent(atracBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(audioBox)
+                            .addComponent(displayBox)
+                            .addComponent(ctrlBox)
+                            .addComponent(defltBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(fontBox)
+                            .addComponent(geUserBox)
+                            .addComponent(hprmBox)
+                            .addComponent(dmacBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(imposeBox)
+                            .addComponent(mp3Box)
+                            .addComponent(mpegBox)
+                            .addComponent(powerBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(psmfBox)
+                            .addComponent(psmfPlayerBox)
+                            .addComponent(rtcBox)
+                            .addComponent(sasBox))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(suspendBox)
+                                .addComponent(umdBox))
+                            .addComponent(utilityBox)))
+                    .addGroup(LoggerAdvancedPanelLayout.createSequentialGroup()
+                        .addGap(25, 25, 25)
+                        .addComponent(jRadioButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jRadioButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jRadioButton3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jRadioButton4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jRadioButton5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jRadioButton6)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(LoggerAdvancedPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(stdoutBox)
+                    .addComponent(stderrBox))
+                .addContainerGap(13, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Advanced", LoggerAdvancedPanel);
+
+        saveButton.setText("Generate new settings file");
+        saveButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                saveButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 765, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addComponent(saveButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 407, Short.MAX_VALUE)
                         .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 754, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -245,7 +673,8 @@ public class LogGUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonOK)
-                    .addComponent(jButtonCancel))
+                    .addComponent(jButtonCancel)
+                    .addComponent(saveButton))
                 .addContainerGap())
         );
 
@@ -257,6 +686,343 @@ public class LogGUI extends javax.swing.JFrame {
 
         enabled = Settings.getInstance().readBool("gui.snapLogwindow");
         snapConsoleCheck.setSelected(enabled);
+    }
+
+    private void setCustom(boolean useCustom) {
+        interruptMgrBox.setEnabled(useCustom);
+        ioFileMgrBox.setEnabled(useCustom);
+        kernelLibBox.setEnabled(useCustom);
+        loadCoreBox.setEnabled(useCustom);
+        loadExecBox.setEnabled(useCustom);
+        moduleMgrBox.setEnabled(useCustom);
+        stdioBox.setEnabled(useCustom);
+        sysMemKernelBox.setEnabled(useCustom);
+        sysMemUserBox.setEnabled(useCustom);
+        threadManBox.setEnabled(useCustom);
+        utilsBox.setEnabled(useCustom);
+        atracBox.setEnabled(useCustom);
+        audioBox.setEnabled(useCustom);
+        ctrlBox.setEnabled(useCustom);
+        defltBox.setEnabled(useCustom);
+        displayBox.setEnabled(useCustom);
+        dmacBox.setEnabled(useCustom);
+        fontBox.setEnabled(useCustom);
+        geUserBox.setEnabled(useCustom);
+        hprmBox.setEnabled(useCustom);
+        imposeBox.setEnabled(useCustom);
+        mp3Box.setEnabled(useCustom);
+        mpegBox.setEnabled(useCustom);
+        powerBox.setEnabled(useCustom);
+        psmfBox.setEnabled(useCustom);
+        psmfPlayerBox.setEnabled(useCustom);
+        rtcBox.setEnabled(useCustom);
+        sasBox.setEnabled(useCustom);
+        suspendBox.setEnabled(useCustom);
+        umdBox.setEnabled(useCustom);
+        utilityBox.setEnabled(useCustom);
+        cpuBox.setEnabled(useCustom);
+        gpuBox.setEnabled(useCustom);
+        compilerBox.setEnabled(useCustom);
+        memBox.setEnabled(useCustom);
+        emuBox.setEnabled(useCustom);
+        loaderBox.setEnabled(useCustom);
+        runtimeBox.setEnabled(useCustom);
+        stdoutBox.setEnabled(useCustom);
+        stderrBox.setEnabled(useCustom);
+    }
+
+    private String selectLoggers() {
+        String loggers = "";
+        if(jRadioButton1.isSelected()) {
+            loggers += LB + "<logger name='cpu' />" + LB +
+                "<logger name='hle' />" + LB +
+                "<logger name='memory' />" + LB +
+                "<logger name='ge' />" + LB +
+                "<logger name='emu' />" + LB +
+                "<logger name='compiler' > <level value='off' /> </logger>" + LB +
+                "<logger name='runtime' > <level value='off' /> </logger>" + LB +
+                "<logger name='loader' > <level value='off' /> </logger>" + LB +
+                "<logger name='stdout' />" + LB +
+                "<logger name='stderr' />" + LB +
+                "<!-- Output profiler info to 'profiler.txt' -->" + LB +
+                "<logger name='profiler' additivity='false'>" + LB +
+                "<level value='info' />" + LB +
+                "<appender-ref ref='ProfilerTxtAppender' />" + LB +
+                "</logger>" + LB;
+        } else if (jRadioButton2.isSelected()) {
+            loggers += LB + "<logger name='cpu' />" + LB +
+                "<logger name='hle' > <level value='off' /> </logger>" + LB +
+                "<logger name='memory' > <level value='off' /> </logger>" + LB +
+                "<logger name='ge' > <level value='off' /> </logger>" + LB +
+                "<logger name='emu' > <level value='off' /> </logger>" + LB +
+                "<logger name='compiler' />" + LB +
+                "<logger name='runtime' > <level value='off' /> </logger>" + LB +
+                "<logger name='loader' > <level value='off' /> </logger>" + LB +
+                "<logger name='stdout' />" + LB +
+                "<logger name='stderr' />" + LB +
+                "<!-- Output profiler info to 'profiler.txt' -->" + LB +
+                "<logger name='profiler' additivity='false'>" + LB +
+                "<level value='info' />" + LB +
+                "<appender-ref ref='ProfilerTxtAppender' />" + LB +
+                "</logger>" + LB;
+        } else if (jRadioButton3.isSelected()) {
+            loggers += LB + "<logger name='cpu' > <level value='off' /> </logger>" + LB +
+                "<logger name='hle' > <level value='off' /> </logger>" + LB +
+                "<logger name='memory' > <level value='off' /> </logger>" + LB +
+                "<logger name='ge' />" + LB +
+                "<logger name='emu' > <level value='off' /> </logger>" + LB +
+                "<logger name='compiler' > <level value='off' /> </logger>" + LB +
+                "<logger name='runtime' > <level value='off' /> </logger>" + LB +
+                "<logger name='loader' > <level value='off' /> </logger>" + LB +
+                "<logger name='stdout' />" + LB +
+                "<logger name='stderr' />" + LB +
+                "<!-- Output profiler info to 'profiler.txt' -->" + LB +
+                "<logger name='profiler' additivity='false'>" + LB +
+                "<level value='info' />" + LB +
+                "<appender-ref ref='ProfilerTxtAppender' />" + LB +
+                "</logger>" + LB;
+        } else if (jRadioButton4.isSelected()) {
+            loggers += LB + "<logger name='cpu' > <level value='off' /> </logger>" + LB +
+                "<logger name='hle' > <level value='off' /> </logger>" + LB +
+                "<logger name='memory' > <level value='off' /> </logger>" + LB +
+                "<logger name='ge' > <level value='off' /> </logger>" + LB +
+                "<logger name='emu' />" + LB +
+                "<logger name='compiler' />" + LB +
+                "<logger name='runtime' />" + LB +
+                "<logger name='loader' />" + LB +
+                "<logger name='stdout' > <level value='off' /> </logger>" + LB +
+                "<logger name='stderr' > <level value='off' /> </logger>" + LB +
+                "<!-- Output profiler info to 'profiler.txt' -->" + LB +
+                "<logger name='profiler' additivity='false'>" + LB +
+                "<level value='info' />" + LB +
+                "<appender-ref ref='ProfilerTxtAppender' />" + LB +
+                "</logger>" + LB;
+        } else if (jRadioButton5.isSelected()) {
+            loggers += LB + "<logger name='cpu' />" + LB +
+                "<logger name='hle' />" + LB +
+                "<logger name='memory' />" + LB +
+                "<logger name='ge' />" + LB +
+                "<logger name='emu' />" + LB +
+                "<logger name='compiler' />" + LB +
+                "<logger name='runtime' />" + LB +
+                "<logger name='loader' />" + LB +
+                "<logger name='stdout' />" + LB +
+                "<logger name='stderr' />" + LB +
+                "<!-- Output profiler info to 'profiler.txt' -->" + LB +
+                "<logger name='profiler' additivity='false'>" + LB +
+                "<level value='info' />" + LB +
+                "<appender-ref ref='ProfilerTxtAppender' />" + LB +
+                "</logger>" + LB;
+        } else if (jRadioButton6.isSelected()) {
+            if(interruptMgrBox.isSelected()) {
+                loggers += LB + "<logger name='hle.InterruptManager' />" + LB;
+            } else {
+                loggers += LB + "<logger name='hle.InterruptManager' > <level value='off' /> </logger>" + LB ;
+            }
+            if(ioFileMgrBox.isSelected()) {
+                loggers += "<logger name='hle.IoFileMgrForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.IoFileMgrForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(kernelLibBox.isSelected()) {
+                loggers += "<logger name='hle.Kernel_Library' />" + LB;
+            } else {
+                loggers += "<logger name='hle.Kernel_Library' > <level value='off' /> </logger>" + LB;
+            }
+            if(loadCoreBox.isSelected()) {
+                loggers += "<logger name='hle.LoadCoreForKernel' />" + LB;
+            } else {
+                loggers += "<logger name='hle.LoadCoreForKernel' > <level value='off' /> </logger>" + LB;
+            }
+            if(loadExecBox.isSelected()) {
+                loggers += "<logger name='hle.LoadExecForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.LoadExecForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(moduleMgrBox.isSelected()) {
+                loggers += "<logger name='hle.ModuleMgrForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.ModuleMgrForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(stdioBox.isSelected()) {
+                loggers += "<logger name='hle.StdioForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.StdioForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(sysMemKernelBox.isSelected()) {
+                loggers += "<logger name='hle.SysMemForKernel' />" + LB;
+            } else {
+                loggers += "<logger name='hle.SysMemForKernel' > <level value='off' /> </logger>" + LB;
+            }
+            if(sysMemUserBox.isSelected()) {
+                loggers += "<logger name='hle.SysMemUserForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.SysMemUserForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(threadManBox.isSelected()) {
+                loggers += "<logger name='hle.ThreadManForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.ThreadManForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(utilsBox.isSelected()) {
+                loggers += "<logger name='hle.UtilsForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.UtilsForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(atracBox.isSelected()) {
+                loggers += "<logger name='hle.sceAtrac3plus' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceAtrac3plus' > <level value='off' /> </logger>" + LB;
+            }
+            if(audioBox.isSelected()) {
+                loggers += "<logger name='hle.sceAudio' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceAudio' > <level value='off' /> </logger>" + LB;
+            }
+            if(ctrlBox.isSelected()) {
+                loggers += "<logger name='hle.sceCtrl' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceCtrl' > <level value='off' /> </logger>" + LB;
+            }
+            if(defltBox.isSelected()) {
+                loggers += "<logger name='hle.sceDeflt' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceDeflt' > <level value='off' /> </logger>" + LB;
+            }
+            if(displayBox.isSelected()) {
+                loggers += "<logger name='hle.sceDisplay' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceDisplay' > <level value='off' /> </logger>" + LB;
+            }
+            if(dmacBox.isSelected()) {
+                loggers += "<logger name='hle.sceDmac' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceDmac' > <level value='off' /> </logger>" + LB;
+            }
+            if(fontBox.isSelected()) {
+                loggers += "<logger name='hle.sceFont' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceFont' > <level value='off' /> </logger>" + LB;
+            }
+            if(geUserBox.isSelected()) {
+                loggers += "<logger name='hle.sceGe_user' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceGe_user' > <level value='off' /> </logger>" + LB;
+            }
+            if(hprmBox.isSelected()) {
+                loggers += "<logger name='hle.sceHprm' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceHprm' > <level value='off' /> </logger>" + LB;
+            }
+            if(imposeBox.isSelected()) {
+                loggers += "<logger name='hle.sceImpose' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceImpose' > <level value='off' /> </logger>" + LB;
+            }
+            if(mp3Box.isSelected()) {
+                loggers += "<logger name='hle.sceMp3' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceMp3' > <level value='off' /> </logger>" + LB;
+            }
+            if(mpegBox.isSelected()) {
+                loggers += "<logger name='hle.sceMpeg' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceMpeg' > <level value='off' /> </logger>" + LB;
+            }
+            if(powerBox.isSelected()) {
+                loggers += "<logger name='hle.scePower' />" + LB;
+            } else {
+                loggers += "<logger name='hle.scePower' > <level value='off' /> </logger>" + LB;
+            }
+            if(psmfBox.isSelected()) {
+                loggers += "<logger name='hle.scePsmf' />" + LB;
+            } else {
+                loggers += "<logger name='hle.scePsmf' > <level value='off' /> </logger>" + LB;
+            }
+            if(psmfPlayerBox.isSelected()) {
+                loggers += "<logger name='hle.scePsmfPlayer' />" + LB;
+            } else {
+                loggers += "<logger name='hle.scePsmfPlayer' > <level value='off' /> </logger>" + LB;
+            }
+            if(rtcBox.isSelected()) {
+                loggers += "<logger name='hle.sceRtc' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceRtc' > <level value='off' /> </logger>" + LB;
+            }
+            if(sasBox.isSelected()) {
+                loggers += "<logger name='hle.sceSasCore' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceSasCore' > <level value='off' /> </logger>" + LB;
+            }
+            if(suspendBox.isSelected()) {
+                loggers += "<logger name='hle.sceSuspendForUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceSuspendForUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(umdBox.isSelected()) {
+                loggers += "<logger name='hle.sceUmdUser' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceUmdUser' > <level value='off' /> </logger>" + LB;
+            }
+            if(utilityBox.isSelected()) {
+                loggers += "<logger name='hle.sceUtility' />" + LB;
+            } else {
+                loggers += "<logger name='hle.sceUtility' > <level value='off' /> </logger>" + LB;
+            }
+            if(cpuBox.isSelected()) {
+                loggers += "<logger name='cpu' />" + LB;
+            } else {
+                loggers += "<logger name='cpu' > <level value='off' /> </logger>" + LB;
+            }
+            if(gpuBox.isSelected()) {
+                loggers += "<logger name='ge' />" + LB;
+            } else {
+                loggers += "<logger name='ge' > <level value='off' /> </logger>" + LB;
+            }
+            if(compilerBox.isSelected()) {
+                loggers += "<logger name='compiler' />" + LB;
+            } else {
+                loggers += "<logger name='compiler' > <level value='off' /> </logger>" + LB;
+            }
+            if(memBox.isSelected()) {
+                loggers += "<logger name='memory' />" + LB;
+            } else {
+                loggers += "<logger name='memory' > <level value='off' /> </logger>" + LB;
+            }
+            if(emuBox.isSelected()) {
+                loggers += "<logger name='emu' />" + LB;
+            } else {
+                loggers += "<logger name='emu' > <level value='off' /> </logger>" + LB;
+            }
+            if(loaderBox.isSelected()) {
+                loggers += "<logger name='loader' />" + LB;
+            } else {
+                loggers += "<logger name='loader' > <level value='off' /> </logger>" + LB;
+            }
+            if(runtimeBox.isSelected()) {
+                loggers += "<logger name='runtime' />" + LB;
+            } else {
+                loggers += "<logger name='runtime' > <level value='off' /> </logger>" + LB;
+            }
+            if(stdoutBox.isSelected()) {
+                loggers += "<logger name='stdout' />" + LB;
+            } else {
+                loggers += "<logger name='stdout' > <level value='off' /> </logger>" + LB;
+            }
+            if(stderrBox.isSelected()) {
+                loggers += "<logger name='stderr' />" + LB;
+            } else {
+                loggers += "<logger name='stderr' > <level value='off' /> </logger>" + LB;
+            }
+
+            loggers += "<!-- Output profiler info to 'profiler.txt' -->" + LB +
+                "<logger name='profiler' additivity='false'>" + LB +
+                "<level value='info' />" + LB +
+                "<appender-ref ref='ProfilerTxtAppender' />" + LB +
+                "</logger>" + LB;
+        }
+
+        return loggers;
     }
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
     Settings.getInstance().writeBool("gui.openLogwindow", openLogwindowCheck.isSelected());
@@ -306,21 +1072,47 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
                 "</layout>" + LB +
                 "</appender>" + LB;
 
-        String htmlAppender = "<appender name='HTMLAppender' class='org.apache.log4j.FileAppender'>" + LB +
-                "<param name='File' value='" + outName + ".html' />" + LB +
-                "<param name='Append' value='false' />" + LB +
-                "<layout class='jpcsp.log.HTMLLayout'>" + LB +
-                "<param name='Title' value='Jpcsp log file' />" + LB +
-                "</layout>" + LB +
-                "</appender>" + LB;
+        String htmlAppender;
+        if (splitFilesBox.isSelected()) {
+            htmlAppender = "<appender name='HTMLAppender' class='org.apache.log4j.RollingFileAppender'>" + LB +
+                    "<param name='MaxFileSize' value='" + maxSizeSpinner.getValue() + "KB' />" + LB +
+                    "<param name='MaxBackupIndex' value='500' />" + LB +
+                    "<param name='File' value='" + outName + ".html' />" + LB +
+                    "<param name='Append' value='false' />" + LB +
+                    "<layout class='jpcsp.log.HTMLLayout'>" + LB +
+                    "<param name='Title' value='Jpcsp log file' />" + LB +
+                    "</layout>" + LB +
+                    "</appender>" + LB;
+        } else {
+            htmlAppender = "<appender name='HTMLAppender' class='org.apache.log4j.FileAppender'>" + LB +
+                    "<param name='File' value='" + outName + ".html' />" + LB +
+                    "<param name='Append' value='false' />" + LB +
+                    "<layout class='jpcsp.log.HTMLLayout'>" + LB +
+                    "<param name='Title' value='Jpcsp log file' />" + LB +
+                    "</layout>" + LB +
+                    "</appender>" + LB;
+        }
 
-        String textAppender = "<appender name='TxtAppender' class='org.apache.log4j.FileAppender'>" + LB +
-                "<param name='File' value='" + outName + ".txt' />" + LB +
-                "<param name='Append' value='false' />" + LB +
-                "<layout class='org.apache.log4j.PatternLayout'>" + LB +
-                "<param name='ConversionPattern' value='%5p %8c - %t - %m%n' />" + LB +
-                "</layout>" + LB +
-                "</appender>" + LB;
+        String textAppender;
+        if (splitFilesBox.isSelected()) {
+            textAppender = "<appender name='TxtAppender' class='org.apache.log4j.RollingFileAppender'>" + LB +
+                    "<param name='MaxFileSize' value='" + maxSizeSpinner.getValue() + "KB' />" + LB +
+                    "<param name='MaxBackupIndex' value='500' />" + LB +
+                    "<param name='File' value='" + outName + ".txt' />" + LB +
+                    "<param name='Append' value='false' />" + LB +
+                    "<layout class='org.apache.log4j.PatternLayout'>" + LB +
+                    "<param name='ConversionPattern' value='%5p %8c - %t - %m%n' />" + LB +
+                    "</layout>" + LB +
+                    "</appender>" + LB;
+        } else {
+            textAppender = "<appender name='TxtAppender' class='org.apache.log4j.FileAppender'>" + LB +
+                    "<param name='File' value='" + outName + ".txt' />" + LB +
+                    "<param name='Append' value='false' />" + LB +
+                    "<layout class='org.apache.log4j.PatternLayout'>" + LB +
+                    "<param name='ConversionPattern' value='%5p %8c - %t - %m%n' />" + LB +
+                    "</layout>" + LB +
+                    "</appender>" + LB;
+        }
 
         String profilerAppender = "<appender name='ProfilerTxtAppender' class='org.apache.log4j.FileAppender'>" + LB +
                 "<param name='File' value='profiler.txt' />" + LB +
@@ -330,16 +1122,7 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
                 "</layout>" + LB +
                 "</appender>" + LB;
 
-        String loggers = LB + "<logger name='cpu' />" + LB +
-                "<logger name='hle' />" + LB +
-                "<logger name='memory' />" + LB +
-                "<logger name='ge' />" + LB +
-                "<logger name='misc' />" + LB +
-                "<!-- Output profiler info to 'profiler.txt' -->" + LB +
-                "<logger name='profiler' additivity='false'>" + LB +
-                "<level value='info' />" + LB +
-                "<appender-ref ref='ProfilerTxtAppender' />" + LB +
-                "</logger>" + LB;
+        String loggers = selectLoggers();
 
         String rootStart = LB + "<root>" + LB +
                 "<level value ='off' />" + LB;
@@ -378,24 +1161,106 @@ private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
     setLogSettingsFile();
 }//GEN-LAST:event_saveButtonActionPerformed
 
+private void jRadioButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton6ActionPerformed
+    setCustom(true);
+}//GEN-LAST:event_jRadioButton6ActionPerformed
+
+private void jRadioButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton5ActionPerformed
+    setCustom(false);
+}//GEN-LAST:event_jRadioButton5ActionPerformed
+
+private void jRadioButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton4ActionPerformed
+    setCustom(false);
+}//GEN-LAST:event_jRadioButton4ActionPerformed
+
+private void jRadioButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton3ActionPerformed
+    setCustom(false);
+}//GEN-LAST:event_jRadioButton3ActionPerformed
+
+private void jRadioButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton2ActionPerformed
+    setCustom(false);
+}//GEN-LAST:event_jRadioButton2ActionPerformed
+
+private void jRadioButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton1ActionPerformed
+    setCustom(false);
+}//GEN-LAST:event_jRadioButton1ActionPerformed
+
+private void splitFilesBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_splitFilesBoxActionPerformed
+    maxSizeSpinner.setEnabled(splitFilesBox.isSelected());
+}//GEN-LAST:event_splitFilesBoxActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel LoggerAdvancedPanel;
     private javax.swing.JPanel LoggerGeneralPanel;
     private javax.swing.JPanel LoggerSettingsPanel;
+    private javax.swing.JCheckBox atracBox;
+    private javax.swing.JCheckBox audioBox;
     private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JCheckBox compilerBox;
+    private javax.swing.JCheckBox cpuBox;
+    private javax.swing.JCheckBox ctrlBox;
+    private javax.swing.JCheckBox defltBox;
+    private javax.swing.JCheckBox displayBox;
+    private javax.swing.JCheckBox dmacBox;
+    private javax.swing.JCheckBox emuBox;
     private javax.swing.JButton fileButton;
+    private javax.swing.JCheckBox fontBox;
+    private javax.swing.JCheckBox geUserBox;
+    private javax.swing.JCheckBox gpuBox;
+    private javax.swing.JCheckBox hprmBox;
+    private javax.swing.JCheckBox imposeBox;
+    private javax.swing.JCheckBox interruptMgrBox;
+    private javax.swing.JCheckBox ioFileMgrBox;
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOK;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JRadioButton jRadioButton1;
+    private javax.swing.JRadioButton jRadioButton2;
+    private javax.swing.JRadioButton jRadioButton3;
+    private javax.swing.JRadioButton jRadioButton4;
+    private javax.swing.JRadioButton jRadioButton5;
+    private javax.swing.JRadioButton jRadioButton6;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator2;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JCheckBox kernelLibBox;
+    private javax.swing.JCheckBox loadCoreBox;
+    private javax.swing.JCheckBox loadExecBox;
+    private javax.swing.JCheckBox loaderBox;
     private javax.swing.JTextField logoutpath;
+    private javax.swing.JSpinner maxSizeSpinner;
+    private javax.swing.JCheckBox memBox;
+    private javax.swing.JCheckBox moduleMgrBox;
+    private javax.swing.JCheckBox mp3Box;
+    private javax.swing.JCheckBox mpegBox;
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox outputToHTML;
     private javax.swing.JCheckBox outputToText;
+    private javax.swing.JCheckBox powerBox;
+    private javax.swing.JCheckBox psmfBox;
+    private javax.swing.JCheckBox psmfPlayerBox;
+    private javax.swing.JCheckBox rtcBox;
+    private javax.swing.JCheckBox runtimeBox;
+    private javax.swing.JCheckBox sasBox;
     private javax.swing.JButton saveButton;
     private javax.swing.JTextArea settingsArea;
     private javax.swing.JCheckBox snapConsoleCheck;
+    private javax.swing.JCheckBox splitFilesBox;
+    private javax.swing.JCheckBox stderrBox;
+    private javax.swing.JCheckBox stdioBox;
+    private javax.swing.JCheckBox stdoutBox;
+    private javax.swing.JCheckBox suspendBox;
+    private javax.swing.JCheckBox sysMemKernelBox;
+    private javax.swing.JCheckBox sysMemUserBox;
+    private javax.swing.JCheckBox threadManBox;
+    private javax.swing.JCheckBox umdBox;
+    private javax.swing.JCheckBox utilityBox;
+    private javax.swing.JCheckBox utilsBox;
     private javax.swing.JTextField xmlpath;
     // End of variables declaration//GEN-END:variables
 
