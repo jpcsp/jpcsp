@@ -197,7 +197,7 @@ public class SafeFastMemory extends FastMemory {
 	}
 
 	@Override
-	public void memcpy(int destination, int source, int length) {
+	public void memcpy(int destination, int source, int length, boolean checkOverlap) {
 		if (length <= 0) {
 			return;
 		}
@@ -211,6 +211,6 @@ public class SafeFastMemory extends FastMemory {
 			return;
 		}
 
-		super.memcpy(destination, source, length);
+		super.memcpy(destination, source, length, checkOverlap);
 	}
 }
