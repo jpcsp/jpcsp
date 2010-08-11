@@ -23,9 +23,6 @@ package jpcsp.HLE;
 public enum SyscallIgnore {
 	_sceKernelGetCpuClockCounterHigh(0xE9E652A9),
 	_sceKernelGetCpuClockCounterLow(0x2DC9709B),
-	inflate(0x216D1BF1),
-	inflateEnd(0x461C7724),
-	inflateInit_(0x18CB51AB),
 	InterruptManagerForKernel_15894D0B(0x15894D0B),
 	InterruptManagerForKernel_43A7BBDC(0x43A7BBDC),
 	InterruptManagerForKernel_53991063(0x53991063),
