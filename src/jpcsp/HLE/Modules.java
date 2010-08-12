@@ -50,6 +50,7 @@ import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.HLE.modules.sceSuspendForUser;
 import jpcsp.HLE.modules.sceUmdUser;
 import jpcsp.HLE.modules.sceUtility;
+import jpcsp.HLE.modules.sceWlan;
 
 import org.apache.log4j.Logger;
 
@@ -86,6 +87,7 @@ public class Modules {
     public static scePsmf scePsmfModule = new scePsmf();
     public static sceMp3 sceMp3Module = new sceMp3();
     public static sceDeflt sceDefltModule = new sceDeflt();
+    public static sceWlan sceWlanModule = new sceWlan();
 
     public static Logger log = Logger.getLogger("hle");
 

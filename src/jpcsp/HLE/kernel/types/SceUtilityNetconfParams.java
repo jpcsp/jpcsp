@@ -19,6 +19,9 @@ package jpcsp.HLE.kernel.types;
 public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
     public pspUtilityDialogCommon base;
     public int netAction;           // The netconf action (PSPSDK): sets how to connect.
+        public final static int PSP_UTILITY_NETCONF_CONNECT_APNET = 0;
+        public final static int PSP_UTILITY_NETCONF_GET_STATUS_APNET = 1;
+        public final static int PSP_UTILITY_NETCONF_CONNECT_ADHOC = 2;
     public int netconfDataAddr;
     public SceUtilityNetconfData netconfData;
     public int netHotspot;          // Flag to allow hotspot connections (PSPSDK).

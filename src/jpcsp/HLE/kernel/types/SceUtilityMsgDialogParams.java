@@ -20,17 +20,24 @@ package jpcsp.HLE.kernel.types;
 public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure {
 
     public pspUtilityDialogCommon base;
-    public int unknown;
+    public int result;
     public int mode;
         public final static int PSP_UTILITY_MSGDIALOG_MODE_ERROR = 0;
         public final static int PSP_UTILITY_MSGDIALOG_MODE_TEXT  = 1;
     public int errorValue;
     public String message; // 512 bytes
     public int options;
-    	public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK         = 0x00000110;
-        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES  = 0x00000010;
-        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO   = 0x00000110;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_ERROR              = 0x00000000;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_NORMAL             = 0x00000001;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_NONE   = 0x00000000;
+    	public final static int PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO  = 0x00000010;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES  = 0x00000000;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO   = 0x00000100;
     public int buttonPressed;
+        public final static int PSP_UTILITY_BUTTON_PRESSED_INVALID              = 0;
+        public final static int PSP_UTILITY_BUTTON_PRESSED_YES                  = 1;
+        public final static int PSP_UTILITY_BUTTON_PRESSED_NO                   = 2;
+    	public final static int PSP_UTILITY_BUTTON_PRESSED_ESC                  = 3;
 
     public SceUtilityMsgDialogParams() {
         base = new pspUtilityDialogCommon();
@@ -43,7 +50,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         read(base);
         setMaxSize(base.size);
 
-        unknown         = read32();
+        result         = read32();
         mode            = read32();
         errorValue      = read32();
         message         = readStringNZ(512);
@@ -56,7 +63,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         setMaxSize(base.size);
         write(base);
 
-        write32(unknown);
+        write32(result);
         write32(mode);
         write32(errorValue);
         writeStringNZ(512, message);
@@ -70,21 +77,29 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
     }
 
     public boolean isOptionYesNoDefaultYes() {
-    	return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES;
+        if((options & PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) == PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) {
+            return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES;
+        } else {
+            return false;
+        }
     }
 
     public boolean isOptionYesNoDefaultNo() {
-    	return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO;
+    	if((options & PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) == PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) {
+            return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO;
+        } else {
+            return false;
+        }
     }
 
     public boolean isOptionYesNo() {
-    	return isOptionYesNoDefaultYes() || isOptionYesNoDefaultNo();
+        return isOptionYesNoDefaultYes() || isOptionYesNoDefaultNo();
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("unknown " + String.format("0x%08X", unknown) + "\n");
+        sb.append("result " + String.format("0x%08X", result) + "\n");
         sb.append("mode " + ((mode == PSP_UTILITY_MSGDIALOG_MODE_ERROR)
             ? "PSP_UTILITY_MSGDIALOG_MODE_ERROR"
             : (mode == PSP_UTILITY_MSGDIALOG_MODE_TEXT)

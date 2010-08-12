@@ -186,6 +186,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     public static final int PSP_SYSTEMPARAM_ID_INT_LANGUAGE = 8;
     public static final int PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE = 9;
 
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_JAPANESE = 0;
     public static final int PSP_SYSTEMPARAM_LANGUAGE_ENGLISH = 1;
     public static final int PSP_SYSTEMPARAM_LANGUAGE_FRENCH = 2;
     public static final int PSP_SYSTEMPARAM_LANGUAGE_SPANISH = 3;
@@ -205,16 +206,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
     public static final int PSP_SYSTEMPARAM_TIME_FORMAT_24HR = 0;
     public static final int PSP_SYSTEMPARAM_TIME_FORMAT_12HR = 1;
 
-    public static final int PSP_UTILITY_ERROR_NOT_INITED = 0x80110005; // might not be correct name
+    public static final int PSP_UTILITY_DIALOG_STATUS_NONE = 0;
+    public static final int PSP_UTILITY_DIALOG_STATUS_INIT = 1;
+    public static final int PSP_UTILITY_DIALOG_STATUS_VISIBLE = 2;
+    public static final int PSP_UTILITY_DIALOG_STATUS_QUIT = 3;
+    public static final int PSP_UTILITY_DIALOG_STATUS_FINISHED = 4;
 
-    public static final int PSP_NETPARAM_ERROR_BAD_NETCONF = 0x80110601;
-    public static final int PSP_NETPARAM_ERROR_BAD_PARAM = 0x80110604;
-
-    public static final int PSP_UTILITY_DIALOG_NONE = 0;
-    public static final int PSP_UTILITY_DIALOG_INIT = 1;
-    public static final int PSP_UTILITY_DIALOG_VISIBLE = 2;
-    public static final int PSP_UTILITY_DIALOG_QUIT = 3;
-    public static final int PSP_UTILITY_DIALOG_FINISHED = 4;
+    public static final int PSP_UTILITY_DIALOG_RESULT_OK = 0;
+    public static final int PSP_UTILITY_DIALOG_RESULT_CANCELED = 1;
+    public static final int PSP_UTILITY_DIALOG_RESULT_ABORTED = 2;
 
     protected static final int maxLineLengthForDialog = 80;
     protected static final int[] fontHeightSavedataList = new int[] { 12, 12, 12, 12, 12, 12, 9, 8, 7, 6 };
@@ -234,9 +234,12 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
     // TODO expose via settings GUI
     protected String systemParam_nickname = "JPCSP";
+    protected int systemParam_adhocChannel = 0;
+    protected int systemParam_wlanPowersave = 0;
     protected int systemParam_dateFormat = PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD;
     protected int systemParam_timeFormat = PSP_SYSTEMPARAM_TIME_FORMAT_24HR;
-    protected int systemParam_timeZone = 0; // TODO probably minutes west or east of UTC
+    protected int systemParam_timeZone = 0;
+    protected int systemParam_daylightSavingTime = 0;
     protected int systemParam_language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
     protected int systemParam_buttonPreference = 0;
 
@@ -249,11 +252,13 @@ public class sceUtility implements HLEModule, HLEStartModule {
     	private pspAbstractMemoryMappedStructure params;
     	private int paramsAddr;
     	private int status;
+        private int result;
     	private boolean displayLocked;
 
     	public UtilityDialogState(String name) {
     		this.name = name;
-    		status = PSP_UTILITY_DIALOG_NONE;
+    		status = PSP_UTILITY_DIALOG_STATUS_NONE;
+            result = PSP_UTILITY_DIALOG_RESULT_OK;
     		displayLocked = false;
     	}
 
@@ -275,7 +280,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 				}
 
 	            // Start with INIT
-	    		status = PSP_UTILITY_DIALOG_INIT;
+	    		status = PSP_UTILITY_DIALOG_STATUS_INIT;
 
 	    		cpu.gpr[2] = 0;
     		}
@@ -291,11 +296,11 @@ public class sceUtility implements HLEModule, HLEStartModule {
             cpu.gpr[2] = status;
 
             // after returning FINISHED once, return NONE on following calls
-            if (status == PSP_UTILITY_DIALOG_FINISHED) {
-                status = PSP_UTILITY_DIALOG_NONE;
-            } else if (status == PSP_UTILITY_DIALOG_INIT) {
+            if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
+                status = PSP_UTILITY_DIALOG_STATUS_NONE;
+            } else if (status == PSP_UTILITY_DIALOG_STATUS_INIT) {
             	// Move from INIT to VISIBLE
-            	status = PSP_UTILITY_DIALOG_VISIBLE;
+            	status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
             }
     	}
 
@@ -306,7 +311,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             	log.debug(name + "ShutdownStart");
             }
 
-            status = PSP_UTILITY_DIALOG_FINISHED;
+            status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
 
             cpu.gpr[2] = 0;
     	}
@@ -314,17 +319,17 @@ public class sceUtility implements HLEModule, HLEStartModule {
     	public boolean tryUpdate(Processor processor) {
     		CpuState cpu = processor.cpu;
 
-            int unk = cpu.gpr[4];
+            int drawSpeed = cpu.gpr[4]; // FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS).
             if (log.isDebugEnabled()) {
-                log.debug(name + "Update unk=" + unk);
+                log.debug(name + "Update drawSpeed=" + drawSpeed);
             }
 
             boolean canDisplay = false;
 
-            if (status == PSP_UTILITY_DIALOG_INIT) {
+            if (status == PSP_UTILITY_DIALOG_STATUS_INIT) {
             	// Move from INIT to VISIBLE
-            	status = PSP_UTILITY_DIALOG_VISIBLE;
-            } else if (status == PSP_UTILITY_DIALOG_VISIBLE) {
+            	status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+            } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
 	            // A call to the GUI (JOptionPane) is only possible when the VideoEngine is not
 	            // busy waiting on a sync: call JOptionPane only when the display is not locked.
             	while (true) {
@@ -374,11 +379,21 @@ public class sceUtility implements HLEModule, HLEStartModule {
     			displayLocked = false;
     		}
 
-    		if (status == PSP_UTILITY_DIALOG_VISIBLE) {
+    		if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
     			// Dialog has completed
-    			status = PSP_UTILITY_DIALOG_QUIT;
+    			status = PSP_UTILITY_DIALOG_STATUS_QUIT;
     		}
     	}
+
+        public void abort() {
+            status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
+            result = PSP_UTILITY_DIALOG_RESULT_ABORTED;
+        }
+
+        public void cancel() {
+            status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
+            result = PSP_UTILITY_DIALOG_RESULT_CANCELED;
+        }
     }
 
     protected static class NotImplementedUtilityDialogState extends UtilityDialogState {
@@ -392,7 +407,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 			log.warn("Unimplemented: " + name + "InitStart");
 
-			cpu.gpr[2] = 0xDEADC0DE;
+			cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
 		}
 
 		@Override
@@ -401,7 +416,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 			log.warn("Unimplemented: " + name + "ShutdownStart");
 
-			cpu.gpr[2] = 0xDEADC0DE;
+			cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
 		}
 
 		@Override
@@ -410,7 +425,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 			log.warn("Unimplemented: " + name + "GetStatus");
 
-			cpu.gpr[2] = PSP_UTILITY_ERROR_NOT_INITED;
+			cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
 		}
 
 		@Override
@@ -419,7 +434,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 			log.warn("Unimplemented: " + name + "Update");
 
-			cpu.gpr[2] = 0xDEADC0DE;
+			cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
 
 			return false;
 		}
@@ -1103,7 +1118,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     savedataParams.base.result = 0;
                     savedataParams.write(mem);
                 } catch (IOException e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_FILE_NOT_FOUND;
                 } catch (Exception e) {
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
                     e.printStackTrace();
@@ -1308,7 +1323,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
         oskParams.oskData.outText = JOptionPane.showInputDialog(oskParams.oskData.desc, oskParams.oskData.inText);
         oskParams.base.result = 0;
-        oskParams.oskData.result = 2; // Unknown value, but required by "SEGA Rally"
+        oskParams.oskData.result = SceUtilityOskParams.PSP_UTILITY_OSK_STATE_INITIALIZED;
         oskParams.write(mem);
         log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
     }
@@ -1335,18 +1350,84 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 	public void sceUtilitySetSystemParamInt(Processor processor) {
 		CpuState cpu = processor.cpu;
+		Memory mem = Processor.memory;
 
-		log.warn("Unimplemented NID function sceUtilitySetSystemParamInt [0x45C18506]");
+        int id = cpu.gpr[4];
+        int value_addr = cpu.gpr[5];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        if (!mem.isAddressGood(value_addr)) {
+            log.warn("sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
+            cpu.gpr[2] = -1;
+        } else {
+            log.debug("sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
+
+            cpu.gpr[2] = 0;
+            switch(id) {
+                case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
+                    systemParam_adhocChannel = mem.read32(value_addr);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
+                    systemParam_wlanPowersave = mem.read32(value_addr);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
+                    systemParam_dateFormat = mem.read32(value_addr);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT:
+                    systemParam_timeFormat = mem.read32(value_addr);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
+                    systemParam_timeZone = mem.read32(value_addr);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS:
+                    systemParam_daylightSavingTime = mem.read32(value_addr);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
+                    systemParam_language = mem.read32(value_addr);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_BUTTON_PREFERENCE:
+                    systemParam_buttonPreference = mem.read32(value_addr);
+                    break;
+
+                default:
+                    log.warn("UNIMPLEMENTED: sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
+                    cpu.gpr[2] = -1;
+                    break;
+            }
+        }
 	}
 
 	public void sceUtilitySetSystemParamString(Processor processor) {
 		CpuState cpu = processor.cpu;
+		Memory mem = Processor.memory;
 
-		log.warn("Unimplemented NID function sceUtilitySetSystemParamString [0x41E30674]");
+        int id = cpu.gpr[4];
+        int str_addr = cpu.gpr[5];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        if (!mem.isAddressGood(str_addr)) {
+            log.warn("sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ") bad address");
+            cpu.gpr[2] = -1;
+        } else {
+            log.debug("sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ")");
+
+            cpu.gpr[2] = 0;
+            switch(id) {
+                case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
+                    systemParam_nickname = Utilities.readStringZ(str_addr);
+                    break;
+
+                default:
+                    log.warn("UNIMPLEMENTED: sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ") unhandled id");
+                    cpu.gpr[2] = -1;
+                    break;
+            }
+        }
 	}
 
 	public void sceUtilityGetSystemParamInt(Processor processor) {
@@ -1364,6 +1445,14 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
             cpu.gpr[2] = 0;
             switch(id) {
+                case PSP_SYSTEMPARAM_ID_INT_ADHOC_CHANNEL:
+                    mem.write32(value_addr, systemParam_adhocChannel);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_WLAN_POWERSAVE:
+                    mem.write32(value_addr, systemParam_wlanPowersave);
+                    break;
+
                 case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
                     mem.write32(value_addr, systemParam_dateFormat);
                     break;
@@ -1376,6 +1465,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     mem.write32(value_addr, systemParam_timeZone);
                     break;
 
+                case PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS:
+                    mem.write32(value_addr, systemParam_daylightSavingTime);
+                    break;
+
                 case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
                     mem.write32(value_addr, systemParam_language);
                     break;
@@ -1385,7 +1478,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     break;
 
                 default:
-                    log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
+                    log.warn("UNIMPLEMENTED: sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
                     cpu.gpr[2] = -1;
                     break;
             }
@@ -1425,17 +1518,22 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 		int id = cpu.gpr[4];
 
-		log.warn("UNIMPLEMENTED:sceUtilityCheckNetParam(id=" + id + ")");
+		log.warn("IGNORING: sceUtilityCheckNetParam(id=" + id + ")");
 
-		cpu.gpr[2] = PSP_NETPARAM_ERROR_BAD_PARAM;
+		cpu.gpr[2] = 0;
 	}
 
 	public void sceUtilityGetNetParam(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceUtilityGetNetParam [0x434D4B3A]");
+        int id = cpu.gpr[4];
+        int param = cpu.gpr[5];
+        int net_addr = cpu.gpr[6];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		log.warn("IGNORING: sceUtilityGetNetParam(id=" + id + ", param=" + param + ", net_addr="
+                + Integer.toHexString(net_addr)+ ")");
+
+		cpu.gpr[2] = 0;
 	}
 
 	public final HLEModuleFunction sceUtilityGameSharingInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingInitStart") {

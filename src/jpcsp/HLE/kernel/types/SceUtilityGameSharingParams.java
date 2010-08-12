@@ -19,6 +19,8 @@ package jpcsp.HLE.kernel.types;
 public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructure {
     public pspUtilityDialogCommon base;
     public String gameSharingName;
+    public int uploadCallbackArg;
+    public int uploadCallbackAddr;       // Predefined callback used for data upload (params: uploadCallbackArg, pointer to gameSharingDataAddr, pointer to gameSharingDataSize).
     public int result;
     public String gameSharingFilepath;   // File path to the game's EBOOT.BIN.
     public int gameSharingMode;          // GameSharing mode: 1 - Single send; 2 - Multiple sends (up to 4).
@@ -34,7 +36,9 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
 
         readUnknown(8);
         gameSharingName = readStringNZ(8);
-        readUnknown(12);
+        readUnknown(4);
+        uploadCallbackArg = read32();
+        uploadCallbackAddr = read32();
         result = read32();
         gameSharingFilepath = readStringNZ(32);
         gameSharingMode = read32();
@@ -50,7 +54,9 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
 
         writeUnknown(8);
         writeStringNZ(8, gameSharingName);
-        writeUnknown(12);
+        writeUnknown(4);
+        write32(uploadCallbackArg);
+        write32(uploadCallbackAddr);
         write32(result);
         writeStringNZ(32, gameSharingFilepath);
         write32(gameSharingMode);
