@@ -986,8 +986,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 	public void sceFontFlush(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn(String.format("Unimplemented sceFontFlush 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+        int fontAddr = cpu.gpr[4];
+
+		log.warn(String.format("IGNORING: sceFontFlush fontAddr=0x%08X", fontAddr));
+
+        cpu.gpr[2] = 0;
 	}
 
 	public void sceFontFindFont(Processor processor) {

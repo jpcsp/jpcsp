@@ -217,7 +217,10 @@ public class MutexManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        String name = Utilities.readStringNZ(mem, name_addr, 32);
+        String name = "";
+        if(mem.isAddressGood(name_addr)) {
+            name = Utilities.readStringNZ(mem, name_addr, 32);
+        }
 
         if (Modules.log.isDebugEnabled()) {
 	        Modules.log.debug("sceKernelCreateMutex(name='" + name

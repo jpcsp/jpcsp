@@ -1396,7 +1396,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int initPriority, int stackSize, int attr, int option_addr) {
 
         if (option_addr != 0) {
-            Modules.log.warn("hleKernelCreateThread unhandled SceKernelThreadOptParam");
+            Modules.log.warn("hleKernelCreateThread unhandled SceKernelThreadOptParam: " +
+                    "option_addr=0x" + Integer.toHexString(option_addr));
         }
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);

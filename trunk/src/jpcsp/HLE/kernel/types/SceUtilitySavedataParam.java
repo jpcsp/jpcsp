@@ -35,7 +35,7 @@ import jpcsp.util.Utilities;
  * 1. Check writePsf:
  *   -> sfoParam.parentalLevel & 0x3ff ? FF1 -> 1027 -> 3.
  *   -> Need to add SAVEDATA_FILE_LIST, SAVEDATA_PARAMS and SAVEDATA_DIRECTORY?
-     -> Delete original file, size "map" cannot resize it smaller.
+ *   -> Delete original file, size "map" cannot resize it smaller.
  */
 
 public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
@@ -65,14 +65,11 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         public final static int MODE_WRITE = 17;
         public final static int MODE_DELETEDATA = 21;
         public final static int MODE_GETSIZE = 22;
-	public int focus;
-		public final static int FOCUS_UNKNOWN = 0;
-		public final static int FOCUS_FIRSTLIST = 1;	// First in list
-		public final static int FOCUS_LASTLIST = 2;		// Last in list
-		public final static int FOCUS_LATEST = 3;		// Most recent one
-		public final static int FOCUS_OLDEST = 4;		// Oldest one
-		public final static int FOCUS_FIRSTEMPTY = 7;	// First empty slot
-		public final static int FOCUS_LASTEMPTY = 8;	// Last empty slot
+    public int bind;   // Used by certain applications to detect if this save data was created on a different PSP.
+        public final static int BIND_NOT_USED = 0;
+        public final static int BIND_IS_OK = 1;
+        public final static int BIND_IS_REJECTED = 2;
+        public final static int BIND_IS_NOT_SUPPORTED = 3;
 	public boolean overwrite;
 	public String gameName; // name used from the game for saves, equal for all saves
 	public String saveName; // name of the particular save, normally a number
@@ -89,16 +86,24 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public PspUtilitySavedataFileData snd0FileData;
 	int newDataAddr;
 	public PspUtilitySavedataListSaveNewData newData;
+    public int focus;
+		public final static int FOCUS_UNKNOWN = 0;
+		public final static int FOCUS_FIRSTLIST = 1;	// First in list
+		public final static int FOCUS_LASTLIST = 2;		// Last in list
+		public final static int FOCUS_LATEST = 3;		// Most recent one
+		public final static int FOCUS_OLDEST = 4;		// Oldest one
+		public final static int FOCUS_FIRSTEMPTY = 7;	// First empty slot
+		public final static int FOCUS_LASTEMPTY = 8;	// Last empty slot
+    public int errorStatus;
 	public int buffer1Addr;
 	public int buffer2Addr;
 	public int buffer3Addr;
+    public String key;		// encrypt/decrypt key for save with firmware >= 2.00
+    public int secureVersion;
+    public int secureStatus;
 	public int buffer4Addr;
     public int buffer5Addr;
     public int buffer6Addr;
-	public String key;		// encrypt/decrypt key for save with firmware >= 2.00
-    public int secureVersion;
-    public int errorStatus;
-    public int secureStatus;
 
 	public static class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
         public String title;
@@ -194,7 +199,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		setMaxSize(base.size);
 
 		mode        = read32();
-		readUnknown(4);
+		bind        = read32();
 		overwrite   = read32() == 0 ? false : true;
 		gameName    = readStringNZ(13);
 		readUnknown(3);
@@ -256,7 +261,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	    write(base);
 
 		write32(mode);
-		writeUnknown(4);
+        write32(bind);
 		write32(overwrite ? 1 : 0);
 		writeStringNZ(13, gameName);
 		writeUnknown(3);
@@ -291,46 +296,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         write32(buffer6Addr);
 	}
 
-    public void singleRead(Memory mem) throws IOException {
-        String path = getBasePath();
-        dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
-    }
-
-    public void singleWrite(Memory mem) throws IOException {
-        String path = getBasePath();
-        Modules.IoFileMgrForUserModule.mkdirs(path);
-        writeFile(mem, path, fileName, dataBuf, dataSize);
-    }
-
-    private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {
-		String path = getBasePath();
-
-        try {
-            fileData.size = loadFile(mem, path, filename, fileData.buf, fileData.bufSize);
-        } catch(FileNotFoundException e) {
-            // ignore
-        }
-    }
-
-	public boolean test(Memory mem) throws IOException {
-		String path = getBasePath();
-
-		boolean result = testFile(mem, path, fileName);
-
-		return result;
-	}
-
-	public void load(Memory mem) throws IOException {
-		String path = getBasePath();
-
-		dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
-        safeLoad(mem, icon0FileName, icon0FileData);
-        safeLoad(mem, icon1FileName, icon1FileData);
-        safeLoad(mem, pic1FileName, pic1FileData);
-        safeLoad(mem, snd0FileName, snd0FileData);
-		loadPsf(mem, path, paramSfoFileName, sfoParam);
-	}
-
     private String getBasePath() {
         return getBasePath(saveName);
     }
@@ -348,29 +313,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return getBasePath(saveName) + fileName;
 	}
 
-	public boolean isPresent(String gameName, String saveName) {
-	    if (fileName == null || fileName.length() <= 0) {
-	        return false;
-	    }
-
-	    String path = getBasePath();
-	    try {
-            SeekableDataInput fileInput = getDataInput(path, fileName);
-            if (fileInput != null) {
-                fileInput.close();
-                return true;
-            }
-	    } catch (IOException e) {
-	    }
-
-        return false;
-	}
-
-	public boolean isPresent() {
-		return isPresent(gameName, saveName);
-	}
-
-	private int getFileSize(String fileName) {
+    private int getFileSize(String fileName) {
 		int size = 0;
 
 		if (fileName != null && fileName.length() > 0) {
@@ -412,39 +355,51 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return null;
 	}
 
-    private void loadPsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
-        SeekableDataInput fileInput = getDataInput(path, name);
-        if (fileInput != null) {
-            byte[] buffer = new byte[(int) fileInput.length()];
-            fileInput.readFully(buffer);
-            fileInput.close();
+    public void singleRead(Memory mem) throws IOException {
+        String path = getBasePath();
+        dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+    }
 
-            PSF psf = new PSF();
-            psf.read(ByteBuffer.wrap(buffer));
+    public void singleWrite(Memory mem) throws IOException {
+        String path = getBasePath();
+        Modules.IoFileMgrForUserModule.mkdirs(path);
+        writeFile(mem, path, fileName, dataBuf, dataSize);
+    }
 
-            sfoParam.parentalLevel = psf.getNumeric("PARENTAL_LEVEL");
-            sfoParam.title = psf.getString("TITLE");
-            sfoParam.detail = psf.getString("SAVEDATA_DETAIL");
-            sfoParam.savedataTitle = psf.getString("SAVEDATA_TITLE");
+    public void load(Memory mem) throws IOException {
+		String path = getBasePath();
+
+		dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+        safeLoad(mem, icon0FileName, icon0FileData);
+        safeLoad(mem, icon1FileName, icon1FileData);
+        safeLoad(mem, pic1FileName, pic1FileData);
+        safeLoad(mem, snd0FileName, snd0FileData);
+		loadPsf(mem, path, paramSfoFileName, sfoParam);
+	}
+
+    private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {
+		String path = getBasePath();
+
+        try {
+            fileData.size = loadFile(mem, path, filename, fileData.buf, fileData.bufSize);
+        } catch(FileNotFoundException e) {
+            // ignore
         }
     }
 
-	private boolean testFile(Memory mem, String path, String name) throws IOException {
-		if (name == null || name.length() <= 0) {
-			return false;
-		}
+    public void save(Memory mem) throws IOException {
+		String path = getBasePath();
 
-		SeekableDataInput fileInput = getDataInput(path, name);
-		if (fileInput == null) {
-			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
-		}
-
-		fileInput.close();
-
-		return true;
+		Modules.IoFileMgrForUserModule.mkdirs(path);
+		writeFile(mem, path, fileName,      dataBuf,           dataSize);
+		writeFile(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
+		writeFile(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
+		writeFile(mem, path, pic1FileName,  pic1FileData.buf,  pic1FileData.size);
+		writeFile(mem, path, snd0FileName,  snd0FileData.buf,  snd0FileData.size);
+		writePsf(mem, path, paramSfoFileName, sfoParam);
 	}
 
-	private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
+    private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
 		if (name == null || name.length() <= 0 || address == 0 || maxLength <= 0) {
 			return 0;
 		}
@@ -465,18 +420,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return fileSize;
 	}
 
-	public void save(Memory mem) throws IOException {
-		String path = getBasePath();
-
-		Modules.IoFileMgrForUserModule.mkdirs(path);
-		writeFile(mem, path, fileName,      dataBuf,           dataSize);
-		writeFile(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
-		writeFile(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
-		writeFile(mem, path, pic1FileName,  pic1FileData.buf,  pic1FileData.size);
-		writeFile(mem, path, snd0FileName,  snd0FileData.buf,  snd0FileData.size);
-		writePsf(mem, path, paramSfoFileName, sfoParam);
-	}
-
 	private void writeFile(Memory mem, String path, String name, int address, int length) throws IOException {
 		if (name == null || name.length() <= 0 || address == 0) {
 			return;
@@ -491,6 +434,23 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		fileOutput.close();
 	}
 
+    private void loadPsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
+        SeekableDataInput fileInput = getDataInput(path, name);
+        if (fileInput != null) {
+            byte[] buffer = new byte[(int) fileInput.length()];
+            fileInput.readFully(buffer);
+            fileInput.close();
+
+            PSF psf = new PSF();
+            psf.read(ByteBuffer.wrap(buffer));
+
+            sfoParam.parentalLevel = psf.getNumeric("PARENTAL_LEVEL");
+            sfoParam.title = psf.getString("TITLE");
+            sfoParam.detail = psf.getString("SAVEDATA_DETAIL");
+            sfoParam.savedataTitle = psf.getString("SAVEDATA_TITLE");
+        }
+    }
+
 	private void writePsf(Memory mem, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
         SeekableRandomFile fileOutput = getDataOutput(path, name);
 		if (fileOutput == null) {
@@ -504,6 +464,51 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
 
         psf.write(fileOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
+	}
+
+	public boolean test(Memory mem) throws IOException {
+		String path = getBasePath();
+
+		boolean result = testFile(mem, path, fileName);
+
+		return result;
+	}
+
+    private boolean testFile(Memory mem, String path, String name) throws IOException {
+		if (name == null || name.length() <= 0) {
+			return false;
+		}
+
+		SeekableDataInput fileInput = getDataInput(path, name);
+		if (fileInput == null) {
+			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+		}
+
+		fileInput.close();
+
+		return true;
+	}
+
+	public boolean isPresent(String gameName, String saveName) {
+	    if (fileName == null || fileName.length() <= 0) {
+	        return false;
+	    }
+
+	    String path = getBasePath();
+	    try {
+            SeekableDataInput fileInput = getDataInput(path, fileName);
+            if (fileInput != null) {
+                fileInput.close();
+                return true;
+            }
+	    } catch (IOException e) {
+	    }
+
+        return false;
+	}
+
+	public boolean isPresent() {
+		return isPresent(gameName, saveName);
 	}
 
     @Override

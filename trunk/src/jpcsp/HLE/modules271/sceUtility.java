@@ -34,6 +34,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
             mm.addFunction(0xC629AF26, sceUtilityLoadAvModuleFunction);
             mm.addFunction(0xF7D8D092, sceUtilityUnloadAvModuleFunction);
+            mm.addFunction(0x4928BD96, sceUtilityMsgDialogAbortFunction);
 
         }
     }
@@ -46,6 +47,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
             mm.removeFunction(sceUtilityLoadAvModuleFunction);
             mm.removeFunction(sceUtilityUnloadAvModuleFunction);
+            mm.removeFunction(sceUtilityMsgDialogAbortFunction);
 
         }
     }
@@ -111,6 +113,15 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     }
 
+    public void sceUtilityMsgDialogAbort(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("PARTIAL: sceUtilityMsgDialogAbort()");
+        msgDialogState.abort();
+
+        cpu.gpr[2] = 0;
+    }
+
     public final HLEModuleFunction sceUtilityLoadAvModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadAvModule") {
 
         @Override
@@ -136,4 +147,15 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityUnloadAvModule(processor);";
         }
     };
+
+    public final HLEModuleFunction sceUtilityMsgDialogAbortFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogAbort") {
+		@Override
+		public final void execute(Processor processor) {
+			sceUtilityMsgDialogAbort(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogAbort(processor);";
+		}
+	};
 }

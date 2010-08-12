@@ -23,6 +23,9 @@ package jpcsp.HLE;
 public enum SyscallIgnore {
 	_sceKernelGetCpuClockCounterHigh(0xE9E652A9),
 	_sceKernelGetCpuClockCounterLow(0x2DC9709B),
+	inflate(0x216D1BF1),
+	inflateEnd(0x461C7724),
+	inflateInit_(0x18CB51AB),
 	InterruptManagerForKernel_15894D0B(0x15894D0B),
 	InterruptManagerForKernel_43A7BBDC(0x43A7BBDC),
 	InterruptManagerForKernel_53991063(0x53991063),
@@ -311,7 +314,6 @@ public enum SyscallIgnore {
 	sceUtilityInstallShutdownStart(0x5EF1C24A), // 2.00+
 	sceUtilityInstallUpdate(0xA03D29BA), // 2.00+
 	sceUtilityLoadUsbModule(0x0D5BC6D2), // 2.00+
-	sceUtilityMsgDialogAbort(0x4928bd96), // 2.71+ or lower
 	sceUtilityScreenshotGetStatus(0xD81957B7), // 2.71+ or lower
 	sceUtilityScreenshotInitStart(0x0251B134), // 3.52+ or lower
 	sceUtilityScreenshotShutdownStart(0xF9E0008C), // 3.52+ or lower
@@ -363,14 +365,12 @@ public enum SyscallIgnore {
 	WlanDrv_lib_81579D36(0x81579d36), // 2.00+
 	WlanDrv_lib_8D5F551B(0x8d5f551b), // 2.00+
 	WlanDrv_lib_FE8A0B46(0xfe8a0b46), // 6.00+ sceKernelSetCompiledSdkVersionXXX
-	WlanGetEtherAddr(0x0c622081),
-	WlanGetSwitchState(0xd7763699),
 	WlanGPPrevEstablishActive(0x5ed4049a),
 	WlanGPRecv(0xa447103a),
 	WlanGPRegisterCallback(0x9658c9f7),
 	WlanGPSend(0xb4d7cb74),
 	WlanGPUnRegisterCallback(0x4c7f62e0),
-	
+
 	// CFW
 	kuKernelLoadModule(0x4C25EA72),
 	systemctrl_user_577AF198(0x577AF198),
@@ -378,7 +378,7 @@ public enum SyscallIgnore {
 	systemctrl_user_ABA7F1B0(0xABA7F1B0),
 	sctrlSEGetConfig(0x16C3B7EE),
 	systemctrl_user_85B520C6(0x85B520C6),
-	
+
 	// Module magic
 	module_bootstart(0xD3744BE0),
 	module_reboot_before(0x2F064FA6),
@@ -387,19 +387,19 @@ public enum SyscallIgnore {
 	module_stop_1(0xCEE8593C),
 	module_stop_2(0xF01D73A7),
 	module_0F7C276C(0x0F7C276C),
-	
+
 	hleDummy(0xcdcdcdcd);
-	
+
 	private int nid;
-	
+
 	SyscallIgnore(int nid) {
 		this.nid = nid;
 	}
-	
+
 	public int getNID() {
 		return nid;
 	}
-	
+
 	public int getSyscall() {
 		return ordinal() + 0x2000;
 	}

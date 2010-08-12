@@ -27,7 +27,7 @@ import jpcsp.hardware.Interrupts;
 import org.apache.log4j.Logger;
 
 public class Kernel_Library implements HLEModule {
-    private static Logger log = Modules.getLogger("Kernel_Library");
+    protected static Logger log = Modules.getLogger("Kernel_Library");
 
     @Override
     public String getName() {
@@ -69,7 +69,7 @@ public class Kernel_Library implements HLEModule {
      * @returns The current state of the interrupt controller, to be used with ::sceKernelCpuResumeIntr().
      */
     public void sceKernelCpuSuspendIntr(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+        CpuState cpu = processor.cpu;
 
         if (log.isDebugEnabled()) {
         	log.debug("sceKernelCpuSuspendIntr interruptsEnabled=" + Interrupts.isInterruptsEnabled());
@@ -89,7 +89,7 @@ public class Kernel_Library implements HLEModule {
      * @param flags - The value returned from ::sceKernelCpuSuspendIntr().
      */
     public void sceKernelCpuResumeIntr(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+        CpuState cpu = processor.cpu;
 
         int flagInterrupts = cpu.gpr[4];
         if (log.isDebugEnabled()) {

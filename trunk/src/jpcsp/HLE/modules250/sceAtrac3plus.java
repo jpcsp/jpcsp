@@ -85,9 +85,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     public void sceAtracReinit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("Unimplemented function sceAtracReinit "
-    			+ String.format("%08x %08x %08x %08x %08x %08x",
-    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        int atID = cpu.gpr[4];
+        int unk = cpu.gpr[5];
+
+        log.warn(String.format("IGNORING: sceAtracReinit atracId=%d unk=%d", atID, unk));
 
         cpu.gpr[2] = 0;
     }

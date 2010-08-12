@@ -38,6 +38,7 @@ public class SceKernelErrors {
      *      -> 0x011 - Utility.
      *      -> 0x026 - Audio.
      *      -> 0x02b - Power.
+     *      -> 0x041 - Wlan.
      *      -> 0x042 - SAS.
      *      -> 0x044 - WAVE.
      *      -> 0x061 - PSMF.
@@ -217,6 +218,13 @@ public class SceKernelErrors {
     public final static int ERROR_ASYNC_BUSY                                    = 0x80020329;
     public final static int ERROR_NO_ASYNC_OP                                   = 0x8002032a;
 
+    public static final int ERROR_UTILITY_INVALID_STATUS                        = 0x80110001;
+    public static final int ERROR_UTILITY_INVALID_PARAM_ADDR                    = 0x80110002;
+    public static final int ERROR_UTILITY_IS_UNKNOWN                            = 0x80110003;
+    public static final int ERROR_UTILITY_INVALID_PARAM_SIZE                    = 0x80110004;
+    public static final int ERROR_UTILITY_WRONG_TYPE                            = 0x80110005;
+    public static final int ERROR_UTILITY_MODULE_NOT_FOUND                      = 0x80110006;
+
     public static final int ERROR_SAVEDATA_LOAD_NO_MEMSTICK                     = 0x80110301;
     public static final int ERROR_SAVEDATA_LOAD_MEMSTICK_REMOVED                = 0x80110302;
     public static final int ERROR_SAVEDATA_LOAD_ACCESS_ERROR                    = 0x80110305;
@@ -224,10 +232,30 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_LOAD_NO_DATA                         = 0x80110307;
     public static final int ERROR_SAVEDATA_LOAD_BAD_PARAMS                      = 0x80110308;
     public static final int ERROR_SAVEDATA_LOAD_NO_UMD                          = 0x80110309;
+    public static final int ERROR_SAVEDATA_LOAD_INTERNAL_ERROR                  = 0x80110309;
 
+    public static final int ERROR_SAVEDATA_RW_NO_MEMSTICK                       = 0x80110321;
+    public static final int ERROR_SAVEDATA_RW_MEMSTICK_REMOVED                  = 0x80110322;
+    public static final int ERROR_SAVEDATA_RW_MEMSTICK_FULL                     = 0x80110323;
+    public static final int ERROR_SAVEDATA_RW_MEMSTICK_PROTECTED                = 0x80110324;
     public static final int ERROR_SAVEDATA_RW_ACCESS_ERROR                      = 0x80110325;
     public static final int ERROR_SAVEDATA_RW_DATA_BROKEN                       = 0x80110326;
     public static final int ERROR_SAVEDATA_RW_NO_DATA                           = 0x80110327;
+    public static final int ERROR_SAVEDATA_RW_BAD_PARAMS                        = 0x80110328;
+    public static final int ERROR_SAVEDATA_RW_FILE_NOT_FOUND                    = 0x80110329;
+    public static final int ERROR_SAVEDATA_RW_CAN_NOT_SUSPEND                   = 0x8011032a;
+    public static final int ERROR_SAVEDATA_RW_INTERNAL_ERROR                    = 0x8011032b;
+    public static final int ERROR_SAVEDATA_RW_BAD_STATUS                        = 0x8011032c;
+    public static final int ERROR_SAVEDATA_RW_SECURE_FILE_FULL                  = 0x8011032d;
+
+    public static final int ERROR_SAVEDATA_DELETE_NO_MEMSTICK                   = 0x80110341;
+    public static final int ERROR_SAVEDATA_DELETE_MEMSTICK_REMOVED              = 0x80110342;
+    public static final int ERROR_SAVEDATA_DELETE_MEMSTICK_PROTECTED            = 0x80110344;
+    public static final int ERROR_SAVEDATA_DELETE_ACCESS_ERROR                  = 0x80110345;
+    public static final int ERROR_SAVEDATA_DELETE_DATA_BROKEN                   = 0x80110346;
+    public static final int ERROR_SAVEDATA_DELETE_NO_DATA                       = 0x80110347;
+    public static final int ERROR_SAVEDATA_DELETE_BAD_PARAMS                    = 0x80110348;
+    public static final int ERROR_SAVEDATA_DELETE_INTERNAL_ERROR                = 0x8011034b;
 
     public static final int ERROR_SAVEDATA_SAVE_NO_MEMSTICK                     = 0x80110381;
     public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_REMOVED                = 0x80110382;
@@ -237,6 +265,7 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_SAVE_BAD_PARAMS                      = 0x80110388;
     public static final int ERROR_SAVEDATA_SAVE_NO_UMD                          = 0x80110389;
     public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD                       = 0x8011038a;
+    public static final int ERROR_SAVEDATA_SAVE_INTERNAL_ERROR                  = 0x8011038b;
 
     public static final int ERROR_SAVEDATA_SIZES_NO_MEMSTICK                    = 0x801103c1;
     public static final int ERROR_SAVEDATA_SIZES_MEMSTICK_REMOVED               = 0x801103c2;
@@ -244,6 +273,10 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_SIZES_DATA_BROKEN                    = 0x801103c6;
     public static final int ERROR_SAVEDATA_SIZES_NO_DATA                        = 0x801103c7;
     public static final int ERROR_SAVEDATA_SIZES_BAD_PARAMS                     = 0x801103c8;
+    public static final int ERROR_SAVEDATA_SIZES_INTERNAL_ERROR                 = 0x801103cb;
+
+    public static final int ERROR_NETPARAM_BAD_NETCONF                          = 0x80110601;
+    public static final int ERROR_NETPARAM_BAD_PARAM                            = 0x80110604;
 
     public final static int ERROR_DEVCTL_BAD_PARAMS                             = 0x80220081;
 
@@ -258,6 +291,8 @@ public class SceKernelErrors {
     public final static int ERROR_AUDIO_NOT_OUTPUT                              = 0x80260009;
 
     public final static int ERROR_POWER_VMEM_IN_USE                             = 0x802b0200;
+
+    public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
 
     public final static int ERROR_SAS_BUSY                                      = 0x80420030;
     public final static int ERROR_SAS_NOT_INIT                                  = 0x80420100;
