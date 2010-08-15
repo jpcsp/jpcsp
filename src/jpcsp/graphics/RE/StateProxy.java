@@ -107,6 +107,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		for (int i = 0; i < flags.length; i++) {
 			flags[i] = true;
 		}
+		flags[GU_TEXTURE_2D] = false;
 
 		System.arraycopy(identityMatrix, 0, matrix[GU_PROJECTION], 0, matrix4Size);
 		System.arraycopy(identityMatrix, 0, matrix[GU_VIEW], 0, matrix4Size);
