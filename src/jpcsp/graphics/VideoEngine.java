@@ -802,7 +802,7 @@ public class VideoEngine {
     		reBlendDst = getBlendFix(context.dfix_color);
     	}
 
-        float[] blend_color = getBlendColor(context.blend_src, context.blend_dst);
+        float[] blend_color = getBlendColor(reBlendSrc, reBlendDst);
         if (blend_color != null) {
         	re.setBlendColor(blend_color);
         }
