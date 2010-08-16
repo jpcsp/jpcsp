@@ -477,6 +477,58 @@ public class VfpuState extends FpuState {
         }
     }
 
+    public void loadVd(int vsize, int vd) {
+        int m, s, i;
+
+        m = (vd >> 2) & 7;
+        i = (vd >> 0) & 3;
+
+        switch (vsize) {
+            case 1:
+                s = (vd >> 5) & 3;
+                v3[0] = getVpr(m, i, s);
+                return;
+
+            case 2:
+                s = (vd & 64) >> 5;
+                if ((vd & 32) != 0) {
+                	v3[0] = getVpr(m, s + 0, i);
+                	v3[1] = getVpr(m, s + 1, i);
+                } else {
+                	v3[0] = getVpr(m, i, s + 0);
+                	v3[1] = getVpr(m, i, s + 1);
+                }
+                return;
+
+            case 3:
+                s = (vd & 64) >> 6;
+                if ((vd & 32) != 0) {
+                	v3[0] = getVpr(m, s + 0, i);
+                	v3[1] = getVpr(m, s + 1, i);
+                	v3[2] = getVpr(m, s + 2, i);
+                } else {
+                	v3[0] = getVpr(m, i, s + 0);
+                	v3[1] = getVpr(m, i, s + 1);
+                	v3[2] = getVpr(m, i, s + 2);
+                }
+                return;
+
+            case 4:
+                if ((vd & 32) != 0) {
+                	v3[0] = getVpr(m, 0, i);
+                	v3[1] = getVpr(m, 1, i);
+                	v3[2] = getVpr(m, 2, i);
+                	v3[3] = getVpr(m, 3, i);
+                } else {
+                	v3[0] = getVpr(m, i, 0);
+                	v3[1] = getVpr(m, i, 1);
+                	v3[2] = getVpr(m, i, 2);
+                	v3[3] = getVpr(m, i, 3);
+                }
+            default:
+        }
+    }
+
     public void saveVd(int vsize, int vd, float[] vr) {
         int m, s, i;
 
@@ -847,7 +899,7 @@ public class VfpuState extends FpuState {
                     if (vcr.pfxs.neg[3]) value |=  1 << 19;
                     gpr[rt] = value;
                     break;
-		case 1: /* 129 */
+                case 1: /* 129 */
                     value |= vcr.pfxt.swz[0] << 0;
                     value |= vcr.pfxt.swz[1] << 2;
                     value |= vcr.pfxt.swz[2] << 4;
@@ -866,7 +918,7 @@ public class VfpuState extends FpuState {
                     if (vcr.pfxt.neg[3]) value |=  1 << 19;
                     gpr[rt] = value;
                     break;
-		case 2: /* 130 */
+                case 2: /* 130 */
                     value |= vcr.pfxd.sat[0] << 0;
                     value |= vcr.pfxd.sat[1] << 2;
                     value |= vcr.pfxd.sat[2] << 4;
@@ -2038,8 +2090,15 @@ public class VfpuState extends FpuState {
     public void doVCMOVT(int vsize, int imm3, int vd, int vs) {
         if (imm3 < 6) {
             if (vcr.cc[imm3]) {
-                loadVs(vsize, vs);
+        		loadVs(vsize, vs);
                 saveVd(vsize, vd, v1);
+            } else {
+            	// Clear the PFXS flag and process the PFXD transformation
+            	vcr.pfxs.enabled = false;
+            	if (vcr.pfxd.enabled) {
+            		loadVd(vsize, vd);
+            		saveVd(vsize, vd, v3);
+            	}
             }
         } else if (imm3 == 6) {
             loadVs(vsize, vs);
@@ -2058,8 +2117,15 @@ public class VfpuState extends FpuState {
     public void doVCMOVF(int vsize, int imm3, int vd, int vs) {
         if (imm3 < 6) {
             if (!vcr.cc[imm3]) {
-                loadVs(vsize, vs);
-                saveVd(vsize, vd, v1);
+        		loadVs(vsize, vs);
+            	saveVd(vsize, vd, v1);
+            } else {
+            	// Clear the PFXS flag and process the PFXD transformation
+            	vcr.pfxs.enabled = false;
+            	if (vcr.pfxd.enabled) {
+            		loadVd(vsize, vd);
+            		saveVd(vsize, vd, v3);
+            	}
             }
         } else if (imm3 == 6) {
             loadVs(vsize, vs);
@@ -2403,8 +2469,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16 - 12;
-        //Memory.log.error("Forbidden LVL.Q");
+        int address = gpr[rs] + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -2412,25 +2477,15 @@ public class VfpuState extends FpuState {
             }
         }
 
-        /* I assume it should be something like that :
-        Mem = 4321
-        Reg = wzyx
-        
-        0   1 z y x 
-        1   2 1 y x
-        2   3 2 1 x
-        3   4 3 2 1
-         */
-
-        int k = 4 - ((address >> 2) & 3);
-
+        int k = 3 - ((address >> 2) & 3);
+        address &= ~0xF;
         if ((vt & 32) != 0) {
-            for (int j = 0; j < k; ++j) {
+            for (int j = k; j < 4; ++j) {
                 setVpr(m, j, i, Float.intBitsToFloat(memory.read32(address)));
                 address += 4;
             }
         } else {
-            for (int j = 0; j < k; ++j) {
+            for (int j = k; j < 4; ++j) {
                 setVpr(m, i, j, Float.intBitsToFloat(memory.read32(address)));
                 address += 4;
             }
@@ -2443,7 +2498,6 @@ public class VfpuState extends FpuState {
         int i = (vt >> 0) & 3;
 
         int address = gpr[rs] + simm14_a16;
-        //Memory.log.error("Forbidden LVR.Q");
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -2451,25 +2505,14 @@ public class VfpuState extends FpuState {
             }
         }
 
-        /* I assume it should be something like that :
-        Mem = 4321
-        Reg = wzyx
-        
-        0   4 3 2 1 
-        1   w 4 3 2
-        2   w z 4 3
-        3   w z y 4
-         */
-
-        int k = (address >> 2) & 3;
-        address += (4 - k) << 2;
+        int k = 4 - ((address >> 2) & 3);
         if ((vt & 32) != 0) {
-            for (int j = 4 - k; j < 4; ++j) {
+            for (int j = 0; j < k; ++j) {
                 setVpr(m, j, i, Float.intBitsToFloat(memory.read32(address)));
                 address += 4;
             }
         } else {
-            for (int j = 4 - k; j < 4; ++j) {
+            for (int j = 0; j < k; ++j) {
                 setVpr(m, i, j, Float.intBitsToFloat(memory.read32(address)));
                 address += 4;
             }
@@ -2504,7 +2547,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16 - 12;
+        int address = gpr[rs] + simm14_a16;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -2512,16 +2555,16 @@ public class VfpuState extends FpuState {
             }
         }
 
-        int k = 4 - ((address >> 2) & 3);
-
+        int k = 3 - ((address >> 2) & 3);
+        address &= ~0xF;
         if ((vt & 32) != 0) {
-            for (int j = 0; j < k; ++j) {
-                memory.write32((address), Float.floatToRawIntBits(getVpr(m, j, i)));
+            for (int j = k; j < 4; ++j) {
+                memory.write32(address, Float.floatToRawIntBits(getVpr(m, j, i)));
                 address += 4;
             }
         } else {
-            for (int j = 0; j < k; ++j) {
-                memory.write32((address), Float.floatToRawIntBits(getVpr(m, i, j)));
+            for (int j = k; j < 4; ++j) {
+                memory.write32(address, Float.floatToRawIntBits(getVpr(m, i, j)));
                 address += 4;
             }
         }
@@ -2540,20 +2583,17 @@ public class VfpuState extends FpuState {
             }
         }
 
-        int k = (address >> 2) & 3;
-        address += (4 - k) << 2;
+        int k = 4 - ((address >> 2) & 3);
         if ((vt & 32) != 0) {
-            for (int j = 4 - k; j < 4; ++j) {
-                memory.write32((address), Float.floatToRawIntBits(getVpr(m, j, i)));
+            for (int j = 0; j < k; ++j) {
+                memory.write32(address, Float.floatToRawIntBits(getVpr(m, j, i)));
                 address += 4;
             }
         } else {
-            for (int j = 4 - k; j < 4; ++j) {
-                memory.write32((address), Float.floatToRawIntBits(getVpr(m, i, j)));
+            for (int j = 0; j < k; ++j) {
+                memory.write32(address, Float.floatToRawIntBits(getVpr(m, i, j)));
                 address += 4;
             }
         }
     }
 }
-
-
