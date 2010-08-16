@@ -822,6 +822,39 @@ void __attribute__((noinline)) bvt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePs
    v2->y = v.x;
 }
 
+void __attribute__((noinline)) svlq(int address, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C100, %1\n"
+   "svl.q  C100, 0($a0)\n"
+   : "+m" (address) : "m" (*v1) );
+}
+
+void __attribute__((noinline)) svrq(int address, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C100, %1\n"
+   "svr.q  C100, 0($a0)\n"
+   : "+m" (address) : "m" (*v1) );
+}
+
+void __attribute__((noinline)) lvlq(ScePspFVector4 *v0, int address, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C100, %2\n"
+   "lvl.q  C100, 0($a1)\n"
+   "sv.q   C100, %0\n"
+   : "+m" (*v0) : "m" (address), "m" (*v1) );
+}
+
+void __attribute__((noinline)) lvrq(ScePspFVector4 *v0, int address, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C100, %2\n"
+   "lvr.q  C100, 0($a1)\n"
+   "sv.q   C100, %0\n"
+   : "+m" (*v0) : "m" (address), "m" (*v1) );
+}
 
 
 ScePspFVector4 v0;
@@ -914,7 +947,7 @@ void initValues()
 void startNewScreen()
 {
 	pspDebugScreenInit();
-	printf("Press Cross/Square/Circle to start test group 1, 2, 3\n");
+	printf("Press Cross/Square/Circle/Left to start test group 1, 2, 3, 4\n");
 	printf("Press Triangle to exit\n");
 }
 
@@ -1233,6 +1266,39 @@ int main(int argc, char *argv[])
 				v2.w = v1.w + 2;
 				vcmovfq(&v0, &v1, &v2, i);
 				printf("vcmovf.q %d: %f %f %f %f\n", i, v0.x, v0.y, v0.z, v0.w);
+			}
+		}
+
+		if (buttonDown & PSP_CTRL_LEFT)
+		{
+			startNewScreen();
+
+			for (i = 0; i < 4; i++)
+			{
+				initValues();
+				svlq(((int) (&m0.y)) + (i << 2), &m1.y);
+				printf("svlq.q %d: %.0f %.0f %.0f %.0f\n", i, m0.y.x, m0.y.y, m0.y.z, m0.y.w);
+			}
+
+			for (i = 0; i < 4; i++)
+			{
+				initValues();
+				svrq(((int) (&m0.y)) + (i << 2), &m1.y);
+				printf("svrq.q %d: %.0f %.0f %.0f %.0f\n", i, m0.y.x, m0.y.y, m0.y.z, m0.y.w);
+			}
+
+			for (i = 0; i < 4; i++)
+			{
+				initValues();
+				lvlq(&v0, ((int) (&m1.y)) + (i << 2), &m0.x);
+				printf("lvlq.q %d: %.0f %.0f %.0f %.0f\n", i, v0.x, v0.y, v0.z, v0.w);
+			}
+
+			for (i = 0; i < 4; i++)
+			{
+				initValues();
+				lvrq(&v0, ((int) (&m1.y)) + (i << 2), &m0.x);
+				printf("lvrq.q %d: %.0f %.0f %.0f %.0f\n", i, v0.x, v0.y, v0.z, v0.w);
 			}
 		}
 
