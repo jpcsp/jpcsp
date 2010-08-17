@@ -30,6 +30,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceKernelModuleInfo;
+import jpcsp.HLE.kernel.types.SceKernelSMOption;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
@@ -356,6 +357,11 @@ public class ModuleMgrForUser implements HLEModule {
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
+        SceKernelSMOption smOption = null;
+        if (option_addr != 0) {
+        	smOption = new SceKernelSMOption();
+        	smOption.read(mem, option_addr);
+        }
 
         if (sceModule == null) {
             log.warn("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
@@ -371,47 +377,44 @@ public class ModuleMgrForUser implements HLEModule {
             cpu.gpr[2] = sceModule.modid; // return the module id
         } else {
         	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            if (mem.isAddressGood(sceModule.entry_addr)) {
+            int attribute = sceModule.attribute;
+        	int entryAddr = sceModule.entry_addr;
+        	if (entryAddr == -1) {
+                log.info("sceKernelStartModule - module has no entry point, trying to use module_start_func");
+                entryAddr = sceModule.module_start_func;
+                attribute = sceModule.module_start_thread_attr;
+        	}
+
+        	if (mem.isAddressGood(entryAddr)) {
                 if (mem.isAddressGood(status_addr)) {
                     mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
                 }
 
                 int priority = 0x20;
-                if (sceModule.module_start_thread_priority > 0) {
+                if (smOption != null && smOption.priority > 0) {
+                	priority = smOption.priority;
+                } else if (sceModule.module_start_thread_priority > 0) {
                 	priority = sceModule.module_start_thread_priority;
                 }
+
                 int stackSize = 0x40000;
-                if (sceModule.module_start_thread_stacksize > 0) {
+                if (smOption != null && smOption.stackSize > 0) {
+                	stackSize = smOption.stackSize;
+                } else if (sceModule.module_start_thread_stacksize > 0) {
                 	stackSize = sceModule.module_start_thread_stacksize;
                 }
-                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart",
-                        sceModule.entry_addr, priority, stackSize, sceModule.attribute, option_addr);
+
+                if (smOption != null) {
+                	attribute = smOption.attribute;
+                }
+
+                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart", entryAddr, priority, stackSize, attribute, 0);
                 // override inherited module id with the new module we are starting
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = sceModule.modid; // return the module id
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
-            } else if (sceModule.entry_addr == -1) {
-                log.info("sceKernelStartModule - module has no entry point");
-                // Try using the start_func parameters.
-                if (mem.isAddressGood(sceModule.module_start_func)) {
-                    log.info("sceKernelStartModule - using start_func parameters");
-                    if (mem.isAddressGood(status_addr)) {
-                        mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
-                    }
-
-                    SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart",
-                            sceModule.module_start_func, sceModule.module_start_thread_priority,
-                            sceModule.module_start_thread_stacksize, sceModule.module_start_thread_attr
-                            , option_addr);
-
-                    thread.moduleid = sceModule.modid;
-                    cpu.gpr[2] = sceModule.modid; // return the module id
-                    threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
-                } else {
-                    cpu.gpr[2] = -1;
-                }
             } else {
-                Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(sceModule.entry_addr));
+                Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(entryAddr));
                 cpu.gpr[2] = -1;
             }
         }
