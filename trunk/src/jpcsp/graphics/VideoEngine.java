@@ -1141,6 +1141,7 @@ public class VideoEngine {
             	context.lightingFlag.setEnabled(normalArgument);
                 if (context.lightingFlag.isEnabled()) {
                     lightingChanged = true;
+                    materialChanged = true;
                 }
                 break;
             }
@@ -2730,29 +2731,54 @@ public class VideoEngine {
 
         boolean useTexture = false;
         boolean useTextureFromNormal = false;
+        boolean useTextureFromNormalizedNormal = false;
         boolean useTextureFromPosition = false;
-        if (vinfo.texture != 0) {
-            useTexture = true;
-        } else if (context.textureFlag.isEnabled() && context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            switch (context.tex_proj_map_mode) {
-                // What is the difference between MODE_NORMAL and MODE_NORMALIZED_NORMAL?
-                case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
-                case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
-                    if (context.tex_proj_map_mode == TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL) {
-                        log.warn("Texture mode TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL not tested");
-                    }
-                    if (vinfo.normal != 0) {
-                        useTexture = true;
-                        useTextureFromNormal = true;
-                    }
-                    break;
-                case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
-                    if (vinfo.position != 0) {
-                        useTexture = true;
-                        useTextureFromPosition = true;
-                    }
-                    break;
+        int nTexCoord = 2;
+        switch (context.tex_map_mode) {
+            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+            	if (vinfo.texture != 0) {
+            	    useTexture = true;
+            	}
+                break;
+
+            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
+                switch (context.tex_proj_map_mode) {
+                    case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
+                        if (vinfo.position != 0) {
+                            useTexture = true;
+                            useTextureFromPosition = true;
+                	        nTexCoord = 3;
+                        }
+                        break;
+                    case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
+                        if (vinfo.texture != 0) {
+                            useTexture = true;
+                        }
+                        break;
+                    case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
+                        if (vinfo.normal != 0) {
+                            useTexture = true;
+                            useTextureFromNormal = true;
+                            nTexCoord = 3;
+                        }
+                        break;
+                    case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
+                        if (vinfo.normal != 0) {
+                            useTexture = true;
+                            useTextureFromNormalizedNormal = true;
+                            nTexCoord = 3;
+                        }
+                        break;
+                }
+                break;
             }
+
+            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP:
+                break;
+
+            default:
+                log("Unhandled texture matrix mode " + context.tex_map_mode);
+                break;
         }
 
         vertexStatistics.start();
@@ -2769,7 +2795,7 @@ public class VideoEngine {
 
         // Do not use optimized VertexInfo reading when tracing is enabled,
         // it doesn't produce any trace information
-        if (!useVertexCache && vinfo.index == 0 && type != PRIM_SPRITES && mem.isAddressGood(vinfo.ptr_vertex) && !isLogTraceEnabled) {
+        if (!useVertexCache && vinfo.index == 0 && type != PRIM_SPRITES && !useTextureFromNormalizedNormal && mem.isAddressGood(vinfo.ptr_vertex) && !isLogTraceEnabled) {
             // Optimized VertexInfo reading:
             // - do not copy the info already available in the OpenGL format
             //   (native format), load it into nativeBuffer (a direct buffer
@@ -2816,7 +2842,7 @@ public class VideoEngine {
                     textureOffset = vertexInfoReader.getTextureOffset();
                     textureType = vertexInfoReader.getTextureType();
                 }
-                setTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative);
+                setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative);
             }
 
             setColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative());
@@ -2846,6 +2872,7 @@ public class VideoEngine {
                 case PRIM_TRIANGLE:
                 case PRIM_TRIANGLE_STRIPS:
                 case PRIM_TRIANGLE_FANS:
+                	float[] normalizedNormal = new float[3];
                     if (cachedVertexInfo == null) {
                         for (int i = 0; i < numberOfVertex; i++) {
                             int addr = vinfo.getAddress(mem, i);
@@ -2857,12 +2884,18 @@ public class VideoEngine {
                                 doSkinning(vinfo, v);
                             }
 
-                            if (vinfo.texture != 0) {
-                                floatBuffer.put(v.t);
-                            } else if (useTextureFromNormal) {
-                                floatBuffer.put(v.n, 0, 2);
+                            if (useTextureFromNormal) {
+                                floatBuffer.put(v.n, 0, 3);
+                            } else if (useTextureFromNormalizedNormal) {
+                            	float normalLength = (float) Math.sqrt(v.n[0] * v.n[0] + v.n[1] * v.n[1] + v.n[2] * v.n[2]);
+                            	normalizedNormal[0] = v.n[0] / normalLength;
+                            	normalizedNormal[1] = v.n[1] / normalLength;
+                            	normalizedNormal[2] = v.n[2] / normalLength;
+                                floatBuffer.put(normalizedNormal, 0, 3);
                             } else if (useTextureFromPosition) {
-                                floatBuffer.put(v.p, 0, 2);
+                                floatBuffer.put(v.p, 0, 3);
+                            } else if (useTexture) {
+                                floatBuffer.put(v.t);
                             }
                             if (useVertexColor) {
                                 floatBuffer.put(v.c);
@@ -2899,7 +2932,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(useVertexColor, useTexture, vinfo.normal != 0, numberOfWeightsForBuffer);
+                    setDataPointers(useVertexColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer);
                     re.drawArrays(type, 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
                     break;
@@ -3008,7 +3041,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(useVertexColor, useTexture, vinfo.normal != 0, 0);
+                    setDataPointers(useVertexColor, useTexture, nTexCoord, vinfo.normal != 0, 0);
                     re.drawArrays(PRIM_SPRITES, 0, numberOfVertex * 2);
                     context.cullFaceFlag.updateEnabled();
                     break;
@@ -3236,12 +3269,12 @@ public class VideoEngine {
         re.enableClientState(IRenderingEngine.RE_VERTEX);
     }
 
-    private void setTexCoordPointer(boolean useTexture, int type, int stride, int offset, boolean isNative) {
-        if (vinfo.texture != 0 || useTexture) {
+    private void setTexCoordPointer(boolean useTexture, int nTexCoord, int type, int stride, int offset, boolean isNative) {
+        if (useTexture) {
             if (isNative) {
-            	bufferManager.setTexCoordPointer(nativeBufferId, 2, type, vinfo.vertexSize, offset);
+            	bufferManager.setTexCoordPointer(nativeBufferId, nTexCoord, type, vinfo.vertexSize, offset);
             } else {
-            	bufferManager.setTexCoordPointer(bufferId, 2, type, stride, offset);
+            	bufferManager.setTexCoordPointer(bufferId, nTexCoord, type, stride, offset);
             }
         }
     }
@@ -3274,11 +3307,11 @@ public class VideoEngine {
         }
     }
 
-    private void setDataPointers(boolean useVertexColor, boolean useTexture, boolean useNormal, int numberOfWeightsForBuffer) {
+    private void setDataPointers(boolean useVertexColor, boolean useTexture, int nTexCoord, boolean useNormal, int numberOfWeightsForBuffer) {
         int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos = 0;
 
         if (vinfo.texture != 0 || useTexture) {
-            stride += SIZEOF_FLOAT * 2;
+            stride += SIZEOF_FLOAT * nTexCoord;
             cpos = npos = vpos = stride;
         }
         if (useVertexColor) {
@@ -3296,7 +3329,7 @@ public class VideoEngine {
         }
 
         enableClientState(useVertexColor, useTexture);
-        setTexCoordPointer(useTexture, IRenderingEngine.RE_FLOAT, stride, 0, false);
+        setTexCoordPointer(useTexture, nTexCoord, IRenderingEngine.RE_FLOAT, stride, 0, false);
         setColorPointer(useVertexColor, IRenderingEngine.RE_FLOAT, stride, cpos, false);
         setNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false);
         re.setWeightPointer(numberOfWeightsForBuffer, IRenderingEngine.RE_FLOAT, stride, wpos);
@@ -4522,7 +4555,7 @@ public class VideoEngine {
 	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
 			boolean useVertexColor, boolean useTexture, boolean useNormal) {
 		// TODO: Compute the normals
-		setDataPointers(useVertexColor, useTexture, useNormal, 0);
+		setDataPointers(useVertexColor, useTexture, 2, useNormal, 0);
 
 		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
 		FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
