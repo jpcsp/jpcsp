@@ -36,7 +36,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			mm.addFunction(0xC1734599, sceKernelReferLwMutexStatusFunction);
 			mm.addFunction(0xDC692EE3, sceKernelTryLockLwMutexFunction);
             mm.addFunction(0x37431849, Kernel_Library_37431849Function);
-            mm.addFunction(0x1839852A, Kernel_Library_1839852AFunction);
+            mm.addFunction(0x1839852A, sceKernelMemcpyFunction);
 
 		}
 	}
@@ -53,7 +53,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			mm.removeFunction(sceKernelReferLwMutexStatusFunction);
 			mm.removeFunction(sceKernelTryLockLwMutexFunction);
             mm.removeFunction(Kernel_Library_37431849Function);
-            mm.removeFunction(Kernel_Library_1839852AFunction);
+            mm.removeFunction(sceKernelMemcpyFunction);
 
 		}
 	}
@@ -95,7 +95,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
         cpu.gpr[2] = 0x800201cb;  // Unknown meaning.
 	}
 
-    public void Kernel_Library_1839852A(Processor processor) {
+    public void sceKernelMemcpy(Processor processor) {
 		CpuState cpu = processor.cpu;
 
 		int dst = cpu.gpr[4];
@@ -173,14 +173,14 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 		}
 	};
 
-    public final HLEModuleFunction Kernel_Library_1839852AFunction = new HLEModuleFunction("Kernel_Library", "Kernel_Library_1839852A") {
+    public final HLEModuleFunction sceKernelMemcpyFunction = new HLEModuleFunction("Kernel_Library", "sceKernelMemcpy") {
 		@Override
 		public final void execute(Processor processor) {
-			Kernel_Library_1839852A(processor);
+			sceKernelMemcpy(processor);
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.Modules.Kernel_LibraryModule.Kernel_Library_1839852A(processor);";
+			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelMemcpy(processor);";
 		}
 	};
 }
