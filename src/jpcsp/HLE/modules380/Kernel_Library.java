@@ -98,9 +98,13 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
     public void Kernel_Library_1839852A(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-        log.warn("Unimplemented NID function Kernel_Library_1839852A [0x1839852A]");
+		int dst = cpu.gpr[4];
+		int src = cpu.gpr[5];
+		int length = cpu.gpr[6];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+		Processor.memory.memcpy(dst, src, length);
+
+		cpu.gpr[2] = dst;
 	}
 
 	public final HLEModuleFunction sceKernelUnlockLwMutexFunction = new HLEModuleFunction("Kernel_Library", "sceKernelUnlockLwMutex") {
