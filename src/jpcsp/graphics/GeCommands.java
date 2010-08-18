@@ -455,11 +455,32 @@ public class GeCommands {
     public final static int TRXDPOS = 0xEC;// 	TRXDPOS 	Transfer Destination Position
     public final static int UNKNOWNCOMMAND_0xED = 0XED;
     public final static int TRXSIZE = 0xEE;// 	TRXSIZE 	Transfer Size
-    public final static int UNKNOWNCOMMAND_0xFF = 0xFF;
+    public final static int VSCX = 0xF0;//      VSCX 	Vertex Screen Coordinate X
+    public final static int VSCY = 0xF1;//      VSCY 	Vertex Screen Coordinate Y
+    public final static int VSCZ = 0xF2;//      VSCZ 	Vertex Screen Coordinate Z
+    public final static int VTCS = 0xF3;//  	VTCS 	Vertex Texture Coordinate S
+    public final static int VTCT = 0xF4;//      VTCT 	Vertex Texture Coordinate T
+    public final static int VTCQ = 0xF5;//  	VTCQ 	Vertex Texture Coordinate Q
+    public final static int VCV = 0xF6;//       VCV	    Vertex Color Value
+    public final static int VAP = 0xF7;//       VAP 	Vertex Alpha and Primitive
+    public final static int VFC = 0xF8;//       VFC     Vertex Fog Coefficient
+    public final static int VSCV = 0xF9;//      VSCV 	Vertex Secondary Color Value
+    public final static int DUMMY = 0xFF;//     DUMMY   Dummy Command
 
 
     public GeCommands() {
-        commands = new String[0x100];
+        commands = new String[0x10B];
+        commands[DUMMY]="dummy";
+        commands[VSCV]="vscv";
+        commands[VFC]="vfc";
+        commands[VAP]="vap";
+        commands[VCV]="vcv";
+        commands[VTCQ]="vtcq";
+        commands[VTCT]="vtct";
+        commands[VTCS]="vtcs";
+        commands[VSCZ]="vscz";
+        commands[VSCY]="vscy";
+        commands[VSCX]="vscx";
         commands[TRXSIZE]="trxsize";
         commands[UNKNOWNCOMMAND_0xED]="unk 0xed";
         commands[TRXDPOS]="trxdpos";

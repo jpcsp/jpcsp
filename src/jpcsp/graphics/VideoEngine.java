@@ -2591,27 +2591,71 @@ public class VideoEngine {
                 context.textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
                 break;
 
-            case UNKNOWNCOMMAND_0xFF: {
+            case VSCX:
+                int coordX = normalArgument & 0xFFFF;
+                log.warn("Unimplemented VSCX: coordX=" + coordX);
+                break;
+
+            case VSCY:
+                int coordY = normalArgument & 0xFFFF;
+                log.warn("Unimplemented VSCY: coordY=" + coordY);
+                break;
+
+            case VSCZ:
+                int coordZ = normalArgument & 0xFFFF;
+                log.warn("Unimplemented VSCZ: coordZ=" + coordZ);
+                break;
+
+            case VTCS:
+                float coordS = floatArgument(normalArgument);
+                log.warn("Unimplemented VTCS: coordS=" + coordS);
+                break;
+
+            case VTCT:
+                float coordT = floatArgument(normalArgument);
+                log.warn("Unimplemented VTCT: coordT=" + coordT);
+                break;
+
+            case VTCQ:
+                float coordQ = floatArgument(normalArgument);
+                log.warn("Unimplemented VTCQ: coordQ=" + coordQ);
+                break;
+
+            case VCV:
+                int colorR = normalArgument & 0xFF;
+                int colorG = (normalArgument >> 8) & 0xFF;
+                int colorB = (normalArgument >> 16) & 0xFF;
+                log.warn("Unimplemented VCV: colorR=" + colorR + ", colorG=" + colorG + ", colorB=" + colorB);
+                break;
+
+            case VAP:
+                int alpha = normalArgument & 0xFF;
+                int prim_type = (normalArgument >> 8) & 0x7;
+                log.warn("Unimplemented VAP: alpha=" + alpha + ", prim_type=" + prim_type);
+                break;
+
+            case VFC:
+                int fog = normalArgument & 0xFF;
+                log.warn("Unimplemented VFC: fog=" + fog);
+                break;
+
+            case VSCV:
+                int colorR2 = normalArgument & 0xFF;
+                int colorG2 = (normalArgument >> 8) & 0xFF;
+                int colorB2 = (normalArgument >> 16) & 0xFF;
+                log.warn("Unimplemented VSCV: colorR2=" + colorR2 + ", colorG2=" + colorG2 + ", colorB2=" + colorB2);
+                break;
+
+            case DUMMY: {
                 // This command always appears before a BOFS command and seems to have
                 // no special meaning.
                 // The command also appears sometimes after a PRIM command.
-                // Ignore the command in these cases.
-                if (isLogInfoEnabled) {
-                    Memory mem = Memory.getInstance();
-                    int nextCommand = mem.read8(currentList.pc + 3);
-                    int previousCommand = mem.read8(currentList.pc - 5);
-                    if (normalArgument != 0) {
-                        // normalArgument != 0 means that we are executing some random
-                        // command list. Display this as an error, which will abort
-                        // the list processing when too many errors are displayed.
-                        error("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
-                    } else if (nextCommand != BOFS && previousCommand != PRIM && previousCommand != UNKNOWNCOMMAND_0xFF) {
-                        if (isLogWarnEnabled) {
-                            log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
-                        }
-                    } else if (isLogDebugEnabled) {
-                        log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
-                    }
+
+                // Confirmed on PSP to be a dummy command and can be safely ignored.
+                // This commands' normalArgument may not be always 0, as it's totally
+                // discarded on the PSP.
+                if (isLogDebugEnabled) {
+                    log.debug("Ignored DUMMY video command.");
                 }
                 break;
             }

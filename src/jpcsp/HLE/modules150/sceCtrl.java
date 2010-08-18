@@ -37,15 +37,14 @@ import jpcsp.HLE.modules.HLEStartModule;
 import org.apache.log4j.Logger;
 
 public class sceCtrl implements HLEModule, HLEStartModule {
-    private static Logger log = Modules.getLogger("sceCtrl");
 
-	private int cycle;
+    private static Logger log = Modules.getLogger("sceCtrl");
+    private int cycle;
     private int mode;
     private int uiMake;
     private int uiBreak;
     private int uiPress;
     private int uiRelease;
-
     private int TimeStamp; // microseconds
     private byte Lx;
     private byte Ly;
@@ -54,7 +53,6 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     // IdleCancelThreshold
     private int idlereset;
     private int idleback;
-
     public final static int PSP_CTRL_SELECT = 0x000001;
     public final static int PSP_CTRL_START = 0x000008;
     public final static int PSP_CTRL_UP = 0x000010;
@@ -91,27 +89,26 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     protected List<ThreadWaitingForSampling> threadsWaitingForSampling;
 
     public boolean isModeDigital() {
-        if (mode == PSP_CTRL_MODE_DIGITAL)
+        if (mode == PSP_CTRL_MODE_DIGITAL) {
             return true;
+        }
         return false;
     }
 
     /** Need to call setButtons even if the user didn't move any fingers, otherwise we can't track "press" properly */
-    public void setButtons(byte Lx, byte Ly, int Buttons)
-    {
+    public void setButtons(byte Lx, byte Ly, int Buttons) {
         int oldButtons = this.Buttons;
 
-        this.TimeStamp = (((int)Emulator.getClock().currentTimeMillis()) * 1000) & 0x7FFFFFFF;
+        this.TimeStamp = (((int) Emulator.getClock().currentTimeMillis()) * 1000) & 0x7FFFFFFF;
         this.Lx = Lx;
         this.Ly = Ly;
         this.Buttons = Buttons;
 
-        if (isModeDigital())
-        {
+        if (isModeDigital()) {
             // PSP_CTRL_MODE_DIGITAL
             // moving the analog stick has no effect and always returns 128,128
-            this.Lx = (byte)128;
-            this.Ly = (byte)128;
+            this.Lx = (byte) 128;
+            this.Ly = (byte) 128;
         }
 
         int changed = oldButtons ^ Buttons;
@@ -173,21 +170,21 @@ public class sceCtrl implements HLEModule, HLEStartModule {
             mm.removeFunction(sceCtrlSetRapidFireFunction);
 
             if (sampleAction != null) {
-            	Managers.intr.removeVBlankAction(sampleAction);
-            	sampleAction = null;
+                Managers.intr.removeVBlankAction(sampleAction);
+                sampleAction = null;
             }
         }
     }
 
     @Override
     public void start() {
-    	uiMake = 0;
+        uiMake = 0;
         uiBreak = 0;
         uiPress = 0;
         uiRelease = ~uiPress;
 
-        Lx = (byte)128;
-        Ly = (byte)128;
+        Lx = (byte) 128;
+        Ly = (byte) 128;
         Buttons = 0;
 
         idlereset = -1;
@@ -201,7 +198,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         // (to differentiate a full buffer from an empty one).
         samples = new Sample[SAMPLE_BUFFER_SIZE + 1];
         for (int i = 0; i < samples.length; i++) {
-        	samples[i] = new Sample();
+            samples[i] = new Sample();
         }
         currentSamplingIndex = 0;
         currentReadingIndex = 0;
@@ -210,8 +207,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         threadsWaitingForSampling = new LinkedList<ThreadWaitingForSampling>();
 
         if (sampleAction == null) {
-        	sampleAction = new SamplingAction();
-        	Managers.intr.addVBlankAction(sampleAction);
+            sampleAction = new SamplingAction();
+            Managers.intr.addVBlankAction(sampleAction);
         }
     }
 
@@ -220,51 +217,54 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     }
 
     protected class SamplingAction implements IAction {
-		@Override
-		public void execute() {
-			hleCtrlExecuteSampling();
-		}
+
+        @Override
+        public void execute() {
+            hleCtrlExecuteSampling();
+        }
     }
 
     protected static class ThreadWaitingForSampling {
-    	SceKernelThreadInfo thread;
-    	int readAddr;
-    	int readCount;
-    	boolean readPositive;
 
-    	public ThreadWaitingForSampling(SceKernelThreadInfo thread, int readAddr, int readCount, boolean readPositive) {
-    		this.thread = thread;
-    		this.readAddr = readAddr;
-    		this.readCount = readCount;
-    		this.readPositive = readPositive;
-    	}
+        SceKernelThreadInfo thread;
+        int readAddr;
+        int readCount;
+        boolean readPositive;
+
+        public ThreadWaitingForSampling(SceKernelThreadInfo thread, int readAddr, int readCount, boolean readPositive) {
+            this.thread = thread;
+            this.readAddr = readAddr;
+            this.readCount = readCount;
+            this.readPositive = readPositive;
+        }
     }
 
     protected static class Sample {
+
         public int TimeStamp; // microseconds
         public byte Lx;
         public byte Ly;
         public int Buttons;
 
         public int write(Memory mem, int addr, boolean positive) {
-            mem.write32(addr    , TimeStamp);
+            mem.write32(addr, TimeStamp);
             mem.write32(addr + 4, positive ? Buttons : ~Buttons);
-            mem.write8 (addr + 8, Lx);
-            mem.write8 (addr + 9, Ly);
+            mem.write8(addr + 8, Lx);
+            mem.write8(addr + 9, Ly);
 
             return addr + 16;
         }
 
         @Override
         public String toString() {
-        	return String.format("TimeStamp=%d,Lx=%d,Ly=%d,Buttons=%08X", TimeStamp, Lx, Ly, Buttons);
+            return String.format("TimeStamp=%d,Lx=%d,Ly=%d,Buttons=%08X", TimeStamp, Lx, Ly, Buttons);
         }
     }
 
     /**
      * Increment (or decrement) the given Sample Index
      * (currentSamplingIndex or currentReadingIndex).
-     * 
+     *
      * @param index the current index value
      *              0 <= index < samples.length
      * @param count the increment (or decrement) value.
@@ -273,113 +273,113 @@ public class sceCtrl implements HLEModule, HLEStartModule {
      *              0 <= returned value < samples.length
      */
     protected int incrementSampleIndex(int index, int count) {
-    	index += count;
-    	if (index >= samples.length) {
-    		index -= samples.length;
-    	} else if (index < 0) {
-    		index += samples.length;
-    	}
+        index += count;
+        if (index >= samples.length) {
+            index -= samples.length;
+        } else if (index < 0) {
+            index += samples.length;
+        }
 
-    	return index;
+        return index;
     }
 
     /**
      * Increment the given Sample Index by 1
      * (currentSamplingIndex or currentReadingIndex).
-     * 
+     *
      * @param index the current index value
      *              0 <= index < samples.length
      * @return      the index value incremented by 1
      *              0 <= returned value < samples.length
      */
     protected int incrementSampleIndex(int index) {
-    	return incrementSampleIndex(index, 1);
+        return incrementSampleIndex(index, 1);
     }
 
     protected int getNumberOfAvailableSamples() {
-    	int n = currentSamplingIndex - currentReadingIndex;
-    	if (n < 0) {
-    		n += samples.length;
-    	}
+        int n = currentSamplingIndex - currentReadingIndex;
+        if (n < 0) {
+            n += samples.length;
+        }
 
-    	return n;
+        return n;
     }
 
     protected void hleCtrlExecuteSampling() {
-    	if (log.isDebugEnabled()) {
-    		log.debug("hleCtrlExecuteSampling");
-    	}
+        if (log.isDebugEnabled()) {
+            log.debug("hleCtrlExecuteSampling");
+        }
 
-    	latchSamplingCount++;
+        latchSamplingCount++;
 
-    	Sample currentSampling = samples[currentSamplingIndex];
-    	currentSampling.TimeStamp = TimeStamp;
-    	currentSampling.Lx = Lx;
-    	currentSampling.Ly = Ly;
-    	currentSampling.Buttons = Buttons;
+        Sample currentSampling = samples[currentSamplingIndex];
+        currentSampling.TimeStamp = TimeStamp;
+        currentSampling.Lx = Lx;
+        currentSampling.Ly = Ly;
+        currentSampling.Buttons = Buttons;
 
-    	currentSamplingIndex = incrementSampleIndex(currentSamplingIndex);
-    	if (currentSamplingIndex == currentReadingIndex) {
-    		currentReadingIndex = incrementSampleIndex(currentReadingIndex);
-    	}
+        currentSamplingIndex = incrementSampleIndex(currentSamplingIndex);
+        if (currentSamplingIndex == currentReadingIndex) {
+            currentReadingIndex = incrementSampleIndex(currentReadingIndex);
+        }
 
-    	if (!threadsWaitingForSampling.isEmpty()) {
-    		ThreadWaitingForSampling wait = threadsWaitingForSampling.remove(0);
-    		if (log.isDebugEnabled()) {
-        		log.debug("hleExecuteSampling waiting up thread " + wait.thread);
-        	}
-			hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive, false);
-			Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
-    	}
+        if (!threadsWaitingForSampling.isEmpty()) {
+            ThreadWaitingForSampling wait = threadsWaitingForSampling.remove(0);
+            if (log.isDebugEnabled()) {
+                log.debug("hleExecuteSampling waiting up thread " + wait.thread);
+            }
+            hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive, false);
+            Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
+        }
     }
 
     protected void hleCtrlReadBufferImmediately(CpuState cpu, int addr, int count, boolean positive, boolean peek) {
-    	Memory mem = Memory.getInstance();
+        Memory mem = Memory.getInstance();
 
         // If more samples are available than requested, read the more recent ones
         int available = getNumberOfAvailableSamples();
         int readIndex;
         if (available > count) {
-        	readIndex = incrementSampleIndex(currentSamplingIndex, -count);
+            readIndex = incrementSampleIndex(currentSamplingIndex, -count);
         } else {
-        	count = available;
-        	readIndex = currentReadingIndex;
+            count = available;
+            readIndex = currentReadingIndex;
         }
 
         if (!peek) {
-        	// Forget the remaining samples if they are not read now
-        	currentReadingIndex = currentSamplingIndex;
+            // Forget the remaining samples if they are not read now
+            currentReadingIndex = currentSamplingIndex;
         }
 
         for (int ctrlCount = 0; ctrlCount < count; ctrlCount++) {
-        	addr = samples[readIndex].write(mem, addr, positive);
-        	readIndex = incrementSampleIndex(readIndex);
+            addr = samples[readIndex].write(mem, addr, positive);
+            readIndex = incrementSampleIndex(readIndex);
         }
 
         if (log.isDebugEnabled()) {
-    		log.debug(String.format("hleCtrlReadBufferImmediately(positive=%b, peek=%b) returning %d", positive, peek, count));
-    	}
+            log.debug(String.format("hleCtrlReadBufferImmediately(positive=%b, peek=%b) returning %d", positive, peek, count));
+        }
 
         cpu.gpr[2] = count;
     }
 
     protected void hleCtrlReadBuffer(int addr, int count, boolean positive) {
-    	// Some data available in sample buffer?
-    	if (getNumberOfAvailableSamples() > 0) {
-    		// Yes, read immediately
-    		hleCtrlReadBufferImmediately(Emulator.getProcessor().cpu, addr, count, positive, false);
-    	} else {
-    		// No, wait for next sampling
-        	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-    		SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-    		ThreadWaitingForSampling threadWaitingForSampling = new ThreadWaitingForSampling(currentThread, addr, count, positive);
-    		threadsWaitingForSampling.add(threadWaitingForSampling);
-    		threadMan.hleBlockCurrentThread();
+        // Some data available in sample buffer?
+        if (getNumberOfAvailableSamples() > 0) {
+            // Yes, read immediately
+            hleCtrlReadBufferImmediately(Emulator.getProcessor().cpu, addr, count, positive, false);
+        } else {
+            // No, wait for next sampling
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+            ThreadWaitingForSampling threadWaitingForSampling = new ThreadWaitingForSampling(currentThread, addr, count, positive);
+            threadsWaitingForSampling.add(threadWaitingForSampling);
+            threadMan.hleBlockCurrentThread();
 
-    		if (log.isDebugEnabled()) {
-        		log.debug("hleCtrlReadBuffer waiting for sample");
-        	}
-    	}
+            if (log.isDebugEnabled()) {
+                log.debug("hleCtrlReadBuffer waiting for sample");
+            }
+        }
     }
 
     public void sceCtrlSetSamplingCycle(Processor processor) {
@@ -388,15 +388,15 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int newCycle = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-        	log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
+            log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = cycle;
-            cycle = newCycle;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        cpu.gpr[2] = cycle;
+        cycle = newCycle;
     }
 
     public void sceCtrlGetSamplingCycle(Processor processor) {
@@ -406,11 +406,11 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int cycleAddr = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            mem.write32(cycleAddr, cycle);
-            cpu.gpr[2] = 0;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        mem.write32(cycleAddr, cycle);
+        cpu.gpr[2] = 0;
     }
 
     public void sceCtrlSetSamplingMode(Processor processor) {
@@ -419,7 +419,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int newMode = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-        	log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
+            log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
         }
 
         cpu.gpr[2] = mode;
@@ -442,7 +442,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int data_addr = cpu.gpr[4];
         int numBuf = cpu.gpr[5];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceCtrlPeekBufferPositive(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlPeekBufferPositive(0x%08X, %d)", data_addr, numBuf));
         }
 
         hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, true, true);
@@ -454,7 +454,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int data_addr = cpu.gpr[4];
         int numBuf = cpu.gpr[5];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceCtrlPeekBufferNegative(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlPeekBufferNegative(0x%08X, %d)", data_addr, numBuf));
         }
 
         hleCtrlReadBufferImmediately(cpu, data_addr, numBuf, false, true);
@@ -467,14 +467,14 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int numBuf = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceCtrlReadBufferPositive(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlReadBufferPositive(0x%08X, %d)", data_addr, numBuf));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            hleCtrlReadBuffer(data_addr, numBuf, true);
+            return;
         }
+        hleCtrlReadBuffer(data_addr, numBuf, true);
     }
 
     public void sceCtrlReadBufferNegative(Processor processor) {
@@ -484,14 +484,14 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int numBuf = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceCtrlReadBufferNegative(0x%08X, %d)", data_addr, numBuf));
+            log.debug(String.format("sceCtrlReadBufferNegative(0x%08X, %d)", data_addr, numBuf));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            hleCtrlReadBuffer(data_addr, numBuf, false);
+            return;
         }
+        hleCtrlReadBuffer(data_addr, numBuf, false);
     }
 
     public void sceCtrlPeekLatch(Processor processor) {
@@ -539,9 +539,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int idlereset_addr = cpu.gpr[4];
         int idleback_addr = cpu.gpr[5];
 
-        log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr)
-            + ",idleback=0x" + Integer.toHexString(idleback_addr) + ")"
-            + " returning idlereset=" + idlereset + " idleback=" + idleback);
+        log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr) + ",idleback=0x" + Integer.toHexString(idleback_addr) + ")" + " returning idlereset=" + idlereset + " idleback=" + idleback);
 
         if (mem.isAddressGood(idlereset_addr)) {
             mem.write32(idlereset_addr, idlereset);

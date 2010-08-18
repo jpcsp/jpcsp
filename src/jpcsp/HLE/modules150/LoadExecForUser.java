@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import java.io.IOException;
@@ -41,36 +40,39 @@ import jpcsp.util.Utilities;
 import org.apache.log4j.Logger;
 
 public class LoadExecForUser implements HLEModule {
+
     private static Logger log = Modules.getLogger("LoadExecForUser");
 
-	@Override
-	public String getName() { return "LoadExecForUser"; }
+    @Override
+    public String getName() {
+        return "LoadExecForUser";
+    }
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
+    @Override
+    public void installModule(HLEModuleManager mm, int version) {
+        if (version >= 150) {
 
-			mm.addFunction(0xBD2F1094, sceKernelLoadExecFunction);
-			mm.addFunction(0x2AC9954B, sceKernelExitGameWithStatusFunction);
-			mm.addFunction(0x05572A5F, sceKernelExitGameFunction);
-			mm.addFunction(0x4AC57943, sceKernelRegisterExitCallbackFunction);
+            mm.addFunction(0xBD2F1094, sceKernelLoadExecFunction);
+            mm.addFunction(0x2AC9954B, sceKernelExitGameWithStatusFunction);
+            mm.addFunction(0x05572A5F, sceKernelExitGameFunction);
+            mm.addFunction(0x4AC57943, sceKernelRegisterExitCallbackFunction);
 
-		}
-	}
+        }
+    }
 
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
+    @Override
+    public void uninstallModule(HLEModuleManager mm, int version) {
+        if (version >= 150) {
 
-			mm.removeFunction(sceKernelLoadExecFunction);
-			mm.removeFunction(sceKernelExitGameWithStatusFunction);
-			mm.removeFunction(sceKernelExitGameFunction);
-			mm.removeFunction(sceKernelRegisterExitCallbackFunction);
+            mm.removeFunction(sceKernelLoadExecFunction);
+            mm.removeFunction(sceKernelExitGameWithStatusFunction);
+            mm.removeFunction(sceKernelExitGameFunction);
+            mm.removeFunction(sceKernelRegisterExitCallbackFunction);
 
-		}
-	}
+        }
+    }
 
-	   public void sceKernelLoadExec(Processor processor) {
+    public void sceKernelLoadExec(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
@@ -81,47 +83,46 @@ public class LoadExecForUser implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
+            return;
+        }
+        log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
 
-            // Flush system memory to mimic a real PSP reset.
-            Modules.SysMemUserForUserModule.reset();
+        // Flush system memory to mimic a real PSP reset.
+        Modules.SysMemUserForUserModule.reset();
 
-            if (option_addr != 0) {
-                int optSize = mem.read32(option_addr);       // Size of the option struct.
-                int argSize = mem.read32(option_addr + 4);   // Number of args (strings).
-                int argAddr = mem.read32(option_addr + 8);   // Pointer to a list of strings.
-                int keyAddr = mem.read32(option_addr + 12);  // Pointer to an encryption key (may not be used).
+        if (option_addr != 0) {
+            int optSize = mem.read32(option_addr);       // Size of the option struct.
+            int argSize = mem.read32(option_addr + 4);   // Number of args (strings).
+            int argAddr = mem.read32(option_addr + 8);   // Pointer to a list of strings.
+            int keyAddr = mem.read32(option_addr + 12);  // Pointer to an encryption key (may not be used).
 
-                log.debug("sceKernelLoadExec params: optSize=" + optSize + ", argSize=" + argSize
-                        + ", argAddr=" + Integer.toHexString(argAddr) + ", keyAddr=" + Integer.toHexString(keyAddr));
-            }
+            log.debug("sceKernelLoadExec params: optSize=" + optSize + ", argSize=" + argSize + ", argAddr=" + Integer.toHexString(argAddr) + ", keyAddr=" + Integer.toHexString(keyAddr));
+        }
 
-            try {
-                SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
-                if (moduleInput != null) {
-                    byte[] moduleBytes = new byte[(int) moduleInput.length()];
-                    moduleInput.readFully(moduleBytes);
-                    ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+        try {
+            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
+            if (moduleInput != null) {
+                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+                moduleInput.readFully(moduleBytes);
+                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-                    SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
-                    Emulator.getClock().resume();
+                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
+                Emulator.getClock().resume();
 
-                    if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                        cpu.gpr[2] = 0;
-                    } else {
-                        log.warn("sceKernelLoadExec - failed, target is not an ELF");
-                        cpu.gpr[2] = ERROR_ILLEGAL_LOADEXEC_FILENAME;
-                    }
-                    moduleInput.close();
+                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                    cpu.gpr[2] = 0;
+                } else {
+                    log.warn("sceKernelLoadExec - failed, target is not an ELF");
+                    cpu.gpr[2] = ERROR_ILLEGAL_LOADEXEC_FILENAME;
                 }
-            } catch (GeneralJpcspException e) {
-                log.error("General Error : " + e.getMessage());
-                Emulator.PauseEmu();
-            } catch (IOException e) {
-                log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
-                cpu.gpr[2] = ERROR_PROHIBIT_LOADEXEC_DEVICE;
+                moduleInput.close();
             }
+        } catch (GeneralJpcspException e) {
+            log.error("General Error : " + e.getMessage());
+            Emulator.PauseEmu();
+        } catch (IOException e) {
+            log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
+            cpu.gpr[2] = ERROR_PROHIBIT_LOADEXEC_DEVICE;
         }
     }
 
@@ -132,10 +133,10 @@ public class LoadExecForUser implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
-            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
+            return;
         }
+        log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
+        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
     }
 
     public void sceKernelExitGame(Processor processor) {
@@ -143,10 +144,10 @@ public class LoadExecForUser implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            log.info("Program exit detected (sceKernelExitGame)");
-            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
+            return;
         }
+        log.info("Program exit detected (sceKernelExitGame)");
+        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
     }
 
     public void sceKernelRegisterExitCallback(Processor processor) {
@@ -156,53 +157,57 @@ public class LoadExecForUser implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            log.debug("IGNORING:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
-            cpu.gpr[2] = 0;
+            return;
         }
+        log.debug("IGNORING:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
+        cpu.gpr[2] = 0;
     }
+    public final HLEModuleFunction sceKernelLoadExecFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelLoadExec") {
 
-	public final HLEModuleFunction sceKernelLoadExecFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelLoadExec") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelLoadExec(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelLoadExec(processor);";
-		}
-	};
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelLoadExec(processor);
+        }
 
-	public final HLEModuleFunction sceKernelExitGameWithStatusFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGameWithStatus") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelExitGameWithStatus(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGameWithStatus(processor);";
-		}
-	};
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelLoadExec(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelExitGameWithStatusFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGameWithStatus") {
 
-	public final HLEModuleFunction sceKernelExitGameFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGame") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelExitGame(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGame(processor);";
-		}
-	};
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelExitGameWithStatus(processor);
+        }
 
-	public final HLEModuleFunction sceKernelRegisterExitCallbackFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelRegisterExitCallback") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelRegisterExitCallback(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelRegisterExitCallback(processor);";
-		}
-	};
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGameWithStatus(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelExitGameFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGame") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelExitGame(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGame(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelRegisterExitCallbackFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelRegisterExitCallback") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelRegisterExitCallback(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelRegisterExitCallback(processor);";
+        }
+    };
 }

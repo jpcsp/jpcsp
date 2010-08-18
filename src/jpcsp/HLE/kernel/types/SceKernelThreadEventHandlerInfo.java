@@ -38,12 +38,13 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
     public final static int THREAD_EVENT_ID_ALL = 0xFFFFFFFF;
     public final static int THREAD_EVENT_ID_KERN = 0xFFFFFFF8;
     public final static int THREAD_EVENT_ID_USER = 0xFFFFFFF0;
-    public final static int THREAD_EVENT_ID_CURRENT = 0;
+    public final static int THREAD_EVENT_ID_CURRENT = 0x0;
     // Thread Events.
-    public final static int THREAD_EVENT_CREATE = 1;
-    public final static int THREAD_EVENT_START = 2;
-    public final static int THREAD_EVENT_EXIT = 4;
-    public final static int THREAD_EVENT_DELETE = 8;
+    public final static int THREAD_EVENT_CREATE = 0x1;
+    public final static int THREAD_EVENT_START = 0x2;
+    public final static int THREAD_EVENT_EXIT = 0x4;
+    public final static int THREAD_EVENT_DELETE = 0x8;
+    public final static int THREAD_EVENT_ALL = 0xF;
 
 	public SceKernelThreadEventHandlerInfo(String name, int thid, int mask, int handler, int common) {
 		size = DEFAULT_SIZE;
@@ -72,11 +73,12 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
         return ((mask & THREAD_EVENT_DELETE) == THREAD_EVENT_DELETE);
     }
 
-    public void triggerThreadEventHandler() {
-        SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getThreadById(thid);
+    public void triggerThreadEventHandler(int evt) {
+        // Uses the current thread's (caller) context and uid.
+        SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 
         if(thread != null) {
-            Modules.ThreadManForUserModule.executeCallback(thread, handler, new AfterEventHandler(), mask, thid, common);
+            Modules.ThreadManForUserModule.executeCallback(thread, handler, new AfterEventHandler(), evt, thread.uid, common);
         }
     }
 

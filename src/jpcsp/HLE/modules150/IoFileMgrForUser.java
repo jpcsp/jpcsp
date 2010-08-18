@@ -158,8 +158,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     private byte[] AES128Key = new byte[16];
     private PGDFileConnector pgdFileConnector;
 
-    private boolean isFatMSAssigned = false;
-
     class IoInfo {
         // PSP settings
         public final int flags;
@@ -2269,7 +2267,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
-                    isFatMSAssigned = true;
                     // Trigger callback immediately
                     threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
                     cpu.gpr[2] = 0;  // Success
@@ -2288,7 +2285,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
-                    isFatMSAssigned = false;
                     cpu.gpr[2] = 0;  // Success
                 } else {
                     cpu.gpr[2] = -1; // Invalid parameters
@@ -2304,7 +2300,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (mem.isAddressGood(indata_addr) && inlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
-                    isFatMSAssigned = (mem.read32(indata_addr) == 1) ? true : false;
+                    MemoryStick.setState(mem.read32(indata_addr));
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;
@@ -2348,7 +2344,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (mem.isAddressGood(outdata_addr) && outlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
-                    mem.write32(outdata_addr, isFatMSAssigned ? 1 : 0);
+                    mem.write32(outdata_addr, MemoryStick.getState());
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;

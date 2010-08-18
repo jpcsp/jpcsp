@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import java.text.SimpleDateFormat;
@@ -45,8 +44,8 @@ import org.apache.log4j.Logger;
  * TODO list:
  * 1. Resolve functions scePsmfPlayer_2BEB1569 and scePsmfPlayer_58B83577's name.
  */
-
 public class scePsmfPlayer implements HLEModule {
+
     private static Logger log = Modules.getLogger("scePsmfPlayer");
 
     @Override
@@ -71,6 +70,11 @@ public class scePsmfPlayer implements HLEModule {
             mm.addFunction(0xF8EF08A6, scePsmfPlayerGetCurrentStatusFunction);
             mm.addFunction(0xDF089680, scePsmfPlayerGetPsmfInfoFunction);
             mm.addFunction(0x1E57A8E7, scePsmfPlayerConfigPlayerFunction);
+            mm.addFunction(0xA3D81169, scePsmfPlayerChangePlayModeFunction);
+            mm.addFunction(0x68F07175, scePsmfPlayerGetCurrentAudioStreamFunction);
+            mm.addFunction(0xF3EFAA91, scePsmfPlayerGetCurrentPlayModeFunction);
+            mm.addFunction(0x3ED62233, scePsmfPlayerGetCurrentPtsFunction);
+            mm.addFunction(0x9FF2B2E7, scePsmfPlayerGetCurrentVideoStreamFunction);
             mm.addFunction(0x2BEB1569, scePsmfPlayer_2BEB1569Function);
             mm.addFunction(0x58B83577, scePsmfPlayer_58B83577Function);
 
@@ -94,6 +98,11 @@ public class scePsmfPlayer implements HLEModule {
             mm.removeFunction(scePsmfPlayerGetCurrentStatusFunction);
             mm.removeFunction(scePsmfPlayerGetPsmfInfoFunction);
             mm.removeFunction(scePsmfPlayerConfigPlayerFunction);
+            mm.removeFunction(scePsmfPlayerChangePlayModeFunction);
+            mm.removeFunction(scePsmfPlayerGetCurrentAudioStreamFunction);
+            mm.removeFunction(scePsmfPlayerGetCurrentPlayModeFunction);
+            mm.removeFunction(scePsmfPlayerGetCurrentPtsFunction);
+            mm.removeFunction(scePsmfPlayerGetCurrentVideoStreamFunction);
             mm.removeFunction(scePsmfPlayer_2BEB1569Function);
             mm.removeFunction(scePsmfPlayer_58B83577Function);
 
@@ -103,10 +112,16 @@ public class scePsmfPlayer implements HLEModule {
     protected static final int psmfPlayerVideoTimestampStep = 3003;
     protected static final int psmfPlayerAudioTimestampStep = 4180;
     protected static final int psmfTimestampPerSecond = 90000;
-    protected static final int pmsfMaxAheadTimestamp = 100000;
+    protected static final int psmfMaxAheadTimestamp = 100000;
+    protected static final int psmfInitFlag = 0xE;
+
     protected static final int PSMF_PLAYER_STATUS_NONE = 0;
-    protected static final int PSMF_PLAYER_STATUS_READY = 1;
-    protected static final int PSMF_PLAYER_STATUS_RUNNING = 2;
+    protected static final int PSMF_PLAYER_STATUS_INIT = 1;
+    protected static final int PSMF_PLAYER_STATUS_VISIBLE = 2;
+    protected static final int PSMF_PLAYER_STATUS_QUIT = 3;
+    protected static final int PSMF_PLAYER_STATUS_FINISHED = 3;
+    protected static final int PSMF_PLAYER_STATUS_VIDEO_FINISHED = 512;
+    protected static final int PSMF_PLAYER_STATUS_AUDIO_FINISHED = 256;
 
     // .PMF file vars.
     protected String pmfFilePath;
@@ -125,6 +140,8 @@ public class scePsmfPlayer implements HLEModule {
 
     // Playback settings.
     protected int displayBuffer;
+    protected int unk1;
+    protected int unk2;
     protected int frameWidth;
     protected int videoPixelMode;
     protected int audioChannelMode;
@@ -139,8 +156,8 @@ public class scePsmfPlayer implements HLEModule {
     }
 
     protected Date convertPsmfTimestampToDate(long timestamp) {
-    	long millis = timestamp / (psmfTimestampPerSecond / 1000);
-    	return new Date(millis);
+        long millis = timestamp / (psmfTimestampPerSecond / 1000);
+        return new Date(millis);
     }
 
     private void writePSMFVideoImage(int dest_addr, int frameWidth) {
@@ -219,7 +236,7 @@ public class scePsmfPlayer implements HLEModule {
     }
 
     protected void analyzePSMFLastTimestamp() {
-        if(pmfFileData != null) {
+        if (pmfFileData != null) {
             // Endian swapped inside the buffer.
             psmfPlayerLastTimestamp = ((pmfFileData[92] << 24) | (pmfFileData[93] << 16) | (pmfFileData[94] << 8) | (pmfFileData[95]));
             psmfPlayerLastDate = convertPsmfTimestampToDate(psmfPlayerLastTimestamp);
@@ -231,22 +248,34 @@ public class scePsmfPlayer implements HLEModule {
         Memory mem = Processor.memory;
 
         int psmfplayer = cpu.gpr[4];
-        int buffer_addr = cpu.gpr[5];
+        int psmfDataAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: scePsmfPlayerCreate psmfplayer=0x" + Integer.toHexString(psmfplayer) + " buffer_addr=0x" + Integer.toHexString(buffer_addr));
+        log.warn("PARTIAL: scePsmfPlayerCreate psmfplayer=0x" + Integer.toHexString(psmfplayer)
+                + " psmfDataAddr=0x" + Integer.toHexString(psmfDataAddr));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            displayBuffer = mem.read32(buffer_addr);
-            frameWidth = 512;
-            audioSize = 2048;
-            videoPixelMode = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
-
-            psmfPlayerStatus = PSMF_PLAYER_STATUS_READY;
-
-            cpu.gpr[2] = 0;
+            return;
         }
+        // The psmfDataAddr contains three fields that are manually set before
+        // scePsmfPlayerCreate is called.
+        displayBuffer = mem.read32(psmfDataAddr); // The buffer allocated for scePsmf, which is ported into scePsmfPlayer.
+        unk1 = mem.read32(psmfDataAddr + 4);      // Always 0x300000.
+        unk2 = mem.read32(psmfDataAddr + 8);      // Variable integer value.
+        log.info("PSMF Data: displayBuffer=0x" + Integer.toHexString(displayBuffer)
+                + ", unk1=0x" + Integer.toHexString(unk1)
+                + ", unk2=" + unk2);
+
+        // Set default values.
+        frameWidth = 512;
+        audioSize = 2048;
+        videoPixelMode = sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+        audioChannelMode = 0;
+
+        // Start with INIT.
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
+
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerDelete(Processor processor) {
@@ -258,18 +287,18 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (checkMediaEngineState()) {
-                if (me != null) {
-                    me.finish();
-                }
-                if (pmfFileChannel != null) {
-                    pmfFileChannel.flush();
-                }
-            }
-
-            cpu.gpr[2] = 0;
+            return;
         }
+        if (checkMediaEngineState()) {
+            if (me != null) {
+                me.finish();
+            }
+            if (pmfFileChannel != null) {
+                pmfFileChannel.flush();
+            }
+        }
+
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerSetPsmf(Processor processor) {
@@ -282,29 +311,30 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            pmfFilePath = Utilities.readStringZ(file_addr);
-
-            //Get the file and read it to a buffer.
-            try {
-                SeekableDataInput psmfFile = Modules.IoFileMgrForUserModule.getFile(pmfFilePath, 0);
-                pmfFileData = new byte[(int) psmfFile.length()];
-                psmfFile.readFully(pmfFileData);
-
-                log.info("'" + pmfFilePath + "' PSMF file loaded.");
-
-                if (checkMediaEngineState()) {
-                    pmfFileChannel = new PacketChannel();
-                    pmfFileChannel.writeFile(pmfFileData);
-                }
-            } catch (Exception e) {
-                //TODO
-            }
-
-            psmfPlayerStatus = PSMF_PLAYER_STATUS_RUNNING;
-
-            cpu.gpr[2] = 0;
+            return;
         }
+        pmfFilePath = Utilities.readStringZ(file_addr);
+
+        //Get the file and read it to a buffer.
+        try {
+            SeekableDataInput psmfFile = Modules.IoFileMgrForUserModule.getFile(pmfFilePath, 0);
+            pmfFileData = new byte[(int) psmfFile.length()];
+            psmfFile.readFully(pmfFileData);
+
+            log.info("'" + pmfFilePath + "' PSMF file loaded.");
+
+            if (checkMediaEngineState()) {
+                pmfFileChannel = new PacketChannel();
+                pmfFileChannel.writeFile(pmfFileData);
+            }
+        } catch (Exception e) {
+            //TODO
+        }
+
+        // Switch to VISIBLE.
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_VISIBLE;
+
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerReleasePsmf(Processor processor) {
@@ -316,49 +346,61 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (checkMediaEngineState()) {
-                if (me != null) {
-                    me.finish();
-                }
-                if (pmfFileChannel != null) {
-                    pmfFileChannel.flush();
-                }
-            }
-
-            psmfPlayerStatus = PSMF_PLAYER_STATUS_READY;
-
-            cpu.gpr[2] = 0;
+            return;
         }
+        if (checkMediaEngineState()) {
+            if (me != null) {
+                me.finish();
+            }
+            if (pmfFileChannel != null) {
+                pmfFileChannel.flush();
+            }
+        }
+
+        // Go back to INIT, because some applications recognize that another file can be
+        // loaded after scePsmfPlayerReleasePsmf has been called.
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
+
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerStart(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int psmfplayer = cpu.gpr[4];
-        int unk = cpu.gpr[5];
-        int init_status = cpu.gpr[6];
+        int initFlagAddr = cpu.gpr[5];
+        int initStatus = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerStart psmfplayer=0x" + Integer.toHexString(psmfplayer) + " unk=0x" + Integer.toHexString(unk) + " init_status=" + Integer.toHexString(init_status));
+        log.warn("PARTIAL: scePsmfPlayerStart psmfplayer=0x" + Integer.toHexString(psmfplayer)
+                + " initFlagAddr=0x" + Integer.toHexString(initFlagAddr)
+                + " initStatus=" + Integer.toHexString(initStatus));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            psmfPlayerStatus = init_status;
-            psmfPlayerAvcCurrentDecodingTimestamp = 0;
-            psmfPlayerAtracCurrentDecodingTimestamp = 0;
-
-            analyzePSMFLastTimestamp();
-
-            if (checkMediaEngineState()) {
-                if (pmfFileChannel != null) {
-                    me = new MediaEngine();
-                    me.init(pmfFileChannel.getFilePath());
-                }
-            }
-
-            cpu.gpr[2] = 0;
+            return;
         }
+        if(mem.isAddressGood(initFlagAddr)) {
+            boolean isPsmfInit = (mem.read32(initFlagAddr) == psmfInitFlag) ? true : false;
+
+            if(!isPsmfInit) {
+                log.warn("scePsmfPlayerStart is using an uninitialized PSMF (no 0xE flag found)!");
+            }
+        }
+        psmfPlayerStatus = initStatus;
+        psmfPlayerAvcCurrentDecodingTimestamp = 0;
+        psmfPlayerAtracCurrentDecodingTimestamp = 0;
+
+        analyzePSMFLastTimestamp();
+
+        if (checkMediaEngineState()) {
+            if (pmfFileChannel != null) {
+                me = new MediaEngine();
+                me.init(pmfFileChannel.getFilePath());
+            }
+        }
+
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerGetAudioOutSize(Processor processor) {
@@ -370,9 +412,9 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = audioSize;
+            return;
         }
+        cpu.gpr[2] = audioSize;
     }
 
     public void scePsmfPlayerStop(Processor processor) {
@@ -384,20 +426,21 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (checkMediaEngineState()) {
-                if (me != null) {
-                    me.finish();
-                }
-                if (pmfFileChannel != null) {
-                    pmfFileChannel.flush();
-                }
-            }
-
-            psmfPlayerStatus = PSMF_PLAYER_STATUS_RUNNING;
-
-            cpu.gpr[2] = 0;
+            return;
         }
+        if (checkMediaEngineState()) {
+            if (me != null) {
+                me.finish();
+            }
+            if (pmfFileChannel != null) {
+                pmfFileChannel.flush();
+            }
+        }
+
+        // Always switch to VISIBLE, because this PSMF can still be resumed.
+        psmfPlayerStatus = PSMF_PLAYER_STATUS_VISIBLE;
+
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerUpdate(Processor processor) {
@@ -409,9 +452,11 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = 0;
+            return;
         }
+        // Update video presentation timestamp.
+        psmfPlayerAvcCurrentPresentationTimestamp = psmfPlayerAvcCurrentDecodingTimestamp;
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerGetVideoData(Processor processor) {
@@ -425,39 +470,45 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        // Check if there's already a valid pointer at videoDataAddr.
+        // If not, use the displayBuffer from scePsmfPlayerCreate.
+        if (mem.isAddressGood(mem.read32(videoDataAddr + 4))) {
+            frameWidth = mem.read32(videoDataAddr);
+            displayBuffer = mem.read32(videoDataAddr + 4);
         } else {
-            // Check if there's already a valid pointer at videoDataAddr.
-            if (mem.isAddressGood(mem.read32(videoDataAddr + 4))) {
-                frameWidth = mem.read32(videoDataAddr);
-                displayBuffer = mem.read32(videoDataAddr + 4);
-            } else {
-                mem.write32(videoDataAddr, frameWidth);
-                mem.write32(videoDataAddr + 4, displayBuffer);
-            }
+            mem.write32(videoDataAddr, frameWidth);
+            mem.write32(videoDataAddr + 4, displayBuffer);
+        }
 
-            // Write video data.
-            if (checkMediaEngineState()) {
-                if (me != null) {
-                    if (me.getContainer() != null) {
-                        me.step();
-                        writePSMFVideoImage(displayBuffer, frameWidth);
-                        psmfPlayerLastTimestamp = me.getPacketTimestamp("Video", "DTS");
-                    }
+        // Write video data.
+        if (checkMediaEngineState()) {
+            if (me != null) {
+                if (me.getContainer() != null) {
+                    me.step();
+                    writePSMFVideoImage(displayBuffer, frameWidth);
+                    psmfPlayerLastTimestamp = me.getPacketTimestamp("Video", "DTS");
                 }
-            } else {
-                generateFakePSMFVideo(displayBuffer, frameWidth);
             }
+        } else {
+            generateFakePSMFVideo(displayBuffer, frameWidth);
+        }
 
-            // Update video timestamp.
-            psmfPlayerAvcCurrentDecodingTimestamp += psmfPlayerVideoTimestampStep;
+        // Update video timestamp.
+        psmfPlayerAvcCurrentDecodingTimestamp += psmfPlayerVideoTimestampStep;
 
-            // Check if we've reached the last timestamp.
-            if (psmfPlayerAvcCurrentDecodingTimestamp > psmfPlayerLastTimestamp) {
-                psmfPlayerStatus = PSMF_PLAYER_STATUS_READY;
-                cpu.gpr[2] = 0x8061600c;  // No more data (actual name unknown).
-            } else {
-                cpu.gpr[2] = 0;
-            }
+        // Check playback status.
+        if (psmfPlayerAvcCurrentDecodingTimestamp > psmfPlayerLastTimestamp) {
+            // If we've reached the last timestamp, change the status to VIDEO_FINISHED.
+            psmfPlayerStatus = PSMF_PLAYER_STATUS_VIDEO_FINISHED;
+            cpu.gpr[2] = 0;
+        } else if (psmfPlayerAvcCurrentDecodingTimestamp > psmfPlayerAtracCurrentDecodingTimestamp + psmfMaxAheadTimestamp) {
+            // If we're ahead of audio, switch to VISIBLE and return an error.
+            psmfPlayerStatus = PSMF_PLAYER_STATUS_VISIBLE;
+            cpu.gpr[2] = 0x8061600c;  // No more data (actual name unknown).
+        } else {
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -472,10 +523,21 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            // Update audio timestamp.
-            psmfPlayerAtracCurrentDecodingTimestamp += psmfPlayerAudioTimestampStep;
+            return;
+        }
+        // Update audio timestamp.
+        psmfPlayerAtracCurrentDecodingTimestamp += psmfPlayerAudioTimestampStep;
 
+        // Check playback status.
+        if (psmfPlayerAtracCurrentDecodingTimestamp > psmfPlayerLastTimestamp) {
+            // If we've reached the last timestamp, change the status to AUDIO_FINISHED.
+            psmfPlayerStatus = PSMF_PLAYER_STATUS_AUDIO_FINISHED;
+            cpu.gpr[2] = 0;
+        } else if (psmfPlayerAtracCurrentDecodingTimestamp > psmfPlayerAvcCurrentDecodingTimestamp + psmfMaxAheadTimestamp) {
+            // If we're ahead of video, switch to VISIBLE and return an error.
+            psmfPlayerStatus = PSMF_PLAYER_STATUS_VISIBLE;
+            cpu.gpr[2] = 0x8061600c;  // No more data (actual name unknown).
+        } else {
             cpu.gpr[2] = 0;
         }
     }
@@ -489,9 +551,9 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = psmfPlayerStatus;
+            return;
         }
+        cpu.gpr[2] = psmfPlayerStatus;
     }
 
     public void scePsmfPlayerGetPsmfInfo(Processor processor) {
@@ -505,9 +567,9 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = 0;
+            return;
         }
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayerConfigPlayer(Processor processor) {
@@ -515,24 +577,116 @@ public class scePsmfPlayer implements HLEModule {
         Memory mem = Memory.getInstance();
 
         int psmfplayer = cpu.gpr[4];
-        int stream_type = cpu.gpr[5];
-        int setting = cpu.gpr[6];
+        int streamType = cpu.gpr[5];
+        int playMode = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerConfigPlayer psmfplayer=0x" + Integer.toHexString(psmfplayer) + " stream_type=" + stream_type + " setting=" + setting);
+        log.warn("PARTIAL: scePsmfPlayerConfigPlayer psmfplayer=0x" + Integer.toHexString(psmfplayer)
+                + " streamType=" + streamType + " playMode=" + playMode);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (stream_type == 1) {           // Video.
-                videoPixelMode = setting;
-            } else if (stream_type == 0) {   // Audio.
-                audioChannelMode = setting;
-            } else {
-                log.warn("scePsmfPlayerConfigPlayer unknown stream type.");
-            }
-
-            cpu.gpr[2] = 0;
+            return;
         }
+        if (streamType == 1) {           // Video: sets the pixel mode.
+            videoPixelMode = playMode;
+        } else if (streamType == 0) {    // Audio: sets the channel mode.
+            audioChannelMode = playMode;
+        } else {
+            log.warn("scePsmfPlayerConfigPlayer unknown stream type.");
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerChangePlayMode(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+        int playMode = cpu.gpr[5];
+        int streamType = cpu.gpr[6];
+
+        log.warn("PARTIAL: scePsmfPlayerChangePlayMode psmfplayer=0x" + Integer.toHexString(psmfplayer)
+                + ", playMode=" + playMode + ", streamType=" + streamType);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (streamType == 1) {           // Video.
+            videoPixelMode = playMode;
+        } else if (streamType == 0) {    // Audio.
+            audioChannelMode = playMode;
+        } else {
+            log.warn("scePsmfPlayerChangePlayMode unknown stream type.");
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerGetCurrentAudioStream(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("UNIMPLEMENTED: scePsmfPlayerGetCurrentAudioStream psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerGetCurrentPlayMode(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
+
+        int psmfplayer = cpu.gpr[4];
+        int videoPlayModeAddr = cpu.gpr[5];
+        int audioPlayModeAddr = cpu.gpr[6];
+
+        log.warn("PARTIAL: scePsmfPlayerGetCurrentPlayMode psmfplayer=0x" + Integer.toHexString(psmfplayer)
+                + ", videoPlayModeAddr=0x" + Integer.toHexString(videoPlayModeAddr)
+                + ", audioPlayModeAddr=0x" + Integer.toHexString(audioPlayModeAddr));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if(mem.isAddressGood(videoPlayModeAddr)) {
+            mem.write32(videoPlayModeAddr, videoPixelMode);
+        }
+        if(mem.isAddressGood(audioPlayModeAddr)) {
+            mem.write32(audioPlayModeAddr, audioChannelMode);
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerGetCurrentPts(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("PARTIAL: scePsmfPlayerGetCurrentPts psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        // Return our current video presentation timestamp.
+        cpu.gpr[2] = psmfPlayerAvcCurrentPresentationTimestamp;
+    }
+
+    public void scePsmfPlayerGetCurrentVideoStream(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("UNIMPLEMENTED: scePsmfPlayerGetCurrentVideoStream psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayer_2BEB1569(Processor processor) {
@@ -544,9 +698,9 @@ public class scePsmfPlayer implements HLEModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = 0;
+            return;
         }
+        cpu.gpr[2] = 0;
     }
 
     public void scePsmfPlayer_58B83577(Processor processor) {
@@ -566,7 +720,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerCreate(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerDeleteFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerDelete") {
 
         @Override
@@ -579,7 +732,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerDelete(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerSetPsmfFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmf") {
 
         @Override
@@ -592,7 +744,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmf(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerReleasePsmfFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerReleasePsmf") {
 
         @Override
@@ -605,7 +756,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerReleasePsmf(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerStartFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerStart") {
 
         @Override
@@ -618,7 +768,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerStart(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerGetAudioOutSizeFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetAudioOutSize") {
 
         @Override
@@ -631,7 +780,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetAudioOutSize(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerStopFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerStop") {
 
         @Override
@@ -644,7 +792,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerStop(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerUpdateFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerUpdate") {
 
         @Override
@@ -657,7 +804,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerUpdate(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerGetVideoDataFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetVideoData") {
 
         @Override
@@ -670,7 +816,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetVideoData(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerGetAudioDataFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetAudioData") {
 
         @Override
@@ -683,7 +828,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetAudioData(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerGetCurrentStatusFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentStatus") {
 
         @Override
@@ -696,7 +840,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetCurrentStatus(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerGetPsmfInfoFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetPsmfInfo") {
 
         @Override
@@ -709,7 +852,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetPsmfInfo(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayerConfigPlayerFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerConfigPlayer") {
 
         @Override
@@ -722,7 +864,66 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayerConfigPlayer(processor);";
         }
     };
+    public final HLEModuleFunction scePsmfPlayerChangePlayModeFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerChangePlayMode") {
 
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerChangePlayMode(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayerChangePlayMode(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerGetCurrentAudioStreamFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentAudioStream") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerGetCurrentAudioStream(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentAudioStream(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerGetCurrentPlayModeFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentPlayMode") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerGetCurrentPlayMode(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentPlayMode(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerGetCurrentPtsFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentPts") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerGetCurrentPts(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentPts(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerGetCurrentVideoStreamFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentVideoStream") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerGetCurrentVideoStream(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentVideoStream(processor);";
+        }
+    };
     public final HLEModuleFunction scePsmfPlayer_2BEB1569Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayer_2BEB1569") {
 
         @Override
@@ -735,7 +936,6 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayer_2BEB1569(processor);";
         }
     };
-
     public final HLEModuleFunction scePsmfPlayer_58B83577Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayer_58B83577") {
 
         @Override

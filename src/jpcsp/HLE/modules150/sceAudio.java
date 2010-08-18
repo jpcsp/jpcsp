@@ -28,6 +28,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
@@ -626,6 +627,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int vol = cpu.gpr[5];
         int pvoid_buf = cpu.gpr[6];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (!mem.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
@@ -647,6 +652,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int vol = cpu.gpr[5];
         int pvoid_buf = cpu.gpr[6];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (pvoid_buf == 0) {
             if (hleAudioGetChannelRestLen(pspPCMChannels[channel]) != 0) {
                 log.warn("sceAudioOutputBlocking (pvoid_buf==0): delaying current thread");
@@ -690,6 +699,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int rightvol = cpu.gpr[6];
         int pvoid_buf = cpu.gpr[7];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (!mem.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
@@ -712,12 +725,16 @@ public class sceAudio implements HLEModule, HLEThread {
         int rightvol = cpu.gpr[6];
         int pvoid_buf = cpu.gpr[7];
 
-        // Tested on PSP:
-        // An output adress of 0 is actually a special code for the PSP.
-        // It means that we must stall processing until all the previous unplayed samples' data
-        // is output. The safest way to mimic this, is to delay the current thread (which will be
-        // an audio processing one) if there are still samples to play.
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (pvoid_buf == 0) {
+            // Tested on PSP:
+            // An output adress of 0 is actually a special code for the PSP.
+            // It means that we must stall processing until all the previous unplayed samples' data
+            // is output. The safest way to mimic this, is to delay the current thread (which will be
+            // an audio processing one) if there are still samples to play.
             if (hleAudioGetChannelRestLen(pspPCMChannels[channel]) != 0) {
                 log.warn("sceAudioOutputPannedBlocking (pvoid_buf==0): delaying current thread");
                 Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
@@ -755,6 +772,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int samplecount = cpu.gpr[5];
         int format = cpu.gpr[6];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (disableChReserve) {
             log.warn("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
             cpu.gpr[2] = -1;
@@ -802,6 +823,10 @@ public class sceAudio implements HLEModule, HLEThread {
 
         int channel = cpu.gpr[4];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (pspPCMChannels[channel].reserved) {
             pspPCMChannels[channel].release();
             pspPCMChannels[channel].reserved = false;
@@ -816,6 +841,10 @@ public class sceAudio implements HLEModule, HLEThread {
 
         int channel = cpu.gpr[4];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
 
@@ -825,6 +854,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int channel = cpu.gpr[4];
         int samplecount = cpu.gpr[5];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         pspPCMChannels[channel].allocatedSamples = samplecount;
         cpu.gpr[2] = 0;
     }
@@ -835,6 +868,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int channel = cpu.gpr[4];
         int format = cpu.gpr[5];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         pspPCMChannels[channel].format = format;
         cpu.gpr[2] = 0;
     }
@@ -846,6 +883,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int leftvol = cpu.gpr[5];
         int rightvol = cpu.gpr[6];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
     }
 
@@ -865,6 +906,10 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioOutput2GetRestSample(Processor processor) {
         CpuState cpu = processor.cpu;
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspSRCChannel);
     }
 
@@ -873,6 +918,10 @@ public class sceAudio implements HLEModule, HLEThread {
 
         int samplecount = cpu.gpr[4];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (pspSRCChannel.reserved) {
             pspSRCChannel.allocatedSamples = samplecount;
             cpu.gpr[2] = 0;
@@ -888,12 +937,15 @@ public class sceAudio implements HLEModule, HLEThread {
         int freq = cpu.gpr[5];
         int format = cpu.gpr[6];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (isAudioOutput2) {
             freq = 44100;
             format = 0;
             isAudioOutput2 = false;
         }
-
         if (disableChReserve) {
             log.warn("IGNORED sceAudioSRCChReserve samplecount= " + samplecount + " freq= " + freq + " format=" + format);
             cpu.gpr[2] = -1;
@@ -912,6 +964,10 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioSRCChRelease(Processor processor) {
         CpuState cpu = processor.cpu;
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (pspSRCChannel.reserved) {
             pspSRCChannel.release();
             pspSRCChannel.reserved = false;
@@ -927,6 +983,10 @@ public class sceAudio implements HLEModule, HLEThread {
         int vol = cpu.gpr[4];
         int buf = cpu.gpr[5];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (!mem.isAddressGood(buf)) {
             log.warn("sceAudioSRCOutputBlocking bad pointer " + String.format("0x%08X", buf));
             cpu.gpr[2] = -1;
@@ -1011,6 +1071,10 @@ public class sceAudio implements HLEModule, HLEThread {
 
         int channel = cpu.gpr[4];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
     }
     public final HLEModuleFunction sceAudioInitFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioInit") {

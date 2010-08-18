@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ARGUMENT;
@@ -33,10 +32,13 @@ import jpcsp.HLE.modules.HLEStartModule;
 import org.apache.log4j.Logger;
 
 public class sceSuspendForUser implements HLEModule, HLEStartModule {
+
     private static Logger log = Modules.getLogger("sceSuspendForUser");
 
     @Override
-    public String getName() { return "sceSuspendForUser"; }
+    public String getName() {
+        return "sceSuspendForUser";
+    }
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
@@ -68,17 +70,15 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
     @Override
     public void start() {
-    	volatileMemLocked = false;
+        volatileMemLocked = false;
     }
 
     @Override
     public void stop() {
     }
-
     public static final int KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY = 0;
     public static final int KERNEL_POWER_TICK_SUSPEND = 1;
     public static final int KERNEL_POWER_TICK_DISPLAY = 6;
-
     private boolean volatileMemLocked;
 
     public void sceKernelPowerLock(Processor processor) {
@@ -88,12 +88,12 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (log.isTraceEnabled()) {
-                log.trace("IGNORING:sceKernelPowerLock type=" + type);
-            }
-        cpu.gpr[2] = 0;
+            return;
         }
+        if (log.isTraceEnabled()) {
+            log.trace("IGNORING:sceKernelPowerLock type=" + type);
+        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceKernelPowerUnlock(Processor processor) {
@@ -103,12 +103,12 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (log.isTraceEnabled()) {
-                log.trace("IGNORING:sceKernelPowerUnlock type=" + type);
-            }
-            cpu.gpr[2] = 0;
+            return;
         }
+        if (log.isTraceEnabled()) {
+            log.trace("IGNORING:sceKernelPowerUnlock type=" + type);
+        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceKernelPowerTick(Processor processor) {
@@ -118,29 +118,29 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            switch (flag) {
-                case KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY:
-                    if (log.isTraceEnabled()) {
-                        log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY)");
-                    }
-                    break;
-                case KERNEL_POWER_TICK_SUSPEND:
-                    if (log.isTraceEnabled()) {
-                        log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND)");
-                    }
-                    break;
-                case KERNEL_POWER_TICK_DISPLAY:
-                    if (log.isTraceEnabled()) {
-                        log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_DISPLAY)");
-                    }
-                    break;
-                default:
-                    log.warn("IGNORING:sceKernelPowerTick(" + flag + ")");
-                    break;
-            }
-            cpu.gpr[2] = 0;
+            return;
         }
+        switch (flag) {
+            case KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY:
+                if (log.isTraceEnabled()) {
+                    log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY)");
+                }
+                break;
+            case KERNEL_POWER_TICK_SUSPEND:
+                if (log.isTraceEnabled()) {
+                    log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND)");
+                }
+                break;
+            case KERNEL_POWER_TICK_DISPLAY:
+                if (log.isTraceEnabled()) {
+                    log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_DISPLAY)");
+                }
+                break;
+            default:
+                log.warn("IGNORING:sceKernelPowerTick(" + flag + ")");
+                break;
+        }
+        cpu.gpr[2] = 0;
     }
 
     protected void hleKernelVolatileMemLock(Processor processor, boolean trylock) {
@@ -152,7 +152,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         int psize = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("hleKernelVolatileMemLock type=%d, paddr=0x%08X, psize=0x%08X, trylock=%b", type, paddr, psize, trylock));
+            log.debug(String.format("hleKernelVolatileMemLock type=%d, paddr=0x%08X, psize=0x%08X, trylock=%b", type, paddr, psize, trylock));
         }
 
         if (type != 0) {
@@ -184,9 +184,9 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            hleKernelVolatileMemLock(processor, false);
+            return;
         }
+        hleKernelVolatileMemLock(processor, false);
     }
 
     public void sceKernelVolatileMemTryLock(Processor processor) {
@@ -211,67 +211,73 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0;
         }
     }
-
     public final HLEModuleFunction sceKernelPowerLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerLock") {
+
         @Override
         public final void execute(Processor processor) {
             sceKernelPowerLock(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerLock(processor);";
         }
     };
-
     public final HLEModuleFunction sceKernelPowerUnlockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerUnlock") {
+
         @Override
         public final void execute(Processor processor) {
             sceKernelPowerUnlock(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerUnlock(processor);";
         }
     };
-
     public final HLEModuleFunction sceKernelPowerTickFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerTick") {
+
         @Override
         public final void execute(Processor processor) {
             sceKernelPowerTick(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerTick(processor);";
         }
     };
-
     public final HLEModuleFunction sceKernelVolatileMemLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemLock") {
+
         @Override
         public final void execute(Processor processor) {
             sceKernelVolatileMemLock(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemLock(processor);";
         }
     };
-
     public final HLEModuleFunction sceKernelVolatileMemTryLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemTryLock") {
+
         @Override
         public final void execute(Processor processor) {
             sceKernelVolatileMemTryLock(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemTryLock(processor);";
         }
     };
-
     public final HLEModuleFunction sceKernelVolatileMemUnlockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemUnlock") {
+
         @Override
         public final void execute(Processor processor) {
             sceKernelVolatileMemUnlock(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemUnlock(processor);";
