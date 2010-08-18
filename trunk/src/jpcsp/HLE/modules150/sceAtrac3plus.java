@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import java.util.HashMap;
@@ -35,10 +34,13 @@ import jpcsp.connector.AtracCodec;
 import org.apache.log4j.Logger;
 
 public class sceAtrac3plus implements HLEModule, HLEStartModule {
+
     protected static Logger log = Modules.getLogger("sceAtrac3plus");
 
     @Override
-    public String getName() { return "sceAtrac3plus"; }
+    public String getName() {
+        return "sceAtrac3plus";
+    }
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
@@ -118,22 +120,16 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     @Override
     public void stop() {
     }
-
     protected static final String uidPurpose = "sceAtrac3plus";
-
-    protected static final int AT3_MAGIC      = 0x00000270; // "AT3"
+    protected static final int AT3_MAGIC = 0x00000270; // "AT3"
     protected static final int AT3_PLUS_MAGIC = 0x0000FFFE; // "AT3PLUS"
-    protected static final int RIFF_MAGIC     = 0x46464952; // "RIFF"
-    protected static final int WAVE_MAGIC     = 0x45564157; // "WAVE"
-
-    protected static final int PSP_ATRAC_ALLDATA_IS_ON_MEMORY              = -1;
-    protected static final int PSP_ATRAC_NONLOOP_STREAM_DATA_IS_ON_MEMORY  = -2;
-    protected static final int PSP_ATRAC_LOOP_STREAM_DATA_IS_ON_MEMORY	   = -3;
-
-
+    protected static final int RIFF_MAGIC = 0x46464952; // "RIFF"
+    protected static final int WAVE_MAGIC = 0x45564157; // "WAVE"
+    protected static final int PSP_ATRAC_ALLDATA_IS_ON_MEMORY = -1;
+    protected static final int PSP_ATRAC_NONLOOP_STREAM_DATA_IS_ON_MEMORY = -2;
+    protected static final int PSP_ATRAC_LOOP_STREAM_DATA_IS_ON_MEMORY = -3;
     protected static final int PSP_MODE_AT_3_PLUS = 0x00001000;
-    protected static final int PSP_MODE_AT_3      = 0x00001001;
-
+    protected static final int PSP_MODE_AT_3 = 0x00001001;
     protected int inputBufferAddr; // currently not used
     protected int inputBufferSize; // currently not used
     protected int inputBufferOffset;
@@ -149,20 +145,19 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     public static int baseBitrate = 64;  // In kbps.
     public static final int remainFrames = -1;
     public static boolean useAtracCodec = false;
-
     protected HashMap<Integer, AtracCodec> atrac3Codecs;
     protected HashMap<Integer, AtracCodec> atrac3plusCodecs;
 
     public static boolean isEnableConnector() {
-		return useAtracCodec;
-	}
+        return useAtracCodec;
+    }
 
-	public static void setEnableConnector(boolean useConnector) {
-		sceAtrac3plus.useAtracCodec = useConnector;
-	}
+    public static void setEnableConnector(boolean useConnector) {
+        sceAtrac3plus.useAtracCodec = useConnector;
+    }
 
     protected AtracCodec getAtracCodec(int atracID) {
-        if(getIDCodecType(atracID) == PSP_MODE_AT_3) {
+        if (getIDCodecType(atracID) == PSP_MODE_AT_3) {
             return atrac3Codecs.get(atracID);
         } else if (getIDCodecType(atracID) == PSP_MODE_AT_3_PLUS) {
             return atrac3plusCodecs.get(atracID);
@@ -182,51 +177,52 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         Memory mem = Memory.getInstance();
         int magic = mem.read32(inputBufferAddr);
         if (magic == RIFF_MAGIC && inputBufferSize >= 8) {
-        	// RIFF file format:
-        	// Offset 0: 'RIFF'
-        	// Offset 4: file length - 8
-        	// Offset 8: 'WAVE'
-        	inputFileSize = mem.read32(inputBufferAddr + 4) + 8;
+            // RIFF file format:
+            // Offset 0: 'RIFF'
+            // Offset 4: file length - 8
+            // Offset 8: 'WAVE'
+            inputFileSize = mem.read32(inputBufferAddr + 4) + 8;
         }
 
         log.info(String.format("hleAtracSetData atracID=%d, bufferSize=0x%x, fileSize=%x", atracID, inputBufferSize, inputFileSize));
 
         AtracCodec codec = getAtracCodec(atracID);
-        if(codec == null) {
-        	log.warn(String.format("hleAtracSetData atracID=%d is invalid", atracID));
-        	return;
+        if (codec == null) {
+            log.warn(String.format("hleAtracSetData atracID=%d is invalid", atracID));
+            return;
         }
-        if(isEnableConnector()) {
+        if (isEnableConnector()) {
             codec.atracSetData(buffer, bufferSize, inputFileSize, true);
-        } else if(sceMpeg.isEnableMediaEngine()) {
+        } else if (sceMpeg.isEnableMediaEngine()) {
             codec.atracSetData(buffer, bufferSize, inputFileSize, false);
         }
     }
 
     protected void hleAtracAddStreamData(int atracID, int length) {
-    	inputFileOffset += length;
-    	inputBufferOffset -= length;
+        inputFileOffset += length;
+        inputBufferOffset -= length;
 
-        if(isEnableConnector())
+        if (isEnableConnector()) {
             getAtracCodec(atracID).atracAddStreamData(inputBufferAddr, length);
+        }
     }
 
     protected int hleCreateAtracID(int codecType) {
-    	int atracID = SceUidManager.getNewUid(uidPurpose);
-    	if (codecType != PSP_MODE_AT_3 && codecType != PSP_MODE_AT_3_PLUS) {
-			log.warn("hleGetAtracID unknown codecType " + codecType);
-    	}
+        int atracID = SceUidManager.getNewUid(uidPurpose);
+        if (codecType != PSP_MODE_AT_3 && codecType != PSP_MODE_AT_3_PLUS) {
+            log.warn("hleGetAtracID unknown codecType " + codecType);
+        }
         AtracCodec atracCodec = new AtracCodec();
-        if(codecType == PSP_MODE_AT_3) {
+        if (codecType == PSP_MODE_AT_3) {
             atrac3Codecs.put(atracID, atracCodec);
-        } else if(codecType == PSP_MODE_AT_3_PLUS) {
+        } else if (codecType == PSP_MODE_AT_3_PLUS) {
             atrac3plusCodecs.put(atracID, atracCodec);
         }
-    	return atracID;
+        return atracID;
     }
 
     protected int getIDCodecType(int atracID) {
-        if(atrac3Codecs.containsKey(atracID)) {
+        if (atrac3Codecs.containsKey(atracID)) {
             return PSP_MODE_AT_3;
         } else if (atrac3plusCodecs.containsKey(atracID)) {
             return PSP_MODE_AT_3_PLUS;
@@ -234,29 +230,30 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             return -1;
         }
     }
+
     protected int getRemainFrames(int atracID) {
-    	if (inputFileOffset >= inputFileSize) {
-    		return -1; // All data in input buffer
-    	}
-		return (inputBufferSize - inputBufferOffset) / (4 * maxSamples);
+        if (inputFileOffset >= inputFileSize) {
+            return -1; // All data in input buffer
+        }
+        return (inputBufferSize - inputBufferOffset) / (4 * maxSamples);
     }
 
     protected void hleAtracGetBufferInfoForReseting(int atracID, int sample, int bufferInfoAddr) {
-    	Memory mem = Memory.getInstance();
+        Memory mem = Memory.getInstance();
 
-    	if (mem.isAddressGood(bufferInfoAddr)) {
+        if (mem.isAddressGood(bufferInfoAddr)) {
             // Holds buffer related parameters.
             // Main buffer.
-            mem.write32(bufferInfoAddr      , inputBufferAddr);            // Pointer to current writing position in the buffer.
-    		mem.write32(bufferInfoAddr +   4, inputBufferAvailableBytes);  // Available bytes in buffer.
-            mem.write32(bufferInfoAddr +   8, inputBufferNeededBytes);     // Number of bytes that must to be written to the buffer.
-            mem.write32(bufferInfoAddr +  12, inputFileOffset);            // Read offset.
+            mem.write32(bufferInfoAddr, inputBufferAddr);            // Pointer to current writing position in the buffer.
+            mem.write32(bufferInfoAddr + 4, inputBufferAvailableBytes);  // Available bytes in buffer.
+            mem.write32(bufferInfoAddr + 8, inputBufferNeededBytes);     // Number of bytes that must to be written to the buffer.
+            mem.write32(bufferInfoAddr + 12, inputFileOffset);            // Read offset.
             // Secondary buffer.
-            mem.write32(bufferInfoAddr +  16, inputBufferAddr);            // Pointer to current writing position in the buffer.
-    		mem.write32(bufferInfoAddr +  20, inputBufferAvailableBytes);  // Available bytes in buffer.
-            mem.write32(bufferInfoAddr +  24, inputBufferNeededBytes);     // Number of bytes that must to be written to the buffer.
-    		mem.write32(bufferInfoAddr +  28, inputFileOffset);            // Read offset.
-    	}
+            mem.write32(bufferInfoAddr + 16, inputBufferAddr);            // Pointer to current writing position in the buffer.
+            mem.write32(bufferInfoAddr + 20, inputBufferAvailableBytes);  // Available bytes in buffer.
+            mem.write32(bufferInfoAddr + 24, inputBufferNeededBytes);     // Number of bytes that must to be written to the buffer.
+            mem.write32(bufferInfoAddr + 28, inputFileOffset);            // Read offset.
+        }
     }
 
     public void sceAtracStartEntry(Processor processor) {
@@ -286,20 +283,20 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        // Tested on PSP:
+        // Only 2 atracIDs per format can be registered at the same time.
+        if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= 2)) {
+            maxSamples = 1024;
+            cpu.gpr[2] = hleCreateAtracID(codecType);
+            atrac3IDsCount++;
+        } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= 2)) {
+            maxSamples = 2048;
+            cpu.gpr[2] = hleCreateAtracID(codecType);
+            atrac3plusIDsCount++;
         } else {
-            // Tested on PSP:
-            // Only 2 atracIDs per format can be registered at the same time.
-            if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= 2)) {
-                maxSamples = 1024;
-                cpu.gpr[2] = hleCreateAtracID(codecType);
-                atrac3IDsCount++;
-            } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= 2)) {
-                maxSamples = 2048;
-                cpu.gpr[2] = hleCreateAtracID(codecType);
-                atrac3plusIDsCount++;
-            } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_NO_ID;
-            }
+            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_NO_ID;
         }
     }
 
@@ -314,7 +311,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracReleaseAtracID: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -344,12 +343,14 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int bufferSize = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceAtracSetData: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, buffer, bufferSize));
+            log.debug(String.format("sceAtracSetData: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, buffer, bufferSize));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracSetData: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -386,13 +387,14 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int halfBufferSize = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceAtracSetHalfwayBuffer: atID = %d, buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X"
-                    , atID, halfBuffer, readSize, halfBufferSize));
+            log.debug(String.format("sceAtracSetHalfwayBuffer: atID = %d, buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", atID, halfBuffer, readSize, halfBufferSize));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracSetHalfwayBuffer: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -437,33 +439,33 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (mem.isAddressGood(buffer)) {
-                at3magic = mem.read32(buffer + 20);
-                at3magic &= 0x0000FFFF;
-
-                if (at3magic == AT3_MAGIC) {
-                    codecType = PSP_MODE_AT_3;
-                } else if (at3magic == AT3_PLUS_MAGIC) {
-                    codecType = PSP_MODE_AT_3_PLUS;
-                }
-
-                if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= 2)) {
-                    maxSamples = 1024;
-                    atID = hleCreateAtracID(codecType);
-                    atrac3IDsCount++;
-                } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= 2)) {
-                    maxSamples = 2048;
-                    atID = hleCreateAtracID(codecType);
-                    atrac3plusIDsCount++;
-                } else {
-                    atID = SceKernelErrors.ERROR_ATRAC_NO_ID;
-                }
-
-                hleAtracSetData(atID, buffer, bufferSize);
-            }
-            cpu.gpr[2] = atID;
+            return;
         }
+        if (mem.isAddressGood(buffer)) {
+            at3magic = mem.read32(buffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC) {
+                codecType = PSP_MODE_AT_3;
+            } else if (at3magic == AT3_PLUS_MAGIC) {
+                codecType = PSP_MODE_AT_3_PLUS;
+            }
+
+            if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= 2)) {
+                maxSamples = 1024;
+                atID = hleCreateAtracID(codecType);
+                atrac3IDsCount++;
+            } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= 2)) {
+                maxSamples = 2048;
+                atID = hleCreateAtracID(codecType);
+                atrac3plusIDsCount++;
+            } else {
+                atID = SceKernelErrors.ERROR_ATRAC_NO_ID;
+            }
+
+            hleAtracSetData(atID, buffer, bufferSize);
+        }
+        cpu.gpr[2] = atID;
     }
 
     public void sceAtracSetHalfwayBufferAndGetID(Processor processor) {
@@ -483,37 +485,37 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (mem.isAddressGood(halfBuffer)) {
-                at3magic = mem.read32(halfBuffer + 20);
-                at3magic &= 0x0000FFFF;
-
-                if (at3magic == AT3_MAGIC) {
-                    codecType = PSP_MODE_AT_3;
-                } else if (at3magic == AT3_PLUS_MAGIC) {
-                    codecType = PSP_MODE_AT_3_PLUS;
-                }
-
-                if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= 2)) {
-                    maxSamples = 1024;
-                    atID = hleCreateAtracID(codecType);
-                    atrac3IDsCount++;
-                } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= 2)) {
-                    maxSamples = 2048;
-                    atID = hleCreateAtracID(codecType);
-                    atrac3plusIDsCount++;
-                } else {
-                    atID = SceKernelErrors.ERROR_ATRAC_NO_ID;
-                }
-
-                hleAtracSetData(atID, halfBuffer, halfBufferSize);
-            }
-            cpu.gpr[2] = atID;
+            return;
         }
+        if (mem.isAddressGood(halfBuffer)) {
+            at3magic = mem.read32(halfBuffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC) {
+                codecType = PSP_MODE_AT_3;
+            } else if (at3magic == AT3_PLUS_MAGIC) {
+                codecType = PSP_MODE_AT_3_PLUS;
+            }
+
+            if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= 2)) {
+                maxSamples = 1024;
+                atID = hleCreateAtracID(codecType);
+                atrac3IDsCount++;
+            } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= 2)) {
+                maxSamples = 2048;
+                atID = hleCreateAtracID(codecType);
+                atrac3plusIDsCount++;
+            } else {
+                atID = SceKernelErrors.ERROR_ATRAC_NO_ID;
+            }
+
+            hleAtracSetData(atID, halfBuffer, halfBufferSize);
+        }
+        cpu.gpr[2] = atID;
     }
 
     public void sceAtracDecodeData(Processor processor) {
-    	CpuState cpu = processor.cpu;
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int atID = cpu.gpr[4];
@@ -529,7 +531,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracDecodeData: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -575,7 +579,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                     }
                 } else {
                     // Using decoded data.
-                    if(samples == 0) {
+                    if (samples == 0) {
                         result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
                     }
                     if (mem.isAddressGood(samplesNbrAddr)) {
@@ -604,7 +608,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetRemainFrame: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -629,7 +635,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetStreamDataInfo: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -664,7 +672,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracAddStreamData: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -680,12 +690,13 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int outPosition = cpu.gpr[5];
         int outBytes = cpu.gpr[6];
 
-        log.warn("IGNORING: sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition)
-                + ", outBytes=0x" + Integer.toHexString(outBytes));
+        log.warn("IGNORING: sceAtracGetSecondBufferInfo: atracID = " + atID + ", outPos=0x" + Integer.toHexString(outPosition) + ", outBytes=0x" + Integer.toHexString(outBytes));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetSecondBufferInfo: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -702,12 +713,14 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int secondBufferSize = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceAtracSetSecondBuffer: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, secondBuffer, secondBufferSize));
+            log.debug(String.format("sceAtracSetSecondBuffer: atID = %d, buffer = 0x%08X, bufferSize = 0x%08X", atID, secondBuffer, secondBufferSize));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracSetSecondBuffer: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -747,7 +760,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetNextDecodePosition: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -787,7 +802,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetSoundSample: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -810,12 +827,13 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int atID = cpu.gpr[4];
         int channelAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceAtracGetChannel: atracID = " + atID
-                + ", channelAddr =0x" + Integer.toHexString(channelAddr));
+        log.warn("PARTIAL: sceAtracGetChannel: atracID = " + atID + ", channelAddr =0x" + Integer.toHexString(channelAddr));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetChannel: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -836,7 +854,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetMaxSample: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -858,7 +878,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetNextSample: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -880,12 +902,13 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int atID = cpu.gpr[4];
         int bitrateAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceAtracGetBitrate: atracID = " + atID
-                + ", bitrateAddr =0x" + Integer.toHexString(bitrateAddr));
+        log.warn("PARTIAL: sceAtracGetBitrate: atracID = " + atID + ", bitrateAddr =0x" + Integer.toHexString(bitrateAddr));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetBitrate: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -906,7 +929,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetLoopStatus: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -934,7 +959,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracSetLoopNum: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -955,7 +982,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetBufferInfoForReseting: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -972,12 +1001,13 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int bytesWrittenFirstBuf = cpu.gpr[6];
         int bytesWrittenSecondBuf = cpu.gpr[7];
 
-        log.warn(String.format("PARTIAL: sceAtracResetPlayPosition atracId=%d, sample=%d, bytesWrittenFirstBuf=%d, bytesWrittenSecondBuf=%d"
-                , atID, sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf));
+        log.warn(String.format("PARTIAL: sceAtracResetPlayPosition atracId=%d, sample=%d, bytesWrittenFirstBuf=%d, bytesWrittenSecondBuf=%d", atID, sample, bytesWrittenFirstBuf, bytesWrittenSecondBuf));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracResetPlayPosition: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -1000,7 +1030,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else if (getIDCodecType(atID) < 0) {
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
             log.warn("sceAtracGetInternalErrorInfo: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -1008,276 +1040,301 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0;
         }
     }
-
     public final HLEModuleFunction sceAtracStartEntryFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracStartEntry") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracStartEntry(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracStartEntry(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracEndEntryFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracEndEntry") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracEndEntry(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracEndEntry(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetAtracIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetAtracID") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetAtracID(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetAtracID(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracReleaseAtracIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracReleaseAtracID") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracReleaseAtracID(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracReleaseAtracID(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracSetDataFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetData") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracSetData(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetData(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracSetHalfwayBufferFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetHalfwayBuffer") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracSetHalfwayBuffer(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetHalfwayBuffer(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracSetDataAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetDataAndGetID") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracSetDataAndGetID(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetDataAndGetID(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracSetHalfwayBufferAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetHalfwayBufferAndGetID") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracSetHalfwayBufferAndGetID(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetHalfwayBufferAndGetID(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracDecodeDataFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracDecodeData") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracDecodeData(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracDecodeData(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetRemainFrameFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetRemainFrame") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetRemainFrame(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetRemainFrame(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetStreamDataInfoFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetStreamDataInfo") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetStreamDataInfo(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetStreamDataInfo(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracAddStreamDataFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracAddStreamData") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracAddStreamData(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracAddStreamData(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetSecondBufferInfoFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetSecondBufferInfo") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetSecondBufferInfo(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetSecondBufferInfo(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracSetSecondBufferFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetSecondBuffer") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracSetSecondBuffer(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetSecondBuffer(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetNextDecodePositionFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetNextDecodePosition") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetNextDecodePosition(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetNextDecodePosition(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetSoundSampleFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetSoundSample") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetSoundSample(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetSoundSample(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetChannelFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetChannel") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetChannel(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetChannel(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetMaxSampleFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetMaxSample") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetMaxSample(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetMaxSample(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetNextSampleFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetNextSample") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetNextSample(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetNextSample(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetBitrateFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetBitrate") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetBitrate(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetBitrate(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetLoopStatusFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetLoopStatus") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetLoopStatus(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetLoopStatus(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracSetLoopNumFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetLoopNum") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracSetLoopNum(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetLoopNum(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetBufferInfoForResetingFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetBufferInfoForReseting") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetBufferInfoForReseting(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetBufferInfoForReseting(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracResetPlayPositionFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracResetPlayPosition") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracResetPlayPosition(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracResetPlayPosition(processor);";
         }
     };
-
     public final HLEModuleFunction sceAtracGetInternalErrorInfoFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetInternalErrorInfo") {
+
         @Override
         public final void execute(Processor processor) {
             sceAtracGetInternalErrorInfo(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetInternalErrorInfo(processor);";

@@ -256,11 +256,6 @@ public enum SyscallIgnore {
 	sceNetThreadAbort(0xAD6844C6),//1.00+
 	sceParseHttpResponseHeader(0xAD7BFDEF),//1.00+
 	sceParseHttpStatusLine(0x8077a433),//1.00+
-	scePsmfPlayerChangePlayMode(0xA3D81169),//1.00+
-	scePsmfPlayerGetCurrentAudioStream(0x68F07175),//1.00+
-	scePsmfPlayerGetCurrentPlayMode(0xF3EFAA91),//1.00+
-	scePsmfPlayerGetCurrentPts(0x3ED62233),//1.00+
-	scePsmfPlayerGetCurrentVideoStream(0x9FF2B2E7),//1.00+
 	sceRegCloseCategory(0x0cae832b),//1.00+
 	sceRegCreateKey(0x57641a81),//1.00+
 	sceRegFlushCategory(0x0d69bf40),//1.00+

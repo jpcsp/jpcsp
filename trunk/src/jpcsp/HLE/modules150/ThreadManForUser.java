@@ -86,6 +86,7 @@ import jpcsp.util.Utilities;
 import org.apache.log4j.Logger;
 
 public class ThreadManForUser implements HLEModule, HLEStartModule {
+
     protected static Logger log = Modules.getLogger("ThreadManForUser");
 
     @Override
@@ -179,24 +180,24 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             mm.addFunction(0xDB738F35, sceKernelGetSystemTimeFunction);
             mm.addFunction(0x82BC5777, sceKernelGetSystemTimeWideFunction);
             mm.addFunction(0x369ED59D, sceKernelGetSystemTimeLowFunction);
-			mm.addFunction(0x6652B8CA, sceKernelSetAlarmFunction);
-			mm.addFunction(0xB2C25152, sceKernelSetSysClockAlarmFunction);
-			mm.addFunction(0x7E65B999, sceKernelCancelAlarmFunction);
-			mm.addFunction(0xDAA3F564, sceKernelReferAlarmStatusFunction);
-			mm.addFunction(0x20FFF560, sceKernelCreateVTimerFunction);
-			mm.addFunction(0x328F9E52, sceKernelDeleteVTimerFunction);
-			mm.addFunction(0xB3A59970, sceKernelGetVTimerBaseFunction);
-			mm.addFunction(0xB7C18B77, sceKernelGetVTimerBaseWideFunction);
-			mm.addFunction(0x034A921F, sceKernelGetVTimerTimeFunction);
-			mm.addFunction(0xC0B3FFD2, sceKernelGetVTimerTimeWideFunction);
-			mm.addFunction(0x542AD630, sceKernelSetVTimerTimeFunction);
-			mm.addFunction(0xFB6425C3, sceKernelSetVTimerTimeWideFunction);
-			mm.addFunction(0xC68D9437, sceKernelStartVTimerFunction);
-			mm.addFunction(0xD0AEEE87, sceKernelStopVTimerFunction);
-			mm.addFunction(0xD8B299AE, sceKernelSetVTimerHandlerFunction);
-			mm.addFunction(0x53B00E9A, sceKernelSetVTimerHandlerWideFunction);
-			mm.addFunction(0xD2D615EF, sceKernelCancelVTimerHandlerFunction);
-			mm.addFunction(0x5F32BEAA, sceKernelReferVTimerStatusFunction);
+            mm.addFunction(0x6652B8CA, sceKernelSetAlarmFunction);
+            mm.addFunction(0xB2C25152, sceKernelSetSysClockAlarmFunction);
+            mm.addFunction(0x7E65B999, sceKernelCancelAlarmFunction);
+            mm.addFunction(0xDAA3F564, sceKernelReferAlarmStatusFunction);
+            mm.addFunction(0x20FFF560, sceKernelCreateVTimerFunction);
+            mm.addFunction(0x328F9E52, sceKernelDeleteVTimerFunction);
+            mm.addFunction(0xB3A59970, sceKernelGetVTimerBaseFunction);
+            mm.addFunction(0xB7C18B77, sceKernelGetVTimerBaseWideFunction);
+            mm.addFunction(0x034A921F, sceKernelGetVTimerTimeFunction);
+            mm.addFunction(0xC0B3FFD2, sceKernelGetVTimerTimeWideFunction);
+            mm.addFunction(0x542AD630, sceKernelSetVTimerTimeFunction);
+            mm.addFunction(0xFB6425C3, sceKernelSetVTimerTimeWideFunction);
+            mm.addFunction(0xC68D9437, sceKernelStartVTimerFunction);
+            mm.addFunction(0xD0AEEE87, sceKernelStopVTimerFunction);
+            mm.addFunction(0xD8B299AE, sceKernelSetVTimerHandlerFunction);
+            mm.addFunction(0x53B00E9A, sceKernelSetVTimerHandlerWideFunction);
+            mm.addFunction(0xD2D615EF, sceKernelCancelVTimerHandlerFunction);
+            mm.addFunction(0x5F32BEAA, sceKernelReferVTimerStatusFunction);
             mm.addFunction(0x446D8DE6, sceKernelCreateThreadFunction);
             mm.addFunction(0x9FA03CD3, sceKernelDeleteThreadFunction);
             mm.addFunction(0xF475845D, sceKernelStartThreadFunction);
@@ -317,23 +318,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             mm.removeFunction(sceKernelGetSystemTimeWideFunction);
             mm.removeFunction(sceKernelGetSystemTimeLowFunction);
             mm.removeFunction(sceKernelSetAlarmFunction);
-			mm.removeFunction(sceKernelSetSysClockAlarmFunction);
-			mm.removeFunction(sceKernelCancelAlarmFunction);
-			mm.removeFunction(sceKernelReferAlarmStatusFunction);
-			mm.removeFunction(sceKernelCreateVTimerFunction);
-			mm.removeFunction(sceKernelDeleteVTimerFunction);
-			mm.removeFunction(sceKernelGetVTimerBaseFunction);
-			mm.removeFunction(sceKernelGetVTimerBaseWideFunction);
-			mm.removeFunction(sceKernelGetVTimerTimeFunction);
-			mm.removeFunction(sceKernelGetVTimerTimeWideFunction);
-			mm.removeFunction(sceKernelSetVTimerTimeFunction);
-			mm.removeFunction(sceKernelSetVTimerTimeWideFunction);
-			mm.removeFunction(sceKernelStartVTimerFunction);
-			mm.removeFunction(sceKernelStopVTimerFunction);
-			mm.removeFunction(sceKernelSetVTimerHandlerFunction);
-			mm.removeFunction(sceKernelSetVTimerHandlerWideFunction);
-			mm.removeFunction(sceKernelCancelVTimerHandlerFunction);
-			mm.removeFunction(sceKernelReferVTimerStatusFunction);
+            mm.removeFunction(sceKernelSetSysClockAlarmFunction);
+            mm.removeFunction(sceKernelCancelAlarmFunction);
+            mm.removeFunction(sceKernelReferAlarmStatusFunction);
+            mm.removeFunction(sceKernelCreateVTimerFunction);
+            mm.removeFunction(sceKernelDeleteVTimerFunction);
+            mm.removeFunction(sceKernelGetVTimerBaseFunction);
+            mm.removeFunction(sceKernelGetVTimerBaseWideFunction);
+            mm.removeFunction(sceKernelGetVTimerTimeFunction);
+            mm.removeFunction(sceKernelGetVTimerTimeWideFunction);
+            mm.removeFunction(sceKernelSetVTimerTimeFunction);
+            mm.removeFunction(sceKernelSetVTimerTimeWideFunction);
+            mm.removeFunction(sceKernelStartVTimerFunction);
+            mm.removeFunction(sceKernelStopVTimerFunction);
+            mm.removeFunction(sceKernelSetVTimerHandlerFunction);
+            mm.removeFunction(sceKernelSetVTimerHandlerWideFunction);
+            mm.removeFunction(sceKernelCancelVTimerHandlerFunction);
+            mm.removeFunction(sceKernelReferVTimerStatusFunction);
             mm.removeFunction(sceKernelCreateThreadFunction);
             mm.removeFunction(sceKernelDeleteThreadFunction);
             mm.removeFunction(sceKernelStartThreadFunction);
@@ -366,17 +367,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             mm.removeFunction(hleKernelExitThreadFunction);
         }
     }
-
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private HashMap<Integer, SceKernelThreadEventHandlerInfo> threadEventHandlerMap;
     private HashMap<Integer, Integer> threadEventMap;
     private LinkedList<SceKernelThreadInfo> readyThreads;
     private SceKernelThreadInfo currentThread;
-    private SceKernelThreadInfo idle0, idle1;
+    private SceKernelThreadInfo idle0,  idle1;
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
     public Statistics statistics;
-
     private boolean dispatchThreadEnabled;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED = 0;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED = 1;
@@ -384,17 +383,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     // TODO figure out a decent number of cycles to wait
     private static final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private static final int WDT_THREAD_HOG_CYCLES = (0x0A000000 - 0x08400000) * 3; // memset can take a while when you're using sb!
-
-	protected static final int CALLBACKID_REGISTER = 16; // $s0
-	protected CallbackManager callbackManager = new CallbackManager();
-
-	protected static final int IDLE_THREAD_ADDRESS           = MemoryMap.START_RAM;
-	public    static final int THREAD_EXIT_HANDLER_ADDRESS   = MemoryMap.START_RAM + 0x20;
-	protected static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
-    public    static final int ASYNC_LOOP_ADDRESS            = MemoryMap.START_RAM + 0x40;
-
+    protected static final int CALLBACKID_REGISTER = 16; // $s0
+    protected CallbackManager callbackManager = new CallbackManager();
+    protected static final int IDLE_THREAD_ADDRESS = MemoryMap.START_RAM;
+    public static final int THREAD_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x20;
+    protected static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
+    public static final int ASYNC_LOOP_ADDRESS = MemoryMap.START_RAM + 0x40;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
-
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
     private static final boolean IGNORE_DELAY = false;
@@ -402,31 +397,30 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public boolean exitCalled = false;
 
     // see sceKernelGetThreadmanIdList
-    public final static int SCE_KERNEL_TMID_Thread             = 1;
-    public final static int SCE_KERNEL_TMID_Semaphore          = 2;
-    public final static int SCE_KERNEL_TMID_EventFlag          = 3;
-    public final static int SCE_KERNEL_TMID_Mbox               = 4;
-    public final static int SCE_KERNEL_TMID_Vpl                = 5;
-    public final static int SCE_KERNEL_TMID_Fpl                = 6;
-    public final static int SCE_KERNEL_TMID_Mpipe              = 7;
-    public final static int SCE_KERNEL_TMID_Callback           = 8;
+    public final static int SCE_KERNEL_TMID_Thread = 1;
+    public final static int SCE_KERNEL_TMID_Semaphore = 2;
+    public final static int SCE_KERNEL_TMID_EventFlag = 3;
+    public final static int SCE_KERNEL_TMID_Mbox = 4;
+    public final static int SCE_KERNEL_TMID_Vpl = 5;
+    public final static int SCE_KERNEL_TMID_Fpl = 6;
+    public final static int SCE_KERNEL_TMID_Mpipe = 7;
+    public final static int SCE_KERNEL_TMID_Callback = 8;
     public final static int SCE_KERNEL_TMID_ThreadEventHandler = 9;
-    public final static int SCE_KERNEL_TMID_Alarm              = 10;
-    public final static int SCE_KERNEL_TMID_VTimer             = 11;
-    public final static int SCE_KERNEL_TMID_SleepThread        = 64;
-    public final static int SCE_KERNEL_TMID_DelayThread        = 65;
-    public final static int SCE_KERNEL_TMID_SuspendThread      = 66;
-    public final static int SCE_KERNEL_TMID_DormantThread      = 67;
-
+    public final static int SCE_KERNEL_TMID_Alarm = 10;
+    public final static int SCE_KERNEL_TMID_VTimer = 11;
+    public final static int SCE_KERNEL_TMID_SleepThread = 64;
+    public final static int SCE_KERNEL_TMID_DelayThread = 65;
+    public final static int SCE_KERNEL_TMID_SuspendThread = 66;
+    public final static int SCE_KERNEL_TMID_DormantThread = 67;
     protected static final int INTR_NUMBER = IntrManager.PSP_SYSTIMER0_INTR;
-	protected Map<Integer, SceKernelAlarmInfo> alarms;
-	protected Map<Integer, SceKernelVTimerInfo> vtimers;
+    protected Map<Integer, SceKernelAlarmInfo> alarms;
+    protected Map<Integer, SceKernelVTimerInfo> vtimers;
 
     public ThreadManForUser() {
     }
 
-	@Override
-	public void start() {
+    @Override
+    public void start() {
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         threadEventMap = new HashMap<Integer, Integer>();
         threadEventHandlerMap = new HashMap<Integer, SceKernelThreadEventHandlerInfo>();
@@ -434,7 +428,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         statistics = new Statistics();
 
         callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
-		callbackManager.Initialize();
+        callbackManager.Initialize();
 
         install_idle_threads();
         install_thread_exit_handler();
@@ -446,13 +440,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         syscallFreeCycles = 0;
         dispatchThreadEnabled = true;
-	}
+    }
 
-	@Override
-	public void stop() {
+    @Override
+    public void stop() {
         alarms = null;
         vtimers = null;
-	}
+    }
 
     public Iterator<SceKernelThreadInfo> iterator() {
         return threadMap.values().iterator();
@@ -477,13 +471,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int rootStackSize = (fromSyscall ? 0x4000 : 0x40000);
         // Use the module_start_thread_stacksize when this information was present in the ELF file
         if (module != null && module.module_start_thread_stacksize > 0) {
-        	rootStackSize = module.module_start_thread_stacksize;
+            rootStackSize = module.module_start_thread_stacksize;
         }
 
         int rootInitPriority = 0x20;
         // Use the module_start_thread_priority when this information was present in the ELF file
         if (module != null && module.module_start_thread_priority > 0) {
-        	rootInitPriority = module.module_start_thread_priority;
+            rootInitPriority = module.module_start_thread_priority;
         }
         currentThread = new SceKernelThreadInfo("root", entry_addr, rootInitPriority, rootStackSize, attr);
         currentThread.moduleid = moduleid;
@@ -514,29 +508,21 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         // Generate 2 idle threads which can toggle between each other when there are no ready threads
         int instruction_addiu = // addiu a0, zr, 0
-            ((AllegrexOpcodes.ADDIU & 0x3f) << 26)
-            | ((0 & 0x1f) << 21)
-            | ((4 & 0x1f) << 16);
+                ((AllegrexOpcodes.ADDIU & 0x3f) << 26) | ((0 & 0x1f) << 21) | ((4 & 0x1f) << 16);
         int instruction_lui = // lui ra, 0x08000000
-            ((AllegrexOpcodes.LUI & 0x3f) << 26)
-            | ((31 & 0x1f) << 16)
-            | (0x0800 & 0x0000ffff);
+                ((AllegrexOpcodes.LUI & 0x3f) << 26) | ((31 & 0x1f) << 16) | (0x0800 & 0x0000ffff);
         int instruction_jr = // jr ra
-            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-            | (AllegrexOpcodes.JR & 0x3f)
-            | ((31 & 0x1f) << 21);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.JR & 0x3f) | ((31 & 0x1f) << 21);
         int instruction_syscall = // syscall 0x0201c [sceKernelDelayThread]
-            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-            | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((sceKernelDelayThreadFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((sceKernelDelayThreadFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // This memory is always reserved on a real PSP
         SysMemInfo info = Modules.SysMemUserForUserModule.malloc(1, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
         int reservedMem = info.addr;
 
-        mem.write32(IDLE_THREAD_ADDRESS + 0,  instruction_addiu);
-        mem.write32(IDLE_THREAD_ADDRESS + 4,  instruction_lui);
-        mem.write32(IDLE_THREAD_ADDRESS + 8,  instruction_jr);
+        mem.write32(IDLE_THREAD_ADDRESS + 0, instruction_addiu);
+        mem.write32(IDLE_THREAD_ADDRESS + 4, instruction_lui);
+        mem.write32(IDLE_THREAD_ADDRESS + 8, instruction_jr);
         mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
 
         // lowest allowed priority is 0x77, so we are ok at 0x7f
@@ -564,9 +550,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f000 [hleKernelExitThread]
-            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-            | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((hleKernelExitThreadFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelExitThreadFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
@@ -579,9 +563,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f001 [hleKernelExitCallback]
-            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-            | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((hleKernelExitCallbackFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelExitCallbackFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
@@ -594,9 +576,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         Memory mem = Memory.getInstance();
 
         int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
-            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-            | (AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((hleKernelAsyncLoopFunction.getSyscallCode() & 0x000fffff) << 6);
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelAsyncLoopFunction.getSyscallCode() & 0x000fffff) << 6);
 
         int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
         int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
@@ -625,7 +605,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             for (Statistics.ThreadStatistics threadStatistics : statistics.threads) {
                 double percentage = 0;
                 if (statistics.allCycles != 0) {
-                	percentage = (threadStatistics.runClocks / (double) statistics.allCycles) * 100;
+                    percentage = (threadStatistics.runClocks / (double) statistics.allCycles) * 100;
                 }
                 log.info("    Thread name:'" + threadStatistics.name + "' runClocks:" + threadStatistics.runClocks + " (" + String.format("%2.2f%%", percentage) + ")");
             }
@@ -638,16 +618,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      */
     public void step() {
         if (LOG_INSTRUCTIONS) {
-			if (log.isTraceEnabled()) {
-			    CpuState cpu = Emulator.getProcessor().cpu;
+            if (log.isTraceEnabled()) {
+                CpuState cpu = Emulator.getProcessor().cpu;
 
-			    if (!isIdleThread(currentThread) && cpu.pc != 0) {
-			    	int address = cpu.pc - 4;
-			    	int opcode = Memory.getInstance().read32(address);
-			    	log.trace(String.format("Executing %08X %s", address, Decoder.instruction(opcode).disasm(address, opcode)));
-			    }
-			}
-		}
+                if (!isIdleThread(currentThread) && cpu.pc != 0) {
+                    int address = cpu.pc - 4;
+                    int opcode = Memory.getInstance().read32(address);
+                    log.trace(String.format("Executing %08X %s", address, Decoder.instruction(opcode).disasm(address, opcode)));
+                }
+            }
+        }
 
         if (currentThread != null) {
             currentThread.runClocks++;
@@ -717,22 +697,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     /** @param newThread The thread to switch in. */
     private void contextSwitch(SceKernelThreadInfo newThread) {
-		if (IntrManager.getInstance().isInsideInterrupt()) {
-			// No context switching inside an interrupt
-			if (log.isDebugEnabled()) {
-				log.debug("Inside an interrupt, not context switching to " + newThread);
-			}
-			return;
-		}
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            // No context switching inside an interrupt
+            if (log.isDebugEnabled()) {
+                log.debug("Inside an interrupt, not context switching to " + newThread);
+            }
+            return;
+        }
 
-    	if (!dispatchThreadEnabled) {
+        if (!dispatchThreadEnabled) {
             log.info("DispatchThread disabled, not context switching to " + newThread);
-    		return;
-    	}
+            return;
+        }
 
         internalContextSwitch(newThread);
 
-    	checkThreadCallbacks(currentThread);
+        checkThreadCallbacks(currentThread);
     }
 
     /** This function must have the property of never returning currentThread,
@@ -761,16 +741,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * switch to the next thread having the highest priority (yield).
      */
     public void hleRescheduleCurrentThread() {
-		SceKernelThreadInfo newThread = nextThread();
-		if (newThread != null &&
-			(currentThread == null ||
-			 currentThread.status != PSP_THREAD_RUNNING ||
-			 currentThread.currentPriority >= newThread.currentPriority)) {
-			if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
-				log.debug("Context switching to '" + newThread + "' after reschedule");
-			}
-			contextSwitch(newThread);
-		}
+        SceKernelThreadInfo newThread = nextThread();
+        if (newThread != null &&
+                (currentThread == null ||
+                currentThread.status != PSP_THREAD_RUNNING ||
+                currentThread.currentPriority >= newThread.currentPriority)) {
+            if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
+                log.debug("Context switching to '" + newThread + "' after reschedule");
+            }
+            contextSwitch(newThread);
+        }
     }
 
     /**
@@ -778,22 +758,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * excepted that it executes callbacks when doCallbacks == true
      */
     public void hleRescheduleCurrentThread(boolean doCallbacks) {
-    	if (doCallbacks) {
-    		if (currentThread != null) {
-    			currentThread.doCallbacks = doCallbacks;
-    		}
-    		checkCallbacks();
-    	}
+        if (doCallbacks) {
+            if (currentThread != null) {
+                currentThread.doCallbacks = doCallbacks;
+            }
+            checkCallbacks();
+        }
 
-    	hleRescheduleCurrentThread();
+        hleRescheduleCurrentThread();
     }
 
     public int getCurrentThreadID() {
-    	if (currentThread == null) {
-    		return -1;
-    	}
+        if (currentThread == null) {
+            return -1;
+        }
 
-    	return currentThread.uid;
+        return currentThread.uid;
     }
 
     public SceKernelThreadInfo getCurrentThread() {
@@ -813,11 +793,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (thread == null) {
             return "NOT A THREAD";
         }
-		return thread.name;
+        return thread.name;
     }
 
     public void hleBlockCurrentThread() {
-    	hleBlockCurrentThread(null);
+        hleBlockCurrentThread(null);
     }
 
     public void hleBlockCurrentThread(IAction onUnblockAction) {
@@ -826,8 +806,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (currentThread.status != PSP_THREAD_SUSPEND) {
-	        currentThread.onUnblockAction = onUnblockAction;
-	        hleChangeThreadState(currentThread, PSP_THREAD_SUSPEND);
+            currentThread.onUnblockAction = onUnblockAction;
+            hleChangeThreadState(currentThread, PSP_THREAD_SUSPEND);
         }
 
         hleRescheduleCurrentThread();
@@ -840,9 +820,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         if (currentThread.status != PSP_THREAD_SUSPEND) {
             currentThread.doCallbacks = true;
-	        currentThread.onUnblockAction = onUnblockAction;
-	        currentThread.wait.waitStateChecker = waitStateChecker;
-	        hleChangeThreadState(currentThread, PSP_THREAD_SUSPEND);
+            currentThread.onUnblockAction = onUnblockAction;
+            currentThread.wait.waitStateChecker = waitStateChecker;
+            hleChangeThreadState(currentThread, PSP_THREAD_SUSPEND);
         }
 
         hleRescheduleCurrentThread(true);
@@ -885,12 +865,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public void hleThreadWaitTimeout(SceKernelThreadInfo thread) {
-    	if (thread.waitType == PSP_WAIT_NONE) {
-    		// The thread is no longer waiting...
-    	} else {
-	        onWaitTimeout(thread);
-	        hleChangeThreadState(thread, PSP_THREAD_READY);
-    	}
+        if (thread.waitType == PSP_WAIT_NONE) {
+            // The thread is no longer waiting...
+        } else {
+            onWaitTimeout(thread);
+            hleChangeThreadState(thread, PSP_THREAD_READY);
+        }
     }
 
     /** Call this when a thread's wait timeout has expired.
@@ -903,52 +883,36 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
             // Return WAIT_TIMEOUT
             thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
-        }
-
-        // EventFlag
+        } // EventFlag
         else if (thread.wait.waitingOnEventFlag) {
             Managers.eventFlags.onThreadWaitTimeout(thread);
-        }
-
-        // Sema
+        } // Sema
         else if (thread.wait.waitingOnSemaphore) {
             Managers.semas.onThreadWaitTimeout(thread);
-        }
-
-        // UMD stat
+        } // UMD stat
         else if (thread.wait.waitingOnUmd) {
             Modules.sceUmdUserModule.onThreadWaitTimeout(thread);
-        }
-
-        // Mutex
+        } // Mutex
         else if (thread.wait.waitingOnMutex) {
             Managers.mutex.onThreadWaitTimeout(thread);
-        }
-
-        // MsgPipe
+        } // MsgPipe
         else if (thread.wait.waitingOnMsgPipeSend || thread.wait.waitingOnMsgPipeReceive) {
             Managers.msgPipes.onThreadWaitTimeout(thread);
-        }
-
-        //Mbx
-        else if(thread.wait.waitingOnMbxReceive) {
+        } //Mbx
+        else if (thread.wait.waitingOnMbxReceive) {
             Managers.mbx.onThreadWaitTimeout(thread);
-        }
-
-        //Fpl
-        else if(thread.wait.waitingOnFpl) {
+        } //Fpl
+        else if (thread.wait.waitingOnFpl) {
             Managers.fpl.onThreadWaitTimeout(thread);
-        }
-
-        //Vpl
-        else if(thread.wait.waitingOnVpl) {
+        } //Vpl
+        else if (thread.wait.waitingOnVpl) {
             Managers.vpl.onThreadWaitTimeout(thread);
         }
 
-        // IO has no timeout, it's always forever
+    // IO has no timeout, it's always forever
     }
 
-    private void deleteThreads(Iterable<SceKernelThreadInfo> iterable){
+    private void deleteThreads(Iterable<SceKernelThreadInfo> iterable) {
         //by removing the value from the iterable BEFORE it is tried to remove
         //from all collections this assures that concurrent modification exception will
         //not occur on the same thread, on the jdk collections, since only that only
@@ -962,20 +926,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public void hleDeleteThread(SceKernelThreadInfo thread) {
-    	if (!threadMap.containsKey(thread.uid)) {
-    		log.debug(String.format("Thread %s already deleted", thread.toString()));
-    		return;
-    	}
+        if (!threadMap.containsKey(thread.uid)) {
+            log.debug(String.format("Thread %s already deleted", thread.toString()));
+            return;
+        }
 
-    	if (log.isDebugEnabled()) {
-    		log.debug("really deleting thread:'" + thread.name + "'");
-    	}
+        if (log.isDebugEnabled()) {
+            log.debug("really deleting thread:'" + thread.name + "'");
+        }
 
         // cleanup thread - free the stack
         if (thread.stack_addr != 0) {
-        	if (log.isDebugEnabled()) {
-        		log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr));
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr));
+            }
             thread.deleteSysMemInfo();
         }
 
@@ -1020,10 +984,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // Example:
             // - main thread calls sceKernelDeleteThread on child thread
             // - child thread calls sceKernelExitDeleteThread
-        	if (thread.doDeleteAction == null) {
-        		thread.doDeleteAction = new DeleteThreadAction(thread);
-        		Scheduler.getInstance().addAction(0, thread.doDeleteAction);
-        	}
+            if (thread.doDeleteAction == null) {
+                thread.doDeleteAction = new DeleteThreadAction(thread);
+                Scheduler.getInstance().addAction(0, thread.doDeleteAction);
+            }
         }
     }
 
@@ -1036,8 +1000,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (thread.status == newStatus) {
-        	// Thread status not changed, nothing to do
-        	return;
+            // Thread status not changed, nothing to do
+            return;
         }
 
         if (!dispatchThreadEnabled && thread == currentThread && newStatus != PSP_THREAD_RUNNING) {
@@ -1047,22 +1011,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         // Moving out of the following states...
         if (thread.status == PSP_THREAD_WAITING) {
-        	if (thread.wait.waitTimeoutAction != null) {
-        		Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
-        	}
+            if (thread.wait.waitTimeoutAction != null) {
+                Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
+            }
             thread.doCallbacks = false;
         } else if (thread.status == PSP_THREAD_STOPPED) {
-        	if (thread.doDeleteAction != null) {
-        		Scheduler.getInstance().removeAction(0, thread.doDeleteAction);
-        		thread.doDeleteAction = null;
-        	}
+            if (thread.doDeleteAction != null) {
+                Scheduler.getInstance().removeAction(0, thread.doDeleteAction);
+                thread.doDeleteAction = null;
+            }
         } else if (thread.status == PSP_THREAD_READY) {
             removeFromReadyThreads(thread);
         } else if (thread.status == PSP_THREAD_SUSPEND) {
-        	if (thread.onUnblockAction != null) {
-        		thread.onUnblockAction.execute();
-        		thread.onUnblockAction = null;
-        	}
+            if (thread.onUnblockAction != null) {
+                thread.onUnblockAction.execute();
+                thread.onUnblockAction = null;
+            }
             thread.doCallbacks = false;
         }
 
@@ -1070,9 +1034,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         // Moving to the following states...
         if (thread.status == PSP_THREAD_WAITING) {
-        	if (thread.wait.waitTimeoutAction != null) {
-        		Scheduler.getInstance().addAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
-        	}
+            if (thread.wait.waitTimeoutAction != null) {
+                Scheduler.getInstance().addAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
+            }
 
             // debug
             if (thread.waitType == PSP_WAIT_NONE) {
@@ -1082,16 +1046,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // TODO check if stopped threads eventually get automatically deleted on a real psp
             // HACK auto delete module mgr threads
             if (thread.name.equals("root") || // should probably find the real name and change it
-                thread.name.equals("SceModmgrStart") ||
-                thread.name.equals("SceKernelModmgrStop")) {
+                    thread.name.equals("SceModmgrStart") ||
+                    thread.name.equals("SceKernelModmgrStop")) {
                 thread.doDelete = true;
             }
 
             if (thread.doDelete) {
-            	if (thread.doDeleteAction == null) {
-            		thread.doDeleteAction = new DeleteThreadAction(thread);
-            		Scheduler.getInstance().addAction(0, thread.doDeleteAction);
-            	}
+                if (thread.doDeleteAction == null) {
+                    thread.doDeleteAction = new DeleteThreadAction(thread);
+                    Scheduler.getInstance().addAction(0, thread.doDeleteAction);
+                }
             }
             onThreadStopped(thread);
         } else if (thread.status == PSP_THREAD_READY) {
@@ -1121,8 +1085,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         thread.wait.waitStateChecker = null;
         thread.waitType = PSP_WAIT_NONE;
         if (thread.wait.waitTimeoutAction != null) {
-        	Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
-        	thread.wait.waitTimeoutAction = null;
+            Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
+            thread.wait.waitTimeoutAction = null;
         }
     }
 
@@ -1135,13 +1099,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
-        for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
+        for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
 
             // Wakeup threads that are in sceKernelWaitThreadEnd
             // We're assuming if waitingOnThreadEnd is set then thread.status = waiting
             if (thread.wait.waitingOnThreadEnd &&
-                thread.wait.ThreadEnd_id == stoppedThread.uid) {
+                    thread.wait.ThreadEnd_id == stoppedThread.uid) {
                 // Untrack
                 thread.wait.waitingOnThreadEnd = false;
 
@@ -1154,34 +1118,33 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     }
 
-	public void hleKernelExitCallback() {
-		hleKernelExitCallback(Emulator.getProcessor());
-	}
+    public void hleKernelExitCallback() {
+        hleKernelExitCallback(Emulator.getProcessor());
+    }
 
-	private void hleKernelExitCallback(Processor processor) {
-		CpuState cpu = processor.cpu;
+    private void hleKernelExitCallback(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		int callbackId = cpu.gpr[CALLBACKID_REGISTER];
-		Callback callback = callbackManager.remove(callbackId);
-		if (callback != null) {
-			if (log.isTraceEnabled()) {
-				log.trace("End of callback " + callback);
-			}
-			cpu.gpr[CALLBACKID_REGISTER] = callback.getSavedIdRegister();
-			cpu.gpr[31] = callback.getSavedRa();
-			cpu.pc = callback.getSavedPc();
-			IAction afterAction = callback.getAfterAction();
-			if (afterAction != null) {
-				afterAction.execute();
-			}
-		}
-	}
-
+        int callbackId = cpu.gpr[CALLBACKID_REGISTER];
+        Callback callback = callbackManager.remove(callbackId);
+        if (callback != null) {
+            if (log.isTraceEnabled()) {
+                log.trace("End of callback " + callback);
+            }
+            cpu.gpr[CALLBACKID_REGISTER] = callback.getSavedIdRegister();
+            cpu.gpr[31] = callback.getSavedRa();
+            cpu.pc = callback.getSavedPc();
+            IAction afterAction = callback.getAfterAction();
+            if (afterAction != null) {
+                afterAction.execute();
+            }
+        }
+    }
     public final HLEModuleFunction hleKernelExitCallbackFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitCallback") {
 
         @Override
         public final void execute(Processor processor) {
-        	hleKernelExitCallback(processor);
+            hleKernelExitCallback(processor);
         }
 
         @Override
@@ -1190,157 +1153,156 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     };
 
-	/**
-	 * Execute the code at the given address.
-	 * The code is executed in the context of the currentThread.
-	 * Parameters ($a0, $a1, ...) may have been copied to the current CpuState
-	 * before calling this method.
-	 * This call can return before the completion of the code. Use the
-	 * "afterAction" parameter to trigger some actions that need to be executed
-	 * after the code (e.g. to evaluate a return value in $v0).
-	 *
-	 * @param address     the address to be called
-	 * @param afterAction the action to be executed after the completion of the code
-	 */
-	public void callAddress(int address, IAction afterAction) {
-		callAddress(null, address, afterAction, null);
-	}
+    /**
+     * Execute the code at the given address.
+     * The code is executed in the context of the currentThread.
+     * Parameters ($a0, $a1, ...) may have been copied to the current CpuState
+     * before calling this method.
+     * This call can return before the completion of the code. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the code (e.g. to evaluate a return value in $v0).
+     *
+     * @param address     the address to be called
+     * @param afterAction the action to be executed after the completion of the code
+     */
+    public void callAddress(int address, IAction afterAction) {
+        callAddress(null, address, afterAction, null);
+    }
 
-	private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, int[] parameters) {
-		if (thread != null && thread != currentThread) {
-			// Save the wait state of the thread to restore it after the call
-    		int status = thread.status;
-    		int waitType = thread.waitType;
-    		int waitId = thread.waitId;
-    		ThreadWaitInfo threadWaitInfo = new ThreadWaitInfo();
-    		threadWaitInfo.copy(thread.wait);
-    		boolean doCallbacks = thread.doCallbacks;
+    private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, int[] parameters) {
+        if (thread != null && thread != currentThread) {
+            // Save the wait state of the thread to restore it after the call
+            int status = thread.status;
+            int waitType = thread.waitType;
+            int waitId = thread.waitId;
+            ThreadWaitInfo threadWaitInfo = new ThreadWaitInfo();
+            threadWaitInfo.copy(thread.wait);
+            boolean doCallbacks = thread.doCallbacks;
 
             // Context switch to the requested thread
-    		thread.waitType = PSP_WAIT_NONE;
-    		internalContextSwitch(thread);
+            thread.waitType = PSP_WAIT_NONE;
+            internalContextSwitch(thread);
 
-    		afterAction = new AfterCallAction(thread, status, waitType, waitId, threadWaitInfo, doCallbacks, afterAction);
-		}
+            afterAction = new AfterCallAction(thread, status, waitType, waitId, threadWaitInfo, doCallbacks, afterAction);
+        }
 
-		CpuState cpu = Emulator.getProcessor().cpu;
+        CpuState cpu = Emulator.getProcessor().cpu;
 
-		// Copy parameters ($a0, $a1, ...) to the cpu
-		if (parameters != null) {
-                    System.arraycopy(parameters, 0, cpu.gpr, 4, parameters.length);
-		}
+        // Copy parameters ($a0, $a1, ...) to the cpu
+        if (parameters != null) {
+            System.arraycopy(parameters, 0, cpu.gpr, 4, parameters.length);
+        }
 
-		int callbackId = callbackManager.getNewCallbackId();
-		Callback callback = new Callback(callbackId, cpu.gpr[CALLBACKID_REGISTER], cpu.gpr[31], cpu.pc, afterAction);
-		cpu.gpr[CALLBACKID_REGISTER] = callbackId;
-		cpu.gpr[31] = CALLBACK_EXIT_HANDLER_ADDRESS;
-		cpu.pc = address;
+        int callbackId = callbackManager.getNewCallbackId();
+        Callback callback = new Callback(callbackId, cpu.gpr[CALLBACKID_REGISTER], cpu.gpr[31], cpu.pc, afterAction);
+        cpu.gpr[CALLBACKID_REGISTER] = callbackId;
+        cpu.gpr[31] = CALLBACK_EXIT_HANDLER_ADDRESS;
+        cpu.pc = address;
 
-		callbackManager.addCallback(callback);
-		if (thread == null) {
-			RuntimeContext.executeCallback();
-		} else {
-			RuntimeContext.executeCallback(thread);
-		}
+        callbackManager.addCallback(callback);
+        if (thread == null) {
+            RuntimeContext.executeCallback();
+        } else {
+            RuntimeContext.executeCallback(thread);
+        }
 
-		// When the compiler is enabled, the callback is already executed
-		// when returning from RuntimeContext.executeCallback()
-		if (cpu.pc == CALLBACK_EXIT_HANDLER_ADDRESS) {
-			hleKernelExitCallback(Emulator.getProcessor());
-		}
-	}
+        // When the compiler is enabled, the callback is already executed
+        // when returning from RuntimeContext.executeCallback()
+        if (cpu.pc == CALLBACK_EXIT_HANDLER_ADDRESS) {
+            hleKernelExitCallback(Emulator.getProcessor());
+        }
+    }
 
-	/**
-	 * Trigger a call to a callback in the context of a thread.
-	 * This call can return before the completion of the callback. Use the
-	 * "afterAction" parameter to trigger some actions that need to be executed
-	 * after the callback (e.g. to evaluate a return value in $v0).
-	 *
-	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
-	 * @param address     address of the callback
-	 * @param afterAction action to be executed after the completion of the callback
-	 */
-	public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Execute callback 0x%08X, afterAction=%s", address, afterAction));
-		}
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in $v0).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X, afterAction=%s", address, afterAction));
+        }
 
-		callAddress(thread, address, afterAction, null);
-	}
+        callAddress(thread, address, afterAction, null);
+    }
 
-	/**
-	 * Trigger a call to a callback in the context of a thread.
-	 * This call can return before the completion of the callback. Use the
-	 * "afterAction" parameter to trigger some actions that need to be executed
-	 * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
-	 *
-	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
-	 * @param address     address of the callback
-	 * @param afterAction action to be executed after the completion of the callback
-	 * @param registerA0  first parameter of the callback ($a0)
-	 */
-	public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Execute callback 0x%08X($a0=0x%08X), afterAction=%s", address, registerA0, afterAction));
-		}
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param registerA0  first parameter of the callback ($a0)
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X), afterAction=%s", address, registerA0, afterAction));
+        }
 
-		callAddress(thread, address, afterAction, new int[] { registerA0 });
-	}
+        callAddress(thread, address, afterAction, new int[]{registerA0});
+    }
 
-	/**
-	 * Trigger a call to a callback in the context of a thread.
-	 * This call can return before the completion of the callback. Use the
-	 * "afterAction" parameter to trigger some actions that need to be executed
-	 * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
-	 *
-	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
-	 * @param address     address of the callback
-	 * @param afterAction action to be executed after the completion of the callback
-	 * @param registerA0  first parameter of the callback ($a0)
-	 * @param registerA1  second parameter of the callback ($a1)
-	 */
-	public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0, int registerA1) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X), afterAction=%s", address, registerA0, registerA1, afterAction));
-		}
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0, int registerA1) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X), afterAction=%s", address, registerA0, registerA1, afterAction));
+        }
 
-		callAddress(thread, address, afterAction, new int[] { registerA0, registerA1 });
-	}
+        callAddress(thread, address, afterAction, new int[]{registerA0, registerA1});
+    }
 
-	/**
-	 * Trigger a call to a callback in the context of a thread.
-	 * This call can return before the completion of the callback. Use the
-	 * "afterAction" parameter to trigger some actions that need to be executed
-	 * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
-	 *
-	 * @param thread      the callback has to be executed by this thread (null means the currentThread)
-	 * @param address     address of the callback
-	 * @param afterAction action to be executed after the completion of the callback
-	 * @param registerA0  first parameter of the callback ($a0)
-	 * @param registerA1  second parameter of the callback ($a1)
-	 * @param registerA2  third parameter of the callback ($a2)
-	 */
-	public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0, int registerA1, int registerA2) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X), afterAction=%s", address, registerA0, registerA1, registerA2, afterAction));
-		}
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     * @param registerA2  third parameter of the callback ($a2)
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0, int registerA1, int registerA2) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X), afterAction=%s", address, registerA0, registerA1, registerA2, afterAction));
+        }
 
-		callAddress(thread, address, afterAction, new int[] { registerA0, registerA1, registerA2 });
-	}
+        callAddress(thread, address, afterAction, new int[]{registerA0, registerA1, registerA2});
+    }
 
-	public void hleKernelExitThread(Processor processor) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
-		}
+    public void hleKernelExitThread(Processor processor) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
+        }
 
-		sceKernelExitThread(processor);
-	}
-
-	public final HLEModuleFunction hleKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitThread") {
+        sceKernelExitThread(processor);
+    }
+    public final HLEModuleFunction hleKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitThread") {
 
         @Override
         public final void execute(Processor processor) {
-        	hleKernelExitThread(processor);
+            hleKernelExitThread(processor);
         }
 
         @Override
@@ -1349,23 +1311,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     };
 
-	public void hleKernelExitDeleteThread() {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, Emulator.getProcessor().cpu.gpr[2]));
-		}
+    public void hleKernelExitDeleteThread() {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("hleKernelExitDeleteThread SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, Emulator.getProcessor().cpu.gpr[2]));
+        }
 
-		sceKernelExitDeleteThread(Emulator.getProcessor());
-	}
+        sceKernelExitDeleteThread(Emulator.getProcessor());
+    }
 
     public void hleKernelAsyncLoop(Processor processor) {
         Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
     }
-
     public final HLEModuleFunction hleKernelAsyncLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelAsyncLoop") {
 
         @Override
         public final void execute(Processor processor) {
-        	hleKernelAsyncLoop(processor);
+            hleKernelAsyncLoop(processor);
         }
 
         @Override
@@ -1374,7 +1335,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     };
 
-	/** Note: Some functions allow uid = 0 = current thread, others don't.
+    /** Note: Some functions allow uid = 0 = current thread, others don't.
      * if uid = 0 then $v0 is set to ERROR_ILLEGAL_THREAD and false is returned
      * if uid < 0 then $v0 is set to ERROR_NOT_FOUND_THREAD and false is returned */
     private boolean checkThreadID(int uid) {
@@ -1393,7 +1354,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
-        int initPriority, int stackSize, int attr, int option_addr) {
+            int initPriority, int stackSize, int attr, int option_addr) {
 
         if (option_addr != 0) {
             Modules.log.warn("hleKernelCreateThread unhandled SceKernelThreadOptParam: " +
@@ -1409,12 +1370,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (log.isDebugEnabled()) {
-        	log.debug("hleKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
-        			+ " name:'" + thread.name
-        			+ "' PC=" + Integer.toHexString(thread.cpuContext.pc)
-        			+ " attr:0x" + Integer.toHexString(attr)
-        			+ " pri:0x" + Integer.toHexString(initPriority)
-        			+ " stackSize:0x" + Integer.toHexString(stackSize));
+            log.debug("hleKernelCreateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.cpuContext.pc) + " attr:0x" + Integer.toHexString(attr) + " pri:0x" + Integer.toHexString(initPriority) + " stackSize:0x" + Integer.toHexString(stackSize));
         }
 
         return thread;
@@ -1424,9 +1380,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         USE_THREAD_BANLIST = enabled;
         log.info("Audio threads disabled: " + USE_THREAD_BANLIST);
     }
-
     /** use lower case in this list */
-    private final String[] threadNameBanList = new String[] {
+    private final String[] threadNameBanList = new String[]{
         "bgm thread", "sgx-psp-freq-thr", "sgx-psp-pcm-th", "ss playthread",
         "spcbgm", "scemainsamplebgmmp3", "se thread"
     };
@@ -1449,14 +1404,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * ambiguous keywords:
      * bgm, freq, sgx
      */
+
     private boolean isBannedThread(SceKernelThreadInfo thread) {
         if (USE_THREAD_BANLIST) {
             String name = thread.name.toLowerCase();
             if (name.contains("snd") || name.contains("sound") ||
-                name.contains("at3") || name.contains("atrac") ||
-                name.contains("sas") || name.contains("wave") ||
-                name.contains("audio") || name.contains("mpeg") ||
-                name.contains("fmod")) {
+                    name.contains("at3") || name.contains("atrac") ||
+                    name.contains("sas") || name.contains("wave") ||
+                    name.contains("audio") || name.contains("mpeg") ||
+                    name.contains("fmod")) {
                 return true;
             }
 
@@ -1471,13 +1427,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void hleKernelStartThread(SceKernelThreadInfo thread, int userDataLength, int userDataAddr, int gp) {
 
-    	if (log.isDebugEnabled()) {
-	        log.debug("hleKernelStartThread SceUID=" + Integer.toHexString(thread.uid)
-	            + " name:'" + thread.name
-	            + "' dataLen=0x" + Integer.toHexString(userDataLength)
-	            + " data=0x" + Integer.toHexString(userDataAddr)
-	            + " gp=0x" + Integer.toHexString(gp));
-    	}
+        if (log.isDebugEnabled()) {
+            log.debug("hleKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' dataLen=0x" + Integer.toHexString(userDataLength) + " data=0x" + Integer.toHexString(userDataAddr) + " gp=0x" + Integer.toHexString(gp));
+        }
 
         // Reset all thread parameters: a thread can be restarted when it has exited.
         thread.reset();
@@ -1502,23 +1454,24 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         // testing
         if (log.isDebugEnabled() && thread.cpuContext.gpr[28] != gp) {
             // from sceKernelStartModule is ok, anywhere else might be an error
-            log.debug("hleKernelStartThread oldGP=0x" + Integer.toHexString(thread.cpuContext.gpr[28])
-                + " newGP=0x" + Integer.toHexString(gp));
+            log.debug("hleKernelStartThread oldGP=0x" + Integer.toHexString(thread.cpuContext.gpr[28]) + " newGP=0x" + Integer.toHexString(gp));
         }
         thread.cpuContext.gpr[28] = gp;
 
         // switch in the target thread if it's higher priority
         hleChangeThreadState(thread, PSP_THREAD_READY);
         if (thread.currentPriority < currentThread.currentPriority) {
-        	if (log.isDebugEnabled()) {
-        		log.debug("hleKernelStartThread switching in thread immediately");
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelStartThread switching in thread immediately");
+            }
             hleRescheduleCurrentThread();
         }
     }
 
     public void sceKernelStartThread(int uid, int len, int data_addr) {
-        if (!checkThreadID(uid)) return;
+        if (!checkThreadID(uid)) {
+            return;
+        }
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -1535,54 +1488,53 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public void hleKernelSleepThread(boolean doCallbacks) {
-    	if (currentThread.wakeupCount > 0) {
-    		// sceKernelWakeupThread() has been called before, do not sleep
-    		currentThread.wakeupCount--;
+        if (currentThread.wakeupCount > 0) {
+            // sceKernelWakeupThread() has been called before, do not sleep
+            currentThread.wakeupCount--;
             Emulator.getProcessor().cpu.gpr[2] = 0;
-    	} else {
-	        // Go to wait state
-	        // wait type
-	        currentThread.waitType = PSP_WAIT_SLEEP;
+        } else {
+            // Go to wait state
+            // wait type
+            currentThread.waitType = PSP_WAIT_SLEEP;
 
-	        // Wait forever (another thread will call sceKernelWakeupThread)
-	        hleKernelThreadWait(currentThread, 0, true);
+            // Wait forever (another thread will call sceKernelWakeupThread)
+            hleKernelThreadWait(currentThread, 0, true);
 
-	        hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
+            hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
 
-	        Emulator.getProcessor().cpu.gpr[2] = 0;
-	        hleRescheduleCurrentThread(doCallbacks);
-    	}
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+            hleRescheduleCurrentThread(doCallbacks);
+        }
     }
 
     public void hleKernelWakeupThread(SceKernelThreadInfo thread) {
         if (thread.status != PSP_THREAD_WAITING) {
-	        log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount");
-	        thread.wakeupCount++;
-	    } else if (isBannedThread(thread)) {
-	        log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not waking up");
-	    } else {
-	    	if (log.isDebugEnabled()) {
-	    		log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-	    	}
-	        hleChangeThreadState(thread, PSP_THREAD_READY);
+            log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount");
+            thread.wakeupCount++;
+        } else if (isBannedThread(thread)) {
+            log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not waking up");
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+            }
+            hleChangeThreadState(thread, PSP_THREAD_READY);
 
-	        // switch in the target thread if it's now higher priority
-	        if (thread.currentPriority < currentThread.currentPriority) {
-	        	if (log.isDebugEnabled()) {
-	        		log.debug("sceKernelWakeupThread yielding to thread with higher priority");
-	        	}
-	            hleRescheduleCurrentThread();
-	        }
-	    }
+            // switch in the target thread if it's now higher priority
+            if (thread.currentPriority < currentThread.currentPriority) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceKernelWakeupThread yielding to thread with higher priority");
+                }
+                hleRescheduleCurrentThread();
+            }
+        }
     }
 
     private void hleKernelWaitThreadEnd(int uid, int micros, boolean forever, boolean callbacks) {
-        if (!checkThreadID(uid)) return;
+        if (!checkThreadID(uid)) {
+            return;
+        }
         if (log.isDebugEnabled()) {
-	        log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid)
-	            + " micros=" + micros
-	            + " forever=" + forever
-	            + " callbacks=" + callbacks);
+            log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " micros=" + micros + " forever=" + forever + " callbacks=" + callbacks);
         }
 
         SceKernelThreadInfo thread = threadMap.get(uid);
@@ -1627,11 +1579,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         thread.wait.micros = micros; // for debugging
         if (forever) {
             thread.wait.microTimeTimeout = 0;
-        	thread.wait.waitTimeoutAction = null;
+            thread.wait.waitTimeoutAction = null;
         } else {
-        	long longMicros = ((long) micros) & 0xFFFFFFFFL;
+            long longMicros = ((long) micros) & 0xFFFFFFFFL;
             thread.wait.microTimeTimeout = Emulator.getClock().microTime() + longMicros;
-        	thread.wait.waitTimeoutAction = new TimeoutThreadAction(thread);
+            thread.wait.waitTimeoutAction = new TimeoutThreadAction(thread);
         }
 
         if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled() && !isIdleThread(thread)) {
@@ -1640,18 +1592,19 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public void hleKernelDelayThread(int micros, boolean doCallbacks) {
-    	hleKernelDelayThread(micros, doCallbacks, 0);
+        hleKernelDelayThread(micros, doCallbacks, 0);
     }
 
     public void hleKernelDelayThread(int micros, boolean doCallbacks, int returnCode) {
         // wait type
         currentThread.waitType = PSP_WAIT_DELAY;
 
-        if (IGNORE_DELAY)
+        if (IGNORE_DELAY) {
             micros = 0;
+        }
 
         if (log.isDebugEnabled()) {
-        	log.debug("hleKernelDelayThread micros=" + micros + ", callbacks=" + doCallbacks);
+            log.debug("hleKernelDelayThread micros=" + micros + ", callbacks=" + doCallbacks);
         }
 
         // Wait on a timeout only
@@ -1668,11 +1621,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, currentThread.uid, func_addr, user_arg_addr);
         callbackMap.put(callback.uid, callback);
 
-        log.debug("hleKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
-            + " name:'" + name
-            + "' PC=" + Integer.toHexString(func_addr)
-            + " arg=" + Integer.toHexString(user_arg_addr)
-            + " thread:'" + currentThread.name + "'");
+        log.debug("hleKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid) + " name:'" + name + "' PC=" + Integer.toHexString(func_addr) + " arg=" + Integer.toHexString(user_arg_addr) + " thread:'" + currentThread.name + "'");
 
         return callback;
     }
@@ -1682,10 +1631,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelCallbackInfo info = callbackMap.remove(uid);
         boolean removed = info != null;
         if (removed) {
-        	if (log.isDebugEnabled()) {
-        		log.debug("hleKernelDeleteCallback SceUID=" + Integer.toHexString(uid)
-        				+ " name:'" + info.name + "'");
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelDeleteCallback SceUID=" + Integer.toHexString(uid) + " name:'" + info.name + "'");
+            }
         } else {
             log.warn("hleKernelDeleteCallback not a callback uid 0x" + Integer.toHexString(uid));
         }
@@ -1717,7 +1665,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     private int getDispatchThreadState() {
-    	return dispatchThreadEnabled ? SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED : SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED;
+        return dispatchThreadEnabled ? SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED : SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED;
     }
 
     /** Registers a callback on the current thread.
@@ -1733,9 +1681,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn("hleKernelRegisterCallback(type=" + callbackType + ") unknown uid " + Integer.toHexString(cbid));
             return false;
         }
-		currentThread.callbackRegistered[callbackType] = true;
-		currentThread.callbackInfo[callbackType] = callback;
-		return true;
+        currentThread.callbackRegistered[callbackType] = true;
+        currentThread.callbackInfo[callbackType] = callback;
+        return true;
     }
 
     /** Unregisters a callback by type and cbid. May not be on the current thread.
@@ -1748,7 +1696,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         for (SceKernelThreadInfo thread : threadMap.values()) {
             if (thread.callbackRegistered[callbackType] &&
-                thread.callbackInfo[callbackType].uid == cbid) {
+                    thread.callbackInfo[callbackType].uid == cbid) {
                 // Warn if we are removing a pending callback, this a callback
                 // that has been pushed but not yet executed.
                 if (thread.callbackReady[callbackType]) {
@@ -1764,8 +1712,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (oldInfo == null) {
-            log.warn("hleKernelUnRegisterCallback(type=" + callbackType + ") cbid=" + Integer.toHexString(cbid)
-                + " no matching callbacks found");
+            log.warn("hleKernelUnRegisterCallback(type=" + callbackType + ") cbid=" + Integer.toHexString(cbid) + " no matching callbacks found");
         }
 
         return oldInfo;
@@ -1790,11 +1737,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             }
 
             if (cb.notifyCount != 0) {
-                log.warn("hleKernelNotifyCallback(type=" + callbackType
-                    + ") thread:'" + thread.name
-                    + "' overwriting previous notifyArg 0x" + Integer.toHexString(cb.notifyArg)
-                    + " -> 0x" + Integer.toHexString(notifyArg)
-                    + ", newCount=" + (cb.notifyCount + 1));
+                log.warn("hleKernelNotifyCallback(type=" + callbackType + ") thread:'" + thread.name + "' overwriting previous notifyArg 0x" + Integer.toHexString(cb.notifyArg) + " -> 0x" + Integer.toHexString(notifyArg) + ", newCount=" + (cb.notifyCount + 1));
             }
 
             cb.notifyCount++; // keep increasing this until we actually enter the callback
@@ -1807,9 +1750,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // Enter callbacks immediately,
             // except those registered to the current thread. The app must explictly
             // call sceKernelCheckCallback or a waitCB function to do that.
-        	if (log.isDebugEnabled()) {
-        		log.debug("hleKernelNotifyCallback(type=" + callbackType + ") calling checkCallbacks");
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelNotifyCallback(type=" + callbackType + ") calling checkCallbacks");
+            }
             checkCallbacks();
         } else {
             log.warn("hleKernelNotifyCallback(type=" + callbackType + ") no registered callbacks to push");
@@ -1819,130 +1762,130 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     /** runs callbacks. Check the thread doCallbacks flag.
      * @return true if we switched into a callback. */
     private boolean checkThreadCallbacks(SceKernelThreadInfo thread) {
-    	boolean handled = false;
+        boolean handled = false;
 
-    	if (thread == null || !thread.doCallbacks) {
-    		return handled;
-    	}
+        if (thread == null || !thread.doCallbacks) {
+            return handled;
+        }
 
-    	for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE; i++) {
+        for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE; i++) {
             if (thread.callbackReady[i] && thread.callbackRegistered[i]) {
-            	if (log.isDebugEnabled()) {
-            		log.debug(String.format("Entering callback type %d %s for thread %s (current thread is %s)", i, thread.callbackInfo[i].toString(), thread.toString(), currentThread.toString()));
-            	}
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("Entering callback type %d %s for thread %s (current thread is %s)", i, thread.callbackInfo[i].toString(), thread.toString(), currentThread.toString()));
+                }
 
-            	thread.callbackReady[i] = false;
-        		thread.callbackInfo[i].startContext(thread, null);
+                thread.callbackReady[i] = false;
+                thread.callbackInfo[i].startContext(thread, null);
                 handled = true;
                 break;
             }
         }
 
-    	return handled;
+        return handled;
     }
 
     public void cancelAlarm(SceKernelAlarmInfo sceKernelAlarmInfo) {
-		Scheduler.getInstance().removeAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
-		sceKernelAlarmInfo.schedule = 0;
-	}
+        Scheduler.getInstance().removeAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
+        sceKernelAlarmInfo.schedule = 0;
+    }
 
-	public void rescheduleAlarm(SceKernelAlarmInfo sceKernelAlarmInfo, int delay) {
-		if (delay < 0) {
-			delay = 100;
-		}
+    public void rescheduleAlarm(SceKernelAlarmInfo sceKernelAlarmInfo, int delay) {
+        if (delay < 0) {
+            delay = 100;
+        }
 
-		sceKernelAlarmInfo.schedule += delay;
-		scheduleAlarm(sceKernelAlarmInfo);
+        sceKernelAlarmInfo.schedule += delay;
+        scheduleAlarm(sceKernelAlarmInfo);
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("New Schedule for Alarm uid=%x: %d", sceKernelAlarmInfo.uid, sceKernelAlarmInfo.schedule));
-		}
-	}
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("New Schedule for Alarm uid=%x: %d", sceKernelAlarmInfo.uid, sceKernelAlarmInfo.schedule));
+        }
+    }
 
-	private void scheduleAlarm(SceKernelAlarmInfo sceKernelAlarmInfo) {
-		Scheduler.getInstance().addAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
-	}
+    private void scheduleAlarm(SceKernelAlarmInfo sceKernelAlarmInfo) {
+        Scheduler.getInstance().addAction(sceKernelAlarmInfo.schedule, sceKernelAlarmInfo.alarmInterruptAction);
+    }
 
-	protected void hleKernelSetAlarm(Processor processor, long delayUsec, int handlerAddress, int handlerArgument) {
+    protected void hleKernelSetAlarm(Processor processor, long delayUsec, int handlerAddress, int handlerArgument) {
         CpuState cpu = processor.cpu;
 
         Scheduler scheduler = Scheduler.getInstance();
-		long now = scheduler.getNow();
-		long schedule = now + delayUsec;
+        long now = scheduler.getNow();
+        long schedule = now + delayUsec;
         SceKernelAlarmInfo sceKernelAlarmInfo = new SceKernelAlarmInfo(schedule, handlerAddress, handlerArgument);
         alarms.put(sceKernelAlarmInfo.uid, sceKernelAlarmInfo);
 
         scheduleAlarm(sceKernelAlarmInfo);
 
         cpu.gpr[2] = sceKernelAlarmInfo.uid;
-	}
+    }
 
-	protected long getSystemTime() {
-		return SystemTimeManager.getSystemTime();
-	}
+    protected long getSystemTime() {
+        return SystemTimeManager.getSystemTime();
+    }
 
-	public long getVTimerTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
-		long time = sceKernelVTimerInfo.current;
+    public long getVTimerTime(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        long time = sceKernelVTimerInfo.current;
 
-		if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
-			time += getSystemTime() - sceKernelVTimerInfo.base;
-		}
+        if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+            time += getSystemTime() - sceKernelVTimerInfo.base;
+        }
 
-		return time;
-	}
+        return time;
+    }
 
-	protected long getVTimerScheduleForScheduler(SceKernelVTimerInfo sceKernelVTimerInfo) {
-		return sceKernelVTimerInfo.base + sceKernelVTimerInfo.schedule;
-	}
+    protected long getVTimerScheduleForScheduler(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        return sceKernelVTimerInfo.base + sceKernelVTimerInfo.schedule;
+    }
 
-	protected void setVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long time) {
-		sceKernelVTimerInfo.current = time;
-	}
+    protected void setVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long time) {
+        sceKernelVTimerInfo.current = time;
+    }
 
-	protected void startVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
-		sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_RUNNING;
-		sceKernelVTimerInfo.base = getSystemTime();
+    protected void startVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_RUNNING;
+        sceKernelVTimerInfo.base = getSystemTime();
 
-		if (sceKernelVTimerInfo.schedule != 0 && sceKernelVTimerInfo.handlerAddress != 0) {
-			scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
-		}
-	}
+        if (sceKernelVTimerInfo.schedule != 0 && sceKernelVTimerInfo.handlerAddress != 0) {
+            scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
+        }
+    }
 
-	protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
-		sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
-		// Sum the elapsed time (multiple Start/Stop sequences are added)
-		sceKernelVTimerInfo.current += getSystemTime() - sceKernelVTimerInfo.base;
-	}
+    protected void stopVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        sceKernelVTimerInfo.active = SceKernelVTimerInfo.ACTIVE_STOPPED;
+        // Sum the elapsed time (multiple Start/Stop sequences are added)
+        sceKernelVTimerInfo.current += getSystemTime() - sceKernelVTimerInfo.base;
+    }
 
-	protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
-		sceKernelVTimerInfo.schedule = schedule;
+    protected void scheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, long schedule) {
+        sceKernelVTimerInfo.schedule = schedule;
 
-		if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
-			Scheduler scheduler = Scheduler.getInstance();
-			scheduler.addAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
-		}
-	}
+        if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+            Scheduler scheduler = Scheduler.getInstance();
+            scheduler.addAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
+        }
+    }
 
-	public void cancelVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
-		Scheduler.getInstance().removeAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
-		sceKernelVTimerInfo.schedule = 0;
-		sceKernelVTimerInfo.handlerAddress = 0;
-		sceKernelVTimerInfo.handlerArgument = 0;
-	}
+    public void cancelVTimer(SceKernelVTimerInfo sceKernelVTimerInfo) {
+        Scheduler.getInstance().removeAction(getVTimerScheduleForScheduler(sceKernelVTimerInfo), sceKernelVTimerInfo.vtimerInterruptAction);
+        sceKernelVTimerInfo.schedule = 0;
+        sceKernelVTimerInfo.handlerAddress = 0;
+        sceKernelVTimerInfo.handlerArgument = 0;
+    }
 
-	public void rescheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, int delay) {
-		if (delay < 0) {
-			delay = 100;
-		}
+    public void rescheduleVTimer(SceKernelVTimerInfo sceKernelVTimerInfo, int delay) {
+        if (delay < 0) {
+            delay = 100;
+        }
 
-		sceKernelVTimerInfo.schedule += delay;
+        sceKernelVTimerInfo.schedule += delay;
 
-		scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
+        scheduleVTimer(sceKernelVTimerInfo, sceKernelVTimerInfo.schedule);
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("New Schedule for VTimer uid=%x: %d", sceKernelVTimerInfo.uid, sceKernelVTimerInfo.schedule));
-		}
-	}
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("New Schedule for VTimer uid=%x: %d", sceKernelVTimerInfo.uid, sceKernelVTimerInfo.schedule));
+        }
+    }
 
     /**
      * Iterates waiting threads, making sure doCallbacks is set before
@@ -1965,23 +1908,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * insideCallback may become true after a call to checkCallbacks().
      */
     private void checkCallbacks() {
-    	if (log.isTraceEnabled()) {
-    		log.trace("checkCallbacks current thread is '" + currentThread.name + "' doCallbacks:" + currentThread.doCallbacks + " caller:" + getCallingFunction());
-    	}
+        if (log.isTraceEnabled()) {
+            log.trace("checkCallbacks current thread is '" + currentThread.name + "' doCallbacks:" + currentThread.doCallbacks + " caller:" + getCallingFunction());
+        }
 
-    	boolean handled;
-    	do {
-    		handled = false;
-	    	for (SceKernelThreadInfo thread : threadMap.values()) {
-	    		if (thread.doCallbacks && checkThreadCallbacks(thread)) {
-	    			handled = true;
-	    			break;
-	    		}
-	    	}
-    	} while (handled);
+        boolean handled;
+        do {
+            handled = false;
+            for (SceKernelThreadInfo thread : threadMap.values()) {
+                if (thread.doCallbacks && checkThreadCallbacks(thread)) {
+                    handled = true;
+                    break;
+                }
+            }
+        } while (handled);
     }
 
-	public void _sceKernelReturnFromCallback(Processor processor) {
+    public void _sceKernelReturnFromCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.warn("Unimplemented _sceKernelReturnFromCallback");
@@ -2000,19 +1943,44 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         String name = readStringNZ(name_addr, 32);
 
-        log.info("sceKernelRegisterThreadEventHandler name=" + name
-                + ", thid=0x" + Integer.toHexString(thid)
-                + ", mask=0x" + Integer.toHexString(mask)
-                + ", handler_func=0x" + Integer.toHexString(handler_func)
-                + ", common_addr=0x" + Integer.toHexString(common_addr));
+        log.info("sceKernelRegisterThreadEventHandler name=" + name + ", thid=0x" + Integer.toHexString(thid) + ", mask=0x" + Integer.toHexString(mask) + ", handler_func=0x" + Integer.toHexString(handler_func) + ", common_addr=0x" + Integer.toHexString(common_addr));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (threadMap.containsKey(thid)) {
+            SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
+            threadEventHandlerMap.put(handler.uid, handler);
+            threadEventMap.put(thid, handler.uid);
+            cpu.gpr[2] = handler.uid;
         } else {
-            if(threadMap.containsKey(thid)) {
-                SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
+            SceKernelThreadEventHandlerInfo handler = new SceKernelThreadEventHandlerInfo(name, thid, mask, handler_func, common_addr);
+            if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_CURRENT) {
                 threadEventHandlerMap.put(handler.uid, handler);
-                threadEventMap.put(thid, handler.uid);
+                threadEventMap.put(getCurrentThread().uid, handler.uid);
+                cpu.gpr[2] = handler.uid;
+            } else if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_USER) {
+                threadEventHandlerMap.put(handler.uid, handler);
+                for (SceKernelThreadInfo thread : threadMap.values()) {
+                    if ((thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
+                        threadEventMap.put(thread.uid, handler.uid);
+                    }
+                }
+                cpu.gpr[2] = handler.uid;
+            } else if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_KERN && isKernelMode()) {
+                threadEventHandlerMap.put(handler.uid, handler);
+                for (SceKernelThreadInfo thread : threadMap.values()) {
+                    if ((thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL) {
+                        threadEventMap.put(thread.uid, handler.uid);
+                    }
+                }
+                cpu.gpr[2] = handler.uid;
+            } else if (thid == SceKernelThreadEventHandlerInfo.THREAD_EVENT_ID_ALL && isKernelMode()) {
+                threadEventHandlerMap.put(handler.uid, handler);
+                for (SceKernelThreadInfo thread : threadMap.values()) {
+                    threadEventMap.put(thread.uid, handler.uid);
+                }
                 cpu.gpr[2] = handler.uid;
             } else {
                 cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -2028,14 +1996,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         log.info("sceKernelReleaseThreadEventHandler uid=0x" + Integer.toHexString(uid));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (threadEventHandlerMap.containsKey(uid)) {
+            threadEventHandlerMap.remove(uid);
+            cpu.gpr[2] = 0;
         } else {
-            if(threadEventHandlerMap.containsKey(uid)) {
-                threadEventHandlerMap.remove(uid);
-                cpu.gpr[2] = 0;
-            } else {
-                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
-            }
+            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD_EVENT_HANDLER;
         }
     }
 
@@ -2046,10 +2014,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
         int status_addr = cpu.gpr[5];
 
-        log.info("sceKernelReferThreadEventHandlerStatus uid=0x" + Integer.toHexString(uid)
-                + ", status_addr=0x" + Integer.toHexString(status_addr));
+        log.info("sceKernelReferThreadEventHandlerStatus uid=0x" + Integer.toHexString(uid) + ", status_addr=0x" + Integer.toHexString(status_addr));
 
-        if(threadEventHandlerMap.containsKey(uid)) {
+        if (threadEventHandlerMap.containsKey(uid)) {
             threadEventHandlerMap.get(uid).write(mem, status_addr);
             cpu.gpr[2] = 0;
         } else {
@@ -2066,11 +2033,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         String name = readStringNZ(name_addr, 32);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
-            cpu.gpr[2] = callback.uid;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
+        cpu.gpr[2] = callback.uid;
     }
 
     public void sceKernelDeleteCallback(Processor processor) {
@@ -2079,13 +2046,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (hleKernelDeleteCallback(uid)) {
+            cpu.gpr[2] = 0;
         } else {
-            if (hleKernelDeleteCallback(uid)) {
-                cpu.gpr[2] = 0;
-            } else {
-                cpu.gpr[2] = -1;
-            }
+            cpu.gpr[2] = -1;
         }
     }
 
@@ -2100,13 +2067,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int arg = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-              log.debug("sceKernelNotifyCallback uid=0x" + Integer.toHexString(uid)
-                      + ", arg=0x" + Integer.toHexString(arg));
+            log.debug("sceKernelNotifyCallback uid=0x" + Integer.toHexString(uid) + ", arg=0x" + Integer.toHexString(arg));
         }
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         int callbackType = 0;  // Only seen in UMD callbacks (E.g.: "Exit_Game").
-        if(callback != null) {
-            if(!getCurrentThread().callbackRegistered[callbackType]) {
+        if (callback != null) {
+            if (!getCurrentThread().callbackRegistered[callbackType]) {
                 hleKernelRegisterCallback(callbackType, uid);
             }
             hleKernelNotifyCallback(callbackType, uid, arg);
@@ -2120,11 +2086,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-              log.debug("sceKernelCancelCallback uid=0x" + Integer.toHexString(uid));
+            log.debug("sceKernelCancelCallback uid=0x" + Integer.toHexString(uid));
         }
 
         SceKernelCallbackInfo callback = callbackMap.get(uid);
-        if(callback != null) {
+        if (callback != null) {
             callback.notifyArg = 0;
         }
         cpu.gpr[2] = 0;
@@ -2137,29 +2103,29 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-              log.debug("sceKernelGetCallbackCount uid=0x" + Integer.toHexString(uid));
+            log.debug("sceKernelGetCallbackCount uid=0x" + Integer.toHexString(uid));
         }
         int count = 0;
         SceKernelCallbackInfo callback = callbackMap.get(uid);
-        if(callback != null) {
+        if (callback != null) {
             count = callback.notifyCount;
         }
         cpu.gpr[2] = count;
     }
 
-	/** Check callbacks, including those on the current thread */
+    /** Check callbacks, including those on the current thread */
     public void sceKernelCheckCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.debug("sceKernelCheckCallback(void)");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = 0;
-            currentThread.doCallbacks = true;
-            checkCallbacks();
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        cpu.gpr[2] = 0;
+        currentThread.doCallbacks = true;
+        checkCallbacks();
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {
@@ -2170,9 +2136,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int info_addr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-    		log.debug("sceKernelReferCallbackStatus SceUID=" + Integer.toHexString(uid)
-    				+ " info=" + Integer.toHexString(info_addr));
-    	}
+            log.debug("sceKernelReferCallbackStatus SceUID=" + Integer.toHexString(uid) + " info=" + Integer.toHexString(info_addr));
+        }
 
         SceKernelCallbackInfo info = callbackMap.get(uid);
         if (info == null) {
@@ -2195,30 +2160,34 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     /** sleep the current thread (using wait) */
     public void sceKernelSleepThread(Processor processor) {
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
-    	}
+        CpuState cpu = processor.cpu;
+
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            hleKernelSleepThread(false);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        hleKernelSleepThread(false);
     }
 
     /** sleep the current thread and handle callbacks (using wait)
      * in our implementation we have to use wait, not suspend otherwise we don't handle callbacks. */
     public void sceKernelSleepThreadCB(Processor processor) {
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
-    	}
+        CpuState cpu = processor.cpu;
 
-         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            hleKernelSleepThread(true);
-            checkCallbacks();
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "'");
         }
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        hleKernelSleepThread(true);
+        checkCallbacks();
     }
 
     public void sceKernelWakeupThread(Processor processor) {
@@ -2226,14 +2195,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (!checkThreadID(uid)) return;
+        if (!checkThreadID(uid)) {
+            return;
+        }
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
-	        cpu.gpr[2] = 0;
-        	hleKernelWakeupThread(thread);
+            cpu.gpr[2] = 0;
+            hleKernelWakeupThread(thread);
         }
     }
 
@@ -2242,7 +2213,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (uid == 0) uid = currentThread.uid;
+        if (uid == 0) {
+            uid = currentThread.uid;
+        }
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
@@ -2262,7 +2235,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (!checkThreadID(uid)) return;
+        if (!checkThreadID(uid)) {
+            return;
+        }
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
@@ -2271,9 +2246,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn("sceKernelSuspendThread on self is not allowed");
             cpu.gpr[2] = ERROR_ILLEGAL_THREAD;
         } else {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
+            }
             hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
             cpu.gpr[2] = 0;
         }
@@ -2284,7 +2259,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (!checkThreadID(uid)) return;
+        if (!checkThreadID(uid)) {
+            return;
+        }
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
@@ -2296,9 +2273,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not resuming");
             cpu.gpr[2] = 0;
         } else {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
+            }
             hleChangeThreadState(thread, PSP_THREAD_READY);
             cpu.gpr[2] = 0;
         }
@@ -2310,22 +2287,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
         int timeout_addr = cpu.gpr[5];
 
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
-    	}
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            int micros = 0;
-            boolean forever = true;
-
-            if (timeout_addr != 0) {
-                micros = Memory.getInstance().read32(timeout_addr);
-                forever = false;
-            }
-            hleKernelWaitThreadEnd(uid, micros, forever, false);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        int micros = 0;
+        boolean forever = true;
+
+        if (timeout_addr != 0) {
+            micros = Memory.getInstance().read32(timeout_addr);
+            forever = false;
+        }
+        hleKernelWaitThreadEnd(uid, micros, forever, false);
     }
 
     public void sceKernelWaitThreadEndCB(Processor processor) {
@@ -2339,18 +2316,18 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            int micros = 0;
-            boolean forever = true;
-
-            if (timeout_addr != 0) {
-                micros = Memory.getInstance().read32(timeout_addr);
-                forever = false;
-            }
-            hleKernelWaitThreadEnd(uid, micros, forever, true);
-            checkCallbacks();
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        int micros = 0;
+        boolean forever = true;
+
+        if (timeout_addr != 0) {
+            micros = Memory.getInstance().read32(timeout_addr);
+            forever = false;
+        }
+        hleKernelWaitThreadEnd(uid, micros, forever, true);
+        checkCallbacks();
     }
 
     /** wait the current thread for a certain number of microseconds */
@@ -2360,10 +2337,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int micros = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            hleKernelDelayThread(micros, false);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        hleKernelDelayThread(micros, false);
     }
 
     /** wait the current thread for a certain number of microseconds */
@@ -2373,10 +2350,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int micros = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            hleKernelDelayThread(micros, true);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        hleKernelDelayThread(micros, true);
     }
 
     /**
@@ -2393,16 +2370,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int sysclocks_addr = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (mem.isAddressGood(sysclocks_addr)) {
+            long sysclocks = mem.read64(sysclocks_addr);
+            int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
+            hleKernelDelayThread(micros, false);
         } else {
-            if (mem.isAddressGood(sysclocks_addr)) {
-                long sysclocks = mem.read64(sysclocks_addr);
-                int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-                hleKernelDelayThread(micros, false);
-            } else {
-                log.warn("sceKernelDelaySysClockThread invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
-                cpu.gpr[2] = -1;
-            }
+            log.warn("sceKernelDelaySysClockThread invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
+            cpu.gpr[2] = -1;
         }
     }
 
@@ -2416,21 +2393,21 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      */
     public void sceKernelDelaySysClockThreadCB(Processor processor) {
         CpuState cpu = processor.cpu;
-    	Memory mem = Memory.getInstance();
+        Memory mem = Memory.getInstance();
 
         int sysclocks_addr = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (mem.isAddressGood(sysclocks_addr)) {
+            long sysclocks = mem.read64(sysclocks_addr);
+            int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
+            hleKernelDelayThread(micros, true);
         } else {
-            if (mem.isAddressGood(sysclocks_addr)) {
-                long sysclocks = mem.read64(sysclocks_addr);
-                int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
-                hleKernelDelayThread(micros, true);
-            } else {
-                log.warn("sceKernelDelaySysClockThreadCB invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
-                Emulator.getProcessor().cpu.gpr[2] = -1;
-            }
+            log.warn("sceKernelDelaySysClockThreadCB invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 
@@ -2438,20 +2415,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.semas.sceKernelCreateSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.semas.sceKernelCreateSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
     public void sceKernelDeleteSema(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
     }
 
     public void sceKernelSignalSema(Processor processor) {
@@ -2463,20 +2440,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelWaitSemaCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelPollSema(Processor processor) {
@@ -2498,20 +2475,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
     public void sceKernelDeleteEventFlag(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
     }
 
     public void sceKernelSetEventFlag(Processor processor) {
@@ -2528,20 +2505,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
     public void sceKernelWaitEventFlagCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
     public void sceKernelPollEventFlag(Processor processor) {
@@ -2563,20 +2540,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.mbx.sceKernelCreateMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.mbx.sceKernelCreateMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelDeleteMbx(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.mbx.sceKernelDeleteMbx(cpu.gpr[4]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.mbx.sceKernelDeleteMbx(cpu.gpr[4]);
     }
 
     public void sceKernelSendMbx(Processor processor) {
@@ -2588,25 +2565,25 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.mbx.sceKernelReceiveMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.mbx.sceKernelReceiveMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelReceiveMbxCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.mbx.sceKernelReceiveMbxCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.mbx.sceKernelReceiveMbxCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelPollMbx(Processor processor) {
         CpuState cpu = processor.cpu;
-    	Managers.mbx.sceKernelPollMbx(cpu.gpr[4], cpu.gpr[5]);
+        Managers.mbx.sceKernelPollMbx(cpu.gpr[4], cpu.gpr[5]);
     }
 
     public void sceKernelCancelReceiveMbx(Processor processor) {
@@ -2623,40 +2600,40 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.msgPipes.sceKernelCreateMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.msgPipes.sceKernelCreateMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
     public void sceKernelDeleteMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.msgPipes.sceKernelDeleteMsgPipe(cpu.gpr[4]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.msgPipes.sceKernelDeleteMsgPipe(cpu.gpr[4]);
     }
 
     public void sceKernelSendMsgPipe(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.msgPipes.sceKernelSendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.msgPipes.sceKernelSendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
     public void sceKernelSendMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.msgPipes.sceKernelSendMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.msgPipes.sceKernelSendMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
     public void sceKernelTrySendMsgPipe(Processor processor) {
@@ -2668,20 +2645,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
     public void sceKernelReceiveMsgPipeCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
     public void sceKernelTryReceiveMsgPipe(Processor processor) {
@@ -2703,40 +2680,40 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
     }
 
     public void sceKernelDeleteVpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
     }
 
     public void sceKernelAllocateVpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
     public void sceKernelAllocateVplCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
     public void sceKernelTryAllocateVpl(Processor processor) {
@@ -2748,10 +2725,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
     public void sceKernelCancelVpl(Processor processor) {
@@ -2768,40 +2745,40 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
 
     public void sceKernelDeleteFpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
     }
 
     public void sceKernelAllocateFpl(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelAllocateFplCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
 
     public void sceKernelTryAllocateFpl(Processor processor) {
@@ -2813,10 +2790,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
     }
 
     public void sceKernelCancelFpl(Processor processor) {
@@ -2871,36 +2848,36 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     /**
-	 * Set an alarm.
-	 * @param delayUsec - The number of micro seconds till the alarm occurs.
-	 * @param handlerAddress - Pointer to a ::SceKernelAlarmHandler
-	 * @param handlerArgument - Common pointer for the alarm handler
-	 *
-	 * @return A UID representing the created alarm, < 0 on error.
-	 */
-	public void sceKernelSetAlarm(Processor processor) {
+     * Set an alarm.
+     * @param delayUsec - The number of micro seconds till the alarm occurs.
+     * @param handlerAddress - Pointer to a ::SceKernelAlarmHandler
+     * @param handlerArgument - Common pointer for the alarm handler
+     *
+     * @return A UID representing the created alarm, < 0 on error.
+     */
+    public void sceKernelSetAlarm(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int delayUsec = cpu.gpr[4];
         int handlerAddress = cpu.gpr[5];
         int handlerArgument = cpu.gpr[6];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelSetAlarm(%d,0x%08X,0x%08X)", delayUsec, handlerAddress, handlerArgument));
+            log.debug(String.format("sceKernelSetAlarm(%d,0x%08X,0x%08X)", delayUsec, handlerAddress, handlerArgument));
         }
 
         hleKernelSetAlarm(processor, delayUsec, handlerAddress, handlerArgument);
     }
 
-	/**
-	 * Set an alarm using a ::SceKernelSysClock structure for the time
-	 *
-	 * @param delaySysclockAddr - Pointer to a ::SceKernelSysClock structure
-	 * @param handlerAddress - Pointer to a ::SceKernelAlarmHandler
-	 * @param handlerArgument - Common pointer for the alarm handler.
-	 *
-	 * @return A UID representing the created alarm, < 0 on error.
-	 */
-	public void sceKernelSetSysClockAlarm(Processor processor) {
+    /**
+     * Set an alarm using a ::SceKernelSysClock structure for the time
+     *
+     * @param delaySysclockAddr - Pointer to a ::SceKernelSysClock structure
+     * @param handlerAddress - Pointer to a ::SceKernelAlarmHandler
+     * @param handlerArgument - Common pointer for the alarm handler.
+     *
+     * @return A UID representing the created alarm, < 0 on error.
+     */
+    public void sceKernelSetSysClockAlarm(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
@@ -2908,41 +2885,41 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int handlerAddress = cpu.gpr[5];
         int handlerArgument = cpu.gpr[6];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelSetSysClockAlarm(0x%08X,0x%08X,0x%08X)", delaySysclockAddr, handlerAddress, handlerArgument));
+            log.debug(String.format("sceKernelSetSysClockAlarm(0x%08X,0x%08X,0x%08X)", delaySysclockAddr, handlerAddress, handlerArgument));
         }
 
         if (mem.isAddressGood(delaySysclockAddr)) {
-        	long delaySysclock = mem.read64(delaySysclockAddr);
-        	long delayUsec = SystemTimeManager.hleSysClock2USec(delaySysclock);
+            long delaySysclock = mem.read64(delaySysclockAddr);
+            long delayUsec = SystemTimeManager.hleSysClock2USec(delaySysclock);
 
-        	hleKernelSetAlarm(processor, delayUsec, handlerAddress, handlerArgument);
+            hleKernelSetAlarm(processor, delayUsec, handlerAddress, handlerArgument);
         } else {
-        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+            cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         }
-	}
+    }
 
-	/**
-	 * Cancel a pending alarm.
-	 *
-	 * @param alarmUid - UID of the alarm to cancel.
-	 *
-	 * @return 0 on success, < 0 on error.
-	 */
+    /**
+     * Cancel a pending alarm.
+     *
+     * @param alarmUid - UID of the alarm to cancel.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceKernelCancelAlarm(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int alarmUid = cpu.gpr[4];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelCancelAlarm(uid=0x%x)", alarmUid));
+            log.debug(String.format("sceKernelCancelAlarm(uid=0x%x)", alarmUid));
         }
 
-    	SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
+        SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
         if (sceKernelAlarmInfo == null) {
-        	log.warn(String.format("sceKernelCancelAlarm unknown uid=0x%x", alarmUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_ALARM;
+            log.warn(String.format("sceKernelCancelAlarm unknown uid=0x%x", alarmUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_ALARM;
         } else {
-        	cancelAlarm(sceKernelAlarmInfo);
-        	cpu.gpr[2] = 0;
+            cancelAlarm(sceKernelAlarmInfo);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -2961,20 +2938,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int alarmUid = cpu.gpr[4];
         int infoAddr = cpu.gpr[5];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelReferAlarmStatus(uid=0x%x, infoAddr=0x%08X)", alarmUid, infoAddr));
+            log.debug(String.format("sceKernelReferAlarmStatus(uid=0x%x, infoAddr=0x%08X)", alarmUid, infoAddr));
         }
 
-    	SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
+        SceKernelAlarmInfo sceKernelAlarmInfo = alarms.get(alarmUid);
         if (sceKernelAlarmInfo == null) {
-        	log.warn(String.format("sceKernelReferAlarmStatus unknown uid=0x%x", alarmUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_ALARM;
+            log.warn(String.format("sceKernelReferAlarmStatus unknown uid=0x%x", alarmUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_ALARM;
         } else if (!mem.isAddressGood(infoAddr)) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+            cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
-        	int size = mem.read32(infoAddr);
-        	sceKernelAlarmInfo.size = size;
-        	sceKernelAlarmInfo.write(mem, infoAddr);
-        	cpu.gpr[2] = 0;
+            int size = mem.read32(infoAddr);
+            sceKernelAlarmInfo.size = size;
+            sceKernelAlarmInfo.write(mem, infoAddr);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -2993,16 +2970,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int optAddr = cpu.gpr[5];
         String name = Utilities.readStringZ(nameAddr);
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelCreateVTimer(name=%s(0x%08X), optAddr=0x%08X)", name, nameAddr, optAddr));
+            log.debug(String.format("sceKernelCreateVTimer(name=%s(0x%08X), optAddr=0x%08X)", name, nameAddr, optAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
-            vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
-            cpu.gpr[2] = sceKernelVTimerInfo.uid;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
+        vtimers.put(sceKernelVTimerInfo.uid, sceKernelVTimerInfo);
+        cpu.gpr[2] = sceKernelVTimerInfo.uid;
     }
 
     /**
@@ -3017,20 +2994,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int vtimerUid = cpu.gpr[4];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelDeleteVTimer(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelDeleteVTimer(uid=0x%x)", vtimerUid));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+            log.warn(String.format("sceKernelDeleteVTimer unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-            SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
-            if (sceKernelVTimerInfo == null) {
-                log.warn(String.format("sceKernelDeleteVTimer unknown uid=0x%x", vtimerUid));
-                cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-            } else {
-                sceKernelVTimerInfo.delete();
-                cpu.gpr[2] = 0;
-            }
+            sceKernelVTimerInfo.delete();
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3049,18 +3026,18 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int vtimerUid = cpu.gpr[4];
         int baseAddr = cpu.gpr[5];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelGetVTimerBase(uid=0x%x,baseAddr=0x%08X)", vtimerUid, baseAddr));
+            log.debug(String.format("sceKernelGetVTimerBase(uid=0x%x,baseAddr=0x%08X)", vtimerUid, baseAddr));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelGetVTimerBase unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelGetVTimerBase unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else if (!mem.isAddressGood(baseAddr)) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+            cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
-        	mem.write64(baseAddr, sceKernelVTimerInfo.base);
-        	cpu.gpr[2] = 0;
+            mem.write64(baseAddr, sceKernelVTimerInfo.base);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3076,15 +3053,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int vtimerUid = cpu.gpr[4];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelGetVTimerBaseWide(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelGetVTimerBaseWide(uid=0x%x)", vtimerUid));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelGetVTimerBaseWide unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelGetVTimerBaseWide unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-        	Utilities.returnRegister64(cpu, sceKernelVTimerInfo.base);
+            Utilities.returnRegister64(cpu, sceKernelVTimerInfo.base);
         }
     }
 
@@ -3103,22 +3080,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int vtimerUid = cpu.gpr[4];
         int timeAddr = cpu.gpr[5];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelGetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
+            log.debug(String.format("sceKernelGetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelGetVTimerTime unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelGetVTimerTime unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else if (!mem.isAddressGood(timeAddr)) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+            cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
-        	long time = getVTimerTime(sceKernelVTimerInfo);
+            long time = getVTimerTime(sceKernelVTimerInfo);
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("sceKernelGetVTimerTime returning %d", time));
+                log.debug(String.format("sceKernelGetVTimerTime returning %d", time));
             }
-        	mem.write64(timeAddr, time);
-        	cpu.gpr[2] = 0;
+            mem.write64(timeAddr, time);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3134,19 +3111,19 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int vtimerUid = cpu.gpr[4];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelGetVTimerTimeWide(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelGetVTimerTimeWide(uid=0x%x)", vtimerUid));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelGetVTimerTimeWide unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelGetVTimerTimeWide unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-        	long time = getVTimerTime(sceKernelVTimerInfo);
+            long time = getVTimerTime(sceKernelVTimerInfo);
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("sceKernelGetVTimerTimeWide returning %d", time));
+                log.debug(String.format("sceKernelGetVTimerTimeWide returning %d", time));
             }
-        	Utilities.returnRegister64(cpu, time);
+            Utilities.returnRegister64(cpu, time);
         }
     }
 
@@ -3165,23 +3142,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int vtimerUid = cpu.gpr[4];
         int timeAddr = cpu.gpr[5];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
+            log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,timeAddr=0x%08X)", vtimerUid, timeAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+            log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+        } else if (!mem.isAddressGood(timeAddr)) {
+            cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
-            SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-            if (sceKernelVTimerInfo == null) {
-                log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
-                cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-            } else if (!mem.isAddressGood(timeAddr)) {
-                cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
-            } else {
-                long time = mem.read64(timeAddr);
-                setVTimer(sceKernelVTimerInfo, time);
-                cpu.gpr[2] = 0;
-            }
+            long time = mem.read64(timeAddr);
+            setVTimer(sceKernelVTimerInfo, time);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3200,20 +3177,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         // cpu.gpr[5] not used!
         long time = Utilities.getRegister64(cpu, 6);
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,time=0x%016X)", vtimerUid, time));
+            log.debug(String.format("sceKernelSetVTimerTime(uid=0x%x,time=0x%016X)", vtimerUid, time));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        if (sceKernelVTimerInfo == null) {
+            log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-            SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
-            if (sceKernelVTimerInfo == null) {
-                log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
-                cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-            } else {
-                setVTimer(sceKernelVTimerInfo, time);
-                cpu.gpr[2] = 0;
-            }
+            setVTimer(sceKernelVTimerInfo, time);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3229,20 +3206,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int vtimerUid = cpu.gpr[4];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelStartVTimer(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelStartVTimer(uid=0x%x)", vtimerUid));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelStartVTimer unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelStartVTimer unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-        	if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
-        		cpu.gpr[2] = 1; // already started
-        	} else {
-        		startVTimer(sceKernelVTimerInfo);
-        		cpu.gpr[2] = 0;
-        	}
+            if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_RUNNING) {
+                cpu.gpr[2] = 1; // already started
+            } else {
+                startVTimer(sceKernelVTimerInfo);
+                cpu.gpr[2] = 0;
+            }
         }
     }
 
@@ -3258,20 +3235,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int vtimerUid = cpu.gpr[4];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelStopVTimer(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelStopVTimer(uid=0x%x)", vtimerUid));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelStopVTimer unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelStopVTimer unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-        	if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_STOPPED) {
-        		cpu.gpr[2] = 0; // already stopped
-        	} else {
-        		stopVTimer(sceKernelVTimerInfo);
-        		cpu.gpr[2] = 1;
-        	}
+            if (sceKernelVTimerInfo.active == SceKernelVTimerInfo.ACTIVE_STOPPED) {
+                cpu.gpr[2] = 0; // already stopped
+            } else {
+                stopVTimer(sceKernelVTimerInfo);
+                cpu.gpr[2] = 1;
+            }
         }
     }
 
@@ -3295,23 +3272,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int handlerArgument = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
-        	log.warn(String.format("sceKernelSetVTimerHandler(uid=0x%x,scheduleAddr=0x%08X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
+            log.warn(String.format("sceKernelSetVTimerHandler(uid=0x%x,scheduleAddr=0x%08X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, scheduleAddr, handlerAddress, handlerArgument));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else if (!mem.isAddressGood(scheduleAddr)) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+            cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
-        	long schedule = mem.read64(scheduleAddr);
-        	sceKernelVTimerInfo.handlerAddress = handlerAddress;
-        	sceKernelVTimerInfo.handlerArgument = handlerArgument;
-        	if (handlerAddress != 0) {
-        		scheduleVTimer(sceKernelVTimerInfo, schedule);
-        	}
-        	cpu.gpr[2] = 0;
+            long schedule = mem.read64(scheduleAddr);
+            sceKernelVTimerInfo.handlerAddress = handlerAddress;
+            sceKernelVTimerInfo.handlerArgument = handlerArgument;
+            if (handlerAddress != 0) {
+                scheduleVTimer(sceKernelVTimerInfo, schedule);
+            }
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3335,20 +3312,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int handlerArgument = cpu.gpr[9];
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelSetVTimerHandlerWide(uid=0x%x,schedule=0x%016X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, schedule, handlerAddress, handlerArgument));
+            log.debug(String.format("sceKernelSetVTimerHandlerWide(uid=0x%x,schedule=0x%016X,handlerAddress=0x%08X,handlerArgument=0x%08X)", vtimerUid, schedule, handlerAddress, handlerArgument));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-        	sceKernelVTimerInfo.handlerAddress = handlerAddress;
-        	sceKernelVTimerInfo.handlerArgument = handlerArgument;
-        	if (handlerAddress != 0) {
-        		scheduleVTimer(sceKernelVTimerInfo, schedule);
-        	}
-        	cpu.gpr[2] = 0;
+            sceKernelVTimerInfo.handlerAddress = handlerAddress;
+            sceKernelVTimerInfo.handlerArgument = handlerArgument;
+            if (handlerAddress != 0) {
+                scheduleVTimer(sceKernelVTimerInfo, schedule);
+            }
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3364,16 +3341,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int vtimerUid = cpu.gpr[4];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelCancelVTimerHandler(uid=0x%x)", vtimerUid));
+            log.debug(String.format("sceKernelCancelVTimerHandler(uid=0x%x)", vtimerUid));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelCancelVTimerHandler unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelCancelVTimerHandler unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else {
-        	cancelVTimer(sceKernelVTimerInfo);
-        	cpu.gpr[2] = 0;
+            cancelVTimer(sceKernelVTimerInfo);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3392,20 +3369,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int vtimerUid = cpu.gpr[4];
         int infoAddr = cpu.gpr[5];
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelReferVTimerStatus(uid=0x%x,infoAddr=0x%08X)", vtimerUid, infoAddr));
+            log.debug(String.format("sceKernelReferVTimerStatus(uid=0x%x,infoAddr=0x%08X)", vtimerUid, infoAddr));
         }
 
-    	SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
+        SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
         if (sceKernelVTimerInfo == null) {
-        	log.warn(String.format("sceKernelReferVTimerStatus unknown uid=0x%x", vtimerUid));
-        	cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
+            log.warn(String.format("sceKernelReferVTimerStatus unknown uid=0x%x", vtimerUid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
         } else if (!mem.isAddressGood(infoAddr)) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
+            cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
-        	int size = mem.read32(infoAddr);
-        	sceKernelVTimerInfo.size = size;
-        	sceKernelVTimerInfo.write(mem, infoAddr);
-        	cpu.gpr[2] = 0;
+            int size = mem.read32(infoAddr);
+            sceKernelVTimerInfo.size = size;
+            sceKernelVTimerInfo.write(mem, infoAddr);
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3421,23 +3398,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         String name = readStringNZ(name_addr, 32);
 
         if (log.isDebugEnabled()) {
-        	log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
+            log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
         }
         SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
 
         if (thread.stackSize > 0 && thread.stack_addr == 0) {
             log.warn("sceKernelCreateThread not enough memory to create the stack");
-        	hleDeleteThread(thread);
-        	cpu.gpr[2] = SceKernelErrors.ERROR_NO_MEMORY;
+            hleDeleteThread(thread);
+            cpu.gpr[2] = SceKernelErrors.ERROR_NO_MEMORY;
         } else {
             // Check if there's a registered event handler for this thread.
-            if(threadEventMap.containsKey(thread.uid)) {
+            if (threadEventMap.containsKey(thread.uid)) {
                 int handlerUid = threadEventMap.get(thread.uid);
                 SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
 
                 // Check if this handler's mask matches the function.
-                if(handler.checkCreateMask()) {
-                    handler.triggerThreadEventHandler();
+                if (handler.checkCreateMask()) {
+                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_CREATE);
                     cpu.gpr[2] = handler.result;
                 }
             } else {
@@ -3449,8 +3426,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                 }
                 // Inherit user mode
                 if ((currentThread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
-                    if ((thread.attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER)
+                    if ((thread.attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
                         log.debug("sceKernelCreateThread inheriting user mode");
+                    }
                     thread.attr |= PSP_THREAD_ATTR_USER;
                     // Always remove kernel mode bit
                     thread.attr &= ~PSP_THREAD_ATTR_KERNEL;
@@ -3467,37 +3445,37 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (uid == 0) {
+            uid = currentThread.uid;
+        }
+        if (!checkThreadID(uid)) {
+            return;
+        }
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
-            if (uid == 0) {
-                uid = currentThread.uid;
-            }
-            if (!checkThreadID(uid)) {
-                return;
-            }
-            SceKernelThreadInfo thread = threadMap.get(uid);
-            if (thread == null) {
-                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-            } else {
-                log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-                // Check if there's a registered event handler for this thread.
-                if (threadEventMap.containsKey(thread.uid)) {
-                    int handlerUid = threadEventMap.get(thread.uid);
-                    SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+            log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+            // Check if there's a registered event handler for this thread.
+            if (threadEventMap.containsKey(thread.uid)) {
+                int handlerUid = threadEventMap.get(thread.uid);
+                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
 
-                    // Check if this handler's mask matches the function.
-                    if (handler.checkDeleteMask()) {
-                        handler.triggerThreadEventHandler();
-                        cpu.gpr[2] = handler.result;
-                    }
+                // Check if this handler's mask matches the function.
+                if (handler.checkDeleteMask()) {
+                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_DELETE);
+                    cpu.gpr[2] = handler.result;
+                }
+            } else {
+                // Mark thread for deletion
+                setToBeDeletedThread(thread);
+                if (thread.status != PSP_THREAD_STOPPED) {
+                    cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
                 } else {
-                    // Mark thread for deletion
-                    setToBeDeletedThread(thread);
-                    if (thread.status != PSP_THREAD_STOPPED) {
-                        cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
-                    } else {
-                        cpu.gpr[2] = 0;
-                    }
+                    cpu.gpr[2] = 0;
                 }
             }
         }
@@ -3512,43 +3490,43 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (!checkThreadID(uid)) {
+            return;
+        }
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else if (isBannedThread(thread)) {
+            log.warn("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not starting");
+            // Banned, fake start
+            cpu.gpr[2] = 0;
+            hleRescheduleCurrentThread();
+        } else if (thread.status != PSP_THREAD_STOPPED) {
+            cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
         } else {
-            if (!checkThreadID(uid)) {
-                return;
-            }
-            SceKernelThreadInfo thread = threadMap.get(uid);
-            if (thread == null) {
-                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-            } else if (isBannedThread(thread)) {
-                log.warn("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not starting");
-                // Banned, fake start
-                cpu.gpr[2] = 0;
-                hleRescheduleCurrentThread();
-            } else if (thread.status != PSP_THREAD_STOPPED) {
-                cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
-            } else {
-                // Check if there's a registered event handler for this thread.
-                if (threadEventMap.containsKey(thread.uid)) {
-                    int handlerUid = threadEventMap.get(thread.uid);
-                    SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+            // Check if there's a registered event handler for this thread.
+            if (threadEventMap.containsKey(thread.uid)) {
+                int handlerUid = threadEventMap.get(thread.uid);
+                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
 
-                    // Check if this handler's mask matches the function.
-                    if (handler.checkStartMask()) {
-                        handler.triggerThreadEventHandler();
-                        cpu.gpr[2] = handler.result;
-                    }
-                } else {
-                    log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
-                    cpu.gpr[2] = 0;
-                    hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
+                // Check if this handler's mask matches the function.
+                if (handler.checkStartMask()) {
+                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_START);
+                    cpu.gpr[2] = handler.result;
                 }
+            } else {
+                log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
+                cpu.gpr[2] = 0;
+                hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
             }
         }
     }
 
     public void _sceKernelExitThread(Processor processor) {
-    	// _sceKernelExitThread is equivalent to sceKernelExitThread
-    	sceKernelExitThread(processor);
+        // _sceKernelExitThread is equivalent to sceKernelExitThread
+        sceKernelExitThread(processor);
     }
 
     /** exit the current thread */
@@ -3559,30 +3537,29 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         SceKernelThreadInfo thread = currentThread;
 
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(thread.uid)
-    				+ " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
-    	}
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            // Check if there's a registered event handler for this thread.
-            if (threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-                // Check if this handler's mask matches the function.
-                if (handler.checkExitMask()) {
-                    handler.triggerThreadEventHandler();
-                    cpu.gpr[2] = handler.result;
-                }
-            } else {
-                thread.exitStatus = exitStatus;
-                cpu.gpr[2] = 0;
-                hleChangeThreadState(thread, PSP_THREAD_STOPPED);
-                RuntimeContext.onThreadExit(thread);
-                hleRescheduleCurrentThread();
+            return;
+        }
+        // Check if there's a registered event handler for this thread.
+        if (threadEventMap.containsKey(thread.uid)) {
+            int handlerUid = threadEventMap.get(thread.uid);
+            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+            // Check if this handler's mask matches the function.
+            if (handler.checkExitMask()) {
+                handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT);
+                cpu.gpr[2] = handler.result;
             }
+        } else {
+            thread.exitStatus = exitStatus;
+            cpu.gpr[2] = 0;
+            hleChangeThreadState(thread, PSP_THREAD_STOPPED);
+            RuntimeContext.onThreadExit(thread);
+            hleRescheduleCurrentThread();
         }
     }
 
@@ -3592,23 +3569,22 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int exitStatus = cpu.gpr[4];
 
-    	SceKernelThreadInfo thread = currentThread;
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid)
-    				+ " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
-    	}
+        SceKernelThreadInfo thread = currentThread;
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            thread.exitStatus = exitStatus;
-            cpu.gpr[2] = 0;
-            hleChangeThreadState(thread, PSP_THREAD_STOPPED);
-            RuntimeContext.onThreadExit(thread);
-
-            setToBeDeletedThread(thread);
-            hleRescheduleCurrentThread();
+            return;
         }
+        thread.exitStatus = exitStatus;
+        cpu.gpr[2] = 0;
+        hleChangeThreadState(thread, PSP_THREAD_STOPPED);
+        RuntimeContext.onThreadExit(thread);
+
+        setToBeDeletedThread(thread);
+        hleRescheduleCurrentThread();
     }
 
     /** terminate thread */
@@ -3617,7 +3593,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (!checkThreadID(uid)) return;
+        if (!checkThreadID(uid)) {
+            return;
+        }
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -3637,21 +3615,21 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (!checkThreadID(uid)) {
+            return;
+        }
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
-            if (!checkThreadID(uid)) {
-                return;
-            }
-            SceKernelThreadInfo thread = threadMap.get(uid);
-            if (thread == null) {
-                cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-            } else {
-                log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+            log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-                terminateThread(thread);
-                setToBeDeletedThread(thread);
+            terminateThread(thread);
+            setToBeDeletedThread(thread);
 
-                cpu.gpr[2] = 0;
-            }
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -3664,23 +3642,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int state = getDispatchThreadState();
-    	if (log.isDebugEnabled()) {
-    		log.debug("sceKernelSuspendDispatchThread() state=" + state);
-    	}
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelSuspendDispatchThread() state=" + state);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            dispatchThreadEnabled = false;
-            cpu.gpr[2] = state;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        dispatchThreadEnabled = false;
+        cpu.gpr[2] = state;
     }
 
     /**
      * Resume the dispatch thread
      *
      * @param state - The state of the dispatch thread
-	 *                (from sceKernelSuspendDispatchThread)
+     *                (from sceKernelSuspendDispatchThread)
      * @return 0 on success, < 0 on error
      */
     public void sceKernelResumeDispatchThread(Processor processor) {
@@ -3689,17 +3667,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int state = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-    		log.debug("sceKernelResumeDispatchThread(state=" + state + ")");
-    	}
+            log.debug("sceKernelResumeDispatchThread(state=" + state + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
-                dispatchThreadEnabled = true;
-            }
-            cpu.gpr[2] = 0;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
+            dispatchThreadEnabled = true;
+        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceKernelChangeCurrentThreadAttr(Processor processor) {
@@ -3709,11 +3687,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int addAttr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-	        log.debug("sceKernelChangeCurrentThreadAttr"
-	                + " removeAttr:0x" + Integer.toHexString(removeAttr)
-	                + " addAttr:0x" + Integer.toHexString(addAttr)
-	                + " oldAttr:0x" + Integer.toHexString(currentThread.attr));
-    	}
+            log.debug("sceKernelChangeCurrentThreadAttr" + " removeAttr:0x" + Integer.toHexString(removeAttr) + " addAttr:0x" + Integer.toHexString(addAttr) + " oldAttr:0x" + Integer.toHexString(currentThread.attr));
+        }
 
         // Probably meant to be sceKernelChangeThreadAttr unknown=uid
         if (removeAttr != 0) {
@@ -3737,42 +3712,33 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int priority = cpu.gpr[5];
 
         if (uid == 0) {
-        	uid = currentThread.uid;
+            uid = currentThread.uid;
         }
 
         // Priority 0 means priority of the calling thread
         if (priority == 0) {
-        	priority = currentThread.currentPriority;
+            priority = currentThread.currentPriority;
         }
 
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
-            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
-                + " newPriority:0x" + Integer.toHexString(priority) + ") unknown thread");
+            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + ") unknown thread");
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
 
         } else if ((thread.status & PSP_THREAD_STOPPED) == PSP_THREAD_STOPPED) {
-            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
-                + " newPriority:0x" + Integer.toHexString(priority)
-                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority)
-                + " thread is stopped, ignoring");
+            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority) + " thread is stopped, ignoring");
             cpu.gpr[2] = ERROR_THREAD_ALREADY_DORMANT;
 
         // TODO check whether it affects kernel threads (probably doesn't)
         } else if (priority < 0x08 || priority >= 0x78) {
-            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
-                + " newPriority:0x" + Integer.toHexString(priority)
-                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority)
-                + " newPriority is outside of valid range");
+            log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority) + " newPriority is outside of valid range");
             cpu.gpr[2] = ERROR_ILLEGAL_PRIORITY;
 
         } else {
-        	if (log.isDebugEnabled()) {
-	            log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
-	                + " newPriority:0x" + Integer.toHexString(priority)
-	                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
+            }
 
             int oldPriority = thread.currentPriority;
             thread.currentPriority = priority;
@@ -3781,23 +3747,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
             // switch in the target thread if it's now higher priority
             if ((thread.status & PSP_THREAD_READY) == PSP_THREAD_READY &&
-                priority < currentThread.currentPriority) {
-            	if (log.isDebugEnabled()) {
-            		log.debug("sceKernelChangeThreadPriority yielding to thread with higher priority");
-            	}
+                    priority < currentThread.currentPriority) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceKernelChangeThreadPriority yielding to thread with higher priority");
+                }
                 hleRescheduleCurrentThread();
             } else if (uid == currentThread.uid && priority > oldPriority) {
-            	if (log.isDebugEnabled()) {
-            		log.debug("sceKernelChangeThreadPriority rescheduling");
-            	}
+                if (log.isDebugEnabled()) {
+                    log.debug("sceKernelChangeThreadPriority rescheduling");
+                }
                 // yield if we moved ourself to lower priority
                 hleRescheduleCurrentThread();
             } else if (priority == oldPriority) {
-            	if (log.isDebugEnabled()) {
-            		log.debug("sceKernelChangeThreadPriority yielding to thread with same priority");
-            	}
-            	// yield to a thread having the same priority
-            	hleRescheduleCurrentThread();
+                if (log.isDebugEnabled()) {
+                    log.debug("sceKernelChangeThreadPriority yielding to thread with same priority");
+                }
+                // yield to a thread having the same priority
+                hleRescheduleCurrentThread();
             }
         }
     }
@@ -3815,12 +3781,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int priority = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-    		log.debug("sceKernelRotateThreadReadyQueue priority=" + priority);
-    	}
+            log.debug("sceKernelRotateThreadReadyQueue priority=" + priority);
+        }
 
-    	if (priority == 0) {
-    		priority = currentThread.currentPriority;
-    	}
+        if (priority == 0) {
+            priority = currentThread.currentPriority;
+        }
 
         synchronized (readyThreads) {
             for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext();) {
@@ -3830,7 +3796,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                         // We are rotating the ThreadReadyQueue of the currentThread,
                         // we can just yield the current thread.
                         // TODO Check if this should yield only to a thread of the same priority or also to a thread with higher priority
-                    	hleRescheduleCurrentThread();
+                        hleRescheduleCurrentThread();
                     } else {
                         // Move the thread to the end of the list to avoid thread starvation on nextThread()
                         it.remove();
@@ -3847,30 +3813,32 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (uid == 0) uid = currentThread.uid;
+        if (uid == 0) {
+            uid = currentThread.uid;
+        }
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") unknown thread");
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PSP_THREAD_WAITING) {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") Thread not waiting: status=" + thread.status);
-        	}
-    		cpu.gpr[2] = SceKernelErrors.ERROR_THREAD_IS_NOT_WAIT;
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") Thread not waiting: status=" + thread.status);
+            }
+            cpu.gpr[2] = SceKernelErrors.ERROR_THREAD_IS_NOT_WAIT;
         } else {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") releasing waiting thread: " + thread.toString());
-        	}
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") releasing waiting thread: " + thread.toString());
+            }
 
-    		cpu.gpr[2] = 0;
-    		thread.cpuContext.gpr[2] = SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-    		hleChangeThreadState(thread, PSP_THREAD_READY);
+            cpu.gpr[2] = 0;
+            thread.cpuContext.gpr[2] = SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
+            hleChangeThreadState(thread, PSP_THREAD_READY);
 
-    		// Switch to the released thread if it has a higher priority
-    		if (thread.currentPriority < currentThread.currentPriority) {
-    			hleRescheduleCurrentThread();
-    		}
+            // Switch to the released thread if it has a higher priority
+            if (thread.currentPriority < currentThread.currentPriority) {
+                hleRescheduleCurrentThread();
+            }
         }
     }
 
@@ -3879,28 +3847,28 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (log.isDebugEnabled()) {
-    		log.debug("sceKernelGetThreadId returning uid=0x" + Integer.toHexString(currentThread.uid));
-    	}
+            log.debug("sceKernelGetThreadId returning uid=0x" + Integer.toHexString(currentThread.uid));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = currentThread.uid;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        cpu.gpr[2] = currentThread.uid;
     }
 
     public void sceKernelGetThreadCurrentPriority(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (log.isDebugEnabled()) {
-    		log.debug("sceKernelGetThreadCurrentPriority returning currentPriority=" + currentThread.currentPriority);
-    	}
+            log.debug("sceKernelGetThreadCurrentPriority returning currentPriority=" + currentThread.currentPriority);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = currentThread.currentPriority;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        cpu.gpr[2] = currentThread.currentPriority;
     }
 
     /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
@@ -3913,10 +3881,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (thread == null) {
             log.warn("sceKernelGetThreadExitStatus unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else  {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
-        	}
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+            }
             cpu.gpr[2] = thread.exitStatus;
         }
     }
@@ -3927,15 +3895,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int size = getThreadCurrentStackSize();
-    	if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceKernelCheckThreadStack returning size=0x%X", size));
-    	}
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelCheckThreadStack returning size=0x%X", size));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            cpu.gpr[2] = size;
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+        cpu.gpr[2] = size;
     }
 
     /** @return amount of free stack space? up to 0x1000 lower?
@@ -3947,24 +3915,24 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (uid == 0) {
+            uid = currentThread.uid;
+        }
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            log.warn("sceKernelGetThreadStackFreeSize unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
-            if (uid == 0) {
-                uid = currentThread.uid;
+            int size = getThreadCurrentStackSize() - 0xfb0;
+            if (size < 0) {
+                size = 0;
             }
-            SceKernelThreadInfo thread = threadMap.get(uid);
-            if (thread == null) {
-                log.warn("sceKernelGetThreadStackFreeSize unknown uid=0x" + Integer.toHexString(uid));
-                Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-            } else {
-                int size = getThreadCurrentStackSize() - 0xfb0;
-                if (size < 0) {
-                    size = 0;
-                }
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", size));
-                }
-                cpu.gpr[2] = size;
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceKernelGetThreadStackFreeSize returning size=0x%X", size));
             }
+            cpu.gpr[2] = size;
         }
     }
 
@@ -3976,15 +3944,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
         int addr = cpu.gpr[5];
 
-        if (uid == 0) uid = currentThread.uid;
+        if (uid == 0) {
+            uid = currentThread.uid;
+        }
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             log.warn("sceKernelReferThreadStatus unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else  {
-        	if (log.isDebugEnabled()) {
-        		log.debug("sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid) + " addr=0x" + Integer.toHexString(addr) + " thread=" + thread);
-        	}
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid) + " addr=0x" + Integer.toHexString(addr) + " thread=" + thread);
+            }
             thread.write(Memory.getInstance(), addr);
             cpu.gpr[2] = 0;
         }
@@ -4007,19 +3977,19 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      */
     public void sceKernelReferSystemStatus(Processor processor) {
         CpuState cpu = processor.cpu;
-    	Memory mem = Memory.getInstance();
+        Memory mem = Memory.getInstance();
 
-    	int statusAddr = cpu.gpr[4];
+        int statusAddr = cpu.gpr[4];
 
-    	if (mem.isAddressGood(statusAddr)) {
-	    	SceKernelSystemStatus status = new SceKernelSystemStatus();
-	    	status.read(mem, statusAddr);
-	    	status.status = 0;
-	    	status.write(mem, statusAddr);
-	    	cpu.gpr[2] = 0;
-    	} else {
-	    	cpu.gpr[2] = -1;
-    	}
+        if (mem.isAddressGood(statusAddr)) {
+            SceKernelSystemStatus status = new SceKernelSystemStatus();
+            status.read(mem, statusAddr);
+            status.status = 0;
+            status.write(mem, statusAddr);
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = -1;
+        }
     }
 
     /** Write uid's to buffer
@@ -4035,44 +4005,41 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int idcount_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
-	        log.debug("sceKernelGetThreadmanIdList type=" + type
-	            + " readbuf:0x" + Integer.toHexString(readbuf_addr)
-	            + " readbufsize:" + readbufsize
-	            + " idcount:0x" + Integer.toHexString(idcount_addr));
+            log.debug("sceKernelGetThreadmanIdList type=" + type + " readbuf:0x" + Integer.toHexString(readbuf_addr) + " readbufsize:" + readbufsize + " idcount:0x" + Integer.toHexString(idcount_addr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-        } else {
-            int saveCount = 0;
-            int fullCount = 0;
-
-            if (type == SCE_KERNEL_TMID_Thread) {
-                for (SceKernelThreadInfo thread : threadMap.values()) {
-                    // Hide kernel mode threads when called from a user mode thread
-                    if (userThreadCalledKernelCurrentThread(thread)) {
-                        if (saveCount < readbufsize) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
-                            }
-                            mem.write32(readbuf_addr + saveCount * 4, thread.uid);
-                            saveCount++;
-                        } else {
-                            log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
-                        }
-                        fullCount++;
-                    }
-                }
-            } else {
-                log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
-            }
-
-            if (mem.isAddressGood(idcount_addr)) {
-                mem.write32(idcount_addr, fullCount);
-            }
-
-            cpu.gpr[2] = saveCount;
+            return;
         }
+        int saveCount = 0;
+        int fullCount = 0;
+
+        if (type == SCE_KERNEL_TMID_Thread) {
+            for (SceKernelThreadInfo thread : threadMap.values()) {
+                // Hide kernel mode threads when called from a user mode thread
+                if (userThreadCalledKernelCurrentThread(thread)) {
+                    if (saveCount < readbufsize) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
+                        }
+                        mem.write32(readbuf_addr + saveCount * 4, thread.uid);
+                        saveCount++;
+                    } else {
+                        log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
+                    }
+                    fullCount++;
+                }
+            }
+        } else {
+            log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
+        }
+
+        if (mem.isAddressGood(idcount_addr)) {
+            mem.write32(idcount_addr, fullCount);
+        }
+
+        cpu.gpr[2] = saveCount;
     }
 
     public void sceKernelGetThreadmanIdType(Processor processor) {
@@ -4100,6 +4067,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public static class Statistics {
+
         private ArrayList<ThreadStatistics> threads = new ArrayList<ThreadStatistics>();
         public long allCycles = 0;
         public long startTimeMillis;
@@ -4127,192 +4095,197 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         private static class ThreadStatistics {
+
             public String name;
             public long runClocks;
         }
     }
 
-	private static class CallbackManager {
-		private Map<Integer, Callback> callbacks;
-		private int currentCallbackId;
+    private static class CallbackManager {
 
-		public void Initialize() {
-			callbacks = new HashMap<Integer, Callback>();
-			currentCallbackId = 1;
-		}
+        private Map<Integer, Callback> callbacks;
+        private int currentCallbackId;
 
-		public void addCallback(Callback callback) {
-			callbacks.put(callback.getId(), callback);
-		}
+        public void Initialize() {
+            callbacks = new HashMap<Integer, Callback>();
+            currentCallbackId = 1;
+        }
 
-		public Callback remove(int id) {
-			Callback callback = callbacks.remove(id);
+        public void addCallback(Callback callback) {
+            callbacks.put(callback.getId(), callback);
+        }
 
-			return callback;
-		}
+        public Callback remove(int id) {
+            Callback callback = callbacks.remove(id);
 
-		public int getNewCallbackId() {
-			return currentCallbackId++;
-		}
-	}
+            return callback;
+        }
 
-	private static class Callback {
-		private int id;
-		private int savedIdRegister;
-		private int savedRa;
-		private int savedPc;
-		private IAction afterAction;
+        public int getNewCallbackId() {
+            return currentCallbackId++;
+        }
+    }
 
-		public Callback(int id, int savedIdRegister, int savedRa, int savedPc, IAction afterAction) {
-			this.id = id;
-			this.savedIdRegister = savedIdRegister;
-			this.savedRa = savedRa;
-			this.savedPc = savedPc;
-			this.afterAction = afterAction;
-		}
+    private static class Callback {
 
-		public IAction getAfterAction() {
-			return afterAction;
-		}
+        private int id;
+        private int savedIdRegister;
+        private int savedRa;
+        private int savedPc;
+        private IAction afterAction;
 
-		@SuppressWarnings("unused")
-		public void setAfterAction(IAction afterAction) {
-			this.afterAction = afterAction;
-		}
+        public Callback(int id, int savedIdRegister, int savedRa, int savedPc, IAction afterAction) {
+            this.id = id;
+            this.savedIdRegister = savedIdRegister;
+            this.savedRa = savedRa;
+            this.savedPc = savedPc;
+            this.afterAction = afterAction;
+        }
 
-		public int getId() {
-			return id;
-		}
+        public IAction getAfterAction() {
+            return afterAction;
+        }
 
-		@SuppressWarnings("unused")
-		public void setId(int id) {
-			this.id = id;
-		}
+        @SuppressWarnings("unused")
+        public void setAfterAction(IAction afterAction) {
+            this.afterAction = afterAction;
+        }
 
-		public int getSavedIdRegister() {
-			return savedIdRegister;
-		}
+        public int getId() {
+            return id;
+        }
 
-		@SuppressWarnings("unused")
-		public void setSavedIdRegister(int savedIdRegister) {
-			this.savedIdRegister = savedIdRegister;
-		}
+        @SuppressWarnings("unused")
+        public void setId(int id) {
+            this.id = id;
+        }
 
-		public int getSavedRa() {
-			return savedRa;
-		}
+        public int getSavedIdRegister() {
+            return savedIdRegister;
+        }
 
-		@SuppressWarnings("unused")
-		public void setSavedRa(int savedRa) {
-			this.savedRa = savedRa;
-		}
+        @SuppressWarnings("unused")
+        public void setSavedIdRegister(int savedIdRegister) {
+            this.savedIdRegister = savedIdRegister;
+        }
 
-		public int getSavedPc() {
-			return savedPc;
-		}
+        public int getSavedRa() {
+            return savedRa;
+        }
 
-		@SuppressWarnings("unused")
-		public void setSavedPc(int savedPc) {
-			this.savedPc = savedPc;
-		}
+        @SuppressWarnings("unused")
+        public void setSavedRa(int savedRa) {
+            this.savedRa = savedRa;
+        }
 
-		@Override
-		public String toString() {
-			return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X", getId(), getSavedIdRegister(), getSavedPc());
-		}
-	}
+        public int getSavedPc() {
+            return savedPc;
+        }
 
-	private class AfterCallAction implements IAction {
-		SceKernelThreadInfo thread;
-		int status;
-		int waitType;
-		int waitId;
-		ThreadWaitInfo threadWaitInfo;
-		boolean doCallback;
-		IAction afterAction;
+        @SuppressWarnings("unused")
+        public void setSavedPc(int savedPc) {
+            this.savedPc = savedPc;
+        }
 
-		public AfterCallAction(SceKernelThreadInfo thread, int status, int waitType, int waitId, ThreadWaitInfo threadWaitInfo, boolean doCallback, IAction afterAction) {
-			this.thread = thread;
-			this.status = status;
-			this.waitType = waitType;
-			this.waitId = waitId;
-			this.threadWaitInfo = threadWaitInfo;
-			this.doCallback = doCallback;
-			this.afterAction = afterAction;
-		}
+        @Override
+        public String toString() {
+            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X", getId(), getSavedIdRegister(), getSavedPc());
+        }
+    }
 
-		@Override
-		public void execute() {
-			boolean restoreWaitState = true;
+    private class AfterCallAction implements IAction {
 
-			// After calling a callback, check if the waiting state of the thread
-			// is still valid, i.e. if the thread must continue to wait or if the
-			// wait condition has been reached.
-			if (threadWaitInfo.waitStateChecker != null) {
-				if (!threadWaitInfo.waitStateChecker.continueWaitState(thread, threadWaitInfo)) {
-					restoreWaitState = false;
-				}
-			}
+        SceKernelThreadInfo thread;
+        int status;
+        int waitType;
+        int waitId;
+        ThreadWaitInfo threadWaitInfo;
+        boolean doCallback;
+        IAction afterAction;
 
-			if (restoreWaitState) {
-				if (log.isDebugEnabled()) {
-					log.debug("AfterCallAction: restoring wait state for thread: " + thread.toString());
-				}
+        public AfterCallAction(SceKernelThreadInfo thread, int status, int waitType, int waitId, ThreadWaitInfo threadWaitInfo, boolean doCallback, IAction afterAction) {
+            this.thread = thread;
+            this.status = status;
+            this.waitType = waitType;
+            this.waitId = waitId;
+            this.threadWaitInfo = threadWaitInfo;
+            this.doCallback = doCallback;
+            this.afterAction = afterAction;
+        }
 
-				// Restore the wait state of the thread
-				thread.waitType = waitType;
-				thread.waitId = waitId;
-				thread.wait.copy(threadWaitInfo);
+        @Override
+        public void execute() {
+            boolean restoreWaitState = true;
 
-				hleChangeThreadState(thread, status);
-			} else if (thread.status != PSP_THREAD_READY) {
-				if (log.isDebugEnabled()) {
-					log.debug("AfterCallAction: set thread to READY state: " + thread.toString());
-				}
+            // After calling a callback, check if the waiting state of the thread
+            // is still valid, i.e. if the thread must continue to wait or if the
+            // wait condition has been reached.
+            if (threadWaitInfo.waitStateChecker != null) {
+                if (!threadWaitInfo.waitStateChecker.continueWaitState(thread, threadWaitInfo)) {
+                    restoreWaitState = false;
+                }
+            }
 
-				hleChangeThreadState(thread, PSP_THREAD_READY);
-				doCallback = false;
-			} else {
-				if (log.isDebugEnabled()) {
-					log.debug("AfterCallAction: leaving thread in READY state: " + thread.toString());
-				}
-				doCallback = false;
-			}
+            if (restoreWaitState) {
+                if (log.isDebugEnabled()) {
+                    log.debug("AfterCallAction: restoring wait state for thread: " + thread.toString());
+                }
 
-			hleRescheduleCurrentThread(doCallback);
+                // Restore the wait state of the thread
+                thread.waitType = waitType;
+                thread.waitId = waitId;
+                thread.wait.copy(threadWaitInfo);
 
-			if (afterAction != null) {
-				afterAction.execute();
-			}
-		}
-	}
+                hleChangeThreadState(thread, status);
+            } else if (thread.status != PSP_THREAD_READY) {
+                if (log.isDebugEnabled()) {
+                    log.debug("AfterCallAction: set thread to READY state: " + thread.toString());
+                }
 
-	public class TimeoutThreadAction implements IAction {
-		private SceKernelThreadInfo thread;
+                hleChangeThreadState(thread, PSP_THREAD_READY);
+                doCallback = false;
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("AfterCallAction: leaving thread in READY state: " + thread.toString());
+                }
+                doCallback = false;
+            }
 
-		public TimeoutThreadAction(SceKernelThreadInfo thread) {
-			this.thread = thread;
-		}
+            hleRescheduleCurrentThread(doCallback);
 
-		@Override
-		public void execute() {
-			hleThreadWaitTimeout(thread);
-		}
-	}
+            if (afterAction != null) {
+                afterAction.execute();
+            }
+        }
+    }
 
-	public class DeleteThreadAction implements IAction {
-		private SceKernelThreadInfo thread;
+    public class TimeoutThreadAction implements IAction {
 
-		public DeleteThreadAction(SceKernelThreadInfo thread) {
-			this.thread = thread;
-		}
+        private SceKernelThreadInfo thread;
 
-		@Override
-		public void execute() {
-			hleDeleteThread(thread);
-		}
-	}
+        public TimeoutThreadAction(SceKernelThreadInfo thread) {
+            this.thread = thread;
+        }
 
+        @Override
+        public void execute() {
+            hleThreadWaitTimeout(thread);
+        }
+    }
+
+    public class DeleteThreadAction implements IAction {
+
+        private SceKernelThreadInfo thread;
+
+        public DeleteThreadAction(SceKernelThreadInfo thread) {
+            this.thread = thread;
+        }
+
+        @Override
+        public void execute() {
+            hleDeleteThread(thread);
+        }
+    }
     public final HLEModuleFunction _sceKernelReturnFromCallbackFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelReturnFromCallback") {
 
         @Override
@@ -5298,185 +5271,221 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     };
     public final HLEModuleFunction sceKernelSetAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetAlarm") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetAlarm(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetAlarm(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelSetSysClockAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetSysClockAlarm") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetSysClockAlarm(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetSysClockAlarm(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelCancelAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelAlarm") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelCancelAlarm(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelAlarm(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelReferAlarmStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferAlarmStatus") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelReferAlarmStatus(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferAlarmStatus(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelCreateVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVTimer") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelCreateVTimer(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateVTimer(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelDeleteVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVTimer") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDeleteVTimer(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteVTimer(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelGetVTimerBaseFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBase") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetVTimerBase(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBase(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelGetVTimerBaseWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBaseWide") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetVTimerBaseWide(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBaseWide(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelGetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetVTimerTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTime(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelGetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTimeWide") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetVTimerTimeWide(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTimeWide(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelSetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetVTimerTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTime(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelSetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTimeWide") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetVTimerTimeWide(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTimeWide(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelStartVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartVTimer") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelStartVTimer(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStartVTimer(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelStopVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStopVTimer") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelStopVTimer(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStopVTimer(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelSetVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandler") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetVTimerHandler(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandler(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelSetVTimerHandlerWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandlerWide") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetVTimerHandlerWide(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandlerWide(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelCancelVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVTimerHandler") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelCancelVTimerHandler(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelVTimerHandler(processor);";
-		}
-	};
-	public final HLEModuleFunction sceKernelReferVTimerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVTimerStatus") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelReferVTimerStatus(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
-		}
-	};
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelSetAlarm(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetAlarm(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelSetSysClockAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetSysClockAlarm") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelSetSysClockAlarm(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetSysClockAlarm(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelCancelAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelAlarm") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelCancelAlarm(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelAlarm(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelReferAlarmStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferAlarmStatus") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelReferAlarmStatus(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferAlarmStatus(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelCreateVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVTimer") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelCreateVTimer(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateVTimer(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelDeleteVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVTimer") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelDeleteVTimer(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteVTimer(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelGetVTimerBaseFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBase") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelGetVTimerBase(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBase(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelGetVTimerBaseWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBaseWide") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelGetVTimerBaseWide(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBaseWide(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelGetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTime") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelGetVTimerTime(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTime(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelGetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTimeWide") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelGetVTimerTimeWide(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTimeWide(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelSetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTime") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelSetVTimerTime(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTime(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelSetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTimeWide") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelSetVTimerTimeWide(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTimeWide(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelStartVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartVTimer") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelStartVTimer(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStartVTimer(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelStopVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStopVTimer") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelStopVTimer(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStopVTimer(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelSetVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandler") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelSetVTimerHandler(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandler(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelSetVTimerHandlerWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandlerWide") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelSetVTimerHandlerWide(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandlerWide(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelCancelVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVTimerHandler") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelCancelVTimerHandler(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelVTimerHandler(processor);";
+        }
+    };
+    public final HLEModuleFunction sceKernelReferVTimerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVTimerStatus") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceKernelReferVTimerStatus(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
+        }
+    };
     public final HLEModuleFunction sceKernelCreateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateThread") {
 
         @Override
