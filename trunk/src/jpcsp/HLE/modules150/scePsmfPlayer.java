@@ -40,10 +40,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-/*
- * TODO list:
- * 1. Resolve functions scePsmfPlayer_2BEB1569 and scePsmfPlayer_58B83577's name.
- */
 public class scePsmfPlayer implements HLEModule {
 
     private static Logger log = Modules.getLogger("scePsmfPlayer");
@@ -75,8 +71,15 @@ public class scePsmfPlayer implements HLEModule {
             mm.addFunction(0xF3EFAA91, scePsmfPlayerGetCurrentPlayModeFunction);
             mm.addFunction(0x3ED62233, scePsmfPlayerGetCurrentPtsFunction);
             mm.addFunction(0x9FF2B2E7, scePsmfPlayerGetCurrentVideoStreamFunction);
-            mm.addFunction(0x2BEB1569, scePsmfPlayer_2BEB1569Function);
-            mm.addFunction(0x58B83577, scePsmfPlayer_58B83577Function);
+            mm.addFunction(0x2BEB1569, scePsmfPlayerSetTempBufFunction);
+            mm.addFunction(0x58B83577, scePsmfPlayerSetPsmfCBFunction);
+            mm.addFunction(0x76C0F4AE, scePsmfPlayerSetPsmfOffsetFunction);
+            mm.addFunction(0xA72DB4F9, scePsmfPlayerSetPsmfOffset_A72DB4F9Function);
+            mm.addFunction(0x2D0E4E0A, scePsmfPlayerSetPsmfOffset_2D0E4E0AFunction);
+            mm.addFunction(0x75F03FA2, scePsmfPlayerSetPsmfOffset_75F03FA2Function);
+            mm.addFunction(0x85461EFF, scePsmfPlayerSetPsmfOffset_85461EFFFunction);
+            mm.addFunction(0x8A9EBDCD, scePsmfPlayerSetPsmfOffset_8A9EBDCDFunction);
+            mm.addFunction(0xB8D10C56, scePsmfPlayerSetPsmfOffset_B8D10C56Function);
 
         }
     }
@@ -103,8 +106,16 @@ public class scePsmfPlayer implements HLEModule {
             mm.removeFunction(scePsmfPlayerGetCurrentPlayModeFunction);
             mm.removeFunction(scePsmfPlayerGetCurrentPtsFunction);
             mm.removeFunction(scePsmfPlayerGetCurrentVideoStreamFunction);
-            mm.removeFunction(scePsmfPlayer_2BEB1569Function);
-            mm.removeFunction(scePsmfPlayer_58B83577Function);
+            mm.removeFunction(scePsmfPlayerSetTempBufFunction);
+            mm.removeFunction(scePsmfPlayerSetPsmfCBFunction);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffsetFunction);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffsetCBFunction);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffset_A72DB4F9Function);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffset_2D0E4E0AFunction);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffset_75F03FA2Function);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffset_85461EFFFunction);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffset_8A9EBDCDFunction);
+            mm.removeFunction(scePsmfPlayerSetPsmfOffset_B8D10C56Function);
 
         }
     }
@@ -689,12 +700,12 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    public void scePsmfPlayer_2BEB1569(Processor processor) {
+    public void scePsmfPlayerSetTempBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int psmfplayer = cpu.gpr[4];
 
-        log.warn("IGNORING: scePsmfPlayer_2BEB1569 psmfplayer=0x" + Integer.toHexString(psmfplayer));
+        log.warn("IGNORING: scePsmfPlayerSetTempBuf psmfplayer=0x" + Integer.toHexString(psmfplayer));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -703,9 +714,105 @@ public class scePsmfPlayer implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    public void scePsmfPlayer_58B83577(Processor processor) {
-        log.warn("scePsmfPlayer_58B83577 redirecting to scePsmfPlayerSetPsmf");
+    public void scePsmfPlayerSetPsmfCB(Processor processor) {
+        log.warn("scePsmfPlayerSetPsmfCB redirecting to scePsmfPlayerSetPsmf");
         scePsmfPlayerSetPsmf(processor);
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
+    }
+
+    public void scePsmfPlayerSetPsmfOffset(Processor processor) {
+        log.warn("scePsmfPlayerSetPsmfOffset redirecting to scePsmfPlayerSetPsmf");
+        scePsmfPlayerSetPsmf(processor);
+    }
+
+    public void scePsmfPlayerSetPsmfOffsetCB(Processor processor) {
+        log.warn("scePsmfPlayerSetPsmfOffsetCB redirecting to scePsmfPlayerSetPsmf");
+        scePsmfPlayerSetPsmf(processor);
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
+    }
+
+    public void scePsmfPlayerSetPsmfOffset_A72DB4F9(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("IGNORING: scePsmfPlayerSetPsmfOffset_A72DB4F9 psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerSetPsmfOffset_2D0E4E0A(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("IGNORING: scePsmfPlayerSetPsmfOffset_2D0E4E0A psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerSetPsmfOffset_75F03FA2(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("IGNORING: scePsmfPlayerSetPsmfOffset_75F03FA2 psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerSetPsmfOffset_85461EFF(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("IGNORING: scePsmfPlayerSetPsmfOffset_85461EFF psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerSetPsmfOffset_8A9EBDCD(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("IGNORING: scePsmfPlayerSetPsmfOffset_8A9EBDCD psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
+    }
+
+    public void scePsmfPlayerSetPsmfOffset_B8D10C56(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmfplayer = cpu.gpr[4];
+
+        log.warn("IGNORING: scePsmfPlayerSetPsmfOffset_B8D10C56 psmfplayer=0x" + Integer.toHexString(psmfplayer));
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
     }
 
     public final HLEModuleFunction scePsmfPlayerCreateFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerCreate") {
@@ -924,28 +1031,124 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentVideoStream(processor);";
         }
     };
-    public final HLEModuleFunction scePsmfPlayer_2BEB1569Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayer_2BEB1569") {
+    public final HLEModuleFunction scePsmfPlayerSetTempBufFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetTempBuf") {
 
         @Override
         public final void execute(Processor processor) {
-            scePsmfPlayer_2BEB1569(processor);
+            scePsmfPlayerSetTempBuf(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayer_2BEB1569(processor);";
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetTempBuf(processor);";
         }
     };
-    public final HLEModuleFunction scePsmfPlayer_58B83577Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayer_58B83577") {
+    public final HLEModuleFunction scePsmfPlayerSetPsmfCBFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfCB") {
 
         @Override
         public final void execute(Processor processor) {
-            scePsmfPlayer_58B83577(processor);
+            scePsmfPlayerSetPsmfCB(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayer_58B83577(processor);";
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfCB(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffsetFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffset(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffsetCBFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffsetCB") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffsetCB(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffsetCB(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffset_A72DB4F9Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset_A72DB4F9") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffset_A72DB4F9(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset_A72DB4F9(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffset_2D0E4E0AFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset_2D0E4E0A") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffset_2D0E4E0A(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset_2D0E4E0A(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffset_75F03FA2Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset_75F03FA2") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffset_75F03FA2(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset_75F03FA2(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffset_85461EFFFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset_85461EFF") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffset_85461EFF(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset_85461EFF(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffset_8A9EBDCDFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset_8A9EBDCD") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffset_8A9EBDCD(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset_8A9EBDCD(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmfPlayerSetPsmfOffset_B8D10C56Function = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset_B8D10C56") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmfPlayerSetPsmfOffset_B8D10C56(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset_B8D10C56(processor);";
         }
     };
 }

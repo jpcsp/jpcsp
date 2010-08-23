@@ -843,15 +843,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
             case SceUtilitySavedataParam.MODE_AUTOSAVE:
             case SceUtilitySavedataParam.MODE_SAVE:
-                try {
-                    if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                        if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                            savedataParams.saveName = savedataParams.saveNameList[0];
-                        } else {
-                            savedataParams.saveName = "-000";
-                        }
+                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                        savedataParams.saveName = savedataParams.saveNameList[0];
+                    } else {
+                        savedataParams.saveName = "-000";
                     }
+                }
 
+                try {
                     savedataParams.save(mem);
                     savedataParams.base.result = 0;
                 } catch (IOException e) {
@@ -938,7 +938,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 String saveName = savedataParams.saveName;
 
                 // ms free size
-                int buffer1Addr = savedataParams.buffer1Addr;
+                int buffer1Addr = savedataParams.msFreeAddr;
                 if (mem.isAddressGood(buffer1Addr)) {
                     String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
 
@@ -951,7 +951,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 }
 
                 // ms data size
-                int buffer2Addr = savedataParams.buffer2Addr;
+                int buffer2Addr = savedataParams.msDataAddr;
                 if (mem.isAddressGood(buffer2Addr)) {
                     gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
                     saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
@@ -966,7 +966,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 }
 
                 // utility data size
-                int buffer3Addr = savedataParams.buffer3Addr;
+                int buffer3Addr = savedataParams.utilityDataAddr;
                 if (mem.isAddressGood(buffer3Addr)) {
                     int memoryStickRequiredSpaceKb = 0;
                     memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
@@ -998,7 +998,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
             case SceUtilitySavedataParam.MODE_LIST: {
                 log.debug("Savedata mode 11");
-                int buffer4Addr = savedataParams.buffer4Addr;
+                int buffer4Addr = savedataParams.idListAddr;
                 if (mem.isAddressGood(buffer4Addr)) {
                 	int maxEntries = mem.read32(buffer4Addr + 0);
                 	int entriesAddr = mem.read32(buffer4Addr + 8);
@@ -1037,7 +1037,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             }
 
             case SceUtilitySavedataParam.MODE_FILES: {
-                int buffer5Addr = savedataParams.buffer5Addr;
+                int buffer5Addr = savedataParams.fileListAddr;
                 if (mem.isAddressGood(buffer5Addr)) {
                     int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
                     int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
@@ -1110,9 +1110,18 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 break;
             }
 
-            case SceUtilitySavedataParam.MODE_READ: {
-                // Sub-type of mode LOAD.
-                // Reads the contents of only one specified file.
+            case SceUtilitySavedataParam.MODE_READ:
+            case SceUtilitySavedataParam.MODE_READSECURE: {
+                // Sub-types of mode LOAD.
+                // Read the contents of only one specified file (encrypted or not).
+                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                        savedataParams.saveName = savedataParams.saveNameList[0];
+                    } else {
+                        savedataParams.saveName = "-000";
+                    }
+                }
+
                 try {
                     savedataParams.singleRead(mem);
                     savedataParams.base.result = 0;
@@ -1126,9 +1135,18 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 break;
             }
 
-            case SceUtilitySavedataParam.MODE_WRITE: {
-                // Sub-type of mode SAVE.
-                // Writes the contents of only one specified file.
+            case SceUtilitySavedataParam.MODE_WRITE:
+            case SceUtilitySavedataParam.MODE_WRITESECURE: {
+                // Sub-types of mode SAVE.
+                // Writes the contents of only one specified file (encrypted or not).
+                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                        savedataParams.saveName = savedataParams.saveNameList[0];
+                    } else {
+                        savedataParams.saveName = "-000";
+                    }
+                }
+
                 try {
                     savedataParams.singleWrite(mem);
                     savedataParams.base.result = 0;
@@ -1161,7 +1179,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 break;
 
             case SceUtilitySavedataParam.MODE_GETSIZE:
-                int buffer6Addr = savedataParams.buffer6Addr;
+                int buffer6Addr = savedataParams.sizeAddr;
                 if (mem.isAddressGood(buffer6Addr)) {
                     int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
                     int saveFileNumEntries = mem.read32(buffer6Addr + 4);
@@ -1218,7 +1236,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 break;
         }
 
-        savedataParams.errorStatus = 0;
         savedataParams.base.writeResult(mem);
         if (log.isDebugEnabled()) {
             log.debug("hleUtilitySavedataDisplay savedResult:0x" + Integer.toHexString(savedataParams.base.result));

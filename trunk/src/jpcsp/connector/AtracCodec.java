@@ -29,6 +29,10 @@ import java.util.HashSet;
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules150.sceAtrac3plus;
+import jpcsp.HLE.modules150.sceMpeg;
+import jpcsp.media.MediaEngine;
+import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Hash;
@@ -55,8 +59,23 @@ public class AtracCodec {
 	public static int waveFactChunkHeader = 0x74636166; // "fact"
 	public static int waveDataChunkHeader = 0x61746164; // "data"
 
+    // Media Engine based playback.
+    protected static final int STREAM_SEEK_FLAG_FRAME = 8;
+    protected MediaEngine me;
+    protected PacketChannel atracChannel;
+    protected int memBufOffset;
+    protected int currentLoopCount;
+    protected boolean useMediaEngine = sceMpeg.isEnableMediaEngine();
+
 	public AtracCodec() {
-		atracDecodeBuffer = new byte[jpcsp.HLE.modules150.sceAtrac3plus.maxSamples * 4];
+        if(useMediaEngine) {
+            me = new MediaEngine();
+            atracChannel = new PacketChannel();
+            memBufOffset = 0;
+            currentLoopCount = 0;
+        }
+
+		atracDecodeBuffer = new byte[sceAtrac3plus.maxSamples * 4];
 		generateCommandFile();
 	}
 
@@ -129,12 +148,26 @@ public class AtracCodec {
 		}
 	}
 
-	public void atracSetData(int address, int length, int atracFileSize, boolean extract) {
+	public void atracSetData(int atracID, int codecType, int address, int length, int atracFileSize, boolean extract) {
 		id = generateID(address, length, atracFileSize);
-
 		closeStreams();
-
 		atracEndSample = -1;
+
+        if(codecType == 0x00001001) {
+            Modules.log.info("Decodable AT3 data detected.");
+            if(useMediaEngine) {
+                atracChannel.flush();
+                me.finish();
+                atracChannel.writePacket(address, length);
+                me.init(atracChannel.getFilePath());
+                memBufOffset = 0;
+                atracEndSample = 0;
+                return;
+            }
+        } else if(codecType == 0x00001000) {
+            Modules.log.info("Undecodable AT3+ data detected.");
+        }
+        useMediaEngine = false;
 
 		File decodedFile = new File(getCompleteFileName(decodedAtracSuffix));
 
@@ -206,6 +239,11 @@ public class AtracCodec {
 	}
 
 	public void atracAddStreamData(int address, int length) {
+        if(useMediaEngine) {
+            atracChannel.writePacket(address, length);
+            return;
+        }
+
 		if (atracStream != null) {
 			try {
 				byte[] buffer = new byte[length];
@@ -220,8 +258,13 @@ public class AtracCodec {
 		}
 	}
 
-	public int atracDecodeData(int address) {
-		int samples = 0;
+	public int atracDecodeData(int atracID, int address) {
+        if(useMediaEngine) {
+            me.step();
+            return copySamplesToMem(address);
+        }
+
+        int samples = 0;
 		if (decodedStream != null) {
 			try {
 				int length = decodedStream.read(atracDecodeBuffer);
@@ -237,12 +280,16 @@ public class AtracCodec {
 		}
 
 		atracEnd = samples <= 0 ? 1 : 0;
-		atracRemainFrames = jpcsp.HLE.modules150.sceAtrac3plus.remainFrames;
+		atracRemainFrames = -1;
 
 		return samples;
 	}
 
 	public void atracResetPlayPosition(int sample) {
+        if(useMediaEngine) {
+            me.getContainer().seekKeyFrame(sample * 4, 0, STREAM_SEEK_FLAG_FRAME);
+        }
+
 		if (decodedStream != null) {
 			try {
 				decodedStream.seek(sample * 4);
@@ -260,20 +307,51 @@ public class AtracCodec {
 		return atracRemainFrames;
 	}
 
-	public void finish() {
-		closeStreams();
-	}
-
 	public int getAtracEndSample() {
 		return atracEndSample;
 	}
 
-    public int getNextDecodePosition() {
+    public int getAtracNextDecodePosition() {
+        if(useMediaEngine) {
+            return memBufOffset;
+        }
+
         try {
             return (int)decodedStream.getFilePointer();
         } catch (Exception e) {
             return -1;
         }
+	}
+
+    public void setAtracLoopCount(int count) {
+        currentLoopCount = count;
+    }
+
+    protected int copySamplesToMem(int address) {
+        Memory mem = Memory.getInstance();
+
+        int samples = 0;
+        byte[] buf = me.getCurrentAudioSamples();
+        atracEndSample = buf.length;
+
+        if((buf != null) && (memBufOffset < buf.length)) {
+            if((memBufOffset + sceAtrac3plus.maxSamples * 4) < buf.length) {
+                mem.copyToMemory(address, ByteBuffer.wrap(buf, memBufOffset, sceAtrac3plus.maxSamples * 4), sceAtrac3plus.maxSamples * 4);
+                memBufOffset += (sceAtrac3plus.maxSamples * 4);
+                samples = sceAtrac3plus.maxSamples;
+            } else {
+                int length = buf.length - memBufOffset;
+                mem.copyToMemory(address, ByteBuffer.wrap(buf, memBufOffset, length), length);
+                memBufOffset += length;
+                samples = length;
+            }
+        }
+
+        return samples;
+    }
+
+    public void finish() {
+		closeStreams();
 	}
 
 	protected void displayInstructions() {

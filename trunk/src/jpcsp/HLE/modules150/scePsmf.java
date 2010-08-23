@@ -66,6 +66,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             mm.addFunction(0x2673646B, scePsmfVerifyPsmfFunction);
             mm.addFunction(0xB78EB9E9, scePsmfGetHeaderSizeFunction);
             mm.addFunction(0xA5EBFE81, scePsmfGetStreamSizeFunction);
+            mm.addFunction(0xE1283895, scePsmf_E1283895Function);
 
         }
     }
@@ -96,6 +97,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             mm.removeFunction(scePsmfVerifyPsmfFunction);
             mm.removeFunction(scePsmfGetHeaderSizeFunction);
             mm.removeFunction(scePsmfGetStreamSizeFunction);
+            mm.removeFunction(scePsmf_E1283895Function);
 
         }
     }
@@ -371,11 +373,19 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
 
         public int getCurrentStreamType() {
-            return streamMap.get(currentStreamNumber).getStreamType();
+            if(streamMap.get(currentStreamNumber) != null) {
+                return streamMap.get(currentStreamNumber).getStreamType();
+            } else {
+                return -1;
+            }
         }
 
         public int getCurrentStreamChannel() {
-            return streamMap.get(currentStreamNumber).getStreamChannel();
+            if(streamMap.get(currentStreamNumber) != null) {
+                return streamMap.get(currentStreamNumber).getStreamChannel();
+            } else {
+                return -1;
+            }
         }
 
         public int getSpecificStreamNum(int type) {
@@ -897,6 +907,21 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
     }
+
+    public void scePsmf_E1283895(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int psmf = cpu.gpr[4];
+
+        log.warn("UNIMPLEMENTED: scePsmf_E1283895 (psmf=0x" + Integer.toHexString(psmf) + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+
     public final HLEModuleFunction scePsmfSetPsmfFunction = new HLEModuleFunction("scePsmf", "scePsmfSetPsmf") {
 
         @Override
@@ -1159,6 +1184,18 @@ public class scePsmf implements HLEModule, HLEStartModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetStreamSize(processor);";
+        }
+    };
+    public final HLEModuleFunction scePsmf_E1283895Function = new HLEModuleFunction("scePsmf", "scePsmf_E1283895") {
+
+        @Override
+        public final void execute(Processor processor) {
+            scePsmf_E1283895(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.scePsmfModule.scePsmf_E1283895(processor);";
         }
     };
 }
