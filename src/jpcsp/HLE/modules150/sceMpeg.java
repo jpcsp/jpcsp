@@ -261,16 +261,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected MediaEngine me;
     protected PacketChannel meChannel;
 
-    protected static boolean isRingBufOn = true;
-
-    public static void setRingBufStatus(boolean status) {
-        isRingBufOn = status;
-    }
-
-    public static boolean getRingBufStatus() {
-        return isRingBufOn;
-    }
-
     public static boolean isEnableConnector() {
 		return useMpegCodec;
 	}
@@ -545,10 +535,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         log.warn("PARTIAL: sceMpegFinish");
-
-        if(!getRingBufStatus()) {
-            setRingBufStatus(true);
-        }
 
         if(isEnableMediaEngine()) {
             me.finish();
@@ -1790,10 +1776,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",callback=0x" + Integer.toHexString(callback_addr)
             + ",args=0x" + Integer.toHexString(callback_args) + ")");
 
-        if(!getRingBufStatus()) {
-            log.warn("sceMpegRingbufferConstruct not using ringbuffer.");
-            cpu.gpr[2] = 0x80618003;  // Ringbuffer error (actual name unknown).
-        } else if (size < getSizeFromPackets(packets)) {
+        if (size < getSizeFromPackets(packets)) {
             log.warn("sceMpegRingbufferConstruct insufficient space: size=" + size + ", packets=" + packets);
         	cpu.gpr[2] = 0x80610022;
         } else if (mem.isAddressGood(ringbuffer_addr)) {
@@ -1872,7 +1855,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.debug(String.format("sceMpegRingbufferPut(ringbuffer=0x%08X,numPackets=%d,available=%d", ringbuffer_addr, numPackets, available));
         }
 
-        if (numPackets < 0 || (!getRingBufStatus() && !isEnableMediaEngine())) {
+        if (numPackets < 0) {
             cpu.gpr[2] = 0;
         } else {
             SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);

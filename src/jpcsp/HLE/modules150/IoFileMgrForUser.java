@@ -61,7 +61,6 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
-import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.connector.PGDFileConnector;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -948,15 +947,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         // PSP_O_NBUF (actual name unknown).
         // This mode seems to be associated only with media files.
-        // These files, when using sceMpegRingbufferPut
-        // fail to properly execute the ringbuffer callback (also happens on PSP, if forced).
+        // Let the MediaEngine handle these files instead of regular sceMpeg methods.
         if ((flags & PSP_O_NBUF) == PSP_O_NBUF) {
             log.warn("PSP_O_NBUF - " + filename + " doesn't use media buffer!");
-            sceMpeg.setRingBufStatus(false);
-        } else {
-            // Always set to true (a valid file may be loaded after
-            // an invalid one).
-            sceMpeg.setRingBufStatus(true);
         }
 
         String mode = getMode(flags);
@@ -2185,6 +2178,28 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 break;
             }
+            // Unknown (UMD).
+            case 0x01F100A4: {
+                log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown umd command");
+                if ((mem.isAddressGood(indata_addr) && inlen >= 4)) {
+                    int unk = mem.read32(indata_addr + 4);
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
+            // Unknown (UMD).
+            case 0x01F300A5: {
+                log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown umd command");
+                if ((mem.isAddressGood(indata_addr) && inlen >= 4) && (mem.isAddressGood(outdata_addr) && outlen >= 4)) {
+                    mem.write32(outdata_addr, 1); // Unknown. Just can't be 0.
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
             // Register memorystick insert/eject callback (mscmhc0).
             case 0x02015804: {
                 log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
@@ -2345,6 +2360,30 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
                     mem.write32(outdata_addr, MemoryStick.getState());
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
+            // Register USB thread.
+            case 0x03415001:{
+                log.debug("sceIoDevctl register usb thread");
+
+                if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                    // Unknown params.
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
+            // Unregister USB thread.
+            case 0x03415002:{
+                log.debug("sceIoDevctl unregister usb thread");
+
+                if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                    // Unknown params.
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;

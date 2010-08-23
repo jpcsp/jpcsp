@@ -19,7 +19,6 @@ package jpcsp.HLE.modules250;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -74,12 +73,12 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
         int atID = cpu.gpr[4];
 
-        log.warn(String.format("IGNORING: sceAtracIsSecondBufferNeeded atracId=%d", atID));
+        log.warn(String.format("PARTIAL: sceAtracIsSecondBufferNeeded atracId=%d", atID));
 
         // -1 -> Error.
         // 0 - > Second buffer isn't needed.
         // 1 -> Second buffer is needed.
-        cpu.gpr[2] = 0;
+        cpu.gpr[2] = isSecondBufferNeeded() ? 1 : 0;
     }
 
     public void sceAtracReinit(Processor processor) {

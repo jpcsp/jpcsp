@@ -47,7 +47,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 			mm.addFunction(0x36AA6E91, sceImposeSetLanguageModeFunction);
 			mm.addFunction(0x24FD7BCF, sceImposeGetLanguageModeFunction);
 			mm.addFunction(0x8C943191, sceImposeGetBatteryIconStatusFunction);
-            
+
 		}
 	}
 
@@ -66,7 +66,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 
 		}
 	}
-	
+
 	@Override
     public void start() {
 		// TODO add to settings gui
@@ -98,6 +98,10 @@ public class sceImpose implements HLEModule, HLEStartModule {
     public final static int PSP_CONFIRM_BUTTON_CROSS = 1;
     private int languageMode_button;
 
+    public final static int PSP_UMD_POPUP_DISABLE = 0;
+    public final static int PSP_UMD_POPUP_ENABLE = 1;
+    private int umdPopupStatus;
+
 	public void sceImposeHomeButton(Processor processor) {
 	    CpuState cpu = processor.cpu;
 
@@ -125,17 +129,21 @@ public class sceImpose implements HLEModule, HLEStartModule {
 	public void sceImposeSetUMDPopup(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceImposeSetUMDPopup [0x72189C48]");
+        int mode = cpu.gpr[4];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		log.debug("sceImposeSetUMDPopup(mode=" + mode + ")");
+
+        umdPopupStatus = mode;
+
+		cpu.gpr[2] = 0;
 	}
 
 	public void sceImposeGetUMDPopup(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceImposeGetUMDPopup [0xE0887BC8]");
+		log.debug("sceImposeGetUMDPopup)");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = umdPopupStatus;
 	}
 
 	public void sceImposeSetLanguageMode(Processor processor) {

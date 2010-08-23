@@ -126,8 +126,62 @@ public class sceRtc implements HLEModule {
         }
     }
 
+    final static int PSP_TIME_INVALID_YEAR = -1;
+    final static int PSP_TIME_INVALID_MONTH = -2;
+    final static int PSP_TIME_INVALID_DAY = -3;
+    final static int PSP_TIME_INVALID_HOUR = -4;
+    final static int PSP_TIME_INVALID_MINUTES = -5;
+    final static int PSP_TIME_INVALID_SECONDS = -6;
+    final static int PSP_TIME_INVALID_MICROSECONDS = -7;
+
+    private long rtcMagicOffset = 62135596800000000L;
+
     protected long hleGetCurrentTick() {
         return Emulator.getClock().microTime();
+    }
+
+    /** 64 bit addend */
+    protected void hleRtcTickAdd64(Processor processor, long multiplier) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
+
+        int dest_addr = cpu.gpr[4];
+        int src_addr = cpu.gpr[5];
+        long value = ((((long)cpu.gpr[6]) & 0xFFFFFFFFL) | (((long)cpu.gpr[7])<<32));
+
+        log.debug("hleRtcTickAdd64 " + multiplier + " * " + value);
+
+        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
+            long src = mem.read64(src_addr);
+            mem.write64(dest_addr, src + multiplier * value);
+            cpu.gpr[2] = 0;
+        } else {
+            log.warn("hleRtcTickAdd64 bad address "
+                + String.format("0x%08X 0x%08X", src_addr, dest_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    /** 32 bit addend */
+    protected void hleRtcTickAdd32(Processor processor, long multiplier) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
+
+        int dest_addr = cpu.gpr[4];
+        int src_addr = cpu.gpr[5];
+        int value = cpu.gpr[6];
+
+        log.debug("hleRtcTickAdd32 " + multiplier + " * " + value);
+
+        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
+            long src = mem.read64(src_addr);
+            mem.write64(dest_addr, src + multiplier * value);
+            cpu.gpr[2] = 0;
+        } else {
+            log.warn("hleRtcTickAdd32 bad address "
+                + String.format("0x%08X 0x%08X", src_addr, dest_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceRtcGetTickResolution(Processor processor) {
@@ -149,20 +203,27 @@ public class sceRtc implements HLEModule {
 
     public void sceRtcGetAccumulativeTime(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented NID function sceRtcGetAccumulativeTime [0x011F03C1]");
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceRtcGetAccumulativeTime");
+        }
+        long accumTick = hleGetCurrentTick();
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = (int)(accumTick & 0xffffffffL);
+        cpu.gpr[3] = (int)((accumTick >> 32) & 0xffffffffL);
     }
 
     public void sceRtcGetAccumlativeTime(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented NID function sceRtcGetAccumlativeTime [0x029CA3B3]");
+        // Typo. Refers to the same function.
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceRtcGetAccumlativeTime");
+        }
+        long accumTick = hleGetCurrentTick();
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = (int)(accumTick & 0xffffffffL);
+        cpu.gpr[3] = (int)((accumTick >> 32) & 0xffffffffL);
     }
 
     public void sceRtcGetCurrentClock(Processor processor) {
@@ -265,14 +326,6 @@ public class sceRtc implements HLEModule {
         log.debug(String.format("sceRtcGetDayOfWeek %04d-%02d-%02d ret:%d", year, month, day, number));
         cpu.gpr[2] = number;
     }
-
-    final static int PSP_TIME_INVALID_YEAR = -1;
-    final static int PSP_TIME_INVALID_MONTH = -2;
-    final static int PSP_TIME_INVALID_DAY = -3;
-    final static int PSP_TIME_INVALID_HOUR = -4;
-    final static int PSP_TIME_INVALID_MINUTES = -5;
-    final static int PSP_TIME_INVALID_SECONDS = -6;
-    final static int PSP_TIME_INVALID_MICROSECONDS = -7;
 
     /**
      * Validate pspDate component ranges
@@ -383,8 +436,6 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    private long rtcMagicOffset = 62135596800000000L;
-
     /** Set a pspTime struct based on ticks. */
     public void sceRtcSetTick(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -455,50 +506,6 @@ public class sceRtc implements HLEModule {
         } else {
             log.warn("sceRtcCompareTick bad address "
                 + String.format("0x%08X 0x%08X", first, second));
-            cpu.gpr[2] = -1;
-        }
-    }
-
-    /** 64 bit addend */
-    protected void hleRtcTickAdd64(Processor processor, long multiplier) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int dest_addr = cpu.gpr[4];
-        int src_addr = cpu.gpr[5];
-        long value = ((((long)cpu.gpr[6]) & 0xFFFFFFFFL) | (((long)cpu.gpr[7])<<32));
-
-        log.debug("hleRtcTickAdd64 " + multiplier + " * " + value);
-
-        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
-            long src = mem.read64(src_addr);
-            mem.write64(dest_addr, src + multiplier * value);
-            cpu.gpr[2] = 0;
-        } else {
-            log.warn("hleRtcTickAdd64 bad address "
-                + String.format("0x%08X 0x%08X", src_addr, dest_addr));
-            cpu.gpr[2] = -1;
-        }
-    }
-
-    /** 32 bit addend */
-    protected void hleRtcTickAdd32(Processor processor, long multiplier) {
-        CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
-
-        int dest_addr = cpu.gpr[4];
-        int src_addr = cpu.gpr[5];
-        int value = cpu.gpr[6];
-
-        log.debug("hleRtcTickAdd32 " + multiplier + " * " + value);
-
-        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
-            long src = mem.read64(src_addr);
-            mem.write64(dest_addr, src + multiplier * value);
-            cpu.gpr[2] = 0;
-        } else {
-            log.warn("hleRtcTickAdd32 bad address "
-                + String.format("0x%08X 0x%08X", src_addr, dest_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -581,7 +588,7 @@ public class sceRtc implements HLEModule {
 
     public void sceRtcFormatRFC3339LocalTime(Processor processor) {
         CpuState cpu = processor.cpu;
- 
+
         log.warn("Unimplemented NID function sceRtcFormatRFC3339LocalTime [0x27F98543]");
 
         cpu.gpr[2] = 0xDEADC0DE;

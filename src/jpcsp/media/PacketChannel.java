@@ -33,12 +33,18 @@ import jpcsp.memory.MemoryReader;
  *
  */
 public class PacketChannel {
+    private static final String basePath = "tmp/";
+    private static final String defaultPath = "tmp/ME.tmp";
     private RandomAccessFile pcRaf;
     private String pcRafPath;
 
     public PacketChannel() {
         pcRaf = null;
-        pcRafPath = "tmp/TMP.PMF";
+        pcRafPath = defaultPath;
+    }
+    public PacketChannel(String path) {
+        pcRaf = null;
+        pcRafPath = basePath + path;
     }
 
     public void writePacket(int address, int length) {

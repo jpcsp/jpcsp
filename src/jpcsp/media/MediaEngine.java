@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.media;
 
 import java.awt.image.BufferedImage;
@@ -42,6 +41,7 @@ import com.xuggle.xuggler.IVideoResampler;
 import com.xuggle.xuggler.Utils;
 
 public class MediaEngine {
+
     private static MediaEngine instance;
     private static IContainer container;
     private static IPacket packet;
@@ -55,6 +55,9 @@ public class MediaEngine {
     private static long firstTimestamp;
     private static JFrame movieFrame;
     private static BufferedImage currentImg;
+    private static byte[] currentSamples;
+    private static int decodedAudioBytes;
+    private static int decodedVideoBytes;
 
     // External audio loading vars.
     private static IContainer extContainer;
@@ -90,11 +93,11 @@ public class MediaEngine {
     }
 
     public IStreamCoder getVideoCoder() {
-         return videoCoder;
+        return videoCoder;
     }
 
     public IStreamCoder getAudioCoder() {
-         return audioCoder;
+        return audioCoder;
     }
 
     public int getVideoStreamID() {
@@ -109,6 +112,18 @@ public class MediaEngine {
         return currentImg;
     }
 
+    public byte[] getCurrentAudioSamples() {
+        return currentSamples;
+    }
+
+    public int getDecodedVideoBytes() {
+        return decodedVideoBytes;
+    }
+
+    public int getDecodedAudioBytes() {
+        return decodedAudioBytes;
+    }
+
     /**
      * Method getPacketTimestamp() - analyzes the current packet
      * and returns it's timestamp.
@@ -119,17 +134,17 @@ public class MediaEngine {
      * @return the timestamp of the current packet or 0 if none.
      */
     public long getPacketTimestamp(String stream, String type) {
-        if(stream.equals("Video")) {
-            if(packet.getStreamIndex() == getVideoStreamID()) {
-                if(type.equals("DTS")) {
+        if (stream.equals("Video")) {
+            if (packet.getStreamIndex() == getVideoStreamID()) {
+                if (type.equals("DTS")) {
                     return packet.getDts();
                 } else if (type.equals("PTS")) {
                     return packet.getPts();
                 }
             }
         } else if (stream.equals("Audio")) {
-            if(packet.getStreamIndex() == getAudioStreamID()) {
-                if(type.equals("DTS")) {
+            if (packet.getStreamIndex() == getAudioStreamID()) {
+                if (type.equals("DTS")) {
                     return packet.getDts();
                 } else if (type.equals("PTS")) {
                     return packet.getPts();
@@ -150,8 +165,9 @@ public class MediaEngine {
     public void init(String file) {
         container = IContainer.make();
 
-        if (container.open(file, IContainer.Type.READ, null) < 0)
+        if (container.open(file, IContainer.Type.READ, null) < 0) {
             Modules.log.error("MediaEngine: Invalid file or container format!");
+        }
 
         numStreams = container.getNumStreams();
 
@@ -160,7 +176,7 @@ public class MediaEngine {
         audioStreamID = -1;
         audioCoder = null;
 
-        for(int i = 0; i < numStreams; i++) {
+        for (int i = 0; i < numStreams; i++) {
             IStream stream = container.getStream(i);
             IStreamCoder coder = stream.getStreamCoder();
 
@@ -173,16 +189,17 @@ public class MediaEngine {
             }
         }
 
-        if (videoStreamID == -1)
-            Modules.log.error("MediaEngine: No video streams found!");
-        else if (videoCoder.open() < 0)
+        if (videoStreamID == -1) {
+            Modules.log.info("MediaEngine: No video streams found!");
+        } else if (videoCoder.open() < 0) {
             Modules.log.error("MediaEngine: Can't open video decoder!");
+        }
 
-        if (audioStreamID == -1)
-            Modules.log.error("MediaEngine: No audio streams found!");
-        else if (audioCoder.open() < 0)
+        if (audioStreamID == -1) {
+            Modules.log.info("MediaEngine: No audio streams found!");
+        } else if (audioCoder.open() < 0) {
             Modules.log.error("MediaEngine: Can't open audio decoder!");
-        else {
+        } else {
             try {
                 startSound(audioCoder);
             } catch (LineUnavailableException ex) {
@@ -208,27 +225,33 @@ public class MediaEngine {
                 picture = resample(picture, IPixelFormat.Type.BGR24);
             }
 
-            int bytesDecoded = videoCoder.decodeVideo(picture, packet, 0);
+            decodedVideoBytes = videoCoder.decodeVideo(picture, packet, 0);
 
-            if (bytesDecoded < 0)
+            if (decodedVideoBytes < 0) {
                 Modules.log.error("MediaEngine: No video bytes decoded!");
+                return;
+            }
 
-            if (picture.isComplete())
+            if (picture.isComplete()) {
                 currentImg = Utils.videoPictureToImage(picture);
+            }
         } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
             IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
 
             int offset = 0;
-            while(offset < packet.getSize()) {
-                int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
+            while (offset < packet.getSize()) {
+                decodedAudioBytes = audioCoder.decodeAudio(samples, packet, offset);
 
-                if (bytesDecoded < 0)
+                if (decodedAudioBytes < 0) {
                     Modules.log.error("MediaEngine: No audio bytes decoded!");
+                    return;
+                }
 
-                offset += bytesDecoded;
+                offset += decodedAudioBytes;
 
-                if (samples.isComplete())
-                    playSound(samples);
+                if (samples.isComplete()) {
+                    updateSoundSamples(samples);
+                }
             }
         }
     }
@@ -237,15 +260,16 @@ public class MediaEngine {
     public void initExtAudio(String file) {
         extContainer = IContainer.make();
 
-        if (extContainer.open(file, IContainer.Type.READ, null) < 0)
+        if (extContainer.open(file, IContainer.Type.READ, null) < 0) {
             Modules.log.error("MediaEngine: Invalid file or container format!");
+        }
 
         int extNumStreams = extContainer.getNumStreams();
 
         extAudioStreamID = -1;
         extAudioCoder = null;
 
-        for(int i = 0; i < extNumStreams; i++) {
+        for (int i = 0; i < extNumStreams; i++) {
             IStream stream = extContainer.getStream(i);
             IStreamCoder coder = stream.getStreamCoder();
 
@@ -255,15 +279,16 @@ public class MediaEngine {
             }
         }
 
-        if (extAudioStreamID == -1)
+        if (extAudioStreamID == -1) {
             Modules.log.error("MediaEngine: No audio streams found!");
-        else if (extAudioCoder.open() < 0)
+        } else if (extAudioCoder.open() < 0) {
             Modules.log.error("MediaEngine: Can't open audio decoder!");
+        }
 
-            try {
-                startSound(extAudioCoder);
-            } catch (LineUnavailableException ex) {
-                Modules.log.error("MediaEngine: Can't start audio line!");
+        try {
+            startSound(extAudioCoder);
+        } catch (LineUnavailableException ex) {
+            Modules.log.error("MediaEngine: Can't start audio line!");
 
         }
         extPacket = IPacket.make();
@@ -276,16 +301,19 @@ public class MediaEngine {
             IAudioSamples samples = IAudioSamples.make(1024, extAudioCoder.getChannels());
 
             int offset = 0;
-            while(offset < extPacket.getSize()) {
+            while (offset < extPacket.getSize()) {
                 int bytesDecoded = extAudioCoder.decodeAudio(samples, extPacket, offset);
 
-                if (bytesDecoded < 0)
+                if (bytesDecoded < 0) {
                     Modules.log.error("MediaEngine: No audio bytes decoded!");
+                    return;
+                }
 
                 offset += bytesDecoded;
 
-                if (samples.isComplete())
+                if (samples.isComplete()) {
                     playSound(samples);
+                }
             }
         }
     }
@@ -317,9 +345,12 @@ public class MediaEngine {
             audioLine.close();
             audioLine = null;
         }
-        if(movieFrame != null) {
+        if (movieFrame != null) {
             movieFrame.dispose();
             movieFrame = null;
+        }
+        if(currentSamples != null) {
+            currentSamples = null;
         }
     }
 
@@ -332,36 +363,36 @@ public class MediaEngine {
         } else {
             long systemClockCurrentTime = System.currentTimeMillis();
             long millisecondsClockTimeSinceStartofVideo = systemClockCurrentTime - clockStartTime;
-            long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestamp)/1000;
+            long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestamp) / 1000;
             final long millisecondsTolerance = 50;
             millisecondsToSleep = (millisecondsStreamTimeSinceStartOfVideo -
-                    (millisecondsClockTimeSinceStartofVideo+millisecondsTolerance));
+                    (millisecondsClockTimeSinceStartofVideo + millisecondsTolerance));
         }
         return millisecondsToSleep;
     }
 
     // This function attempts to resample an IVideoPicture to any given
     // pixel format.
-    private IVideoPicture resample(IVideoPicture picture, IPixelFormat.Type pixel){
+    private IVideoPicture resample(IVideoPicture picture, IPixelFormat.Type pixel) {
         IVideoResampler resampler = null;
 
-            resampler = IVideoResampler.make(videoCoder.getWidth(),
-                    videoCoder.getHeight(), pixel,
-                    videoCoder.getWidth(), videoCoder.getHeight(),
-                    videoCoder.getPixelType());
+        resampler = IVideoResampler.make(videoCoder.getWidth(),
+                videoCoder.getHeight(), pixel,
+                videoCoder.getWidth(), videoCoder.getHeight(),
+                videoCoder.getPixelType());
 
-            if(resampler != null) {
-                picture = IVideoPicture.make(resampler.getOutputPixelFormat(),
-                        picture.getWidth(), picture.getHeight());
-            }
+        if (resampler != null) {
+            picture = IVideoPicture.make(resampler.getOutputPixelFormat(),
+                    picture.getWidth(), picture.getHeight());
+        }
 
         return picture;
-     }
+    }
 
     // Sound sampling functions also based on Xuggler's demos.
     private static void startSound(IStreamCoder aAudioCoder) throws LineUnavailableException {
         AudioFormat audioFormat = new AudioFormat(aAudioCoder.getSampleRate(),
-                (int)IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
+                (int) IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
                 aAudioCoder.getChannels(),
                 true,
                 false);
@@ -374,5 +405,19 @@ public class MediaEngine {
     private static void playSound(IAudioSamples aSamples) {
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
         audioLine.write(rawBytes, 0, aSamples.getSize());
+    }
+
+    private static void updateSoundSamples(IAudioSamples aSamples) {
+        byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
+
+        if(currentSamples == null) {
+            currentSamples = rawBytes;
+        } else {
+            byte[] temp = new byte[rawBytes.length + currentSamples.length];
+            System.arraycopy(currentSamples, 0, temp, 0, currentSamples.length);
+            System.arraycopy(rawBytes, 0, temp, currentSamples.length, rawBytes.length);
+
+            currentSamples = temp;
+        }
     }
 }
