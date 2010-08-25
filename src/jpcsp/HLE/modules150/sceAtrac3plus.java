@@ -152,6 +152,12 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
     protected int atrac3IDsCount;
     protected int atrac3plusIDsCount;
+
+    // Tested on PSP:
+    // Only 2 atracIDs per format can be registered at the same time.
+    // Note: After firmware 2.50, these limits can be changed by sceAtracReinit.
+    protected int atrac3MaxIDsCount = 2;
+    protected int atrac3plusMaxIDsCount = 2;
     public static int maxSamples;
     protected int atracBitrate = 64;
     protected int atracChannels = 2;
@@ -213,6 +219,11 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
     protected boolean isSecondBufferNeeded() {
         return isSecondBufferNeeded;
+    }
+
+    protected void hleAtracReinit(int newAT3IdCount, int newAT3plusIdCount) {
+        atrac3MaxIDsCount = newAT3IdCount;
+        atrac3plusMaxIDsCount = newAT3plusIdCount;
     }
 
     protected void hleAtracSetData(int atracID, int buffer, int bufferSize, int minSize) {
@@ -336,13 +347,12 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        // Tested on PSP:
-        // Only 2 atracIDs per format can be registered at the same time.
-        if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= 2)) {
+
+        if ((codecType == PSP_MODE_AT_3) && (atrac3IDsCount <= atrac3MaxIDsCount)) {
             maxSamples = 1024;
             cpu.gpr[2] = hleCreateAtracID(codecType);
             atrac3IDsCount++;
-        } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= 2)) {
+        } else if ((codecType == PSP_MODE_AT_3_PLUS) && (atrac3plusIDsCount <= atrac3plusMaxIDsCount)) {
             maxSamples = 2048;
             cpu.gpr[2] = hleCreateAtracID(codecType);
             atrac3plusIDsCount++;

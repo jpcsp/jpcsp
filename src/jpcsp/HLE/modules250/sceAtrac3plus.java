@@ -19,6 +19,8 @@ package jpcsp.HLE.modules250;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -59,10 +61,14 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         int atID = cpu.gpr[4];
         int outputChannelAddr = cpu.gpr[5];
 
-        log.warn(String.format("Unimplemented sceAtracGetOutputChannel: atracID = %d, outputChannelAddr = 0x%08X", atID, outputChannelAddr));
+        log.warn(String.format("PARTIAL: sceAtracGetOutputChannel: atracID = %d, outputChannelAddr = 0x%08X", atID, outputChannelAddr));
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (mem.isAddressGood(outputChannelAddr)) {
-        	mem.write32(outputChannelAddr, 1);
+        	mem.write32(outputChannelAddr, 2);
         }
 
         cpu.gpr[2] = 0;
@@ -75,6 +81,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
         log.warn(String.format("PARTIAL: sceAtracIsSecondBufferNeeded atracId=%d", atID));
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         // -1 -> Error.
         // 0 - > Second buffer isn't needed.
         // 1 -> Second buffer is needed.
@@ -84,12 +94,22 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     public void sceAtracReinit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int atID = cpu.gpr[4];
-        int unk = cpu.gpr[5];
+        int at3IDNum = cpu.gpr[4];
+        int at3plusIDNum = cpu.gpr[5];
 
-        log.warn(String.format("IGNORING: sceAtracReinit atracId=%d unk=%d", atID, unk));
+        log.warn(String.format("PARTIAL: sceAtracReinit at3IDNum=%d at3plusIDNum=%d", at3IDNum, at3plusIDNum));
 
-        cpu.gpr[2] = 0;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if(at3IDNum + at3plusIDNum * 2 > 6) {
+            // The total ammount of AT3 IDs and AT3+ IDs (x2) can't be superior to 6.
+            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_NO_ID;
+        } else {
+            hleAtracReinit(at3IDNum, at3plusIDNum);
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceAtracGetBufferInfoForResetting(Processor processor) {

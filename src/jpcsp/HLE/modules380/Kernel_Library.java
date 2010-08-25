@@ -20,6 +20,8 @@ package jpcsp.HLE.modules380;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Processor;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -60,27 +62,43 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 
 	public void sceKernelUnlockLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
-		Managers.mutex.sceKernelUnlockLwMutex(gpr[4], gpr[5]);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+		Managers.lwmutex.sceKernelUnlockLwMutex(gpr[4], gpr[5]);
 	}
 
 	public void sceKernelLockLwMutexCB(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
-		Managers.mutex.sceKernelLockLwMutexCB(gpr[4], gpr[5], gpr[6]);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+		Managers.lwmutex.sceKernelLockLwMutexCB(gpr[4], gpr[5], gpr[6]);
 	}
 
 	public void sceKernelLockLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
-		Managers.mutex.sceKernelLockLwMutex(gpr[4], gpr[5], gpr[6]);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+		Managers.lwmutex.sceKernelLockLwMutex(gpr[4], gpr[5], gpr[6]);
 	}
 
 	public void sceKernelReferLwMutexStatus(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
-		Managers.mutex.sceKernelReferLwMutexStatus(gpr[4], gpr[5]);
+		Managers.lwmutex.sceKernelReferLwMutexStatus(gpr[4], gpr[5]);
 	}
 
 	public void sceKernelTryLockLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
-		Managers.mutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+		Managers.lwmutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
 	}
 
     public void Kernel_Library_37431849(Processor processor) {

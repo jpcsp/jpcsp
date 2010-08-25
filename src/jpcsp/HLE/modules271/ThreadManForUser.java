@@ -63,6 +63,10 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
 
     public void sceKernelTryLockMutex(Processor processor) {
         int[] gpr = processor.cpu.gpr;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         Managers.mutex.sceKernelTryLockMutex(gpr[4], gpr[5]);
     }
 

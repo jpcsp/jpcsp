@@ -72,6 +72,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_WAIT_a          = 0x0a; // ?
     public static final int PSP_WAIT_b          = 0x0b; // ?
     public static final int PSP_WAIT_MUTEX      = 0x0c; // wait mutex
+    public static final int PSP_WAIT_LWMUTEX    = 0x0d; // wait lwmutex
 
     // SceKernelThreadInfo <http://psp.jim.sh/pspsdk-doc/structSceKernelThreadInfo.html>
     public final String name;

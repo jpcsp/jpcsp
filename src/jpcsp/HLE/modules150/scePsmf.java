@@ -66,7 +66,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             mm.addFunction(0x2673646B, scePsmfVerifyPsmfFunction);
             mm.addFunction(0xB78EB9E9, scePsmfGetHeaderSizeFunction);
             mm.addFunction(0xA5EBFE81, scePsmfGetStreamSizeFunction);
-            mm.addFunction(0xE1283895, scePsmf_E1283895Function);
+            mm.addFunction(0xE1283895, scePsmfGetPsmfVersionFunction);
 
         }
     }
@@ -97,7 +97,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             mm.removeFunction(scePsmfVerifyPsmfFunction);
             mm.removeFunction(scePsmfGetHeaderSizeFunction);
             mm.removeFunction(scePsmfGetStreamSizeFunction);
-            mm.removeFunction(scePsmf_E1283895Function);
+            mm.removeFunction(scePsmfGetPsmfVersionFunction);
 
         }
     }
@@ -908,18 +908,22 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
     }
 
-    public void scePsmf_E1283895(Processor processor) {
+    public void scePsmfGetPsmfVersion(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int psmf = cpu.gpr[4];
 
-        log.warn("UNIMPLEMENTED: scePsmf_E1283895 (psmf=0x" + Integer.toHexString(psmf) + ")");
+        log.warn("PARTIAL: scePsmfGetPsmfVersion (psmf=0x" + Integer.toHexString(psmf) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (psmfMap.containsKey(psmf)) {
+            cpu.gpr[2] = psmfMap.get(psmf).getVersion();
+        } else {
+            cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+        }
     }
 
     public final HLEModuleFunction scePsmfSetPsmfFunction = new HLEModuleFunction("scePsmf", "scePsmfSetPsmf") {
@@ -1186,16 +1190,16 @@ public class scePsmf implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetStreamSize(processor);";
         }
     };
-    public final HLEModuleFunction scePsmf_E1283895Function = new HLEModuleFunction("scePsmf", "scePsmf_E1283895") {
+    public final HLEModuleFunction scePsmfGetPsmfVersionFunction = new HLEModuleFunction("scePsmf", "scePsmfGetPsmfVersion") {
 
         @Override
         public final void execute(Processor processor) {
-            scePsmf_E1283895(processor);
+            scePsmfGetPsmfVersion(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePsmfModule.scePsmf_E1283895(processor);";
+            return "jpcsp.HLE.Modules.scePsmfModule.scePsmfGetPsmfVersion(processor);";
         }
     };
 }

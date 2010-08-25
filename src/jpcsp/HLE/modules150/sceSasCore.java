@@ -1100,10 +1100,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int mode = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode=" + mode);
+            log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
