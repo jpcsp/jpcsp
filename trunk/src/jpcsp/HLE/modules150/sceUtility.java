@@ -933,7 +933,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
             	//   size (32KB string) : "416 KB"
             	// error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
             	//
-                log.warn("PARTIAL:Savedata mode 8 (SCE_UTILITY_SAVEDATA_TYPE_SIZES)");
                 String gameName = savedataParams.gameName;
                 String saveName = savedataParams.saveName;
 
@@ -997,7 +996,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
             }
 
             case SceUtilitySavedataParam.MODE_LIST: {
-                log.debug("Savedata mode 11");
                 int buffer4Addr = savedataParams.idListAddr;
                 if (mem.isAddressGood(buffer4Addr)) {
                 	int maxEntries = mem.read32(buffer4Addr + 0);
@@ -1107,6 +1105,30 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     mem.write32(buffer5Addr + 20, systemFileNumEntries);
                 }
         		savedataParams.base.result = 0;
+                break;
+            }
+
+            case SceUtilitySavedataParam.MODE_MAKEDATA:
+            case SceUtilitySavedataParam.MODE_MAKEDATASECURE: {
+                // Split saving version.
+                // Write system data files (encrypted or not).
+                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+                        savedataParams.saveName = savedataParams.saveNameList[0];
+                    } else {
+                        savedataParams.saveName = "-000";
+                    }
+                }
+
+                try {
+                    savedataParams.save(mem);
+                    savedataParams.base.result = 0;
+                } catch (IOException e) {
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                } catch (Exception e) {
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                    e.printStackTrace();
+                }
                 break;
             }
 
@@ -1227,7 +1249,14 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     Utilities.writeStringNZ(mem, buffer6Addr +  52, 8, neededSize + " KB");
 
                 }
-        		savedataParams.base.result = 0;
+                // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
+                if(MemoryStick.getState() != MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED) {
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
+                } else if (!savedataParams.isPresent()) {
+                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+                } else {
+                    savedataParams.base.result = 0;
+                }
                 break;
 
             default:

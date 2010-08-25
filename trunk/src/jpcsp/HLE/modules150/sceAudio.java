@@ -987,7 +987,15 @@ public class sceAudio implements HLEModule, HLEThread {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (!mem.isAddressGood(buf)) {
+        if (buf == 0) {
+            if (hleAudioGetChannelRestLen(pspSRCChannel) != 0) {
+                log.warn("sceAudioSRCOutputBlocking (buf==0): delaying current thread");
+                Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+            } else {
+                log.warn("sceAudioSRCOutputBlocking (buf==0): not delaying current thread");
+                cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
+            }
+        } else if (!mem.isAddressGood(buf)) {
             log.warn("sceAudioSRCOutputBlocking bad pointer " + String.format("0x%08X", buf));
             cpu.gpr[2] = -1;
         } else {

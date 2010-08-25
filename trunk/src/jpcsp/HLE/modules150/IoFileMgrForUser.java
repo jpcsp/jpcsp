@@ -2178,22 +2178,25 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 break;
             }
-            // Unknown (UMD).
+            // Seek UMD disc (raw).
             case 0x01F100A4: {
-                log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown umd command");
+                log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " seek UMD disc");
                 if ((mem.isAddressGood(indata_addr) && inlen >= 4)) {
-                    int unk = mem.read32(indata_addr + 4);
+                    int sector = mem.read32(indata_addr);
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;
                 }
                 break;
             }
-            // Unknown (UMD).
+            // Prepare UMD data into cache.
             case 0x01F300A5: {
-                log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown umd command");
+                log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " prepare UMD data to cache");
                 if ((mem.isAddressGood(indata_addr) && inlen >= 4) && (mem.isAddressGood(outdata_addr) && outlen >= 4)) {
-                    mem.write32(outdata_addr, 1); // Unknown. Just can't be 0.
+                    int sector = mem.read32(indata_addr + 4);  // First sector of data to read.
+                    int sectorNum = mem.read32(indata_addr + 12);  // Length of data to read.
+
+                    mem.write32(outdata_addr, 1); // Status (unitary index with unknown meaning).
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;

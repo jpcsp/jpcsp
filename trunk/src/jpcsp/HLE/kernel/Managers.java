@@ -23,6 +23,7 @@ import jpcsp.HLE.kernel.managers.MbxManager;
 import jpcsp.HLE.kernel.managers.ModuleManager;
 import jpcsp.HLE.kernel.managers.MsgPipeManager;
 import jpcsp.HLE.kernel.managers.MutexManager;
+import jpcsp.HLE.kernel.managers.LwMutexManager;
 import jpcsp.HLE.kernel.managers.SemaManager;
 import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.managers.VplManager;
@@ -37,6 +38,7 @@ public class Managers {
     public static FplManager fpl;
     public static VplManager vpl;
     public static MutexManager mutex;
+    public static LwMutexManager lwmutex;
     public static MsgPipeManager msgPipes;
     public static ModuleManager modules;
     public static SystemTimeManager systime;
@@ -50,6 +52,7 @@ public class Managers {
         fpl.reset();
         vpl.reset();
         mutex.reset();
+        lwmutex.reset();
         msgPipes.reset();
         modules.reset();
         systime.reset();
@@ -63,6 +66,7 @@ public class Managers {
         fpl = FplManager.singleton;
         vpl = VplManager.singleton;
         mutex = MutexManager.singleton;
+        lwmutex = LwMutexManager.singleton;
         msgPipes = MsgPipeManager.singleton;
         modules = ModuleManager.singleton;
         systime = SystemTimeManager.singleton;

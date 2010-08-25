@@ -50,6 +50,11 @@ public class ThreadWaitInfo {
     public int Mutex_id;
     public int Mutex_count;
 
+    // LwMutex
+    public boolean waitingOnLwMutex;
+    public int LwMutex_id;
+    public int LwMutex_count;
+
     // IO
     public boolean waitingOnIo;
     public int Io_id;
@@ -106,6 +111,10 @@ public class ThreadWaitInfo {
     	waitingOnMutex = that.waitingOnMutex;
     	Mutex_id = that.Mutex_id;
     	Mutex_count = that.Mutex_count;
+
+        waitingOnLwMutex = that.waitingOnLwMutex;
+    	LwMutex_id = that.LwMutex_id;
+    	LwMutex_count = that.LwMutex_count;
 
     	waitingOnIo = that.waitingOnIo;
     	Io_id = that.Io_id;

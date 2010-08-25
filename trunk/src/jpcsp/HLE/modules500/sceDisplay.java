@@ -19,7 +19,6 @@ package jpcsp.HLE.modules500;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -28,55 +27,56 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 
 	@Override
 	public String getName() { return "sceDisplay"; }
-	
+
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		super.installModule(mm, version);
-		
+
 		if (version >= 500) {
-		
+
 			mm.addFunction(0x40F1469C, sceDisplayWaitVblankStartMultiFunction);
-			mm.addFunction(0x77ED8B3A, sceDisplay_77ED8B3AFunction);
-			
+			mm.addFunction(0x77ED8B3A, sceDisplayWaitVblankStartMultiCBFunction);
+
 		}
 	}
-	
+
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		super.uninstallModule(mm, version);
-		
+
 		if (version >= 500) {
-		
+
 			mm.removeFunction(sceDisplayWaitVblankStartMultiFunction);
-			mm.removeFunction(sceDisplay_77ED8B3AFunction);
-			
+			mm.removeFunction(sceDisplayWaitVblankStartMultiCBFunction);
+
 		}
 	}
-	
-	
+
+
 	public void sceDisplayWaitVblankStartMulti(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		// Same as sceDisplayWaitVblankStart().
-        // May be different on the PSP, because it suggests multiple graphics'
-        // chips interaction (GE and ME, probably).
-        if (log.isDebugEnabled()) {
-        	log.debug("sceDisplayWaitVblankStartMulti");
-        }
+		int cycleNum = cpu.gpr[4];  // Number of VSYNCs to wait before blocking the thread on VBLANK.
+
+        log.warn("PARTIAL: sceDisplayWaitVblankStartMulti cycleNum=" + cycleNum);
 
         cpu.gpr[2] = 0;
 
         blockCurrentThreadOnVblank(false);
 	}
-    
-	public void sceDisplay_77ED8B3A(Processor processor) {
+
+	public void sceDisplayWaitVblankStartMultiCB(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.debug("Unimplemented NID function sceDisplay_77ED8B3A [0x77ED8B3A]");
+		int cycleNum = cpu.gpr[4];   // Number of VSYNCs to wait before blocking the thread on VBLANK.
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        log.warn("PARTIAL: sceDisplayWaitVblankStartMultiCB cycleNum=" + cycleNum);
+
+        cpu.gpr[2] = 0;
+
+        blockCurrentThreadOnVblank(true);
 	}
-    
+
 	public final HLEModuleFunction sceDisplayWaitVblankStartMultiFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMulti") {
 		@Override
 		public final void execute(Processor processor) {
@@ -87,15 +87,15 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartMulti(processor);";
 		}
 	};
-    
-	public final HLEModuleFunction sceDisplay_77ED8B3AFunction = new HLEModuleFunction("sceDisplay", "sceDisplay_77ED8B3A") {
+
+	public final HLEModuleFunction sceDisplayWaitVblankStartMultiCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMultiCB") {
 		@Override
 		public final void execute(Processor processor) {
-			sceDisplay_77ED8B3A(processor);
+			sceDisplayWaitVblankStartMultiCB(processor);
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplay_77ED8B3A(processor);";
+			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartMultiCB(processor);";
 		}
 	};
 }

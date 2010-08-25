@@ -202,10 +202,19 @@ public class SceKernelErrors {
     public final static int ERROR_ILLEGAL_KTLS                                  = 0x800201c0;
     public final static int ERROR_KTLS_IS_FULL                                  = 0x800201c1;
     public final static int ERROR_KTLS_IS_BUSY                                  = 0x800201c2;
-    public final static int ERROR_NOT_FOUND_MUTEX                               = 0x800201c3;
+    public final static int ERROR_MUTEX_NOT_FOUND                               = 0x800201c3;
     public final static int ERROR_MUTEX_LOCKED                                  = 0x800201c4;
-
-    public final static int ERROR_MUTEX_OVERFLOW                                = 0x800201c8;
+    public final static int ERROR_MUTEX_UNLOCKED                                = 0x800201c5;
+    public final static int ERROR_MUTEX_LOCK_OVERFLOW                           = 0x800201c6;
+    public final static int ERROR_MUTEX_UNLOCK_UNDERFLOW                        = 0x800201c7;
+    public final static int ERROR_MUTEX_RECURSIVE_NOT_ALLOWED                   = 0x800201c8;
+    public final static int ERROR_MESSAGEBOX_DUPLICATE_MESSAGE                  = 0x800201c9;
+    public final static int ERROR_LWMUTEX_NOT_FOUND                             = 0x800201ca;
+    public final static int ERROR_LWMUTEX_LOCKED                                = 0x800201cb;
+    public final static int ERROR_LWMUTEX_UNLOCKED                              = 0x800201cc;
+    public final static int ERROR_LWMUTEX_LOCK_OVERFLOW                         = 0x800201cd;
+    public final static int ERROR_LWMUTEX_UNLOCK_UNDERFLOW                      = 0x800201ce;
+    public final static int ERROR_LWMUTEX_RECURSIVE_NOT_ALLOWED                 = 0x800201cf;
 
     public final static int ERROR_CANNOT_CANCEL                                 = 0x80020261;
 

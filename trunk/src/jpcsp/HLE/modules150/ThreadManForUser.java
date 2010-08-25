@@ -895,6 +895,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } // Mutex
         else if (thread.wait.waitingOnMutex) {
             Managers.mutex.onThreadWaitTimeout(thread);
+        } // LwMutex
+        else if (thread.wait.waitingOnLwMutex) {
+            Managers.lwmutex.onThreadWaitTimeout(thread);
         } // MsgPipe
         else if (thread.wait.waitingOnMsgPipeSend || thread.wait.waitingOnMsgPipeReceive) {
             Managers.msgPipes.onThreadWaitTimeout(thread);
@@ -951,6 +954,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         Managers.eventFlags.onThreadDeleted(thread);
         Managers.semas.onThreadDeleted(thread);
         Managers.mutex.onThreadDeleted(thread);
+        Managers.lwmutex.onThreadDeleted(thread);
         Managers.msgPipes.onThreadDeleted(thread);
         Managers.mbx.onThreadDeleted(thread);
         Managers.fpl.onThreadDeleted(thread);
