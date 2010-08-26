@@ -48,7 +48,7 @@ public class LwMutexManager {
     private LwMutexWaitStateChecker lwMutexWaitStateChecker;
     private final static int PSP_LWMUTEX_ATTR_FIFO = 0;
     private final static int PSP_LWMUTEX_ATTR_PRIORITY = 0x100;
-    private final static int PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE = 0x300;
+    private final static int PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE = 0x200;
 
     public void reset() {
         lwMutexMap = new HashMap<Integer, SceKernelLwMutexInfo>();
@@ -91,7 +91,7 @@ public class LwMutexManager {
     }
 
     private boolean tryLockLwMutex(SceKernelLwMutexInfo info, int count, SceKernelThreadInfo thread) {
-        if (info.locked == 0 || info.attr == PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
+        if (info.locked == 0 || (info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) == PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
             info.threadid = thread.uid;
             info.locked += count;
             return true;
@@ -208,7 +208,7 @@ public class LwMutexManager {
 
                     cpu.gpr[2] = 0;
                 } else {
-                    if (info.attr != PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
+                    if ((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) != PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
                         cpu.gpr[2] = ERROR_LWMUTEX_RECURSIVE_NOT_ALLOWED;
                     } else {
                         cpu.gpr[2] = ERROR_LWMUTEX_LOCK_OVERFLOW;

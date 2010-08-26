@@ -75,7 +75,7 @@ public class scePsmfPlayer implements HLEModule {
             mm.addFunction(0x2BEB1569, scePsmfPlayerBreakFunction);
             mm.addFunction(0x76C0F4AE, scePsmfPlayerSetPsmfOffsetFunction);
             mm.addFunction(0xA72DB4F9, scePsmfPlayerSetPsmfOffsetCBFunction);
-            mm.addFunction(0x2D0E4E0A, scePsmfPlayerSetPsmf_2D0E4E0AFunction);
+            mm.addFunction(0x2D0E4E0A, scePsmfPlayerSetTempBufFunction);
             mm.addFunction(0x75F03FA2, scePsmfPlayerSelectSpecificVideoFunction);
             mm.addFunction(0x85461EFF, scePsmfPlayerSelectSpecificAudioFunction);
             mm.addFunction(0x8A9EBDCD, scePsmfPlayerSelectVideoFunction);
@@ -110,7 +110,7 @@ public class scePsmfPlayer implements HLEModule {
             mm.removeFunction(scePsmfPlayerBreakFunction);
             mm.removeFunction(scePsmfPlayerSetPsmfOffsetFunction);
             mm.removeFunction(scePsmfPlayerSetPsmfOffsetCBFunction);
-            mm.removeFunction(scePsmfPlayerSetPsmf_2D0E4E0AFunction);
+            mm.removeFunction(scePsmfPlayerSetTempBufFunction);
             mm.removeFunction(scePsmfPlayerSelectSpecificVideoFunction);
             mm.removeFunction(scePsmfPlayerSelectSpecificAudioFunction);
             mm.removeFunction(scePsmfPlayerSelectVideoFunction);
@@ -831,12 +831,12 @@ public class scePsmfPlayer implements HLEModule {
         scePsmfPlayerSetPsmfCB(processor);
     }
 
-    public void scePsmfPlayerSetPsmf_2D0E4E0A(Processor processor) {
+    public void scePsmfPlayerSetTempBuf(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("IGNORING: scePsmfPlayerSetPsmf_2D0E4E0A psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        log.warn("IGNORING: scePsmfPlayerSetTempBuf psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1181,16 +1181,16 @@ public class scePsmfPlayer implements HLEModule {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffsetCB(processor);";
         }
     };
-    public final HLEModuleFunction scePsmfPlayerSetPsmf_2D0E4E0AFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmf_2D0E4E0A") {
+    public final HLEModuleFunction scePsmfPlayerSetTempBufFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetTempBuf") {
 
         @Override
         public final void execute(Processor processor) {
-            scePsmfPlayerSetPsmf_2D0E4E0A(processor);
+            scePsmfPlayerSetTempBuf(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmf_2D0E4E0A(processor);";
+            return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetTempBuf(processor);";
         }
     };
     public final HLEModuleFunction scePsmfPlayerSelectSpecificVideoFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSelectSpecificVideo") {
