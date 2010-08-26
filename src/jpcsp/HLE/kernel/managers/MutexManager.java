@@ -95,7 +95,7 @@ public class MutexManager {
 
     private boolean tryLockMutex(SceKernelMutexInfo info, int count, SceKernelThreadInfo thread) {
         // Allow Mutex locking when not locked or when using ALLOW_RECURSIVE.
-        if (info.locked == 0 || info.attr == PSP_MUTEX_ATTR_ALLOW_RECURSIVE) {
+        if (info.locked == 0 || (info.attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) == PSP_MUTEX_ATTR_ALLOW_RECURSIVE) {
             info.threadid = thread.uid;
             info.locked += count;
             return true;
@@ -250,7 +250,7 @@ public class MutexManager {
 
                     cpu.gpr[2] = 0;
                 } else {
-                    if (info.attr != PSP_MUTEX_ATTR_ALLOW_RECURSIVE) {
+                    if ((info.attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) != PSP_MUTEX_ATTR_ALLOW_RECURSIVE) {
                         cpu.gpr[2] = ERROR_MUTEX_RECURSIVE_NOT_ALLOWED;
                     } else {
                         cpu.gpr[2] = ERROR_MUTEX_LOCK_OVERFLOW;
