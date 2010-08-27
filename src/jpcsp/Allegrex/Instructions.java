@@ -5358,7 +5358,7 @@ public void compile(ICompilerContext context, int insn) {
 			context.getMethodVisitor().visitInsn(Opcodes.FADD);
 		}
 		context.storeVd(1, 0);
-		context.endPfxCompiled();
+		context.endPfxCompiled(1);
 	} else {
 		// Unsupported VDOT.S
 		context.compileInterpreterInstruction();
