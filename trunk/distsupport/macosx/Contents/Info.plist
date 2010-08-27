@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>JPCSP Emulator</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.jpcsp.emulator</string>
+	<key>CFBundleVersion</key>
+	<string>@major.version@.@minor.version@</string>
+	<key>CFBundleAllowMixedLocalizations</key>
+	<true/>
+	<key>CFBundleExecutable</key>
+	<string>JavaApplicationStub</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@major.version@</string>
+	<key>CFBundleSignature</key>
+	<string>PCSP</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Jpcsp @major.version@.@minor.version@</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleIconFile</key>
+	<string>PSP-Silver-1.icns</string>
+	<key>Java</key>
+	<dict>
+		<key>WorkingDirectory</key>
+		<string>$APP_PACKAGE/Contents/Resources/Java</string>
+		<key>MainClass</key>
+		<string>jpcsp.MainGUI</string>
+		<key>JVMVersion</key>
+		<string>1.6+</string>
+		<key>Arguments</key>
+		<string></string>
+		<key>ClassPath</key>
+		<array>
+			<string>@libraries@</string>
+		</array>
+		<key>Properties</key>
+		<dict>
+			<key>apple.laf.useScreenMenuBar</key>
+			<string>true</string>
+            <key>java.library.path</key>
+            <string>$JAVAROOT/lib/macosx</string>
+		</dict>
+	</dict>
+</dict>
+</plist>
