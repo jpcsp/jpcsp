@@ -6,9 +6,9 @@
 	<property name="source" value="1.6" />
 
 	<property name="jpcsp.mainclass" value="jpcsp.MainGUI" />
+	<property name="jpcsp.version" value="0.5" />
 
 	<path id="Jpcsp.classpath">
-		<pathelement location="bin/class" />
 		<pathelement location="lib/gluegen-rt.jar" />
 		<pathelement location="lib/javassist.jar" />
 		<pathelement location="lib/jogl.jar" />
@@ -42,6 +42,20 @@
 						</tokenfilter>
 					</outputfilterchain>
 				</redirector>
+			</exec>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="szip" description="Compress the build with 7-zip.">
+		<attribute name="dir" default="dist" />
+		<attribute name="platform.name" />
+		<attribute name="basedir" default="jpcsp-@{platform.name}" />
+		<sequential>
+			<svnversion outputproperty="jpcsp.revision" />
+			<exec executable="7z" dir="@{dir}">
+				<arg line="a -t7z -m0=lzma -mx=9 -mfb=64 -md=8m -ms=on" />
+				<arg line="jpcsp-${jpcsp.revision}-@{platform.name}.7z" />
+				<arg line="@{basedir}" />
 			</exec>
 		</sequential>
 	</macrodef>
@@ -117,36 +131,74 @@
 				<exclude name="**/src/**" />
 			</fileset>
 		</copy>
-		<svnversion outputproperty="jpcsp.revision" />
-		<exec executable="7z" dir="dist">
-			<arg line="a -t7z -m0=lzma -mx=9 -mfb=64 -md=8m -ms=on" />
-			<arg line="jpcsp-${jpcsp.revision}-${platform.name}.7z" />
-			<arg line="jpcsp-${platform.name}" />
-		</exec>
 	</target>
 	<target name="dist-windows-x86">
 		<antcall target="dist-generic">
 			<param name="platform.name" value="windows-x86" />
 		</antcall>
+		<szip platform.name="windows-x86" />
 	</target>
 	<target name="dist-windows-amd64">
 		<antcall target="dist-generic">
 			<param name="platform.name" value="windows-amd64" />
 		</antcall>
+		<szip platform.name="windows-amd64" />
 	</target>
 	<target name="dist-linux-x86">
 		<antcall target="dist-generic">
 			<param name="platform.name" value="linux-x86" />
 		</antcall>
+		<szip platform.name="linux-x86" />
 	</target>
 	<target name="dist-linux-amd64">
 		<antcall target="dist-generic">
 			<param name="platform.name" value="linux-amd64" />
 		</antcall>
+		<szip platform.name="linux-amd64" />
 	</target>
 	<target name="dist-macosx">
 		<antcall target="dist-generic">
 			<param name="platform.name" value="macosx" />
 		</antcall>
+		<mkdir dir="dist/jpcsp-macosx/Jpcsp.app" />
+		<copy todir="dist/jpcsp-macosx/Jpcsp.app">
+			<fileset dir="distsupport/macosx">
+				<include name="**" />
+				<exclude name="Contents/Info.plist" />
+			</fileset>
+		</copy>
+		<pathconvert property="jpcsp.libraries" dirsep="/" pathsep="&lt;/string>${line.separator}&#x0009;&#x0009;&#x0009;&lt;string>">
+			<map from="${basedir}" to="$JAVAROOT"/>
+			<path location="${basedir}/bin/jpcsp.jar" />
+			<path refid="Jpcsp.classpath" />
+		</pathconvert>
+		<svnversion outputproperty="jpcsp.revision" />
+		<copy file="distsupport/macosx/Contents/Info.plist"
+			tofile="dist/jpcsp-macosx/Jpcsp.app/Contents/Info.plist" >
+			<filterchain>
+				<replacetokens>
+					<token key="major.version" value="${jpcsp.version}" />
+					<token key="minor.version" value="${jpcsp.revision}" />
+					<token key="libraries" value="${jpcsp.libraries}" />
+				</replacetokens>
+			</filterchain>
+		</copy>
+		<move todir="dist/jpcsp-macosx/Jpcsp.app/Contents/Resources/Java">
+			<fileset dir="dist/jpcsp-macosx">
+				<include name="**" />
+				<exclude name="Jpcsp.app/**" />
+			</fileset>
+		</move>
+		<tar destfile="dist/jpcsp-${jpcsp.revision}-macosx.tar">
+			<tarfileset dir="dist/jpcsp-macosx" filemode="755">
+				<include name="Jpcsp.app/Contents/MacOS/JavaApplicationStub"/>
+			</tarfileset>
+			<tarfileset dir="dist/jpcsp-macosx">
+				<include name="**" />
+				<exclude name="Jpcsp.app/Contents/MacOS/JavaApplicationStub"/>
+			</tarfileset>
+		</tar>
+		<szip platform.name="macosx" basedir="jpcsp-${jpcsp.revision}-macosx.tar" />
+		<delete file="dist/jpcsp-${jpcsp.revision}-macosx.tar" />
 	</target>
 </project>
