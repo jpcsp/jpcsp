@@ -31,7 +31,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_READ_ONLY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UNSUPPORTED_OPERATION;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MISC;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
@@ -911,7 +911,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
             // wait type
-            currentThread.waitType = PSP_WAIT_MISC;
+            currentThread.waitType = PSP_WAIT_EVENTFLAG;
 
             // Go to wait state
             int timeout = 0;

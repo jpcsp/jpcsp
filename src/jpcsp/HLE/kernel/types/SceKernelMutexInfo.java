@@ -20,50 +20,49 @@ import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.util.Utilities;
 
-// this is all guessed
 public class SceKernelMutexInfo {
 
-    // PSP info
     public int size = 52;
     public String name;
     public int attr;
+    public int initCount;
+    public int lockedCount;
     public int numWaitThreads;
-    public int locked;
+
+    public final int uid;
     public int threadid;
 
-    // Internal info
-    public final int uid;
-
-    public SceKernelMutexInfo(String name, int attr) {
+    public SceKernelMutexInfo(String name, int count, int attr) {
         this.name = name;
         this.attr = attr;
 
+        initCount = count;
+        lockedCount = count;
         numWaitThreads = 0;
-        locked = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-Mutex");
     }
 
     public void read(Memory mem, int address) {
-        size  	        = mem.read32(address);
-        name            = Utilities.readStringNZ(mem, address + 4, 31);
-        attr            = mem.read32(address + 36);
-        numWaitThreads  = mem.read32(address + 40);
-        locked          = mem.read32(address + 44);
-        threadid        = mem.read32(address + 48);
+        size = mem.read32(address);
+        name = Utilities.readStringNZ(mem, address + 4, 31);
+        attr = mem.read32(address + 36);
+        initCount = mem.read32(address + 40);
+        lockedCount = mem.read32(address + 44);
+        numWaitThreads = mem.read32(address + 48);
     }
 
     public void write(Memory mem, int address) {
         mem.write32(address, size);
         Utilities.writeStringNZ(mem, address + 4, 32, name);
         mem.write32(address + 36, attr);
-        mem.write32(address + 40, numWaitThreads);
-        mem.write32(address + 44, locked);
-        mem.write32(address + 48, threadid);
+        mem.write32(address + 40, initCount);
+        mem.write32(address + 44, lockedCount);
+        mem.write32(address + 48, numWaitThreads);
     }
 
-	@Override
-	public String toString() {
-		return String.format("SceKernelMutexInfo(uid=%x, name=%s, locked=%d, numWaitThreads=%d, attr=0x%X", uid, name, locked, numWaitThreads, attr);
-	}
+    @Override
+    public String toString() {
+        return String.format("SceKernelMutexInfo(uid=%x, name=%s, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X", uid, name, initCount, lockedCount, numWaitThreads, attr);
+    }
 }

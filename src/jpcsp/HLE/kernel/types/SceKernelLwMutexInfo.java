@@ -22,56 +22,56 @@ import jpcsp.util.Utilities;
 
 public class SceKernelLwMutexInfo {
 
-    // PSP info
-    public int size = 52;
+    public int size = 60;
     public String name;
     public int attr;
-    public int mutexUid;
-    public int mutexOpaqueWorkAreaAddr;
+    public int lwMutexUid;
+    public int lwMutexOpaqueWorkAreaAddr;
+    public int initCount;
+    public int lockedCount;
     public int numWaitThreads;
-    public int locked;
+
+    public final int uid;
     public int threadid;
 
-    // Internal info
-    public final int uid;
-
-    public SceKernelLwMutexInfo(int workArea, String name, int attr) {
+    public SceKernelLwMutexInfo(int workArea, String name, int count, int attr) {
         Memory mem = Memory.getInstance();
-        this.mutexOpaqueWorkAreaAddr = workArea;
+        this.lwMutexOpaqueWorkAreaAddr = workArea;
         this.name = name;
         this.attr = attr;
 
+        initCount = count;
+        lockedCount = count;
         numWaitThreads = 0;
-        locked = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-LwMutex");
-        mem.write32(mutexOpaqueWorkAreaAddr, uid);
+        mem.write32(lwMutexOpaqueWorkAreaAddr, uid);
     }
 
     public void read(Memory mem, int address) {
-        size                    = mem.read32(address);
-        name                    = Utilities.readStringNZ(mem, address + 4, 31);
-        attr                    = mem.read32(address + 36);
-        mutexUid                = mem.read32(address + 40);
-        mutexOpaqueWorkAreaAddr = mem.read32(address + 44);
-        numWaitThreads          = mem.read32(address + 48);
-        locked                  = mem.read32(address + 52);
-        threadid                = mem.read32(address + 56);
+        size = mem.read32(address);
+        name = Utilities.readStringNZ(mem, address + 4, 31);
+        attr = mem.read32(address + 36);
+        lwMutexUid = mem.read32(address + 40);
+        lwMutexOpaqueWorkAreaAddr = mem.read32(address + 44);
+        initCount = mem.read32(address + 48);
+        lockedCount = mem.read32(address + 52);
+        numWaitThreads = mem.read32(address + 56);
     }
 
     public void write(Memory mem, int address) {
         mem.write32(address, size);
         Utilities.writeStringNZ(mem, address + 4, 32, name);
         mem.write32(address + 36, attr);
-        mem.write32(address + 40, mutexUid);
-        mem.write32(address + 44, mutexOpaqueWorkAreaAddr);
-        mem.write32(address + 48, numWaitThreads);
-        mem.write32(address + 52, locked);
-        mem.write32(address + 56, threadid);
+        mem.write32(address + 40, lwMutexUid);
+        mem.write32(address + 44, lwMutexOpaqueWorkAreaAddr);
+        mem.write32(address + 48, initCount);
+        mem.write32(address + 52, lockedCount);
+        mem.write32(address + 56, numWaitThreads);
     }
 
-	@Override
-	public String toString() {
-		return String.format("SceKernelLwMutexInfo(uid=%x, name=%s, locked=%d, numWaitThreads=%d, attr=0x%X", uid, name, locked, numWaitThreads, attr);
-	}
+    @Override
+    public String toString() {
+        return String.format("SceKernelLwMutexInfo(uid=%x, name=%s, mutexUid=%x, lwMutexOpaqueWorkAreaAddr=0x%X, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X", uid, name, lwMutexUid, lwMutexOpaqueWorkAreaAddr, initCount, lockedCount, numWaitThreads, attr);
+    }
 }

@@ -19,6 +19,8 @@ package jpcsp.HLE.modules500;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -58,11 +60,16 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 
 		int cycleNum = cpu.gpr[4];  // Number of VSYNCs to wait before blocking the thread on VBLANK.
 
-        log.warn("PARTIAL: sceDisplayWaitVblankStartMulti cycleNum=" + cycleNum);
+        if(log.isDebugEnabled()) {
+            log.debug("sceDisplayWaitVblankStartMulti cycleNum=" + cycleNum);
+        }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
-
-        blockCurrentThreadOnVblank(false);
+        blockCurrentThreadOnVblankMulti(cycleNum, false);
 	}
 
 	public void sceDisplayWaitVblankStartMultiCB(Processor processor) {
@@ -70,11 +77,16 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 
 		int cycleNum = cpu.gpr[4];   // Number of VSYNCs to wait before blocking the thread on VBLANK.
 
-        log.warn("PARTIAL: sceDisplayWaitVblankStartMultiCB cycleNum=" + cycleNum);
+        if(log.isDebugEnabled()) {
+            log.debug("sceDisplayWaitVblankStartMultiCB cycleNum=" + cycleNum);
+        }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
-
-        blockCurrentThreadOnVblank(true);
+        blockCurrentThreadOnVblankMulti(cycleNum, true);
 	}
 
 	public final HLEModuleFunction sceDisplayWaitVblankStartMultiFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMulti") {

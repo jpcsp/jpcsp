@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.managers;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_NOT_FOUND;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_LOCK_OVERFLOW;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_LOCKED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_RECURSIVE_NOT_ALLOWED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_UNLOCKED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_UNLOCK_UNDERFLOW;
@@ -46,6 +46,7 @@ public class LwMutexManager {
 
     private HashMap<Integer, SceKernelLwMutexInfo> lwMutexMap;
     private LwMutexWaitStateChecker lwMutexWaitStateChecker;
+
     private final static int PSP_LWMUTEX_ATTR_FIFO = 0;
     private final static int PSP_LWMUTEX_ATTR_PRIORITY = 0x100;
     private final static int PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE = 0x200;
@@ -91,9 +92,18 @@ public class LwMutexManager {
     }
 
     private boolean tryLockLwMutex(SceKernelLwMutexInfo info, int count, SceKernelThreadInfo thread) {
-        if (info.locked == 0 || (info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) == PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
-            info.threadid = thread.uid;
-            info.locked += count;
+        if (info.lockedCount == 0) {
+            // If the lwmutex is not locked, allow this thread to lock it.
+        	info.threadid = thread.uid;
+            info.lockedCount += count;
+            return true;
+        } else if (info.threadid == thread.uid) {
+            // If the lwmutex is already locked, but it's trying to be locked by the same thread
+            // that acquired it initially, check if recursive locking is allowed.
+            // If not, don't increase this lwmutex's lock count, but still return true.
+            if(((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) == PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE)) {
+                info.lockedCount += count;
+            }
             return true;
         }
         return false;
@@ -103,7 +113,6 @@ public class LwMutexManager {
         if (info.numWaitThreads <= 0) {
             return;
         }
-
         if (wakeAll) {
             for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
@@ -120,10 +129,9 @@ public class LwMutexManager {
                     Modules.ThreadManForUserModule.hleChangeThreadState(thread, PSP_THREAD_READY);
                 }
             }
-            // No thread is having control of LwMutex
+            // No thread is having control of LwMutex.
             info.threadid = -1;
         } else {
-
             if ((info.attr & PSP_LWMUTEX_ATTR_FIFO) == PSP_LWMUTEX_ATTR_FIFO) {
                 for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
@@ -131,6 +139,8 @@ public class LwMutexManager {
                             thread.wait.waitingOnLwMutex &&
                             thread.wait.LwMutex_id == info.uid &&
                             tryLockLwMutex(info, thread.wait.LwMutex_count, thread)) {
+                        // New thread is taking control of LwMutex.
+                        info.threadid = thread.uid;
                         // Update numWaitThreads
                         info.numWaitThreads--;
                         // Untrack
@@ -139,7 +149,6 @@ public class LwMutexManager {
                         thread.cpuContext.gpr[2] = 0;
                         // Wakeup
                         Modules.ThreadManForUserModule.hleChangeThreadState(thread, PSP_THREAD_READY);
-                        break;
                     }
                 }
             } else if ((info.attr & PSP_LWMUTEX_ATTR_PRIORITY) == PSP_LWMUTEX_ATTR_PRIORITY) {
@@ -149,6 +158,8 @@ public class LwMutexManager {
                             thread.wait.waitingOnLwMutex &&
                             thread.wait.LwMutex_id == info.uid &&
                             tryLockLwMutex(info, thread.wait.LwMutex_count, thread)) {
+                        // New thread is taking control of LwMutex.
+                        info.threadid = thread.uid;
                         // Update numWaitThreads
                         info.numWaitThreads--;
                         // Untrack
@@ -157,7 +168,6 @@ public class LwMutexManager {
                         thread.cpuContext.gpr[2] = 0;
                         // Wakeup
                         Modules.ThreadManForUserModule.hleChangeThreadState(thread, PSP_THREAD_READY);
-                        break;
                     }
                 }
             }
@@ -211,7 +221,7 @@ public class LwMutexManager {
                     if ((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) != PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
                         cpu.gpr[2] = ERROR_LWMUTEX_RECURSIVE_NOT_ALLOWED;
                     } else {
-                        cpu.gpr[2] = ERROR_LWMUTEX_LOCK_OVERFLOW;
+                        cpu.gpr[2] = ERROR_LWMUTEX_LOCKED;
                     }
                 }
             } else {
@@ -232,10 +242,9 @@ public class LwMutexManager {
             Modules.log.debug("sceKernelCreateLwMutex (workAreaAddr='" + Integer.toHexString(workAreaAddr) + "', name='" + name + "', attr=0x" + Integer.toHexString(attr) + ", count=0x" + Integer.toHexString(count) + ", option_addr=0x" + Integer.toHexString(option_addr) + ")");
         }
 
-        SceKernelLwMutexInfo info = new SceKernelLwMutexInfo(workAreaAddr, name, attr);
+        SceKernelLwMutexInfo info = new SceKernelLwMutexInfo(workAreaAddr, name, count, attr);
         lwMutexMap.put(info.uid, info);
 
-        info.locked = count;
         info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
 
         cpu.gpr[2] = info.uid;
@@ -302,20 +311,18 @@ public class LwMutexManager {
         if (info == null) {
             Modules.log.warn("sceKernelUnlockLwMutex unknown uid");
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
-        } else if (info.locked == 0) {
+        } else if (info.lockedCount == 0) {
             Modules.log.warn("sceKernelUnlockLwMutex not locked");
             cpu.gpr[2] = ERROR_LWMUTEX_UNLOCKED;
+        } else if (info.lockedCount < 0) {
+            Modules.log.warn("sceKernelUnlockLwMutex underflow");
+            cpu.gpr[2] = ERROR_LWMUTEX_UNLOCK_UNDERFLOW;
         } else {
-            info.locked -= count;
-            if (info.locked < 0) {
-                Modules.log.warn("sceKernelUnlockLwMutex underflow " + info.locked);
-                info.locked = ERROR_LWMUTEX_UNLOCK_UNDERFLOW;
-            } else if (info.locked == 0) {
+            info.lockedCount -= count;
+            if (info.lockedCount == 0) {
                 wakeWaitMutexThreads(info, false);
-                cpu.gpr[2] = 0;
-            } else {
-                cpu.gpr[2] = 0;
             }
+            cpu.gpr[2] = 0;
         }
     }
 
@@ -379,8 +386,8 @@ public class LwMutexManager {
                 return false;
             }
 
-            // Check the lwmutex
-            if (!tryLockLwMutex(info, wait.LwMutex_count, thread)) {
+            // Check the lwmutex.
+            if (tryLockLwMutex(info, wait.LwMutex_count, thread)) {
                 info.numWaitThreads--;
                 thread.cpuContext.gpr[2] = 0;
                 return false;
