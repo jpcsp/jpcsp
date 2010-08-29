@@ -603,7 +603,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         // 6 -> Echo (uses feedback).
         // 7 -> Delay (uses delay).
         // 8 -> "Pipe" effect.
-        log.debug("__sceSasRevType(sasCore=" + sasCore + ", type=" + type + ")");
+        log.debug("__sceSasRevType(sasCore=0x" + Integer.toHexString(sasCore) + ", type=" + type + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -748,7 +748,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int unk = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug("PARTIAL:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk=0x" + Integer.toHexString(unk) + ")");
+            log.debug("__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk=0x" + Integer.toHexString(unk) + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -1102,7 +1102,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int sasCore = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore));
+            log.debug("__sceSasGetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -1123,7 +1123,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int mode = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasSetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + "): mode=" + mode);
+            log.debug("__sceSasSetOutputmode(sasCore=0x" + Integer.toHexString(sasCore) + ", mode=" + mode + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {

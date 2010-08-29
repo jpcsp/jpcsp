@@ -87,7 +87,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
 
         }
     }
-    
+
     @Override
     public void start() {
     	umdActivated = false;
@@ -269,7 +269,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
             // wait type
-            currentThread.waitType = SceKernelThreadInfo.PSP_WAIT_MISC;
+            currentThread.waitType = SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
 
             // Go to wait state
             threadMan.hleKernelThreadWait(currentThread, timeout, !doTimeout);

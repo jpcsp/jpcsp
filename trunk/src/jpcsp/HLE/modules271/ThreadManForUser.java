@@ -92,7 +92,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
 
     public void sceKernelCancelMutex(Processor processor) {
         int[] gpr = processor.cpu.gpr;
-        Managers.mutex.sceKernelCancelMutex(gpr[4]);
+        Managers.mutex.sceKernelCancelMutex(gpr[4], gpr[5], gpr[6]);
     }
 
     public void sceKernelReferMutexStatus(Processor processor) {

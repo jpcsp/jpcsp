@@ -1416,7 +1416,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                     name.contains("at3") || name.contains("atrac") ||
                     name.contains("sas") || name.contains("wave") ||
                     name.contains("audio") || name.contains("mpeg") ||
-                    name.contains("fmod")) {
+                    name.contains("fmod") || name.contains("mp3")) {
                 return true;
             }
 
@@ -4057,7 +4057,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public void sceKernelReferThreadProfiler(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("Unimplemented sceKernelReferThreadProfiler");
+        // Can be safely ignored. Only valid in debug mode on a real PSP.
+        if(log.isDebugEnabled()) {
+            log.debug("sceKernelReferThreadProfiler");
+        }
 
         cpu.gpr[2] = 0;
     }
@@ -4065,7 +4068,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public void sceKernelReferGlobalProfiler(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("Unimplemented sceKernelReferGlobalProfiler");
+        // Can be safely ignored. Only valid in debug mode on a real PSP.
+        if(log.isDebugEnabled()) {
+            log.debug("sceKernelReferGlobalProfiler");
+        }
 
         cpu.gpr[2] = 0;
     }

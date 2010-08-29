@@ -63,7 +63,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_WAIT_SLEEP      = 0x01; // sleep thread
     public static final int PSP_WAIT_DELAY      = 0x02; // delay thread
     public static final int PSP_WAIT_SEMA       = 0x03; // wait sema
-    public static final int PSP_WAIT_MISC       = 0x04; // wait event flag, io, umd, vblank(?)
+    public static final int PSP_WAIT_EVENTFLAG  = 0x04; // wait event flag
     public static final int PSP_WAIT_MBX        = 0x05; // wait mbx
     public static final int PSP_WAIT_VPL        = 0x06; // wait vpl
     public static final int PSP_WAIT_FPL        = 0x07; // wait fpl

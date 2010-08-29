@@ -47,6 +47,7 @@ import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -111,7 +112,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     private int sync;
     private boolean setGeBufCalledAtLeastOnce;
     public boolean gotBadGeBufParams;
-    public boolean gotBadFbBufParams;    
+    public boolean gotBadFbBufParams;
     protected boolean isFbShowing;
 
     // additional variables
@@ -166,7 +167,12 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     private Semaphore displayLock;
     private boolean tryLockDisplay;
     private long tryLockTimestamp;
-    
+
+    // VBLANK Multi.
+    private int vblankMultiCurrentVcount;
+    private int vblankMultiCycleNum;
+    private int vblankMultiThreadID = -1;
+
     private static class AsyncDisplayThread extends Thread {
 		private Semaphore displaySemaphore;
 		private boolean run;
@@ -230,6 +236,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 	private class DisplayVblankAction implements IAction {
 		@Override
 		public void execute() {
+            // Check for previous VBLANK status (multi).
+            if(vblankMultiThreadID > 0) {
+                checkVblankMulti();
+            }
 			hleVblankStart();
 		}
 	}
@@ -247,7 +257,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 			return sceDisplay.this.vcount == vcount;
 		}
 	}
-    
+
     @Override
     public String getName() {
         return "sceDisplay";
@@ -306,12 +316,12 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     }
 
     public static final GLCapabilities capabilities = new GLCapabilities();
-    
+
     static {
     	capabilities.setStencilBits(8);
     	capabilities.setAlphaBits(8);
     }
-    
+
     public sceDisplay() {
     	super (capabilities);
 
@@ -334,7 +344,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         bufferwidthFb = 512;
         pixelformatFb = PSP_DISPLAY_PIXEL_FORMAT_8888;
         sync          = PSP_DISPLAY_SETBUF_IMMEDIATE;
-        
+
         bottomaddrFb = topaddrFb + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
 
         detailsDirty = true;
@@ -420,7 +430,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             lastUpdate = now;
         }
     }
-    
+
     public void step() {
     	step(false);
     }
@@ -609,7 +619,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         Buffer pixels = Memory.getInstance().getBuffer(topaddr, bottomaddr - topaddr);
         return pixels;
     }
-    
+
     public boolean isGeAddress(int address) {
         address &= Memory.addressMask;
         if (address >= topaddrGe && address < bottomaddrGe) {
@@ -839,7 +849,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
             texS1 = texS4 = texS;
             texT1 = texT2 = texT;
-            
+
             texS2 = texS3 = texT3 = texT4 = 0.0f;
         }
 
@@ -971,7 +981,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         // re.setViewMatrix(context.view_uploaded_matrix);
         // re.setModelMatrix(context.model_uploaded_matrix);
     }
-    
+
     protected void blockCurrentThreadOnVblank(boolean doCallbacks) {
     	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         int threadId = threadMan.getCurrentThreadID();
@@ -987,11 +997,37 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         	threadMan.hleBlockCurrentThread();
         }
     }
-    
+
+    protected void blockCurrentThreadOnVblankMulti(int cycles, boolean doCallbacks) {
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        // Save the current status.
+        vblankMultiCurrentVcount = vcount;
+        vblankMultiCycleNum = cycles;
+        vblankMultiThreadID = threadMan.getCurrentThreadID();
+        // Block the current thread.
+        if (doCallbacks) {
+        	threadMan.hleBlockCurrentThreadCB(null, new VblankWaitStateChecker(vcount));
+        } else {
+        	threadMan.hleBlockCurrentThread();
+        }
+    }
+
+    protected void checkVblankMulti() {
+        // If the current vcount matches the desired sum of cycles, add a new action.
+        if(vcount == (vblankMultiCurrentVcount + vblankMultiCycleNum)) {
+            // Add a Vblank action to unblock the thread.
+            UnblockThreadAction vblankAction = new UnblockThreadAction(vblankMultiThreadID);
+            IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+            // Reset the status.
+            vblankMultiCurrentVcount = 0;
+            vblankMultiCycleNum = 0;
+            vblankMultiThreadID = -1;
+        }
+    }
+
     private void hleVblankStart() {
     	lastVblankMicroTime = Emulator.getClock().microTime();
-
-    	// Vcount increases at each VBLANK
+    	// Vcount increases at each VBLANK.
     	vcount++;
     }
 
@@ -1173,28 +1209,33 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     public void sceDisplaySetMode(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int mode = cpu.gpr[4];
-        int width = cpu.gpr[5];
-        int height = cpu.gpr[6];
-        
-        log.debug("sceDisplaySetMode(mode=" + mode + ",width=" + width + ",height=" + height + ")");
+        int displayMode = cpu.gpr[4];
+        int displayWidth = cpu.gpr[5];
+        int displayHeight = cpu.gpr[6];
 
-        if (width <= 0 || height <= 0) {
+        log.debug("sceDisplaySetMode(mode=" + displayMode + ",width=" + displayWidth + ",height=" + displayHeight + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (displayWidth <= 0 || displayHeight <= 0) {
             cpu.gpr[2] = -1;
         } else {
-            this.mode   = mode;
-            this.width  = width;
-            this.height = height;
+            this.mode   = displayMode;
+            this.width  = displayWidth;
+            this.height = displayHeight;
 
             bottomaddrFb =
-                topaddrFb + bufferwidthFb * height *
+                topaddrFb + bufferwidthFb * displayHeight *
                 getPixelFormatBytes(pixelformatFb);
             pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
             detailsDirty = true;
 
-            if (mode != 0)
-                log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + mode);
+            if (displayMode != 0) {
+                log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + displayMode);
+            }
 
             cpu.gpr[2] = 0;
         }
@@ -1203,11 +1244,11 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     public void sceDisplayGetMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory memory = Processor.memory;
-        
+
         int modeAddr = cpu.gpr[4];
         int widthAddr = cpu.gpr[5];
         int heightAddr = cpu.gpr[6];
-        
+
         if (!memory.isAddressGood(modeAddr  ) ||
             !memory.isAddressGood(widthAddr ) ||
             !memory.isAddressGood(heightAddr))
@@ -1232,44 +1273,54 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplaySetHoldMode(Processor processor) {
         CpuState cpu = processor.cpu;
-        
-        int unk = cpu.gpr[4];
-        
-        log.warn("IGNORING: sceDisplaySetHoldMode unk=" + unk);
+
+        int holdMode = cpu.gpr[4];
+
+        log.warn("IGNORING: sceDisplaySetHoldMode holdMode=" + holdMode);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
     }
 
     public void sceDisplaySetResumeMode(Processor processor) {
         CpuState cpu = processor.cpu;
-        
-        int unk = cpu.gpr[4];
 
-        log.warn("IGNORING: sceDisplaySetResumeMode unk=" + unk);
+        int resumeMode = cpu.gpr[4];
+
+        log.warn("IGNORING: sceDisplaySetResumeMode resumeMode=" + resumeMode);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
     }
 
     public void sceDisplaySetFrameBuf(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int topaddr = cpu.gpr[4];
         int bufferwidth = cpu.gpr[5];
         int pixelformat = cpu.gpr[6];
-        int sync = cpu.gpr[7];
-        
-        cpu.gpr[2] = hleDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, sync);
+        int syncType = cpu.gpr[7];
+
+        cpu.gpr[2] = hleDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, syncType);
     }
 
-	public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int sync) {
+	public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
 		topaddr &= Memory.addressMask;
 
         if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
-            sync < 0 || sync > 1) {
+            syncType < 0 || syncType > 1) {
             log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ",bufferwidth=" + bufferwidth +
                 ",pixelformat=" + pixelformat +
-                ",sync=" + sync + ") bad params");
+                ",syncType=" + syncType + ") bad params");
             isFbShowing = false;
             gotBadFbBufParams = true;
             return -1;
@@ -1280,7 +1331,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                 ",bufferwidth=" + bufferwidth +
                 ",pixelformat=" + pixelformat +
-                ",sync=" + sync + ") bad params (topaddr==0)");
+                ",syncType=" + syncType + ") bad params (topaddr==0)");
             isFbShowing = false;
             gotBadFbBufParams = true;
             return 0;
@@ -1296,20 +1347,19 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
                     "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
                     ",bufferwidth=" + bufferwidth +
                     ",pixelformat=" + pixelformat +
-                    ",sync=" + sync + ") ok");
+                    ",syncType=" + syncType + ") ok");
             }
 
             if (pixelformat != pixelformatFb ||
                 bufferwidth != bufferwidthFb ||
-                Utilities.makePow2(height) != Utilities.makePow2(height))
-            {
+                Utilities.makePow2(height) != Utilities.makePow2(height)) {
                 createTex = true;
             }
 
             topaddrFb     = topaddr;
             bufferwidthFb = bufferwidth;
             pixelformatFb = pixelformat;
-            this.sync          = sync;
+            sync          = syncType;
 
             bottomaddrFb =
                 topaddr + bufferwidthFb * height *
@@ -1340,10 +1390,11 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         int topaddrAddr = cpu.gpr[4];
         int bufferwidthAddr = cpu.gpr[5];
         int pixelformatAddr = cpu.gpr[6];
-        int sync = cpu.gpr[7];
+        int syncType = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
-    		log.debug(String.format("sceDisplayGetFrameBuf topaddrAddr=0x%08X, bufferwidthAddr=0x%08X, pixelformatAddr=0x%08X, sync=%d", topaddrAddr, bufferwidthAddr, pixelformatAddr, sync));
+    		log.debug(String.format("sceDisplayGetFrameBuf topaddrAddr=0x%08X, bufferwidthAddr=0x%08X, pixelformatAddr=0x%08X, sync=%d",
+                    topaddrAddr, bufferwidthAddr, pixelformatAddr, syncType));
         }
 
         if (!mem.isAddressGood(topaddrAddr    ) ||
@@ -1360,7 +1411,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayIsForeground(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         if (log.isDebugEnabled()) {
     		log.debug("sceDisplayIsForeground ret: " + isFbShowing);
     	}
@@ -1369,10 +1420,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayGetBrightness(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         int leveladdr = cpu.gpr[4];
         int unkaddr = cpu.gpr[5];
-        
+
         log.warn("IGNORING: sceDisplayGetBrightness leveladdr=0x"
                 + Integer.toHexString(leveladdr) + ", unkaddr=0x"
                 + Integer.toHexString(unkaddr));
@@ -1387,7 +1438,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayIsVblank(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         cpu.gpr[2] = isVblank() ? 1 : 0;
 
         if (log.isDebugEnabled()) {
@@ -1397,11 +1448,15 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayWaitVblank(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblank");
         }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
     	if (!isVblank()) {
     		sceDisplayWaitVblankStart(processor);
@@ -1410,11 +1465,15 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayWaitVblankCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblankCB");
         }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
         if (!isVblank()) {
         	sceDisplayWaitVblankStartCB(processor);
@@ -1423,25 +1482,31 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayWaitVblankStart(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblankStart");
         }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
-
         blockCurrentThreadOnVblank(false);
     }
 
     public void sceDisplayWaitVblankStartCB(Processor processor) {
         CpuState cpu = processor.cpu;
-        
+
         if (log.isDebugEnabled()) {
         	log.debug("sceDisplayWaitVblankStartCB");
         }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
-
         blockCurrentThreadOnVblank(true);
     }
 
@@ -1458,6 +1523,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
     public void sceDisplayAdjustAccumulatedHcount(Processor processor) {
         CpuState cpu = processor.cpu;
+
         log.warn("UNIMPLEMENTED: sceDisplayAdjustAccumulatedHcount");
         cpu.gpr[2] = 0;
     }

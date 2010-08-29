@@ -1485,7 +1485,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             log.warn("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
             cpu.gpr[2] = -1;
         } else {
-            log.debug("PARTIAL:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
+            log.debug("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
 
             cpu.gpr[2] = 0;
             switch(id) {
@@ -1541,7 +1541,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             log.warn("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") bad address");
             cpu.gpr[2] = -1;
         } else {
-            log.debug("PARTIAL:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ")");
+            log.debug("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ")");
 
             cpu.gpr[2] = 0;
             switch(id) {
