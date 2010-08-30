@@ -16,7 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-public class SceKernelMsgPacket extends pspAbstractMemoryMappedStructure {
+import java.util.Comparator;
+
+public class SceKernelMsgPacket extends pspAbstractMemoryMappedStructure implements Comparator<SceKernelMsgPacket> {
 	public int nextMsgPacketAddr;
 	int msgPriority; // SceUChar
 
@@ -28,14 +30,19 @@ public class SceKernelMsgPacket extends pspAbstractMemoryMappedStructure {
 	}
 
 	@Override
-	public int sizeof() {
-		return 8;
-	}
-
-	@Override
 	protected void write() {
 		write32(nextMsgPacketAddr);
 		write8((byte) msgPriority);
 		writeUnknown(3);
 	}
+
+    @Override
+	public int sizeof() {
+		return 8;
+	}
+
+    @Override
+    public int compare(SceKernelMsgPacket m1, SceKernelMsgPacket m2) {
+        return m1.msgPriority - m2.msgPriority;
+    }
 }

@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import jpcsp.Memory;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
@@ -26,11 +29,12 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
     public int attr;
     public int numWaitThreads;
     private int numMessages;
-    private int firstMessage_addr;
+    private int firstMessageAddr;
 
     // Internal info
     public final int uid;
-    public int lastMessage_addr;
+    public int lastMessageAddr;
+    public ArrayList<SceKernelMsgPacket> msgQueue;
 
     public SceKernelMbxInfo(String name, int attr) {
         this.name = name;
@@ -38,8 +42,9 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
 
         numWaitThreads = 0;
         numMessages = 0;
-        firstMessage_addr = 0;
-        lastMessage_addr = 0;
+        firstMessageAddr = 0;
+        lastMessageAddr = 0;
+        msgQueue = new ArrayList<SceKernelMsgPacket>();
 
         uid = SceUidManager.getNewUid("ThreadMan-Mbx");
     }
@@ -52,7 +57,7 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
 		attr = read32();
 		numWaitThreads = read32();
 		numMessages = read32();
-		firstMessage_addr = read32();
+		firstMessageAddr = read32();
 	}
 
 	@Override
@@ -63,7 +68,7 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
 		write32(attr);
 		write32(numWaitThreads);
 		write32(numMessages);
-		write32(firstMessage_addr);
+		write32(firstMessageAddr);
 	}
 
 	@Override
@@ -72,21 +77,19 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
 	}
 
     public int removeMsg(Memory mem) {
-    	int msgAddr = firstMessage_addr;
-
+    	int msgAddr = firstMessageAddr;
     	if (msgAddr != 0) {
     		SceKernelMsgPacket packet = new SceKernelMsgPacket();
     		packet.read(mem, msgAddr);
-    		firstMessage_addr = packet.nextMsgPacketAddr;
-    		if (firstMessage_addr == 0) {
-    			lastMessage_addr = 0;
+    		firstMessageAddr = packet.nextMsgPacketAddr;
+    		if (firstMessageAddr == 0) {
+    			lastMessageAddr = 0;
     		}
     		packet.nextMsgPacketAddr = 0;
     		packet.write(mem);
-
+            msgQueue.remove(packet);
     		numMessages--;
     	}
-
     	return msgAddr;
     }
 
@@ -96,18 +99,42 @@ public class SceKernelMbxInfo extends pspAbstractMemoryMappedStructure {
     		packet.read(mem, msgAddr);
     		packet.nextMsgPacketAddr = 0;
     		packet.write(mem);
-
-    		if (lastMessage_addr == 0) {
-    			firstMessage_addr = msgAddr;
-    			lastMessage_addr = msgAddr;
+            msgQueue.add(packet);
+    		if (lastMessageAddr == 0) {
+    			firstMessageAddr = msgAddr;
+    			lastMessageAddr = msgAddr;
     		} else {
     			SceKernelMsgPacket lastPacket = new SceKernelMsgPacket();
-    			lastPacket.read(mem, lastMessage_addr);
+    			lastPacket.read(mem, lastMessageAddr);
     			lastPacket.nextMsgPacketAddr = msgAddr;
     			lastPacket.write(mem);
-    			lastMessage_addr = msgAddr;
+    			lastMessageAddr = msgAddr;
     		}
+    		numMessages++;
+    	}
+    }
 
+    public void addMsgByPriority(Memory mem, int msgAddr) {
+    	if (msgAddr != 0) {
+    		SceKernelMsgPacket packet = new SceKernelMsgPacket();
+    		packet.read(mem, msgAddr);
+    		packet.nextMsgPacketAddr = 0;
+    		packet.write(mem);
+            msgQueue.add(packet);
+            Collections.sort(msgQueue, packet);
+            if(msgQueue.get(0) != null) {
+                msgAddr = msgQueue.get(0).nextMsgPacketAddr;
+            }
+    		if (lastMessageAddr == 0) {
+    			firstMessageAddr = msgAddr;
+    			lastMessageAddr = msgAddr;
+    		} else {
+    			SceKernelMsgPacket lastPacket = new SceKernelMsgPacket();
+    			lastPacket.read(mem, lastMessageAddr);
+    			lastPacket.nextMsgPacketAddr = msgAddr;
+    			lastPacket.write(mem);
+    			lastMessageAddr = msgAddr;
+    		}
     		numMessages++;
     	}
     }
