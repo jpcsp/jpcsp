@@ -2325,6 +2325,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 break;
             }
+            // Check if the device is write protected (fatms0).
+            case 0x02425824: {
+                log.debug("sceIoDevctl check write protection (fatms0)");
+
+                if (!device.equals("fatms0:")) {
+                    cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS;
+                } else if (mem.isAddressGood(outdata_addr)) {
+                    // 0 - Device is not protected.
+                    // 1 - Device is protected.
+                    mem.write32(outdata_addr, 0);
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
             // Get MS capacity (fatms0).
             case 0x02425818: {
                 int sectorSize = 0x200;

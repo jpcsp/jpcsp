@@ -36,6 +36,7 @@ public class SceKernelErrors {
      *      -> 0x001 - File.
      *      -> 0x002 - Kernel.
      *      -> 0x011 - Utility.
+     *      -> 0x021 - UMD.
      *      -> 0x026 - Audio.
      *      -> 0x02b - Power.
      *      -> 0x041 - Wlan.
@@ -286,6 +287,8 @@ public class SceKernelErrors {
 
     public static final int ERROR_NETPARAM_BAD_NETCONF                          = 0x80110601;
     public static final int ERROR_NETPARAM_BAD_PARAM                            = 0x80110604;
+
+    public final static int ERROR_UMD_NOT_READY                                 = 0x80210001;
 
     public final static int ERROR_DEVCTL_BAD_PARAMS                             = 0x80220081;
 

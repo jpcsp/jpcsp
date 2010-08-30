@@ -16,13 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules200;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
+
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
+    protected boolean umdAllowReplace;
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
@@ -51,17 +53,26 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     public void sceUmdReplaceProhibit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED:sceUmdReplaceProhibit");
+        if(log.isDebugEnabled()) {
+            log.debug("sceUmdReplaceProhibit");
+        }
 
-        cpu.gpr[2] = 0;
+        umdAllowReplace = false;
+        if(getUmdStat() != PSP_UMD_READY) {
+            cpu.gpr[2] = ERROR_UMD_NOT_READY;
+        } else {
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceUmdReplacePermit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn(String.format("UNIMPLEMENTED:sceUmdReplacePermit"
-            + " %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+        if(log.isDebugEnabled()) {
+            log.debug("sceUmdReplacePermit");
+        }
 
+        umdAllowReplace = true;
         cpu.gpr[2] = 0;
     }
 
