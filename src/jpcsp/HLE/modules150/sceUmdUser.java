@@ -238,6 +238,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
         umdActivated = true;
         cpu.gpr[2] = 0;
+        Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
         checkWaitingThreads();
     }
 
