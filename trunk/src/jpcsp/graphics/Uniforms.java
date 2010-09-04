@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics;
 
 import jpcsp.graphics.RE.IRenderingEngine;
+import jpcsp.graphics.RE.StateProxy;
 
 public enum Uniforms {
 	zPos("psp_zPos"),
@@ -40,20 +41,27 @@ public enum Uniforms {
 	ctestMsk("ctestMsk"),
 	boneMatrix("psp_boneMatrix"),
 	weights("psp_weights"),
-	numberBones("psp_numberBones");
+	numberBones("psp_numberBones"),
+	vinfoColor("vinfoColor"),
+	vinfoPosition("vinfoPosition"),
+	vinfoTransform2D("vinfoTransform2D"),
+	positionScale("positionScale"),
+	normalScale("normalScale"),
+	textureScale("textureScale"),
+	weightScale("weightScale");
 
 	String uniformString;
-	int uniformId;
+	int[] uniformId = new int[StateProxy.maxProgramId];
 
 	Uniforms(String uniformString) {
 		this.uniformString = uniformString;
 	}
 
-	public int getId() {
-		return uniformId;
+	public int getId(int shaderProgram) {
+		return uniformId[shaderProgram];
 	}
 
 	public void allocateId(IRenderingEngine re, int shaderProgram) {
-		uniformId = re.getUniformLocation(shaderProgram, uniformString);
+		uniformId[shaderProgram] = re.getUniformLocation(shaderProgram, uniformString);
 	}
 }

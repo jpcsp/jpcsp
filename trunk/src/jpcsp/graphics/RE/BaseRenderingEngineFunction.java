@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import static jpcsp.graphics.GeCommands.PRIM_SPRITES;
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
@@ -41,16 +40,35 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
  *   only combined model-view matrix
  * - direct rendering mode
  * - implementation of the bounding box processing
+ *   (using OpenGL Query with a partial software implementation)
  * - mapping of setColorMask(int, int, int, int) to setColorMask(bool, bool, bool, bool)
+ *
+ * The partial software implementation for Bounding Boxes tries to find out
+ * if a bounding box is visible or not without using an OpenGL Query.
+ * The OpenGL queries have quite a large overhead to be setup and the software
+ * implementation solves the following bounding box cases:
+ * - if at least one bounding box vertex is visible,
+ *   the complete bounding box is visible
+ * - if all the bounding box vertices are not visible and are all placed on the
+ *   same side of a frustum plane, then the complete bounding box is not visible.
+ *   E.g.: all the vertices are hidden on the left side of the frustum.
+ *
+ *   If some vertices are hidden on different sides of the frustum (e.g. one on
+ *   the left side and one on the right side), the implementation cannot determine
+ *   if some pixels in between are visible or not. A complete intersection test is
+ *   necessary in that case. Remark: this could be implemented in software too.
+ *
+ * In all other cases, the OpenGL query has to be used to determine if the bounding
+ * box is visible or not.
  */
 public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
+	protected static final boolean usePartialSoftwareTestForBoundingBox = true;
+	protected static final boolean useQueryForBoundingBox = true;
 	protected IREBufferManager bufferManager;
 	protected boolean clearMode;
 	ClearModeContext clearModeContext = new ClearModeContext();
 	protected boolean directMode;
 	protected boolean directModeSetOrthoMatrix;
-	protected int bboxBuffer;
-	protected int bboxNumberVertex;
 	protected static final boolean[] flagsValidInClearMode = new boolean[] {
 		false, // GU_ALPHA_TEST
 		false, // GU_DEPTH_TEST
@@ -97,6 +115,21 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	protected boolean modelMatrixLoaded = false;
 	protected boolean queryAvailable;
 	protected int bboxQueryId;
+	protected boolean bboxQueryInitialized;
+	protected int bboxBuffer;
+	protected int numberOfVertexBoundingBox;
+	protected int bboxNumberVertex;
+	protected VisibilityTestResult bboxVisible;
+	protected float[] bboxCenter = new float[3];
+	protected enum VisibilityTestResult {
+		undefined,
+		visible,
+		notVisibleLeft,
+		notVisibleRight,
+		notVisibleTop,
+		notVisibleBottom,
+		mustUseQuery
+	};
 
 	public BaseRenderingEngineFunction(IRenderingEngine proxy) {
 		super(proxy);
@@ -384,146 +417,236 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
 	@Override
 	public boolean hasBoundingBox() {
-		return queryAvailable && super.hasBoundingBox();
+		return (usePartialSoftwareTestForBoundingBox ||
+		        (useQueryForBoundingBox && queryAvailable)) &&
+		       super.hasBoundingBox();
 	}
 
 	@Override
-	public void beginBoundingBox() {
-		// Bounding box should not be displayed, disable all drawings
-        re.startDirectRendering(false, false, false, false, false, 0, 0);
+	public void beginBoundingBox(int numberOfVertexBoundingBox) {
+		bboxQueryInitialized = false;
+		bboxVisible = VisibilityTestResult.undefined;
+		this.numberOfVertexBoundingBox = numberOfVertexBoundingBox;
 
-        re.beginQuery(bboxQueryId);
+        super.beginBoundingBox(numberOfVertexBoundingBox);
+	}
 
-        bufferManager.getBuffer(bboxBuffer).clear();
-        bboxNumberVertex = 0;
+	protected void initializeBoundingBoxQuery() {
+		if (!bboxQueryInitialized) {
+			// Bounding box should not be displayed, disable all drawings
+	        re.startDirectRendering(false, false, false, false, false, 0, 0);
 
-        super.beginBoundingBox();
+	        re.beginQuery(bboxQueryId);
+
+	        bufferManager.getBuffer(bboxBuffer).clear();
+	        bboxNumberVertex = 0;
+
+	        bboxQueryInitialized = true;
+		}
 	}
 
 	@Override
 	public void drawBoundingBox(float[][] values) {
-        //
-        // The bounding box is a cube defined by 8 vertices.
-        // It is not clear if the vertices have to be listed in a pre-defined order.
-        // Which primitive should be used?
-        // - GL_TRIANGLE_STRIP: we only draw 3 faces of the cube
-        // - GL_QUADS: how are organized the 8 vertices to draw all the cube faces?
-        //
+		boolean needQuery = true;
 
-		//
-        // Cube from BBOX:
-        //
-        // BBOX Front face:
-        //  2---3
-        //  |   |
-        //  |   |
-        //  0---1
-        //
-        // BBOX Back face:
-        //  6---7
-        //  |   |
-        //  |   |
-        //  4---5
-        //
-        // OpenGL QUAD:
-        //  3---2
-        //  |   |
-        //  |   |
-        //  0---1
-        //
+		if (usePartialSoftwareTestForBoundingBox) {
+			// The Bounding Box is visible if at least one vertex is visible.
+			//
+			// The Bounding Box is not visible if all the vertices are not visible
+			// under the same condition (e.g. all vertices not visible on the left).
+			//
+			// We must use the full query for complex cases, i.e. when none of the
+			// vertices are visible but under different conditions
+			// (e.g. one vertex on the left side and one right side: the middle
+			// could be visible)
+			if (bboxVisible != VisibilityTestResult.visible) {
+				for (int i = 0; i < values.length; i++) {
+					VisibilityTestResult vertexVisible = isVertexVisible(values[i]);
+					if (log.isDebugEnabled()) {
+						log.debug("BBOX Vertex #" + i + ": visible=" + vertexVisible);
+					}
+					if (vertexVisible == VisibilityTestResult.visible) {
+						bboxVisible = vertexVisible;
+						break;
+					} else if (bboxVisible == VisibilityTestResult.undefined) {
+						bboxVisible = vertexVisible;
+					} else if (vertexVisible != bboxVisible) {
+						bboxVisible = VisibilityTestResult.mustUseQuery;
+					}
+				}
+			}
 
-		FloatBuffer bboxVertexBuffer = bufferManager.getBuffer(bboxBuffer).asFloatBuffer();
+			// If we could not take any decision based on the vertices,
+			// check additionally if the bounding box center is visible...
+			if (bboxVisible == VisibilityTestResult.mustUseQuery) {
+				bboxCenter[0] = 0;
+				bboxCenter[1] = 0;
+				bboxCenter[2] = 0;
+				for (int i = 0; i < values.length; i++) {
+					bboxCenter[0] += values[i][0];
+					bboxCenter[1] += values[i][1];
+					bboxCenter[2] += values[i][2];
+				}
+				bboxCenter[0] /= values.length;
+				bboxCenter[1] /= values.length;
+				bboxCenter[2] /= values.length;
 
-		// Front face
-        bboxVertexBuffer.put(values[0]);
-        bboxVertexBuffer.put(values[1]);
-        bboxVertexBuffer.put(values[3]);
-        bboxVertexBuffer.put(values[2]);
+				VisibilityTestResult centerVisible = isVertexVisible(bboxCenter);
+				if (log.isDebugEnabled()) {
+					log.debug("BBOX Center: visible=" + centerVisible);
+				}
+				if (centerVisible == VisibilityTestResult.visible) {
+					// If the center is visible, the bounding box is visible!
+					bboxVisible = centerVisible;
+				}
+			}
 
-        // Back face
-        bboxVertexBuffer.put(values[4]);
-        bboxVertexBuffer.put(values[5]);
-        bboxVertexBuffer.put(values[7]);
-        bboxVertexBuffer.put(values[6]);
+			if (bboxVisible == VisibilityTestResult.visible) {
+				needQuery = false;
+			} else if (bboxVisible != VisibilityTestResult.mustUseQuery && numberOfVertexBoundingBox == values.length) {
+				needQuery = false;
+			}
+		}
 
-        // Right face
-        bboxVertexBuffer.put(values[1]);
-        bboxVertexBuffer.put(values[5]);
-        bboxVertexBuffer.put(values[7]);
-        bboxVertexBuffer.put(values[3]);
+		if (useQueryForBoundingBox && needQuery) {
+			initializeBoundingBoxQuery();
+			//
+	        // The bounding box is a cube defined by 8 vertices.
+	        // It is not clear if the vertices have to be listed in a pre-defined order.
+	        // Which primitive should be used?
+	        // - GL_TRIANGLE_STRIP: we only draw 3 faces of the cube
+	        // - GL_QUADS: how are organized the 8 vertices to draw all the cube faces?
+	        //
 
-        // Left face
-        bboxVertexBuffer.put(values[0]);
-        bboxVertexBuffer.put(values[4]);
-        bboxVertexBuffer.put(values[6]);
-        bboxVertexBuffer.put(values[2]);
+			//
+	        // Cube from BBOX:
+	        //
+	        // BBOX Front face:
+	        //  2---3
+	        //  |   |
+	        //  |   |
+	        //  0---1
+	        //
+	        // BBOX Back face:
+	        //  6---7
+	        //  |   |
+	        //  |   |
+	        //  4---5
+	        //
+	        // OpenGL QUAD:
+	        //  3---2
+	        //  |   |
+	        //  |   |
+	        //  0---1
+	        //
 
-        // Top face
-        bboxVertexBuffer.put(values[2]);
-        bboxVertexBuffer.put(values[3]);
-        bboxVertexBuffer.put(values[7]);
-        bboxVertexBuffer.put(values[6]);
+			FloatBuffer bboxVertexBuffer = bufferManager.getBuffer(bboxBuffer).asFloatBuffer();
 
-        // Bottom face
-        bboxVertexBuffer.put(values[0]);
-        bboxVertexBuffer.put(values[1]);
-        bboxVertexBuffer.put(values[5]);
-        bboxVertexBuffer.put(values[4]);
+			// Front face
+	        bboxVertexBuffer.put(values[0]);
+	        bboxVertexBuffer.put(values[1]);
+	        bboxVertexBuffer.put(values[3]);
+	        bboxVertexBuffer.put(values[2]);
 
-        bboxNumberVertex += 6 * 4;
+	        // Back face
+	        bboxVertexBuffer.put(values[4]);
+	        bboxVertexBuffer.put(values[5]);
+	        bboxVertexBuffer.put(values[7]);
+	        bboxVertexBuffer.put(values[6]);
+
+	        // Right face
+	        bboxVertexBuffer.put(values[1]);
+	        bboxVertexBuffer.put(values[5]);
+	        bboxVertexBuffer.put(values[7]);
+	        bboxVertexBuffer.put(values[3]);
+
+	        // Left face
+	        bboxVertexBuffer.put(values[0]);
+	        bboxVertexBuffer.put(values[4]);
+	        bboxVertexBuffer.put(values[6]);
+	        bboxVertexBuffer.put(values[2]);
+
+	        // Top face
+	        bboxVertexBuffer.put(values[2]);
+	        bboxVertexBuffer.put(values[3]);
+	        bboxVertexBuffer.put(values[7]);
+	        bboxVertexBuffer.put(values[6]);
+
+	        // Bottom face
+	        bboxVertexBuffer.put(values[0]);
+	        bboxVertexBuffer.put(values[1]);
+	        bboxVertexBuffer.put(values[5]);
+	        bboxVertexBuffer.put(values[4]);
+
+	        bboxNumberVertex += 6 * 4;
+		}
 
         super.drawBoundingBox(values);
 	}
 
 	@Override
 	public void endBoundingBox() {
-		re.bindBuffer(0);
-        re.disableClientState(IRenderingEngine.RE_TEXTURE);
-        re.disableClientState(IRenderingEngine.RE_COLOR);
-        re.disableClientState(IRenderingEngine.RE_NORMAL);
-        re.enableClientState(IRenderingEngine.RE_VERTEX);
-        bufferManager.setVertexPointer(bboxBuffer, 3, IRenderingEngine.RE_FLOAT, 3 * SIZEOF_FLOAT, 0);
-        bufferManager.setBufferData(bboxBuffer, bboxNumberVertex * 3 * SIZEOF_FLOAT, bufferManager.getBuffer(bboxBuffer).rewind(), RE_DYNAMIC_DRAW);
-        re.drawArrays(PRIM_SPRITES, 0, bboxNumberVertex);
+		if (bboxQueryInitialized) {
+			re.bindBuffer(0);
+	        re.disableClientState(IRenderingEngine.RE_TEXTURE);
+	        re.disableClientState(IRenderingEngine.RE_COLOR);
+	        re.disableClientState(IRenderingEngine.RE_NORMAL);
+	        re.enableClientState(IRenderingEngine.RE_VERTEX);
+	        bufferManager.setVertexPointer(bboxBuffer, 3, IRenderingEngine.RE_FLOAT, 3 * SIZEOF_FLOAT, 0);
+	        bufferManager.setBufferData(bboxBuffer, bboxNumberVertex * 3 * SIZEOF_FLOAT, bufferManager.getBuffer(bboxBuffer).rewind(), RE_DYNAMIC_DRAW);
+	        re.drawArrays(RE_QUADS, 0, bboxNumberVertex);
 
-        re.endQuery();
-        re.endDirectRendering();
+	        re.endQuery();
+	        re.endDirectRendering();
+		}
 
         super.endBoundingBox();
 	}
 
 	@Override
 	public boolean isBoundingBoxVisible() {
-        boolean resultAvailable = false;
         boolean isVisible = true;
 
-        // Wait for query result available
-        for (int i = 0; i < 10000; i++) {
-        	resultAvailable = re.getQueryResultAvailable(bboxQueryId);
-            if (log.isTraceEnabled()) {
-                log.trace("glGetQueryObjectiv result available " + resultAvailable);
-            }
+        if (usePartialSoftwareTestForBoundingBox && bboxVisible != VisibilityTestResult.mustUseQuery) {
+        	isVisible = (bboxVisible == VisibilityTestResult.visible);
+        	if (log.isDebugEnabled()) {
+        		log.debug("Used software test for BBOX, visible=" + isVisible);
+        	}
+        } else if (bboxQueryInitialized) {
+        	if (usePartialSoftwareTestForBoundingBox && log.isDebugEnabled()) {
+        		log.debug("Failed to use software test for BBOX");
+        	}
 
-            if (resultAvailable) {
-                // Retrieve query result (number of visible samples)
-                int result = re.getQueryResult(bboxQueryId);
-                if (log.isTraceEnabled()) {
-                    log.trace("glGetQueryObjectiv result " + result);
-                }
+        	boolean resultAvailable = false;
 
-                // 0 samples visible means the bounding box was occluded (not visible)
-                if (result == 0) {
-                	isVisible = false;
-                }
-                break;
-            }
-        }
+	        // Wait for query result available
+	        for (int i = 0; i < 20000; i++) {
+	        	resultAvailable = re.getQueryResultAvailable(bboxQueryId);
+	            if (log.isTraceEnabled()) {
+	                log.trace("glGetQueryObjectiv result available " + resultAvailable);
+	            }
 
-        if (!resultAvailable) {
-            if (log.isEnabledFor(Level.WARN)) {
-                log.warn("BoundingBox Query result not available in due time");
-            }
-        }
+	            if (resultAvailable) {
+	                // Retrieve query result (number of visible samples)
+	                int result = re.getQueryResult(bboxQueryId);
+	                if (log.isTraceEnabled()) {
+	                    log.trace("glGetQueryObjectiv result " + result);
+	                }
+
+	                // 0 samples visible means the bounding box was occluded (not visible)
+	                if (result == 0) {
+	                	isVisible = false;
+	                }
+	                break;
+	            }
+	        }
+
+	        if (!resultAvailable) {
+	            if (log.isEnabledFor(Level.WARN)) {
+	                log.warn("BoundingBox Query result not available in due time");
+	            }
+	        }
+		}
 
         return isVisible && super.isBoundingBoxVisible();
 	}
@@ -531,5 +654,64 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	@Override
 	public IREBufferManager getBufferManager() {
 		return bufferManager;
+	}
+
+	@Override
+	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
+        re.setTexEnv(RE_TEXENV_RGB_SCALE, colorDoubled ? 2.0f : 1.0f);
+        re.setTexEnv(RE_TEXENV_ENV_MODE, func);
+		super.setTextureFunc(func, alphaUsed, colorDoubled);
+	}
+
+	protected static void multMatrix44(float[] result4, float[] matrix44, float[] vector4) {
+		float x = vector4[0];
+		float y = vector4[1];
+		float z = vector4[2];
+		float w = vector4.length < 4 ? 1.f : vector4[3];
+		result4[0] = matrix44[0] * x + matrix44[4] * y + matrix44[ 8] * z + matrix44[12] * w;
+		result4[1] = matrix44[1] * x + matrix44[5] * y + matrix44[ 9] * z + matrix44[13] * w;
+		result4[2] = matrix44[2] * x + matrix44[6] * y + matrix44[10] * z + matrix44[14] * w;
+		result4[3] = matrix44[3] * x + matrix44[7] * y + matrix44[11] * z + matrix44[15] * w;
+	}
+
+	protected VisibilityTestResult isVertexVisible(float[] vertex) {
+		float[] mVertex = new float[4];
+		float[] mvVertex = new float[4];
+		float[] mvpVertex = new float[4];
+
+		multMatrix44(mVertex, context.model_uploaded_matrix, vertex);
+		multMatrix44(mvVertex, context.view_uploaded_matrix, mVertex);
+		multMatrix44(mvpVertex, context.proj_uploaded_matrix, mvVertex);
+
+		float w = mvpVertex[3];
+		if (w != 0.f) {
+			float viewportX = context.viewport_cx - context.offset_x;
+			float viewportWidth = context.viewport_width;
+			float windowX = (mvpVertex[0] / w * 0.5f + 0.5f) * viewportWidth + viewportX;
+			if (log.isTraceEnabled()) {
+				log.trace("isVertexVisible windows X=" + windowX);
+			}
+			if (windowX < context.region_x1) {
+				return VisibilityTestResult.notVisibleLeft;
+			}
+			if (windowX > context.region_x2) {
+				return VisibilityTestResult.notVisibleRight;
+			}
+
+			float viewportY = context.viewport_cy - context.offset_y;
+			float viewportHeight = context.viewport_height;
+			float windowY = (mvpVertex[1] / w * 0.5f + 0.5f) * viewportHeight + viewportY;
+			if (log.isTraceEnabled()) {
+				log.trace("isVertexVisible windows Y=" + windowY);
+			}
+			if (windowY < context.region_y1) {
+				return VisibilityTestResult.notVisibleBottom;
+			}
+			if (windowY > context.region_y2) {
+				return VisibilityTestResult.notVisibleTop;
+			}
+		}
+
+		return VisibilityTestResult.visible;
 	}
 }

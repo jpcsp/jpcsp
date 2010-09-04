@@ -29,7 +29,6 @@ import com.jidesoft.swing.FolderChooser;
  */
 public class SettingsGUI extends javax.swing.JFrame {
 	private static final long serialVersionUID = -732715495873159718L;
-    private MainGUI mainWindow = null;
     
     /** Creates new form SettingsGUI */
     public SettingsGUI() {
@@ -50,11 +49,11 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.useshaders");
         shadersCheck.setSelected(enabled);
         
+        enabled = Settings.getInstance().readBool("emu.useGeometryShader");
+        geometryShaderCheck.setSelected(enabled);
+        
         enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
         filelogCheck.setSelected(enabled);
-        
-        enabled = Settings.getInstance().readBool("emu.disablege");
-        disableGECheck.setSelected(enabled);
         
         enabled = Settings.getInstance().readBool("emu.disablevbo");
         disableVBOCheck.setSelected(enabled);
@@ -95,10 +94,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         umdpath.setText(Settings.getInstance().readString("emu.umdpath"));
     }
     
-    public void setMainGUI(MainGUI mainWindow) {
-        this.mainWindow = mainWindow;
-    }
-    
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -124,11 +119,11 @@ public class SettingsGUI extends javax.swing.JFrame {
         filelogCheck = new javax.swing.JCheckBox();
         VideoPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
-        disableGECheck = new javax.swing.JCheckBox();
         disableVBOCheck = new javax.swing.JCheckBox();
         onlyGEGraphicsCheck = new javax.swing.JCheckBox();
         useVertexCache = new javax.swing.JCheckBox();
         shadersCheck = new javax.swing.JCheckBox();
+        geometryShaderCheck = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -248,8 +243,6 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         jTabbedPane1.addTab(Resource.get("general"), generalPanel);
 
-        disableGECheck.setText(Resource.get("disablege"));
-
         disableVBOCheck.setText(Resource.get("disablevbo"));
 
         onlyGEGraphicsCheck.setText(Resource.get("onlyGeGraphics"));
@@ -258,24 +251,24 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         shadersCheck.setText(Resource.get("useshader"));
 
+        geometryShaderCheck.setText(Resource.get("useGeometryShader"));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(disableGECheck)
                     .addComponent(disableVBOCheck)
                     .addComponent(onlyGEGraphicsCheck)
                     .addComponent(useVertexCache)
-                    .addComponent(shadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(shadersCheck)
+                    .addComponent(geometryShaderCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(disableGECheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(disableVBOCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(onlyGEGraphicsCheck)
@@ -283,6 +276,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(useVertexCache)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(shadersCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(geometryShaderCheck)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -475,11 +470,11 @@ public void RefreshWindow() {
 	enabled = Settings.getInstance().readBool("emu.useshaders");
 	shadersCheck.setSelected(enabled);
 	
+	enabled = Settings.getInstance().readBool("emu.useGeometryShader");
+	geometryShaderCheck.setSelected(enabled);
+	
 	enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
 	filelogCheck.setSelected(enabled);
-	
-	enabled = Settings.getInstance().readBool("emu.disablege");
-	disableGECheck.setSelected(enabled);
 	
 	enabled = Settings.getInstance().readBool("emu.disablevbo");
 	disableVBOCheck.setSelected(enabled);
@@ -526,8 +521,8 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.compiler", compilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.profiler", profilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
+   Settings.getInstance().writeBool("emu.useGeometryShader", geometryShaderCheck.isSelected());
    Settings.getInstance().writeBool("emu.debug.enablefilelogger", filelogCheck.isSelected());
-   Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
@@ -572,7 +567,6 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JCheckBox compilerCheck;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
-    private javax.swing.JCheckBox disableGECheck;
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox filelogCheck;
     private javax.swing.JPanel generalPanel;
@@ -592,6 +586,7 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox shadersCheck;
+    private javax.swing.JCheckBox geometryShaderCheck;
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JTextField umdpath;
     private javax.swing.JCheckBox useConnector;

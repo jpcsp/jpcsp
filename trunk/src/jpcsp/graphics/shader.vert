@@ -1,8 +1,14 @@
 #version 120
 #extension GL_EXT_gpu_shader4 : enable
 
-attribute vec4 psp_weights1;
-attribute vec4 psp_weights2;
+// Use attributes instead of gl_Vertex, gl_Normal...: attributes support all the
+// data types used by the PSP (signed/unsigned bytes/shorts/floats).
+attribute vec4 texture;
+attribute vec4 color;
+attribute vec3 normal;
+attribute vec4 position;
+attribute vec4 weights1;
+attribute vec4 weights2;
 
 uniform float psp_zPos;
 uniform float psp_zScale;
@@ -18,6 +24,13 @@ uniform int   texMapProj;
 uniform ivec2 texShade;
 uniform bool  lightingEnable;
 uniform bool  colorAddition;
+uniform int   vinfoColor;
+uniform int   vinfoPosition;
+uniform bool  vinfoTransform2D;
+uniform float positionScale;
+uniform float normalScale;
+uniform float textureScale;
+uniform float weightScale;
 
 void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, inout vec3 S)
 {
@@ -76,6 +89,8 @@ void ApplyLighting(inout vec4 Cp, inout vec4 Cs, in vec3 V, in vec3 N)
 
 void ApplyTexture(inout vec4 T, in vec4 V, in vec3 N)
 {
+    T.xy /= textureScale;
+
     switch (texMapMode)
     {
     case 0: // UV mapping
@@ -119,29 +134,124 @@ void ApplySkinning(inout vec3 Vv, inout vec3 Nv)
     vec3  N = V;
     float W;
     mat3  M;
+    vec4  W1 = weights1 / weightScale;
+    vec4  W2 = weights2 / weightScale;
+
     switch (psp_numberBones - 1)
     {
-    case 7: W = psp_weights2[3]; M = mat3(psp_boneMatrix[7]); V += (M * Vv + psp_boneMatrix[7][3].xyz) * W; N += M * Nv * W;
-    case 6: W = psp_weights2[2]; M = mat3(psp_boneMatrix[6]); V += (M * Vv + psp_boneMatrix[6][3].xyz) * W; N += M * Nv * W;
-    case 5: W = psp_weights2[1]; M = mat3(psp_boneMatrix[5]); V += (M * Vv + psp_boneMatrix[5][3].xyz) * W; N += M * Nv * W;
-    case 4: W = psp_weights2[0]; M = mat3(psp_boneMatrix[4]); V += (M * Vv + psp_boneMatrix[4][3].xyz) * W; N += M * Nv * W;
-    case 3: W = psp_weights1[3]; M = mat3(psp_boneMatrix[3]); V += (M * Vv + psp_boneMatrix[3][3].xyz) * W; N += M * Nv * W;
-    case 2: W = psp_weights1[2]; M = mat3(psp_boneMatrix[2]); V += (M * Vv + psp_boneMatrix[2][3].xyz) * W; N += M * Nv * W;
-    case 1: W = psp_weights1[1]; M = mat3(psp_boneMatrix[1]); V += (M * Vv + psp_boneMatrix[1][3].xyz) * W; N += M * Nv * W;
-    case 0: W = psp_weights1[0]; M = mat3(psp_boneMatrix[0]); V += (M * Vv + psp_boneMatrix[0][3].xyz) * W; N += M * Nv * W;
+    case 7: W = W2[3]; M = mat3(psp_boneMatrix[7]); V += (M * Vv + psp_boneMatrix[7][3].xyz) * W; N += M * Nv * W;
+    case 6: W = W2[2]; M = mat3(psp_boneMatrix[6]); V += (M * Vv + psp_boneMatrix[6][3].xyz) * W; N += M * Nv * W;
+    case 5: W = W2[1]; M = mat3(psp_boneMatrix[5]); V += (M * Vv + psp_boneMatrix[5][3].xyz) * W; N += M * Nv * W;
+    case 4: W = W2[0]; M = mat3(psp_boneMatrix[4]); V += (M * Vv + psp_boneMatrix[4][3].xyz) * W; N += M * Nv * W;
+    case 3: W = W1[3]; M = mat3(psp_boneMatrix[3]); V += (M * Vv + psp_boneMatrix[3][3].xyz) * W; N += M * Nv * W;
+    case 2: W = W1[2]; M = mat3(psp_boneMatrix[2]); V += (M * Vv + psp_boneMatrix[2][3].xyz) * W; N += M * Nv * W;
+    case 1: W = W1[1]; M = mat3(psp_boneMatrix[1]); V += (M * Vv + psp_boneMatrix[1][3].xyz) * W; N += M * Nv * W;
+    case 0: W = W1[0]; M = mat3(psp_boneMatrix[0]); V += (M * Vv + psp_boneMatrix[0][3].xyz) * W; N += M * Nv * W;
     }
     Vv = V;
     Nv = N;
 }
 
+void DecodePosition(inout vec3 V)
+{
+    // V.z is unsigned in 2D
+    if (vinfoTransform2D)
+    {
+        switch (vinfoPosition)
+        {
+        case 1: // GU_VERTEX_8BIT
+            // V.z is unsigned 8 bit in 2D
+            if (V.z < 0) V.z += 0x100;
+            break;
+        case 2: // GU_VERTEX_16BIT
+            // V.z is unsigned 16 bit in 2D
+            if (V.z < 0) V.z += 0x10000;
+            break;
+        case 3: // GU_VERTEX_32BITF
+            if (V.z < 0)
+            {
+                // Negative V.z are interpreted as 0 in 2D
+                V.z = 0;
+            }
+            else
+            {
+                // 2D positions are always integer values
+                V.z = int(V.z);
+            }
+        }
+    }
+    else
+    {
+        V /= positionScale;
+    }
+}
+
+void DecodeColor(inout vec4 C)
+{
+    switch (vinfoColor)
+    {
+    case -1: // !useVertexColor
+        C = gl_Color;
+        break;
+    case 4: // GU_COLOR_5650
+    {
+        int packedBits = int(C.x);
+        int rBits = (packedBits      ) & 0x1F;
+        int gBits = (packedBits >>  5) & 0x3F;
+        int bBits = (packedBits >> 11) & 0x1F;
+        C.r = (rBits << 3) | (rBits >> 2);
+        C.g = (gBits << 2) | (gBits >> 4);
+        C.b = (bBits << 3) | (bBits >> 2);
+        C.a = 1;
+        C.rgb /= 255.0f;
+        break;
+    }
+    case 5: // GU_COLOR_5551
+    {
+        int packedBits = int(C.x);
+        int rBits = (packedBits      ) & 0x1F;
+        int gBits = (packedBits >>  5) & 0x1F;
+        int bBits = (packedBits >> 10) & 0x1F;
+        C.r = (rBits << 3) | (rBits >> 2);
+        C.g = (gBits << 3) | (gBits >> 2);
+        C.b = (bBits << 3) | (bBits >> 2);
+        C.a = (packedBits >> 15) & 0x01;
+        C.rgb /= 255.0f;
+        break;
+    }
+    case 6: // GU_COLOR_4444
+    {
+        int packedBits = int(C.x);
+        int rBits = (packedBits      ) & 0x0F;
+        int gBits = (packedBits >>  4) & 0x0F;
+        int bBits = (packedBits >>  8) & 0x0F;
+        int aBits = (packedBits >> 12) & 0x0F;
+        C.r = (rBits << 4) | rBits;
+        C.g = (gBits << 4) | gBits;
+        C.b = (bBits << 4) | bBits;
+        C.a = (aBits << 4) | aBits;
+        C /= 255.0f;
+        break;
+    }
+    case 7: // GU_COLOR_8888
+        C /= 255.0f;
+        break;
+    }
+
+}
+
 void main()
 {
-    vec3 N  = gl_Normal;
-    vec4 V  = gl_Vertex;
+    vec3 N  = normal;
+    vec4 V  = position;
     vec3 Ve = vec3(gl_ModelViewMatrix * V);
-    vec4 Cp = gl_Color;
+    vec4 Cp = color;
     vec4 Cs = vec4(0.0);
-    vec4 T  = gl_MultiTexCoord0;
+    vec4 T  = texture;
+
+    DecodeColor(Cp);
+    DecodePosition(V.xyz);
+    N /= normalScale;
 
     if (psp_numberBones > 0) ApplySkinning(V.xyz, N);
 

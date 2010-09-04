@@ -76,15 +76,13 @@ import org.apache.log4j.Logger;
 //   are immutable. This information could be stored in a file for subsequent runs and
 //   used as hints for the next runs.
 // - Unswizzle textures in shader (is this possible?)
-// - interpret all the vertex type in a shader instead of transforming everything in
-//   GL_FLOAT in VertexInfo.readVertex(). Mapping integer values to [0..2] or [-1..1]
-//   could be performed in vertex shader.
-// - implement PRIM_SPRITES in shader (instead of duplicating vertex in Java)
+// - implement PRIM_SPRITES in shader (instead of duplicating vertex in Java):
+//   use a geometry shader
 //
 public class VideoEngine {
 
     public static final int NUM_LIGHTS = 4;
-    public static final int SIZEOF_FLOAT = 4;
+    public static final int SIZEOF_FLOAT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_FLOAT];
     public final static String[] psm_names = new String[]{
         "PSM_5650",
         "PSM_5551",
@@ -177,57 +175,49 @@ public class VideoEngine {
     private boolean geBufChanged;
     private IAction hleAction;
     private HashMap<Integer, Integer> currentCMDValues;
+    private boolean bboxWarningDisplayed = false;
 
     public static class MatrixUpload {
-
         private final float[] matrix;
-        private final int matrixWidth;
-        private final int matrixHeight;
-        private int currentX;
-        private int currentY;
         private boolean changed;
+        private int[] matrixIndex;
+        private int index;
+        private int maxIndex;
 
         public MatrixUpload(float[] matrix, int matrixWidth, int matrixHeight) {
             changed = true;
             this.matrix = matrix;
-            this.matrixWidth = matrixWidth;
-            this.matrixHeight = matrixHeight;
 
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     matrix[y * 4 + x] = (x == y ? 1 : 0);
                 }
             }
+
+            maxIndex = matrixWidth * matrixHeight;
+            matrixIndex = new int[maxIndex];
+            for (int i = 0; i < maxIndex; i++) {
+            	matrixIndex[i] = (i % matrixWidth) + (i / matrixWidth) * 4;
+            }
         }
 
         public void startUpload(int startIndex) {
-            currentX = startIndex % matrixWidth;
-            currentY = startIndex / matrixWidth;
+        	index = startIndex;
         }
 
-        public boolean uploadValue(float value) {
-            boolean done = false;
-
-            if (currentY >= matrixHeight) {
-                VideoEngine.getInstance().error(String.format("Ignored Matrix upload value (X=%d,Y=%d,idx=%08X)", currentX, currentY, currentY * matrixWidth + currentX));
-                return true;
+        public final boolean uploadValue(float value) {
+            if (index >= maxIndex) {
+                VideoEngine.getInstance().error(String.format("Ignored Matrix upload value (idx=%08X)", index));
+            } else {
+	            int i = matrixIndex[index];
+	            if (matrix[i] != value) {
+	                matrix[i] = value;
+	                changed = true;
+	            }
             }
+            index++;
 
-            int index = currentY * 4 + currentX;
-            if (matrix[index] != value) {
-                matrix[index] = value;
-                changed = true;
-            }
-            currentX++;
-            if (currentX >= matrixWidth) {
-                currentX = 0;
-                currentY++;
-                if (currentY >= matrixHeight) {
-                    done = true;
-                }
-            }
-
-            return done;
+            return index >= maxIndex;
         }
 
         public boolean isChanged() {
@@ -306,6 +296,10 @@ public class VideoEngine {
         } else {    // If the queue is empty.
             drawListQueue.add(list);
         }
+    }
+
+    public int numberDrawLists() {
+    	return drawListQueue.size();
     }
 
     public boolean hasDrawLists() {
@@ -474,8 +468,6 @@ public class VideoEngine {
     private void startUpdate() {
         statistics.start();
 
-        re.startDisplay();
-
         logLevelUpdated();
         memoryForGEUpdated();
         somethingDisplayed = false;
@@ -497,8 +489,6 @@ public class VideoEngine {
     }
 
     private void endUpdate() {
-    	re.endDisplay();
-
     	if (useVertexCache) {
             if (primCount > VertexCache.cacheMaxSize) {
                 log.warn(String.format("VertexCache size (%d) too small to execute %d PRIM commands", VertexCache.cacheMaxSize, primCount));
@@ -1237,36 +1227,9 @@ public class VideoEngine {
                 break;
             }
 
-            case BONE: {
-                // Multiple BONE matrix can be loaded in sequence
-                // without having to issue a BOFS for each matrix.
-                int matrixIndex = boneMatrixIndex / 12;
-                int elementIndex = boneMatrixIndex % 12;
-                if (matrixIndex >= 8) {
-                    error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
-                } else {
-                    float floatArgument = floatArgument(normalArgument);
-                    context.bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
-                	context.boneMatrixLinear[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
-                    if (matrixIndex >= boneMatrixLinearUpdatedMatrix) {
-                        boneMatrixLinearUpdatedMatrix = matrixIndex + 1;
-                    }
-
-                    boneMatrixIndex++;
-
-                    if (isLogDebugEnabled && (boneMatrixIndex % 12) == 0) {
-                        for (int x = 0; x < 3; x++) {
-                            log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
-                                    matrixIndex,
-                                    context.bone_uploaded_matrix[matrixIndex][x + 0],
-                                    context.bone_uploaded_matrix[matrixIndex][x + 3],
-                                    context.bone_uploaded_matrix[matrixIndex][x + 6],
-                                    context.bone_uploaded_matrix[matrixIndex][x + 9]));
-                        }
-                    }
-                }
+            case BONE:
+            	executeCommandBONE(normalArgument);
                 break;
-            }
 
             /*
              * Morphing
@@ -2773,11 +2736,14 @@ public class VideoEngine {
 
         boolean useVertexColor = initRendering();
 
+        int nTexCoord = 2;
+        int nColor = 4;
+        int nVertex = 3;
+
         boolean useTexture = false;
         boolean useTextureFromNormal = false;
         boolean useTextureFromNormalizedNormal = false;
         boolean useTextureFromPosition = false;
-        int nTexCoord = 2;
         switch (context.tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
             	if (vinfo.texture != 0) {
@@ -2831,15 +2797,31 @@ public class VideoEngine {
         vinfo.setDirty();
 
         int numberOfWeightsForBuffer;
+        boolean mustComputeWeights;
         if (vinfo.weight != 0) {
         	numberOfWeightsForBuffer = re.setBones(vinfo.skinningWeightCount, context.boneMatrixLinear);
+        	mustComputeWeights = (numberOfWeightsForBuffer == 0);
         } else {
         	numberOfWeightsForBuffer = re.setBones(0, null);
+        	mustComputeWeights = false;
         }
 
-        // Do not use optimized VertexInfo reading when tracing is enabled,
-        // it doesn't produce any trace information
-        if (!useVertexCache && vinfo.index == 0 && type != PRIM_SPRITES && !useTextureFromNormalizedNormal && mem.isAddressGood(vinfo.ptr_vertex) && !isLogTraceEnabled) {
+        // Do not use optimized VertexInfo reading when
+        // - using Vertex Cache
+        // - the Vertex are indexed
+        // - the PRIM_SPRITE primitive is used where it is not supported natively
+        // - the normals have to be normalized for the texture mapping
+        // - the weights have to be computed and are not supported natively
+        // - the vertex address is invalid
+        // - tracing is enabled because it doesn't produce any trace information
+        if (!useVertexCache &&
+            vinfo.index == 0 &&
+            (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
+            !useTextureFromNormalizedNormal &&
+            !mustComputeWeights &&
+            mem.isAddressGood(vinfo.ptr_vertex) &&
+            !isLogTraceEnabled) {
+        	//
             // Optimized VertexInfo reading:
             // - do not copy the info already available in the OpenGL format
             //   (native format), load it into nativeBuffer (a direct buffer
@@ -2849,10 +2831,7 @@ public class VideoEngine {
             // The best case is no reading and no conversion at all when all the
             // vertex info are available in a format usable by OpenGL.
             //
-            // The optimized reading cannot currently handle
-            // indexed vertex info (vinfo.index != 0) and PRIM_SPRITES.
-            //
-            Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex);
+            Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex, re.canAllNativeVertexInfo());
 
             enableClientState(useVertexColor, useTexture);
 
@@ -2886,18 +2865,23 @@ public class VideoEngine {
                     textureOffset = vertexInfoReader.getTextureOffset();
                     textureType = vertexInfoReader.getTextureType();
                 }
+                nTexCoord = vertexInfoReader.getTextureNumberValues();
                 setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative);
             }
+            nVertex = vertexInfoReader.getPositionNumberValues();
+            nColor = vertexInfoReader.getColorNumberValues();
+            int nWeight = vertexInfoReader.getWeightNumberValues();
 
-            setColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative());
+            re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor);
+            setColorPointer(useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative());
             setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative());
-            setVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative());
+            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative());
+            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative());
 
             re.drawArrays(type, 0, numberOfVertex);
 
         } else {
             // Non-optimized VertexInfo reading
-
             VertexInfo cachedVertexInfo = null;
             if (useVertexCache) {
                 vertexCacheLookupStatistics.start();
@@ -2908,6 +2892,8 @@ public class VideoEngine {
             ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
             FloatBuffer floatBuffer = byteBuffer.asFloatBuffer();
             floatBuffer.clear();
+
+            re.setVertexInfo(vinfo, false, useVertexColor);
 
             switch (type) {
                 case PRIM_POINT:
@@ -2924,7 +2910,7 @@ public class VideoEngine {
                             VertexState v = vinfo.readVertex(mem, addr);
 
                             // Do skinning first as it modifies v.p and v.n
-                            if (vinfo.weight != 0 && vinfo.position != 0 && numberOfWeightsForBuffer == 0) {
+                            if (mustComputeWeights && vinfo.position != 0) {
                                 doSkinning(vinfo, v);
                             }
 
@@ -2976,7 +2962,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(useVertexColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer);
+                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer);
                     re.drawArrays(type, 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
                     break;
@@ -3085,8 +3071,8 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(useVertexColor, useTexture, nTexCoord, vinfo.normal != 0, 0);
-                    re.drawArrays(PRIM_SPRITES, 0, numberOfVertex * 2);
+                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, 0);
+                    re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
                     context.cullFaceFlag.updateEnabled();
                     break;
             }
@@ -3238,7 +3224,10 @@ public class VideoEngine {
             log.warn(helper.getCommandString(BBOX) + " no positions for vertex!");
             return;
         } else if (!re.hasBoundingBox()) {
-            log.info("Not supported by your OpenGL version (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
+        	if (!bboxWarningDisplayed) {
+        		log.warn("Not supported by your OpenGL version (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
+        		bboxWarningDisplayed = true;
+        	}
             return;
         } else if ((numberOfVertexBoundingBox % 8) != 0) {
             // How to interpret non-multiple of 8?
@@ -3250,7 +3239,8 @@ public class VideoEngine {
         Memory mem = Memory.getInstance();
         boolean useVertexColor = initRendering();
 
-        re.beginBoundingBox();
+        re.setVertexInfo(vinfo, false, useVertexColor);
+        re.beginBoundingBox(numberOfVertexBoundingBox);
         for (int i = 0; i < numberOfVertexBoundingBox; i++) {
             int addr = vinfo.getAddress(mem, i);
 
@@ -3294,6 +3284,36 @@ public class VideoEngine {
         }
     }
 
+    private void executeCommandBONE(int normalArgument) {
+        // Multiple BONE matrix can be loaded in sequence
+        // without having to issue a BOFS for each matrix.
+        int matrixIndex = boneMatrixIndex / 12;
+        int elementIndex = boneMatrixIndex % 12;
+        if (matrixIndex >= 8) {
+            error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
+        } else {
+            float floatArgument = floatArgument(normalArgument);
+            context.bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
+        	context.boneMatrixLinear[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
+            if (matrixIndex >= boneMatrixLinearUpdatedMatrix) {
+                boneMatrixLinearUpdatedMatrix = matrixIndex + 1;
+            }
+
+            boneMatrixIndex++;
+
+            if (isLogDebugEnabled && (boneMatrixIndex % 12) == 0) {
+                for (int x = 0; x < 3; x++) {
+                    log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
+                            matrixIndex,
+                            context.bone_uploaded_matrix[matrixIndex][x + 0],
+                            context.bone_uploaded_matrix[matrixIndex][x + 3],
+                            context.bone_uploaded_matrix[matrixIndex][x + 6],
+                            context.bone_uploaded_matrix[matrixIndex][x + 9]));
+                }
+            }
+        }
+    }
+
     private void enableClientState(boolean useVertexColor, boolean useTexture) {
         if (vinfo.texture != 0 || useTexture) {
             re.enableClientState(IRenderingEngine.RE_TEXTURE);
@@ -3323,21 +3343,21 @@ public class VideoEngine {
         }
     }
 
-    private void setColorPointer(boolean useVertexColor, int type, int stride, int offset, boolean isNative) {
+    private void setColorPointer(boolean useVertexColor, int nColor, int type, int stride, int offset, boolean isNative) {
         if (useVertexColor) {
             if (isNative) {
-                bufferManager.setColorPointer(nativeBufferId, 4, type, vinfo.vertexSize, offset);
+                bufferManager.setColorPointer(nativeBufferId, nColor, type, vinfo.vertexSize, offset);
             } else {
-            	bufferManager.setColorPointer(bufferId, 4, type, stride, offset);
+            	bufferManager.setColorPointer(bufferId, nColor, type, stride, offset);
             }
         }
     }
 
-    private void setVertexPointer(int type, int stride, int offset, boolean isNative) {
+    private void setVertexPointer(int nVertex, int type, int stride, int offset, boolean isNative) {
         if (isNative) {
-            bufferManager.setVertexPointer(nativeBufferId, 3, type, vinfo.vertexSize, offset);
+            bufferManager.setVertexPointer(nativeBufferId, nVertex, type, vinfo.vertexSize, offset);
         } else {
-        	bufferManager.setVertexPointer(bufferId, 3, type, stride, offset);
+        	bufferManager.setVertexPointer(bufferId, nVertex, type, stride, offset);
         }
     }
 
@@ -3351,7 +3371,17 @@ public class VideoEngine {
         }
     }
 
-    private void setDataPointers(boolean useVertexColor, boolean useTexture, int nTexCoord, boolean useNormal, int numberOfWeightsForBuffer) {
+    private void setWeightPointer(int numberOfWeightsForBuffer, int type, int stride, int offset, boolean isNative) {
+    	if (numberOfWeightsForBuffer > 0) {
+    		if (isNative) {
+    			re.setWeightPointer(numberOfWeightsForBuffer, type, vinfo.vertexSize, offset);
+    		} else {
+    			re.setWeightPointer(numberOfWeightsForBuffer, type, stride, offset);
+    		}
+    	}
+    }
+
+    private void setDataPointers(int nVertex, boolean useVertexColor, int nColor, boolean useTexture, int nTexCoord, boolean useNormal, int numberOfWeightsForBuffer) {
         int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos = 0;
 
         if (vinfo.texture != 0 || useTexture) {
@@ -3374,10 +3404,10 @@ public class VideoEngine {
 
         enableClientState(useVertexColor, useTexture);
         setTexCoordPointer(useTexture, nTexCoord, IRenderingEngine.RE_FLOAT, stride, 0, false);
-        setColorPointer(useVertexColor, IRenderingEngine.RE_FLOAT, stride, cpos, false);
+        setColorPointer(useVertexColor, nColor, IRenderingEngine.RE_FLOAT, stride, cpos, false);
         setNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false);
-        re.setWeightPointer(numberOfWeightsForBuffer, IRenderingEngine.RE_FLOAT, stride, wpos);
-        setVertexPointer(IRenderingEngine.RE_FLOAT, stride, vpos, false);
+        setWeightPointer(numberOfWeightsForBuffer, IRenderingEngine.RE_FLOAT, stride, wpos, false);
+        setVertexPointer(nVertex, IRenderingEngine.RE_FLOAT, stride, vpos, false);
     }
 
     public void doPositionSkinning(VertexInfo vinfo, float[] boneWeights, float[] position) {
@@ -4599,7 +4629,9 @@ public class VideoEngine {
 	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
 			boolean useVertexColor, boolean useTexture, boolean useNormal) {
 		// TODO: Compute the normals
-		setDataPointers(useVertexColor, useTexture, 2, useNormal, 0);
+		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0);
+
+		re.setVertexInfo(vinfo, false, useVertexColor);
 
 		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
 		FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();

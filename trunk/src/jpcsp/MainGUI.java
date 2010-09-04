@@ -917,8 +917,6 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       Point mainwindow = this.getLocation();
       setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
       setgui.setVisible(true);
-      /* add a direct link to the main window*/
-      setgui.setMainGUI(this);
      }
      else
      {
