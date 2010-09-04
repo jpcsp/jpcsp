@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import jpcsp.graphics.Uniforms;
-
 /**
  * @author gid15
  * 
@@ -31,11 +29,12 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[][] matrix;
 	protected static final int RE_BONES_MATRIX = 4;
 	protected static final int matrix4Size = 4 * 4;
-	protected int maxUniformId;
-	protected int[] uniformInt;
-	protected int[][] uniformIntArray;
-	protected float[] uniformFloat;
-	protected float[][] uniformFloatArray;
+	public    static final int maxProgramId = 10;
+	public    static final int maxUniformId = 200;
+	protected int[][] uniformInt;
+	protected int[][][] uniformIntArray;
+	protected float[][] uniformFloat;
+	protected float[][][] uniformFloatArray;
 	protected boolean[] clientState;
 	protected boolean[] vertexAttribArray;
 	protected int textureMipmapMinFilter;
@@ -62,6 +61,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int depthFunc;
 	protected int bindTexture;
 	protected int bindBuffer;
+	protected int useProgram;
 
 	public StateProxy(IRenderingEngine proxy) {
 		super(proxy);
@@ -71,19 +71,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected void init() {
 		flags = new boolean[RE_NUMBER_FLAGS];
 
-		maxUniformId = 0;
-		for (Uniforms uniform : Uniforms.values()) {
-			int id = uniform.getId();
-			if (id > maxUniformId) {
-				maxUniformId = id;
-			}
-		}
-		int numberUniforms = maxUniformId + 1;
-
-		uniformInt = new int[numberUniforms];
-		uniformFloat = new float[numberUniforms];
-		uniformIntArray = new int[numberUniforms][];
-		uniformFloatArray = new float[numberUniforms][];
+		uniformInt = new int[maxProgramId][maxUniformId];
+		uniformFloat = new float[maxProgramId][maxUniformId];
+		uniformIntArray = new int[maxProgramId][maxUniformId][];
+		uniformFloatArray = new float[maxProgramId][maxUniformId][];
 
 		matrix = new float[RE_BONES_MATRIX + 1][];
 		matrix[GU_PROJECTION] = new float[matrix4Size];
@@ -93,7 +84,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		matrix[RE_BONES_MATRIX] = new float[8 * matrix4Size];
 
 		clientState = new boolean[4];
-		vertexAttribArray = new boolean[numberUniforms];
+		vertexAttribArray = new boolean[maxUniformId];
 		colorMask = new int[4];
 	}
 
@@ -137,6 +128,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		bindTexture = -1;
 		bindBuffer = -1;
 		frontFace = false;
+		useProgram = 0;
 
 		super.startDisplay();
 	}
@@ -161,9 +153,9 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void setUniform(int id, int value) {
 		// An unused uniform as an id == -1
 		if (id >= 0 && id <= maxUniformId) {
-			if (uniformInt[id] != value) {
+			if (uniformInt[useProgram][id] != value) {
 				super.setUniform(id, value);
-				uniformInt[id] = value;
+				uniformInt[useProgram][id] = value;
 			}
 		}
 	}
@@ -171,9 +163,9 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setUniform(int id, float value) {
 		if (id >= 0 && id <= maxUniformId) {
-			if (uniformFloat[id] != value) {
+			if (uniformFloat[useProgram][id] != value) {
 				super.setUniform(id, value);
-				uniformFloat[id] = value;
+				uniformFloat[useProgram][id] = value;
 			}
 		}
 	}
@@ -181,10 +173,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setUniform(int id, int value1, int value2) {
 		if (id >= 0 && id <= maxUniformId) {
-			int[] oldValues = uniformIntArray[id];
+			int[] oldValues = uniformIntArray[useProgram][id];
 			if (oldValues == null || oldValues.length != 2) {
 				super.setUniform(id, value1, value2);
-				uniformIntArray[id] = new int[] { value1, value2 };
+				uniformIntArray[useProgram][id] = new int[] { value1, value2 };
 			} else {
 				if (oldValues[0] != value1 || oldValues[1] != value2) {
 					super.setUniform(id, value1, value2);
@@ -196,16 +188,34 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
+	public void setUniform2(int id, int[] values) {
+		if (id >= 0 && id <= maxUniformId) {
+			int[] oldValues = uniformIntArray[useProgram][id];
+			if (oldValues == null || oldValues.length != 2) {
+				super.setUniform2(id, values);
+				oldValues = new int[2];
+				oldValues[0] = values[0];
+				oldValues[1] = values[1];
+				uniformIntArray[useProgram][id] = oldValues;
+			} else if (oldValues[0] != values[0] || oldValues[1] != values[1]) {
+				super.setUniform2(id, values);
+				oldValues[0] = values[0];
+				oldValues[1] = values[1];
+			}
+		}
+	}
+
+	@Override
 	public void setUniform3(int id, int[] values) {
 		if (id >= 0 && id <= maxUniformId) {
-			int[] oldValues = uniformIntArray[id];
+			int[] oldValues = uniformIntArray[useProgram][id];
 			if (oldValues == null || oldValues.length != 3) {
 				super.setUniform3(id, values);
 				oldValues = new int[3];
 				oldValues[0] = values[0];
 				oldValues[1] = values[1];
 				oldValues[2] = values[2];
-				uniformIntArray[id] = oldValues;
+				uniformIntArray[useProgram][id] = oldValues;
 			} else if (oldValues[0] != values[0] || oldValues[1] != values[1] || oldValues[2] != values[2]) {
 				super.setUniform3(id, values);
 				oldValues[0] = values[0];
@@ -218,7 +228,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setUniform4(int id, int[] values) {
 		if (id >= 0 && id <= maxUniformId) {
-			int[] oldValues = uniformIntArray[id];
+			int[] oldValues = uniformIntArray[useProgram][id];
 			if (oldValues == null || oldValues.length != 4) {
 				super.setUniform4(id, values);
 				oldValues = new int[4];
@@ -226,7 +236,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 				oldValues[1] = values[1];
 				oldValues[2] = values[2];
 				oldValues[3] = values[3];
-				uniformIntArray[id] = oldValues;
+				uniformIntArray[useProgram][id] = oldValues;
 			} else if (oldValues[0] != values[0] || oldValues[1] != values[1] || oldValues[2] != values[2] || oldValues[3] != values[3]) {
 				super.setUniform4(id, values);
 				oldValues[0] = values[0];
@@ -240,13 +250,13 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setUniformMatrix4(int id, int count, float[] values) {
 		if (id >= 0 && id <= maxUniformId && count > 0) {
-			float[] oldValues = uniformFloatArray[id];
+			float[] oldValues = uniformFloatArray[useProgram][id];
 			int length = count * matrix4Size;
 			if (oldValues == null || oldValues.length < length) {
 				super.setUniformMatrix4(id, count, values);
 				oldValues = new float[length];
 				System.arraycopy(values, 0, oldValues, 0, length);
-				uniformFloatArray[id] = oldValues;
+				uniformFloatArray[useProgram][id] = oldValues;
 			} else {
 				boolean differ = false;
 				for (int i = 0; i < length; i++) {
@@ -457,9 +467,11 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		if (texture != bindTexture) {
 			super.bindTexture(texture);
 			bindTexture = texture;
-			// Binding a new texture can change the OpenGL texture wrap mode
+			// Binding a new texture can change the OpenGL texture wrap mode and min/mag filters
 			textureWrapModeS = -1;
 			textureWrapModeT = -1;
+			textureMipmapMinFilter = -1;
+			textureMipmapMagFilter = -1;
 		}
 	}
 
@@ -515,5 +527,20 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			bindBuffer = 0;
 		}
 		super.deleteBuffer(buffer);
+	}
+
+	@Override
+	public void setViewport(int x, int y, int width, int height) {
+		if (x >= 0 && y >= 0 && width >= 0 && height >= 0) {
+			super.setViewport(x, y, width, height);
+		}
+	}
+
+	@Override
+	public void useProgram(int program) {
+		if (useProgram != program) {
+			super.useProgram(program);
+			useProgram = program;
+		}
 	}
 }

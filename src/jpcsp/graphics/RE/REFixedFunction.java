@@ -39,8 +39,6 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
 
 	@Override
 	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
-		int texEnvMode = func;
-
 		if (colorDoubled || !alphaUsed) {
             // GL_RGB_SCALE is only used in OpenGL when GL_TEXTURE_ENV_MODE is GL_COMBINE
             // See http://www.opengl.org/sdk/docs/man/xhtml/glTexEnv.xml
@@ -48,7 +46,7 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
             	case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE:
                     // Cv = Cp * Cs
                     // Av = Ap * As
-                    texEnvMode = RE_TEXENV_COMBINE;
+            		func = RE_TEXENV_COMBINE;
                     re.setTexEnv(RE_TEXENV_COMBINE_RGB, RE_TEXENV_MODULATE);
                     re.setTexEnv(RE_TEXENV_SRC0_RGB, RE_TEXENV_TEXTURE);
                     re.setTexEnv(RE_TEXENV_OPERAND0_RGB, RE_TEXENV_SRC_COLOR);
@@ -62,7 +60,7 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                     re.setTexEnv(RE_TEXENV_OPERAND1_ALPHA, RE_TEXENV_SRC_ALPHA);
                     break;
                 case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_DECAL:
-                    texEnvMode = RE_TEXENV_COMBINE;
+                	func = RE_TEXENV_COMBINE;
                     // Cv = Cs * As + Cp * (1 - As)
                     // Av = Ap
                     if (!alphaUsed) {
@@ -90,7 +88,7 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                 case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_BLEND:
                     // Cv = Cc * Cs + Cp * (1 - Cs)
                     // Av = As * Ap
-                    texEnvMode = RE_TEXENV_COMBINE;
+                	func = RE_TEXENV_COMBINE;
                     re.setTexEnv(RE_TEXENV_COMBINE_RGB, RE_TEXENV_INTERPOLATE);
                     re.setTexEnv(RE_TEXENV_SRC0_RGB, RE_TEXENV_CONSTANT);
                     re.setTexEnv(RE_TEXENV_OPERAND0_RGB, RE_TEXENV_SRC_COLOR);
@@ -108,7 +106,7 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                 case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE:
                     // Cv = Cs
                     // Av = As
-                    texEnvMode = RE_TEXENV_COMBINE;
+                	func = RE_TEXENV_COMBINE;
                     re.setTexEnv(RE_TEXENV_COMBINE_RGB, RE_TEXENV_REPLACE);
                     re.setTexEnv(RE_TEXENV_SRC0_RGB, RE_TEXENV_TEXTURE);
                     re.setTexEnv(RE_TEXENV_OPERAND0_RGB, RE_TEXENV_SRC_COLOR);
@@ -120,7 +118,7 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                 case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD:
                     // Cv = Cp + Cs
                     // Av = Ap * As
-                    texEnvMode = RE_TEXENV_COMBINE;
+                	func = RE_TEXENV_COMBINE;
                     re.setTexEnv(RE_TEXENV_COMBINE_RGB, RE_TEXENV_ADD);
                     re.setTexEnv(RE_TEXENV_SRC0_RGB, RE_TEXENV_TEXTURE);
                     re.setTexEnv(RE_TEXENV_OPERAND0_RGB, RE_TEXENV_SRC_COLOR);
@@ -135,10 +133,8 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                     break;
             }
         }
-        re.setTexEnv(RE_TEXENV_RGB_SCALE, colorDoubled ? 2.0f : 1.0f);
-        re.setTexEnv(RE_TEXENV_ENV_MODE, texEnvMode);
 
-        super.setTextureFunc(func, alphaUsed, colorDoubled);
+		super.setTextureFunc(func, alphaUsed, colorDoubled);
 	}
 
 	@Override

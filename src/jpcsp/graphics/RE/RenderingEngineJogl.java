@@ -21,6 +21,7 @@ import java.nio.Buffer;
 import javax.media.opengl.GL;
 import javax.media.opengl.GLException;
 
+import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
 
@@ -181,16 +182,21 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	};
 	protected static final int[] shaderTypeToGL = {
 		GL.GL_VERTEX_SHADER,       // RE_VERTEX_SHADER
-		GL.GL_FRAGMENT_SHADER      // RE_FRAGMENT_SHADER
+		GL.GL_FRAGMENT_SHADER,     // RE_FRAGMENT_SHADER
+		GL.GL_GEOMETRY_SHADER_EXT  // RE_GEOMETRY_SHADER
 	};
 	protected static final int[] primitiveToGL = {
-		GL.GL_POINTS,              // PRIM_POINT
-		GL.GL_LINES,               // PRIM_LINE
-		GL.GL_LINE_STRIP,          // PRIM_LINES_STRIPS
-		GL.GL_TRIANGLES,           // PRIM_TRIANGLE
-		GL.GL_TRIANGLE_STRIP,      // PRIM_TRIANGLE_STRIPS
-		GL.GL_TRIANGLE_FAN,        // PRIM_TRIANGLE_FANS
-		GL.GL_QUADS                // PRIM_SPRITES
+		GL.GL_POINTS,              // GU_POINTS / PRIM_POINT
+		GL.GL_LINES,               // GU_LINES / PRIM_LINE
+		GL.GL_LINE_STRIP,          // GU_LINE_STRIP / PRIM_LINES_STRIPS
+		GL.GL_TRIANGLES,           // GU_TRIANGLES / PRIM_TRIANGLE
+		GL.GL_TRIANGLE_STRIP,      // GU_TRIANGLE_STRIP / PRIM_TRIANGLE_STRIPS
+		GL.GL_TRIANGLE_FAN,        // GU_TRIANGLE_FAN / PRIM_TRIANGLE_FANS
+		GL.GL_QUADS,               // GU_SPRITES / PRIM_SPRITES
+		GL.GL_QUADS,               // RE_QUADS
+		GL.GL_LINES_ADJACENCY_EXT, // RE_LINES_ADJACENCY
+		GL.GL_TRIANGLES_ADJACENCY_EXT, // RE_TRIANGLES_ADJACENCY
+		GL.GL_TRIANGLE_STRIP_ADJACENCY_EXT // RE_TRIANGLE_STRIP_ADJACENCY
 	};
 	protected static final int[] clientStateToGL = {
 		GL.GL_TEXTURE_COORD_ARRAY, // RE_TEXTURE
@@ -290,6 +296,11 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 		GL.GL_MIN,                 // ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE
 		GL.GL_MAX,                 // ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE
 		GL.GL_FUNC_ADD             // ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE
+	};
+	protected static final int[] programParameterToGL = {
+		GL.GL_GEOMETRY_INPUT_TYPE_EXT,  // RE_GEOMETRY_INPUT_TYPE
+		GL.GL_GEOMETRY_OUTPUT_TYPE_EXT, // RE_GEOMETRY_OUTPUT_TYPE
+		GL.GL_GEOMETRY_VERTICES_OUT_EXT // RE_GEOMETRY_VERTICES_OUT
 	};
 
 	protected GL gl;
@@ -596,6 +607,12 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	public void setUniform(int id, float value) {
         gl.glUniform1f(id, value);
 	}
+
+	@Override
+	public void setUniform2(int id, int[] values) {
+		gl.glUniform2iv(id, 1, values, 0);
+	}
+
 	@Override
 	public void setUniform3(int id, int[] values) {
         gl.glUniform3iv(id, 1, values, 0);
@@ -667,9 +684,12 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void compilerShader(int shader, String[] source) {
+	public boolean compilerShader(int shader, String[] source) {
 		gl.glShaderSource(shader, 1, source, null, 0);
 		gl.glCompileShader(shader);
+		int[] compileStatus = new int[1];
+		gl.glGetShaderiv(shader, GL.GL_COMPILE_STATUS, compileStatus, 0);
+		return compileStatus[0] == GL.GL_TRUE;
 	}
 
 	@Override
@@ -722,7 +742,12 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 		byte[] infoLog = new byte[length];
         gl.glGetProgramInfoLog(program, length, charsWritten, 0, infoLog, 0);
 
-        return new String(infoLog, 0, length - 1);
+        // Remove ending '\0' byte(s)
+        while (length > 0 && infoLog[length - 1] == 0) {
+        	length--;
+        }
+
+        return new String(infoLog, 0, length);
 	}
 
 	@Override
@@ -746,6 +771,17 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	@Override
 	public boolean isFunctionAvailable(String name) {
 		return gl.isFunctionAvailable(name);
+	}
+
+	@Override
+	public boolean isExtensionAvailable(String name) {
+		String extensions = gl.glGetString(GL.GL_EXTENSIONS);
+		if (extensions == null) {
+			return false;
+		}
+
+		// Extensions are space separated
+		return (" " + extensions + " ").indexOf(" " + name + " ") >= 0;
 	}
 
 	@Override
@@ -1019,7 +1055,7 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void beginBoundingBox() {
+	public void beginBoundingBox(int numberOfVertexBoundingBox) {
 		// Nothing to do
 	}
 
@@ -1083,5 +1119,28 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 	public IREBufferManager getBufferManager() {
 		// Nothing to do
 		return null;
+	}
+
+	@Override
+	public boolean canAllNativeVertexInfo() {
+		return false;
+	}
+
+	@Override
+	public boolean canNativeSpritesPrimitive() {
+		return false;
+	}
+
+	@Override
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor) {
+		// Nothing to do
+	}
+
+	@Override
+	public void setProgramParameter(int program, int parameter, int value) {
+		if (parameter == RE_GEOMETRY_INPUT_TYPE || parameter == RE_GEOMETRY_OUTPUT_TYPE) {
+			value = primitiveToGL[value];
+		}
+		gl.glProgramParameteriEXT(program, programParameterToGL[parameter], value);
 	}
 }

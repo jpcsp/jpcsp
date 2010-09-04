@@ -19,6 +19,7 @@ package jpcsp.graphics.RE;
 import java.nio.Buffer;
 
 import jpcsp.graphics.GeContext;
+import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
 
 /**
@@ -54,6 +55,19 @@ public interface IRenderingEngine {
 	public static final int RE_TEXTURE_GEN_S       = 23;
 	public static final int RE_TEXTURE_GEN_T       = 24;
 	public static final int RE_NUMBER_FLAGS        = 25; // Always the last one
+
+	// Primitive types:
+	public static final int GU_POINTS              = 0;
+	public static final int GU_LINES               = 1;
+	public static final int GU_LINE_STRIP          = 2;
+	public static final int GU_TRIANGLES           = 3;
+	public static final int GU_TRIANGLE_STRIP      = 4;
+	public static final int GU_TRIANGLE_FAN        = 5;
+	public static final int GU_SPRITES             = 6;
+	public static final int RE_QUADS               = 7;
+	public static final int RE_LINES_ADJACENCY     = 8;
+	public static final int RE_TRIANGLES_ADJACENCY = 9;
+	public static final int RE_TRIANGLE_STRIP_ADJACENCY = 10;
 
 	// Matrix modes:
 	public static final int GU_PROJECTION          = 0;
@@ -118,6 +132,7 @@ public interface IRenderingEngine {
 	// Shader types:
 	public static final int RE_VERTEX_SHADER       = 0;
 	public static final int RE_FRAGMENT_SHADER     = 1;
+	public static final int RE_GEOMETRY_SHADER     = 2;
 
 	// Client State types:
 	public static final int RE_TEXTURE             = 0;
@@ -134,6 +149,16 @@ public interface IRenderingEngine {
 	public static final int RE_UNSIGNED_INT        = 5;
 	public static final int RE_FLOAT               = 6;
 	public static final int RE_DOUBLE              = 7;
+	public static final int[] sizeOfType = {
+		1, // RE_BYTE
+		1, // RE_UNSIGNED_BYTE
+		2, // RE_SHORT
+		2, // RE_UNSIGNED_SHORT
+		4, // RE_INT
+		4, // RE_UNSIGNED_INT
+		4, // RE_FLOAT
+		8  // RE_DOUBLE
+	};
 
 	// Buffer usage:
 	public static final int RE_STREAM_DRAW         = 0;
@@ -145,6 +170,11 @@ public interface IRenderingEngine {
 	public static final int RE_DYNAMIC_DRAW        = 6;
 	public static final int RE_DYNAMIC_READ        = 7;
 	public static final int RE_DYNAMIC_COPY        = 8;
+
+	// Program parameters
+	public static final int RE_GEOMETRY_INPUT_TYPE   = 0;
+	public static final int RE_GEOMETRY_OUTPUT_TYPE  = 1;
+	public static final int RE_GEOMETRY_VERTICES_OUT = 2;
 
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
@@ -206,6 +236,7 @@ public interface IRenderingEngine {
 	public void setUniform(int id, int value);
 	public void setUniform(int id, int value1, int value2);
 	public void setUniform(int id, float value);
+	public void setUniform2(int id, int[] values);
 	public void setUniform3(int id, int[] values);
 	public void setUniform4(int id, int[] values);
 	public void setUniformMatrix4(int id, int count, float[] values);
@@ -219,7 +250,7 @@ public interface IRenderingEngine {
 	public void startClearMode(boolean color, boolean stencil, boolean depth);
 	public void endClearMode();
 	public int createShader(int type);
-	public void compilerShader(int shader, String[] source);
+	public boolean compilerShader(int shader, String[] source);
 	public int createProgram();
 	public void useProgram(int program);
 	public void attachShader(int program, int shader);
@@ -230,6 +261,7 @@ public interface IRenderingEngine {
 	public String getShaderInfoLog(int shader);
 	public String getProgramInfoLog(int program);
 	public boolean isFunctionAvailable(String name);
+	public boolean isExtensionAvailable(String name);
 	public void drawArrays(int primitive, int first, int count);
 	public int genBuffer();
 	public void deleteBuffer(int buffer);
@@ -272,7 +304,7 @@ public interface IRenderingEngine {
 	public void setBlendEquation(int mode);
 	public void setLineSmoothHint();
 	public boolean hasBoundingBox();
-	public void beginBoundingBox();
+	public void beginBoundingBox(int numberOfVertexBoundingBox);
 	public void drawBoundingBox(float[][] values);
 	public void endBoundingBox();
 	public boolean isBoundingBoxVisible();
@@ -292,4 +324,8 @@ public interface IRenderingEngine {
 	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer);
 	public void clear(float red, float green, float blue, float alpha);
 	public IREBufferManager getBufferManager();
+	public boolean canAllNativeVertexInfo();
+	public boolean canNativeSpritesPrimitive();
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor);
+	public void setProgramParameter(int program, int parameter, int value);
 }

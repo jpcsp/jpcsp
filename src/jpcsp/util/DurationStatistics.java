@@ -63,7 +63,14 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
             result.append(" in ");
             result.append(String.format("%.3fs", cumulatedTimeMillis / 1000.0));
             result.append(" (avg=");
-            result.append(String.format("%.3fs", cumulatedTimeMillis / (1000.0 * numberCalls)));
+            double average = cumulatedTimeMillis / (1000.0 * numberCalls);
+            if (average < 0.000001) {
+            	result.append(String.format("%.3fus", average * 1000000));
+            } else if (average < 0.001) {
+            	result.append(String.format("%.3fms", average * 1000));
+            } else {
+            	result.append(String.format("%.3fs", average));
+            }
             result.append(")");
         }
 

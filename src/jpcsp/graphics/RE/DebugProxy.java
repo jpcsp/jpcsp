@@ -25,6 +25,8 @@ import jpcsp.graphics.Uniforms;
  *
  */
 public class DebugProxy extends BaseRenderingEngineProxy {
+	protected int useProgram;
+
 	public DebugProxy(IRenderingEngine proxy) {
 		super(proxy);
 	}
@@ -318,7 +320,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	protected String getUniformName(int id) {
 		for (Uniforms uniform : Uniforms.values()) {
-			if (uniform.getId() == id) {
+			if (uniform.getId(useProgram) == id) {
 				return uniform.name();
 			}
 		}
@@ -564,5 +566,14 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("bindBuffer %d", buffer));
 		}
 		super.bindBuffer(buffer);
+	}
+
+	@Override
+	public void useProgram(int program) {
+		useProgram = program;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("useProgram %d", program));
+		}
+		super.useProgram(program);
 	}
 }

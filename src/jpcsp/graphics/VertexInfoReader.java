@@ -16,11 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import static jpcsp.graphics.RE.IRenderingEngine.RE_BYTE;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_FLOAT;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_INT;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_SHORT;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_UNSIGNED_BYTE;
+import static jpcsp.graphics.RE.IRenderingEngine.RE_UNSIGNED_SHORT;
+
 import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
-import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.BufferedMemoryReader;
 import jpcsp.memory.ImageReader;
 
@@ -33,15 +39,23 @@ public class VertexInfoReader {
 	private BufferedMemoryReader memoryReader;
 	private VertexInfo vertexInfo;
 	private IVertexDataBuffer vertexDataBuffer;
+	private int weightOffset;
+	private int weightType;
+	private int weightNumberValues;
 	private int textureOffset;
 	private int textureType;
+	private int textureNumberValues;
 	private int colorOffset;
 	private int colorType;
+	private int colorNumberValues;
 	private int normalOffset;
 	private int normalType;
+	private int normalNumberValues;
 	private int positionOffset;
 	private int positionType;
+	private int positionNumberValues;
 	private int stride;
+	private boolean weightNative;
 	private boolean textureNative;
 	private boolean colorNative;
 	private boolean normalNative;
@@ -49,14 +63,9 @@ public class VertexInfoReader {
 	private float[] boneWeights = new float[8];
 	private float[] normal = new float[3];
 	private float[] position = new float[3];
+	private boolean canAllNativeVertexInfo;
 
-	// OpenGL types
-	public final static int typeNone = -1;
-	public final static int typeUInt8 = IRenderingEngine.RE_UNSIGNED_BYTE;
-	public final static int typeInt8  = IRenderingEngine.RE_BYTE;
-	public final static int typeInt16 = IRenderingEngine.RE_SHORT;
-	public final static int typeInt32 = IRenderingEngine.RE_INT;
-	public final static int typeFloat = IRenderingEngine.RE_FLOAT;
+	private final static int typeNone = -1;
 
 	// Readers skipping the padding at the end of a vertex element,
 	// indexed by the alignment (1 = byte-aligned, 2 = short-aligned, 4 = int-aligned)
@@ -140,6 +149,13 @@ public class VertexInfoReader {
 	                         , new Weight3Reader()
 	                         };
 
+	// Readers skipping a weight element, indexed by the weight type
+	private final IVertexInfoReader[] skipWeightReaders = new IVertexInfoReader[]
+	                         { new NopReader()
+	                         , new SkipWeight1Reader()
+	                         , new SkipWeight2Reader()
+	                         , new SkipWeight3Reader()
+	                         };
 
 	public VertexInfoReader() {
 	}
@@ -156,11 +172,21 @@ public class VertexInfoReader {
 	private void update() {
 		stride = 0;
 
+		// Weight
+		IVertexInfoReader weightReader = getWeightReader(false);
+		weightNative = weightReader.isNative();
+		weightType = weightReader.type();
+		weightOffset = 0;
+		weightNumberValues = weightReader.numberValues();
+		int weightSize = weightReader.size();
+		stride += weightSize;
+
 		// Texture
 		IVertexInfoReader textureReader = getTextureReader(false);
 		textureNative = textureReader.isNative();
 		textureType = textureReader.type();
 		textureOffset = (textureNative ? vertexInfo.textureOffset : stride);
+		textureNumberValues = textureReader.numberValues();
 		int textureSize = textureReader.size();
 		stride += textureSize;
 
@@ -169,6 +195,7 @@ public class VertexInfoReader {
 		colorNative = colorReader.isNative();
 		colorType = colorReader.type();
 		colorOffset = (colorNative ? vertexInfo.colorOffset : stride);
+		colorNumberValues = colorReader.numberValues();
 		int colorSize = colorReader.size();
 		stride += colorSize;
 
@@ -177,6 +204,7 @@ public class VertexInfoReader {
 		normalNative = normalReader.isNative();
 		normalType = normalReader.type();
 		normalOffset = (normalNative ? vertexInfo.normalOffset : stride);
+		normalNumberValues = normalReader.numberValues();
 		int normalSize = normalReader.size();
 		stride += normalSize;
 
@@ -185,8 +213,21 @@ public class VertexInfoReader {
 		positionNative = positionReader.isNative();
 		positionType = positionReader.type();
 		positionOffset = (positionNative ? vertexInfo.positionOffset : stride);
+		positionNumberValues = positionReader.numberValues();
 		int positionSize = positionReader.size();
 		stride += positionSize;
+	}
+
+	public int getWeightOffset() {
+		return weightOffset;
+	}
+
+	public int getWeightType() {
+		return weightType;
+	}
+
+	public int getWeightNumberValues() {
+		return weightNumberValues;
 	}
 
 	public int getTextureOffset() {
@@ -197,12 +238,20 @@ public class VertexInfoReader {
 		return textureType;
 	}
 
+	public int getTextureNumberValues() {
+		return textureNumberValues;
+	}
+
 	public int getColorOffset() {
 		return colorOffset;
 	}
 
 	public int getColorType() {
 		return colorType;
+	}
+
+	public int getColorNumberValues() {
+		return colorNumberValues;
 	}
 
 	public int getNormalOffset() {
@@ -213,6 +262,10 @@ public class VertexInfoReader {
 		return normalType;
 	}
 
+	public int getNormalNumberValues() {
+		return normalNumberValues;
+	}
+
 	public int getPositionOffset() {
 		return positionOffset;
 	}
@@ -221,8 +274,16 @@ public class VertexInfoReader {
 		return positionType;
 	}
 
+	public int getPositionNumberValues() {
+		return positionNumberValues;
+	}
+
 	public int getStride() {
 		return stride;
+	}
+
+	public boolean isWeightNative() {
+		return weightNative;
 	}
 
 	public boolean isTextureNative() {
@@ -281,9 +342,10 @@ public class VertexInfoReader {
 	 *							elements. The native elements are not included.
 	 *							Returns "null" if all the elements are native.
 	 */
-	public Buffer read(VertexInfo vertexInfo, int address, int numberOfVertex) {
+	public Buffer read(VertexInfo vertexInfo, int address, int numberOfVertex, boolean canAllNativeVertexInfo) {
 		videoEngine = VideoEngine.getInstance();
 		this.vertexInfo = vertexInfo;
+		this.canAllNativeVertexInfo = canAllNativeVertexInfo;
 
 		update();
 
@@ -316,7 +378,7 @@ public class VertexInfoReader {
 		createVertexDataBuffer(numberOfVertex);
 
 		// Prepare all the element readers
-		IVertexInfoReader weightReader   = getWeightReader();
+		IVertexInfoReader weightReader   = getWeightReader(weightNative);
 		IVertexInfoReader textureReader  = getTextureReader(textureNative);
 		IVertexInfoReader colorReader    = getColorReader(colorNative);
 		IVertexInfoReader normalReader   = getNormalReader(normalNative);
@@ -336,8 +398,8 @@ public class VertexInfoReader {
 		return vertexDataBuffer.getBuffer();
 	}
 
-	private IVertexInfoReader getWeightReader() {
-		return weightReaders[vertexInfo.weight];
+	private IVertexInfoReader getWeightReader(boolean isNative) {
+		return (isNative ? skipWeightReaders[vertexInfo.weight] : weightReaders[vertexInfo.weight]);
 	}
 
 	private IVertexInfoReader getTextureReader(boolean isNative) {
@@ -473,12 +535,17 @@ public class VertexInfoReader {
 		public int size();
 
 		/**
-		 * Returns the OpenGL type of the values put into the vertex data buffer
+		 * Returns the Rendering Engine type of the values put into the vertex data buffer
 		 */
 		public int type();
 
 		/**
-		 * Returns if the vertex data can be used directly by OpenGL, without conversion
+		 * Returns the number of values for the element type
+		 */
+		public int numberValues();
+
+		/**
+		 * Returns if the vertex data can be used directly by the RE, without conversion
 		 */
 		public boolean isNative();
 	}
@@ -503,9 +570,6 @@ public class VertexInfoReader {
 		public int size() {
 			return 0;
 		}
-
-		@Override
-		abstract public int type();
 	}
 
 	/**
@@ -513,9 +577,6 @@ public class VertexInfoReader {
 	 *
 	 */
 	private abstract class AbstractSkipReader implements IVertexInfoReader {
-		@Override
-		abstract public void read();
-
 		@Override
 		public boolean isNative() {
 			return true;
@@ -529,6 +590,11 @@ public class VertexInfoReader {
 		@Override
 		public int type() {
 			return typeNone;
+		}
+
+		@Override
+		public int numberValues() {
+			return 0;
 		}
 	}
 
@@ -711,17 +777,22 @@ public class VertexInfoReader {
 		@Override
 		public boolean isNative() {
 			// Unsigned byte is not available as a native texture coordinate value
-			return false;
+			return canAllNativeVertexInfo;
 		}
 
 		@Override
 		public int size() {
-			return (vertexInfo.transform2D ? 4 : 8);
+			return (isNative() ? 0 : (vertexInfo.transform2D ? 4 : 8));
 		}
 
 		@Override
 		public int type() {
-			return (vertexInfo.transform2D ? typeInt16 : typeFloat);
+			return (isNative() ? RE_UNSIGNED_BYTE : (vertexInfo.transform2D ? RE_SHORT : RE_FLOAT));
+		}
+
+		@Override
+		public int numberValues() {
+			return 2;
 		}
 	}
 
@@ -743,7 +814,7 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return vertexInfo.transform2D;
+			return canAllNativeVertexInfo || vertexInfo.transform2D;
 		}
 
 		@Override
@@ -753,8 +824,13 @@ public class VertexInfoReader {
 
 		@Override
 		public int type() {
-			// Use signed Int16 because unsigned Int16 is not available as a native texture type
-			return (isNative() ? typeInt16 : typeFloat);
+			// Use signed Int16 because unsigned Int16 is not allowed for glTexCoordPointer
+			return (canAllNativeVertexInfo ? RE_UNSIGNED_SHORT : (isNative() ? RE_SHORT : RE_FLOAT));
+		}
+
+		@Override
+		public int numberValues() {
+			return 2;
 		}
 	}
 
@@ -765,7 +841,12 @@ public class VertexInfoReader {
 	private class Texture3Reader extends AbstractNativeReader {
 		@Override
 		public int type() {
-			return typeFloat;
+			return RE_FLOAT;
+		}
+
+		@Override
+		public int numberValues() {
+			return 2;
 		}
 	}
 
@@ -781,17 +862,22 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return false;
+			return canAllNativeVertexInfo;
 		}
 
 		@Override
 		public int size() {
-			return 4;
+			return (isNative() ? 0 : 4);
 		}
 
 		@Override
 		public int type() {
-			return typeUInt8;
+			return (isNative() ? RE_UNSIGNED_SHORT : RE_UNSIGNED_BYTE);
+		}
+
+		@Override
+		public int numberValues() {
+			return (isNative() ? 1 : 4);
 		}
 	}
 
@@ -807,17 +893,22 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return false;
+			return canAllNativeVertexInfo;
 		}
 
 		@Override
 		public int size() {
-			return 4;
+			return (isNative() ? 0 : 4);
 		}
 
 		@Override
 		public int type() {
-			return typeUInt8;
+			return (isNative() ? RE_UNSIGNED_SHORT : RE_UNSIGNED_BYTE);
+		}
+
+		@Override
+		public int numberValues() {
+			return (isNative() ? 1 : 4);
 		}
 	}
 
@@ -833,17 +924,22 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return false;
+			return canAllNativeVertexInfo;
 		}
 
 		@Override
 		public int size() {
-			return 4;
+			return (isNative() ? 0 : 4);
 		}
 
 		@Override
 		public int type() {
-			return typeUInt8;
+			return (isNative() ? RE_UNSIGNED_SHORT : RE_UNSIGNED_BYTE);
+		}
+
+		@Override
+		public int numberValues() {
+			return (isNative() ? 1 : 4);
 		}
 	}
 
@@ -854,7 +950,12 @@ public class VertexInfoReader {
 	private class Color7Reader extends AbstractNativeReader {
 		@Override
 		public int type() {
-			return typeUInt8;
+			return RE_UNSIGNED_BYTE;
+		}
+
+		@Override
+		public int numberValues() {
+			return 4;
 		}
 	}
 
@@ -882,7 +983,7 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return vertexInfo.transform2D;
+			return canAllNativeVertexInfo || vertexInfo.transform2D;
 		}
 
 		@Override
@@ -892,7 +993,12 @@ public class VertexInfoReader {
 
 		@Override
 		public int type() {
-			return (isNative() ? typeInt8 : typeFloat);
+			return (isNative() ? RE_BYTE : RE_FLOAT);
+		}
+
+		@Override
+		public int numberValues() {
+			return 3;
 		}
 	}
 
@@ -920,7 +1026,7 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return vertexInfo.transform2D;
+			return canAllNativeVertexInfo || vertexInfo.transform2D;
 		}
 
 		@Override
@@ -930,7 +1036,12 @@ public class VertexInfoReader {
 
 		@Override
 		public int type() {
-			return (isNative() ? typeInt16 : typeFloat);
+			return (isNative() ? RE_SHORT : RE_FLOAT);
+		}
+
+		@Override
+		public int numberValues() {
+			return 3;
 		}
 	}
 
@@ -952,7 +1063,7 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return vertexInfo.weight == 0;
+			return canAllNativeVertexInfo || vertexInfo.weight == 0;
 		}
 
 		@Override
@@ -962,7 +1073,12 @@ public class VertexInfoReader {
 
 		@Override
 		public int type() {
-			return typeFloat;
+			return RE_FLOAT;
+		}
+
+		@Override
+		public int numberValues() {
+			return 3;
 		}
 	}
 
@@ -995,17 +1111,22 @@ public class VertexInfoReader {
 		@Override
 		public boolean isNative() {
 			// Cannot be native because X and Y are signed and Z is unsigned
-			return false;
+			return canAllNativeVertexInfo;
 		}
 
 		@Override
 		public int size() {
-			return 12;
+			return (isNative() ? 0 : 12);
 		}
 
 		@Override
 		public int type() {
-			return (vertexInfo.transform2D ? typeInt32 : typeFloat);
+			return (isNative() ? RE_BYTE : (vertexInfo.transform2D ? RE_INT : RE_FLOAT));
+		}
+
+		@Override
+		public int numberValues() {
+			return 3;
 		}
 	}
 
@@ -1038,17 +1159,22 @@ public class VertexInfoReader {
 		@Override
 		public boolean isNative() {
 			// Cannot be native in 2D because X and Y are signed and Z is unsigned
-			return false;
+			return canAllNativeVertexInfo;
 		}
 
 		@Override
 		public int size() {
-			return 12;
+			return (isNative() ? 0 : 12);
 		}
 
 		@Override
 		public int type() {
-			return (vertexInfo.transform2D ? typeInt32 : typeFloat);
+			return (isNative() ? RE_SHORT : (vertexInfo.transform2D ? RE_INT : RE_FLOAT));
+		}
+
+		@Override
+		public int numberValues() {
+			return 3;
 		}
 	}
 
@@ -1082,7 +1208,7 @@ public class VertexInfoReader {
 		@Override
 		public boolean isNative() {
 			// 2D needs some corrections of the Z coord.
-			return vertexInfo.weight == 0 && !vertexInfo.transform2D;
+			return canAllNativeVertexInfo || !vertexInfo.transform2D;
 		}
 
 		@Override
@@ -1092,7 +1218,12 @@ public class VertexInfoReader {
 
 		@Override
 		public int type() {
-			return typeFloat;
+			return RE_FLOAT;
+		}
+
+		@Override
+		public int numberValues() {
+			return 3;
 		}
 	}
 
@@ -1100,7 +1231,7 @@ public class VertexInfoReader {
 	 * Reader for Weight type 1 (GU_WEIGHT_8BIT)
 	 *
 	 */
-	public class Weight1Reader extends AbstractSkipReader {
+	public class Weight1Reader implements IVertexInfoReader {
 		@Override
 		public void read() {
 			for (int i = 0; i < vertexInfo.skinningWeightCount; i++) {
@@ -1108,13 +1239,33 @@ public class VertexInfoReader {
 				boneWeights[i] = memoryReader.readNext8() / 128f;
 			}
 		}
+
+		@Override
+		public boolean isNative() {
+			return true;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public int type() {
+			return RE_UNSIGNED_BYTE;
+		}
+
+		@Override
+		public int numberValues() {
+			return vertexInfo.skinningWeightCount;
+		}
 	}
 
 	/**
 	 * Reader for Weight type 2 (GU_WEIGHT_16BIT)
 	 *
 	 */
-	public class Weight2Reader extends AbstractSkipReader {
+	public class Weight2Reader implements IVertexInfoReader {
 		@Override
 		public void read() {
 			for (int i = 0; i < vertexInfo.skinningWeightCount; i++) {
@@ -1122,19 +1273,99 @@ public class VertexInfoReader {
 				boneWeights[i] = memoryReader.readNext16() / 32768f;
 			}
 		}
+
+		@Override
+		public boolean isNative() {
+			return true;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public int type() {
+			return RE_UNSIGNED_SHORT;
+		}
+
+		@Override
+		public int numberValues() {
+			return vertexInfo.skinningWeightCount;
+		}
 	}
 
 	/**
 	 * Reader for Weight type 3 (GU_WEIGHT_32BITF)
 	 *
 	 */
-	public class Weight3Reader extends AbstractSkipReader {
+	public class Weight3Reader implements IVertexInfoReader {
 		@Override
 		public void read() {
 			for (int i = 0; i < vertexInfo.skinningWeightCount; i++) {
 				// Float value
 				boneWeights[i] = memoryReader.readNextFloat();
 			}
+		}
+
+		@Override
+		public boolean isNative() {
+			return true;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public int type() {
+			return RE_FLOAT;
+		}
+
+		@Override
+		public int numberValues() {
+			return vertexInfo.skinningWeightCount;
+		}
+	}
+
+	/**
+	 * Reader skipping the weight bytes (N x 8 bit)
+	 *
+	 */
+	private class SkipWeight1Reader extends AbstractSkipReader {
+		@Override
+		public void read() {
+			// Skip Weight Bytes
+			for (int i = 0; i < vertexInfo.skinningWeightCount; i++) {
+				memoryReader.skipNext8();
+			}
+		}
+	}
+
+	/**
+	 * Reader skipping the weight shorts (N x 16 bit)
+	 *
+	 */
+	private class SkipWeight2Reader extends AbstractSkipReader {
+		@Override
+		public void read() {
+			// Skip Weight Shorts
+			for (int i = 0; i < vertexInfo.skinningWeightCount; i++) {
+				memoryReader.skipNext16();
+			}
+		}
+	}
+
+	/**
+	 * Reader skipping the weight floats (N x 32 bit)
+	 *
+	 */
+	private class SkipWeight3Reader extends AbstractSkipReader {
+		@Override
+		public void read() {
+			// Skip Weight Floats
+			memoryReader.skipNext32(vertexInfo.skinningWeightCount);
 		}
 	}
 }

@@ -19,6 +19,7 @@ package jpcsp.graphics.RE;
 import java.nio.Buffer;
 
 import jpcsp.graphics.GeContext;
+import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
 
@@ -341,6 +342,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
+	public void setUniform2(int id, int[] values) {
+		proxy.setUniform2(id, values);
+	}
+
+	@Override
 	public void setUniform3(int id, int[] values) {
 		proxy.setUniform3(id, values);
 	}
@@ -411,8 +417,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void compilerShader(int shader, String[] source) {
-		proxy.compilerShader(shader, source);
+	public boolean compilerShader(int shader, String[] source) {
+		return proxy.compilerShader(shader, source);
 	}
 
 	@Override
@@ -463,6 +469,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public boolean isFunctionAvailable(String name) {
 		return proxy.isFunctionAvailable(name);
+	}
+
+	@Override
+	public boolean isExtensionAvailable(String name) {
+		return proxy.isExtensionAvailable(name);
 	}
 
 	@Override
@@ -721,8 +732,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void beginBoundingBox() {
-		proxy.beginBoundingBox();
+	public void beginBoundingBox(int numberOfVertexBoundingBox) {
+		proxy.beginBoundingBox(numberOfVertexBoundingBox);
 	}
 
 	@Override
@@ -778,5 +789,25 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public IREBufferManager getBufferManager() {
 		return proxy.getBufferManager();
+	}
+
+	@Override
+	public boolean canAllNativeVertexInfo() {
+		return proxy.canAllNativeVertexInfo();
+	}
+
+	@Override
+	public boolean canNativeSpritesPrimitive() {
+		return proxy.canNativeSpritesPrimitive();
+	}
+
+	@Override
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor) {
+		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor);
+	}
+
+	@Override
+	public void setProgramParameter(int program, int parameter, int value) {
+		proxy.setProgramParameter(program, parameter, value);
 	}
 }

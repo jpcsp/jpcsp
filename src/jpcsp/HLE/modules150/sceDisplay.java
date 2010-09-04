@@ -42,7 +42,6 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
-import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -76,7 +75,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
 	private static final long serialVersionUID = 2267866365228834812L;
 
-    private static final boolean useReadPixels = true;
+    private static final boolean useReadPixels = false;
     private boolean onlyGEGraphics = false;
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
@@ -90,8 +89,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     // sceDisplaySetBufSync enum
     public static final int PSP_DISPLAY_SETBUF_IMMEDIATE = 0;
     public static final int PSP_DISPLAY_SETBUF_NEXTFRAME = 1;
-
-    public boolean disableGE;
 
     // current Rendering Engine
     private IRenderingEngine re;
@@ -351,8 +348,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         displayDirty = true;
         geDirty = false;
         createTex = true;
-
-        disableGE = Settings.getInstance().readBool("emu.disablege");
 
         pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
@@ -894,7 +889,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         bufferManager.setTexCoordPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
         bufferManager.setVertexPointer(drawBuffer, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
         bufferManager.setBufferData(drawBuffer, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
-        re.drawArrays(GeCommands.PRIM_SPRITES, 0, 4);
+        re.setVertexInfo(null, false, false);
+        re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
         re.endDirectRendering();
 
@@ -909,6 +905,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
+    	// Update: glReadPixels has a poorer performance than glGetTextImage
+    	// on modern graphic cards.
         if (useReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
             re.setProjectionMatrix(VideoEngine.getOrthoMatrix(0, width, height, 0, -1, 1));
             int bufferStep = bufferwidth * getPixelFormatBytes(pixelformat);
@@ -1109,18 +1107,14 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             return;
         }
 
-        if (disableGE) {
-            pixelsFb.clear();
-            re.bindTexture(texFb);
-            re.setTexSubImage(0,
-                0, 0, bufferwidthFb, height,
-                pixelformatFb, pixelformatFb, pixelsFb);
-
-            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
-        } else if (onlyGEGraphics) {
+        if (onlyGEGraphics) {
+        	re.startDisplay();
             VideoEngine.getInstance().update();
+            re.endDisplay();
         } else {
-            // Render GE
+        	re.startDisplay();
+
+        	// Render GE
             re.setViewport(0, 0, width, height);
 
             // If the GE is not at the same address as the FrameBuffer,
@@ -1171,6 +1165,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
                 rotate(ang);
 
             drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
+
+            re.endDisplay();
         }
 
         reportFPSStats();
@@ -1310,7 +1306,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         cpu.gpr[2] = hleDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, syncType);
     }
 
-	public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
+    public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
 		topaddr &= Memory.addressMask;
 
         if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
