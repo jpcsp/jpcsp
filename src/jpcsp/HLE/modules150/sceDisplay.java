@@ -928,49 +928,52 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             re.copyTexSubImage(0, 0, 0, 0, 0, width, height);
 
             // Copy the current texture into memory
-            temp.clear();
-            re.getTexImage(0, pixelformat, pixelformat, temp);
+            Buffer buffer = (pixels.limit() >= temp.limit() ? pixels : temp);
+            buffer.clear();
+            re.getTexImage(0, pixelformat, pixelformat, buffer);
 
             // Copy temp into pixels, temp is probably square and pixels is less,
             // a smaller rectangle, otherwise we could copy straight into pixels.
-            temp.clear();
-            pixels.clear();
-            temp.limit(pixels.limit());
-            if (temp instanceof ByteBuffer) {
-                ((ByteBuffer) pixels).put((ByteBuffer) temp);
-            } else if (temp instanceof IntBuffer) {
-            	VideoEngine videoEngine = VideoEngine.getInstance();
-            	if (videoEngine.isUsingTRXKICK() && videoEngine.getMaxSpriteHeight() < Integer.MAX_VALUE) {
-            		// Hack: God of War is using GE command lists stored into the non-visible
-            		// part of the GE buffer. The lists are copied from the main memory into
-            		// the VRAM using TRXKICK. Be careful to not overwrite these non-visible
-            		// parts.
-            		//
-            		// Copy only the visible part of the GE to the memory, e.g.
-            		// when width==480 and bufferwidth==1024, copy only 480 pixels
-            		// per line and skip 1024-480 pixels.
-            		IntBuffer srcBuffer = (IntBuffer) temp;
-            		IntBuffer dstBuffer = (IntBuffer) pixels;
-            		int pixelsPerElement = 4 / getPixelFormatBytes(pixelformat);
-            		int maxHeight = VideoEngine.getInstance().getMaxSpriteHeight();
-            		if (VideoEngine.log.isDebugEnabled()) {
-            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight);
-            		}
-            		if (maxHeight > height) {
-            			maxHeight = height;
-            		}
-            		for (int y = 0; y < maxHeight; y++) {
-            			int startOffset = y * bufferwidth / pixelsPerElement;
-            			srcBuffer.limit(startOffset + (width + 1) / pixelsPerElement);
-            			srcBuffer.position(startOffset);
-            			dstBuffer.position(startOffset);
-            			dstBuffer.put(srcBuffer);
-            		}
-            	} else {
-            		((IntBuffer) pixels).put((IntBuffer) temp);
-            	}
-            } else {
-                throw new RuntimeException("unhandled buffer type");
+            if (buffer == temp) {
+	            temp.clear();
+	            pixels.clear();
+	            temp.limit(pixels.limit());
+	            if (temp instanceof ByteBuffer) {
+	                ((ByteBuffer) pixels).put((ByteBuffer) temp);
+	            } else if (temp instanceof IntBuffer) {
+	            	VideoEngine videoEngine = VideoEngine.getInstance();
+	            	if (videoEngine.isUsingTRXKICK() && videoEngine.getMaxSpriteHeight() < Integer.MAX_VALUE) {
+	            		// Hack: God of War is using GE command lists stored into the non-visible
+	            		// part of the GE buffer. The lists are copied from the main memory into
+	            		// the VRAM using TRXKICK. Be careful to not overwrite these non-visible
+	            		// parts.
+	            		//
+	            		// Copy only the visible part of the GE to the memory, e.g.
+	            		// when width==480 and bufferwidth==1024, copy only 480 pixels
+	            		// per line and skip 1024-480 pixels.
+	            		IntBuffer srcBuffer = (IntBuffer) temp;
+	            		IntBuffer dstBuffer = (IntBuffer) pixels;
+	            		int pixelsPerElement = 4 / getPixelFormatBytes(pixelformat);
+	            		int maxHeight = VideoEngine.getInstance().getMaxSpriteHeight();
+	            		if (VideoEngine.log.isDebugEnabled()) {
+	            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight);
+	            		}
+	            		if (maxHeight > height) {
+	            			maxHeight = height;
+	            		}
+	            		for (int y = 0; y < maxHeight; y++) {
+	            			int startOffset = y * bufferwidth / pixelsPerElement;
+	            			srcBuffer.limit(startOffset + (width + 1) / pixelsPerElement);
+	            			srcBuffer.position(startOffset);
+	            			dstBuffer.position(startOffset);
+	            			dstBuffer.put(srcBuffer);
+	            		}
+	            	} else {
+	            		((IntBuffer) pixels).put((IntBuffer) temp);
+	            	}
+	            } else {
+	                throw new RuntimeException("unhandled buffer type");
+	            }
             }
             // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
         }
