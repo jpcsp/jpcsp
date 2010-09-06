@@ -23,7 +23,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
-    protected int compiledSDKVersion;
+    protected int compiledSdkVersion;
     protected int compilerVersion;
 
 	@Override
@@ -54,6 +54,16 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 		}
 	}
 
+	@Override
+	public void start() {
+		compiledSdkVersion = 0;
+		super.start();
+	}
+
+	public int hleGetCompiledSdkVersion() {
+		return compiledSdkVersion;
+	}
+
 	public void sceKernelGetCompiledSdkVersion(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -61,7 +71,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
             log.debug("sceKernelGetCompiledSdkVersion");
         }
 
-		cpu.gpr[2] = compiledSDKVersion;
+		cpu.gpr[2] = compiledSdkVersion;
 	}
 
 	public void sceKernelSetCompiledSdkVersion(Processor processor) {
@@ -73,7 +83,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
             log.debug("sceKernelSetCompiledSdkVersion: sdkVersion=" + Integer.toHexString(sdkVersion));
         }
 
-        compiledSDKVersion = sdkVersion;
+        compiledSdkVersion = sdkVersion;
 		cpu.gpr[2] = 0;
 	}
 
