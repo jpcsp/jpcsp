@@ -102,12 +102,12 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
     public void stop() {
     }
 
-    protected final int PSP_UMD_NOT_PRESENT = 0x01;
-    protected final int PSP_UMD_PRESENT = 0x02;
-    protected final int PSP_UMD_CHANGED = 0x04;
-    protected final int PSP_UMD_INITING = 0x08;
-    protected final int PSP_UMD_INITED = 0x10;
-    protected final int PSP_UMD_READY = 0x20;
+    protected static final int PSP_UMD_NOT_PRESENT = 0x01;
+    protected static final int PSP_UMD_PRESENT = 0x02;
+    protected static final int PSP_UMD_CHANGED = 0x04;
+    protected static final int PSP_UMD_INITING = 0x08;
+    protected static final int PSP_UMD_INITED = 0x10;
+    protected static final int PSP_UMD_READY = 0x20;
     protected UmdIsoReader iso;
     protected boolean umdActivated;
     protected boolean umdDeactivateCalled;
@@ -151,6 +151,13 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
             if (umdActivated) {
                 // it can also return just 0x2 and 0x12, immediately after the UMD has been inserted, but we'll go straight to 0x22
                 event |= PSP_UMD_READY; // return 0x22
+
+                // The PSP is returning 0x32 instead of 0x22 when
+                // sceKernelSetCompiledSdkVersion()
+                // has been called (i.e. when sceKernelGetCompiledSdkVersion() != 0).
+                if (Modules.SysMemUserForUserModule.hleGetCompiledSdkVersion() != 0) {
+                	event |= PSP_UMD_INITED; // return 0x32
+                }
             } else {
                 event |= PSP_UMD_INITED; // return 0x12
             }
