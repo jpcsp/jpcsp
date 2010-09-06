@@ -361,6 +361,30 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
+	public void setUniform2(int id, int[] values) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setUniform2 %s=%d, %d", getUniformName(id), values[0], values[1]));
+		}
+		super.setUniform2(id, values);
+	}
+
+	@Override
+	public void setUniform3(int id, int[] values) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setUniform3 %s=%d, %d, %d", getUniformName(id), values[0], values[1], values[2]));
+		}
+		super.setUniform3(id, values);
+	}
+
+	@Override
+	public void setUniform4(int id, int[] values) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setUniform4 %s=%d, %d, %d, %d", getUniformName(id), values[0], values[1], values[2], values[3]));
+		}
+		super.setUniform4(id, values);
+	}
+
+	@Override
 	public void setUniform(int id, int value) {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("setUniform %s=%d", getUniformName(id), value));
@@ -575,5 +599,13 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("useProgram %d", program));
 		}
 		super.useProgram(program);
+	}
+
+	@Override
+	public void setViewport(int x, int y, int width, int height) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setViewport x=%d, y=%d, width=%d, height=%d", x, y, width, height));
+		}
+		super.setViewport(x, y, width, height);
 	}
 }

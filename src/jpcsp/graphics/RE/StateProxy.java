@@ -62,6 +62,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int bindTexture;
 	protected int bindBuffer;
 	protected int useProgram;
+	protected int textureMapMode;
+	protected int textureProjMapMode;
 
 	public StateProxy(IRenderingEngine proxy) {
 		super(proxy);
@@ -129,6 +131,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		bindBuffer = -1;
 		frontFace = false;
 		useProgram = 0;
+		textureMapMode = -1;
+		textureProjMapMode = -1;
 
 		super.startDisplay();
 	}
@@ -541,6 +545,15 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		if (useProgram != program) {
 			super.useProgram(program);
 			useProgram = program;
+		}
+	}
+
+	@Override
+	public void setTextureMapMode(int mode, int proj) {
+		if (mode != textureMapMode || proj != textureProjMapMode) {
+			super.setTextureMapMode(mode, proj);
+			textureMapMode = mode;
+			textureProjMapMode = proj;
 		}
 	}
 }
