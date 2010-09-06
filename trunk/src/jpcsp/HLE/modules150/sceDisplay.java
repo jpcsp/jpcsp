@@ -928,7 +928,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             re.copyTexSubImage(0, 0, 0, 0, 0, width, height);
 
             // Copy the current texture into memory
-            Buffer buffer = (pixels.limit() >= temp.limit() ? pixels : temp);
+            Buffer buffer = (pixels.capacity() >= temp.capacity() ? pixels : temp);
             buffer.clear();
             re.getTexImage(0, pixelformat, pixelformat, buffer);
 
