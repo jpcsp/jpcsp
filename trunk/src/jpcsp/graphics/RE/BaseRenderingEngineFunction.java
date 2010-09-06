@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
+import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
+import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
@@ -358,6 +360,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         re.setColorMask(colorWriteEnabled, colorWriteEnabled, colorWriteEnabled, colorWriteEnabled);
         re.setDepthMask(depthWriteEnabled);
         re.setTextureFunc(RE_TEXENV_REPLACE, true, false);
+        re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES);
         re.setFrontFace(true);
         re.setBones(0, null);
 
@@ -395,6 +398,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	    	re.setDepthMask(context.depthMask);
 	        re.setTextureFunc(context.textureFunc, context.textureAlphaUsed, context.textureColorDoubled);
 		}
+        re.setTextureMapMode(context.tex_map_mode, context.tex_proj_map_mode);
         context.scissorTestFlag.updateEnabled();
         context.lightingFlag.updateEnabled();
         re.setTextureMipmapMagFilter(context.tex_mag_filter);
