@@ -789,7 +789,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
         switch (savedataParams.mode) {
             case SceUtilitySavedataParam.MODE_AUTOLOAD:
-            case SceUtilitySavedataParam.MODE_LOAD:
+            case SceUtilitySavedataParam.MODE_LOAD: {
                 if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
                     if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
                         savedataParams.saveName = savedataParams.saveNameList[0];
@@ -809,9 +809,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     e.printStackTrace();
                 }
                 break;
+            }
 
-            case SceUtilitySavedataParam.MODE_LISTLOAD:
-                //Search for valid saves.
+            case SceUtilitySavedataParam.MODE_LISTLOAD: {
+                // Search for valid saves.
             	ArrayList<String> validNames = new ArrayList<String>();
 
                 for(int i = 0; i < savedataParams.saveNameList.length; i++) {
@@ -840,9 +841,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     }
                 }
                 break;
+            }
 
             case SceUtilitySavedataParam.MODE_AUTOSAVE:
-            case SceUtilitySavedataParam.MODE_SAVE:
+            case SceUtilitySavedataParam.MODE_SAVE: {
                 if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
                     if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
                         savedataParams.saveName = savedataParams.saveNameList[0];
@@ -861,8 +863,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     e.printStackTrace();
                 }
                 break;
+            }
 
-            case SceUtilitySavedataParam.MODE_LISTSAVE:
+            case SceUtilitySavedataParam.MODE_LISTSAVE: {
                 showSavedataList(savedataParams.saveNameList);
                 if (saveListSelection == null) {
                     log.warn("Savedata MODE_LISTSAVE no save selected");
@@ -880,8 +883,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     }
                 }
                 break;
+            }
 
-            case SceUtilitySavedataParam.MODE_DELETE:
+            case SceUtilitySavedataParam.MODE_DELETE: {
                 if(savedataParams.saveNameList != null) {
                     for(int i = 0; i < savedataParams.saveNameList.length; i++) {
                         String save = "ms0/PSP/SAVEDATA/" + (State.discId) +
@@ -896,6 +900,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
                 }
                 break;
+            }
 
             case SceUtilitySavedataParam.MODE_SIZES: {
             	// "METAL SLUG XX" outputs the following on stdout after calling mode 8:
@@ -990,6 +995,17 @@ public class sceUtility implements HLEModule, HLEStartModule {
             	} else {
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
             	}
+                break;
+            }
+
+            case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
+                String saveDir = "ms0/PSP/SAVEDATA/" + savedataParams.gameName + savedataParams.saveName;
+                if(deleteSavedataDir(saveDir)) {
+                    savedataParams.base.result = 0;
+                } else {
+                    log.warn("Savedata MODE_SINGLEDELETE directory not found!");
+                   savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+                }
                 break;
             }
 
@@ -1334,6 +1350,11 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 msgDialogParams.buttonPressed = 2;
             } else if (result == JOptionPane.CANCEL_OPTION) {
                 msgDialogParams.buttonPressed = 3;
+            }
+        } else if (msgDialogParams.isOptionOk()) {
+            int result = JOptionPane.showConfirmDialog(null, formatMessageForDialog(msgDialogParams.message), null, JOptionPane.OK_OPTION);
+            if (result == JOptionPane.OK_OPTION) {
+                msgDialogParams.buttonPressed = 1;
             }
         } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
             JOptionPane.showMessageDialog(null, formatMessageForDialog(msgDialogParams.message), title, JOptionPane.INFORMATION_MESSAGE);
