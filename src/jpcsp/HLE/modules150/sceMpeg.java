@@ -32,7 +32,9 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -443,6 +445,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",offset=0x" + Integer.toHexString(offset_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegQueryStreamOffset bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -488,6 +494,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         log.debug("sceMpegQueryStreamSize(buffer=0x" + Integer.toHexString(buffer_addr)
             + ",size=0x" + Integer.toHexString(size_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(size_addr)) {
             analyseMpeg(buffer_addr);
             log.debug(String.format("sceMpegQueryStreamSize magic=0x%08X"
@@ -519,10 +529,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         log.warn("PARTIAL: sceMpegInit");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if(isEnableMediaEngine()) {
             meChannel.flush();
         }
-
         // Checked. Only one instance of sceMpeg is allowed per file.
         if (mpegHandle != 0) {
             cpu.gpr[2] = 0x80618005;  // Current instance is already in use (actual name unknown).
@@ -536,6 +549,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         log.warn("PARTIAL: sceMpegFinish");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if(isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
@@ -554,6 +571,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         log.warn("PARTIAL: sceMpegQueryMemSize(mode=" + mode + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         // Mode = 0 -> 64k.
         cpu.gpr[2] = MPEG_MEMSIZE;
     }
@@ -578,6 +599,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",mode=" + mode
             + ",ddrtop=0x" + Integer.toHexString(ddrtop) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (size < MPEG_MEMSIZE) {
             log.warn("sceMpegCreate bad size " + size);
             cpu.gpr[2] = 0x80610022; // bad param/size (actual name unknown)
@@ -626,11 +651,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         log.warn("PARTIAL: sceMpegDelete(mpeg=0x" + Integer.toHexString(mpeg) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if(isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -650,6 +678,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",stream_type=" + stream_type
             + ",stream_num=" + stream_num + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -686,6 +718,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         log.warn("PARTIAL: sceMpegUnRegistStream(mpeg=0x" + Integer.toHexString(mpeg)
             + ",stream=0x" + Integer.toHexString(stream_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegUnRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -717,6 +753,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int mpeg = cpu.gpr[4];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ") bad mpeg handle");
             cpu.gpr[2] = -1;
@@ -737,6 +777,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int mpeg = cpu.gpr[4];
         int esBuf = cpu.gpr[5];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
             + ",esBuf=0x" + Integer.toHexString(esBuf) + ") bad mpeg handle");
@@ -761,6 +805,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int esSize_addr = cpu.gpr[5];
         int outSize_addr = cpu.gpr[6];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegQueryAtracEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -789,6 +837,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int esSize_addr = cpu.gpr[5];
         int outSize_addr = cpu.gpr[6];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegQueryPcmEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -821,6 +873,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",au=0x" + Integer.toHexString(au_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegInitAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -850,6 +906,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",stream_addr=0x" + Integer.toHexString(stream_addr)
             + ",mode=0x" + mode + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
     }
 
@@ -864,6 +924,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",stream_addr=0x" + Integer.toHexString(stream_addr)
             + ",mode=0x" + mode + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
     }
 
@@ -881,6 +945,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",au=0x" + Integer.toHexString(au_addr)
             + ",attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
@@ -944,6 +1012,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",au=0x" + Integer.toHexString(au_addr)
             + ",attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
@@ -995,6 +1067,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",au=0x" + Integer.toHexString(au_addr)
             + ",attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
@@ -1049,6 +1125,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         log.warn("PARTIAL: sceMpegFlushStream mpeg=0x" + Integer.toHexString(mpeg)
                 + "stream_addr=0x" + Integer.toHexString(stream_addr));
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if(isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
@@ -1064,11 +1144,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         log.warn("PARTIAL: sceMpegFlushAllStream");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if(isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegFlushAllStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1093,6 +1176,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",init=0x" + Integer.toHexString(init_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
             if(defaultFrameWidth == 0) {
@@ -1242,6 +1329,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         	log.info(String.format("PARTIAL: sceMpegAvcDecodeDetail(mpeg=0x%08X, detailAddr=0x%08X)", mpeg, detailAddr));
         }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeDetail bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1272,6 +1363,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         log.debug("sceMpegAvcDecodeMode(mpeg=0x" + Integer.toHexString(mpeg)
             + ",mode_addr=0x" + Integer.toHexString(mode_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn(String.format("sceMpegAvcDecodeMode bad mpeg handle 0x%08X", mpeg));
             cpu.gpr[2] = -1;
@@ -1310,6 +1405,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",status=0x" + Integer.toHexString(status_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeStop bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1331,6 +1430,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         log.warn("PARTIAL: sceMpegAvcDecodeFlush mpeg=0x" + Integer.toHexString(mpeg));
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if(isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
@@ -1356,6 +1459,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 + ",resultAddr=0x" + Integer.toHexString(resultAddr)
                 + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcQueryYCbCrSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1386,7 +1493,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",height=" + height
             + ")");
 
-        cpu.gpr[2] = 0;
+         if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+         }
+         cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcDecodeYCbCr(Processor processor) {
@@ -1398,6 +1509,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[6];
         int init_addr = cpu.gpr[7];
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
@@ -1502,6 +1617,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",status=0x" + Integer.toHexString(status_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeStopYCbCr bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1521,10 +1640,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
-        int source_addr = cpu.gpr[5]; //YCbCr data.
-        int range_addr = cpu.gpr[6];  //YCbCr range.
+        int source_addr = cpu.gpr[5]; // YCbCr data.
+        int range_addr = cpu.gpr[6];  // YCbCr range.
         int frameWidth = cpu.gpr[7];
-        int dest_addr = cpu.gpr[8];   //Converted data (RGB).
+        int dest_addr = cpu.gpr[8];   // Converted data (RGB).
 
         log.warn("PARTIAL: sceMpegAvcCsc(mpeg=0x" + Integer.toHexString(mpeg)
             + ",source=0x" + Integer.toHexString(source_addr)
@@ -1532,6 +1651,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",frameWidth=" + frameWidth
             + ",dest=0x" + Integer.toHexString(dest_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
             if(defaultFrameWidth == 0) {
@@ -1680,6 +1803,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",init=" + init + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAtracDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1755,6 +1882,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int size = getSizeFromPackets(packets);
         log.debug("sceMpegRingbufferQueryMemSize packets=" + packets + ", size=0x" + Integer.toHexString(size));
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = size;
     }
 
@@ -1776,6 +1907,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             + ",callback=0x" + Integer.toHexString(callback_addr)
             + ",args=0x" + Integer.toHexString(callback_args) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (size < getSizeFromPackets(packets)) {
             log.warn("sceMpegRingbufferConstruct insufficient space: size=" + size + ", packets=" + packets);
         	cpu.gpr[2] = 0x80610022;
@@ -1797,6 +1932,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         log.debug("sceMpegRingbufferDestruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
     }
 
@@ -1855,6 +1994,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.debug(String.format("sceMpegRingbufferPut(ringbuffer=0x%08X,numPackets=%d,available=%d", ringbuffer_addr, numPackets, available));
         }
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         if (numPackets < 0) {
             cpu.gpr[2] = 0;
         } else {
@@ -1877,6 +2020,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x"
                 + Integer.toHexString(ringbuffer_addr) + ") ret:" + ringbuffer.packetsFree);
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = ringbuffer.packetsFree;
     }
 
@@ -1894,6 +2041,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         log.warn("UNIMPLEMENTED: sceMpegNextAvcRpAu "
             + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
         cpu.gpr[2] = 0;
     }
 

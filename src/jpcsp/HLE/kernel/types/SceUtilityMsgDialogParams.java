@@ -29,13 +29,21 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
     public int options;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_ERROR              = 0x00000000;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_NORMAL             = 0x00000001;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_ALLOW_SOUND        = 0x00000000;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_MUTE_SOUND         = 0x00000002;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_NONE   = 0x00000000;
     	public final static int PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO  = 0x00000010;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_OK     = 0x00000020;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL      = 0x00000000;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL     = 0x00000080;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NONE = 0x00000000;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES  = 0x00000000;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO   = 0x00000100;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_OK   = 0x00000000;
     public int buttonPressed;
         public final static int PSP_UTILITY_BUTTON_PRESSED_INVALID              = 0;
         public final static int PSP_UTILITY_BUTTON_PRESSED_YES                  = 1;
+        public final static int PSP_UTILITY_BUTTON_PRESSED_OK                   = 1;
         public final static int PSP_UTILITY_BUTTON_PRESSED_NO                   = 2;
     	public final static int PSP_UTILITY_BUTTON_PRESSED_ESC                  = 3;
 
@@ -94,6 +102,10 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
 
     public boolean isOptionYesNo() {
         return isOptionYesNoDefaultYes() || isOptionYesNoDefaultNo();
+    }
+
+    public boolean isOptionOk() {
+        return((options & PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_OK) == PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_OK);
     }
 
     @Override

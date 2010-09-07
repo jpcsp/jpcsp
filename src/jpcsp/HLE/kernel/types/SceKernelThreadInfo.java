@@ -59,20 +59,20 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_THREAD_STOPPED  = 0x00000010;
     public static final int PSP_THREAD_KILLED   = 0x00000020;
 
-    public static final int PSP_WAIT_NONE       = 0x00;
-    public static final int PSP_WAIT_SLEEP      = 0x01; // sleep thread
-    public static final int PSP_WAIT_DELAY      = 0x02; // delay thread
-    public static final int PSP_WAIT_SEMA       = 0x03; // wait sema
-    public static final int PSP_WAIT_EVENTFLAG  = 0x04; // wait event flag
-    public static final int PSP_WAIT_MBX        = 0x05; // wait mbx
-    public static final int PSP_WAIT_VPL        = 0x06; // wait vpl
-    public static final int PSP_WAIT_FPL        = 0x07; // wait fpl
-    public static final int PSP_WAIT_MSGPIPE    = 0x08; // wait msg pipe (send and receive)
-    public static final int PSP_WAIT_THREAD_END = 0x09; // wait thread end
-    public static final int PSP_WAIT_a          = 0x0a; // ?
-    public static final int PSP_WAIT_b          = 0x0b; // ?
-    public static final int PSP_WAIT_MUTEX      = 0x0c; // wait mutex
-    public static final int PSP_WAIT_LWMUTEX    = 0x0d; // wait lwmutex
+    public static final int PSP_WAIT_NONE               = 0x00;
+    public static final int PSP_WAIT_SLEEP              = 0x01; // Wait on sleep thread.
+    public static final int PSP_WAIT_DELAY              = 0x02; // Wait on delay thread.
+    public static final int PSP_WAIT_SEMA               = 0x03; // Wait on sema.
+    public static final int PSP_WAIT_EVENTFLAG          = 0x04; // Wait on event flag.
+    public static final int PSP_WAIT_MBX                = 0x05; // Wait on mbx.
+    public static final int PSP_WAIT_VPL                = 0x06; // Wait on vpl.
+    public static final int PSP_WAIT_FPL                = 0x07; // Wait on fpl.
+    public static final int PSP_WAIT_MSGPIPE            = 0x08; // Wait on msg pipe (send and receive).
+    public static final int PSP_WAIT_THREAD_END         = 0x09; // Wait on thread end.
+    public static final int PSP_WAIT_EVENTHANDLER       = 0x0a; // Wait on event handler release.
+    public static final int PSP_WAIT_CALLBACK_DELETE    = 0x0b; // Wait on callback delete.
+    public static final int PSP_WAIT_MUTEX              = 0x0c; // Wait on mutex.
+    public static final int PSP_WAIT_LWMUTEX            = 0x0d; // Wait on lwmutex.
 
     // SceKernelThreadInfo <http://psp.jim.sh/pspsdk-doc/structSceKernelThreadInfo.html>
     public final String name;

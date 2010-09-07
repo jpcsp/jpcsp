@@ -99,7 +99,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public final static int PSP_O_CREAT    = 0x0200;
     public final static int PSP_O_TRUNC    = 0x0400;
     public final static int PSP_O_EXCL     = 0x0800;
-    public final static int PSP_O_NBUF     = 0x4000; // Special mode only valid for media files.
+    public final static int PSP_O_NBUF     = 0x4000;     // Used on the PSP to bypass the internal disc cache (commonly seen in media files that need to maintain a fixed bitrate).
     public final static int PSP_O_NOWAIT   = 0x8000;
     public final static int PSP_O_PLOCK    = 0x2000000;  // Used on the PSP to open the file inside a power lock (safe).
     public final static int PSP_O_PGD      = 0x40000000; // From "Kingdom Hearts: Birth by Sleep".
@@ -940,16 +940,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             if ((flags & PSP_O_CREAT) == PSP_O_CREAT) log.debug("PSP_O_CREAT");
             if ((flags & PSP_O_TRUNC) == PSP_O_TRUNC) log.debug("PSP_O_TRUNC");
             if ((flags & PSP_O_EXCL) == PSP_O_EXCL) log.debug("PSP_O_EXCL");
+            if ((flags & PSP_O_NBUF) == PSP_O_NBUF) log.debug("PSP_O_NBUF");
             if ((flags & PSP_O_NOWAIT) == PSP_O_NOWAIT) log.debug("PSP_O_NOWAIT");
             if ((flags & PSP_O_PLOCK) == PSP_O_PLOCK) log.debug("PSP_O_PLOCK");
             if ((flags & PSP_O_PGD) == PSP_O_PGD) log.debug("PSP_O_PGD");
-        }
-
-        // PSP_O_NBUF (actual name unknown).
-        // This mode seems to be associated only with media files.
-        // Let the MediaEngine handle these files instead of regular sceMpeg methods.
-        if ((flags & PSP_O_NBUF) == PSP_O_NBUF) {
-            log.warn("PSP_O_NBUF - " + filename + " doesn't use media buffer!");
         }
 
         String mode = getMode(flags);
