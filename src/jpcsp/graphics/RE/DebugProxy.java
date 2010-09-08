@@ -608,4 +608,44 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.setViewport(x, y, width, height);
 	}
+
+	@Override
+	public void setScissor(int x, int y, int width, int height) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setScissor x=%d, y=%d, width=%d, height=%d", x, y, width, height));
+		}
+		super.setScissor(x, y, width, height);
+	}
+
+	@Override
+	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("setTexSubImage level=%d, xOffset=%d, yOffset=%d, width=%d, height=%d, format=%d, type=%d", level, xOffset, yOffset, width, height, format, type));
+		}
+		super.setTexSubImage(level, xOffset, yOffset, width, height, format, type, buffer);
+	}
+
+	@Override
+	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("copyTexSubImage level=%d, xOffset=%d, yOffset=%d, x=%d, y=%d, width=%d, height=%d", level, xOffset, yOffset, x, y, width, height));
+		}
+		super.copyTexSubImage(level, xOffset, yOffset, x, y, width, height);
+	}
+
+	@Override
+	public void getTexImage(int level, int format, int type, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("getTexImage level=%d, format=%d, type=%d", level, format, type));
+		}
+		super.getTexImage(level, format, type, buffer);
+	}
+
+	@Override
+	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("readPixels x=%d, y=%d, width=%d, height=%d, format=%d, type=%d", x, y, width, height, format, type));
+		}
+		super.readPixels(x, y, width, height, format, type, buffer);
+	}
 }

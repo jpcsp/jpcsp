@@ -126,7 +126,7 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
     public int tex_map_mode;
     public int tex_proj_map_mode;
 
-	public boolean[] glColorMask = new boolean[4];
+	public int[] glColorMask = new int[4];
 
     // OpenGL flags (enable/disable)
 	private boolean glTextureGenS;
@@ -351,7 +351,7 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		read32Array(glStencilFail);
 		read32Array(glStencilPassDepthPass);
 		read32Array(glStencilPassDepthFail);
-		readBooleanArray(glColorMask);
+		read32Array(glColorMask);
 	}
 
 	@Override
@@ -521,7 +521,7 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		write32Array(glStencilFail);
 		write32Array(glStencilPassDepthPass);
 		write32Array(glStencilPassDepthFail);
-		writeBooleanArray(glColorMask);
+		write32Array(glColorMask);
 
 		if (getOffset() > sizeof()) {
 			Modules.log.error("pspGeContext buffer overflow (" + getOffset() + " bytes)!");
