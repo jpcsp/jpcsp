@@ -1294,11 +1294,11 @@ void init()
 	addAttribute(", Pos", &zpos, NULL, x + 14, y, 0, 0xFFFF, 1000);
 	y++;
 
-	addAttribute("Viewport X", &viewportX, NULL, x, y, 0, 4095, 100);
-	addAttribute(", Y", &viewportY, NULL, x + 16, y, 0, 4095, 100);
+	addAttribute("Viewport X", &viewportX, NULL, x, y, 0, 4095, 10);
+	addAttribute(", Y", &viewportY, NULL, x + 16, y, 0, 4095, 10);
 	y++;
-	addAttribute("         Width", &viewportWidth, NULL, x, y, 0, 4096, 100);
-	addAttribute(", Height", &viewportHeight, NULL, x + 19, y, 0, 4096, 100);
+	addAttribute("         Width", &viewportWidth, NULL, x, y, -4096, 4095, 10);
+	addAttribute(", Height", &viewportHeight, NULL, x + 19, y, -4096, 4095, 10);
 	y++;
 	addAttribute("Offset X", &offsetX, NULL, x, y, 0, 4096, 1);
 	addAttribute(", Y", &offsetY, NULL, x + 14, y, 0, 4096, 1);
