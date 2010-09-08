@@ -35,7 +35,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int[][][] uniformIntArray;
 	protected float[][] uniformFloat;
 	protected float[][][] uniformFloatArray;
-	protected boolean[] clientState;
+	protected StateBoolean[] clientState;
 	protected boolean[] vertexAttribArray;
 	protected int textureMipmapMinFilter;
 	protected int textureMipmapMagFilter;
@@ -64,6 +64,32 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int useProgram;
 	protected int textureMapMode;
 	protected int textureProjMapMode;
+	protected int viewportX;
+	protected int viewportY;
+	protected int viewportWidth;
+	protected int viewportHeight;
+
+	protected static class StateBoolean {
+		private boolean undefined = true;
+		private boolean value;
+
+		public boolean isUndefined() {
+			return undefined;
+		}
+
+		public void setUndefined() {
+			undefined = true;
+		}
+
+		public boolean getValue() {
+			return value;
+		}
+
+		public void setValue(boolean value) {
+			this.value = value;
+			undefined = false;
+		}
+	}
 
 	public StateProxy(IRenderingEngine proxy) {
 		super(proxy);
@@ -85,7 +111,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		matrix[GU_TEXTURE] = new float[matrix4Size];
 		matrix[RE_BONES_MATRIX] = new float[8 * matrix4Size];
 
-		clientState = new boolean[4];
+		clientState = new StateBoolean[4];
+		for (int i = 0; i < clientState.length; i++) {
+			clientState[i] = new StateBoolean();
+		}
 		vertexAttribArray = new boolean[maxUniformId];
 		colorMask = new int[4];
 	}
@@ -94,7 +123,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void startDisplay() {
 		// The following properties are lost when starting a new display
 		for (int i = 0; i < clientState.length; i++) {
-			clientState[i] = false;
+			clientState[i].setUndefined();
 		}
 
 		for (int i = 0; i < flags.length; i++) {
@@ -133,6 +162,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		useProgram = 0;
 		textureMapMode = -1;
 		textureProjMapMode = -1;
+		viewportX = -1;
+		viewportY = -1;
+		viewportWidth = -1;
+		viewportHeight = -1;
 
 		super.startDisplay();
 	}
@@ -345,9 +378,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void disableClientState(int type) {
-		if (clientState[type]) {
+		StateBoolean state = clientState[type];
+		if (state.getValue() || state.isUndefined()) {
 			super.disableClientState(type);
-			clientState[type] = false;
+			state.setValue(false);
 		}
 	}
 
@@ -355,9 +389,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void enableClientState(int type) {
 		// enableClientState(RE_VERTEX) cannot be cached: it is required each time
 		// by OpenGL and seems to trigger the correct Vertex generation.
-		if (!clientState[type] || type == RE_VERTEX) {
+		StateBoolean state = clientState[type];
+		if (type == RE_VERTEX || !state.getValue() || state.isUndefined()) {
 			super.enableClientState(type);
-			clientState[type] = true;
+			state.setValue(true);
 		}
 	}
 
@@ -536,7 +571,13 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setViewport(int x, int y, int width, int height) {
 		if (x >= 0 && y >= 0 && width >= 0 && height >= 0) {
-			super.setViewport(x, y, width, height);
+			if (x != viewportX || y != viewportY || width != viewportWidth || height != viewportHeight) {
+				super.setViewport(x, y, width, height);
+				viewportX = x;
+				viewportY = y;
+				viewportWidth = width;
+				viewportHeight = height;
+			}
 		}
 	}
 

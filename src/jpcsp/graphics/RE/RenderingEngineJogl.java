@@ -884,8 +884,10 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 
 	@Override
 	public void setPixelStore(int rowLength, int alignment) {
-        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, alignment);
         gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, rowLength);
+        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, alignment);
+        gl.glPixelStorei(GL.GL_PACK_ROW_LENGTH, rowLength);
+        gl.glPixelStorei(GL.GL_PACK_ALIGNMENT, alignment);
 	}
 
 	@Override

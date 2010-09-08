@@ -544,7 +544,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 		    re.bindTexture(texFb);
 
 		    // Copy screen to the current texture
-		    re.copyTexSubImage(0, 0, 0, 0, 0, widthGe, heightGe);
+		    re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferwidthGe, widthGe), heightGe);
 
 		    // Re-render GE/current texture upside down
 		    drawFrameBuffer(true, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
@@ -767,7 +767,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         re.setPixelStore(bufferwidthGe, getPixelFormatBytes(pixelformatGe));
 
         // Copy screen to the GE texture
-        re.copyTexSubImage(0, 0, 0, 0, 0, widthGe, heightGe);
+        re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(widthGe, bufferwidthGe), heightGe);
 
         // Copy the GE texture into temp buffer
         temp.clear();
@@ -855,7 +855,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             re.setViewport(0, 0, canvasWidth, canvasHeight);
         }
 
-        re.setPixelStore(bufferwidth, getPixelFormatBytes(pixelformat));
         re.bindTexture(texFb);
 
         IREBufferManager bufferManager = re.getBufferManager();
@@ -895,13 +894,9 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         re.endDirectRendering();
 
         isrotating = false;
-
     }
 
     private void copyScreenToPixels(Buffer pixels, int bufferwidth, int pixelformat, int width, int height) {
-    	re.setModelViewMatrix(null);
-    	re.setTextureMatrix(null);
-
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
@@ -917,15 +912,13 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
                 re.readPixels(0, y, widthToRead, 1, pixelformat, pixelformat, pixels);
             }
         } else {
-        	re.setProjectionMatrix(null);
-
         	// Set texFb as the current texture
             re.bindTexture(texFb);
 
             re.setPixelStore(bufferwidth, getPixelFormatBytes(pixelformat));
 
             // Copy screen to the current texture
-            re.copyTexSubImage(0, 0, 0, 0, 0, width, height);
+            re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferwidth, width), height);
 
             // Copy the current texture into memory
             Buffer buffer = (pixels.capacity() >= temp.capacity() ? pixels : temp);
@@ -977,10 +970,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             }
             // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
         }
-        // re.setProjectionMatrix(context.proj_uploaded_matrix);
-        // re.setTextureMatrix(context.texture_uploaded_matrix);
-        // re.setViewMatrix(context.view_uploaded_matrix);
-        // re.setModelMatrix(context.model_uploaded_matrix);
     }
 
     protected void blockCurrentThreadOnVblank(boolean doCallbacks) {
