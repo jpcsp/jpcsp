@@ -76,8 +76,6 @@ import org.apache.log4j.Logger;
 //   are immutable. This information could be stored in a file for subsequent runs and
 //   used as hints for the next runs.
 // - Unswizzle textures in shader (is this possible?)
-// - implement PRIM_SPRITES in shader (instead of duplicating vertex in Java):
-//   use a geometry shader
 //
 public class VideoEngine {
 
@@ -158,6 +156,7 @@ public class VideoEngine {
     private int maxSpriteHeight;
     private boolean blendChanged;
     private boolean depthChanged;
+    private boolean scissorChanged;
     // opengl needed information/buffers
     private int textureId = -1;
     private int[] tmp_texture_buffer32 = new int[1024 * 1024];
@@ -482,6 +481,7 @@ public class VideoEngine {
         viewportChanged = true;
         depthChanged = true;
         materialChanged = true;
+        scissorChanged = true;
         errorCount = 0;
         usingTRXKICK = false;
         maxSpriteHeight = 0;
@@ -1112,6 +1112,7 @@ public class VideoEngine {
             case REGION1:
             	context.region_x1 = normalArgument & 0x3ff;
             	context.region_y1 = (normalArgument >> 10) & 0x3ff;
+            	scissorChanged = true;
                 break;
 
             case REGION2:
@@ -1122,6 +1123,7 @@ public class VideoEngine {
                 if (isLogDebugEnabled) {
                     log("drawRegion(" + context.region_x1 + "," + context.region_y1 + "," + context.region_width + "," + context.region_height + ")");
                 }
+            	scissorChanged = true;
                 break;
 
             /*
@@ -2250,6 +2252,7 @@ public class VideoEngine {
             case SCISSOR1:
             	context.scissor_x1 = normalArgument & 0x3ff;
             	context.scissor_y1 = (normalArgument >> 10) & 0x3ff;
+            	scissorChanged = true;
                 break;
 
             case SCISSOR2:
@@ -2257,19 +2260,10 @@ public class VideoEngine {
             	context.scissor_y2 = (normalArgument >> 10) & 0x3ff;
             	context.scissor_width = 1 + context.scissor_x2 - context.scissor_x1;
             	context.scissor_height = 1 + context.scissor_y2 - context.scissor_y1;
-
                 if (isLogDebugEnabled) {
                     log("sceGuScissor(" + context.scissor_x1 + "," + context.scissor_y1 + "," + context.scissor_width + "," + context.scissor_height + ")");
                 }
-                if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0 && context.scissor_width <= context.region_width && context.scissor_height <= context.region_height) {
-                	context.scissorTestFlag.setEnabled(true);
-                    re.setScissor(context.scissor_x1, context.scissor_y1, context.scissor_width, context.scissor_height);
-                    if (isLogDebugEnabled) {
-                        log("sceGuEnable(GU_SCISSOR_TEST)");
-                    }
-                } else {
-                	context.scissorTestFlag.setEnabled(false);
-                }
+            	scissorChanged = true;
                 break;
 
             case NEARZ: {
@@ -2757,7 +2751,7 @@ public class VideoEngine {
                         if (vinfo.position != 0) {
                             useTexture = true;
                             useTextureFromPosition = true;
-                	        nTexCoord = 3;
+                	        nTexCoord = nVertex;
                         }
                         break;
                     case TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES:
@@ -2856,16 +2850,18 @@ public class VideoEngine {
                     textureNative = vertexInfoReader.isNormalNative();
                     textureOffset = vertexInfoReader.getNormalOffset();
                     textureType = vertexInfoReader.getNormalType();
+                    nTexCoord = vertexInfoReader.getNormalNumberValues();
                 } else if (useTextureFromPosition) {
                     textureNative = vertexInfoReader.isPositionNative();
                     textureOffset = vertexInfoReader.getPositionOffset();
                     textureType = vertexInfoReader.getPositionType();
+                    nTexCoord = vertexInfoReader.getPositionNumberValues();
                 } else {
                     textureNative = vertexInfoReader.isTextureNative();
                     textureOffset = vertexInfoReader.getTextureOffset();
                     textureType = vertexInfoReader.getTextureType();
+                    nTexCoord = vertexInfoReader.getTextureNumberValues();
                 }
-                nTexCoord = vertexInfoReader.getTextureNumberValues();
                 setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative);
             }
             nVertex = vertexInfoReader.getPositionNumberValues();
@@ -3092,6 +3088,7 @@ public class VideoEngine {
         }
 
         endRendering(useVertexColor, useTexture, numberOfVertex);
+
     }
 
     private void executeCommandTRXKICK(int normalArgument) {
@@ -4110,12 +4107,36 @@ public class VideoEngine {
         return buffer;
     }
 
+    private void setScissor() {
+        if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0 && context.scissor_width <= context.region_width && context.scissor_height <= context.region_height) {
+        	int scissorX = context.scissor_x1;
+        	int scissorY = context.scissor_y1;
+        	int scissorWidth = context.scissor_width;
+        	int scissorHeight = context.scissor_height;
+        	if (scissorHeight < 272) {
+        		scissorY += 272 - scissorHeight;
+        	}
+            re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
+        	context.scissorTestFlag.setEnabled(true);
+        } else {
+        	context.scissorTestFlag.setEnabled(false);
+        }
+    }
+
     private boolean initRendering() {
         /*
          * Defer transformations until primitive rendering
          */
 
-        /*
+    	/*
+    	 * Set Scissor
+    	 */
+    	if (scissorChanged) {
+    		setScissor();
+    		scissorChanged = false;
+    	}
+
+    	/*
          * Apply Blending
          */
         if (blendChanged) {
@@ -4128,7 +4149,21 @@ public class VideoEngine {
          */
         if (projectionMatrixUpload.isChanged()) {
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	re.setProjectionMatrix(context.proj_uploaded_matrix);
+            	if (context.viewport_height <= 0 && context.viewport_width >= 0) {
+            		re.setProjectionMatrix(context.proj_uploaded_matrix);
+            	} else {
+            		float[] flippedMatrix = new float[16];
+            		System.arraycopy(context.proj_uploaded_matrix, 0, flippedMatrix, 0, flippedMatrix.length);
+            		if (context.viewport_height > 0) {
+                		// Flip upside-down
+            			flippedMatrix[5] = -flippedMatrix[5];
+            		}
+            		if (context.viewport_width < 0) {
+            			// Flip right-to-left
+            			flippedMatrix[0] = -flippedMatrix[0];
+            		}
+            		re.setProjectionMatrix(flippedMatrix);
+            	}
             } else {
             	re.setProjectionMatrix(null);
             }
@@ -4154,7 +4189,22 @@ public class VideoEngine {
                 	context.viewport_width = 480;
                 	context.viewport_height = 272;
                 }
-                re.setViewport(context.viewport_cx - context.offset_x, context.viewport_cy - context.offset_y, context.viewport_width, context.viewport_height);
+
+                int halfHeight = Math.abs(context.viewport_height);
+                int haltWidth = Math.abs(context.viewport_width);
+                int viewportX = context.viewport_cx - haltWidth - context.offset_x;
+                int viewportY = context.viewport_cy - halfHeight - context.offset_y;
+                int viewportWidth = 2 * haltWidth;
+                int viewportHeight = 2 * halfHeight;
+
+                // Align the viewport to the top of the window
+                if (viewportHeight < 272) {
+                    viewportY += 272 - viewportHeight;
+            	}
+
+                if (viewportHeight <= 272) {
+                	re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
+                }
             }
             viewportChanged = false;
         }
@@ -4265,7 +4315,7 @@ public class VideoEngine {
          */
         if (textureMatrixUpload.isChanged()) {
             if (context.transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_POSITION);;
+            	re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES);
 
             	float[] textureMatrix = new float[] {
             			1.f / context.texture_width[0], 0, 0, 0,
