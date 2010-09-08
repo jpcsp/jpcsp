@@ -89,7 +89,7 @@ public class VertexInfo {
 
     // cache data
     private final static int hashStride = 0; // Currently no stride on vertex hashes. This is producing incorrect vertex matches.
-	private int glId = -1;	// id created by glGenBuffers
+	private int bufferId = -1;	// id created by glGenBuffers
 	private boolean hashCodeComputed = false;
 	private int hashCode;
 	private int cachedNumberOfVertex;
@@ -675,7 +675,7 @@ public class VertexInfo {
     	return hashCode;
     }
 
-    public boolean equals(VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForVBO) {
+    public boolean equals(VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForBuffer) {
 		if (param != vertexInfo.param ||
 		    cachedNumberOfVertex != numberOfVertex ||
 		    ptr_index != vertexInfo.ptr_index) {
@@ -689,7 +689,7 @@ public class VertexInfo {
 		}
 
 		// Check if the bone matrix has changed, only if not using Skinning Shaders
-		if (weight != 0 && numberOfWeightsForVBO > 0) {
+		if (weight != 0 && numberOfWeightsForBuffer == 0) {
 			for (int i = 0; i < skinningWeightCount; i++) {
 				for (int j = 0; j < 12; j++) {
 					if (cachedBoneMatrix[i][j] != boneMatrix[i][j]) {
@@ -713,12 +713,12 @@ public class VertexInfo {
 	}
 
 	public void bindVertex(IRenderingEngine re) {
-		re.bindBuffer(glId);
+		re.bindBuffer(bufferId);
 	}
 
 	public void loadVertex(IRenderingEngine re, FloatBuffer buffer, int size) {
-		if (glId == -1) {
-            glId = re.genBuffer();
+		if (bufferId == -1) {
+            bufferId = re.genBuffer();
 		}
 
 		bindVertex(re);
@@ -735,23 +735,23 @@ public class VertexInfo {
 	}
 
 	public void deleteVertex(IRenderingEngine re) {
-		if (glId != -1) {
-			re.deleteBuffer(glId);
-            glId = -1;
+		if (bufferId != -1) {
+			re.deleteBuffer(bufferId);
+            bufferId = -1;
 		}
 		cachedMorphWeights = null;
 		cachedBoneMatrix = null;
 		cachedBuffer = null;
     }
 
-	public void prepareForCache(VertexCache vertexCache, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForVBO) {
+	public void prepareForCache(VertexCache vertexCache, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForBuffer) {
 		this.vertexCache = vertexCache;
 		cachedNumberOfVertex = numberOfVertex;
 
 		cachedMorphWeights = new float[morphingVertexCount];
 		System.arraycopy(morph_weight, 0, cachedMorphWeights, 0, morphingVertexCount);
 
-		if (weight != 0 && numberOfWeightsForVBO > 0) {
+		if (weight != 0 && numberOfWeightsForBuffer == 0) {
 			cachedBoneMatrix = new float[skinningWeightCount][];
 			for (int i = 0; i < skinningWeightCount; i++) {
 				cachedBoneMatrix[i] = new float[12];

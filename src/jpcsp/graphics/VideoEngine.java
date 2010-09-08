@@ -2862,17 +2862,17 @@ public class VideoEngine {
                     textureType = vertexInfoReader.getTextureType();
                     nTexCoord = vertexInfoReader.getTextureNumberValues();
                 }
-                setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative);
+                setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative, true);
             }
             nVertex = vertexInfoReader.getPositionNumberValues();
             nColor = vertexInfoReader.getColorNumberValues();
             int nWeight = vertexInfoReader.getWeightNumberValues();
 
             re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor);
-            setColorPointer(useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative());
-            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative());
-            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative());
-            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative());
+            setColorPointer(useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), true);
+            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), true);
+            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), true);
+            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), true);
 
             re.drawArrays(type, 0, numberOfVertex);
 
@@ -2958,7 +2958,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer);
+                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
                     re.drawArrays(type, 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
                     break;
@@ -3067,7 +3067,7 @@ public class VideoEngine {
                         }
                         cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, 0);
+                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, 0, cachedVertexInfo == null);
                     re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
                     context.cullFaceFlag.updateEnabled();
                     break;
@@ -3330,9 +3330,11 @@ public class VideoEngine {
         re.enableClientState(IRenderingEngine.RE_VERTEX);
     }
 
-    private void setTexCoordPointer(boolean useTexture, int nTexCoord, int type, int stride, int offset, boolean isNative) {
+    private void setTexCoordPointer(boolean useTexture, int nTexCoord, int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
         if (useTexture) {
-            if (isNative) {
+        	if (!useBufferManager) {
+        		re.setTexCoordPointer(nTexCoord, type, stride, offset);
+        	} else if (isNative) {
             	bufferManager.setTexCoordPointer(nativeBufferId, nTexCoord, type, vinfo.vertexSize, offset);
             } else {
             	bufferManager.setTexCoordPointer(bufferId, nTexCoord, type, stride, offset);
@@ -3340,9 +3342,11 @@ public class VideoEngine {
         }
     }
 
-    private void setColorPointer(boolean useVertexColor, int nColor, int type, int stride, int offset, boolean isNative) {
+    private void setColorPointer(boolean useVertexColor, int nColor, int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
         if (useVertexColor) {
-            if (isNative) {
+        	if (!useBufferManager) {
+        		re.setColorPointer(nColor, type, stride, offset);
+        	} else if (isNative) {
                 bufferManager.setColorPointer(nativeBufferId, nColor, type, vinfo.vertexSize, offset);
             } else {
             	bufferManager.setColorPointer(bufferId, nColor, type, stride, offset);
@@ -3350,17 +3354,21 @@ public class VideoEngine {
         }
     }
 
-    private void setVertexPointer(int nVertex, int type, int stride, int offset, boolean isNative) {
-        if (isNative) {
+    private void setVertexPointer(int nVertex, int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
+    	if (!useBufferManager) {
+    		re.setVertexPointer(nVertex, type, stride, offset);
+    	} else if (isNative) {
             bufferManager.setVertexPointer(nativeBufferId, nVertex, type, vinfo.vertexSize, offset);
         } else {
         	bufferManager.setVertexPointer(bufferId, nVertex, type, stride, offset);
         }
     }
 
-    private void setNormalPointer(int type, int stride, int offset, boolean isNative) {
+    private void setNormalPointer(int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
         if (vinfo.normal != 0) {
-            if (isNative) {
+        	if (!useBufferManager) {
+        		re.setNormalPointer(type, stride, offset);
+        	} else if (isNative) {
                 bufferManager.setNormalPointer(nativeBufferId, type, vinfo.vertexSize, offset);
             } else {
             	bufferManager.setNormalPointer(bufferId, type, stride, offset);
@@ -3368,9 +3376,11 @@ public class VideoEngine {
         }
     }
 
-    private void setWeightPointer(int numberOfWeightsForBuffer, int type, int stride, int offset, boolean isNative) {
+    private void setWeightPointer(int numberOfWeightsForBuffer, int type, int stride, int offset, boolean isNative, boolean useBufferManager) {
     	if (numberOfWeightsForBuffer > 0) {
-    		if (isNative) {
+    		if (!useBufferManager) {
+    			re.setWeightPointer(numberOfWeightsForBuffer, type, stride, offset);
+    		} else if (isNative) {
     			re.setWeightPointer(numberOfWeightsForBuffer, type, vinfo.vertexSize, offset);
     		} else {
     			re.setWeightPointer(numberOfWeightsForBuffer, type, stride, offset);
@@ -3378,7 +3388,7 @@ public class VideoEngine {
     	}
     }
 
-    private void setDataPointers(int nVertex, boolean useVertexColor, int nColor, boolean useTexture, int nTexCoord, boolean useNormal, int numberOfWeightsForBuffer) {
+    private void setDataPointers(int nVertex, boolean useVertexColor, int nColor, boolean useTexture, int nTexCoord, boolean useNormal, int numberOfWeightsForBuffer, boolean useBufferManager) {
         int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos = 0;
 
         if (vinfo.texture != 0 || useTexture) {
@@ -3400,11 +3410,11 @@ public class VideoEngine {
         }
 
         enableClientState(useVertexColor, useTexture);
-        setTexCoordPointer(useTexture, nTexCoord, IRenderingEngine.RE_FLOAT, stride, 0, false);
-        setColorPointer(useVertexColor, nColor, IRenderingEngine.RE_FLOAT, stride, cpos, false);
-        setNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false);
-        setWeightPointer(numberOfWeightsForBuffer, IRenderingEngine.RE_FLOAT, stride, wpos, false);
-        setVertexPointer(nVertex, IRenderingEngine.RE_FLOAT, stride, vpos, false);
+        setTexCoordPointer(useTexture, nTexCoord, IRenderingEngine.RE_FLOAT, stride, 0, false, useBufferManager);
+        setColorPointer(useVertexColor, nColor, IRenderingEngine.RE_FLOAT, stride, cpos, false, useBufferManager);
+        setNormalPointer(IRenderingEngine.RE_FLOAT, stride, npos, false, useBufferManager);
+        setWeightPointer(numberOfWeightsForBuffer, IRenderingEngine.RE_FLOAT, stride, wpos, false, useBufferManager);
+        setVertexPointer(nVertex, IRenderingEngine.RE_FLOAT, stride, vpos, false, useBufferManager);
     }
 
     public void doPositionSkinning(VertexInfo vinfo, float[] boneWeights, float[] position) {
@@ -4679,7 +4689,7 @@ public class VideoEngine {
 	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
 			boolean useVertexColor, boolean useTexture, boolean useNormal) {
 		// TODO: Compute the normals
-		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0);
+		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
 
 		re.setVertexInfo(vinfo, false, useVertexColor);
 
