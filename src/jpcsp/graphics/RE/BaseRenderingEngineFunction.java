@@ -718,4 +718,12 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
 		return VisibilityTestResult.visible;
 	}
+
+	@Override
+	public void startDisplay() {
+		for (int light = 0; light < context.lightFlags.length; light++) {
+			context.lightFlags[light].update();
+		}
+		super.startDisplay();
+	}
 }
