@@ -102,12 +102,13 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
     public void stop() {
     }
 
+    protected static final int PSP_UMD_INIT = 0x00;
     protected static final int PSP_UMD_NOT_PRESENT = 0x01;
     protected static final int PSP_UMD_PRESENT = 0x02;
     protected static final int PSP_UMD_CHANGED = 0x04;
-    protected static final int PSP_UMD_INITING = 0x08;
-    protected static final int PSP_UMD_INITED = 0x10;
-    protected static final int PSP_UMD_READY = 0x20;
+    protected static final int PSP_UMD_NOT_READY = 0x08;
+    protected static final int PSP_UMD_READY = 0x10;
+    protected static final int PSP_UMD_READABLE = 0x20;
     protected UmdIsoReader iso;
     protected boolean umdActivated;
     protected boolean umdDeactivateCalled;
@@ -115,7 +116,6 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
 
     public void setIsoReader(UmdIsoReader iso) {
         this.iso = iso;
-
         if (iso == null) {
             umdActivated = false;
         } else {
@@ -127,47 +127,23 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         return umdActivated;
     }
 
-    /** note this value is NOT the same as that used in the activate/deactivate callback */
     public int getUmdStat() {
         int stat;
         if (iso != null) {
-            stat = PSP_UMD_PRESENT | PSP_UMD_INITED; // return 0x12
+            stat = PSP_UMD_PRESENT;
             if (umdActivated) {
-                stat |= PSP_UMD_READY; // return 0x32
+                stat |= PSP_UMD_READY;
+                stat |= PSP_UMD_READABLE;
+            } else {
+                stat |= PSP_UMD_NOT_READY;
             }
         } else {
-            stat = PSP_UMD_NOT_PRESENT; // return 0x1
+            stat = PSP_UMD_NOT_PRESENT;
             if (umdDeactivateCalled) {
-                stat |= PSP_UMD_INITING; // return 0x9
+                stat |= PSP_UMD_NOT_READY;
             }
         }
         return stat;
-    }
-
-    protected int getUmdCallbackEvent() {
-        int event = 0;
-        if (iso != null) {
-            event = PSP_UMD_PRESENT;
-            if (umdActivated) {
-                // it can also return just 0x2 and 0x12, immediately after the UMD has been inserted, but we'll go straight to 0x22
-                event |= PSP_UMD_READY; // return 0x22
-
-                // The PSP is returning 0x32 instead of 0x22 when
-                // sceKernelSetCompiledSdkVersion()
-                // has been called (i.e. when sceKernelGetCompiledSdkVersion() != 0).
-                if (Modules.SysMemUserForUserModule.hleGetCompiledSdkVersion() != 0) {
-                	event |= PSP_UMD_INITED; // return 0x32
-                }
-            } else {
-                event |= PSP_UMD_INITED; // return 0x12
-            }
-        } else {
-            event = PSP_UMD_NOT_PRESENT;
-            if (!umdActivated && umdDeactivateCalled) {
-                event = PSP_UMD_INITING;
-            }
-        }
-        return event;
     }
 
     protected boolean checkDriveStat(int wantedStat) {
@@ -245,7 +221,6 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
         umdActivated = true;
         cpu.gpr[2] = 0;
-        Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
         checkWaitingThreads();
     }
 
@@ -426,9 +401,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
-            // Tested on PSP:
-            // sceUmdRegisterUMDCallBack doesn't notify the registered callback.
-            // The callback is only checked when checkCallbacks() from ThreadManForUser is called.
+            Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdStat());
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;

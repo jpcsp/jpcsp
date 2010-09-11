@@ -128,8 +128,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             voices[i] = new pspVoice();
         }
 
-        grainSamples = 0x100; // Normal base value for sound processing.
-        outputMode = 0; // Checked. 0 is default (STEREO).
+        grainSamples = 0x100;   // Normal base value for sound processing.
+        outputMode = 0;         // Checked. 0 is default (STEREO).
         sasVolLevel = 0;
 
         if (voicesCheckerThread == null) {
@@ -545,7 +545,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int feedback = cpu.gpr[6];
 
         // Set waveform effect's delay and feedback levels.
-        log.debug("__sceSasRevParam(" + String.format("sasCore=0x%08x, delay=%d, feedback=%d)", sasCore, delay, feedback));
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasRevParam(" + String.format("sasCore=0x%08x, delay=%d, feedback=%d)", sasCore, delay, feedback));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -603,7 +605,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         // 6 -> Echo (uses feedback).
         // 7 -> Delay (uses delay).
         // 8 -> "Pipe" effect.
-        log.debug("__sceSasRevType(sasCore=0x" + Integer.toHexString(sasCore) + ", type=" + type + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasRevType(sasCore=0x" + Integer.toHexString(sasCore) + ", type=" + type + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -622,13 +626,11 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
-        int unk1 = cpu.gpr[5]; // 0x00000100
-        int unk2 = cpu.gpr[6]; // 0x00000020
-        int unk3 = cpu.gpr[7]; // 0x00000000
-        int sasSampleRate = cpu.gpr[8]; // 0x0000AC44 (44100 Hz)
 
-        log.info("PARTIAL __sceSasInit: " + String.format("sasCore=0x%08x, unk1=0x%08x, unk2=0x%08x, unk3=0x%08x, sampleRate=%d",
-                sasCore, cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], sampleRate));
+        // Tested on PSP:
+        // This function has only one parameter (the external opaque memory handle).
+        // All the other supposed parameters are actually leftovers from sceAudio functions.
+        log.info("PARTIAL: __sceSasInit");
 
         // We support only 1 sascore instance at a time.
         // Currently, we overwrite the previous sascore...
@@ -637,11 +639,11 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (mem.isAddressGood(sasCore)) {
-            sasCoreUid = SceUidManager.getNewUid("sceMpeg-Mpeg");
+            sasCoreUid = SceUidManager.getNewUid("sceSasCore-SasCore");
             mem.write32(sasCore, sasCoreUid);
         }
 
-        sampleRate = sasSampleRate;
+        sampleRate = 0x0000AC44;  // Default.
         cpu.gpr[2] = 0;
     }
 
@@ -650,10 +652,12 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int leftVolume = cpu.gpr[6]; // left channel volume 0 - 0x1000
-        int rightVolume = cpu.gpr[7]; // right channel volume 0 - 0x1000
+        int leftVolume = cpu.gpr[6];    // Left channel volume 0 - 0x1000.
+        int rightVolume = cpu.gpr[7];   // Right channel volume 0 - 0x1000.
 
-        log.debug("__sceSasSetVolume " + makeLogParams(cpu));
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasSetVolume " + makeLogParams(cpu));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -677,7 +681,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int leftVol = cpu.gpr[6];
         int rightVol = cpu.gpr[7];
 
-        log.debug("__sceSasCoreWithMix " + makeLogParams(cpu));
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasCoreWithMix " + makeLogParams(cpu));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -723,10 +729,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             log.debug("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + ")");
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        // "Star Ocean" games call this function from inside a SYSTIMER interrupt handler.
+        // TODO: Investigate if this can also happen in other get methods in sceSasCore.
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
             int endFlag = 0;
             for (int i = 0; i < voices.length; i++) {
@@ -745,17 +749,16 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int unk = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk=0x" + Integer.toHexString(unk) + ")");
+            log.debug("__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
+        if (isSasHandleGood(sasCore, "__sceSasGetEnvelopeHeight", cpu)) {
             cpu.gpr[2] = voices[voice].envelope.height;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
@@ -850,7 +853,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int releaseType = cpu.gpr[10];  // ADSR Envelope's release curve shape.
 
         if (log.isDebugEnabled()) {
-            log.warn("__sceSasSetADSRmode" + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
+            log.debug("__sceSasSetADSRmode" + String.format("sasCore=%08x, voice=%d flag=%08x a=%08x d=%08x s=%08x r%08x",
                     sasCore, voice, flag, attackType, decayType, sustainType, releaseType));
         }
 
@@ -918,7 +921,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int sasCore = cpu.gpr[4];
         int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
 
-        log.debug("__sceSasCore " + makeLogParams(cpu));
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasCore " + makeLogParams(cpu));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1069,7 +1074,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int rightVol = cpu.gpr[6];
 
         // Set waveform effect's volume.
-        log.debug("__sceSasRevEVOL(" + String.format("sasCore=0x%08x,leftVol=0x%04x,rightVol=0x%04x)", sasCore, leftVol, rightVol));
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasRevEVOL(" + String.format("sasCore=0x%08x,leftVol=0x%04x,rightVol=0x%04x)", sasCore, leftVol, rightVol));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1146,7 +1153,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int wet = cpu.gpr[6];
 
         // Set waveform effect's dry and wet status.
-        log.debug("__sceSasRevVON(" + String.format("sasCore=0x%08x,dry=%d,wet=%d)", sasCore, dry, wet));
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasRevVON(" + String.format("sasCore=0x%08x,dry=%d,wet=%d)", sasCore, dry, wet));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
