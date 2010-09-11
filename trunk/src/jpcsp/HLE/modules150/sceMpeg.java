@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
@@ -51,10 +50,13 @@ import jpcsp.util.Utilities;
 import org.apache.log4j.Logger;
 
 public class sceMpeg implements HLEModule, HLEStartModule {
+
     private static Logger log = Modules.getLogger("sceMpeg");
 
     @Override
-    public String getName() { return "sceMpeg"; }
+    public String getName() {
+        return "sceMpeg";
+    }
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
@@ -172,10 +174,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         pcmStreamsMap = new HashMap<Integer, Integer>();
         afterRingbufferPutCallback = new AfterRingbufferPutCallback();
         if (isEnableConnector()) {
-        	mpegCodec = new MpegCodec();
+            mpegCodec = new MpegCodec();
         }
         if (isEnableMediaEngine()) {
-        	me = new MediaEngine();
+            me = new MediaEngine();
             meChannel = new PacketChannel();
         }
     }
@@ -183,7 +185,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     @Override
     public void stop() {
     }
-
     public static boolean useMpegCodec = false;
     public static boolean enableMediaEngine = false;
 
@@ -193,14 +194,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
     public static final int PSMF_VERSION_0015 = 0x35313030;
-    protected static final int MPEG_MEMSIZE = 0x10000;         // 64k
-    protected static final int atracDecodeDelay = 1000 / 30;   // Milliseconds.
-    protected static final int avcDecodeDelay   = 1000 / 30;   // Milliseconds (decoding video at 30 FPS, .PMF standard).
+    protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
+    protected static final int atracDecodeDelay = 1000 / 30;    // Milliseconds.
+    protected static final int avcDecodeDelay = 1000 / 30;      // Milliseconds (decoding video at 30 FPS, .PMF standard).
     protected static final int maxAheadTimestamp = 100000;
-    protected static final int mpegTimestampPerSecond = 90000; // How many MPEG Timestamp units in a second.
-    protected static final int videoTimestampStep = 3003;      // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
-    protected static final int audioTimestampStep = 4180;      // Value based on pmfplayer.
-
+    protected static final int mpegTimestampPerSecond = 90000;  // How many MPEG Timestamp units in a second.
+    protected static final int videoTimestampStep = 3003;       // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
+    protected static final int audioTimestampStep = 4180;       // Value based on pmfplayer.
 
     // MPEG processing vars.
     protected int mpegHandle;
@@ -217,6 +217,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected int avcAuAddr;
     protected int atracAuAddr;
     protected long mpegLastTimestamp;
+    protected long mpegFirstTimestamp;
+    protected Date mpegFirstDate;
     protected Date mpegLastDate;
     protected int videoFrameCount;
     protected int audioFrameCount;
@@ -224,12 +226,16 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected int avcDetailFrameWidth;
     protected int avcDetailFrameHeight;
     protected int defaultFrameWidth;
-
-    // MPEG Avc Es buffer.
-    protected static final int MPEG_ESBUF_HANDLE = 0xE2E20000; // Checked. Only one buffer per file.
-    protected static final int MPEG_ESBUF_SIZE = 2048; // MPEG packet size.
+    // MPEG AVC elementary stream.
+    protected static final int MPEG_AVC_ES_HANDLE = 0xE2E20000;  // Checked. Only one buffer per file.
+    protected static final int MPEG_AVC_ES_SIZE = 2048;          // MPEG packet size.
     protected boolean isAvcEsBufInUse = false;
-
+    // MPEG ATRAC elementary stream.
+    protected static final int MPEG_ATRAC_ES_SIZE = 2112;
+    protected static final int MPEG_ATRAC_ES_OUTPUT_SIZE = 8192;
+    // MPEG PCM elementary stream.
+    protected static final int MPEG_PCM_ES_SIZE = 320;
+    protected static final int MPEG_PCM_ES_OUTPUT_SIZE = 320;
     // MPEG analysis results.
     public static final int MPEG_VERSION_0012 = 0;
     public static final int MPEG_VERSION_0013 = 1;
@@ -240,7 +246,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected int mpegMagic;
     protected int mpegOffset;
     protected int mpegStreamAddr;
-
     // MPEG streams.
     protected static final int MPEG_AVC_STREAM = 0;
     protected static final int MPEG_ATRAC_STREAM = 1;
@@ -252,42 +257,40 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected boolean isAtracRegistered = false;
     protected boolean isAvcRegistered = false;
     protected boolean isPcmRegistered = false;
-
     // MPEG decoding results.
-    protected static final int MPEG_AVC_DECODE_SUCCESS = 1;
-    protected static final int MPEG_AVC_DECODE_ERROR_FATAL = -8;  // May be other values.
+    protected static final int MPEG_AVC_DECODE_SUCCESS = 1;       // Internal value.
+    protected static final int MPEG_AVC_DECODE_ERROR_FATAL = -8;
     protected int avcDecodeResult;
     protected int avcFrameStatus;
-
     protected MpegCodec mpegCodec;
     protected MediaEngine me;
     protected PacketChannel meChannel;
 
     public static boolean isEnableConnector() {
-		return useMpegCodec;
-	}
+        return useMpegCodec;
+    }
 
-	public static void setEnableConnector(boolean useConnector) {
-		sceMpeg.useMpegCodec = useConnector;
+    public static void setEnableConnector(boolean useConnector) {
+        sceMpeg.useMpegCodec = useConnector;
         if (useConnector) {
-			log.info("Using JPCSP connector");
-		}
-	}
+            log.info("Using JPCSP connector");
+        }
+    }
 
     public static boolean isEnableMediaEngine() {
         return enableMediaEngine;
-	}
+    }
 
-	public static void setEnableMediaEngine(boolean enableMediaEngine) {
-		sceMpeg.enableMediaEngine = enableMediaEngine;
-		if (enableMediaEngine) {
-			log.info("Media Engine enabled");
-		}
-	}
+    public static void setEnableMediaEngine(boolean enableMediaEngine) {
+        sceMpeg.enableMediaEngine = enableMediaEngine;
+        if (enableMediaEngine) {
+            log.info("Media Engine enabled");
+        }
+    }
 
     protected Date convertTimestampToDate(long timestamp) {
-    	long millis = timestamp / (mpegTimestampPerSecond / 1000);
-    	return new Date(millis);
+        long millis = timestamp / (mpegTimestampPerSecond / 1000);
+        return new Date(millis);
     }
 
     protected int makeFakeStreamHandle(int stream) {
@@ -312,58 +315,62 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     }
 
     protected int endianSwap(int x) {
-        return (x << 24) | ((x << 8) &  0xFF0000) | ((x >> 8) &  0xFF00) | ((x >> 24) &  0xFF);
+        return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | ((x >> 24) & 0xFF);
     }
 
     protected int getTimestampMSB(long ts) {
-        return (int)((ts >> 32) & 0x1);
+        return (int) ((ts >> 32) & 0x1);
     }
 
     protected int getTimestampLSB(long ts) {
-        return (int)(ts & 0xFFFFFFFFL);
+        return (int) (ts & 0xFFFFFFFFL);
     }
 
     protected void analyseMpeg(int buffer_addr) {
-    	Memory mem = Memory.getInstance();
+        Memory mem = Memory.getInstance();
 
         mpegStreamAddr = buffer_addr;
         mpegMagic = mem.read32(buffer_addr);
         mpegRawVersion = mem.read32(buffer_addr + 4);
-    	switch (mpegRawVersion) {
-    		case PSMF_VERSION_0012: mpegVersion = MPEG_VERSION_0012; break;
-    		case PSMF_VERSION_0013: mpegVersion = MPEG_VERSION_0013; break;
-    		case PSMF_VERSION_0014: mpegVersion = MPEG_VERSION_0014; break;
-    		case PSMF_VERSION_0015: mpegVersion = MPEG_VERSION_0015; break;
-    		default:                mpegVersion = -1;                break;
-    	}
+        switch (mpegRawVersion) {
+            case PSMF_VERSION_0012:
+                mpegVersion = MPEG_VERSION_0012;
+                break;
+            case PSMF_VERSION_0013:
+                mpegVersion = MPEG_VERSION_0013;
+                break;
+            case PSMF_VERSION_0014:
+                mpegVersion = MPEG_VERSION_0014;
+                break;
+            case PSMF_VERSION_0015:
+                mpegVersion = MPEG_VERSION_0015;
+                break;
+            default:
+                mpegVersion = -1;
+                break;
+        }
         mpegOffset = endianSwap(mem.read32(buffer_addr + 8));
-    	mpegStreamSize = endianSwap(mem.read32(buffer_addr + 12));
-
+        mpegStreamSize = endianSwap(mem.read32(buffer_addr + 12));
+        mpegFirstTimestamp = endianSwap(mem.read32(buffer_addr + 86));
         mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 92));
+        mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
-
         avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);
         avcDetailFrameHeight = (mem.read8(buffer_addr + 143) * 0x10);
-
         if (mpegRingbuffer != null) {
-        	mpegRingbuffer.reset();
-        	mpegRingbuffer.write(mem, mpegRingbufferAddr);
+            mpegRingbuffer.reset();
+            mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
-
-        // From "The Legend of Heroes II: Prophecy of the Moonlight Witch":
-        //   - "Warning:AUDIO START PTS is not 90000:4180".
-        mpegAtracCurrentDecodingTimestamp = mpegTimestampPerSecond / audioTimestampStep;
-        mpegAtracCurrentPresentationTimestamp = mpegTimestampPerSecond / audioTimestampStep;
-        mpegAvcCurrentDecodingTimestamp = mpegTimestampPerSecond / videoTimestampStep;
-        mpegAvcCurrentPresentationTimestamp = mpegTimestampPerSecond / videoTimestampStep;
-
+        mpegAtracCurrentDecodingTimestamp = mpegFirstTimestamp;
+        mpegAtracCurrentPresentationTimestamp = mpegFirstTimestamp;
+        mpegAvcCurrentDecodingTimestamp = mpegFirstTimestamp;
+        mpegAvcCurrentPresentationTimestamp = mpegFirstTimestamp;
         videoFrameCount = 0;
         audioFrameCount = 0;
-
-        if(mpegStreamSize > 0) {
-            if(isEnableMediaEngine()) {
+        if (mpegStreamSize > 0) {
+            if (isEnableMediaEngine()) {
                 meChannel.writePacket(buffer_addr, mpegOffset);
-            } else if(isEnableConnector()) {
+            } else if (isEnableConnector()) {
                 mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
                 mpegCodec.writeVideo(buffer_addr, mpegOffset);
             }
@@ -405,18 +412,15 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         int width = Math.min(480, frameWidth);
         int height = 272;
-
         // Get the current generated image, convert it to pixels and write it
         // to memory.
         if (me != null && me.getCurrentImg() != null) {
             // Override the base dimensions with the image's real dimensions.
             width = me.getCurrentImg().getWidth();
             height = me.getCurrentImg().getHeight();
-
             for (int y = 0; y < height; y++) {
                 int address = dest_addr + y * frameWidth * bytesPerPixel;
                 IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
-
                 for (int x = 0; x < width; x++) {
                     int colorARGB = me.getCurrentImg().getRGB(x, y);
                     // Convert from ARGB to ABGR.
@@ -425,7 +429,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     int g = (colorARGB >>> 8) & 0xFF;
                     int b = colorARGB & 0xFF;
                     int colorABGR = a << 24 | b << 16 | g << 8 | r;
-
                     int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
                     memoryWriter.writeNext(pixelColor);
                 }
@@ -441,9 +444,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[5];
         int offset_addr = cpu.gpr[6];
 
-        log.debug("sceMpegQueryStreamOffset(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",buffer=0x" + Integer.toHexString(buffer_addr)
-            + ",offset=0x" + Integer.toHexString(offset_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegQueryStreamOffset(mpeg=0x" + Integer.toHexString(mpeg) + ", buffer=0x" + Integer.toHexString(buffer_addr) + ", offset=0x" + Integer.toHexString(offset_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -453,33 +456,29 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegQueryStreamOffset bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(offset_addr)) {
-        	analyseMpeg(buffer_addr);
-            log.debug(String.format("sceMpegQueryStreamOffset magic=0x%08X"
-                + " version=0x%08X offset=0x%08X size=0x%08X", mpegMagic, mpegVersion, mpegOffset, mpegStreamSize));
-
+            analyseMpeg(buffer_addr);
             if (mpegMagic == PSMF_MAGIC) {
-            	if (mpegVersion < 0) {
+                if (mpegVersion < 0) {
                     log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", mpegRawVersion));
-        			mem.write32(offset_addr, 0);
-                    cpu.gpr[2] = 0x80610002;
-            	} else {
-            		if ((mpegOffset & 2047) != 0 || mpegOffset == 0) {
+                    mem.write32(offset_addr, 0);
+                    cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_BAD_VERSION;
+                } else {
+                    if ((mpegOffset & 2047) != 0 || mpegOffset == 0) {
                         log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", mpegOffset));
-            			mem.write32(offset_addr, 0);
-            			cpu.gpr[2] = 0x806101FE;
-            		} else {
-            			mem.write32(offset_addr, mpegOffset);
-            			cpu.gpr[2] = 0;
-            		}
-            	}
+                        mem.write32(offset_addr, 0);
+                        cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+                    } else {
+                        mem.write32(offset_addr, mpegOffset);
+                        cpu.gpr[2] = 0;
+                    }
+                }
             } else {
                 log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", mpegMagic));
-    			mem.write32(offset_addr, 0);
-                cpu.gpr[2] = 0x806101FE;
+                mem.write32(offset_addr, 0);
+                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
             }
         } else {
-            log.warn("sceMpegQueryStreamOffset bad address "
-                + String.format("0x%08X 0x%08X", buffer_addr, offset_addr));
+            log.warn("sceMpegQueryStreamOffset bad address " + String.format("0x%08X 0x%08X", buffer_addr, offset_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -491,8 +490,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[4];
         int size_addr = cpu.gpr[5];
 
-        log.debug("sceMpegQueryStreamSize(buffer=0x" + Integer.toHexString(buffer_addr)
-            + ",size=0x" + Integer.toHexString(size_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegQueryStreamSize(buffer=0x" + Integer.toHexString(buffer_addr) + ", size=0x" + Integer.toHexString(size_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -500,26 +500,20 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(size_addr)) {
             analyseMpeg(buffer_addr);
-            log.debug(String.format("sceMpegQueryStreamSize magic=0x%08X"
-                + " version=0x%08X offset=0x%08X size=0x%08X", mpegMagic, mpegVersion, mpegOffset, mpegStreamSize));
-
-            log.info("sceMpegQueryStreamSize lastTimeStamp=" + mpegLastTimestamp);
-
             if (mpegMagic == PSMF_MAGIC) {
-            	if ((mpegStreamSize & 2047) == 0) {
-	                mem.write32(size_addr, mpegStreamSize);
-	                cpu.gpr[2] = 0;
-            	} else {
-            		mem.write32(size_addr, 0);
-                    cpu.gpr[2] = 0x806101FE;
-            	}
+                if ((mpegStreamSize & 2047) == 0) {
+                    mem.write32(size_addr, mpegStreamSize);
+                    cpu.gpr[2] = 0;
+                } else {
+                    mem.write32(size_addr, 0);
+                    cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
+                }
             } else {
                 log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", mpegMagic));
                 cpu.gpr[2] = -1;
             }
         } else {
-            log.warn("sceMpegQueryStreamSize bad address "
-                + String.format("0x%08X 0x%08X", buffer_addr, size_addr));
+            log.warn("sceMpegQueryStreamSize bad address " + String.format("0x%08X 0x%08X", buffer_addr, size_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -527,40 +521,37 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public void sceMpegInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("PARTIAL: sceMpegInit");
+        if (log.isInfoEnabled()) {
+            log.info("sceMpegInit");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(isEnableMediaEngine()) {
+        if (isEnableMediaEngine()) {
             meChannel.flush();
         }
-        // Checked. Only one instance of sceMpeg is allowed per file.
-        if (mpegHandle != 0) {
-            cpu.gpr[2] = 0x80618005;  // Current instance is already in use (actual name unknown).
-        } else {
-            cpu.gpr[2] = 0;
-        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegFinish(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("PARTIAL: sceMpegFinish");
+        if (log.isInfoEnabled()) {
+            log.info("sceMpegFinish");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(isEnableMediaEngine()) {
+        if (isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
         } else if (isEnableConnector()) {
-        	mpegCodec.finish();
+            mpegCodec.finish();
         }
-
-        mpegHandle = 0;
         cpu.gpr[2] = 0;
     }
 
@@ -569,13 +560,15 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int mode = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMpegQueryMemSize(mode=" + mode + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegQueryMemSize(mode=" + mode + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        // Mode = 0 -> 64k.
+        // Mode = 0 -> 64k (constant).
         cpu.gpr[2] = MPEG_MEMSIZE;
     }
 
@@ -591,13 +584,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int mode = cpu.gpr[9];
         int ddrtop = cpu.gpr[10];
 
-        log.warn("PARTIAL: sceMpegCreate(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",data=0x" + Integer.toHexString(data)
-            + ",size=" + size
-            + ",ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
-            + ",frameWidth=" + frameWidth
-            + ",mode=" + mode
-            + ",ddrtop=0x" + Integer.toHexString(ddrtop) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegCreate(mpeg=0x" + Integer.toHexString(mpeg) + ", data=0x" + Integer.toHexString(data) + ", size=" + size + ", ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ", frameWidth=" + frameWidth + ", mode=" + mode + ", ddrtop=0x" + Integer.toHexString(ddrtop) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -605,29 +594,25 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (size < MPEG_MEMSIZE) {
             log.warn("sceMpegCreate bad size " + size);
-            cpu.gpr[2] = 0x80610022; // bad param/size (actual name unknown)
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_MEMORY;
         } else if (mem.isAddressGood(mpeg) && mem.isAddressGood(data) && mem.isAddressGood(ringbuffer_addr)) {
             // Update the ring buffer struct.
             SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
             if (ringbuffer.packetSize == 0) {
-            	ringbuffer.packetsFree = 0;
+                ringbuffer.packetsFree = 0;
             } else {
-            	ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
+                ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
             }
             ringbuffer.mpeg = mpeg;
             ringbuffer.write(mem, ringbuffer_addr);
-
-            // Write mpeg "outdata".
+            // Write mpeg system handle.
             mpegHandle = data + 0x30;
             mem.write32(mpeg, mpegHandle);
-            log.debug("sceMpegCreate generated handle " + Integer.toHexString(mpegHandle));
-
-            // Initialise mpeg struct.
+            // Initialise fake mpeg struct.
             Utilities.writeStringZ(mem, mpegHandle, "LIBMPEG.001");
             mem.write32(mpegHandle + 12, -1);
             mem.write32(mpegHandle + 16, ringbuffer_addr);
             mem.write32(mpegHandle + 20, ringbuffer.dataUpperBound);
-
             // Initialise mpeg values.
             mpegRingbufferAddr = ringbuffer_addr;
             mpegRingbuffer = ringbuffer;
@@ -638,8 +623,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegCreate bad address "
-                + String.format("0x%08X 0x%08X 0x%08X", mpeg, data, ringbuffer_addr));
+            log.warn("sceMpegCreate bad address " + String.format("0x%08X 0x%08X 0x%08X", mpeg, data, ringbuffer_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -649,13 +633,15 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int mpeg = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMpegDelete(mpeg=0x" + Integer.toHexString(mpeg) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegDelete(mpeg=0x" + Integer.toHexString(mpeg) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(isEnableMediaEngine()) {
+        if (isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
         }
@@ -674,9 +660,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int stream_type = cpu.gpr[5];
         int stream_num = cpu.gpr[6];
 
-        log.warn("PARTIAL: sceMpegRegistStream(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",stream_type=" + stream_type
-            + ",stream_num=" + stream_num + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegRegistStream(mpeg=0x" + Integer.toHexString(mpeg) + ", stream_type=" + stream_type + ", stream_num=" + stream_num + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -688,7 +674,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else {
             int handle = makeFakeStreamHandle(stream_type);
             // Regist the respective stream.
-            switch(stream_type) {
+            switch (stream_type) {
                 case MPEG_AVC_STREAM:
                     isAvcRegistered = true;
                     avcStreamsMap.put(handle, stream_num);
@@ -702,8 +688,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     isPcmRegistered = true;
                     pcmStreamsMap.put(handle, stream_num);
                     break;
-                default: log.warn("sceMpegRegistStream unknown stream type=" + stream_type);
-                break;
+                default:
+                    log.warn("sceMpegRegistStream unknown stream type=" + stream_type);
+                    break;
             }
             cpu.gpr[2] = handle;
         }
@@ -715,8 +702,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int mpeg = cpu.gpr[4];
         int stream_addr = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceMpegUnRegistStream(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",stream=0x" + Integer.toHexString(stream_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegUnRegistStream(mpeg=0x" + Integer.toHexString(mpeg) + ", stream=0x" + Integer.toHexString(stream_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -726,8 +714,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegUnRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else {
-             // Unregist the respective stream.
-            switch(getFakeStreamType(stream_addr)) {
+            // Unregist the respective stream.
+            switch (getFakeStreamType(stream_addr)) {
                 case MPEG_AVC_STREAM:
                     isAvcRegistered = false;
                     avcStreamsMap.remove(stream_addr);
@@ -741,8 +729,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     isPcmRegistered = false;
                     pcmStreamsMap.remove(stream_addr);
                     break;
-                default: log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(stream_addr));
-                break;
+                default:
+                    log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(stream_addr));
+                    break;
             }
             cpu.gpr[2] = 0;
         }
@@ -753,6 +742,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int mpeg = cpu.gpr[4];
 
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ")");
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
@@ -761,13 +754,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ") bad mpeg handle");
             cpu.gpr[2] = -1;
         } else {
-            log.debug("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg));
-        	if (isAvcEsBufInUse) {
-        		cpu.gpr[2] = 0;
-        	} else {
-        		cpu.gpr[2] = MPEG_ESBUF_HANDLE;
+            if (isAvcEsBufInUse) {
+                cpu.gpr[2] = 0;
+            } else {
+                cpu.gpr[2] = MPEG_AVC_ES_HANDLE;
                 isAvcEsBufInUse = true;
-        	}
+            }
         }
     }
 
@@ -777,21 +769,21 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int mpeg = cpu.gpr[4];
         int esBuf = cpu.gpr[5];
 
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ")");
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (getMpegHandle(mpeg) != mpegHandle) {
-            log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",esBuf=0x" + Integer.toHexString(esBuf) + ") bad mpeg handle");
+            log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ") bad mpeg handle");
             cpu.gpr[2] = -1;
         } else if (esBuf == 0) {
-            log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
-                    + ",esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
-        	cpu.gpr[2] = 0x806101FE;
+            log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         } else {
-            log.debug("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
-                + ",buffer=0x" + Integer.toHexString(esBuf) + ")");
             isAvcEsBufInUse = false;
             cpu.gpr[2] = 0;
         }
@@ -805,6 +797,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int esSize_addr = cpu.gpr[5];
         int outSize_addr = cpu.gpr[6];
 
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegQueryAtracEsSize(mpeg=0x" + Integer.toHexString(mpeg) + ", esSize_addr=0x" + Integer.toHexString(esSize_addr) + ", outSize_addr=0x" + Integer.toHexString(outSize_addr) + ")");
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
@@ -813,18 +809,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegQueryAtracEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(outSize_addr)) {
-            log.debug("sceMpegQueryAtracEsSize(mpeg=0x" + Integer.toHexString(mpeg)
-                + ",esSize=0x" + Integer.toHexString(esSize_addr)
-                + ",size=0x" + Integer.toHexString(outSize_addr) + ")");
-
-            // copied from noxa/pspplayer and checked on psp: always constant
-            mem.write32(esSize_addr, 2112);
-            mem.write32(outSize_addr, 8192);
-
+            mem.write32(esSize_addr, MPEG_ATRAC_ES_SIZE);
+            mem.write32(outSize_addr, MPEG_ATRAC_ES_OUTPUT_SIZE);
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegQueryAtracEsSize bad address "
-                + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
+            log.warn("sceMpegQueryAtracEsSize bad address " + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -837,6 +826,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int esSize_addr = cpu.gpr[5];
         int outSize_addr = cpu.gpr[6];
 
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegQueryPcmEsSize(mpeg=0x" + Integer.toHexString(mpeg) + ", esSize_addr=0x" + Integer.toHexString(esSize_addr) + ", outSize_addr=0x" + Integer.toHexString(outSize_addr) + ")");
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
@@ -845,18 +838,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             Modules.log.warn("sceMpegQueryPcmEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(outSize_addr)) {
-            log.debug("sceMpegQueryPcmEsSize(mpeg=0x" + Integer.toHexString(mpeg)
-                + ",esSize=0x" + Integer.toHexString(esSize_addr)
-                + ",size=0x" + Integer.toHexString(outSize_addr) + ")");
-
-            // always constant
-            mem.write32(esSize_addr, 320);
-            mem.write32(outSize_addr, 320);
-
+            mem.write32(esSize_addr, MPEG_PCM_ES_SIZE);
+            mem.write32(outSize_addr, MPEG_PCM_ES_OUTPUT_SIZE);
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegQueryPcmEsSize bad address "
-                + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
+            log.warn("sceMpegQueryPcmEsSize bad address " + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -869,9 +855,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[5];
         int au_addr = cpu.gpr[6];
 
-        log.warn("PARTIAL: sceMpegInitAu(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",buffer=0x" + Integer.toHexString(buffer_addr)
-            + ",au=0x" + Integer.toHexString(au_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegInitAu(mpeg=0x" + Integer.toHexString(mpeg) + ", buffer=0x" + Integer.toHexString(buffer_addr) + ", au=0x" + Integer.toHexString(au_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -881,16 +867,29 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             Modules.log.warn("sceMpegInitAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else {
-            // Presentation Timestamp (-1 == not init).
-            mem.write32(au_addr, 0xFFFFFFFF);                 // MSB (bit 33).
-            mem.write32(au_addr + 4, 0xFFFFFFFF);             // LSB (32-bit TimeStamp).
-            // Decoding Timestamp (-1 == not init).
-            mem.write32(au_addr + 8, 0xFFFFFFFF);             // MSB (bit 33).
-            mem.write32(au_addr + 12, 0xFFFFFFFF);            // LSB (32-bit TimeStamp).
-            // Allocated buffer.
-            mem.write32(au_addr + 16, buffer_addr);
-            mem.write32(au_addr + 20, MPEG_ESBUF_SIZE);
-
+            // Check if sceMpegInitAu is being called for AVC or ATRAC
+            // and write the proper AU (access unit) struct.
+            if (buffer_addr == MPEG_AVC_ES_HANDLE) {
+                // Presentation Timestamp.
+                mem.write32(au_addr, getTimestampMSB(mpegAvcCurrentPresentationTimestamp));     // MSB (bit 33).
+                mem.write32(au_addr + 4, getTimestampLSB(mpegAvcCurrentPresentationTimestamp)); // LSB (32-bit TimeStamp).
+                // Decoding Timestamp.
+                mem.write32(au_addr + 8, getTimestampMSB(mpegAvcCurrentDecodingTimestamp));     // MSB (bit 33).
+                mem.write32(au_addr + 12, getTimestampLSB(mpegAvcCurrentDecodingTimestamp));    // LSB (32-bit TimeStamp).
+                // Allocated buffer.
+                mem.write32(au_addr + 16, buffer_addr);
+                mem.write32(au_addr + 20, MPEG_AVC_ES_SIZE);
+            } else {
+                // Presentation Timestamp.
+                mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));     // MSB (bit 33).
+                mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp)); // LSB (32-bit TimeStamp).
+                // Decoding Timestamp.
+                mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));     // MSB (bit 33).
+                mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));    // LSB (32-bit TimeStamp).
+                // Allocated buffer.
+                mem.write32(au_addr + 16, buffer_addr);
+                mem.write32(au_addr + 20, MPEG_ATRAC_ES_SIZE);
+            }
             cpu.gpr[2] = 0;
         }
     }
@@ -902,9 +901,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int stream_addr = cpu.gpr[5];
         int mode = cpu.gpr[6];
 
-        log.warn("UNIMPLEMENTED: sceMpegChangeGetAvcAuMode(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",stream_addr=0x" + Integer.toHexString(stream_addr)
-            + ",mode=0x" + mode + ")");
+        log.warn("UNIMPLEMENTED: sceMpegChangeGetAvcAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(stream_addr) + ",mode=0x" + mode + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -920,9 +917,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int stream_addr = cpu.gpr[5];
         int mode = cpu.gpr[6];
 
-        log.warn("UNIMPLEMENTED: sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",stream_addr=0x" + Integer.toHexString(stream_addr)
-            + ",mode=0x" + mode + ")");
+        log.warn("UNIMPLEMENTED: sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(stream_addr) + ",mode=0x" + mode + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -940,10 +935,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int au_addr = cpu.gpr[6];
         int attr_addr = cpu.gpr[7];
 
-        log.warn("PARTIAL: sceMpegGetAvcAu(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",stream=0x" + Integer.toHexString(stream_addr)
-            + ",au=0x" + Integer.toHexString(au_addr)
-            + ",attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegGetAvcAu(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", stream=0x" + Integer.toHexString(stream_addr)
+                    + ", au=0x" + Integer.toHexString(au_addr)
+                    + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -952,48 +949,36 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegGetAvcAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer == null) {
-            log.warn("sceMpegGetAvcAu ringbuffer not created");
-            cpu.gpr[2] = -1;
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
-            log.debug("sceMpegGetAvcAu ringbuffer empty");
-            if (isAtracRegistered) {
-                cpu.gpr[2] = 0x806101fe; // no audio data in ring buffer and atrac au/stream 1 has been registered (actual name unknown)
-            } else {
-                cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
-            }
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAvcAu didn't get a fake stream");
-            cpu.gpr[2] = 0;
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
-            if ((mpegAvcCurrentDecodingTimestamp > mpegAtracCurrentDecodingTimestamp + maxAheadTimestamp)
-                    && isAtracRegistered) {
-            	// Video is ahead of audio, deliver no video data to wait for audio
-            	if (log.isDebugEnabled()) {
-            		log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcCurrentDecodingTimestamp + " - " + mpegAtracCurrentDecodingTimestamp);
-            	}
-                cpu.gpr[2] = 0x80618001; // no video data in ring buffer (actual name unknown)
+            if ((mpegAvcCurrentDecodingTimestamp > mpegAtracCurrentDecodingTimestamp + maxAheadTimestamp) && isAtracRegistered) {
+                // Video is ahead of audio, deliver no video data to wait for audio.
+                if (log.isDebugEnabled()) {
+                    log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcCurrentDecodingTimestamp + " - " + mpegAtracCurrentDecodingTimestamp);
+                }
+                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the video timestamp (AVC).
-                mem.write32(au_addr,      getTimestampMSB(mpegAvcCurrentPresentationTimestamp));
-                mem.write32(au_addr + 4,  getTimestampLSB(mpegAvcCurrentPresentationTimestamp));
-                mem.write32(au_addr + 8,  getTimestampMSB(mpegAvcCurrentDecodingTimestamp));
+                mem.write32(au_addr, getTimestampMSB(mpegAvcCurrentPresentationTimestamp));
+                mem.write32(au_addr + 4, getTimestampLSB(mpegAvcCurrentPresentationTimestamp));
+                mem.write32(au_addr + 8, getTimestampMSB(mpegAvcCurrentDecodingTimestamp));
                 mem.write32(au_addr + 12, getTimestampLSB(mpegAvcCurrentDecodingTimestamp));
-
                 // Bitfield used to store data attributes.
-                if(mem.isAddressGood(attr_addr)) {
+                if (mem.isAddressGood(attr_addr)) {
                     mem.write32(attr_addr, 1);     // Unknown.
                 }
-	            cpu.gpr[2] = 0;
+                cpu.gpr[2] = 0;
             }
         } else {
-            log.warn("sceMpegGetAvcAu bad address "
-                + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            log.warn("sceMpegGetAvcAu bad address " + String.format("0x%08X 0x%08X", stream_addr, au_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1007,10 +992,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int au_addr = cpu.gpr[6];
         int attr_addr = cpu.gpr[7];
 
-        log.warn("PARTIAL: sceMpegGetPcmAu(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",stream=0x" + Integer.toHexString(stream_addr)
-            + ",au=0x" + Integer.toHexString(au_addr)
-            + ",attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegGetPcmAu(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", stream=0x" + Integer.toHexString(stream_addr)
+                    + ", au=0x" + Integer.toHexString(au_addr)
+                    + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1019,36 +1006,29 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegGetPcmAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer == null) {
-            log.warn("sceMpegGetPcmAu ringbuffer not created");
-            cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
-            log.debug("sceMpegGetPcmAu ringbuffer empty");
-            cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
+        }else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
             log.warn("sceMpegGetPcmAu didn't get a fake stream");
-            cpu.gpr[2] = 0;
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
             // Update the audio timestamp (Atrac).
-            mem.write32(au_addr,      getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
-            mem.write32(au_addr + 4,  getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
-            mem.write32(au_addr + 8,  getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
+            mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
+            mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
+            mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
             mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
-
             // Bitfield used to store data attributes.
-            if(mem.isAddressGood(attr_addr)) {
+            if (mem.isAddressGood(attr_addr)) {
                 // Uses same bitfield as the one in the PSMF header.
                 mem.write32(attr_addr, (1 << 7));     // Sampling rate (1 = 44.1kHz).
                 mem.write32(attr_addr, 2);            // Number of channels (1 - MONO / 2 - STEREO).
             }
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegGetPcmAu bad address "
-                + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            log.warn("sceMpegGetPcmAu bad address " + String.format("0x%08X 0x%08X", stream_addr, au_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1062,10 +1042,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int au_addr = cpu.gpr[6];
         int attr_addr = cpu.gpr[7];
 
-        log.warn("PARTIAL: sceMpegGetAtracAu(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",stream=0x" + Integer.toHexString(stream_addr)
-            + ",au=0x" + Integer.toHexString(au_addr)
-            + ",attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegGetAtracAu(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", stream=0x" + Integer.toHexString(stream_addr)
+                    + ", au=0x" + Integer.toHexString(au_addr)
+                    + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1074,44 +1056,37 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegGetAtracAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer == null) {
-            log.warn("sceMpegGetAtracAu ringbuffer not created");
-            cpu.gpr[2] = -1;
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegGetAtracAu ringbuffer empty");
-            cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAtracAu didn't get a fake stream");
-            cpu.gpr[2] = 0;
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
-            if ((mpegAtracCurrentDecodingTimestamp > mpegAvcCurrentDecodingTimestamp + maxAheadTimestamp)
-                    && isAvcRegistered) {
-            	// Audio is ahead of video, deliver no audio data to wait for video
-            	if (log.isDebugEnabled()) {
-            		log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracCurrentDecodingTimestamp + " - " + mpegAvcCurrentDecodingTimestamp);
-            	}
-                cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
+            if ((mpegAtracCurrentDecodingTimestamp > mpegAvcCurrentDecodingTimestamp + maxAheadTimestamp) && isAvcRegistered) {
+                // Audio is ahead of video, deliver no audio data to wait for video.
+                if (log.isDebugEnabled()) {
+                    log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracCurrentDecodingTimestamp + " - " + mpegAvcCurrentDecodingTimestamp);
+                }
+                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the audio timestamp (Atrac).
-                mem.write32(au_addr,      getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
-                mem.write32(au_addr + 4,  getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
-                mem.write32(au_addr + 8,  getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
+                mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
+                mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
+                mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
                 mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
-
                 // Bitfield used to store data attributes.
-                if(mem.isAddressGood(attr_addr)) {
+                if (mem.isAddressGood(attr_addr)) {
                     mem.write32(attr_addr, 0);     // Pointer to ATRAC3plus stream (from PSMF file).
                 }
                 cpu.gpr[2] = 0;
             }
         } else {
-            log.warn("sceMpegGetAtracAu bad address "
-                + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            log.warn("sceMpegGetAtracAu bad address " + String.format("0x%08X 0x%08X", stream_addr, au_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1122,18 +1097,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int mpeg = cpu.gpr[4];
         int stream_addr = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceMpegFlushStream mpeg=0x" + Integer.toHexString(mpeg)
-                + "stream_addr=0x" + Integer.toHexString(stream_addr));
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegFlushStream mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", stream_addr=0x" + Integer.toHexString(stream_addr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(isEnableMediaEngine()) {
+        if (isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
         }
-
         cpu.gpr[2] = 0;
     }
 
@@ -1142,22 +1118,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int mpeg = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMpegFlushAllStream");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegFlushAllStream mpeg=0x" + Integer.toHexString(mpeg));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(isEnableMediaEngine()) {
+        if (isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
         }
-        if (getMpegHandle(mpeg) != mpegHandle) {
-            log.warn("sceMpegFlushAllStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
-            cpu.gpr[2] = -1;
-        } else {
-            cpu.gpr[2] = 0;
-        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcDecode(Processor processor) {
@@ -1170,11 +1143,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[7];
         int init_addr = cpu.gpr[8];
 
-        log.warn("PARTIAL: sceMpegAvcDecode(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",au=0x" + Integer.toHexString(au_addr)
-            + ",frameWidth=" + frameWidth
-            + ",buffer=0x" + Integer.toHexString(buffer_addr)
-            + ",init=0x" + Integer.toHexString(init_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcDecode(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", au=0x" + Integer.toHexString(au_addr)
+                    + ", frameWidth=" + frameWidth
+                    + ", buffer=0x" + Integer.toHexString(buffer_addr)
+                    + ", init=0x" + Integer.toHexString(init_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1182,17 +1157,15 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
-            if(defaultFrameWidth == 0) {
+            if (defaultFrameWidth == 0) {
                 frameWidth = avcDetailFrameWidth;
             } else {
                 frameWidth = defaultFrameWidth;
             }
         }
-
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1201,12 +1174,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcDecode ringbuffer empty");
-            cpu.gpr[2] = 0x80628002; // no video data in ring buffer (actual name unknown)
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_VIDEO_FATAL;
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
             int au = mem.read32(au_addr);
             int buffer = mem.read32(buffer_addr);
             int init = mem.read32(init_addr);
-
             if (log.isDebugEnabled()) {
                 log.debug(String.format("sceMpegAvcDecode *au=0x%08X, *buffer=0x%08X, init=%d", au, buffer, init));
             }
@@ -1251,8 +1223,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             final int width = Math.min(480, frameWidth);
             final int height = 272;
 
-            if(isEnableMediaEngine()) {
-                if(me.getContainer() != null) {
+            if (isEnableMediaEngine()) {
+                if (me.getContainer() != null) {
                     mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
                     me.step();
                     writeVideoImage(buffer, frameWidth);
@@ -1268,17 +1240,16 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             } else {
                 // Generate static.
                 generateFakeMPEGVideo(buffer, frameWidth);
-
-                if (isEnableConnector())
+                if (isEnableConnector()) {
                     mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
-
+                }
                 Date currentDate = convertTimestampToDate(mpegAvcCurrentDecodingTimestamp);
-                log.info("currentDate: " + currentDate.toString());
+                if(log.isDebugEnabled()) {
+                    log.debug("currentDate: " + currentDate.toString());
+                }
                 SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-
                 Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video. ");
-
                 String displayedString;
                 if (mpegLastDate != null) {
                     displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
@@ -1290,17 +1261,17 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     displayedString = String.format(" %d ", processedSize);
                 }
                 Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-
                 if (log.isDebugEnabled()) {
                     log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
                 }
                 avcFrameStatus = 1;
             }
+
             videoFrameCount++;
+
             if (log.isDebugEnabled()) {
                 log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
             }
-
             if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                 mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                 mpegRingbuffer.write(mem, mpegRingbufferAddr);
@@ -1325,8 +1296,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int mpeg = cpu.gpr[4];
         int detailAddr = cpu.gpr[5];
 
-        if (log.isInfoEnabled()) {
-        	log.info(String.format("PARTIAL: sceMpegAvcDecodeDetail(mpeg=0x%08X, detailAddr=0x%08X)", mpeg, detailAddr));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceMpegAvcDecodeDetail(mpeg=0x%08X, detailAddr=0x%08X)", mpeg, detailAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -1338,12 +1309,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         } else if (!mem.isAddressGood(detailAddr)) {
             log.warn(String.format("sceMpegAvcDecodeDetail bad address 0x%08X", detailAddr));
-        	cpu.gpr[2] = -1;
+            cpu.gpr[2] = -1;
         } else {
             mem.write32(detailAddr, avcDecodeResult);             // Stores the result.
-        	mem.write32(detailAddr + 4, videoFrameCount);         // Last decoded frame.
-        	mem.write32(detailAddr + 8, avcDetailFrameWidth);     // Frame width.
-        	mem.write32(detailAddr + 12, avcDetailFrameHeight);   // Frame height.
+            mem.write32(detailAddr + 4, videoFrameCount);         // Last decoded frame.
+            mem.write32(detailAddr + 8, avcDetailFrameWidth);     // Frame width.
+            mem.write32(detailAddr + 12, avcDetailFrameHeight);   // Frame height.
             mem.write32(detailAddr + 16, 0);                      // Frame crop rect (left).
             mem.write32(detailAddr + 20, 0);                      // Frame crop rect (right).
             mem.write32(detailAddr + 24, 0);                      // Frame crop rect (top).
@@ -1360,8 +1331,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int mpeg = cpu.gpr[4];
         int mode_addr = cpu.gpr[5];
 
-        log.debug("sceMpegAvcDecodeMode(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",mode_addr=0x" + Integer.toHexString(mode_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcDecodeMode(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", mode_addr=0x" + Integer.toHexString(mode_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1371,15 +1344,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn(String.format("sceMpegAvcDecodeMode bad mpeg handle 0x%08X", mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(mode_addr)) {
-            // -1 seems to represent a defualt value.
-            // It is also valid for the pixel mode, but it should be ignored
-            // (probably represents "do nothing").
-            int mode = mem.read32(mode_addr); // castlevania x: -1
+            // -1 is a defualt value.
+            int mode = mem.read32(mode_addr);
             int pixelMode = mem.read32(mode_addr + 4);
             if (pixelMode >= PSP_DISPLAY_PIXEL_FORMAT_565 && pixelMode <= PSP_DISPLAY_PIXEL_FORMAT_8888) {
-            	videoPixelMode = pixelMode;
+                videoPixelMode = pixelMode;
                 log.debug("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode);
-            } else if(pixelMode == -1){
+            } else if (pixelMode == -1) {
                 log.debug("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode + ": not changing pixel mode");
             } else {
                 log.warn("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode + ": unknown mode");
@@ -1400,10 +1371,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[6];
         int status_addr = cpu.gpr[7];
 
-        log.warn("PARTIAL: sceMpegAvcDecodeStop(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",frameWidth=" + frameWidth
-            + ",buffer=0x" + Integer.toHexString(buffer_addr)
-            + ",status=0x" + Integer.toHexString(status_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcDecodeStop(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", frameWidth=" + frameWidth
+                    + ", buffer_addr=0x" + Integer.toHexString(buffer_addr)
+                    + ", status_addr=0x" + Integer.toHexString(status_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1417,8 +1390,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mem.write32(status_addr, avcFrameStatus);
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegAvcDecodeStop bad address "
-                + String.format("0x%08X 0x%08X", buffer_addr, status_addr));
+            log.warn("sceMpegAvcDecodeStop bad address " + String.format("0x%08X 0x%08X", buffer_addr, status_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1428,17 +1400,18 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int mpeg = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMpegAvcDecodeFlush mpeg=0x" + Integer.toHexString(mpeg));
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcDecodeFlush mpeg=0x" + Integer.toHexString(mpeg));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(isEnableMediaEngine()) {
+        if (isEnableMediaEngine()) {
             me.finish();
             meChannel.flush();
         }
-
         cpu.gpr[2] = 0;
     }
 
@@ -1452,12 +1425,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int height = cpu.gpr[7];     // 272.
         int resultAddr = cpu.gpr[8]; // Where to store the result.
 
-        log.warn("PARTIAL: sceMpegAvcQueryYCbCrSize(mpeg=0x" + Integer.toHexString(mpeg)
-                + ",mode=" + mode
-                + ",width=" + width
-                + ",height=" + height
-                + ",resultAddr=0x" + Integer.toHexString(resultAddr)
-                + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcQueryYCbCrSize(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", mode=" + mode
+                    + ", width=" + width
+                    + ", height=" + height
+                    + ", resultAddr=0x" + Integer.toHexString(resultAddr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1467,8 +1441,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegAvcQueryYCbCrSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(resultAddr)) {
-            // Write the size of the buffer used by sceMpegAvcDecodeYCbCr:
-        	// assume 2 bytes per pixel.
+            // Write the size of the buffer used by sceMpegAvcDecodeYCbCr (assume 2 bytes per pixel).
             mem.write32(resultAddr, width * height * 2);
             cpu.gpr[2] = 0;
         } else {
@@ -1486,18 +1459,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int height = cpu.gpr[7];
         int ycbcr_addr = cpu.gpr[8];
 
-         log.warn("PARTIAL: sceMpegAvcInitYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",YCbCr_addr=0x" + Integer.toHexString(ycbcr_addr)
-            + ",mode=" + mode
-            + ",width=" + width
-            + ",height=" + height
-            + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcInitYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", YCbCr_addr=0x" + Integer.toHexString(ycbcr_addr)
+                    + ", mode=" + mode
+                    + ", width=" + width
+                    + ", height=" + height + ")");
+        }
 
-         if (IntrManager.getInstance().isInsideInterrupt()) {
+        if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
-         }
-         cpu.gpr[2] = 0;
+        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcDecodeYCbCr(Processor processor) {
@@ -1509,6 +1483,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[6];
         int init_addr = cpu.gpr[7];
 
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcDecodeYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", au=0x" + Integer.toHexString(au_addr)
+                    + ", buffer=0x" + Integer.toHexString(buffer_addr)
+                    + ", init=0x" + Integer.toHexString(init_addr) + ")");
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
@@ -1516,7 +1497,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeYCbCr bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1525,14 +1505,16 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcDecodeYCbCr ringbuffer empty");
-            cpu.gpr[2] = 0x80628002;
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_VIDEO_FATAL;
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
             // Decode the video data in YCbCr mode.
             long currentSystemTime = Emulator.getClock().milliTime();
             int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
             if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
                 int delayMillis = avcDecodeDelay - elapsedTime;
-                log.info("Delaying sceMpegAvcDecodeYCbCr for " + delayMillis + "ms");
+                if(log.isDebugEnabled()) {
+                    log.debug("Delaying sceMpegAvcDecodeYCbCr for " + delayMillis + "ms");
+                }
                 Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
                 lastAvcSystemTime = currentSystemTime + delayMillis;
             } else {
@@ -1578,9 +1560,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     avcFrameStatus = 0;
                 }
             } else {
-            	packetsConsumed = 0;
+                packetsConsumed = 0;
                 avcFrameStatus = 1;
             }
+
             videoFrameCount++;
 
             if (log.isDebugEnabled()) {
@@ -1598,8 +1581,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mem.write32(init_addr, avcFrameStatus);
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegAvcDecodeYCbCr bad address "
-                + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
+            log.warn("sceMpegAvcDecodeYCbCr bad address " + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
 
             cpu.gpr[2] = -1;
         }
@@ -1613,9 +1595,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[5];
         int status_addr = cpu.gpr[6];
 
-        log.warn("PARTIAL: sceMpegAvcDecodeStopYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",buffer=0x" + Integer.toHexString(buffer_addr)
-            + ",status=0x" + Integer.toHexString(status_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcDecodeStopYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", buffer=0x" + Integer.toHexString(buffer_addr)
+                    + ", status=0x" + Integer.toHexString(status_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1629,8 +1613,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mem.write32(status_addr, avcFrameStatus);
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegAvcDecodeStopYCbCr bad address "
-                + String.format("0x%08X 0x%08X", buffer_addr, status_addr));
+            log.warn("sceMpegAvcDecodeStopYCbCr bad address " + String.format("0x%08X 0x%08X", buffer_addr, status_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1645,11 +1628,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int frameWidth = cpu.gpr[7];
         int dest_addr = cpu.gpr[8];   // Converted data (RGB).
 
-        log.warn("PARTIAL: sceMpegAvcCsc(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",source=0x" + Integer.toHexString(source_addr)
-            + ",range_addr=0x" + Integer.toHexString(range_addr)
-            + ",frameWidth=" + frameWidth
-            + ",dest=0x" + Integer.toHexString(dest_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAvcCsc(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", source=0x" + Integer.toHexString(source_addr)
+                    + ", range_addr=0x" + Integer.toHexString(range_addr)
+                    + ", frameWidth=" + frameWidth
+                    + ", dest=0x" + Integer.toHexString(dest_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1657,17 +1642,15 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         // When frameWidth is 0, take the frameWidth specified at sceMpegCreate.
         if (frameWidth == 0) {
-            if(defaultFrameWidth == 0) {
+            if (defaultFrameWidth == 0) {
                 frameWidth = avcDetailFrameWidth;
             } else {
                 frameWidth = defaultFrameWidth;
             }
         }
-
         if (mpegRingbuffer != null) {
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
         }
-
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcCsc bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1676,19 +1659,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcCsc ringbuffer empty");
-            cpu.gpr[2] = 0x80628002;
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_VIDEO_FATAL;
         } else if (mem.isAddressGood(dest_addr) && mem.isAddressGood(source_addr) && mem.isAddressGood(range_addr)) {
             int rangeWidthStart = mem.read32(range_addr);
             int rangeHeightStart = mem.read32(range_addr + 4);
             int rangeWidthEnd = mem.read32(range_addr + 8);
             int rangeHeigtEnd = mem.read32(range_addr + 12);
-
             if (log.isDebugEnabled()) {
-                log.debug("sceMpegAvcCsc range -"
-                        + " x:"+ rangeWidthStart
-                        + " y:" + rangeHeightStart
-                        + " xLen:" + rangeWidthEnd
-                        + " yLen:" + rangeHeigtEnd);
+                log.debug("sceMpegAvcCsc range -" + " x:" + rangeWidthStart + " y:" + rangeHeightStart + " xLen:" + rangeWidthEnd + " yLen:" + rangeHeigtEnd);
             }
 
             // sceMpegAvcDecodeYCbCr() is performing the video decoding and
@@ -1697,93 +1675,92 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // The other methods (JpcspConnector and Faked video) are performing
             // both steps together: this is done in here.
             if (isEnableMediaEngine()) {
-            	if (me.getContainer() != null) {
+                if (me.getContainer() != null) {
                     writeVideoImage(dest_addr, frameWidth);
-            	}
+                }
             } else {
-	            long currentSystemTime = Emulator.getClock().milliTime();
-	            int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
-	            if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
-	                int delayMillis = avcDecodeDelay - elapsedTime;
-	                log.info("Delaying sceMpegAvcCsc for " + delayMillis + "ms");
-	                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-	                lastAvcSystemTime = currentSystemTime + delayMillis;
-	            } else {
-	                lastAvcSystemTime = currentSystemTime;
-	            }
+                long currentSystemTime = Emulator.getClock().milliTime();
+                int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
+                if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
+                    int delayMillis = avcDecodeDelay - elapsedTime;
+                    if(log.isDebugEnabled()) {
+                        log.debug("Delaying sceMpegAvcCsc for " + delayMillis + "ms");
+                    }
+                    Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
+                    lastAvcSystemTime = currentSystemTime + delayMillis;
+                } else {
+                    lastAvcSystemTime = currentSystemTime;
+                }
 
-	            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
+                mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
 
-	            int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-	            int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
-	            int processedSize = processedPackets * mpegRingbuffer.packetSize;
+                int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
+                int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
+                int processedSize = processedPackets * mpegRingbuffer.packetSize;
 
-	            // let's go with 3 packets per frame for now
-	            int packetsConsumed = 3;
-	            if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
-	                // Try a better approximation of the packets consumed based on the timestamp
-	                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
-	                if (processedSizeBasedOnTimestamp < processedSize) {
-	                    packetsConsumed = 0;
-	                } else {
-	                    packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
-	                    if (packetsConsumed > 10) {
-	                        packetsConsumed = 10;
-	                    }
-	                }
-	                if (log.isDebugEnabled()) {
-	                    log.debug(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
-	                }
-	            }
+                // let's go with 3 packets per frame for now
+                int packetsConsumed = 3;
+                if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
+                    // Try a better approximation of the packets consumed based on the timestamp
+                    int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
+                    if (processedSizeBasedOnTimestamp < processedSize) {
+                        packetsConsumed = 0;
+                    } else {
+                        packetsConsumed = (processedSizeBasedOnTimestamp - processedSize) / mpegRingbuffer.packetSize;
+                        if (packetsConsumed > 10) {
+                            packetsConsumed = 10;
+                        }
+                    }
+                    if (log.isDebugEnabled()) {
+                        log.debug(String.format("sceMpegAvcCsc consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
+                    }
+                }
 
-	            if (isEnableConnector() && mpegCodec.readVideoFrame(dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoFrameCount)) {
-	                packetsConsumed = mpegCodec.getPacketsConsumed();
-	                mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
-	            } else {
-	                // Generate static.
-	                generateFakeMPEGVideo(dest_addr, frameWidth);
+                if (isEnableConnector() && mpegCodec.readVideoFrame(dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoFrameCount)) {
+                    packetsConsumed = mpegCodec.getPacketsConsumed();
+                    mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
+                } else {
+                    // Generate static.
+                    generateFakeMPEGVideo(dest_addr, frameWidth);
+                    if (isEnableConnector()) {
+                        mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
+                    }
+                    Date currentDate = convertTimestampToDate(mpegAvcCurrentDecodingTimestamp);
+                    if(log.isDebugEnabled()) {
+                        log.debug("currentDate: " + currentDate.toString());
+                    }
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+                    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
+                    String displayedString;
+                    if (mpegLastDate != null) {
+                        displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+                        Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+                    }
+                    if (mpegStreamSize > 0) {
+                        displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
+                    } else {
+                        displayedString = String.format(" %d ", processedSize);
+                    }
+                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
+                    if (log.isDebugEnabled()) {
+                        log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+                    }
+                }
 
-	                if (isEnableConnector())
-	                    mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
+                videoFrameCount++;
+                if (log.isDebugEnabled()) {
+                    log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+                }
 
-	                Date currentDate = convertTimestampToDate(mpegAvcCurrentDecodingTimestamp);
-	                log.info("currentDate: " + currentDate.toString());
-	                SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-	                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-	                Debug.printFramebuffer(dest_addr, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video (in YCbCr mode). ");
-
-	                String displayedString;
-	                if (mpegLastDate != null) {
-	                    displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
-	                    Debug.printFramebuffer(dest_addr, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-	                }
-	                if (mpegStreamSize > 0) {
-	                    displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
-	                } else {
-	                    displayedString = String.format(" %d ", processedSize);
-	                }
-	                Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
-
-	                if (log.isDebugEnabled()) {
-	                    log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
-	                }
-	            }
-	            videoFrameCount++;
-
-	            if (log.isDebugEnabled()) {
-	                log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
-	            }
-
-	            if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
-	                mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
-	                mpegRingbuffer.write(mem, mpegRingbufferAddr);
-	            }
+                if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+                    mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+                    mpegRingbuffer.write(mem, mpegRingbufferAddr);
+                }
             }
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegAvcCsc bad address "
-                + String.format("0x%08X 0x%08X", source_addr, dest_addr));
+            log.warn("sceMpegAvcCsc bad address " + String.format("0x%08X 0x%08X", source_addr, dest_addr));
 
             cpu.gpr[2] = -1;
         }
@@ -1798,10 +1775,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int buffer_addr = cpu.gpr[6];
         int init = cpu.gpr[7];
 
-        log.warn("PARTIAL: sceMpegAtracDecode(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",au=0x" + Integer.toHexString(au_addr)
-            + ",buffer=0x" + Integer.toHexString(buffer_addr)
-            + ",init=" + init + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegAtracDecode(mpeg=0x" + Integer.toHexString(mpeg)
+                    + ", au=0x" + Integer.toHexString(au_addr)
+                    + ", buffer=0x" + Integer.toHexString(buffer_addr)
+                    + ", init=" + init + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1826,22 +1805,23 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 lastAtracSystemTime = currentSystemTime;
             }
 
-            if(isEnableMediaEngine()) {
+            // External audio setup.
+            if (isEnableMediaEngine()) {
                 String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.";
                 String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac"};
                 boolean found = false;
                 File f = null;
                 try {
-                    for(int i = 0; i < supportedFormats.length; i++) {
+                    for (int i = 0; i < supportedFormats.length; i++) {
                         f = new File(pmfExtAudioPath + supportedFormats[i]);
-                        if(f.exists()) {
+                        if (f.exists()) {
                             pmfExtAudioPath += supportedFormats[i];
                             found = true;
                             break;
                         }
                     }
-                    if(found) {
-                        if(me.getExtContainer() != null) {
+                    if (found) {
+                        if (me.getExtContainer() != null) {
                             me.stepExtAudio();
                         } else {
                             me.initExtAudio(pmfExtAudioPath);
@@ -1851,27 +1831,27 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     // Ignore.
                 }
             } else if (isEnableConnector()) {
-                if(mpegCodec.readAudioFrame(buffer_addr, audioFrameCount))
+                if (mpegCodec.readAudioFrame(buffer_addr, audioFrameCount)) {
                     mpegAtracCurrentDecodingTimestamp = mpegCodec.getMpegAtracCurrentTimestamp();
+                }
             } else {
                 mem.memset(buffer_addr, (byte) 0, 8192);
             }
             audioFrameCount++;
             if (log.isDebugEnabled()) {
-            	log.debug("sceMpegAtracDecode currentTimestamp=" + mpegAtracCurrentDecodingTimestamp);
+                log.debug("sceMpegAtracDecode currentTimestamp=" + mpegAtracCurrentDecodingTimestamp);
             }
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegAtracDecode bad address "
-                + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
+            log.warn("sceMpegAtracDecode bad address " + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
             cpu.gpr[2] = -1;
         }
     }
 
     private int getSizeFromPackets(int packets) {
-    	int size = (packets * 104) + (packets * 2048);
+        int size = (packets * 104) + (packets * 2048);
 
-    	return size;
+        return size;
     }
 
     public void sceMpegRingbufferQueryMemSize(Processor processor) {
@@ -1879,14 +1859,15 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int packets = cpu.gpr[4];
 
-        int size = getSizeFromPackets(packets);
-        log.debug("sceMpegRingbufferQueryMemSize packets=" + packets + ", size=0x" + Integer.toHexString(size));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMpegRingbufferQueryMemSize packets=" + packets);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        cpu.gpr[2] = size;
+        cpu.gpr[2] = getSizeFromPackets(packets);
     }
 
     public void sceMpegRingbufferConstruct(Processor processor) {
@@ -1896,16 +1877,18 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int ringbuffer_addr = cpu.gpr[4];
         int packets = cpu.gpr[5];
         int data = cpu.gpr[6];
-        int size = cpu.gpr[7]; // matching sceMpegQueryMemSize
+        int size = cpu.gpr[7];
         int callback_addr = cpu.gpr[8];
         int callback_args = cpu.gpr[9];
 
-        log.debug("sceMpegRingbufferConstruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
-            + ",packets=" + packets
-            + ",data=0x" + Integer.toHexString(data)
-            + ",size=" + size
-            + ",callback=0x" + Integer.toHexString(callback_addr)
-            + ",args=0x" + Integer.toHexString(callback_args) + ")");
+        if(log.isDebugEnabled()) {
+            log.debug("sceMpegRingbufferConstruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
+                    + ", packets=" + packets
+                    + ", data=0x" + Integer.toHexString(data)
+                    + ", size=" + size
+                    + ", callback=0x" + Integer.toHexString(callback_addr)
+                    + ", args=0x" + Integer.toHexString(callback_args) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1913,14 +1896,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (size < getSizeFromPackets(packets)) {
             log.warn("sceMpegRingbufferConstruct insufficient space: size=" + size + ", packets=" + packets);
-        	cpu.gpr[2] = 0x80610022;
+            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_MEMORY;
         } else if (mem.isAddressGood(ringbuffer_addr)) {
             SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(packets, data, size, callback_addr, callback_args);
             ringbuffer.write(mem, ringbuffer_addr);
             cpu.gpr[2] = 0;
         } else {
-            log.warn("sceMpegRingbufferConstruct bad address "
-                + String.format("0x%08X", ringbuffer_addr));
+            log.warn("sceMpegRingbufferConstruct bad address " + String.format("0x%08X", ringbuffer_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1930,7 +1912,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int ringbuffer_addr = cpu.gpr[4];
 
-        log.debug("sceMpegRingbufferDestruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
+        if(log.isDebugEnabled()) {
+            log.debug("sceMpegRingbufferDestruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -1942,43 +1926,39 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected int ringbufferCallback_ringbuffer_addr;
 
     public class AfterRingbufferPutCallback implements IAction {
-		@Override
-		public void execute() {
-			hleMpegRingbufferPostPut();
-		}
+
+        @Override
+        public void execute() {
+            hleMpegRingbufferPostPut();
+        }
     }
 
     protected void hleMpegRingbufferPostPut() {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
+        int packetsAdded = cpu.gpr[2];
         SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbufferCallback_ringbuffer_addr);
 
-        int packetsAdded = cpu.gpr[2];
         if (log.isDebugEnabled()) {
-        	log.debug("sceMpegRingbufferPut packetsAdded=" + packetsAdded + ", packetsRead=" + ringbuffer.packetsRead);
+            log.debug("sceMpegRingbufferPut packetsAdded=" + packetsAdded + ", packetsRead=" + ringbuffer.packetsRead);
         }
-        if (packetsAdded > 0)
-        {
-            if(isEnableMediaEngine()) {
+
+        if (packetsAdded > 0) {
+            if (isEnableMediaEngine()) {
                 meChannel.writePacket(ringbuffer.data, packetsAdded * ringbuffer.packetSize);
             } else if (isEnableConnector()) {
-        		mpegCodec.writeVideo(ringbuffer.data, packetsAdded * ringbuffer.packetSize);
-        	}
-
-        	if (ringbuffer.packetsFree - packetsAdded < 0) {
-                log.warn("sceMpegRingbufferPut clamping packetsAdded old=" + packetsAdded
-                    + " new=" + ringbuffer.packetsFree);
-
+                mpegCodec.writeVideo(ringbuffer.data, packetsAdded * ringbuffer.packetSize);
+            }
+            if (ringbuffer.packetsFree - packetsAdded < 0) {
+                log.warn("sceMpegRingbufferPut clamping packetsAdded old=" + packetsAdded + " new=" + ringbuffer.packetsFree);
                 packetsAdded = ringbuffer.packetsFree;
             }
-
             ringbuffer.packetsRead += packetsAdded;
             ringbuffer.packetsWritten += packetsAdded;
             ringbuffer.packetsFree -= packetsAdded;
             ringbuffer.write(mem, ringbufferCallback_ringbuffer_addr);
         }
-
         cpu.gpr[2] = packetsAdded;
     }
 
@@ -1991,7 +1971,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int available = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceMpegRingbufferPut(ringbuffer=0x%08X,numPackets=%d,available=%d", ringbuffer_addr, numPackets, available));
+            log.debug(String.format("sceMpegRingbufferPut ringbuffer=0x%08X, numPackets=%d, available=%d",
+                    ringbuffer_addr, numPackets, available));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -2001,10 +1982,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (numPackets < 0) {
             cpu.gpr[2] = 0;
         } else {
+            int numberPackets = Math.min(available, numPackets);
             SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
             ringbufferCallback_ringbuffer_addr = ringbuffer_addr;
-
-            int numberPackets = Math.min(available, numPackets);
             Modules.ThreadManForUserModule.executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, numberPackets, ringbuffer.callback_args);
         }
     }
@@ -2015,15 +1995,15 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         int ringbuffer_addr = cpu.gpr[4];
 
-        SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
-
-        log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x"
-                + Integer.toHexString(ringbuffer_addr) + ") ret:" + ringbuffer.packetsFree);
+        if(log.isDebugEnabled()) {
+            log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+        SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
         cpu.gpr[2] = ringbuffer.packetsFree;
     }
 
@@ -2038,8 +2018,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public void sceMpegNextAvcRpAu(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceMpegNextAvcRpAu "
-            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
+        log.warn("UNIMPLEMENTED: sceMpegNextAvcRpAu " + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -2095,496 +2074,541 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
     public final HLEModuleFunction sceMpegQueryStreamOffsetFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryStreamOffset") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegQueryStreamOffset(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryStreamOffset(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegQueryStreamSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryStreamSize") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegQueryStreamSize(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryStreamSize(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegInitFunction = new HLEModuleFunction("sceMpeg", "sceMpegInit") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegInit(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegInit(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegFinishFunction = new HLEModuleFunction("sceMpeg", "sceMpegFinish") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegFinish(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFinish(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegQueryMemSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryMemSize") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegQueryMemSize(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryMemSize(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegCreateFunction = new HLEModuleFunction("sceMpeg", "sceMpegCreate") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegCreate(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegCreate(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegDeleteFunction = new HLEModuleFunction("sceMpeg", "sceMpegDelete") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegDelete(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegDelete(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegRegistStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegRegistStream") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegRegistStream(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRegistStream(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegUnRegistStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegUnRegistStream") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegUnRegistStream(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegUnRegistStream(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegMallocAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegMallocAvcEsBuf") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegMallocAvcEsBuf(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegMallocAvcEsBuf(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegFreeAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegFreeAvcEsBuf") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegFreeAvcEsBuf(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFreeAvcEsBuf(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegQueryAtracEsSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryAtracEsSize") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegQueryAtracEsSize(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryAtracEsSize(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegQueryPcmEsSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryPcmEsSize") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegQueryPcmEsSize(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryPcmEsSize(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegInitAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegInitAu") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegInitAu(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegInitAu(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegChangeGetAvcAuModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegChangeGetAvcAuMode") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegChangeGetAvcAuMode(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegChangeGetAvcAuMode(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegChangeGetAuModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegChangeGetAuMode") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegChangeGetAuMode(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegChangeGetAuMode(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegGetAvcAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetAvcAu") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegGetAvcAu(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetAvcAu(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegGetPcmAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetPcmAu") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegGetPcmAu(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetPcmAu(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegGetAtracAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetAtracAu") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegGetAtracAu(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetAtracAu(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegFlushStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegFlushStream") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegFlushStream(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFlushStream(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegFlushAllStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegFlushAllStream") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegFlushAllStream(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFlushAllStream(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecode") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecode(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecode(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeDetailFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeDetail") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecodeDetail(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeDetail(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeMode") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecodeMode(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeMode(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeStopFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeStop") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecodeStop(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeStop(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeFlushFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeFlush") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecodeFlush(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeFlush(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcQueryYCbCrSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcQueryYCbCrSize") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcQueryYCbCrSize(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcQueryYCbCrSize(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcInitYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcInitYCbCr") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcInitYCbCr(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcInitYCbCr(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeYCbCr") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecodeYCbCr(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeYCbCr(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeStopYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeStopYCbCr") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecodeStopYCbCr(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeStopYCbCr(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcCscFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcCsc") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcCsc(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcCsc(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAtracDecodeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAtracDecode") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAtracDecode(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAtracDecode(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegRingbufferQueryMemSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferQueryMemSize") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegRingbufferQueryMemSize(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferQueryMemSize(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegRingbufferConstructFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferConstruct") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegRingbufferConstruct(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferConstruct(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegRingbufferDestructFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferDestruct") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegRingbufferDestruct(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferDestruct(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegRingbufferPutFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferPut") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegRingbufferPut(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferPut(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegRingbufferAvailableSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferAvailableSize") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegRingbufferAvailableSize(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferAvailableSize(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpeg_11CAB459Function = new HLEModuleFunction("sceMpeg", "sceMpeg_11CAB459") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpeg_11CAB459(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_11CAB459(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegNextAvcRpAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegNextAvcRpAu") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegNextAvcRpAu(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegNextAvcRpAu(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpeg_B27711A8Function = new HLEModuleFunction("sceMpeg", "sceMpeg_B27711A8") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpeg_B27711A8(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_B27711A8(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpeg_D4DD6E75Function = new HLEModuleFunction("sceMpeg", "sceMpeg_D4DD6E75") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpeg_D4DD6E75(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_D4DD6E75(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpeg_C345DED2Function = new HLEModuleFunction("sceMpeg", "sceMpeg_C345DED2") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpeg_C345DED2(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_C345DED2(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpeg_AB0E9556Function = new HLEModuleFunction("sceMpeg", "sceMpeg_AB0E9556") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpeg_AB0E9556(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_AB0E9556(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpegAvcDecodeDetail2Function = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeDetail2") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpegAvcDecodeDetail2(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeDetail2(processor);";
         }
     };
-
     public final HLEModuleFunction sceMpeg_988E9E12Function = new HLEModuleFunction("sceMpeg", "sceMpeg_988E9E12") {
+
         @Override
         public final void execute(Processor processor) {
             sceMpeg_988E9E12(processor);
         }
+
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_988E9E12(processor);";

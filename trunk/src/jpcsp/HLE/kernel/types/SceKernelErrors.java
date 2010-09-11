@@ -42,8 +42,10 @@ public class SceKernelErrors {
      *      -> 0x041 - Wlan.
      *      -> 0x042 - SAS.
      *      -> 0x044 - WAVE.
-     *      -> 0x061 - PSMF.
+     *      -> 0x061 - PSMF/MPEG.
+     *      -> 0x062 - MPEG Video.
      *      -> 0x063 - ATRAC.
+     *      -> 0x07f - MPEG Audio.
      *
      * Bits 15 to 0 (E): Represent the error code itself (different for each area).
      *      -> E.g.: 0x80110001 - Error -> Utility -> Some unknown error.
@@ -315,11 +317,20 @@ public class SceKernelErrors {
     public final static int ERROR_WAVE_INVALID_CHANNEL                          = 0x80440010;
     public final static int ERROR_WAVE_INVALID_SAMPLE_COUNT                     = 0x80440011;
 
+    public final static int ERROR_MPEG_BAD_VERSION                              = 0x80610002;
+    public final static int ERROR_MPEG_NO_MEMORY                                = 0x80610022;
+    public final static int ERROR_MPEG_INVALID_ADDR                             = 0x80610103;
+    public final static int ERROR_MPEG_INVALID_VALUE                            = 0x806101fe;
+
     public final static int ERROR_PSMF_NOT_INITIALIZED                          = 0x80615001;
     public final static int ERROR_PSMF_BAD_VERSION                              = 0x80615002;
     public final static int ERROR_PSMF_NOT_FOUND                                = 0x80615025;
     public final static int ERROR_PSMF_INVALID_PSMF                             = 0x80615501;
-    public final static int ERROR_PSMF_INVALID_VALUE                            = 0x806151FE;
+    public final static int ERROR_PSMF_INVALID_VALUE                            = 0x806151fe;
+
+    public final static int ERROR_MPEG_NO_DATA                                  = 0x80618001;
+
+    public final static int ERROR_MPEG_VIDEO_FATAL                              = 0x80628002;
 
     public final static int ERROR_ATRAC_NO_ID                                   = 0x80630003;
     public final static int ERROR_ATRAC_INVALID_CODEC                           = 0x80630004;
@@ -330,4 +341,6 @@ public class SceKernelErrors {
     public final static int ERROR_ATRAC_SECOND_BUFFER_NOT_NEEDED                = 0x80630022;
     public final static int ERROR_ATRAC_BUFFER_IS_EMPTY                         = 0x80630023;
     public final static int ERROR_ATRAC_ALL_DATA_DECODED                        = 0x80630024;
+
+    public final static int ERROR_MPEG_AUDIO_FATAL                              = 0x807f00fc;
 }
