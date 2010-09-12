@@ -206,7 +206,9 @@ public class VideoEngine {
 
         public final boolean uploadValue(float value) {
             if (index >= maxIndex) {
-                VideoEngine.getInstance().error(String.format("Ignored Matrix upload value (idx=%08X)", index));
+            	if(VideoEngine.getInstance().isLogDebugEnabled) {
+					VideoEngine.log(String.format("Ignored Matrix upload value (idx=%08X)", index));
+				}
             } else {
 	            int i = matrixIndex[index];
 	            if (matrix[i] != value) {
@@ -1478,7 +1480,7 @@ public class VideoEngine {
             }
 
             case SHADE: {
-                re.setShadeModel(normalArgument);
+                re.setShadeModel(normalArgument & 1);
                 if (isLogDebugEnabled) {
                     log("sceGuShadeModel(" + ((normalArgument != 0) ? "smooth" : "flat") + ")");
                 }
@@ -1592,9 +1594,9 @@ public class VideoEngine {
                 break;
 
             case LMODE: {
-                re.setLightMode(normalArgument);
+                re.setLightMode(normalArgument & 1);
                 if (isLogDebugEnabled) {
-                    VideoEngine.log.info("sceGuLightMode(" + ((normalArgument != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
+                    VideoEngine.log.info("sceGuLightMode(" + (((normalArgument & 1) != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
                 }
                 // Check if other values than 0 and 1 are set
                 if ((normalArgument & ~1) != 0) {
@@ -3287,7 +3289,8 @@ public class VideoEngine {
         int matrixIndex = boneMatrixIndex / 12;
         int elementIndex = boneMatrixIndex % 12;
         if (matrixIndex >= 8) {
-            error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
+        	if(isLogDebugEnabled)
+        		log("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
         } else {
             float floatArgument = floatArgument(normalArgument);
             context.bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
