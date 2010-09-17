@@ -321,6 +321,15 @@ public class VideoEngine {
         return false;
     }
 
+    public PspGeList getFirstDrawList() {
+    	PspGeList firstList = currentList;
+    	if (firstList == null) {
+    		firstList = drawListQueue.peek();
+    	}
+
+    	return firstList;
+    }
+
     public PspGeList getLastDrawList() {
         PspGeList lastList = null;
         for (PspGeList list : drawListQueue) {
@@ -576,13 +585,9 @@ public class VideoEngine {
         int waitForSyncCount = 0;
         while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
             if (currentList.isPaused()) {
-                if (currentList.isFinished()) {
-                    listHasEnded = true;
-                    break;
-                }
 				waitSignalStatistics.start();
 				if (isLogDebugEnabled) {
-				    log.debug(String.format("SIGNAL / END reached, waiting for Sync"));
+				    log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync"));
 				}
 				currentList.status = PSP_GE_LIST_END_REACHED;
 				if (!currentList.waitForSync(10)) {
@@ -606,6 +611,10 @@ public class VideoEngine {
 					currentList.clearPaused();
 				}
 				if (!currentList.isPaused()) {
+	                if (currentList.isFinished()) {
+	                    listHasEnded = true;
+	                    break;
+	                }
 				    currentList.status = PSP_GE_LIST_DRAWING;
 				}
 				waitSignalStatistics.end();
@@ -870,28 +879,61 @@ public class VideoEngine {
     // UnSwizzling based on pspplayer
     private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel, int level) {
         int rowWidth = (bytesPerPixel > 0) ? (context.texture_buffer_width[level] * bytesPerPixel) : (context.texture_buffer_width[level] / 2);
-        int pitch = (rowWidth - 16) / 4;
+        int pitch = rowWidth / 4;
         int bxc = rowWidth / 16;
-        int byc = (context.texture_height[level] + 7) / 8;
+        int byc = Math.max((context.texture_height[level] + 7) / 8, 1);
 
         int ydest = 0;
 
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, 4);
         for (int by = 0; by < byc; by++) {
-            int xdest = ydest;
-            for (int bx = 0; bx < bxc; bx++) {
-                int dest = xdest;
-                for (int n = 0; n < 8; n++) {
-                    tmp_texture_buffer32[dest] = memoryReader.readNext();
-                    tmp_texture_buffer32[dest + 1] = memoryReader.readNext();
-                    tmp_texture_buffer32[dest + 2] = memoryReader.readNext();
-                    tmp_texture_buffer32[dest + 3] = memoryReader.readNext();
+            if (rowWidth >= 16) {
+                int xdest = ydest;
+                for (int bx = 0; bx < bxc; bx++) {
+                    int dest = xdest;
+                    for (int n = 0; n < 8; n++) {
+                        tmp_texture_buffer32[dest] = memoryReader.readNext();
+                        tmp_texture_buffer32[dest + 1] = memoryReader.readNext();
+                        tmp_texture_buffer32[dest + 2] = memoryReader.readNext();
+                        tmp_texture_buffer32[dest + 3] = memoryReader.readNext();
 
-                    dest += pitch + 4;
+                        dest += pitch;
+                    }
+                    xdest += 4;
                 }
-                xdest += (16 / 4);
+                ydest += (rowWidth * 8) / 4;
+            } else if (rowWidth == 8) {
+            	for (int n = 0; n < 8; n++, ydest += 2) {
+                    tmp_texture_buffer32[ydest] = memoryReader.readNext();
+                    tmp_texture_buffer32[ydest + 1] = memoryReader.readNext();
+                    memoryReader.skip(2);
+            	}
+            } else if (rowWidth == 4) {
+            	for (int n = 0; n < 8; n++, ydest++) {
+                    tmp_texture_buffer32[ydest] = memoryReader.readNext();
+                    memoryReader.skip(3);
+            	}
+            } else if (rowWidth == 2) {
+            	for (int n = 0; n < 4; n++, ydest++) {
+            		int n1 = memoryReader.readNext() & 0xFFFF;
+            		memoryReader.skip(3);
+            		int n2 = memoryReader.readNext() & 0xFFFF;
+                    memoryReader.skip(3);
+                    tmp_texture_buffer32[ydest] = n1 | (n2 << 16);
+            	}
+            } else if (rowWidth == 1) {
+            	for (int n = 0; n < 2; n++, ydest++) {
+            		int n1 = memoryReader.readNext() & 0xFF;
+            		memoryReader.skip(3);
+            		int n2 = memoryReader.readNext() & 0xFF;
+                    memoryReader.skip(3);
+            		int n3 = memoryReader.readNext() & 0xFF;
+                    memoryReader.skip(3);
+            		int n4 = memoryReader.readNext() & 0xFF;
+                    memoryReader.skip(3);
+                    tmp_texture_buffer32[ydest] = n1 | (n2 << 8) | (n3 << 16) | (n4 << 24);
+            	}
             }
-            ydest += (rowWidth * 8) / 4;
         }
 
         if (State.captureGeNextFrame) {
@@ -1051,8 +1093,9 @@ public class VideoEngine {
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
                 }
+                currentList.clearRestart();
                 currentList.finishList();
-                currentList.pushFinishCallback(normalArgument);
+                currentList.pushFinishCallback(currentList.id, normalArgument);
                 break;
 
             case BASE:
@@ -3217,9 +3260,14 @@ public class VideoEngine {
     }
 
     private void executeCommandBBOX(int normalArgument) {
-        int numberOfVertexBoundingBox = normalArgument;
+        Memory mem = Memory.getInstance();
+        int numberOfVertexBoundingBox = normalArgument & 0xFF;
 
-        if (vinfo.position == 0) {
+        if (!mem.isAddressGood(vinfo.ptr_vertex)) {
+            // Abort here to avoid a lot of useless memory read errors...
+            error(String.format("%s Invalid vertex address 0x%08X", helper.getCommandString(BBOX), vinfo.ptr_vertex));
+            return;
+        } else if (vinfo.position == 0) {
             log.warn(helper.getCommandString(BBOX) + " no positions for vertex!");
             return;
         } else if (!re.hasBoundingBox()) {
@@ -3235,7 +3283,6 @@ public class VideoEngine {
             log.debug(helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
         }
 
-        Memory mem = Memory.getInstance();
         boolean useVertexColor = initRendering();
 
         re.setVertexInfo(vinfo, false, useVertexColor);
@@ -3636,12 +3683,17 @@ public class VideoEngine {
             boolean compressedTexture = false;
 
             int numberMipmaps = context.texture_num_mip_maps;
+            Memory mem = Memory.getInstance();
 
             for (int level = 0; level <= numberMipmaps; level++) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
                 texaddr = context.texture_base_pointer[level];
                 texaddr &= Memory.addressMask;
+                if (!mem.isAddressGood(texaddr)) {
+                	error(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
+                	break;
+                }
                 compressedTexture = false;
                 int compressedTextureSize = 0;
                 int buffer_storage = context.texture_storage;

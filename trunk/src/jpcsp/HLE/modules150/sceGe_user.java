@@ -289,11 +289,13 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 					log.debug("hleGeOnAfterCallback restarting list " + list);
 				}
 
-				// If the list is still on the END command, skip it.
-				Memory mem = Memory.getInstance();
-				if (mem.isAddressGood(list.pc)) {
-					if (VideoEngine.command(mem.read32(list.pc)) == GeCommands.END) {
-						list.pc += 4;
+				if (!list.isFinished()) {
+					// If the list is still on the END command, skip it.
+					Memory mem = Memory.getInstance();
+					if (mem.isAddressGood(list.pc)) {
+						if (VideoEngine.command(mem.read32(list.pc)) == GeCommands.END) {
+							list.pc += 4;
+						}
 					}
 				}
 
@@ -315,8 +317,8 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     }
 
     /** safe to call from the Async display thread */
-    public void triggerFinishCallback(int cbid, int callbackNotifyArg1) {
-		triggerAsyncCallback(cbid, -1, PSP_GE_BEHAVIOR_SUSPEND, callbackNotifyArg1, finishCallbacks);
+    public void triggerFinishCallback(int cbid, int listId, int callbackNotifyArg1) {
+		triggerAsyncCallback(cbid, listId, PSP_GE_BEHAVIOR_SUSPEND, callbackNotifyArg1, finishCallbacks);
     }
 
     /** safe to call from the Async display thread */
@@ -654,11 +656,14 @@ public class sceGe_user implements HLEModule, HLEStartModule {
                     Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
 	    		}
             } else if (mode == 1) {
-                PspGeList currentList = VideoEngine.getInstance().getCurrentList();
+                PspGeList currentList = VideoEngine.getInstance().getFirstDrawList();
                 if (currentList == null) {
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = currentList.status;
+                }
+                if (log.isDebugEnabled()) {
+                	log.debug("sceGeDrawSync mode=" + mode + ", returning " + cpu.gpr[2]);
                 }
             } else {
                 log.warn("sceGeDrawSync invalid mode=" + mode);
