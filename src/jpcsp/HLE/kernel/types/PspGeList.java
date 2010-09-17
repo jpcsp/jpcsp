@@ -100,8 +100,8 @@ public class PspGeList
         Modules.sceGe_userModule.triggerSignalCallback(cbid, listId, behavior, signal);
     }
 
-    public void pushFinishCallback(int arg) {
-    	Modules.sceGe_userModule.triggerFinishCallback(cbid, arg);
+    public void pushFinishCallback(int listId, int arg) {
+    	Modules.sceGe_userModule.triggerFinishCallback(cbid, listId, arg);
     }
 
     private void pushStack(int value) {
