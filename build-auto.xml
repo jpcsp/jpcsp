@@ -6,7 +6,7 @@
 	<property name="source" value="1.6" />
 
 	<property name="jpcsp.mainclass" value="jpcsp.MainGUI" />
-	<property name="jpcsp.version" value="0.5" />
+	<property name="jpcsp.version" value="0.6" />
 
 	<path id="Jpcsp.classpath">
 		<pathelement location="lib/gluegen-rt.jar" />
@@ -119,12 +119,12 @@
 				<include name="lib/*.jar" />
 				<include name="lib/${platform.name}/*" />
 				<include name="demos/**" />
-				<include name="documents/**" />
 				<include name="flash0/**" />
 				<include name="ms0/**" />
 				<include name="patches/**" />
 				<include name="umdimages/**" />
 				<include name="gpl.txt" />
+				<include name="README.txt" />
 				<include name="Compiler.xml" />
 				<include name="LogSettings.xml" />
 				<include name="start-${platform.name}*" />
