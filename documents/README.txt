@@ -12,6 +12,8 @@
 
 *******************************************************************************
 [VERSION HISTORY]:
+v0.6:
+September 18, 2010 - Added new emulation changes and improved the FAQ.
 v0.5:
 March 25, 2010 - Merged all JPCSP's (v0.5) details into this README file.
 *******************************************************************************
@@ -51,9 +53,56 @@ Please keep in mind that JPCSP does not support or endorse piracy.
 			   [What's new (changelog)]
 ...............................................................................
 ...............................................................................
+JPCSP v0.6 (September 18, 2010):
+
+-> Included compilation of several "Allegrex" instructions in dynarec for a
+   much better performance;
+
+-> Performed major code cleanups and reorganization;
+
+-> Fixed and improved module loading:
+	- Corrected import and export's mapping;
+	- Implemented newly discovered loading methods.
+
+-> Updated all modules with the most recent findings;
+
+-> Added all new save/load (savedata) modes;
+
+-> Reviewed and improved all kernel object managers:
+	- Implemented each kernel object manager's attributes;
+	- Added full LwMutex support in a dedicated kernel object manager
+	- Provided corrections for mutex, semaphore and event flag managers;
+	- Properly implemented VPL and FPL handling.
+
+-> Improved graphics' handling:
+	- Splitted rendering into a new RE (rendering engine);
+	- Cleaned up and optimized VideoEngine;
+	- Fully implemented, corrected and organized main GE commands;
+	- Improved shaders' usage and stability;
+	- Introduced a geometry shader for increased speed in rendering;
+	- Fixed display list processing;
+	- Improved the performance of several GE commands.
+
+-> Implemented a MediaEngine for video and audio playback (based on FFMPEG):
+	- Added video playback support in sceMpeg and scePsmfPlayer;
+	- Added ATRAC3 audio playback support in sceAtrac3plus;
+	- Improved "UMD Browser" to display images, load videos and play sounds
+	  from the UMD data.
+
+-> Improved main GUI and debug tools:
+	- Added a "Cheats" menu with CWCheat support;
+	- Provided a cleaner organization and display of settings;
+	- Removed "Emulation" menu;
+	- Improved the "Logger" tool;
+	- Added a new "Image Viewer" tool.
+
+
+
+
 JPCSP v0.5 (March 09, 2010):
 
 -> Lots of code cleanups;
+
 -> Graphical improvements:
 	- Shader improvements;
 	- VideoEngine optimizations;
@@ -74,7 +123,9 @@ JPCSP v0.5 (March 09, 2010):
 	- Added English, French, German, Spanish, Catalan and Lithuanian packs;
 
 -> Beggining of threaded IOAsync operations implementation;
+
 -> General fixes for module loading;
+
 -> Small improvements of HLE functions.
 ...............................................................................
 
@@ -89,10 +140,19 @@ JPCSP v0.5 (March 09, 2010):
 
 Be sure to have JRE (Java Runtime Environement) installed in your computer
 before attempting to run JPCSP.
-With this distribution you should find a batch (.bat) file. This is just a
-shortcut for the command line operation that launches JPCSP's .jar file. You
-can edit this file if you want to change the heap memory the emulator can use.
-Eg.: java -Xmx512m -jar jpcsp.jar -> uses 512 MB of RAM.
+
+NOTE: It is strongly advised that even on a 64-bit OS, you should install the
+32-bit JRE release and use JPCSP's 32-bit version, for compatiblity reasons.
+
+If you've downloaded the Windows version, use the batch (.bat) files located
+inside JPCSP's main folder (start-windows-x86.bat or start-windows-amd64.bat).
+
+If you've downloaded the Linux version, use the shell script (.sh) files 
+located inside JPCSP's main folder (start-linux-x86.sh or 
+start-linux-amd64.sh).
+
+If you've downloaded the MacOSX version, just double click the application
+bundle to start JPCSP.
 
 
 
@@ -100,13 +160,12 @@ Eg.: java -Xmx512m -jar jpcsp.jar -> uses 512 MB of RAM.
 2. Loading/Running applications:
 
 To load an ISO/CSO image, you need to place it under the "umdimages" folder
-(this folder can be changed under Settings > Compatibility).
+(this folder can be changed under Options > Configuration > General).
 For homebrew, place the application's main folder (which should contain the 
 EBOOT file) under ms0 > PSP > GAME.
 
 To know which games are currently compatible with the emulator, you can check
-the Compatibility page of JPCSP´s homepage (link at the bottom of this FAQ), or
-check this list (updated): http://jpcsp.org/forum/viewtopic.php?f=4&t=6368
+JPCSP's forum for the latest news and an updated compatibility list post.
 
 The games tagged as "Encrypted" cannot be loaded by regular means. The only
 legal option is to own a PSP and use it to decrypt your own games' boot file.
@@ -116,26 +175,24 @@ legal option is to own a PSP and use it to decrypt your own games' boot file.
 
 3. Usage:
 
-The "File" menu allows you to load UMD images, homebrew from MemStick and any
-other file such as demos.
-The "Emulation" menu contains the run, pause and reset buttons for the
-emulator.
-The "Options" menu contains the "Screenshot" function, which allows you to take
-a screenshot of the current screen. It is then saved as [DiscID]_Snap_XXX.png
-in the current directory. The "Settings" allow you to change features such as
-HLE specific options or keyboard mapping. The "Save/Load Snapshot" functions
-capture and loads the current RAM memory and GPR registers' state to a file,
-so it can be used as an additional save option. The "Rotate" option is able to
-change the screen orientation accordingly to a chosen angle.
-The "Language" menu allows you to change the language of the emulator.
+The "File" menu allows you to load UMD images (Load UMD), homebrew applications
+(Load MemStick), and any other file such as demos (Load File). It also allows 
+to capture and load the current RAM memory and GPR registers' state to a file,
+so it can be used as an additional save option (Save/Load Snapshot).
+
+The "Options" menu contains dedicated settings for "Video" (Rotate and 
+Screenshot), "Audio" (Mute) and "Controls" features, as well as the 
+"Configuration" menu.
+
 The "Debug" menu contains all the advanced features of the emulator such as the
-debugger and the memory viewer.
+logger, the debugger and the memory viewer (see section 5. Advanced features).
+
+The "Cheats" menu allows you to apply cheats to the current application.
+
+The "Language" menu allows you to change the language of the emulator.
+
 The "Help" menu contains the "About" window.
 
-Below the main window you can find the logger. This window keeps track of the
-instructions used by the running applications, so it contains useful debug
-information. You can change the logging level to OFF, INFO, WARN, ERROR, FATAL,
-DEBUG, TRACE or ALL. You can also export the listed information to a file.
 
 
 
@@ -154,19 +211,17 @@ Usage: java -Xmx512m -jar jpcsp.jar <OPTIONS>
 
 4. Requirements:
 
-No accurate requirements are needed to use JPCSP (aside from OpenGL support), 
-however, a good overall system is clearly a huge help.
+Minimum:
+- OS: Windows 32bit or 64bit / Linux 32bit or 64bit / Mac OSX; 
+- CPU: Pentium 4 and up;
+- GPU: Any graphic card supporting OpenGL 2.0 and up; 
+- Memory: 1GB RAM.
 
-Here are some recommended requirements:
-- OS: Windows (XP/Vista/7) 32bit/64bit or 
-      Linux (any up-to-date distribution) 32bit/64bit.
-- CPU: 2.0 Ghz Intel Dual Core or 2.3 Ghz AMD Athlon 64 3200+.
-- RAM: 1 Gb.
-- Video Card: 256 Mb. 
-              Requires full OpenGL support (version 2.0 is the recommended 
-              minimum).
-
-Please note that these settings are mostly a reflection of users' experience.
+Recommended:
+- OS: Windows Vista / Windows 7;
+- CPU: Dual core @ 2.5 GHz;
+- GPU: Updated graphic card supporting OpenGL;
+- Memory: 2GB RAM or more. 
 
 
 
@@ -191,16 +246,47 @@ that maps your pad's buttons to the keyboard.
 
 
 - Patch files:
-To avoid repeatedly editing the Compatibility settings each time you want to 
-play a different game you can save them in a patch file that will get 
-automatically loaded with the game.
-Patch files go in the patches directory and are named after the game's Disc ID.
+To avoid repeatedly editing the settings each time you want to play a different
+game you can save them in a patch file that will get automatically loaded with 
+the game. Patch files go in the "patches" directory and are named after the 
+game's Disc ID.
 
 Please note when a game is using a patch file all compatibility settings in 
 the user interface will be overridden regardless of their state.
 
 
-- Debugger:
+- Media Engine:
+NOTE: Currently, only supported in 32-bit Windows.
+The "Media Engine" can be enabled under "Options" > "Configuration" > "Misc".
+You also need to unpack a folder called ffmpeg-natives.7z located under lib >
+windows-x86.
+This allows JPCSP to use the FFMPEG's wrapper Xuggler to decode and playback
+ingame videos (instead of faked MPEG data) and audio (ATRAC3 only, ATRAC3+ is
+not supported yet).
+
+
+- Debug Tools (under "Debug" > "Tools"):
+* Logger:
+The logger is a tool that can be enabled under "Debug" > "Tools" > "Logger" >
+"Show Logger". This opens an additional window that keeps track of the internal
+functioning of the current application in the log4j style.
+With this tool you can check which syscalls are called by the application, 
+which code blocks are being compiled by the compiler and so on. 
+
+You can also customize it's usage by going to "Debug" > "Tools" > "Logger" > 
+"Customize...".
+There you can specify general settings like opening this window at startup,
+preview the current log4j settings' file (LogSettings.xml), output the logging
+information into one file (formatted HTML or plain TXT) or several splitted 
+files and even change the logging method in use (GPU log only, for example).
+
+Note: After these modifications are applied, you must press the "Generate new
+settings file" button to update the external log settings' file. The changes in
+"Settings" and "Advanced" tabs are not saved by the emulator so the user can
+easily regenerate the original file.
+
+
+* Debugger:
 The debugger allows you to view the disassembly, place, export and import 
 breakpoints, step through instructions and override the program counter.
 The contents of the GPR and FPR are present in the side bar.
@@ -216,27 +302,40 @@ There are some other miscellaneous features in the side bar:
 	For best results run replays in the same game the capture was taken in.
 
 
-- Instruction Counter:
+* Memory Viewer:
+Displays the current's application raw RAM memory.
+
+
+* Image Viewer:
+Displays images directly loaded from the VRAM.
+
+
+* VFPU Registers:
+Contains internal information on VFPU oprations.
+
+
+* Instruction Counter:
 Lists all instructions and their frequency for the currently loaded program.
 
 
-- File IO Logger:
+* File IO Logger:
 Shows all IO activity. 
 Useful for developers to make sure they are reading files once only and as 
 quickly as possible. It can also tell you if you have forgotten to close a 
 file handle.
-This logger will need enabling from the Settings dialog.
 
 
-- ELF Header Information:
-Shows the ELF headers.
+* ELF Header Information:
+Shows ELF section and program headers parsed from the application's main boot 
+file.
 
 
 - Profiler:
 The profiler is a method used by JPCSP to analyse repeated code sequences in
 order to allow further optimization. If you wish, you can turn this feature on
-in the "Settings". The data will be saved for a certain application after 
-closing the emulator.
+under "Options" > "Configuration" > "General". The data will be saved for a 
+certain application after closing the emulator.
+Use "Reset Profiler Information" under "Debug" to clear the saved data.
 
 
 - ISO contents:
@@ -251,38 +350,35 @@ file. In order to do this, go to "Debug">"Dump ISO to ISO-index.txt".
 			   	[The Team]
 ...............................................................................
 ...............................................................................
-Developers:
-- Owners:
-	shadow,
-	fiveofhearts,
-	hlide,
-	gid15,
-	gigaherz,
-	Orphis,
-	mad,
-	Nutzje,
-	aisesal,
-	shashClp.
+JPCSP Team (active):
+- gid15
+- hlide
+- Hykem
+- Orphis
+- shadow
 
-- Committers:
-	wrayal,
-	dreampeppers99,
-	spip2,
-	mozvip,
-	Drakon,
-	Hykem,
-	raziel1000,
-	i30817,
-	theball,
-	J_BYYX.
-
-
+Past members and contributors (inactive):
+- fiveofhearts
+- gigaherz
+- mad
+- Nutzje
+- aisesal
+- shashClp
+- wrayal
+- dreampeppers99
+- spip2
+- mozvip
+- Drakon
+- raziel1000
+- i30817
+- theball
+- J_BYYX
 
 Beta-testers:
-	BlackDaemon,
-	SilvX,
-	s1n,
-	Foxik.
+- BlackDaemon
+- SilvX
+- s1n
+- Foxik
 ...............................................................................
 
 
@@ -314,10 +410,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses>.
 JPCSP's Google Code repository:
 - http://code.google.com/p/jpcsp
 
-JPCSP's Official Website and Forum:
+JPCSP's Official Website:
 - http://www.jpcsp.org
-- http://jpcsp.org/forum
 
-Emunewz:
-- http://www.emunewz.net/forum/portal.php
+JPCSP's Official Forum (hosted at Emunewz.net):
+- http://www.emunewz.net/forum/forumdisplay.php?fid=51
 ...............................................................................
