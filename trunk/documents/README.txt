@@ -82,6 +82,9 @@ JPCSP v0.6 (September 18, 2010):
 	- Introduced a geometry shader for increased speed in rendering;
 	- Fixed display list processing;
 	- Improved the performance of several GE commands.
+	- Implemented the VideoEngine processing in a parallel thread,
+	  to take advantage of dual-core processors and
+	  match the PSP dual-core architecture.
 
 -> Implemented a MediaEngine for video and audio playback (based on FFMPEG):
 	- Added video playback support in sceMpeg and scePsmfPlayer;
@@ -379,6 +382,7 @@ Beta-testers:
 - SilvX
 - s1n
 - Foxik
+- Darth1701
 ...............................................................................
 
 
