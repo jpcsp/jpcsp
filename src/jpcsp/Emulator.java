@@ -36,6 +36,7 @@ import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.util.JpcspDialogManager;
 
 import org.apache.log4j.Logger;
 
@@ -61,6 +62,7 @@ public class Emulator implements Runnable {
     public static Logger log = Logger.getLogger("emu");
     private SceModule module;
     private int firmwareVersion = 150;
+    private String[] bootModuleBlackList = {"Prometheus Loader"};
 
     public Emulator(MainGUI gui) {
         Emulator.gui = gui;
@@ -115,6 +117,15 @@ public class Emulator implements Runnable {
         }
     }
 
+    private boolean isBootModuleBad(String name) {
+        for (String moduleName : bootModuleBlackList) {
+                if (name.equals(moduleName)) {
+                    return true;
+                }
+            }
+        return false;
+    }
+
     public SceModule load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
     	return load(pspfilename, f, false);
     }
@@ -127,6 +138,10 @@ public class Emulator implements Runnable {
 
         if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
             throw new GeneralJpcspException("File format not supported!");
+        }
+        if (isBootModuleBad(module.modname)) {
+            JpcspDialogManager.showError(null, "Patched module '" + module.modname + "' detected! " +
+                    "Patched files are not supported by JPCSP!");
         }
 
         moduleLoaded = true;

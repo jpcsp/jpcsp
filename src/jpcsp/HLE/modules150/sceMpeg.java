@@ -176,7 +176,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (isEnableConnector()) {
             mpegCodec = new MpegCodec();
         }
-        if (isEnableMediaEngine()) {
+        if (checkMediaEngineState()) {
             me = new MediaEngine();
             meChannel = new PacketChannel();
         }
@@ -277,7 +277,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
-    public static boolean isEnableMediaEngine() {
+    public static boolean checkMediaEngineState() {
         return enableMediaEngine;
     }
 
@@ -368,7 +368,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         videoFrameCount = 0;
         audioFrameCount = 0;
         if (mpegStreamSize > 0) {
-            if (isEnableMediaEngine()) {
+            if (checkMediaEngineState()) {
                 meChannel.writePacket(buffer_addr, mpegOffset);
             } else if (isEnableConnector()) {
                 mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
@@ -529,7 +529,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isEnableMediaEngine()) {
+        if (checkMediaEngineState()) {
             meChannel.flush();
         }
         cpu.gpr[2] = 0;
@@ -546,7 +546,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isEnableMediaEngine()) {
+        if (checkMediaEngineState()) {
             me.finish();
             meChannel.flush();
         } else if (isEnableConnector()) {
@@ -641,7 +641,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isEnableMediaEngine()) {
+        if (checkMediaEngineState()) {
             me.finish();
             meChannel.flush();
         }
@@ -1106,7 +1106,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isEnableMediaEngine()) {
+        if (checkMediaEngineState()) {
             me.finish();
             meChannel.flush();
         }
@@ -1126,7 +1126,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isEnableMediaEngine()) {
+        if (checkMediaEngineState()) {
             me.finish();
             meChannel.flush();
         }
@@ -1223,14 +1223,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             final int width = Math.min(480, frameWidth);
             final int height = 272;
 
-            if (isEnableMediaEngine()) {
+            if (checkMediaEngineState()) {
                 if (me.getContainer() != null) {
                     mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
                     me.step();
                     writeVideoImage(buffer, frameWidth);
                     avcFrameStatus = 1;
                 } else {
-                    me.init(meChannel.getFilePath());
+                    me.init(meChannel.getFilePath(), true, true);
                     avcFrameStatus = 0;
                 }
             } else if (isEnableConnector() && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoFrameCount)) {
@@ -1408,7 +1408,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isEnableMediaEngine()) {
+        if (checkMediaEngineState()) {
             me.finish();
             meChannel.flush();
         }
@@ -1550,13 +1550,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // Currently, only the MediaEngine is supporting these 2 steps approach.
             // The other methods (JpcspConnector and Faked video) are performing
             // both steps together: this will be done in sceMpegAvcCsc().
-            if (isEnableMediaEngine()) {
+            if (checkMediaEngineState()) {
                 if (me.getContainer() != null) {
                     mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
                     me.step();
                     avcFrameStatus = 1;
                 } else {
-                    me.init(meChannel.getFilePath());
+                    me.init(meChannel.getFilePath(), true, true);
                     avcFrameStatus = 0;
                 }
             } else {
@@ -1674,7 +1674,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // Currently, only the MediaEngine is supporting these 2 steps approach.
             // The other methods (JpcspConnector and Faked video) are performing
             // both steps together: this is done in here.
-            if (isEnableMediaEngine()) {
+            if (checkMediaEngineState()) {
                 if (me.getContainer() != null) {
                     writeVideoImage(dest_addr, frameWidth);
                 }
@@ -1806,7 +1806,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             }
 
             // External audio setup.
-            if (isEnableMediaEngine()) {
+            if (checkMediaEngineState()) {
                 String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.";
                 String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac"};
                 boolean found = false;
@@ -1945,7 +1945,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
 
         if (packetsAdded > 0) {
-            if (isEnableMediaEngine()) {
+            if (checkMediaEngineState()) {
                 meChannel.writePacket(ringbuffer.data, packetsAdded * ringbuffer.packetSize);
             } else if (isEnableConnector()) {
                 mpegCodec.writeVideo(ringbuffer.data, packetsAdded * ringbuffer.packetSize);

@@ -584,7 +584,7 @@ public class VideoEngine {
         int memoryReaderPc = currentList.pc;
         int waitForSyncCount = 0;
         while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
-            if (currentList.isPaused()) {
+            if (currentList.isPaused() || currentList.isEnded()) {
 				waitSignalStatistics.start();
 				if (isLogDebugEnabled) {
 				    log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync"));

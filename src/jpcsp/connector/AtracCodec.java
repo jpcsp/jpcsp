@@ -30,7 +30,6 @@ import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.sceAtrac3plus;
-import jpcsp.HLE.modules150.sceMpeg;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryReader;
@@ -65,11 +64,20 @@ public class AtracCodec {
     protected PacketChannel atracChannel;
     protected int memBufOffset;
     protected int currentLoopCount;
-    protected boolean useMediaEngine = sceMpeg.isEnableMediaEngine();
+    protected static boolean useMediaEngine = false;
+
+    public static boolean checkMediaEngineState() {
+        return useMediaEngine;
+    }
+
+    public static void setEnableMediaEngine(boolean state) {
+        useMediaEngine = state;
+    }
 
 	public AtracCodec() {
-        if(useMediaEngine) {
+        if(checkMediaEngineState()) {
             me = new MediaEngine();
+            me.setAudioSamplesSize(sceAtrac3plus.maxSamples);
             atracChannel = new PacketChannel();
             memBufOffset = 0;
             currentLoopCount = 0;
@@ -155,11 +163,11 @@ public class AtracCodec {
 
         if(codecType == 0x00001001) {
             Modules.log.info("Decodable AT3 data detected.");
-            if(useMediaEngine) {
+            if(checkMediaEngineState()) {
                 atracChannel.flush();
                 me.finish();
                 atracChannel.writePacket(address, length);
-                me.init(atracChannel.getFilePath());
+                me.init(atracChannel.getFilePath(), false, true);
                 memBufOffset = 0;
                 atracEndSample = 0;
                 return;
@@ -167,7 +175,7 @@ public class AtracCodec {
         } else if(codecType == 0x00001000) {
             Modules.log.info("Undecodable AT3+ data detected.");
         }
-        useMediaEngine = false;
+        setEnableMediaEngine(false);
 
 		File decodedFile = new File(getCompleteFileName(decodedAtracSuffix));
 
@@ -239,7 +247,7 @@ public class AtracCodec {
 	}
 
 	public void atracAddStreamData(int address, int length) {
-        if(useMediaEngine) {
+        if(checkMediaEngineState()) {
             atracChannel.writePacket(address, length);
             return;
         }
@@ -259,7 +267,7 @@ public class AtracCodec {
 	}
 
 	public int atracDecodeData(int atracID, int address) {
-        if(useMediaEngine) {
+        if(checkMediaEngineState()) {
             me.step();
             return copySamplesToMem(address);
         }
@@ -286,7 +294,7 @@ public class AtracCodec {
 	}
 
 	public void atracResetPlayPosition(int sample) {
-        if(useMediaEngine) {
+        if(checkMediaEngineState()) {
             me.getContainer().seekKeyFrame(sample * 4, 0, STREAM_SEEK_FLAG_FRAME);
         }
 
@@ -312,7 +320,7 @@ public class AtracCodec {
 	}
 
     public int getAtracNextDecodePosition() {
-        if(useMediaEngine) {
+        if(checkMediaEngineState()) {
             return memBufOffset;
         }
 

@@ -50,28 +50,26 @@ public class PacketChannel {
     public void writePacket(int address, int length) {
         if (length > 0 && Memory.getInstance().isAddressGood(address)) {
             try {
-                if(pcRaf == null)
+                if(pcRaf == null) {
                     pcRaf = new RandomAccessFile(pcRafPath, "rw");
-
+                }
                 byte[] buffer = new byte[length];
                 IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
                 for (int i = 0; i < length; i++) {
                     buffer[i] = (byte)memoryReader.readNext();
                 }
-
                 pcRaf.write(buffer);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
     }
 
     public void writeFile(byte[] buffer) {
         try {
-            if(pcRaf == null)
+            if(pcRaf == null) {
                 pcRaf = new RandomAccessFile(pcRafPath, "rw");
-
+            }
             pcRaf.write(buffer);
         } catch (Exception e) {
             e.printStackTrace();

@@ -223,9 +223,14 @@ public class scePsmfPlayer implements HLEModule {
     // Media Engine vars.
     protected PacketChannel pmfFileChannel;
     protected MediaEngine me;
+    protected static boolean useMediaEngine = false;
 
-    private boolean checkMediaEngineState() {
-        return sceMpeg.isEnableMediaEngine();
+    public static boolean checkMediaEngineState() {
+        return useMediaEngine;
+    }
+
+    public static void setEnableMediaEngine(boolean state) {
+        useMediaEngine = state;
     }
 
     protected Date convertPsmfTimestampToDate(long timestamp) {
@@ -484,7 +489,7 @@ public class scePsmfPlayer implements HLEModule {
         if (checkMediaEngineState()) {
             if (pmfFileChannel != null) {
                 me = new MediaEngine();
-                me.init(pmfFileChannel.getFilePath());
+                me.init(pmfFileChannel.getFilePath(), true, true);
             }
         }
 

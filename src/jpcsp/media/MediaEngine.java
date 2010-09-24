@@ -23,12 +23,10 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-import javax.swing.JFrame;
 
 import jpcsp.HLE.Modules;
 
 import com.xuggle.ferry.Logger;
-import com.xuggle.xuggler.Global;
 import com.xuggle.xuggler.IAudioSamples;
 import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
@@ -51,11 +49,9 @@ public class MediaEngine {
     private static int videoStreamID;
     private static int audioStreamID;
     private static SourceDataLine audioLine;
-    private static long clockStartTime;
-    private static long firstTimestamp;
-    private static JFrame movieFrame;
     private static BufferedImage currentImg;
     private static byte[] currentSamples;
+    private static int currentSamplesSize = 1024;  // Default size.
     private static int decodedAudioBytes;
     private static int decodedVideoBytes;
 
@@ -124,6 +120,14 @@ public class MediaEngine {
         return decodedAudioBytes;
     }
 
+    public int getAudioSamplesSize() {
+        return currentSamplesSize;
+    }
+
+    public void setAudioSamplesSize(int newSize) {
+        currentSamplesSize = newSize;
+    }
+
     /**
      * Method getPacketTimestamp() - analyzes the current packet
      * and returns it's timestamp.
@@ -162,7 +166,7 @@ public class MediaEngine {
      * The sceMpeg functions must call init() first for each MPEG stream and then
      * keep calling step() until the video is finished and finish() is called.
      */
-    public void init(String file) {
+    public void init(String file, boolean decodeVideo, boolean decodeAudio) {
         container = IContainer.make();
 
         if (container.open(file, IContainer.Type.READ, null) < 0) {
@@ -189,27 +193,23 @@ public class MediaEngine {
             }
         }
 
-        if (videoStreamID == -1) {
-            Modules.log.info("MediaEngine: No video streams found!");
-        } else if (videoCoder.open() < 0) {
-            Modules.log.error("MediaEngine: Can't open video decoder!");
+        if (decodeVideo) {
+            if (videoStreamID == -1) {
+                Modules.log.error("MediaEngine: No video streams found!");
+            } else if (videoCoder.open() < 0) {
+                Modules.log.error("MediaEngine: Can't open video decoder!");
+            }
         }
 
-        if (audioStreamID == -1) {
-            Modules.log.info("MediaEngine: No audio streams found!");
-        } else if (audioCoder.open() < 0) {
-            Modules.log.error("MediaEngine: Can't open audio decoder!");
-        } else {
-            try {
-                startSound(audioCoder);
-            } catch (LineUnavailableException ex) {
-                Modules.log.error("MediaEngine: Can't start audio line!");
+        if (decodeAudio) {
+            if (audioStreamID == -1) {
+                Modules.log.error("MediaEngine: No audio streams found!");
+            } else if (audioCoder.open() < 0) {
+                Modules.log.error("MediaEngine: Can't open audio decoder!");
             }
         }
 
         packet = IPacket.make();
-        firstTimestamp = Global.NO_PTS;
-        clockStartTime = 0;
     }
 
     @SuppressWarnings("deprecation")
@@ -236,7 +236,7 @@ public class MediaEngine {
                 currentImg = Utils.videoPictureToImage(picture);
             }
         } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
-            IAudioSamples samples = IAudioSamples.make(1024, audioCoder.getChannels());
+            IAudioSamples samples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
 
             int offset = 0;
             while (offset < packet.getSize()) {
@@ -345,30 +345,9 @@ public class MediaEngine {
             audioLine.close();
             audioLine = null;
         }
-        if (movieFrame != null) {
-            movieFrame.dispose();
-            movieFrame = null;
-        }
-        if(currentSamples != null) {
+        if (currentSamples != null) {
             currentSamples = null;
         }
-    }
-
-    private static long calculateDelay(IVideoPicture picture) {
-        long millisecondsToSleep = 0;
-        if (firstTimestamp == Global.NO_PTS) {
-            firstTimestamp = picture.getTimeStamp();
-            clockStartTime = System.currentTimeMillis();
-            millisecondsToSleep = 0;
-        } else {
-            long systemClockCurrentTime = System.currentTimeMillis();
-            long millisecondsClockTimeSinceStartofVideo = systemClockCurrentTime - clockStartTime;
-            long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestamp) / 1000;
-            final long millisecondsTolerance = 50;
-            millisecondsToSleep = (millisecondsStreamTimeSinceStartOfVideo -
-                    (millisecondsClockTimeSinceStartofVideo + millisecondsTolerance));
-        }
-        return millisecondsToSleep;
     }
 
     // This function attempts to resample an IVideoPicture to any given
@@ -389,7 +368,7 @@ public class MediaEngine {
         return picture;
     }
 
-    // Sound sampling functions also based on Xuggler's demos.
+    // Sound sampling functions also based on Xuggler's demos (for external audio).
     private static void startSound(IStreamCoder aAudioCoder) throws LineUnavailableException {
         AudioFormat audioFormat = new AudioFormat(aAudioCoder.getSampleRate(),
                 (int) IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
@@ -407,10 +386,11 @@ public class MediaEngine {
         audioLine.write(rawBytes, 0, aSamples.getSize());
     }
 
+    // Continuous sample update function for internal audio decoding.
     private static void updateSoundSamples(IAudioSamples aSamples) {
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
 
-        if(currentSamples == null) {
+        if (currentSamples == null) {
             currentSamples = rawBytes;
         } else {
             byte[] temp = new byte[rawBytes.length + currentSamples.length];

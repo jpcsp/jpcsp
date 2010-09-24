@@ -52,6 +52,7 @@ import javax.swing.UIManager;
 import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.connector.AtracCodec;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.ImageViewer;
 import jpcsp.Debugger.InstructionCounter;
@@ -72,7 +73,9 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMpeg;
+import jpcsp.HLE.modules.scePsmfPlayer;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -1094,6 +1097,9 @@ private void installCompatibilitySettings()
 
     boolean useMediaEngine = Settings.getInstance().readBool("emu.useMediaEngine");
     sceMpeg.setEnableMediaEngine(useMediaEngine);
+    scePsmfPlayer.setEnableMediaEngine(useMediaEngine);
+    AtracCodec.setEnableMediaEngine(useMediaEngine);
+    sceMp3.setEnableMediaEngine(useMediaEngine);
 
     boolean useVertexCache = Settings.getInstance().readBool("emu.useVertexCache");
     VideoEngine.getInstance().setUseVertexCache(useVertexCache);
@@ -1147,8 +1153,12 @@ public boolean installCompatibilityPatches(String filename)
         }
 
         String useMediaEngine = patchSettings.getProperty("emu.useMediaEngine");
-        if (useMediaEngine != null)
+        if (useMediaEngine != null) {
             sceMpeg.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+            scePsmfPlayer.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+            AtracCodec.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+            sceMp3.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+        }
 
         String useVertexCache = patchSettings.getProperty("emu.useVertexCache");
         if (useVertexCache != null)
