@@ -345,8 +345,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public PSMFEntry getEPMapEntryWithTimestamp(int ts) {
             PSMFEntry entry = null;
             for (; EPMap.values().iterator().hasNext(); entry = EPMap.values().iterator().next()) {
-                if (entry.getEntryPTS() == ts) {
-                    break;
+                if (entry != null) {
+                    if (entry.getEntryPTS() == ts) {
+                        break;
+                    }
                 }
             }
             return entry;
@@ -356,8 +358,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
             PSMFEntry entry = null;
             int id = 0;
             for (; EPMap.values().iterator().hasNext(); entry = EPMap.values().iterator().next()) {
-                if (entry.getEntryPTS() == ts) {
-                    break;
+                if (entry != null) {
+                    if (entry.getEntryPTS() == ts) {
+                        break;
+                    }
                 }
                 id++;
             }
@@ -373,7 +377,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
 
         public int getCurrentStreamType() {
-            if(streamMap.get(currentStreamNumber) != null) {
+            if (streamMap.get(currentStreamNumber) != null) {
                 return streamMap.get(currentStreamNumber).getStreamType();
             } else {
                 return -1;
@@ -381,7 +385,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
 
         public int getCurrentStreamChannel() {
-            if(streamMap.get(currentStreamNumber) != null) {
+            if (streamMap.get(currentStreamNumber) != null) {
                 return streamMap.get(currentStreamNumber).getStreamChannel();
             } else {
                 return -1;
@@ -925,7 +929,6 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
     }
-
     public final HLEModuleFunction scePsmfSetPsmfFunction = new HLEModuleFunction("scePsmf", "scePsmfSetPsmf") {
 
         @Override

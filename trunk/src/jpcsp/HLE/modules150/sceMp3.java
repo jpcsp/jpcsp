@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 
 import jpcsp.Memory;
@@ -28,6 +29,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.media.MediaEngine;
+import jpcsp.media.PacketChannel;
 
 import org.apache.log4j.Logger;
 
@@ -100,6 +103,49 @@ public class sceMp3 implements HLEModule, HLEStartModule {
     }
     protected int mp3HandleCount;
     protected HashMap<Integer, Mp3Stream> mp3Map;
+    protected static final int compressionFactor = 10;
+    protected static final int PSP_MP3_LOOP_NUM_INFINITE = -1;
+    protected static final int PSP_MP3_MAX_SAMPLES = 1152; // MPEG-1 Layer 3.
+
+    // Media Engine based playback.
+    protected MediaEngine me;
+    protected PacketChannel mp3Channel;
+    protected int memBufOffset;
+    protected static boolean useMediaEngine = false;
+
+    public static boolean checkMediaEngineState() {
+        return useMediaEngine;
+    }
+
+    public static void setEnableMediaEngine(boolean state) {
+        useMediaEngine = state;
+    }
+
+    protected int endianSwap(int x) {
+        return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | ((x >> 24) & 0xFF);
+    }
+
+    protected int copySamplesToMem(int address) {
+        Memory mem = Memory.getInstance();
+
+        int samples = 0;
+        byte[] buf = me.getCurrentAudioSamples();
+
+        if((buf != null) && (memBufOffset < buf.length)) {
+            if((memBufOffset + PSP_MP3_MAX_SAMPLES * 8) < buf.length) {
+                mem.copyToMemory(address, ByteBuffer.wrap(buf, memBufOffset, PSP_MP3_MAX_SAMPLES * 8), PSP_MP3_MAX_SAMPLES * 8);
+                memBufOffset += (PSP_MP3_MAX_SAMPLES * 8);
+                samples = PSP_MP3_MAX_SAMPLES;
+            } else {
+                int length = buf.length - memBufOffset;
+                mem.copyToMemory(address, ByteBuffer.wrap(buf, memBufOffset, length), length);
+                memBufOffset += length;
+                samples = length;
+            }
+        }
+
+        return samples;
+    }
 
     protected int makeFakeMp3StreamHandle() {
         // The stream can't be negative.
@@ -107,60 +153,247 @@ public class sceMp3 implements HLEModule, HLEStartModule {
     }
 
     protected class Mp3Stream {
+        // SceMp3InitArg struct.
+        private final long mp3StreamStart;
+        private final long mp3StreamEnd;
+        private final int mp3Buf;
+        private final int mp3BufSize;
+        private final int mp3PcmBuf;
+        private final int mp3PcmBufSize;
 
-        private int mp3StreamStart;
-        private int mp3Unk1;
-        private int mp3StreamEnd;
-        private int mp3Unk2;
-        private int mp3Buf;
-        private int mp3BufSize;
-        private int mp3PcmBuf;
-        private int mp3PcmBufSize;
-        private int mp3Handle;
-        private int mp3LoopNum;
-        private int mp3BufCurrentPos;
-        private int mp3SampleRate;
-        private int mp3BitRate;
+        // MP3 handle.
+        private final int mp3Handle;
+
+        // MP3 internal file buffer vars.
+        private int mp3InputFileSize;
+        private int mp3InputFileReadPos;
+        private int mp3InputBufWritePos;
+        private int mp3InputBufSize;
+
+        // MP3 decoding vars.
         private int mp3DecodedBytes;
         private int mp3DecodedSamples;
+
+        // MP3 properties.
+        private int mp3SampleRate;
+        private int mp3LoopNum;
+        private int mp3BitRate;
         private int mp3MaxSamples;
         private int mp3Channels;
+
+        //
+        // The Buffer layout is the following:
+        // - mp3BufSize: maximum buffer size, cannot be changed
+        // - mp3InputBufSize: the number of bytes available for reading
+        // - mp3InputFileReadPos: the index of the first byte available for reading
+        // - mp3InputBufWritePos: the index of the first byte available for writing
+        //                          (i.e. the index of the first byte after the last byte
+        //                           available for reading)
+        // The buffer is cyclic, i.e. the byte following the last byte is the first byte.
+        // The following conditions are always true:
+        // - 0 <= mp3InputFileReadPos < mp3BufSize
+        // - 0 <= mp3InputBufWritePos < mp3BufSize
+        // - mp3InputFileReadPos + mp3InputBufSize == mp3InputBufWritePos
+        //   or (for cyclic buffer)
+        //   mp3InputFileReadPos + mp3InputBufSize == mp3InputBufWritePos + mp3BufSize
+        //
+        // For example:
+        //   [................R..........W.......]
+        //                    |          +-> mp3InputBufWritePos
+        //                    +-> mp3InputFileReadPos
+        //                    <----------> mp3InputBufSize
+        //   <-----------------------------------> mp3BufSize
+        //
+        //   mp3BufSize = 8192
+        //   mp3InputFileReadPos = 4096
+        //   mp3InputBufWritePos = 6144
+        //   mp3InputBufSize = 2048
+        //
+        // MP3 Frame Header (4 bytes):
+        // - Bits 31 to 21: Frame sync (all 1);
+        // - Bits 20 and 19: MPEG Audio version;
+        // - Bits 18 and 17: Layer;
+        // - Bit 16: Protection bit;
+        // - Bits 15 to 12: Bitrate;
+        // - Bits 11 and 10: Sample rate;
+        // - Bit 9: Padding;
+        // - Bit 8: Reserved;
+        // - Bits 7 and 6: Channels;
+        // - Bits 5 and 4: Channel extension;
+        // - Bit 3: Copyrigth;
+        // - Bit 2 and 4: Original;
+        // - Bits 1 and 0: Emphasis.
+        //
+        // NOTE: sceMp3 is only capable of handling MPEG Version 1 Layer III data.
+        //
 
         public Mp3Stream(int args) {
             Memory mem = Memory.getInstance();
 
+            if(checkMediaEngineState()) {
+                me = new MediaEngine();
+                me.setAudioSamplesSize(PSP_MP3_MAX_SAMPLES);
+                mp3Channel = new PacketChannel();
+            }
+
             // SceMp3InitArg struct.
-            mp3StreamStart = mem.read32(args);
-            mp3Unk1 = mem.read32(args + 4);
-            mp3StreamEnd = mem.read32(args + 8);
-            mp3Unk2 = mem.read32(args + 12);
+            mp3StreamStart = mem.read64(args);
+            mp3StreamEnd = mem.read64(args + 8);
             mp3Buf = mem.read32(args + 16);
             mp3BufSize = mem.read32(args + 20);
             mp3PcmBuf = mem.read32(args + 24);
             mp3PcmBufSize = mem.read32(args + 28);
 
-            mp3Handle = makeFakeMp3StreamHandle();
-            mp3BufCurrentPos = mp3StreamStart;
+            // The MP3 file reading position starts at mp3StreamStart.
+            mp3InputFileReadPos = (int) mp3StreamStart;
+            mp3InputFileSize = 0;
 
-            // Dummy values.
-            // TODO: Parse the real values from the stream.
-            mp3SampleRate = 44100;
-            mp3BitRate = 128;
+            // The MP3 buffer is currently empty.
+            mp3InputBufWritePos = mp3InputFileReadPos;
+            mp3InputBufSize = 0;
+
+            // Set default properties.
+            mp3MaxSamples = PSP_MP3_MAX_SAMPLES;
+            mp3LoopNum = PSP_MP3_LOOP_NUM_INFINITE;
             mp3DecodedSamples = 0;
-            mp3MaxSamples = 0;
-            mp3Channels = 2;
-            mp3LoopNum = 0;
             mp3DecodedBytes = 0;
+
+            mp3Handle = makeFakeMp3StreamHandle();
+        }
+
+        private void parseMp3FrameHeader() {
+            Memory mem = Memory.getInstance();
+            int header = endianSwap(mem.read32(mp3Buf));
+            mp3Channels = calculateMp3Channels((header >> 6) & 0x3);
+            mp3SampleRate = calculateMp3SampleRate((header >> 10) & 0x3);
+            mp3BitRate = calculateMp3Bitrate((header >> 12) & 0xF);
+        }
+
+        private int calculateMp3Bitrate(int bitVal) {
+            switch (bitVal) {
+                case 0: return 0;  // Variable Bitrate.
+                case 1: return 32;
+                case 2: return 40;
+                case 3: return 48;
+                case 4: return 56;
+                case 5: return 64;
+                case 6: return 80;
+                case 7: return 96;
+                case 8: return 112;
+                case 9: return 128;
+                case 10: return 160;
+                case 11: return 192;
+                case 12: return 224;
+                case 13: return 256;
+                case 14: return 320;
+                default: return -1;
+            }
+        }
+
+        private int calculateMp3SampleRate(int bitVal) {
+            if (bitVal == 0) {
+                return 44100;
+            } else if (bitVal == 1) {
+                return 48000;
+            } else if (bitVal == 2) {
+                return 32000;
+            } else {
+                return 0;
+            }
+        }
+
+        private int calculateMp3Channels(int bitVal) {
+            if (bitVal == 0 || bitVal == 1 || bitVal == 2) {
+                return 2;  // Stereo / Joint Stereo / Dual Channel.
+            } else if (bitVal == 3) {
+                return 1;  // Mono.
+            } else {
+                return 0;
+            }
+        }
+
+        /**
+         * @return number of bytes that can be read from the buffer
+         */
+        public int getMp3AvailableReadSize() {
+            return mp3InputBufSize;
+        }
+
+        /**
+         * @return number of bytes that can be written sequentially into the buffer
+         */
+        public int getMp3AvailableWriteSize() {
+            return (mp3BufSize - mp3InputBufWritePos);
+        }
+
+        /**
+         * Read bytes from the buffer.
+         *
+         * @param size    number of byte read
+         * @return        number of bytes actually read
+         */
+        private int consumeRead(int size) {
+            size = Math.min(size, getMp3AvailableReadSize());
+            mp3InputBufSize -= size;
+            mp3InputFileReadPos += size;
+            return size;
+        }
+
+        /**
+         * Write bytes into the buffer.
+         *
+         * @param size    number of byte written
+         * @return        number of bytes actually written
+         */
+        private int consumeWrite(int size) {
+            size = Math.min(size, getMp3AvailableWriteSize());
+            mp3InputBufSize += size;
+            mp3InputBufWritePos += size;
+            if (mp3InputBufWritePos >= mp3BufSize) {
+                mp3InputBufWritePos -= mp3BufSize;
+            }
+            return size;
+        }
+
+        public void init() {
+            parseMp3FrameHeader();
+            if(checkMediaEngineState()) {
+                memBufOffset = 0;
+                mp3Channel.flush();
+                me.finish();
+                me.init(mp3Channel.getFilePath(), false, true);
+            }
         }
 
         public int decode() {
-            // Faking.
-            // Decode at 320 kbps.
-            mp3DecodedBytes += 320;
-            mp3DecodedSamples++;
-            mp3BufCurrentPos += mp3DecodedBytes;
+            if(checkMediaEngineState()) {
+                me.step();
+                mp3DecodedSamples = copySamplesToMem(mp3PcmBuf);
+                mp3DecodedBytes = mp3DecodedSamples * 8;
+            } else {
+                mp3DecodedSamples = PSP_MP3_MAX_SAMPLES;
+                mp3DecodedBytes = mp3DecodedSamples * 8;
+            }
+            int mp3BufReadConsumed = Math.min(mp3DecodedBytes / compressionFactor, getMp3AvailableReadSize());
+            consumeRead(mp3BufReadConsumed);
 
             return mp3DecodedBytes;
+        }
+
+        public int isStreamDataNeeded() {
+            return (getMp3AvailableReadSize() < (mp3BufSize / 2) ? 1 : 0);  // The buffer is considered to be a double buffer.
+        }
+
+        public boolean isStreamDataEnd() {
+            return (mp3InputFileSize >= (int) mp3StreamEnd);
+        }
+
+        public int addMp3StreamData(int size) {
+            if(checkMediaEngineState()) {
+                mp3Channel.writePacket(mp3Buf, size);
+            }
+            mp3InputFileSize += size;
+            return consumeWrite(size);
         }
 
         public int getMp3Handle() {
@@ -183,16 +416,16 @@ public class sceMp3 implements HLEModule, HLEStartModule {
             return mp3PcmBufSize;
         }
 
-        public int getMp3BufCurrentPos() {
-            return mp3BufCurrentPos;
+        public int getMp3InputFileReadPos() {
+            return mp3InputFileReadPos;
+        }
+
+        public int getMp3InputBufWritePos() {
+            return mp3InputBufWritePos;
         }
 
         public int getMp3BufSize() {
             return mp3BufSize;
-        }
-
-        public int getMp3RemainingBytes() {
-            return (mp3BufSize - mp3BufCurrentPos);
         }
 
         public int getMp3DecodedSamples() {
@@ -224,15 +457,12 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         }
 
         public void setMp3BufCurrentPos(int pos) {
-            mp3BufCurrentPos = pos;
-        }
-
-        public int isStreamDataNeeded() {
-            return ((mp3BufSize < mp3StreamEnd) ? 1 : 0);
-        }
-
-        public void addMp3StreamData(int size) {
-            mp3BufSize += size;
+            mp3InputFileReadPos = pos;
+            mp3InputBufWritePos = pos;
+            mp3InputBufSize = 0;
+            mp3InputFileSize = 0;
+            mp3DecodedSamples = 0;
+            mp3DecodedBytes = 0;
         }
     }
 
@@ -241,7 +471,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3args = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3ReserveMp3Handle " + String.format("mp3args=0x%08x", cpu.gpr[4]));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3ReserveMp3Handle " + String.format("mp3args=0x%08x", cpu.gpr[4]));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -260,7 +492,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3handle = cpu.gpr[4];
         int size = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceMp3NotifyAddStreamData " + String.format("mp3handle=0x%08x, size=%d", mp3handle, size));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3NotifyAddStreamData " + String.format("mp3handle=0x%08x, size=%d", mp3handle, size));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -279,7 +513,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3ResetPlayPosition " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3ResetPlayPosition " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -295,24 +531,30 @@ public class sceMp3 implements HLEModule, HLEStartModule {
     public void sceMp3InitResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("IGNORING: sceMp3InitResource");
+        if(log.isInfoEnabled()) {
+            log.info("sceMp3InitResource");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+
         cpu.gpr[2] = 0;
     }
 
     public void sceMp3TermResource(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("IGNORING: sceMp3TermResource");
+        if(log.isInfoEnabled()) {
+            log.info("sceMp3TermResource");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+
         cpu.gpr[2] = 0;
     }
 
@@ -322,7 +564,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3handle = cpu.gpr[4];
         int loopNbr = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceMp3SetLoopNum " + String.format("mp3handle=0x%08x, loopNbr=%d", mp3handle, loopNbr));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3SetLoopNum " + String.format("mp3handle=0x%08x, loopNbr=%d", mp3handle, loopNbr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -340,12 +584,23 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("IGNORING: sceMp3Init " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3Init " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+        if (mp3Map.containsKey(mp3handle)) {
+            mp3Map.get(mp3handle).init();
+        }
+        if(log.isInfoEnabled()) {
+            log.info("Initializing Mp3 data: channels = " + mp3Map.get(mp3handle).getMp3ChannelNum()
+                    + ", samplerate = " + mp3Map.get(mp3handle).getMp3SamplingRate() + "kHz, bitrate = "
+                    + mp3Map.get(mp3handle).getMp3BitRate() + "kbps.");
+        }
+
         cpu.gpr[2] = 0;
     }
 
@@ -354,7 +609,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3GetMp3ChannelNum " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3GetMp3ChannelNum " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -373,7 +630,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3GetSamplingRate " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3GetSamplingRate " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -396,7 +655,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3BufToWriteAddr = cpu.gpr[6];
         int mp3PosAddr = cpu.gpr[7];
 
-        log.warn("PARTIAL: sceMp3GetInfoToAddStreamData " + String.format("mp3handle=0x%08x, mp3BufAddr=0x%08x, mp3BufToWriteAddr=0x%08x, mp3PosAddr=0x%08x", mp3handle, mp3BufAddr, mp3BufToWriteAddr, mp3PosAddr));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3GetInfoToAddStreamData " + String.format("mp3handle=0x%08x, mp3BufAddr=0x%08x, mp3BufToWriteAddr=0x%08x, mp3PosAddr=0x%08x", mp3handle, mp3BufAddr, mp3BufToWriteAddr, mp3PosAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -406,14 +667,12 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int bufToWrite = 0;
         int bufPos = 0;
         Mp3Stream stream = null;
-
         if (mp3Map.containsKey(mp3handle)) {
             stream = mp3Map.get(mp3handle);
-            bufAddr = stream.getMp3BufAddr();
-            bufToWrite = stream.getMp3RemainingBytes();
-            bufPos = stream.getMp3BufCurrentPos();
+            bufAddr = stream.isStreamDataEnd() ? 0 : stream.getMp3BufAddr();
+            bufToWrite = stream.isStreamDataEnd() ? 0: stream.getMp3AvailableWriteSize();
+            bufPos = stream.getMp3InputFileReadPos();
         }
-
         mem.write32(mp3BufAddr, bufAddr);
         mem.write32(mp3BufToWriteAddr, bufToWrite);
         mem.write32(mp3PosAddr, bufPos);
@@ -428,17 +687,16 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         int mp3handle = cpu.gpr[4];
         int outPcmAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: sceMp3Decode " + String.format("mp3handle=0x%08x, outPcmAddr=0x%08x", mp3handle, outPcmAddr));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3Decode " + String.format("mp3handle=0x%08x, outPcmAddr=0x%08x", mp3handle, outPcmAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        // Should decode a portion of this mp3 stream.
-        // TODO: Implement real mp3 to pcm decoding.
         int pcmBytes = 0;
         Mp3Stream stream = null;
-
         if (mp3Map.containsKey(mp3handle)) {
             stream = mp3Map.get(mp3handle);
             pcmBytes = stream.decode();
@@ -453,7 +711,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3CheckStreamDataNeeded " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3CheckStreamDataNeeded " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -474,12 +734,18 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("IGNORING: sceMp3ReleaseMp3Handle " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3ReleaseMp3Handle " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+        if (mp3Map.containsKey(mp3handle)) {
+            mp3Map.remove(mp3handle);
+        }
+
         cpu.gpr[2] = 0;
     }
 
@@ -488,7 +754,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3GetSumDecodedSample " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3GetSumDecodedSample " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -507,7 +775,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3GetBitRate " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3GetBitRate " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -526,7 +796,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3GetMaxOutputSample " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3GetMaxOutputSample " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -545,7 +817,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         int mp3handle = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceMp3GetLoopNum " + String.format("mp3handle=0x%08x", mp3handle));
+        if(log.isDebugEnabled()) {
+            log.debug("sceMp3GetLoopNum " + String.format("mp3handle=0x%08x", mp3handle));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -558,6 +832,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = loopNum;
     }
+
     public final HLEModuleFunction sceMp3ReserveMp3HandleFunction = new HLEModuleFunction("sceMp3", "sceMp3ReserveMp3Handle") {
 
         @Override

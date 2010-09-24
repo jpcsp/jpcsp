@@ -566,7 +566,10 @@ public class RuntimeContext {
 	        syncDebugger();
 	    	syncPause();
 	    	checkStoppedThread();
-    	}
+    	 } else {
+            // Always sync the display to trigger the GE list processing
+            Modules.sceDisplayModule.step();
+         }
 
     	lastSyncTime = System.currentTimeMillis();
     	wantSync = false;
