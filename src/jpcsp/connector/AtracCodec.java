@@ -340,9 +340,9 @@ public class AtracCodec {
 
         int samples = 0;
         byte[] buf = me.getCurrentAudioSamples();
-        atracEndSample = buf.length;
-
+        
         if((buf != null) && (memBufOffset < buf.length)) {
+            atracEndSample = buf.length;
             if((memBufOffset + sceAtrac3plus.maxSamples * 4) < buf.length) {
                 mem.copyToMemory(address, ByteBuffer.wrap(buf, memBufOffset, sceAtrac3plus.maxSamples * 4), sceAtrac3plus.maxSamples * 4);
                 memBufOffset += (sceAtrac3plus.maxSamples * 4);
