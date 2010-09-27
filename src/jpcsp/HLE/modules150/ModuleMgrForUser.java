@@ -248,7 +248,7 @@ public class ModuleMgrForUser implements HLEModule {
                 }
                 SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr-TestInfo", allocType, totalAllocSize, 0);
                 if (testInfo == null) {
-                	log.error(String.format("Failed module allocation of size 0x%08X for '%s%'", totalAllocSize, name));
+                	log.error(String.format("Failed module allocation of size 0x%08X for '%s'", totalAllocSize, name));
                 	cpu.gpr[2] = -1;
                 	return;
                 }

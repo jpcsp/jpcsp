@@ -72,6 +72,6 @@ public class SceUtilityGameSharingParams extends pspAbstractMemoryMappedStructur
 
     @Override
     public String toString() {
-        return String.format("title=%s, EBOOTAddr=0x%08X, EBOOTSize=%i", gameSharingName, gameSharingDataAddr, gameSharingDataSize);
+            return String.format("title=%s, EBOOTAddr=0x%08X, EBOOTSize=%d", gameSharingName, gameSharingDataAddr, gameSharingDataSize);
     }
 }
