@@ -91,6 +91,6 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
 
     @Override
     public String toString() {
-        return String.format("title=%s, timeout=%i", netconfData.confTitle, netconfData.timeout);
+        return String.format("title=%s, timeout=%d", netconfData.confTitle, netconfData.timeout);
     }
 }
