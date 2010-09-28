@@ -99,7 +99,11 @@ public class HLEModuleManager {
         scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
         sceMp3(Modules.sceMp3Module),
         sceDeflt(Modules.sceDefltModule),
-        sceWlan(Modules.sceWlanModule);
+        sceWlan(Modules.sceWlanModule),
+        sceNet(Modules.sceNetModule),
+        sceNetAdhoc(Modules.sceNetAdhocModule),
+        sceNetAdhocctl(Modules.sceNetAdhocctlModule),
+        sceNetIfhandle(Modules.sceNetIfhandleModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

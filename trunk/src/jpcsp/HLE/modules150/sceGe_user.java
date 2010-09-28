@@ -408,6 +408,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 
     public void sceGeGetMtx(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
         int mtxtype = cpu.gpr[4];
         int mtx_addr = cpu.gpr[5];
@@ -415,7 +416,13 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         VideoEngine ve = VideoEngine.getInstance();
         float[] mtx = ve.getMatrix(mtxtype);
 
-        log.warn("UNIMPLEMENTED: sceGeGetMtx mtxtype=" + mtxtype + " mtx_addr=0x" + Integer.toHexString(mtx_addr) + ", mtx=" + mtx);
+        if(mem.isAddressGood(mtx_addr)) {
+            for(int i = 0; i < mtx.length; i++) {
+                mem.write32(mtx_addr, (int)mtx[i]);
+            }
+        }
+
+        log.info("sceGeGetMtx mtxtype=" + mtxtype + " mtx_addr=0x" + Integer.toHexString(mtx_addr) + ", mtx=" + mtx);
 
         cpu.gpr[2] = 0;
     }
@@ -596,10 +603,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         } else if (id < 0 || id >= NUMBER_GE_LISTS) {
         	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
         } else if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
-            // Based on tests on a PSP, sceGeListSync can't be called inside an interrupt handler
-            // for both modes. However, some recent games rely on a mode == 1 call to execute this function.
-            // TODO: Investigate if this is firmware dependent.
-    		log.debug("sceGeListSync cannot be called inside an interrupt handler!");
+    		log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
     		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
         	PspGeList list = null;
@@ -640,7 +644,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         // no synchronization on "this" required because we are not accessing
     	// local data, only list information from the VideoEngine.
         if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
-            log.debug("sceGeListSync cannot be called inside an interrupt handler!");
+            log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
             if (mode == 0) {
@@ -737,7 +741,9 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 
         pspGeCallbackData cbdata = new pspGeCallbackData();
         cbdata.read(Emulator.getMemory(), cbdata_addr);
+
         int cbid = SceUidManager.getNewUid("pspge-callback");
+
         if (log.isDebugEnabled()) {
         	log.debug("sceGeSetCallback signalFunc=0x" + Integer.toHexString(cbdata.signalFunction)
                               + ", signalArg=0x" + Integer.toHexString(cbdata.signalArgument)

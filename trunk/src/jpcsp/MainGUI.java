@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp;
 
 import java.awt.Dimension;
@@ -95,6 +94,7 @@ import org.apache.log4j.xml.DOMConfigurator;
  * @author  shadow
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
+
     private static final long serialVersionUID = -3647025845406693230L;
     public static final int MAX_RECENT = 10;
     LogWindow consolewin;
@@ -113,11 +113,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
     private List<RecentElement> recentFile = new LinkedList<RecentElement>();
     public final static String windowNameForSettings = "mainwindow";
-
     private final static String[] userDir = {
-    	"ms0/PSP/SAVEDATA",
-    	"ms0/PSP/GAME",
-    	"tmp"
+        "ms0/PSP/SAVEDATA",
+        "ms0/PSP/GAME",
+        "tmp"
     };
 
     /** Creates new form MainGUI */
@@ -127,11 +126,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         consolewin = new LogWindow();
 
         // Create needed user directories
-        for(String dirName : userDir) {
-	        File dir = new File(dirName);
-	        if(!dir.exists()) dir.mkdirs();
+        for (String dirName : userDir) {
+            File dir = new File(dirName);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
         }
-        
+
         emulator = new Emulator(this);
 
         Resource.add("jpcsp.languages." + Settings.getInstance().readString("emu.language"));
@@ -156,8 +157,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         Insets insets = getInsets();
         Dimension minSize = new Dimension(
-            480 + insets.left + insets.right,
-            272 + insets.top + insets.bottom);
+                480 + insets.left + insets.right,
+                272 + insets.top + insets.bottom);
         setMinimumSize(minSize);
 
         //logging console window stuff
@@ -651,9 +652,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }// </editor-fold>//GEN-END:initComponents
 
     private void changeLanguage(String language) {
-         Resource.add("jpcsp.languages." + language);
-         Settings.getInstance().writeString("emu.language", language);
-         initComponents();
+        Resource.add("jpcsp.languages." + language);
+        Settings.getInstance().writeString("emu.language", language);
+        initComponents();
     }
 
     public LogWindow getConsoleWindow() {
@@ -667,10 +668,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         Settings.getInstance().readRecent("umd", recentUMD);
         Settings.getInstance().readRecent("file", recentFile);
-       
+
         for (RecentElement umd : recentUMD) {
             JMenuItem item = new JMenuItem(umd.toString());
-            //item.setFont(Settings.getInstance().getFont()); // doesn't seem to work
             item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_UMD, umd.path));
             RecentMenu.add(item);
         }
@@ -678,7 +678,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         if (recentUMD.size() > 0 && recentFile.size() > 0) {
             RecentMenu.addSeparator();
         }
-        
+
         for (RecentElement file : recentFile) {
             JMenuItem item = new JMenuItem(file.toString());
             item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_FILE, file.path));
@@ -688,29 +688,25 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
     PauseEmu();
-    if (State.debugger == null)
-    {
+    if (State.debugger == null) {
         State.debugger = new DisassemblerFrame(emulator);
         State.debugger.setLocation(Settings.getInstance().readWindowPos("disassembler"));
         State.debugger.setVisible(true);
-    }
-    else
-    {
+    } else {
         State.debugger.setVisible(true);
         State.debugger.RefreshDebugger(false);
     }
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
 private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
-            RunEmu();
+    RunEmu();
 }//GEN-LAST:event_RunButtonActionPerformed
- private JFileChooser makeJFileChooser() {
+    private JFileChooser makeJFileChooser() {
         final JFileChooser fc = new JFileChooser();
         fc.setDialogTitle("Open Elf/Pbp File");
         fc.setCurrentDirectory(new java.io.File("."));
         return fc;
     }
-
 private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
     PauseEmu();
 
@@ -722,176 +718,172 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         loadFile(file);
     } else {
         return; //user cancel the action
-
     }
 }//GEN-LAST:event_OpenFileActionPerformed
 
-private String pspifyFilename(String pcfilename) {
-    // Files relative to ms0 directory
-    if (pcfilename.startsWith("ms0")) {
-        return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/");
-    }
-
-    // Files with absolute path but also in ms0 directory
-    try {
-        String ms0path = new File("ms0").getCanonicalPath();
-        if (pcfilename.startsWith(ms0path)) {
-            // Strip off absolute prefix
-            return "ms0:" + pcfilename.substring(ms0path.length()).replaceAll("\\\\", "/");
+    private String pspifyFilename(String pcfilename) {
+        // Files relative to ms0 directory
+        if (pcfilename.startsWith("ms0")) {
+            return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/");
         }
-    } catch(Exception e) {
-        // Required by File.getCanonicalPath
-        e.printStackTrace();
+
+        // Files with absolute path but also in ms0 directory
+        try {
+            String ms0path = new File("ms0").getCanonicalPath();
+            if (pcfilename.startsWith(ms0path)) {
+                // Strip off absolute prefix
+                return "ms0:" + pcfilename.substring(ms0path.length()).replaceAll("\\\\", "/");
+            }
+        } catch (Exception e) {
+            // Required by File.getCanonicalPath
+            e.printStackTrace();
+        }
+
+        // Files anywhere on user's hard drive, may not work
+        // use host0:/ ?
+        return pcfilename.replaceAll("\\\\", "/");
     }
 
-    // Files anywhere on user's hard drive, may not work
-    // use host0:/ ?
-    return pcfilename.replaceAll("\\\\", "/");
-}
+    public void loadFile(File file) {
+        //This is where a real application would open the file.
+        try {
+            if (consolewin != null) {
+                consolewin.clearScreenMessages();
+            }
+            Emulator.log.info(MetaInformation.FULL_NAME);
 
-public void loadFile(File file) {
-    //This is where a real application would open the file.
-    try {
-        if (consolewin != null)
-            consolewin.clearScreenMessages();
-        Emulator.log.info(MetaInformation.FULL_NAME);
+            umdLoaded = false;
+            loadedFile = file;
 
-        umdLoaded = false;
-        loadedFile = file;
+            // Create a read-only memory-mapped file
+            RandomAccessFile raf = new RandomAccessFile(file, "r");
+            FileChannel roChannel = raf.getChannel();
+            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
+            SceModule module = emulator.load(pspifyFilename(file.getPath()), readbuffer);
+            roChannel.close();
+            raf.close();
 
-        // Create a read-only memory-mapped file
-        RandomAccessFile raf = new RandomAccessFile(file, "r");
-        FileChannel roChannel = raf.getChannel();
-        ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-        SceModule module = emulator.load(pspifyFilename(file.getPath()), readbuffer);
-        roChannel.close(); // doesn't seem to work properly :(
-        raf.close(); // still doesn't work properly :/
+            PSF psf = module.psf;
+            String title;
+            String discId = State.DISCID_UNKNOWN_FILE;
+            boolean isHomebrew;
+            if (psf != null) {
+                title = psf.getPrintableString("TITLE");
+                discId = psf.getString("DISC_ID");
+                if (discId == null) {
+                    discId = State.DISCID_UNKNOWN_FILE;
+                }
+                isHomebrew = psf.isLikelyHomebrew();
+            } else {
+                title = file.getParentFile().getName();
+                isHomebrew = true; // missing psf, assume homebrew
+            }
+            setTitle(MetaInformation.FULL_NAME + " - " + title);
+            addRecentFile(file, title);
 
-        PSF psf = module.psf;
-        String title;
-        String discId = State.DISCID_UNKNOWN_FILE;
-        boolean isHomebrew;
-        if (psf != null) {
-            title = psf.getPrintableString("TITLE");
-
-            discId = psf.getString("DISC_ID");
-            if (discId == null) {
-                discId = State.DISCID_UNKNOWN_FILE;
+            // Strip off absolute file path if the file is inside our ms0 directory
+            String filepath = file.getParent();
+            String ms0path = new File("ms0").getCanonicalPath();
+            if (filepath.startsWith(ms0path)) {
+                filepath = filepath.substring(ms0path.length() - 3); // path must start with "ms0"
             }
 
-            isHomebrew = psf.isLikelyHomebrew();
-        } else {
-            title = file.getParentFile().getName();
-            isHomebrew = true; // missing psf, assume homebrew
+            Modules.IoFileMgrForUserModule.setfilepath(filepath);
+            Modules.IoFileMgrForUserModule.setIsoReader(null);
+            jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
+
+            RuntimeContext.setIsHomebrew(isHomebrew);
+            State.discId = discId;
+            State.title = title;
+
+            // use regular settings first
+            installCompatibilitySettings();
+
+            if (!isHomebrew && !discId.equals(State.DISCID_UNKNOWN_FILE)) {
+                // override with patch file (allows incomplete patch files)
+                installCompatibilityPatches(discId + ".patch");
+            }
+
+            if (instructioncounter != null) {
+                instructioncounter.RefreshWindow();
+            }
+            StepLogger.clear();
+            StepLogger.setName(file.getPath());
+        } catch (GeneralJpcspException e) {
+            JpcspDialogManager.showError(this, Resource.get("generalError") + " : " + e.getMessage());
+        } catch (IOException e) {
+            if(file.getName().contains("iso") || file.getName().contains("cso")) {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : " + Resource.get("wrongLoader"));
+            } else {
+                e.printStackTrace();
+                JpcspDialogManager.showError(this, Resource.get("ioError") + " : " + e.getMessage());
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            if (ex.getMessage() != null) {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : " + ex.getMessage());
+            } else {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : Check console for details.");
+            }
         }
-        setTitle(MetaInformation.FULL_NAME + " - " + title);
-        addRecentFile(file, title);
+    }
 
-        // Strip off absolute file path if the file is inside our ms0 directory
-        String filepath = file.getParent();
-        String ms0path = new File("ms0").getCanonicalPath();
-        if (filepath.startsWith(ms0path)) {
-            filepath = filepath.substring(ms0path.length() - 3); // path must start with "ms0"
-        }
-
-        Modules.IoFileMgrForUserModule.setfilepath(filepath);
-        Modules.IoFileMgrForUserModule.setIsoReader(null);
-        jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
-
-        RuntimeContext.setIsHomebrew(isHomebrew);
-        State.discId = discId;
-        State.title = title;
-
-        // use regular settings first
-        installCompatibilitySettings();
-
-        if (!isHomebrew && !discId.equals(State.DISCID_UNKNOWN_FILE)) {
-            // override with patch file (allows incomplete patch files)
-            installCompatibilityPatches(discId + ".patch");
-        }
-
-        if (instructioncounter != null)
-            instructioncounter.RefreshWindow();
-        StepLogger.clear();
-        StepLogger.setName(file.getPath());
-    } catch (GeneralJpcspException e) {
-         JpcspDialogManager.showError(this, Resource.get("generalError")+" : " + e.getMessage());
-     } catch (IOException e) {
-         e.printStackTrace();
-         JpcspDialogManager.showError(this, Resource.get("ioError")+" : " + e.getMessage());
-     } catch (Exception ex) {
-         ex.printStackTrace();
-         if (ex.getMessage() != null) {
-             JpcspDialogManager.showError(this, Resource.get("criticalError")+" : " + ex.getMessage());
-         } else {
-             JpcspDialogManager.showError(this, Resource.get("criticalError")+" : Check console for details.");
-         }
-     }
-}
-
-private void addRecentFile(File file, String title) {
-    //try {
-        String s = file.getPath(); //file.getCanonicalPath();
+    private void addRecentFile(File file, String title) {
+        String s = file.getPath();
         for (int i = 0; i < recentFile.size(); ++i) {
-            if (recentFile.get(i).path.equals(s))
+            if (recentFile.get(i).path.equals(s)) {
                 recentFile.remove(i--);
+            }
         }
         recentFile.add(0, new RecentElement(s, title));
-        while(recentFile.size() > MAX_RECENT)
+        while (recentFile.size() > MAX_RECENT) {
             recentFile.remove(MAX_RECENT);
+        }
         Settings.getInstance().writeRecent("file", recentFile);
         populateRecentMenu();
-    //} catch (IOException e) {
-    //    e.printStackTrace();
-    //}
-}
-
-private void addRecentUMD(File file, String title) {
-    try {
-        String s = file.getCanonicalPath();
-        for (int i = 0; i < recentUMD.size(); ++i) {
-            if (recentUMD.get(i).path.equals(s))
-                recentUMD.remove(i--);
-        }
-        recentUMD.add(0, new RecentElement(s, title));
-        while(recentUMD.size() > MAX_RECENT)
-            recentUMD.remove(MAX_RECENT);
-        Settings.getInstance().writeRecent("umd", recentUMD);
-        populateRecentMenu();
-    } catch (IOException e) {
-        e.printStackTrace();
     }
-}
+
+    private void addRecentUMD(File file, String title) {
+        try {
+            String s = file.getCanonicalPath();
+            for (int i = 0; i < recentUMD.size(); ++i) {
+                if (recentUMD.get(i).path.equals(s)) {
+                    recentUMD.remove(i--);
+                }
+            }
+            recentUMD.add(0, new RecentElement(s, title));
+            while (recentUMD.size() > MAX_RECENT) {
+                recentUMD.remove(MAX_RECENT);
+            }
+            Settings.getInstance().writeRecent("umd", recentUMD);
+            populateRecentMenu();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
     TogglePauseEmu();
 }//GEN-LAST:event_PauseButtonActionPerformed
 
 private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
-     if(elfheader==null)
-     {
-
-      elfheader = new ElfHeaderInfo();
-      elfheader.setLocation(Settings.getInstance().readWindowPos("elfheader"));
-      elfheader.setVisible(true);
-     }
-     else
-     {
-       elfheader.RefreshWindow();
-       elfheader.setVisible(true);
-     }
+    if (elfheader == null) {
+        elfheader = new ElfHeaderInfo();
+        elfheader.setLocation(Settings.getInstance().readWindowPos("elfheader"));
+        elfheader.setVisible(true);
+    } else {
+        elfheader.RefreshWindow();
+        elfheader.setVisible(true);
+    }
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
     PauseEmu();
-    if (State.memoryViewer == null)
-    {
+    if (State.memoryViewer == null) {
         State.memoryViewer = new MemoryViewer();
         State.memoryViewer.setLocation(Settings.getInstance().readWindowPos("memoryview"));
         State.memoryViewer.setVisible(true);
-    }
-    else
-    {
+    } else {
         State.memoryViewer.RefreshMemory();
         State.memoryViewer.setVisible(true);
     }
@@ -908,24 +900,21 @@ private void EnterImageViewerActionPerformed(java.awt.event.ActionEvent evt) {//
 }//GEN-LAST:event_EnterImageViewerActionPerformed
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
-  StringBuilder message = new StringBuilder();
+    StringBuilder message = new StringBuilder();
     message.append("<html>").append("<h2>" + MetaInformation.FULL_NAME + "</h2>").append("<hr/>").append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a><br/>").append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a><br/>").append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a><br/>").append("<hr/>").append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>").append("</html>");
     JOptionPane.showMessageDialog(this, message.toString(), MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
 private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetttingsMenuActionPerformed
-    if(setgui==null)
-     {
-      setgui = new SettingsGUI();
-      Point mainwindow = this.getLocation();
-      setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
-      setgui.setVisible(true);
-     }
-     else
-     {
-       setgui.RefreshWindow();
-       setgui.setVisible(true);
-     }
+    if (setgui == null) {
+        setgui = new SettingsGUI();
+        Point mainwindow = this.getLocation();
+        setgui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
+        setgui.setVisible(true);
+    } else {
+        setgui.RefreshWindow();
+        setgui.setVisible(true);
+    }
 }//GEN-LAST:event_SetttingsMenuActionPerformed
 
 private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitEmuActionPerformed
@@ -934,15 +923,12 @@ private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
     PauseEmu();
-    if(memstick==null)
-    {
+    if (memstick == null) {
         memstick = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
         Point mainwindow = this.getLocation();
-        memstick.setLocation(mainwindow.x+100, mainwindow.y+50);
+        memstick.setLocation(mainwindow.x + 100, mainwindow.y + 50);
         memstick.setVisible(true);
-    }
-    else
-    {
+    } else {
         memstick.refreshFiles();
         memstick.setVisible(true);
     }
@@ -954,14 +940,10 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
     PauseEmu();
-
-    if (Settings.getInstance().readBool("emu.umdbrowser"))
-    {
+    if (Settings.getInstance().readBool("emu.umdbrowser")) {
         umdbrowser = new UmdBrowser(this, new File(Settings.getInstance().readString("emu.umdpath") + "/"));
         umdbrowser.setVisible(true);
-    }
-    else
-    {
+    } else {
         final JFileChooser fc = makeJFileChooser();
         fc.setDialogTitle(Resource.get("openumd"));
         int returnVal = fc.showOpenDialog(this);
@@ -970,258 +952,256 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             File file = fc.getSelectedFile();
             loadUMD(file);
         } else {
-            return; //user cancel the action
+            return;
         }
     }
 }//GEN-LAST:event_openUmdActionPerformed
-
-/** Don't call this directly, see loadUMD(File file) */
-private boolean loadUMD(UmdIsoReader iso, String bootPath) throws IOException {
-    boolean success = false;
-
-    try {
-        UmdIsoFile bootBin = iso.getFile(bootPath);
-        if (bootBin.length() != 0) {
-            byte[] bootfile = new byte[(int)bootBin.length()];
-            bootBin.read(bootfile);
-            ByteBuffer buf = ByteBuffer.wrap(bootfile);
-            emulator.load("disc0:/" + bootPath, buf);
-            success = true;
+    /** Don't call this directly, see loadUMD(File file) */
+    private boolean loadUMD(UmdIsoReader iso, String bootPath) throws IOException {
+        boolean success = false;
+        try {
+            UmdIsoFile bootBin = iso.getFile(bootPath);
+            if (bootBin.length() != 0) {
+                byte[] bootfile = new byte[(int) bootBin.length()];
+                bootBin.read(bootfile);
+                ByteBuffer buf = ByteBuffer.wrap(bootfile);
+                emulator.load("disc0:/" + bootPath, buf);
+                success = true;
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println(e.getMessage());
+        } catch (GeneralJpcspException e) {
         }
-    } catch (FileNotFoundException e) {
-        System.out.println(e.getMessage());
-    } catch (GeneralJpcspException e) {
-        //JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
+        return success;
     }
 
-    return success;
-}
-
-/** Don't call this directly, see loadUMD(File file) */
-private boolean loadUnpackedUMD(String filename) throws IOException, GeneralJpcspException {
-    // Load unpacked BOOT.BIN as if it came from the umd
-    File file = new File(filename);
-    if (file.exists()) {
-        FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
-        ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-        emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", readbuffer);
-        roChannel.close();
-        Emulator.log.info("Using unpacked UMD EBOOT.BIN image");
-        return true;
-    }
-    return false;
-}
-
-public void loadUMD(File file) {
-    try {
-        if (consolewin != null)
-            consolewin.clearScreenMessages();
-        Emulator.log.info(MetaInformation.FULL_NAME);
-
-        umdLoaded = true;
-        loadedFile = file;
-
-        UmdIsoReader iso = new UmdIsoReader(file.getPath());
-        UmdIsoFile psfFile = iso.getFile("PSP_GAME/param.sfo");
-
-        //Emulator.log.debug("Loading param.sfo from UMD");
-        PSF psf = new PSF();
-        byte[] data = new byte[(int)psfFile.length()];
-        psfFile.read(data);
-        psf.read(ByteBuffer.wrap(data));
-
-        Emulator.log.info("UMD param.sfo :\n" + psf);
-        String title = psf.getPrintableString("TITLE");
-        String discId = psf.getString("DISC_ID");
-        if (discId == null) {
-            discId = State.DISCID_UNKNOWN_UMD;
+    /** Don't call this directly, see loadUMD(File file) */
+    private boolean loadUnpackedUMD(String filename) throws IOException, GeneralJpcspException {
+        // Load unpacked BOOT.BIN as if it came from the umd
+        File file = new File(filename);
+        if (file.exists()) {
+            FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
+            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
+            emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", readbuffer);
+            roChannel.close();
+            Emulator.log.info("Using unpacked UMD EBOOT.BIN image");
+            return true;
         }
-
-        setTitle(MetaInformation.FULL_NAME + " - " + title);
-        addRecentUMD(file, title);
-
-        emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
-        RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
-
-        // use regular settings first
-        installCompatibilitySettings();
-
-        // override with patch file (allows incomplete patch files)
-        installCompatibilityPatches(discId + ".patch");
-        
-        if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
-            loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
-            loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
-
-            State.discId = discId;
-            State.title = title;
-
-            Modules.IoFileMgrForUserModule.setfilepath("disc0/");
-            //Modules.IoFileMgrForUserModule.setfilepath("disc0/PSP_GAME/SYSDIR");
-
-            Modules.IoFileMgrForUserModule.setIsoReader(iso);
-            jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
-
-            if (instructioncounter != null)
-                instructioncounter.RefreshWindow();
-            StepLogger.clear();
-            StepLogger.setName(file.getPath());
-        } else {
-            throw new GeneralJpcspException(Resource.get("encryptedBoot"));
-        }
-    } catch (GeneralJpcspException e) {
-        JpcspDialogManager.showError(this, e.getMessage());
-    } catch (IOException e) {
-        e.printStackTrace();
-        JpcspDialogManager.showError(this, Resource.get("ioError")+" : " + e.getMessage());
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        if (ex.getMessage() != null) {
-            JpcspDialogManager.showError(this, Resource.get("criticalError")+" : " + ex.getMessage());
-        } else {
-            JpcspDialogManager.showError(this, Resource.get("criticalError")+" : Check console for details.");
-        }
-    }
-}
-
-private void installCompatibilitySettings()
-{
-    Emulator.log.info("Loading global compatibility settings");
-
-    boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
-    Modules.sceDisplayModule.setOnlyGEGraphics(onlyGEGraphics);
-
-    boolean useConnector = Settings.getInstance().readBool("emu.useConnector");
-    sceMpeg.setEnableConnector(useConnector);
-    sceAtrac3plus.setEnableConnector(useConnector);
-
-    boolean useMediaEngine = Settings.getInstance().readBool("emu.useMediaEngine");
-    sceMpeg.setEnableMediaEngine(useMediaEngine);
-    scePsmfPlayer.setEnableMediaEngine(useMediaEngine);
-    AtracCodec.setEnableMediaEngine(useMediaEngine);
-    sceMp3.setEnableMediaEngine(useMediaEngine);
-
-    boolean useVertexCache = Settings.getInstance().readBool("emu.useVertexCache");
-    VideoEngine.getInstance().setUseVertexCache(useVertexCache);
-
-    boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
-    Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
-
-    boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
-    Modules.sceAudioModule.setAudioMuted(audioMuted);
-    Modules.sceSasCoreModule.setAudioMuted(audioMuted);
-
-    boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
-    Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
-
-    boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-    Modules.ThreadManForUserModule.setThreadBanningEnabled(ignoreAudioThreads);
-
-    boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
-    Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
-    Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
-
-    boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
-    SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
-}
-
-/** @return true if a patch file was found */
-public boolean installCompatibilityPatches(String filename)
-{
-    File patchfile = new File("patches/" + filename);
-    if (!patchfile.exists())
-    {
-        Emulator.log.debug("No patch file found for this game");
         return false;
     }
 
-    Properties patchSettings= new Properties();
-    InputStream patchInputStream = null;
-    try {
-        Emulator.log.info("Overriding previous settings with patch file");
-        patchInputStream = new BufferedInputStream(new FileInputStream(patchfile));
-        patchSettings.load(patchInputStream);
+    public void loadUMD(File file) {
+        try {
+            if (consolewin != null) {
+                consolewin.clearScreenMessages();
+            }
+            Modules.SysMemUserForUserModule.reset();
+            Emulator.log.info(MetaInformation.FULL_NAME);
 
-        String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
-        if (onlyGEGraphics != null)
-            Modules.sceDisplayModule.setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
+            umdLoaded = true;
+            loadedFile = file;
 
-        String useConnector = patchSettings.getProperty("emu.useConnector");
-        if (useConnector != null) {
-            sceMpeg.setEnableConnector(Integer.parseInt(useConnector) != 0);
-            sceAtrac3plus.setEnableConnector(Integer.parseInt(useConnector) != 0);
+            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoFile psfFile = iso.getFile("PSP_GAME/param.sfo");
+
+            PSF psf = new PSF();
+            byte[] data = new byte[(int) psfFile.length()];
+            psfFile.read(data);
+            psf.read(ByteBuffer.wrap(data));
+
+            Emulator.log.info("UMD param.sfo :\n" + psf);
+            String title = psf.getPrintableString("TITLE");
+            String discId = psf.getString("DISC_ID");
+            if (discId == null) {
+                discId = State.DISCID_UNKNOWN_UMD;
+            }
+
+            setTitle(MetaInformation.FULL_NAME + " - " + title);
+            addRecentUMD(file, title);
+
+            emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
+            RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
+
+            // use regular settings first
+            installCompatibilitySettings();
+
+            // override with patch file (allows incomplete patch files)
+            installCompatibilityPatches(discId + ".patch");
+
+            if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
+                    loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
+                    loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
+
+                State.discId = discId;
+                State.title = title;
+
+                Modules.IoFileMgrForUserModule.setfilepath("disc0/");
+
+                Modules.IoFileMgrForUserModule.setIsoReader(iso);
+                jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
+
+                if (instructioncounter != null) {
+                    instructioncounter.RefreshWindow();
+                }
+                StepLogger.clear();
+                StepLogger.setName(file.getPath());
+            } else {
+                throw new GeneralJpcspException(Resource.get("encryptedBoot"));
+            }
+        } catch (GeneralJpcspException e) {
+            JpcspDialogManager.showError(this, e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            JpcspDialogManager.showError(this, Resource.get("ioError") + " : " + e.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            if (ex.getMessage() != null) {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : " + ex.getMessage());
+            } else {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : Check console for details.");
+            }
         }
-
-        String useMediaEngine = patchSettings.getProperty("emu.useMediaEngine");
-        if (useMediaEngine != null) {
-            sceMpeg.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-            scePsmfPlayer.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-            AtracCodec.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-            sceMp3.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
-        }
-
-        String useVertexCache = patchSettings.getProperty("emu.useVertexCache");
-        if (useVertexCache != null)
-            VideoEngine.getInstance().setUseVertexCache(Integer.parseInt(useVertexCache) != 0);
-
-        String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
-        if (disableAudio != null)
-            jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!(Integer.parseInt(disableAudio) != 0));
-
-        String disableBlocking = patchSettings.getProperty("emu.disableblockingaudio");
-        if (disableBlocking != null)
-            jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!(Integer.parseInt(disableBlocking) != 0));
-
-        String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
-        if (ignoreAudioThreads != null)
-        	Modules.ThreadManForUserModule.setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
-
-        String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
-        if (ignoreInvalidMemoryAccess != null) {
-            Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
-            Compiler.setIgnoreInvalidMemory(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
-        }
-
-        String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
-        if (ignoreUnmappedImports != null)
-        	SyscallHandler.setEnableIgnoreUnmappedImports(Integer.parseInt(ignoreUnmappedImports) != 0);
-
-    } catch (IOException e) {
-        e.printStackTrace();
-    } finally{
-        Utilities.close(patchInputStream);
     }
 
-    return true;
-}
+    private void installCompatibilitySettings() {
+        Emulator.log.info("Loading global compatibility settings");
+
+        boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
+        Modules.sceDisplayModule.setOnlyGEGraphics(onlyGEGraphics);
+
+        boolean useConnector = Settings.getInstance().readBool("emu.useConnector");
+        sceMpeg.setEnableConnector(useConnector);
+        sceAtrac3plus.setEnableConnector(useConnector);
+
+        boolean useMediaEngine = Settings.getInstance().readBool("emu.useMediaEngine");
+        sceMpeg.setEnableMediaEngine(useMediaEngine);
+        scePsmfPlayer.setEnableMediaEngine(useMediaEngine);
+        AtracCodec.setEnableMediaEngine(useMediaEngine);
+        sceMp3.setEnableMediaEngine(useMediaEngine);
+
+        boolean useVertexCache = Settings.getInstance().readBool("emu.useVertexCache");
+        VideoEngine.getInstance().setUseVertexCache(useVertexCache);
+
+        boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
+        Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
+
+        boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
+        Modules.sceAudioModule.setAudioMuted(audioMuted);
+        Modules.sceSasCoreModule.setAudioMuted(audioMuted);
+
+        boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
+        Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
+
+        boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
+        Modules.ThreadManForUserModule.setThreadBanningEnabled(ignoreAudioThreads);
+
+        boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
+        Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
+        Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
+
+        boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
+        SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
+    }
+
+    /** @return true if a patch file was found */
+    public boolean installCompatibilityPatches(String filename) {
+        File patchfile = new File("patches/" + filename);
+        if (!patchfile.exists()) {
+            Emulator.log.debug("No patch file found for this game");
+            return false;
+        }
+
+        Properties patchSettings = new Properties();
+        InputStream patchInputStream = null;
+        try {
+            Emulator.log.info("Overriding previous settings with patch file");
+            patchInputStream = new BufferedInputStream(new FileInputStream(patchfile));
+            patchSettings.load(patchInputStream);
+
+            String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
+            if (onlyGEGraphics != null) {
+                Modules.sceDisplayModule.setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
+            }
+
+            String useConnector = patchSettings.getProperty("emu.useConnector");
+            if (useConnector != null) {
+                sceMpeg.setEnableConnector(Integer.parseInt(useConnector) != 0);
+                sceAtrac3plus.setEnableConnector(Integer.parseInt(useConnector) != 0);
+            }
+
+            String useMediaEngine = patchSettings.getProperty("emu.useMediaEngine");
+            if (useMediaEngine != null) {
+                sceMpeg.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+                scePsmfPlayer.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+                AtracCodec.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+                sceMp3.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+            }
+
+            String useVertexCache = patchSettings.getProperty("emu.useVertexCache");
+            if (useVertexCache != null) {
+                VideoEngine.getInstance().setUseVertexCache(Integer.parseInt(useVertexCache) != 0);
+            }
+
+            String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
+            if (disableAudio != null) {
+                jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!(Integer.parseInt(disableAudio) != 0));
+            }
+
+            String disableBlocking = patchSettings.getProperty("emu.disableblockingaudio");
+            if (disableBlocking != null) {
+                jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!(Integer.parseInt(disableBlocking) != 0));
+            }
+
+            String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
+            if (ignoreAudioThreads != null) {
+                Modules.ThreadManForUserModule.setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
+            }
+
+            String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
+            if (ignoreInvalidMemoryAccess != null) {
+                Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
+                Compiler.setIgnoreInvalidMemory(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
+            }
+
+            String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
+            if (ignoreUnmappedImports != null) {
+                SyscallHandler.setEnableIgnoreUnmappedImports(Integer.parseInt(ignoreUnmappedImports) != 0);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            Utilities.close(patchInputStream);
+        }
+
+        return true;
+    }
 
 private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
     resetEmu();
 }//GEN-LAST:event_ResetButtonActionPerformed
-
-private void resetEmu() {
-    if(loadedFile != null) {
-        PauseEmu();
-        HLEModuleManager.stopModules();
-        if(umdLoaded)
-            loadUMD(loadedFile);
-        else
-            loadFile(loadedFile);
+    private void resetEmu() {
+        if (loadedFile != null) {
+            PauseEmu();
+            RuntimeContext.reset();
+            Modules.SysMemUserForUserModule.reset();
+            HLEModuleManager.stopModules();         
+            if (umdLoaded) {
+                loadUMD(loadedFile);
+            } else {
+                loadFile(loadedFile);
+            }
+        }
     }
-}
-
 private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed
     PauseEmu();
-    if (instructioncounter==null)
-    {
+    if (instructioncounter == null) {
         instructioncounter = new InstructionCounter();
         emulator.setInstructionCounter(instructioncounter);
         Point mainwindow = this.getLocation();
-        instructioncounter.setLocation(mainwindow.x+100, mainwindow.y+50);
+        instructioncounter.setLocation(mainwindow.x + 100, mainwindow.y + 50);
         instructioncounter.setVisible(true);
-    }
-    else
-    {
+    } else {
         instructioncounter.RefreshWindow();
         instructioncounter.setVisible(true);
     }
@@ -1250,163 +1230,148 @@ private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 }//GEN-LAST:event_DumpIsoActionPerformed
 
 private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetProfilerActionPerformed
-	Profiler.reset();
+    Profiler.reset();
 }//GEN-LAST:event_ResetProfilerActionPerformed
 
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
-Modules.sceDisplayModule.getscreen = true;
+    Modules.sceDisplayModule.getscreen = true;
 }//GEN-LAST:event_ShotItemActionPerformed
 
 private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RotateItemActionPerformed
-sceDisplay screen = Modules.sceDisplayModule;
-Object[] options = {"90 CW","90 CCW","180","Mirror","Normal"};
+    sceDisplay screen = Modules.sceDisplayModule;
+    Object[] options = {"90 CW", "90 CCW", "180", "Mirror", "Normal"};
 
-int jop = JOptionPane.showOptionDialog(null, Resource.get("chooseRotation"), "Rotate", JOptionPane.UNDEFINED_CONDITION, JOptionPane.QUESTION_MESSAGE, null, options, options[4]);
+    int jop = JOptionPane.showOptionDialog(null, Resource.get("chooseRotation"), "Rotate", JOptionPane.UNDEFINED_CONDITION, JOptionPane.QUESTION_MESSAGE, null, options, options[4]);
 
-if(jop != -1)
-    screen.rotate(jop);
-else
-    return;
+    if (jop != -1) {
+        screen.rotate(jop);
+    } else {
+        return;
+    }
 }//GEN-LAST:event_RotateItemActionPerformed
-private byte safeRead8(int address)
-{
-    byte value = 0;
-    if (Memory.getInstance().isAddressGood(address))
-        value = (byte)Memory.getInstance().read8(address);
-    return value;
-}
-
-private void safeWrite8(byte value, int address)
-{
-    if (Memory.getInstance().isAddressGood(address))
-        Memory.getInstance().write8(address, value);
-}
-private void SaveSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveSnapActionPerformed
-File f = new File("Snap_" + State.discId + ".bin");
-BufferedOutputStream bOut = null;
-ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
-
-Emulator.getProcessor().save(cpuBuf);
-
-try
-{
-    bOut = new BufferedOutputStream( new FileOutputStream(f) );
-    for(int i = 0x08000000; i<=0x09ffffff; i++)
-    {
-        bOut.write(safeRead8(i));
+    private byte safeRead8(int address) {
+        byte value = 0;
+        if (Memory.getInstance().isAddressGood(address)) {
+            value = (byte) Memory.getInstance().read8(address);
+        }
+        return value;
     }
 
-    bOut.write(cpuBuf.array());
-}
-catch(IOException e)
-{
+    private void safeWrite8(byte value, int address) {
+        if (Memory.getInstance().isAddressGood(address)) {
+            Memory.getInstance().write8(address, value);
+        }
+    }
+private void SaveSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveSnapActionPerformed
+    File f = new File("Snap_" + State.discId + ".bin");
+    BufferedOutputStream bOut = null;
+    ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
 
-}
-finally
-{
-    Utilities.close(bOut);
-}
+    Emulator.getProcessor().save(cpuBuf);
+
+    try {
+        bOut = new BufferedOutputStream(new FileOutputStream(f));
+        for (int i = 0x08000000; i <= 0x09ffffff; i++) {
+            bOut.write(safeRead8(i));
+        }
+
+        bOut.write(cpuBuf.array());
+    } catch (IOException e) {
+    } finally {
+        Utilities.close(bOut);
+    }
 }//GEN-LAST:event_SaveSnapActionPerformed
 
 private void LoadSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoadSnapActionPerformed
-File f = new File("Snap_" + State.discId + ".bin");
-BufferedInputStream bIn = null;
-ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
+    File f = new File("Snap_" + State.discId + ".bin");
+    BufferedInputStream bIn = null;
+    ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
 
-try
-{
-    bIn = new BufferedInputStream(new FileInputStream(f));
-    for(int i = 0x08000000; i<=0x09ffffff; i++ )
-    {
-        safeWrite8((byte)bIn.read(), i);
+    try {
+        bIn = new BufferedInputStream(new FileInputStream(f));
+        for (int i = 0x08000000; i <= 0x09ffffff; i++) {
+            safeWrite8((byte) bIn.read(), i);
+        }
+
+        bIn.read(cpuBuf.array());
+    } catch (IOException e) {
+    } finally {
+        Utilities.close(bIn);
     }
 
-    bIn.read(cpuBuf.array());
-}
-
-catch(IOException e)
-{
-
-}
-
-finally
-{
-    Utilities.close(bIn);
-}
-
-Emulator.getProcessor().load(cpuBuf);
+    Emulator.getProcessor().load(cpuBuf);
 }//GEN-LAST:event_LoadSnapActionPerformed
 
 private void EnglishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnglishActionPerformed
-changeLanguage("en_EN");
+    changeLanguage("en_EN");
 }//GEN-LAST:event_EnglishActionPerformed
 
 private void FrenchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FrenchActionPerformed
-changeLanguage("fr_FR");
+    changeLanguage("fr_FR");
 }//GEN-LAST:event_FrenchActionPerformed
 
 private void GermanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GermanActionPerformed
-changeLanguage("de_DE");
+    changeLanguage("de_DE");
 }//GEN-LAST:event_GermanActionPerformed
 
 private void LithuanianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LithuanianActionPerformed
-changeLanguage("lt_LT");
+    changeLanguage("lt_LT");
 }//GEN-LAST:event_LithuanianActionPerformed
 
 private void SpanishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SpanishActionPerformed
-changeLanguage("es_ES");
+    changeLanguage("es_ES");
 }//GEN-LAST:event_SpanishActionPerformed
 
 private void CatalanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CatalanActionPerformed
-changeLanguage("es_CA");
+    changeLanguage("es_CA");
 }//GEN-LAST:event_CatalanActionPerformed
 
 private void PortugueseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PortugueseActionPerformed
-changeLanguage("pt_PT");
+    changeLanguage("pt_PT");
 }//GEN-LAST:event_PortugueseActionPerformed
 
 private void JapaneseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JapaneseActionPerformed
-changeLanguage("jp_JP");
+    changeLanguage("jp_JP");
 }//GEN-LAST:event_JapaneseActionPerformed
 
 private void PortugueseBRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PortugueseBRActionPerformed
-changeLanguage("pt_BR");
+    changeLanguage("pt_BR");
 }//GEN-LAST:event_PortugueseBRActionPerformed
 
 private void cwcheatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cwcheatActionPerformed
-CheatsGUI cwCheats = new CheatsGUI("CWCheat");
-cwCheats.setVisible(true);
+    CheatsGUI cwCheats = new CheatsGUI("CWCheat");
+    cwCheats.setVisible(true);
 }//GEN-LAST:event_cwcheatActionPerformed
 
 private void RussianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RussianActionPerformed
-changeLanguage("ru_RU");
+    changeLanguage("ru_RU");
 }//GEN-LAST:event_RussianActionPerformed
 
 private void PolishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PolishActionPerformed
-changeLanguage("pl_PL");
+    changeLanguage("pl_PL");
 }//GEN-LAST:event_PolishActionPerformed
 
 private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ControlsConfActionPerformed
-    if(ctrlgui == null) {
-      ctrlgui = new ControlsGUI();
-      Point mainwindow = this.getLocation();
-      ctrlgui.setLocation(mainwindow.x+100, mainwindow.y+50);
-      ctrlgui.setVisible(true);
-      /* add a direct link to the main window*/
-      ctrlgui.setMainGUI(this);
-     } else {
-       ctrlgui.setVisible(true);
-     }
+    if (ctrlgui == null) {
+        ctrlgui = new ControlsGUI();
+        Point mainwindow = this.getLocation();
+        ctrlgui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
+        ctrlgui.setVisible(true);
+        /* add a direct link to the main window*/
+        ctrlgui.setMainGUI(this);
+    } else {
+        ctrlgui.setVisible(true);
+    }
 }//GEN-LAST:event_ControlsConfActionPerformed
 
 private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
-if(MuteOpt.isSelected()){
-    Modules.sceAudioModule.setAudioMuted(true);
-    Modules.sceSasCoreModule.setAudioMuted(true);
-} else {
-    Modules.sceAudioModule.setAudioMuted(false);
-    Modules.sceSasCoreModule.setAudioMuted(false);
-}
+    if (MuteOpt.isSelected()) {
+        Modules.sceAudioModule.setAudioMuted(true);
+        Modules.sceSasCoreModule.setAudioMuted(true);
+    } else {
+        Modules.sceAudioModule.setAudioMuted(false);
+        Modules.sceSasCoreModule.setAudioMuted(false);
+    }
 }//GEN-LAST:event_MuteOptActionPerformed
 
 private void ToggleLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleLoggerActionPerformed
@@ -1419,135 +1384,129 @@ private void ToggleLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_ToggleLoggerActionPerformed
 
 private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CustomLoggerActionPerformed
-    if(loggui == null) {
-      loggui = new LogGUI();
-      Point mainwindow = this.getLocation();
-      loggui.setLocation(mainwindow.x+100, mainwindow.y+50);
-      loggui.setVisible(true);
-      /* add a direct link to the main window*/
-      loggui.setMainGUI(this);
-     } else {
-       loggui.setVisible(true);
-     }
+    if (loggui == null) {
+        loggui = new LogGUI();
+        Point mainwindow = this.getLocation();
+        loggui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
+        loggui.setVisible(true);
+        /* add a direct link to the main window*/
+        loggui.setMainGUI(this);
+    } else {
+        loggui.setVisible(true);
+    }
 }//GEN-LAST:event_CustomLoggerActionPerformed
+    private void exitEmu() {
+        if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+            Settings.getInstance().writeWindowPos("mainwindow", getLocation());
+        }
 
-private void exitEmu() {
-    if (Settings.getInstance().readBool("gui.saveWindowPos"))
-        Settings.getInstance().writeWindowPos("mainwindow", getLocation());
+        Modules.ThreadManForUserModule.exit();
+        Modules.sceDisplayModule.exit();
+        VideoEngine.exit();
+        Emulator.exit();
 
-    Modules.ThreadManForUserModule.exit();
-    Modules.sceDisplayModule.exit();
-    VideoEngine.exit();
-    Emulator.exit();
-
-    System.exit(0);
-}
-
-public void snaptoMainwindow() {
-    snapConsole = true;
-    mainwindowPos = getLocation();
-    consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
-}
-
-private void RunEmu()
-{
-    emulator.RunEmu();
-}
-
-private void TogglePauseEmu()
-{
-    // This is a toggle, so can pause and unpause
-    if (Emulator.run)
-    {
-        if (!Emulator.pause)
-            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
-        else
-            RunEmu();
+        System.exit(0);
     }
-}
 
-private void PauseEmu()
-{
-    // This will only enter pause mode
-    if (Emulator.run && !Emulator.pause) {
-        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
+    public void snaptoMainwindow() {
+        snapConsole = true;
+        mainwindowPos = getLocation();
+        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
     }
-}
 
-public void RefreshButtons()
-{
-    RunButton.setSelected(Emulator.run && !Emulator.pause);
-    PauseButton.setSelected(Emulator.run && Emulator.pause);
-}
-
-/** set the FPS portion of the title */
-public void setMainTitle(String message)
-{
-    String oldtitle = getTitle();
-    int sub = oldtitle.indexOf("FPS:");
-    if(sub!=-1)
-    {
-        String newtitle= oldtitle.substring(0, sub-1);
-        setTitle(newtitle + " " + message);
+    private void RunEmu() {
+        emulator.RunEmu();
     }
-    else
-    {
-        setTitle(oldtitle + " " + message);
-    }
-}
 
-private void printUsage() {
-    System.err.println("Usage: java -Xmx512m -jar jpcsp.jar [OPTIONS]");
-    System.err.println();
-    System.err.println("  -d, --debugger             Open debugger at start.");
-    System.err.println("  -f, --loadfile FILE        Load a file.");
-    System.err.println("                               Example: ms0/PSP/GAME/pspsolitaire/EBOOT.PBP");
-    System.err.println("  -u, --loadumd FILE         Load a UMD. Example: umdimages/cube.iso");
-    System.err.println("  -r, --run                  Run loaded file or umd. Use with -f or -u option.");
-}
-
-private void processArgs(String[] args) {
-    int i = 0;
-    while(i < args.length) {
-        if (args[i].equals("-d") || args[i].equals("--debugger")) {
-            i++;
-            // hack: reuse this function
-            EnterDebuggerActionPerformed(null);
-        } else if (args[i].equals("-f") || args[i].equals("--loadfile")) {
-            i++;
-            if (i < args.length) {
-                File file = new File(args[i]);
-                if(file.exists())
-                    loadFile(file);
-                i++;
+    private void TogglePauseEmu() {
+        // This is a toggle, so can pause and unpause
+        if (Emulator.run) {
+            if (!Emulator.pause) {
+                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
             } else {
-                printUsage();
-                break;
+                RunEmu();
             }
-        } else if (args[i].equals("-u") || args[i].equals("--loadumd")) {
-            i++;
-            if (i < args.length) {
-                File file = new File(args[i]);
-                if(file.exists())
-                    loadUMD(file);
-                i++;
-            } else {
-                printUsage();
-                break;
-            }
-        } else if (args[i].equals("-r") || args[i].equals("--run")) {
-            i++;
-            RunEmu();
-        } else {
-            printUsage();
-            break;
         }
     }
-}
+
+    private void PauseEmu() {
+        // This will only enter pause mode
+        if (Emulator.run && !Emulator.pause) {
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
+        }
+    }
+
+    public void RefreshButtons() {
+        RunButton.setSelected(Emulator.run && !Emulator.pause);
+        PauseButton.setSelected(Emulator.run && Emulator.pause);
+    }
+
+    /** set the FPS portion of the title */
+    public void setMainTitle(String message) {
+        String oldtitle = getTitle();
+        int sub = oldtitle.indexOf("FPS:");
+        if (sub != -1) {
+            String newtitle = oldtitle.substring(0, sub - 1);
+            setTitle(newtitle + " " + message);
+        } else {
+            setTitle(oldtitle + " " + message);
+        }
+    }
+
+    private void printUsage() {
+        System.err.println("Usage: java -Xmx512m -jar jpcsp.jar [OPTIONS]");
+        System.err.println();
+        System.err.println("  -d, --debugger             Open debugger at start.");
+        System.err.println("  -f, --loadfile FILE        Load a file.");
+        System.err.println("                               Example: ms0/PSP/GAME/pspsolitaire/EBOOT.PBP");
+        System.err.println("  -u, --loadumd FILE         Load a UMD. Example: umdimages/cube.iso");
+        System.err.println("  -r, --run                  Run loaded file or umd. Use with -f or -u option.");
+    }
+
+    private void processArgs(String[] args) {
+        int i = 0;
+        while (i < args.length) {
+            if (args[i].equals("-d") || args[i].equals("--debugger")) {
+                i++;
+                // hack: reuse this function
+                EnterDebuggerActionPerformed(null);
+            } else if (args[i].equals("-f") || args[i].equals("--loadfile")) {
+                i++;
+                if (i < args.length) {
+                    File file = new File(args[i]);
+                    if (file.exists()) {
+                        loadFile(file);
+                    }
+                    i++;
+                } else {
+                    printUsage();
+                    break;
+                }
+            } else if (args[i].equals("-u") || args[i].equals("--loadumd")) {
+                i++;
+                if (i < args.length) {
+                    File file = new File(args[i]);
+                    if (file.exists()) {
+                        loadUMD(file);
+                    }
+                    i++;
+                } else {
+                    printUsage();
+                    break;
+                }
+            } else if (args[i].equals("-r") || args[i].equals("--run")) {
+                i++;
+                RunEmu();
+            } else {
+                printUsage();
+                break;
+            }
+        }
+    }
 
     /**
-    * @param args the command line arguments
-    */
+     * @param args the command line arguments
+     */
     public static void main(String args[]) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -1559,6 +1518,7 @@ private void processArgs(String[] args) {
         final String[] fargs = args;
 
         java.awt.EventQueue.invokeLater(new Runnable() {
+
             @Override
             public void run() {
                 Thread.currentThread().setName("GUI");
@@ -1636,7 +1596,8 @@ private void processArgs(String[] args) {
     }
 
     @Override
-    public void keyTyped(KeyEvent arg0) { }
+    public void keyTyped(KeyEvent arg0) {
+    }
 
     @Override
     public void keyPressed(KeyEvent arg0) {
@@ -1649,7 +1610,8 @@ private void processArgs(String[] args) {
     }
 
     @Override
-    public void componentHidden(ComponentEvent e) { }
+    public void componentHidden(ComponentEvent e) {
+    }
 
     @Override
     public void componentMoved(ComponentEvent e) {
@@ -1659,7 +1621,7 @@ private void processArgs(String[] args) {
             Dimension mainwindowSize = this.getSize();
 
             if (consolePos.x == mainwindowPos.x &&
-                consolePos.y == mainwindowPos.y + mainwindowSize.height) {
+                    consolePos.y == mainwindowPos.y + mainwindowSize.height) {
                 consolewin.setLocation(newPos.x, newPos.y + mainwindowSize.height);
             } else {
                 snapConsole = false;
@@ -1670,31 +1632,35 @@ private void processArgs(String[] args) {
     }
 
     @Override
-    public void componentResized(ComponentEvent e) { }
+    public void componentResized(ComponentEvent e) {
+    }
 
     @Override
-    public void componentShown(ComponentEvent e) { }
+    public void componentShown(ComponentEvent e) {
+    }
 
     private class RecentElementActionListener implements ActionListener {
-    	public static final int TYPE_UMD = 0;
-    	public static final int TYPE_FILE = 1;
-    	int type;
-    	String path;
 
-    	public RecentElementActionListener(int type, String path) {
-    		this.path = path;
-    		this.type = type;
-		}
+        public static final int TYPE_UMD = 0;
+        public static final int TYPE_FILE = 1;
+        int type;
+        String path;
 
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			File file = new File(path);
-            if(file.exists()) {
-            	if(type == TYPE_UMD)
-            		loadUMD(file);
-            	else
-            		loadFile(file);
+        public RecentElementActionListener(int type, String path) {
+            this.path = path;
+            this.type = type;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            File file = new File(path);
+            if (file.exists()) {
+                if (type == TYPE_UMD) {
+                    loadUMD(file);
+                } else {
+                    loadFile(file);
+                }
             }
-		}
+        }
     }
 }
