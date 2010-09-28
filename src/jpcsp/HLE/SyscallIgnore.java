@@ -132,37 +132,6 @@ public enum SyscallIgnore {
 	sceMpegGetUserdataAu(0x01977054),
 	sceMpegQueryUserdataEsSize(0xC45C99CC),
 	sceMpegRingbufferQueryPackNum(0x769BEBB6),
-	sceNetAdhocctlAddHandler(0x20B317A0),
-	sceNetAdhocctlConnect(0x0AD043ED),
-	sceNetAdhocctlCreate(0xEC0635C1),
-	sceNetAdhocctlCreateEnterGameMode(0xA5C055CE),
-	sceNetAdhocctlDelHandler(0x6402490B),
-	sceNetAdhocctlDisconnect(0x34401D65),
-	sceNetAdhocctlExitGameMode(0xCF8E084D),
-	sceNetAdhocctlGetAddrByName(0x99560ABE),
-	sceNetAdhocctlGetAdhocId(0x362CBE8F),
-	sceNetAdhocctlGetGameModeInfo(0x5A014CE0),
-	sceNetAdhocctlGetNameByAddr(0x8916C003),
-	sceNetAdhocctlGetParameter(0xDED9D28E),
-	sceNetAdhocctlGetPeerInfo(0x8DB83FDC),
-	sceNetAdhocctlGetPeerList(0xE162CB14),
-	sceNetAdhocctlGetScanInfo(0x81AEE1BE),
-	sceNetAdhocctlGetState(0x75ECD386),
-	sceNetAdhocctlInit(0xE26F226E),
-	sceNetAdhocctlJoin(0x5E7F79C9),
-	sceNetAdhocctlJoinEnterGameMode(0x1FF89745),
-	sceNetAdhocctlScan(0x08FFF7A0),
-	sceNetAdhocctlTerm(0x9D689E13),
-	sceNetAdhocGameModeCreateMaster(0x7F75C338),
-	sceNetAdhocGameModeCreateReplica(0x3278AB0C),
-	sceNetAdhocGameModeDeleteMaster(0xA0229362),
-	sceNetAdhocGameModeDeleteReplica(0x0B2228E9),
-	sceNetAdhocGameModeUpdateMaster(0x98C204C8),
-	sceNetAdhocGameModeUpdateReplica(0xFA324B4E),
-	sceNetAdhocGetPdpStat(0xC7C1FC57),
-	sceNetAdhocGetPtpStat(0xB9685118),
-	sceNetAdhocGetSocketAlert(0x4D2CE199),
-	sceNetAdhocInit(0xE1D621D7),
 	sceNetAdhocMatchingAbortSendData(0xEC19337D),
 	sceNetAdhocMatchingCancelTarget(0xEA3C6108),
 	sceNetAdhocMatchingCancelTargetWithOpt(0x8f58bedf),
@@ -178,21 +147,6 @@ public enum SyscallIgnore {
 	sceNetAdhocMatchingStart(0x93EF3843),
 	sceNetAdhocMatchingStop(0x32B156B3),
 	sceNetAdhocMatchingTerm(0x7945ECDA),
-	sceNetAdhocPdpCreate(0x6F92741B),
-	sceNetAdhocPdpDelete(0x7F27BB5E),
-	sceNetAdhocPdpRecv(0xDFE53E03),
-	sceNetAdhocPdpSend(0xABED3790),
-	sceNetAdhocPollSocket(0x7A662D6B),
-	sceNetAdhocPtpAccept(0x9DF81198),
-	sceNetAdhocPtpClose(0x157E6225),
-	sceNetAdhocPtpConnect(0xFC6FC07B),
-	sceNetAdhocPtpFlush(0x9AC2EEAC),
-	sceNetAdhocPtpListen(0xE08BDAC1),
-	sceNetAdhocPtpOpen(0x877F6D66),
-	sceNetAdhocPtpRecv(0x8BEA2B3E),
-	sceNetAdhocPtpSend(0x4DA4C788),
-	sceNetAdhocSetSocketAlert(0x73BFD52D),
-	sceNetAdhocTerm(0xA62C6F57),
 	sceNetApctlAddHandler(0x8abadd51),
 	sceNetApctlConnect(0xCFB957C6),
 	sceNetApctlDelHandler(0x5963991b),
@@ -205,12 +159,6 @@ public enum SyscallIgnore {
 	sceNetApDialogDummyGetState(0xCA9BE5BF),
 	sceNetApDialogDummyInit(0xBB73FF67),
 	sceNetApDialogDummyTerm(0xF213BE65),
-	sceNetEtherNtostr(0x89360950),
-	sceNetEtherStrton(0xD27961C9),
-	sceNetFreeThreadinfo(0x50647530),
-	sceNetGetDropRate(0xC80181A2),
-	sceNetGetLocalEtherAddr(0x0BF0A3AE),
-	sceNetGetMallocStat(0xCC393E48),
 	sceNetInetAccept(0xDB094E1B),
 	sceNetInetBind(0x1A33F9AE),
 	sceNetInetClose(0x8D7284EA),
@@ -242,7 +190,6 @@ public enum SyscallIgnore {
 	sceNetInetSocket(0x8B7B220F),//1.00+
 	sceNetInetSocketAbort(0x80A21ABD),//1.00+
 	sceNetInetTerm(0xA9ED66B9),//1.00+
-	sceNetInit(0x39af39a6),//1.00+
 	sceNetResolverCreate(0x244172af),//1.00+
 	sceNetResolverDelete(0x94523e09),//1.00+
 	sceNetResolverInit(0xf3370e61),//1.00+
@@ -250,10 +197,6 @@ public enum SyscallIgnore {
 	sceNetResolverStartNtoA(0x224c5f44),//1.00+
 	sceNetResolverStop(0x808F6063),//1.00+
 	sceNetResolverTerm(0x6138194a),//1.00+
-	//0x22fe
-	sceNetSetDropRate(0xFD8585E1),//1.00+
-	sceNetTerm(0x281928A9),//1.00+
-	sceNetThreadAbort(0xAD6844C6),//1.00+
 	sceParseHttpResponseHeader(0xAD7BFDEF),//1.00+
 	sceParseHttpStatusLine(0x8077a433),//1.00+
 	sceRegCloseCategory(0x0cae832b),//1.00+

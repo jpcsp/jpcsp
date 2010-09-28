@@ -325,8 +325,10 @@ public class SceKernelErrors {
     public final static int ERROR_PSMF_NOT_INITIALIZED                          = 0x80615001;
     public final static int ERROR_PSMF_BAD_VERSION                              = 0x80615002;
     public final static int ERROR_PSMF_NOT_FOUND                                = 0x80615025;
-    public final static int ERROR_PSMF_INVALID_PSMF                             = 0x80615501;
+    public final static int ERROR_PSMF_INVALID_ID                               = 0x80615100;
     public final static int ERROR_PSMF_INVALID_VALUE                            = 0x806151fe;
+    public final static int ERROR_PSMF_INVALID_TIMESTAMP                        = 0x80615500;
+    public final static int ERROR_PSMF_INVALID_PSMF                             = 0x80615501;
 
     public final static int ERROR_MPEG_NO_DATA                                  = 0x80618001;
 

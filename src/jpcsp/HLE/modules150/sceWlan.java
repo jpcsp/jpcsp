@@ -56,6 +56,7 @@ public class sceWlan implements HLEModule {
 
         }
     }
+    
     public static int PSP_WLAN_SWITCH_OFF = 0;
     public static int PSP_WLAN_SWITCH_ON = 1;
     private byte[] fakeWlanAddr = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x00, 0x00};
@@ -93,6 +94,7 @@ public class sceWlan implements HLEModule {
 
         cpu.gpr[2] = PSP_WLAN_SWITCH_ON;
     }
+
     public final HLEModuleFunction sceWlanGetEtherAddrFunction = new HLEModuleFunction("sceWlan", "sceWlanGetEtherAddr") {
 
         @Override
@@ -105,6 +107,7 @@ public class sceWlan implements HLEModule {
             return "jpcsp.HLE.Modules.sceWlanModule.sceWlanGetEtherAddr(processor);";
         }
     };
+
     public final HLEModuleFunction sceWlanGetSwitchStateFunction = new HLEModuleFunction("sceWlan", "sceWlanGetSwitchState") {
 
         @Override
