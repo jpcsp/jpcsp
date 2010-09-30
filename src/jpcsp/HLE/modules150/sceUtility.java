@@ -465,7 +465,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		return formattedMessage.toString();
 	}
 
-    protected final class SavedataListTableColumnModel extends DefaultTableColumnModel {
+    protected static final class SavedataListTableColumnModel extends DefaultTableColumnModel {
 		private static final long serialVersionUID = -2460343777558549264L;
 		private int fontHeight = 12;
 

@@ -357,7 +357,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 		}
     }
 
-    private class ListSyncWaitStateChecker implements IWaitStateChecker {
+    private static class ListSyncWaitStateChecker implements IWaitStateChecker {
     	private PspGeList list;
 
     	public ListSyncWaitStateChecker(PspGeList list) {
