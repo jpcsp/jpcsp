@@ -61,10 +61,10 @@ import jpcsp.format.PSF;
  */
 public class MemStickBrowser extends JDialog {
 
-    private final class MemStickTableColumnModel extends DefaultTableColumnModel {
+    private static final class MemStickTableColumnModel extends DefaultTableColumnModel {
         private static final long serialVersionUID = -6321946514015824875L;
 
-        private final class CellRenderer extends DefaultTableCellRenderer {
+        private static final class CellRenderer extends DefaultTableCellRenderer {
             private static final long serialVersionUID = 6767267483048658105L;
 
             @Override

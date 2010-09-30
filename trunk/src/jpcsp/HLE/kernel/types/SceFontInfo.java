@@ -160,7 +160,7 @@ public class SceFontInfo {
     }
 
     // Glyph class.
-    private class Glyph {
+    private static class Glyph {
         private int x;
         private int y;
         private int w;

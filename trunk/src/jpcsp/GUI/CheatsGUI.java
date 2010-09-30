@@ -29,7 +29,7 @@ import jpcsp.MemoryMap;
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 	private static final long serialVersionUID = 6791588139795694296L;
 
-	private class CheatsThread extends Thread {
+	private static class CheatsThread extends Thread {
         public CheatsThread () {
         }
 
