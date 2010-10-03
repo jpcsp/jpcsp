@@ -42,7 +42,11 @@ import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Logger;
+
 public class LwMutexManager {
+
+    protected static Logger log = Modules.getLogger("ThreadManForUser");
 
     private HashMap<Integer, SceKernelLwMutexInfo> lwMutexMap;
     private LwMutexWaitStateChecker lwMutexWaitStateChecker;
@@ -64,7 +68,7 @@ public class LwMutexManager {
         if (info != null) {
             info.numWaitThreads--;
             if (info.numWaitThreads < 0) {
-                Modules.log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", lwmutex " + Integer.toHexString(info.uid) + " numWaitThreads underflowed");
+                log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", lwmutex " + Integer.toHexString(info.uid) + " numWaitThreads underflowed");
                 info.numWaitThreads = 0;
             }
             return true;
@@ -78,7 +82,7 @@ public class LwMutexManager {
             // Return WAIT_TIMEOUT
             thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
         } else {
-            Modules.log.warn("LwMutex deleted while we were waiting for it! (timeout expired)");
+            log.warn("LwMutex deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
             thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
         }
@@ -94,14 +98,14 @@ public class LwMutexManager {
     private boolean tryLockLwMutex(SceKernelLwMutexInfo info, int count, SceKernelThreadInfo thread) {
         if (info.lockedCount == 0) {
             // If the lwmutex is not locked, allow this thread to lock it.
-        	info.threadid = thread.uid;
+            info.threadid = thread.uid;
             info.lockedCount += count;
             return true;
         } else if (info.threadid == thread.uid) {
             // If the lwmutex is already locked, but it's trying to be locked by the same thread
             // that acquired it initially, check if recursive locking is allowed.
             // If not, don't increase this lwmutex's lock count, but still return true.
-            if(((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) == PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE)) {
+            if (((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) == PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE)) {
                 info.lockedCount += count;
             }
             return true;
@@ -182,15 +186,15 @@ public class LwMutexManager {
 
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn(message + " - unknown UID");
+            log.warn(message + " - unknown UID");
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
             if (!tryLockLwMutex(info, count, currentThread)) {
-                if (Modules.log.isDebugEnabled()) {
-                    Modules.log.debug(message + " - '" + info.name + "' fast check failed");
+                if (log.isDebugEnabled()) {
+                    log.debug(message + " - '" + info.name + "' fast check failed");
                 }
                 if (wait) {
                     // Failed, but it's ok, just wait a little
@@ -205,7 +209,7 @@ public class LwMutexManager {
                         if (mem.isAddressGood(timeout_addr)) {
                             timeout = mem.read32(timeout_addr);
                         } else {
-                            Modules.log.warn(message + " - bad timeout address");
+                            log.warn(message + " - bad timeout address");
                         }
                     }
                     threadMan.hleKernelThreadWait(currentThread, timeout, forever);
@@ -225,7 +229,7 @@ public class LwMutexManager {
                     }
                 }
             } else {
-                Modules.log.debug(message + " - '" + info.name + "' fast check succeeded");
+                log.debug(message + " - '" + info.name + "' fast check succeeded");
                 cpu.gpr[2] = 0;
             }
             threadMan.hleRescheduleCurrentThread(doCallbacks);
@@ -238,8 +242,8 @@ public class LwMutexManager {
 
         String name = Utilities.readStringNZ(mem, name_addr, 32);
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelCreateLwMutex (workAreaAddr='" + Integer.toHexString(workAreaAddr) + "', name='" + name + "', attr=0x" + Integer.toHexString(attr) + ", count=0x" + Integer.toHexString(count) + ", option_addr=0x" + Integer.toHexString(option_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelCreateLwMutex (workAreaAddr='" + Integer.toHexString(workAreaAddr) + "', name='" + name + "', attr=0x" + Integer.toHexString(attr) + ", count=0x" + Integer.toHexString(count) + ", option_addr=0x" + Integer.toHexString(option_addr) + ")");
         }
 
         SceKernelLwMutexInfo info = new SceKernelLwMutexInfo(workAreaAddr, name, count, attr);
@@ -256,13 +260,13 @@ public class LwMutexManager {
 
         int uid = mem.read32(workAreaAddr);
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelDeleteLwMutex (workAreaAddr='" + Integer.toHexString(workAreaAddr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelDeleteLwMutex (workAreaAddr='" + Integer.toHexString(workAreaAddr) + ")");
         }
 
         SceKernelLwMutexInfo info = lwMutexMap.remove(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelDeleteLwMutex unknown UID " + Integer.toHexString(uid));
+            log.warn("sceKernelDeleteLwMutex unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
         } else {
             mem.write32(workAreaAddr, 0);  // Clear uid.
@@ -275,7 +279,9 @@ public class LwMutexManager {
 
         int uid = mem.read32(workAreaAddr);
 
-        Modules.log.debug("sceKernelLockLwMutex redirecting to hleKernelLockLwMutex");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelLockLwMutex redirecting to hleKernelLockLwMutex");
+        }
         hleKernelLockLwMutex(uid, count, timeout_addr, true, false);
     }
 
@@ -284,7 +290,9 @@ public class LwMutexManager {
 
         int uid = mem.read32(workAreaAddr);
 
-        Modules.log.debug("sceKernelLockLwMutexCB redirecting to hleKernelLockLwMutex");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelLockLwMutexCB redirecting to hleKernelLockLwMutex");
+        }
         hleKernelLockLwMutex(uid, count, timeout_addr, true, true);
     }
 
@@ -293,7 +301,9 @@ public class LwMutexManager {
 
         int uid = mem.read32(workAreaAddr);
 
-        Modules.log.debug("sceKernelTryLockLwMutex redirecting to hleKernelLockLwMutex");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelTryLockLwMutex redirecting to hleKernelLockLwMutex");
+        }
         hleKernelLockLwMutex(uid, count, 0, false, false);
     }
 
@@ -303,19 +313,19 @@ public class LwMutexManager {
 
         int uid = mem.read32(workAreaAddr);
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelUnlockLwMutex (workAreaAddr=0x" + Integer.toHexString(workAreaAddr) + ", count=" + count + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelUnlockLwMutex (workAreaAddr=0x" + Integer.toHexString(workAreaAddr) + ", count=" + count + ")");
         }
 
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelUnlockLwMutex unknown uid");
+            log.warn("sceKernelUnlockLwMutex unknown uid");
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
         } else if (info.lockedCount == 0) {
-            Modules.log.warn("sceKernelUnlockLwMutex not locked");
+            log.warn("sceKernelUnlockLwMutex not locked");
             cpu.gpr[2] = ERROR_LWMUTEX_UNLOCKED;
         } else if (info.lockedCount < 0) {
-            Modules.log.warn("sceKernelUnlockLwMutex underflow");
+            log.warn("sceKernelUnlockLwMutex underflow");
             cpu.gpr[2] = ERROR_LWMUTEX_UNLOCK_UNDERFLOW;
         } else {
             info.lockedCount -= count;
@@ -332,20 +342,20 @@ public class LwMutexManager {
 
         int uid = mem.read32(workAreaAddr);
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelReferLwMutexStatus (workAreaAddr=0x" + Integer.toHexString(workAreaAddr) + ", addr=0x" + addr + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelReferLwMutexStatus (workAreaAddr=0x" + Integer.toHexString(workAreaAddr) + ", addr=0x" + addr + ")");
         }
 
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
+            log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
         } else {
             if (mem.isAddressGood(addr)) {
                 info.write(mem, addr);
                 cpu.gpr[2] = 0;
             } else {
-                Modules.log.warn("sceKernelReferLwMutexStatus bad address 0x" + Integer.toHexString(addr));
+                log.warn("sceKernelReferLwMutexStatus bad address 0x" + Integer.toHexString(addr));
                 cpu.gpr[2] = -1;
             }
         }
@@ -355,20 +365,20 @@ public class LwMutexManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelReferLwMutexStatus (uid=0x" + Integer.toHexString(uid) + ", addr=0x" + addr + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelReferLwMutexStatus (uid=0x" + Integer.toHexString(uid) + ", addr=0x" + addr + ")");
         }
 
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
+            log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
         } else {
             if (mem.isAddressGood(addr)) {
                 info.write(mem, addr);
                 cpu.gpr[2] = 0;
             } else {
-                Modules.log.warn("sceKernelReferLwMutexStatus bad address 0x" + Integer.toHexString(addr));
+                log.warn("sceKernelReferLwMutexStatus bad address 0x" + Integer.toHexString(addr));
                 cpu.gpr[2] = -1;
             }
         }

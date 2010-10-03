@@ -61,7 +61,9 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         int atID = cpu.gpr[4];
         int outputChannelAddr = cpu.gpr[5];
 
-        log.warn(String.format("PARTIAL: sceAtracGetOutputChannel: atracID = %d, outputChannelAddr = 0x%08X", atID, outputChannelAddr));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracGetOutputChannel: atracID = %d, outputChannelAddr = 0x%08X", atID, outputChannelAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -70,7 +72,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         if (mem.isAddressGood(outputChannelAddr)) {
         	mem.write32(outputChannelAddr, 2);
         }
-
         cpu.gpr[2] = 0;
     }
 
@@ -79,14 +80,16 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
         int atID = cpu.gpr[4];
 
-        log.warn(String.format("PARTIAL: sceAtracIsSecondBufferNeeded atracId=%d", atID));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracIsSecondBufferNeeded atracId=%d", atID));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // -1 -> Error.
-        // 0 - > Second buffer isn't needed.
+        // 0 -> Second buffer isn't needed.
         // 1 -> Second buffer is needed.
         cpu.gpr[2] = isSecondBufferNeeded() ? 1 : 0;
     }
@@ -97,7 +100,9 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         int at3IDNum = cpu.gpr[4];
         int at3plusIDNum = cpu.gpr[5];
 
-        log.warn(String.format("PARTIAL: sceAtracReinit at3IDNum=%d at3plusIDNum=%d", at3IDNum, at3plusIDNum));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracReinit at3IDNum=%d at3plusIDNum=%d", at3IDNum, at3plusIDNum));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -119,9 +124,10 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         int sample = cpu.gpr[5];
         int bufferInfoAddr = cpu.gpr[6];
 
-        log.warn(String.format("PARTIAL: sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, unk1Addr=0x%08x", atID, sample, bufferInfoAddr));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, bufferInfoAddr=0x%08x", atID, sample, bufferInfoAddr));
+        }
         hleAtracGetBufferInfoForReseting(atID, sample, bufferInfoAddr);
-
         cpu.gpr[2] = 0;
     }
 

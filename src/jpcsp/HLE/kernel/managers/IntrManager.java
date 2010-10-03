@@ -34,7 +34,12 @@ import jpcsp.HLE.kernel.types.interrupts.VBlankInterruptHandler;
 import jpcsp.hardware.Interrupts;
 import jpcsp.scheduler.Scheduler;
 
+import org.apache.log4j.Logger;
+
 public class IntrManager {
+
+    protected static Logger log = Modules.getLogger("ThreadManForUser");
+
 	public static final int PSP_GPIO_INTR      =  4;
 	public static final int PSP_ATA_INTR       =  5;
 	public static final int PSP_UMD_INTR       =  6;
@@ -152,8 +157,8 @@ public class IntrManager {
 	}
 
 	public void addDeferredInterrupt(AbstractInterruptHandler interruptHandler) {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug("addDeferredInterrupt");
+		if (log.isDebugEnabled()) {
+			log.debug("addDeferredInterrupt");
 		}
 		deferredInterrupts.add(interruptHandler);
 	}
@@ -165,8 +170,8 @@ public class IntrManager {
 
 	public void onInterruptsEnabled() {
 		if (!deferredInterrupts.isEmpty() && canExecuteInterruptNow()) {
-			if (Modules.log.isDebugEnabled()) {
-				Modules.log.debug("Executing deferred interrupts");
+			if (log.isDebugEnabled()) {
+				log.debug("Executing deferred interrupts");
 			}
 
 			List<AbstractInterruptHandler> copyDeferredInterrupts = new LinkedList<AbstractInterruptHandler>(deferredInterrupts);
@@ -212,8 +217,8 @@ public class IntrManager {
 
 
 	protected void onEndOfInterrupt() {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug("End of Interrupt");
+		if (log.isDebugEnabled()) {
+			log.debug("End of Interrupt");
 		}
 
 		allegrexInterruptHandlers.clear();
@@ -233,8 +238,8 @@ public class IntrManager {
 			if (allegrexInterruptHandlersIterator != null && allegrexInterruptHandlersIterator.hasNext()) {
 				AbstractAllegrexInterruptHandler allegrexInterruptHandler = allegrexInterruptHandlersIterator.next();
 				if (allegrexInterruptHandler != null) {
-					if (Modules.log.isDebugEnabled()) {
-						Modules.log.debug("Calling InterruptHandler " + allegrexInterruptHandler.toString());
+					if (log.isDebugEnabled()) {
+						log.debug("Calling InterruptHandler " + allegrexInterruptHandler.toString());
 					}
 					allegrexInterruptHandler.copyArgumentsToCpu(Emulator.getProcessor().cpu);
 					Modules.ThreadManForUserModule.callAddress(allegrexInterruptHandler.getAddress(), continueAction);
@@ -284,16 +289,16 @@ public class IntrManager {
 	}
 
 	public void triggerInterrupt(int interruptNumber, IAction afterInterruptAction, IAction afterHandlerAction) {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("Triggering Interrupt %s(0x%X)", getInterruptName(interruptNumber), interruptNumber));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Triggering Interrupt %s(0x%X)", getInterruptName(interruptNumber), interruptNumber));
 		}
 
 		executeInterrupts(getInterruptHandlers(interruptNumber), afterInterruptAction, afterHandlerAction);
 	}
 
 	public void triggerInterrupt(int interruptNumber, IAction afterInterruptAction, IAction afterHandlerAction, AbstractAllegrexInterruptHandler allegrexInterruptHandler) {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("Triggering Interrupt %s(0x%X) at 0x%08X", getInterruptName(interruptNumber), interruptNumber, allegrexInterruptHandler.getAddress()));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Triggering Interrupt %s(0x%X) at 0x%08X", getInterruptName(interruptNumber), interruptNumber, allegrexInterruptHandler.getAddress()));
 		}
 
 		// Trigger only this interrupt handler
@@ -326,8 +331,8 @@ public class IntrManager {
 	}
 
 	public int sceKernelRegisterSubIntrHandler(int intrNumber, int subIntrNumber, int handlerAddress, int handlerArgument) {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("sceKernelRegisterSubIntrHandler(%d, %d, 0x%08X, 0x%08X)", intrNumber, subIntrNumber, handlerAddress, handlerArgument));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernelRegisterSubIntrHandler(%d, %d, 0x%08X, 0x%08X)", intrNumber, subIntrNumber, handlerAddress, handlerArgument));
 		}
 
 		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS) {
@@ -348,8 +353,8 @@ public class IntrManager {
 	}
 
 	public int sceKernelReleaseSubIntrHandler(int intrNumber, int subIntrNumber) {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("sceKernelReleaseSubIntrHandler(%d, %d)", intrNumber, subIntrNumber));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernelReleaseSubIntrHandler(%d, %d)", intrNumber, subIntrNumber));
 		}
 
 		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS) {
@@ -368,8 +373,8 @@ public class IntrManager {
 	}
 
 	protected int hleKernelEnableDisableSubIntr(int intrNumber, int subIntrNumber, boolean enabled) {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("sceKernel%sSubIntr(%d, %d)", enabled ? "Enable" : "Disable", intrNumber, subIntrNumber));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceKernel%sSubIntr(%d, %d)", enabled ? "Enable" : "Disable", intrNumber, subIntrNumber));
 		}
 
 		if (intrNumber < 0 || intrNumber >= IntrManager.PSP_NUMBER_INTERRUPTS) {

@@ -42,6 +42,7 @@ public class SceKernelErrors {
      *      -> 0x041 - Wlan.
      *      -> 0x042 - SAS.
      *      -> 0x044 - WAVE.
+     *      -> 0x046 - Font.
      *      -> 0x061 - PSMF/MPEG.
      *      -> 0x062 - MPEG Video.
      *      -> 0x063 - ATRAC.
@@ -316,6 +317,8 @@ public class SceKernelErrors {
     public final static int ERROR_WAVE_BAD_VOL                                  = 0x8044000a;
     public final static int ERROR_WAVE_INVALID_CHANNEL                          = 0x80440010;
     public final static int ERROR_WAVE_INVALID_SAMPLE_COUNT                     = 0x80440011;
+
+    public final static int ERROR_FONT_INVALID_LIBID                            = 0x80460002;
 
     public final static int ERROR_MPEG_BAD_VERSION                              = 0x80610002;
     public final static int ERROR_MPEG_NO_MEMORY                                = 0x80610022;

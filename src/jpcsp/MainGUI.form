@@ -137,6 +137,53 @@
                 </Property>
               </Properties>
               <SubComponents>
+                <Menu class="javax.swing.JMenu" name="ResizeMenu">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Resize"/>
+                  </Properties>
+                  <SubComponents>
+                    <MenuItem class="javax.swing.JMenuItem" name="OneItem">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="1x"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OneItemActionPerformed"/>
+                      </Events>
+                    </MenuItem>
+                    <MenuItem class="javax.swing.JMenuItem" name="OneHalfItem">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="1.5x"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OneHalfItemActionPerformed"/>
+                      </Events>
+                    </MenuItem>
+                    <MenuItem class="javax.swing.JMenuItem" name="TwoItem">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="2x"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="TwoItemActionPerformed"/>
+                      </Events>
+                    </MenuItem>
+                    <MenuItem class="javax.swing.JMenuItem" name="TwoHalfItem">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="2.5x"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="TwoHalfItemActionPerformed"/>
+                      </Events>
+                    </MenuItem>
+                    <MenuItem class="javax.swing.JMenuItem" name="ThreeItem">
+                      <Properties>
+                        <Property name="text" type="java.lang.String" value="3x"/>
+                      </Properties>
+                      <Events>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ThreeItemActionPerformed"/>
+                      </Events>
+                    </MenuItem>
+                  </SubComponents>
+                </Menu>
                 <MenuItem class="javax.swing.JMenuItem" name="ShotItem">
                   <Properties>
                     <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">

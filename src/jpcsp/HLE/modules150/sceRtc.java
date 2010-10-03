@@ -29,6 +29,7 @@ import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -207,6 +208,8 @@ public class sceRtc implements HLEModule {
         if (Modules.log.isDebugEnabled()) {
         	Modules.log.debug("sceRtcGetAccumulativeTime");
         }
+        // Returns the difference between the last reincarnated time and the current tick.
+        // Just return our current tick, since there's no need to mimick such behaviour.
         long accumTick = hleGetCurrentTick();
 
         cpu.gpr[2] = (int)(accumTick & 0xffffffffL);
@@ -376,10 +379,19 @@ public class sceRtc implements HLEModule {
 
     public void sceRtcSetTime_t(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented NID function sceRtcSetTime_t [0x3A807CC8]");
+        int date_addr = cpu.gpr[4];
+        int time = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(date_addr)) {
+            ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
+            dateTime.write(mem, date_addr);
+            cpu.gpr[2] = 0;
+        } else {
+            log.warn("sceRtcSetTime_t bad address " + String.format("0x%08X", date_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceRtcGetTime_t(Processor processor) {
@@ -406,34 +418,80 @@ public class sceRtc implements HLEModule {
 
     public void sceRtcSetDosTime(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented NID function sceRtcSetDosTime [0xF006F264]");
+        int date_addr = cpu.gpr[4];
+        int time = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(date_addr)) {
+            ScePspDateTime dateTime = ScePspDateTime.fromMSDOSTime(time);
+            dateTime.write(mem, date_addr);
+            cpu.gpr[2] = 0;
+        } else {
+            log.warn("sceRtcSetDosTime bad address " + String.format("0x%08X", date_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceRtcGetDosTime(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented NID function sceRtcGetDosTime [0x36075567]");
+        int date_addr = cpu.gpr[4];
+        int time_addr = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
+            ScePspDateTime dateTime = new ScePspDateTime();
+            dateTime.read(mem, date_addr);
+            Calendar cal = Calendar.getInstance();
+            cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
+            int dostime = (int)(cal.getTime().getTime() / 1000L);
+            log.debug("sceRtcGetDosTime psptime:" + dateTime + " dostime:" + dostime);
+            mem.write32(time_addr, dostime);
+            cpu.gpr[2] = 0;
+        } else {
+            log.warn("sceRtcGetDosTime bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceRtcSetWin32FileTime(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented NID function sceRtcSetWin32FileTime [0x7ACE4C04]");
+        int date_addr = cpu.gpr[4];
+        long time = Utilities.getRegister64(cpu, cpu.gpr[5]);
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(date_addr)) {
+            ScePspDateTime dateTime = ScePspDateTime.fromFILETIMETime(time);
+            dateTime.write(mem, date_addr);
+            cpu.gpr[2] = 0;
+        } else {
+            log.warn("sceRtcSetWin32FileTime bad address " + String.format("0x%08X", date_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceRtcGetWin32FileTime(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented NID function sceRtcGetWin32FileTime [0xCF561893]");
+        int date_addr = cpu.gpr[4];
+        int time_addr = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
+            ScePspDateTime dateTime = new ScePspDateTime();
+            dateTime.read(mem, date_addr);
+            Calendar cal = Calendar.getInstance();
+            cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
+            int filetimetime = (int)(cal.getTime().getTime() / 1000L);
+            log.debug("sceRtcGetWin32FileTime psptime:" + dateTime + " filetimetime:" + filetimetime);
+            mem.write64(time_addr, filetimetime);
+            cpu.gpr[2] = 0;
+        } else {
+            log.warn("sceRtcGetWin32FileTime bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     /** Set a pspTime struct based on ticks. */

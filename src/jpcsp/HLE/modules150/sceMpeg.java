@@ -163,6 +163,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     @Override
     public void start() {
         mpegHandle = 0;
+        isCurrentMpegAnalyzed = false;
         mpegRingbuffer = null;
         mpegRingbufferAddr = 0;
         mpegAtracCurrentDecodingTimestamp = 0;
@@ -226,6 +227,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected int avcDetailFrameWidth;
     protected int avcDetailFrameHeight;
     protected int defaultFrameWidth;
+    protected boolean isCurrentMpegAnalyzed;;
     // MPEG AVC elementary stream.
     protected static final int MPEG_AVC_ES_HANDLE = 0xE2E20000;  // Checked. Only one buffer per file.
     protected static final int MPEG_AVC_ES_SIZE = 2048;          // MPEG packet size.
@@ -250,13 +252,18 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected static final int MPEG_AVC_STREAM = 0;
     protected static final int MPEG_ATRAC_STREAM = 1;
     protected static final int MPEG_PCM_STREAM = 2;
-    protected static final int MPEG_AUDIO_STREAM = 15;  // PCM or Atrac3plus? Seems to allow both.
+    protected static final int MPEG_AUDIO_STREAM = 15;
+    protected static final int MPEG_AU_MODE_DECODE = 0;
+    protected static final int MPEG_AU_MODE_SKIP = 1;
     protected HashMap<Integer, Integer> atracStreamsMap;
     protected HashMap<Integer, Integer> avcStreamsMap;
     protected HashMap<Integer, Integer> pcmStreamsMap;
     protected boolean isAtracRegistered = false;
     protected boolean isAvcRegistered = false;
     protected boolean isPcmRegistered = false;
+    protected boolean ignoreAtrac = false;
+    protected boolean ignoreAvc = false;
+    protected boolean ignorePcm = false;
     // MPEG decoding results.
     protected static final int MPEG_AVC_DECODE_SUCCESS = 1;       // Internal value.
     protected static final int MPEG_AVC_DECODE_ERROR_FATAL = -8;
@@ -326,6 +333,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         return (int) (ts & 0xFFFFFFFFL);
     }
 
+    protected boolean isCurrentMpegAnalyzed() {
+        return isCurrentMpegAnalyzed;
+    }
+
+    protected void setCurrentMpegAnalyzed(boolean status) {
+        isCurrentMpegAnalyzed = status;
+    }
+
     protected void analyseMpeg(int buffer_addr) {
         Memory mem = Memory.getInstance();
 
@@ -351,13 +366,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         mpegOffset = endianSwap(mem.read32(buffer_addr + 8));
         mpegStreamSize = endianSwap(mem.read32(buffer_addr + 12));
-        mpegFirstTimestamp = endianSwap(mem.read32(buffer_addr + 86));
-        mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 92));
+        mpegFirstTimestamp = endianSwap(mem.read32(buffer_addr + 112));
+        mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 118));
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);
         avcDetailFrameHeight = (mem.read8(buffer_addr + 143) * 0x10);
-        if (mpegRingbuffer != null) {
+        if ((mpegRingbuffer != null) && !isCurrentMpegAnalyzed()) {
             mpegRingbuffer.reset();
             mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
@@ -367,7 +382,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         mpegAvcCurrentPresentationTimestamp = mpegFirstTimestamp;
         videoFrameCount = 0;
         audioFrameCount = 0;
-        if (mpegStreamSize > 0) {
+        if ((mpegStreamSize > 0) && !isCurrentMpegAnalyzed()) {
             if (checkMediaEngineState()) {
                 meChannel.writePacket(buffer_addr, mpegOffset);
             } else if (isEnableConnector()) {
@@ -375,6 +390,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 mpegCodec.writeVideo(buffer_addr, mpegOffset);
             }
         }
+        // When used with scePsmf, some applications attempt to use sceMpegQueryStreamOffset
+        // and sceMpegQueryStreamSize, which forces a packet overwrite in the Media Engine and in
+        // the MPEG ringbuffer.
+        // Mark the current MPEG as analyzed to filter this, and restore it at sceMpegFinish.
+        setCurrentMpegAnalyzed(true);
     }
 
     private void generateFakeMPEGVideo(int dest_addr, int frameWidth) {
@@ -552,6 +572,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (isEnableConnector()) {
             mpegCodec.finish();
         }
+        setCurrentMpegAnalyzed(false);
         cpu.gpr[2] = 0;
     }
 
@@ -917,11 +938,40 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int stream_addr = cpu.gpr[5];
         int mode = cpu.gpr[6];
 
-        log.warn("UNIMPLEMENTED: sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(stream_addr) + ",mode=0x" + mode + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(stream_addr) + ",mode=0x" + mode + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        switch (getFakeStreamType(stream_addr)) {
+            case MPEG_AVC_STREAM:
+                if(mode == MPEG_AU_MODE_DECODE) {
+                    ignoreAvc = false;
+                } else if (mode == MPEG_AU_MODE_SKIP) {
+                    ignoreAvc = true;
+                }
+                break;
+            case MPEG_AUDIO_STREAM:
+            case MPEG_ATRAC_STREAM:
+                if(mode == MPEG_AU_MODE_DECODE) {
+                    ignoreAtrac = false;
+                } else if (mode == MPEG_AU_MODE_SKIP) {
+                    ignoreAvc = true;
+                }
+                break;
+            case MPEG_PCM_STREAM:
+                if(mode == MPEG_AU_MODE_DECODE) {
+                    ignorePcm = false;
+                } else if (mode == MPEG_AU_MODE_SKIP) {
+                    ignorePcm = true;
+                }
+                break;
+            default:
+                log.warn("sceMpegChangeGetAuMode unknown stream=0x" + Integer.toHexString(stream_addr));
+                break;
         }
         cpu.gpr[2] = 0;
     }
@@ -967,10 +1017,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the video timestamp (AVC).
-                mem.write32(au_addr, getTimestampMSB(mpegAvcCurrentPresentationTimestamp));
-                mem.write32(au_addr + 4, getTimestampLSB(mpegAvcCurrentPresentationTimestamp));
-                mem.write32(au_addr + 8, getTimestampMSB(mpegAvcCurrentDecodingTimestamp));
-                mem.write32(au_addr + 12, getTimestampLSB(mpegAvcCurrentDecodingTimestamp));
+                if(!ignoreAvc) {
+                    mem.write32(au_addr, getTimestampMSB(mpegAvcCurrentPresentationTimestamp));
+                    mem.write32(au_addr + 4, getTimestampLSB(mpegAvcCurrentPresentationTimestamp));
+                    mem.write32(au_addr + 8, getTimestampMSB(mpegAvcCurrentDecodingTimestamp));
+                    mem.write32(au_addr + 12, getTimestampLSB(mpegAvcCurrentDecodingTimestamp));
+                }
                 // Bitfield used to store data attributes.
                 if (mem.isAddressGood(attr_addr)) {
                     mem.write32(attr_addr, 1);     // Unknown.
@@ -1016,10 +1068,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
             // Update the audio timestamp (Atrac).
-            mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
-            mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
-            mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
-            mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
+            if(!ignorePcm) {
+                mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
+                mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
+                mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
+                mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
+            }
             // Bitfield used to store data attributes.
             if (mem.isAddressGood(attr_addr)) {
                 // Uses same bitfield as the one in the PSMF header.
@@ -1075,10 +1129,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the audio timestamp (Atrac).
-                mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
-                mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
-                mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
-                mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
+                if(!ignoreAtrac) {
+                    mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
+                    mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
+                    mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
+                    mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
+                }
                 // Bitfield used to store data attributes.
                 if (mem.isAddressGood(attr_addr)) {
                     mem.write32(attr_addr, 0);     // Pointer to ATRAC3plus stream (from PSMF file).
@@ -1349,9 +1405,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             int pixelMode = mem.read32(mode_addr + 4);
             if (pixelMode >= PSP_DISPLAY_PIXEL_FORMAT_565 && pixelMode <= PSP_DISPLAY_PIXEL_FORMAT_8888) {
                 videoPixelMode = pixelMode;
-                log.debug("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode);
-            } else if (pixelMode == -1) {
-                log.debug("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode + ": not changing pixel mode");
             } else {
                 log.warn("sceMpegAvcDecodeMode mode=0x" + mode + " pixel mode=" + pixelMode + ": unknown mode");
             }

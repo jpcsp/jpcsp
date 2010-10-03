@@ -46,12 +46,13 @@ public class Debug {
         	Modules.log.info(String.format("printFontbuffer '%c' (%d, %d)", c, x, y));
         }
 
-        int fontBaseIndex = c * 8;
-
-        if (fontBaseIndex >= Font.font.length) {
-            fontBaseIndex = '?' * 8;
+        if (sceFont.getAlternateChar() * 8 >= Font.font.length) {
+            sceFont.setAlternateChar('?');
         }
-
+        int fontBaseIndex = c * 8;
+        if (fontBaseIndex >= Font.font.length) {
+            fontBaseIndex = sceFont.getAlternateChar() * 8;
+        }
         int pixelColor0 = getFontPixelColor(0x00000000, pixelformat);
 		int pixelColor1 = getFontPixelColor(0xFFFFFFFF, pixelformat);
         for (int i = 0; i < Font.charHeight; i++) {
@@ -84,8 +85,8 @@ public class Debug {
 
     	Memory mem = Memory.getInstance();
         switch (pixelformat) {
-        	case sceFont.FONT_PIXELFORMAT_4: 
-        	case sceFont.FONT_PIXELFORMAT_4_REV: {
+        	case sceFont.PSP_FONT_PIXELFORMAT_4:
+        	case sceFont.PSP_FONT_PIXELFORMAT_4_REV: {
         		int oldColor = mem.read8(framebufferAddr);
         		int newColor;
         		if ((x & 1) != pixelformat) {
@@ -96,18 +97,17 @@ public class Debug {
         		mem.write8(framebufferAddr, (byte) newColor);
         		break;
         	}
-        	case sceFont.FONT_PIXELFORMAT_8: {
+        	case sceFont.PSP_FONT_PIXELFORMAT_8: {
         		mem.write8(framebufferAddr, (byte) pixelColor);
         		break;
         	}
-        	case sceFont.FONT_PIXELFORMAT_24: {
-        		// TODO Check if this the correct byte order
+        	case sceFont.PSP_FONT_PIXELFORMAT_24: {
         		mem.write8(framebufferAddr + 0, (byte) (pixelColor >>  0));
         		mem.write8(framebufferAddr + 1, (byte) (pixelColor >>  8));
         		mem.write8(framebufferAddr + 2, (byte) (pixelColor >> 16));
         		break;
         	}
-        	case sceFont.FONT_PIXELFORMAT_32: {
+        	case sceFont.PSP_FONT_PIXELFORMAT_32: {
         		mem.write32(framebufferAddr, pixelColor);
         		break;
         	}
@@ -119,26 +119,26 @@ public class Debug {
     		return fontPixelSizeInBytes[pixelformat];
     	}
 
-    	Modules.log.warn("Unknown pixel format for sceFont: " + pixelformat); 
+    	Modules.log.warn("Unknown pixel format for sceFont: " + pixelformat);
     	return 1;
     }
 
 	public static int getFontPixelColor(int color, int pixelformat) {
 		switch (pixelformat) {
-			case sceFont.FONT_PIXELFORMAT_4:
-			case sceFont.FONT_PIXELFORMAT_4_REV:
+			case sceFont.PSP_FONT_PIXELFORMAT_4:
+			case sceFont.PSP_FONT_PIXELFORMAT_4_REV:
 				// Use only 4-bit alpha
 				color = (color >> 28) & 0xF;
 				break;
-			case sceFont.FONT_PIXELFORMAT_8:
+			case sceFont.PSP_FONT_PIXELFORMAT_8:
 				// Use only 8-bit alpha
 				color = (color >> 24) & 0xFF;
 				break;
-			case sceFont.FONT_PIXELFORMAT_24:
+			case sceFont.PSP_FONT_PIXELFORMAT_24:
 				// Use RGB with 8-bit values
 				color = color & 0x00FFFFFF;
 				break;
-			case sceFont.FONT_PIXELFORMAT_32:
+			case sceFont.PSP_FONT_PIXELFORMAT_32:
 				// Use RGBA with 8-bit values
 				break;
 		}
@@ -209,7 +209,6 @@ public class Debug {
 			case PSP_DISPLAY_PIXEL_FORMAT_8888:
 				break;
 		}
-
 		return color;
 	}
 

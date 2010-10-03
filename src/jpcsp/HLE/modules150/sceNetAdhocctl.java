@@ -16,11 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import java.util.HashMap;
+
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -98,6 +101,14 @@ public class sceNetAdhocctl implements HLEModule {
 
         }
     }
+    public static final int PSP_ADHOCCTL_EVENT_ERROR = 0;
+    public static final int PSP_ADHOCCTL_EVENT_CONNECTED = 1;
+    public static final int PSP_ADHOCCTL_EVENT_DISCONNECTED = 2;
+    public static final int PSP_ADHOCCTL_EVENT_SCAN = 3;
+    public static final int PSP_ADHOCCTL_EVENT_GAME = 4;
+    public static final int PSP_ADHOCCTL_EVENT_DISCOVER = 5;
+    public static final int PSP_ADHOCCTL_EVENT_WOL = 6;
+    public static final int PSP_ADHOCCTL_EVENT_WOL_INTERRUPTED = 7;
 
     public static final int PSP_ADHOCCTL_STATE_DISCONNECTED = 0;
     public static final int PSP_ADHOCCTL_STATE_CONNECTED = 1;
@@ -109,6 +120,55 @@ public class sceNetAdhocctl implements HLEModule {
     private int adhocctlCurrentState;
     private String adhocctlCurrentGroup;
 
+    private HashMap<Integer, AdhocctlHandler> adhocctlHandlerMap = new HashMap<Integer, AdhocctlHandler>();
+    private int adhocctlHandlerCount = 0;
+
+    protected class AdhocctlHandler {
+
+        private int entryAddr;
+        private int currentEvent;
+        private int currentError;
+        private int currentArg;
+        private int handle;
+
+        private AdhocctlHandler(int num, int addr, int arg) {
+            entryAddr = addr;
+            currentArg = arg;
+            handle = makeFakeAdhocctHandle(num);
+        }
+
+        protected void triggerAdhocctlHandler() {
+            SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+            if (thread != null) {
+                Modules.ThreadManForUserModule.executeCallback(thread, entryAddr, null, currentEvent, currentError, currentArg);
+            }
+        }
+
+        protected int makeFakeAdhocctHandle(int num) {
+            return 0x0000AD00 | (num & 0xFFFF);
+        }
+
+        protected int getHandle() {
+            return handle;
+        }
+
+        protected void setEvent(int event) {
+            currentEvent = event;
+        }
+
+        protected void setError(int error) {
+            currentError = error;
+        }
+    }
+
+    protected void notifyAdhocctlHandler(int event, int error) {
+        for(AdhocctlHandler handler : adhocctlHandlerMap.values()) {
+            handler.setEvent(event);
+            handler.setError(error);
+            handler.triggerAdhocctlHandler();
+        }
+    }
+
     public void sceNetAdhocctlInit(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -117,18 +177,16 @@ public class sceNetAdhocctl implements HLEModule {
         int threadPri = cpu.gpr[5];
         int adhocIDAddr = cpu.gpr[6];
 
-        log.warn("PARTIAL: sceNetAdhocctlInit (threadStack=0x" + Integer.toHexString(threadStack)
-                + ", threadPri=0x" + Integer.toHexString(threadPri)
-                + ", adhocIDAddr=0x" + Integer.toHexString(adhocIDAddr) + ")");
+        log.warn("PARTIAL: sceNetAdhocctlInit (threadStack=0x" + Integer.toHexString(threadStack) + ", threadPri=0x" + Integer.toHexString(threadPri) + ", adhocIDAddr=0x" + Integer.toHexString(adhocIDAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(adhocIDAddr)) {
+        if (mem.isAddressGood(adhocIDAddr)) {
             int adhocType = mem.read32(adhocIDAddr); // 0 - Commercial type / 1 - Debug type.
             String adhocParams = Utilities.readStringNZ(mem, adhocIDAddr + 4, 9);
-            log.info("Found Ad hoc ID data: type=" + adhocType + ", params=" + adhocParams);
+            log.info("Found Adhoc ID data: type=" + adhocType + ", params=" + adhocParams);
         }
         cpu.gpr[2] = 0;
     }
@@ -157,11 +215,12 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(groupNameAddr)) {
+        if (mem.isAddressGood(groupNameAddr)) {
             String groupName = Utilities.readStringNZ(mem, groupNameAddr, 8);
             adhocctlCurrentGroup = groupName;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_CONNECTED;
+        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
         cpu.gpr[2] = 0;
     }
 
@@ -177,11 +236,12 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(groupNameAddr)) {
+        if (mem.isAddressGood(groupNameAddr)) {
             String groupName = Utilities.readStringNZ(mem, groupNameAddr, 8);
             adhocctlCurrentGroup = groupName;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_CONNECTED;
+        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
         cpu.gpr[2] = 0;
     }
 
@@ -197,7 +257,7 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(scanInfoAddr)) {
+        if (mem.isAddressGood(scanInfoAddr)) {
             // IBSS Data field.
             int nextAddr = mem.read32(scanInfoAddr);  // Next group data.
             int ch = mem.read32(scanInfoAddr + 4);
@@ -208,6 +268,7 @@ public class sceNetAdhocctl implements HLEModule {
             adhocctlCurrentGroup = groupName;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_CONNECTED;
+        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_CONNECTED, 0);
         cpu.gpr[2] = 0;
     }
 
@@ -221,6 +282,7 @@ public class sceNetAdhocctl implements HLEModule {
             return;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_SCAN;
+        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_SCAN, 0);
         cpu.gpr[2] = 0;
     }
 
@@ -234,23 +296,41 @@ public class sceNetAdhocctl implements HLEModule {
             return;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_DISCONNECTED;
+        notifyAdhocctlHandler(PSP_ADHOCCTL_EVENT_DISCONNECTED, 0);
         cpu.gpr[2] = 0;
     }
 
     public void sceNetAdhocctlAddHandler(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocctlAddHandler");
+        int adhocctlHandlerAddr = cpu.gpr[4];
+        int adhocctlHandlerArg = cpu.gpr[5];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        log.warn("PARTIAL: sceNetAdhocctlAddHandler (adhocctlHandlerAddr=0x" + Integer.toHexString(adhocctlHandlerAddr) + ", adhocctlHandlerArg=0x" + Integer.toHexString(adhocctlHandlerArg) + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerCount++, adhocctlHandlerAddr, adhocctlHandlerArg);
+        int handle = adhocctlHandler.getHandle();
+        adhocctlHandlerMap.put(handle, adhocctlHandler);
+        cpu.gpr[2] = handle;
     }
 
     public void sceNetAdhocctlDelHandler(Processor processor) {
-        CpuState cpu = processor.cpu;
+       CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocctlDelHandler");
+        int adhocctlHandler = cpu.gpr[4];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        log.warn("PARTIAL: sceNetAdhocctlDelHandler (adhocctlHandler=0x" + Integer.toHexString(adhocctlHandler) + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        adhocctlHandlerMap.remove(adhocctlHandler);
+        cpu.gpr[2] = 0;
     }
 
     public void sceNetAdhocctlGetState(Processor processor) {
@@ -260,12 +340,12 @@ public class sceNetAdhocctl implements HLEModule {
         int stateAddr = cpu.gpr[4];
 
         log.warn("PARTIAL: sceNetAdhocctlGetState (stateAddr=0x" + Integer.toHexString(stateAddr) + ")");
-        
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(stateAddr)) {
+        if (mem.isAddressGood(stateAddr)) {
             mem.write32(stateAddr, adhocctlCurrentState);
         }
         cpu.gpr[2] = 0;
@@ -366,7 +446,6 @@ public class sceNetAdhocctl implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
     public final HLEModuleFunction sceNetAdhocctlInitFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlInit") {
 
         @Override
@@ -379,7 +458,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlInit(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlTermFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlTerm") {
 
         @Override
@@ -392,7 +470,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlTerm(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlConnectFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlConnect") {
 
         @Override
@@ -405,7 +482,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlConnect(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlCreateFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlCreate") {
 
         @Override
@@ -418,7 +494,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlCreate(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlJoinFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlJoin") {
 
         @Override
@@ -431,7 +506,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlJoin(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlScanFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlScan") {
 
         @Override
@@ -444,7 +518,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlScan(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlDisconnectFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlDisconnect") {
 
         @Override
@@ -457,7 +530,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlDisconnect(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlAddHandlerFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlAddHandler") {
 
         @Override
@@ -470,7 +542,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlAddHandler(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlDelHandlerFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlDelHandler") {
 
         @Override
@@ -483,7 +554,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlDelHandler(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetStateFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetState") {
 
         @Override
@@ -496,7 +566,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetState(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetAdhocIdFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetAdhocId") {
 
         @Override
@@ -509,7 +578,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetAdhocId(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetPeerListFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetPeerList") {
 
         @Override
@@ -522,7 +590,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetPeerList(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetPeerInfoFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetPeerInfo") {
 
         @Override
@@ -535,7 +602,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetPeerInfo(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetAddrByNameFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetAddrByName") {
 
         @Override
@@ -548,7 +614,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetAddrByName(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetNameByAddrFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetNameByAddr") {
 
         @Override
@@ -561,7 +626,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetNameByAddr(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetParameterFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetParameter") {
 
         @Override
@@ -574,7 +638,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetParameter(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetScanInfoFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetScanInfo") {
 
         @Override
@@ -587,7 +650,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetScanInfo(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlCreateEnterGameModeFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlCreateEnterGameMode") {
 
         @Override
@@ -600,7 +662,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlCreateEnterGameMode(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlCreateEnterGameModeMinFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlCreateEnterGameModeMin") {
 
         @Override
@@ -613,7 +674,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlCreateEnterGameModeMin(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlJoinEnterGameModeFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlJoinEnterGameMode") {
 
         @Override
@@ -626,7 +686,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlJoinEnterGameMode(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlExitGameModeFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlExitGameMode") {
 
         @Override
@@ -639,7 +698,6 @@ public class sceNetAdhocctl implements HLEModule {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlExitGameMode(processor);";
         }
     };
-
     public final HLEModuleFunction sceNetAdhocctlGetGameModeInfoFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetGameModeInfo") {
 
         @Override
