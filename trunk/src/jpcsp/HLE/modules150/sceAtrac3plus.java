@@ -834,7 +834,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int posAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("PARTIAL: sceAtracGetNextDecodePosition atracID = %d, posAddr = 0x%08X",
+            log.debug(String.format("sceAtracGetNextDecodePosition atracID = %d, posAddr = 0x%08X",
                     atID, posAddr));
         }
 
@@ -878,7 +878,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int loopStartSampleAddr = cpu.gpr[6];
         int loopEndSampleAddr = cpu.gpr[7];
 
-        log.warn(String.format("PARTIAL: sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atID, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracGetSoundSample atracID = %d, endSampleAddr = 0x%08X, loopStartSampleAddr = 0x%08X, loopEndSampleAddr = 0x%08X", atID, endSampleAddr, loopStartSampleAddr, loopEndSampleAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -964,7 +966,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int nbrSamplesAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("PARTIAL: sceAtracGetNextSample: atracID=%d, nbrSamplesAddr=0x%08x", atID, nbrSamplesAddr));
+            log.debug(String.format("sceAtracGetNextSample: atracID=%d, nbrSamplesAddr=0x%08x", atID, nbrSamplesAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -1077,7 +1079,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int bufferInfoAddr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("PARTIAL: sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, bufferInfoAddr=0x%08x", atID, sample, bufferInfoAddr));
+            log.debug(String.format("sceAtracGetBufferInfoForReseting atracID=%d, sample=%d, bufferInfoAddr=0x%08x", atID, sample, bufferInfoAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -1129,7 +1131,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         int errorAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("PARTIAL: sceAtracGetInternalErrorInfo atracId=%d, errorAddr=0x%08x", atID, errorAddr));
+            log.debug(String.format("sceAtracGetInternalErrorInfo atracId=%d, errorAddr=0x%08x", atID, errorAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {

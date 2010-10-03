@@ -46,6 +46,7 @@ import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceNetIfhandle;
+import jpcsp.HLE.modules.sceOpenPSID;
 import jpcsp.HLE.modules.scePower;
 import jpcsp.HLE.modules.scePsmf;
 import jpcsp.HLE.modules.scePsmfPlayer;
@@ -96,6 +97,7 @@ public class Modules {
     public static sceNetAdhoc sceNetAdhocModule = new sceNetAdhoc();
     public static sceNetAdhocctl sceNetAdhocctlModule = new sceNetAdhocctl();
     public static sceNetIfhandle sceNetIfhandleModule = new sceNetIfhandle();
+    public static sceOpenPSID sceOpenPSIDModule = new sceOpenPSID();
 
     public static Logger log = Logger.getLogger("hle");
 

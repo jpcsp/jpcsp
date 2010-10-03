@@ -28,7 +28,6 @@ public enum SyscallIgnore {
 	InterruptManagerForKernel_53991063(0x53991063),
 	Kprintf(0x84F370BC),
 	LoadExecForUser_362A956B(0x362A956B),
-	OpenPSIDGetOpenPSID(0xc69bebce),
 	QueryInterruptManCB(0x00B6B0F3),
 	RegCloseRegistry(0xfa8a5739),
 	RegExit(0x9b25edf1),
@@ -240,19 +239,11 @@ public enum SyscallIgnore {
 	sceUtilityDialogSetStatus(0x680c0ea8), //1.50+
 	sceUtilityDialogSetThreadId(0x6f923bd3), //1.50+
 	sceUtilityGetNetParamLatestID(0x4FED24D8), //1.50+
-	sceUtilityHtmlViewerGetStatus(0xBDA7D894), //1.50+
-	sceUtilityHtmlViewerInitStart(0xCDC3AA41), //1.50+
-	sceUtilityHtmlViewerShutdownStart(0xF5CE1134), //3.70+ or lower
-	sceUtilityHtmlViewerUpdate(0x05AFB9E4), // 3.95+ or lower
 	sceUtilityInstallGetStatus(0xC4700FA3), // 2.00+
 	sceUtilityInstallInitStart(0x1281DA8E), // 2.00+
 	sceUtilityInstallShutdownStart(0x5EF1C24A), // 2.00+
 	sceUtilityInstallUpdate(0xA03D29BA), // 2.00+
 	sceUtilityLoadUsbModule(0x0D5BC6D2), // 2.00+
-	sceUtilityScreenshotGetStatus(0xD81957B7), // 2.71+ or lower
-	sceUtilityScreenshotInitStart(0x0251B134), // 3.52+ or lower
-	sceUtilityScreenshotShutdownStart(0xF9E0008C), // 3.52+ or lower
-	sceUtilityScreenshotUpdate(0xAB083EA9), // 2.71+
 	sceUtilitySetNetParam(0xfc4516f3), // 2.00+
 	sceUtilityUnloadUsbModule(0xF64910F0), // 2.71+
 	sceVaudioChRelease(0x67585dfd), // 3.95+

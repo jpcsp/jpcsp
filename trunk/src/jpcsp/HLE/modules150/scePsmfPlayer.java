@@ -328,8 +328,9 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
         int psmfPlayerDataAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: scePsmfPlayerCreate psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + " psmfPlayerDataAddr=0x" + Integer.toHexString(psmfPlayerDataAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerCreate psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", psmfPlayerDataAddr=0x" + Integer.toHexString(psmfPlayerDataAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -340,9 +341,7 @@ public class scePsmfPlayer implements HLEModule {
         displayBuffer = mem.read32(psmfPlayerDataAddr);                   // The buffer allocated for scePsmf, which is ported into scePsmfPlayer.
         displayBufferSize = mem.read32(psmfPlayerDataAddr + 4);           // The buffer's size.
         playbackThreadPriority = mem.read32(psmfPlayerDataAddr + 8);      // Priority of the "START" thread.
-        log.info("PSMF Player Data: displayBuffer=0x" + Integer.toHexString(displayBuffer)
-                + ", displayBufferSize=0x" + Integer.toHexString(displayBufferSize)
-                + ", playbackThreadPriority=0x" + Integer.toHexString(playbackThreadPriority));
+        log.info("PSMF Player Data: displayBuffer=0x" + Integer.toHexString(displayBuffer) + ", displayBufferSize=0x" + Integer.toHexString(displayBufferSize) + ", playbackThreadPriority=0x" + Integer.toHexString(playbackThreadPriority));
 
         // Start with INIT.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
@@ -355,7 +354,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("PARTIAL: scePsmfPlayerDelete psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerDelete psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -382,7 +383,9 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
         int fileAddr = cpu.gpr[5];  // PMF file path.
 
-        log.warn("PARTIAL: scePsmfPlayerSetPsmf psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + " fileAddr=0x" + Integer.toHexString(fileAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSetPsmf psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", fileAddr=0x" + Integer.toHexString(fileAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -413,9 +416,11 @@ public class scePsmfPlayer implements HLEModule {
     }
 
     public void scePsmfPlayerSetPsmfCB(Processor processor) {
-        log.warn("scePsmfPlayerSetPsmfCB redirecting to scePsmfPlayerSetPsmf");
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSetPsmfCB redirecting to scePsmfPlayerSetPsmf");
+        }
         scePsmfPlayerSetPsmf(processor);
-        Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
+        //Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
     }
 
     public void scePsmfPlayerReleasePsmf(Processor processor) {
@@ -423,7 +428,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("PARTIAL: scePsmfPlayerReleasePsmf psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerReleasePsmf psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -453,16 +460,16 @@ public class scePsmfPlayer implements HLEModule {
         int initPlayInfoAddr = cpu.gpr[5];
         int initPts = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerStart psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + " initPlayInfoAddr=0x" + Integer.toHexString(initPlayInfoAddr)
-                + " initPts=" + initPts);
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerStart psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", initPlayInfoAddr=0x" + Integer.toHexString(initPlayInfoAddr) + ", initPts=" + initPts);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Read the playback parameters.
-        if(mem.isAddressGood(initPlayInfoAddr)) {
+        if (mem.isAddressGood(initPlayInfoAddr)) {
             videoCodec = mem.read32(initPlayInfoAddr);
             videoStreamNum = mem.read32(initPlayInfoAddr + 4);
             audioCodec = mem.read32(initPlayInfoAddr + 8);
@@ -470,12 +477,7 @@ public class scePsmfPlayer implements HLEModule {
             playMode = mem.read32(initPlayInfoAddr + 16);
             playSpeed = mem.read32(initPlayInfoAddr + 20);
 
-             log.info("Found play info data: videoCodec=0x" + Integer.toHexString(videoCodec)
-                + ", videoStreamNum=" + videoStreamNum
-                + ", audioCodec=0x" + Integer.toHexString(audioCodec)
-                + ", audioStreamNum=" + audioStreamNum
-                + ", playMode=" + playMode
-                + ", playSpeed=" + playSpeed);
+            log.info("Found play info data: videoCodec=0x" + Integer.toHexString(videoCodec) + ", videoStreamNum=" + videoStreamNum + ", audioCodec=0x" + Integer.toHexString(audioCodec) + ", audioStreamNum=" + audioStreamNum + ", playMode=" + playMode + ", playSpeed=" + playSpeed);
         }
 
         // Initialize the current PTS and DTS with the given timestamp (mostly set to 0).
@@ -504,7 +506,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("PARTIAL: scePsmfPlayerGetAudioOutSize psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetAudioOutSize psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -518,7 +522,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("PARTIAL: scePsmfPlayerStop psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerStop psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -545,7 +551,9 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
 
         // Can be called from interrupt.
-        log.warn("PARTIAL: scePsmfPlayerUpdate psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerUpdate psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         // Update video presentation timestamp.
         psmfPlayerAvcCurrentPresentationTimestamp = psmfPlayerAvcCurrentDecodingTimestamp;
@@ -568,7 +576,9 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
         int videoDataAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: scePsmfPlayerGetVideoData psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + " videoDataAddr=0x" + Integer.toHexString(videoDataAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetVideoData psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", videoDataAddr=0x" + Integer.toHexString(videoDataAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -618,14 +628,16 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
         int audioDataAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: scePsmfPlayerGetAudioData psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + " audioDataAddr=0x" + Integer.toHexString(audioDataAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetAudioData psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", audioDataAddr=0x" + Integer.toHexString(audioDataAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Set empty data.
-        if(mem.isAddressGood(audioDataAddr)) {
+        if (mem.isAddressGood(audioDataAddr)) {
             mem.memset(audioDataAddr, (byte) 0, audioSize);
         }
         // Update audio timestamp.
@@ -644,7 +656,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("PARTIAL: scePsmfPlayerGetCurrentStatus psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("PARTIAL: scePsmfPlayerGetCurrentStatus psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -660,13 +674,15 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
         int psmfInfoAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: scePsmfPlayerGetPsmfInfo psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + " psmfInfoAddr=0x" + Integer.toHexString(psmfInfoAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetPsmfInfo psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", psmfInfoAddr=0x" + Integer.toHexString(psmfInfoAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(psmfInfoAddr)) {
+        if (mem.isAddressGood(psmfInfoAddr)) {
             mem.write32(psmfInfoAddr, psmfCurrentPts);
             mem.write32(psmfInfoAddr + 4, psmfAvcStreamNum);
             mem.write32(psmfInfoAddr + 8, psmfAtracStreamNum);
@@ -683,8 +699,9 @@ public class scePsmfPlayer implements HLEModule {
         int configMode = cpu.gpr[5];
         int configAttr = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerConfigPlayer psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + " configMode=" + configMode + " configAttr=" + configAttr);
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerConfigPlayer psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", configMode=" + configMode + ", configAttr=" + configAttr);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -707,8 +724,9 @@ public class scePsmfPlayer implements HLEModule {
         int newPlayMode = cpu.gpr[5];
         int newPlaySpeed = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerChangePlayMode psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + ", newPlayMode=" + newPlayMode + ", newPlaySpeed=" + newPlaySpeed);
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerChangePlayMode psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", newPlayMode=" + newPlayMode + ", newPlaySpeed=" + newPlaySpeed);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -727,18 +745,18 @@ public class scePsmfPlayer implements HLEModule {
         int audioCodecAddr = cpu.gpr[5];
         int audioStreamNumAddr = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerGetCurrentAudioStream psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + ", audioCodecAddr=0x" + Integer.toHexString(audioCodecAddr)
-                + ", audioStreamNumAddr=0x" + Integer.toHexString(audioStreamNumAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetCurrentAudioStream psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", audioCodecAddr=0x" + Integer.toHexString(audioCodecAddr) + ", audioStreamNumAddr=0x" + Integer.toHexString(audioStreamNumAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(audioCodecAddr)) {
+        if (mem.isAddressGood(audioCodecAddr)) {
             mem.write32(audioCodecAddr, audioCodec);
         }
-        if(mem.isAddressGood(audioStreamNumAddr)) {
+        if (mem.isAddressGood(audioStreamNumAddr)) {
             mem.write32(audioStreamNumAddr, audioStreamNum);
         }
         cpu.gpr[2] = 0;
@@ -752,18 +770,18 @@ public class scePsmfPlayer implements HLEModule {
         int playModeAddr = cpu.gpr[5];
         int playSpeedAddr = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerGetCurrentPlayMode psmfplayer=0x" + Integer.toHexString(psmfPlayer)
-                + ", playModeAddr=0x" + Integer.toHexString(playModeAddr)
-                + ", playSpeedAddr=0x" + Integer.toHexString(playSpeedAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetCurrentPlayMode psmfplayer=0x" + Integer.toHexString(psmfPlayer) + ", playModeAddr=0x" + Integer.toHexString(playModeAddr) + ", playSpeedAddr=0x" + Integer.toHexString(playSpeedAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(playModeAddr)) {
+        if (mem.isAddressGood(playModeAddr)) {
             mem.write32(playModeAddr, playMode);
         }
-        if(mem.isAddressGood(playSpeedAddr)) {
+        if (mem.isAddressGood(playSpeedAddr)) {
             mem.write32(playSpeedAddr, playSpeed);
         }
         cpu.gpr[2] = 0;
@@ -776,15 +794,16 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
         int currentPtsAddr = cpu.gpr[5];
 
-        log.warn("PARTIAL: scePsmfPlayerGetCurrentPts psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + ", currentPtsAddr=0x" + Integer.toHexString(currentPtsAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetCurrentPts psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", currentPtsAddr=0x" + Integer.toHexString(currentPtsAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Write our current video presentation timestamp.
-        if(mem.isAddressGood(currentPtsAddr)) {
+        if (mem.isAddressGood(currentPtsAddr)) {
             mem.write32(currentPtsAddr, psmfPlayerAvcCurrentPresentationTimestamp);
         }
         cpu.gpr[2] = 0;
@@ -798,18 +817,18 @@ public class scePsmfPlayer implements HLEModule {
         int videoCodecAddr = cpu.gpr[5];
         int videoStreamNumAddr = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerGetCurrentVideoStream psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + ", videoCodecAddr=0x" + Integer.toHexString(videoCodecAddr)
-                + ", videoStreamNumAddr=0x" + Integer.toHexString(videoStreamNumAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerGetCurrentVideoStream psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", videoCodecAddr=0x" + Integer.toHexString(videoCodecAddr) + ", videoStreamNumAddr=0x" + Integer.toHexString(videoStreamNumAddr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(videoCodecAddr)) {
+        if (mem.isAddressGood(videoCodecAddr)) {
             mem.write32(videoCodecAddr, videoCodec);
         }
-        if(mem.isAddressGood(videoStreamNumAddr)) {
+        if (mem.isAddressGood(videoStreamNumAddr)) {
             mem.write32(videoStreamNumAddr, videoStreamNum);
         }
         cpu.gpr[2] = 0;
@@ -827,12 +846,16 @@ public class scePsmfPlayer implements HLEModule {
     }
 
     public void scePsmfPlayerSetPsmfOffset(Processor processor) {
-        log.warn("scePsmfPlayerSetPsmfOffset redirecting to scePsmfPlayerSetPsmf");
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSetPsmfOffset redirecting to scePsmfPlayerSetPsmf");
+        }
         scePsmfPlayerSetPsmf(processor);
     }
 
     public void scePsmfPlayerSetPsmfOffsetCB(Processor processor) {
-        log.warn("scePsmfPlayerSetPsmfOffsetCB redirecting to scePsmfPlayerSetPsmfCB");
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSetPsmfOffsetCB redirecting to scePsmfPlayerSetPsmfCB");
+        }
         scePsmfPlayerSetPsmfCB(processor);
     }
 
@@ -857,9 +880,9 @@ public class scePsmfPlayer implements HLEModule {
         int newVideoCodec = cpu.gpr[5];
         int newVideoStreamNum = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerSelectSpecificVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + ", newVideoCodec=0x" + Integer.toHexString(newVideoCodec)
-                + ", newVideoStreamNum=" + newVideoStreamNum);
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSelectSpecificVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", newVideoCodec=0x" + Integer.toHexString(newVideoCodec) + ", newVideoStreamNum=" + newVideoStreamNum);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -877,9 +900,9 @@ public class scePsmfPlayer implements HLEModule {
         int newAudioCodec = cpu.gpr[5];
         int newAudioStreamNum = cpu.gpr[6];
 
-        log.warn("PARTIAL: scePsmfPlayerSelectSpecificVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer)
-                + ", newAudioCodec=0x" + Integer.toHexString(newAudioCodec)
-                + ", newAudioStreamNum=" + newAudioStreamNum);
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSelectSpecificVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer) + ", newAudioCodec=0x" + Integer.toHexString(newAudioCodec) + ", newAudioStreamNum=" + newAudioStreamNum);
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -895,7 +918,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("PARTIAL: scePsmfPlayerSelectVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSelectVideo psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -911,7 +936,9 @@ public class scePsmfPlayer implements HLEModule {
 
         int psmfPlayer = cpu.gpr[4];
 
-        log.warn("PARTIAL: scePsmfPlayerSelectAudio psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        if (log.isDebugEnabled()) {
+            log.debug("scePsmfPlayerSelectAudio psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;

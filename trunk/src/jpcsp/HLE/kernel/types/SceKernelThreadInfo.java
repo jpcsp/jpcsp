@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_DORMANT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_ALREADY_DORMANT;
 
 import java.util.Comparator;
 
@@ -74,7 +74,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_WAIT_MUTEX              = 0x0c; // Wait on mutex.
     public static final int PSP_WAIT_LWMUTEX            = 0x0d; // Wait on lwmutex.
 
-    // SceKernelThreadInfo <http://psp.jim.sh/pspsdk-doc/structSceKernelThreadInfo.html>
+    // SceKernelThreadInfo.
     public final String name;
     public int attr;
     public int status; // it's a bitfield but I don't think we ever use more than 1 bit at once
@@ -92,6 +92,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int intrPreemptCount;
     public int threadPreemptCount;
     public int releaseCount;
+    public int notifyCallback;  // Used by sceKernelNotifyCallback to check if a callback has been called or not.
 
     private SysMemInfo stackSysMemInfo;
     // internal variables
@@ -105,7 +106,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final ThreadWaitInfo wait;
     public IAction onUnblockAction;
 
-    // callbacks, only 1 of each type can be registered per thread
+    // Callbacks, only 1 of each type can be registered per thread.
     public final static int THREAD_CALLBACK_UMD         = 0;
     public final static int THREAD_CALLBACK_IO          = 1;
     public final static int THREAD_CALLBACK_MEMORYSTICK = 2;
@@ -115,26 +116,23 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public SceKernelCallbackInfo[] callbackInfo;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
-        // Ignore 0 size from the idle threads (don't want them stealing space)
+        // Ignore 0 size from the idle threads.
         if (stackSize != 0) {
             if (stackSize < 512) {
-                // 512 byte min
+                // 512 byte min.
                 stackSize = 512;
             } else {
-                // 256 byte size alignment (should be 16?)
+                // 256 byte size alignment.
                 stackSize = (stackSize + 0xFF) & ~0xFF;
             }
         }
-
         this.name = name;
         this.entry_addr = entry_addr;
         this.initPriority = initPriority;
         this.stackSize = stackSize;
         this.attr = attr;
-
         uid = SceUidManager.getNewUid("ThreadMan-thread");
-
-        // setup the stack
+        // Setup the stack.
         if (stackSize > 0) {
         	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(2, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
         	if (stackSysMemInfo == null) {
@@ -146,15 +144,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
             stack_addr = 0;
         }
 
-
-        gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg
-        // internal state
-
-        // Inherit context
+        // Inherit gpReg.
+        gpReg_addr = Emulator.getProcessor().cpu.gpr[28];
+        // Inherit context.
         cpuContext = new CpuState(Emulator.getProcessor().cpu);
-
         wait = new ThreadWaitInfo();
-
         reset();
     }
 
@@ -183,11 +177,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         waitType = PSP_WAIT_NONE;
         waitId = 0;
         wakeupCount = 0;
-        exitStatus = ERROR_THREAD_IS_NOT_DORMANT;
+        exitStatus = ERROR_THREAD_ALREADY_DORMANT;  // Threads start with DORMANT and not NOT_DORMANT (tested and checked).
         runClocks = 0;
         intrPreemptCount = 0;
         threadPreemptCount = 0;
         releaseCount = 0;
+        notifyCallback = 0;
 
         // Thread specific registers
         cpuContext.pc = entry_addr;
@@ -235,7 +230,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     }
 
     public void write(Memory mem, int address) {
-        mem.write32(address, 104); // size
+        mem.write32(address, 108); // size
         Utilities.writeStringNZ(mem, address + 4, 32, name);
         mem.write32(address + 36, attr);
         mem.write32(address + 40, status);
@@ -253,6 +248,24 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 92, intrPreemptCount);
         mem.write32(address + 96, threadPreemptCount);
         mem.write32(address + 100, releaseCount);
+        mem.write32(address + 104, notifyCallback);
+    }
+
+    // SceKernelThreadRunStatus.
+    // Represents a smaller subset of SceKernelThreadInfo containing only the most volatile parts
+    // of the thread (mostly used for debugging).
+    public void writeRunStatus(Memory mem, int address) {
+        mem.write32(address, 44); // size
+        mem.write32(address + 4, status);
+        mem.write32(address + 8, currentPriority);
+        mem.write32(address + 12, waitType);
+        mem.write32(address + 16, waitId);
+        mem.write32(address + 20, wakeupCount);
+        mem.write64(address + 24, runClocks);
+        mem.write32(address + 28, intrPreemptCount);
+        mem.write32(address + 32, threadPreemptCount);
+        mem.write32(address + 36, releaseCount);
+        mem.write32(address + 40, notifyCallback);
     }
 
 	@Override

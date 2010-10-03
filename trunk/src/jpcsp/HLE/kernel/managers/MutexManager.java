@@ -42,7 +42,11 @@ import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.util.Utilities;
 
+import org.apache.log4j.Logger;
+
 public class MutexManager {
+
+    protected static Logger log = Modules.getLogger("ThreadManForUser");
 
     private HashMap<Integer, SceKernelMutexInfo> mutexMap;
     private MutexWaitStateChecker mutexWaitStateChecker;
@@ -66,7 +70,7 @@ public class MutexManager {
         if (info != null) {
             info.numWaitThreads--;
             if (info.numWaitThreads < 0) {
-                Modules.log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", mutex " + Integer.toHexString(info.uid) + " numWaitThreads underflowed");
+                log.warn("removing waiting thread " + Integer.toHexString(thread.uid) + ", mutex " + Integer.toHexString(info.uid) + " numWaitThreads underflowed");
                 info.numWaitThreads = 0;
             }
             return true;
@@ -81,7 +85,7 @@ public class MutexManager {
             // Return WAIT_TIMEOUT
             thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
         } else {
-            Modules.log.warn("Mutex deleted while we were waiting for it! (timeout expired)");
+            log.warn("Mutex deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
             thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
         }
@@ -97,14 +101,14 @@ public class MutexManager {
     private boolean tryLockMutex(SceKernelMutexInfo info, int count, SceKernelThreadInfo thread) {
         if (info.lockedCount == 0) {
             // If the mutex is not locked, allow this thread to lock it.
-        	info.threadid = thread.uid;
+            info.threadid = thread.uid;
             info.lockedCount += count;
             return true;
         } else if (info.threadid == thread.uid) {
             // If the mutex is already locked, but it's trying to be locked by the same thread
             // that acquired it initially, check if recursive locking is allowed.
             // If not, don't increase this mutex's lock count, but still return true.
-            if(((info.attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) == PSP_MUTEX_ATTR_ALLOW_RECURSIVE)) {
+            if (((info.attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) == PSP_MUTEX_ATTR_ALLOW_RECURSIVE)) {
                 info.lockedCount += count;
             }
             return true;
@@ -186,8 +190,8 @@ public class MutexManager {
             name = Utilities.readStringNZ(mem, name_addr, 32);
         }
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelCreateMutex(name='" + name + "',attr=0x" + Integer.toHexString(attr) + ",count=0x" + Integer.toHexString(count) + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelCreateMutex(name='" + name + "',attr=0x" + Integer.toHexString(attr) + ",count=0x" + Integer.toHexString(count) + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
         }
 
         SceKernelMutexInfo info = new SceKernelMutexInfo(name, count, attr);
@@ -201,13 +205,13 @@ public class MutexManager {
     public void sceKernelDeleteMutex(int uid) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelDeleteMutex(uid=" + Integer.toHexString(uid));
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelDeleteMutex(uid=" + Integer.toHexString(uid));
         }
 
         SceKernelMutexInfo info = mutexMap.remove(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelDeleteMutex unknown UID " + Integer.toHexString(uid));
+            log.warn("sceKernelDeleteMutex unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_MUTEX_NOT_FOUND;
         } else {
             cpu.gpr[2] = 0;
@@ -222,15 +226,15 @@ public class MutexManager {
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn(message + " - unknown UID");
+            log.warn(message + " - unknown UID");
             cpu.gpr[2] = ERROR_MUTEX_NOT_FOUND;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
             if (!tryLockMutex(info, count, currentThread)) {
-                if (Modules.log.isDebugEnabled()) {
-                    Modules.log.debug(message + " - '" + info.name + "' fast check failed");
+                if (log.isDebugEnabled()) {
+                    log.debug(message + " - '" + info.name + "' fast check failed");
                 }
                 if (wait) {
                     // Failed, but it's ok, just wait a little
@@ -245,7 +249,7 @@ public class MutexManager {
                         if (mem.isAddressGood(timeout_addr)) {
                             timeout = mem.read32(timeout_addr);
                         } else {
-                            Modules.log.warn(message + " - bad timeout address");
+                            log.warn(message + " - bad timeout address");
                         }
                     }
                     threadMan.hleKernelThreadWait(currentThread, timeout, forever);
@@ -265,7 +269,7 @@ public class MutexManager {
                     }
                 }
             } else {
-                Modules.log.debug(message + " - '" + info.name + "' fast check succeeded");
+                log.debug(message + " - '" + info.name + "' fast check succeeded");
                 cpu.gpr[2] = 0;
             }
             threadMan.hleRescheduleCurrentThread(doCallbacks);
@@ -273,34 +277,42 @@ public class MutexManager {
     }
 
     public void sceKernelLockMutex(int uid, int count, int timeout_addr) {
-        Modules.log.debug("sceKernelLockMutex redirecting to hleKernelLockMutex");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelLockMutex redirecting to hleKernelLockMutex");
+        }
         hleKernelLockMutex(uid, count, timeout_addr, true, false);
     }
 
     public void sceKernelLockMutexCB(int uid, int count, int timeout_addr) {
-        Modules.log.debug("sceKernelLockMutex redirecting to hleKernelLockMutex");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelLockMutex redirecting to hleKernelLockMutex");
+        }
         hleKernelLockMutex(uid, count, timeout_addr, true, true);
     }
 
     public void sceKernelTryLockMutex(int uid, int count) {
-        Modules.log.debug("sceKernelTryLockMutex redirecting to hleKernelLockMutex");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelTryLockMutex redirecting to hleKernelLockMutex");
+        }
         hleKernelLockMutex(uid, count, 0, false, false);
     }
 
     public void sceKernelUnlockMutex(int uid, int count) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        Modules.log.debug("sceKernelUnlockMutex(uid=" + Integer.toHexString(uid) + ", count=" + count + ")");
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelUnlockMutex(uid=" + Integer.toHexString(uid) + ", count=" + count + ")");
+        }
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelUnlockMutex unknown uid");
+            log.warn("sceKernelUnlockMutex unknown uid");
             cpu.gpr[2] = ERROR_MUTEX_NOT_FOUND;
         } else if (info.lockedCount == 0) {
-            Modules.log.warn("sceKernelUnlockMutex not locked");
+            log.warn("sceKernelUnlockMutex not locked");
             cpu.gpr[2] = ERROR_MUTEX_UNLOCKED;
         } else if ((info.lockedCount - count) < 0) {
-            Modules.log.warn("sceKernelUnlockMutex underflow");
+            log.warn("sceKernelUnlockMutex underflow");
             cpu.gpr[2] = ERROR_MUTEX_UNLOCK_UNDERFLOW;
         } else {
             info.lockedCount -= count;
@@ -315,16 +327,16 @@ public class MutexManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Memory.getInstance();
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelCancelMutex uid=" + Integer.toHexString(uid) + ", newcount=" + newcount + ", numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelCancelMutex uid=" + Integer.toHexString(uid) + ", newcount=" + newcount + ", numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
         }
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelCancelMutex unknown UID " + Integer.toHexString(uid));
+            log.warn("sceKernelCancelMutex unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_MUTEX_NOT_FOUND;
         } else if (info.lockedCount == 0) {
-            Modules.log.warn("sceKernelCancelMutex UID " + Integer.toHexString(uid) + " not locked");
+            log.warn("sceKernelCancelMutex UID " + Integer.toHexString(uid) + " not locked");
             cpu.gpr[2] = -1;
         } else {
             // Write previous numWaitThreads count.
@@ -346,13 +358,13 @@ public class MutexManager {
     public void sceKernelReferMutexStatus(int uid, int addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        if (Modules.log.isDebugEnabled()) {
-            Modules.log.debug("sceKernelReferMutexStatus uid=" + Integer.toHexString(uid) + "addr=" + String.format("0x%08X", addr));
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelReferMutexStatus uid=" + Integer.toHexString(uid) + "addr=" + String.format("0x%08X", addr));
         }
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelReferMutexStatus unknown UID " + Integer.toHexString(uid));
+            log.warn("sceKernelReferMutexStatus unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_MUTEX_NOT_FOUND;
         } else {
             Memory mem = Memory.getInstance();
@@ -360,7 +372,7 @@ public class MutexManager {
                 info.write(mem, addr);
                 cpu.gpr[2] = 0;
             } else {
-                Modules.log.warn("sceKernelReferMutexStatus bad address 0x" + Integer.toHexString(addr));
+                log.warn("sceKernelReferMutexStatus bad address 0x" + Integer.toHexString(addr));
                 cpu.gpr[2] = -1;
             }
         }

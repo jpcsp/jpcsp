@@ -103,7 +103,8 @@ public class HLEModuleManager {
         sceNet(Modules.sceNetModule),
         sceNetAdhoc(Modules.sceNetAdhocModule),
         sceNetAdhocctl(Modules.sceNetAdhocctlModule),
-        sceNetIfhandle(Modules.sceNetIfhandleModule);
+        sceNetIfhandle(Modules.sceNetIfhandleModule),
+        sceOpenPSID(Modules.sceOpenPSIDModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

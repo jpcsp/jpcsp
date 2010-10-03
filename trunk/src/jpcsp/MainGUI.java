@@ -196,6 +196,12 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ExitEmu = new javax.swing.JMenuItem();
         OptionsMenu = new javax.swing.JMenu();
         VideoOpt = new javax.swing.JMenu();
+        ResizeMenu = new javax.swing.JMenu();
+        OneItem = new javax.swing.JMenuItem();
+        OneHalfItem = new javax.swing.JMenuItem();
+        TwoItem = new javax.swing.JMenuItem();
+        TwoHalfItem = new javax.swing.JMenuItem();
+        ThreeItem = new javax.swing.JMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
         AudioOpt = new javax.swing.JMenu();
@@ -360,6 +366,50 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OptionsMenu.setText(Resource.get("options"));
 
         VideoOpt.setText(Resource.get("video"));
+
+        ResizeMenu.setText("Resize");
+
+        OneItem.setText("1x");
+        OneItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                OneItemActionPerformed(evt);
+            }
+        });
+        ResizeMenu.add(OneItem);
+
+        OneHalfItem.setText("1.5x");
+        OneHalfItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                OneHalfItemActionPerformed(evt);
+            }
+        });
+        ResizeMenu.add(OneHalfItem);
+
+        TwoItem.setText("2x");
+        TwoItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                TwoItemActionPerformed(evt);
+            }
+        });
+        ResizeMenu.add(TwoItem);
+
+        TwoHalfItem.setText("2.5x");
+        TwoHalfItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                TwoHalfItemActionPerformed(evt);
+            }
+        });
+        ResizeMenu.add(TwoHalfItem);
+
+        ThreeItem.setText("3x");
+        ThreeItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ThreeItemActionPerformed(evt);
+            }
+        });
+        ResizeMenu.add(ThreeItem);
+
+        VideoOpt.add(ResizeMenu);
 
         ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
         ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
@@ -1395,6 +1445,26 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         loggui.setVisible(true);
     }
 }//GEN-LAST:event_CustomLoggerActionPerformed
+
+private void TwoItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoItemActionPerformed
+    setSize(new Dimension(480 * 2, 352 * 2));
+}//GEN-LAST:event_TwoItemActionPerformed
+
+private void ThreeItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ThreeItemActionPerformed
+    setSize(new Dimension(480 * 3, 352 * 3));
+}//GEN-LAST:event_ThreeItemActionPerformed
+
+private void OneHalfItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneHalfItemActionPerformed
+    setSize(new Dimension((int)(480 * 1.5), (int)(352 * 1.5)));
+}//GEN-LAST:event_OneHalfItemActionPerformed
+
+private void TwoHalfItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoHalfItemActionPerformed
+    setSize(new Dimension((int)(480 * 2.5), (int)(352 * 2.5)));
+}//GEN-LAST:event_TwoHalfItemActionPerformed
+
+private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneItemActionPerformed
+    setSize(new Dimension(480, 352));
+}//GEN-LAST:event_OneItemActionPerformed
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1563,6 +1633,8 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JMenu LoggerMenu;
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JCheckBoxMenuItem MuteOpt;
+    private javax.swing.JMenuItem OneHalfItem;
+    private javax.swing.JMenuItem OneItem;
     private javax.swing.JMenuItem OpenFile;
     private javax.swing.JMenuItem OpenMemStick;
     private javax.swing.JMenu OptionsMenu;
@@ -1573,6 +1645,7 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetProfiler;
+    private javax.swing.JMenu ResizeMenu;
     private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
@@ -1580,8 +1653,11 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem Spanish;
+    private javax.swing.JMenuItem ThreeItem;
     private javax.swing.JCheckBoxMenuItem ToggleLogger;
     private javax.swing.JMenu ToolsSubMenu;
+    private javax.swing.JMenuItem TwoHalfItem;
+    private javax.swing.JMenuItem TwoItem;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JMenu VideoOpt;
     private javax.swing.JMenuItem cwcheat;
