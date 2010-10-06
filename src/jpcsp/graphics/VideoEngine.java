@@ -3026,8 +3026,10 @@ public class VideoEngine {
                             // Flipped:
                             //  sprite (16,0)-(0,56) at (0,16,65535)-(56,0,65535)
                             // Not flipped:
+                            //	sprite (0,0)-(0,0) at (279,440,0)-(272,433,0)
+                            // Not flipped:
                             //	sprite (24,0)-(0,48) at (226,120,0)-(254,178,0)
-                            boolean flippedTexture = v1.t[0] > v2.t[0] && v1.p[1] > v2.p[1];
+                            boolean flippedTexture = (v1.t[0] > v2.t[0] && (v1.p[0] < v2.p[0] && v1.p[1] > v2.p[1]));
 
                             if (flippedTexture && isLogInfoEnabled) {
                                 log.info("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + +((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ") flipped");

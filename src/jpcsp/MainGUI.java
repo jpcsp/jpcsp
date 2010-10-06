@@ -236,6 +236,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Japanese = new javax.swing.JMenuItem();
         Russian = new javax.swing.JMenuItem();
         Polish = new javax.swing.JMenuItem();
+        Chinese = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -679,6 +680,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         LanguageMenu.add(Polish);
+
+        Chinese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/cn_CN_Icon.png"))); // NOI18N
+        Chinese.setText(Resource.get("chinese"));
+        Chinese.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ChineseActionPerformed(evt);
+            }
+        });
+        LanguageMenu.add(Chinese);
 
         MenuBar.add(LanguageMenu);
 
@@ -1465,6 +1475,10 @@ private void TwoHalfItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneItemActionPerformed
     setSize(new Dimension(480, 352));
 }//GEN-LAST:event_OneItemActionPerformed
+
+private void ChineseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChineseActionPerformed
+    changeLanguage("cn_CN");
+}//GEN-LAST:event_ChineseActionPerformed
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1610,6 +1624,7 @@ private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     private javax.swing.JMenu AudioOpt;
     private javax.swing.JMenuItem Catalan;
     private javax.swing.JMenu CheatsMenu;
+    private javax.swing.JMenuItem Chinese;
     private javax.swing.JMenuItem ControlsConf;
     private javax.swing.JMenuItem CustomLogger;
     private javax.swing.JMenu DebugMenu;

@@ -166,8 +166,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         isCurrentMpegAnalyzed = false;
         mpegRingbuffer = null;
         mpegRingbufferAddr = 0;
-        mpegAtracCurrentDecodingTimestamp = 0;
-        mpegAvcCurrentDecodingTimestamp = 0;
         avcAuAddr = 0;
         atracAuAddr = 0;
         atracStreamsMap = new HashMap<Integer, Integer>();
@@ -376,10 +374,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mpegRingbuffer.reset();
             mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
-        mpegAtracCurrentDecodingTimestamp = mpegFirstTimestamp;
-        mpegAtracCurrentPresentationTimestamp = mpegFirstTimestamp;
-        mpegAvcCurrentDecodingTimestamp = mpegFirstTimestamp;
-        mpegAvcCurrentPresentationTimestamp = mpegFirstTimestamp;
+        mpegAtracCurrentDecodingTimestamp = 0;
+        mpegAtracCurrentPresentationTimestamp = 0;
+        mpegAvcCurrentDecodingTimestamp = 0;
+        mpegAvcCurrentPresentationTimestamp = 0;
         videoFrameCount = 0;
         audioFrameCount = 0;
         if ((mpegStreamSize > 0) && !isCurrentMpegAnalyzed()) {

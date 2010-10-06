@@ -46,10 +46,14 @@ import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetAdhocctl;
 import jpcsp.HLE.modules.sceNetIfhandle;
+import jpcsp.HLE.modules.sceNp;
+import jpcsp.HLE.modules.sceNpAuth;
+import jpcsp.HLE.modules.sceNpService;
 import jpcsp.HLE.modules.sceOpenPSID;
 import jpcsp.HLE.modules.scePower;
 import jpcsp.HLE.modules.scePsmf;
 import jpcsp.HLE.modules.scePsmfPlayer;
+import jpcsp.HLE.modules.scePspNpDrm_user;
 import jpcsp.HLE.modules.sceRtc;
 import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.HLE.modules.sceSuspendForUser;
@@ -98,6 +102,10 @@ public class Modules {
     public static sceNetAdhocctl sceNetAdhocctlModule = new sceNetAdhocctl();
     public static sceNetIfhandle sceNetIfhandleModule = new sceNetIfhandle();
     public static sceOpenPSID sceOpenPSIDModule = new sceOpenPSID();
+    public static sceNp sceNpModule = new sceNp();
+    public static sceNpAuth sceNpAuthModule = new sceNpAuth();
+    public static sceNpService sceNpServiceModule = new sceNpService();
+    public static scePspNpDrm_user scePspNpDrm_userModule = new scePspNpDrm_user();
 
     public static Logger log = Logger.getLogger("hle");
 
