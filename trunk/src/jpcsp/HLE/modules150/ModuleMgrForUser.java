@@ -67,7 +67,8 @@ public class ModuleMgrForUser implements HLEModule {
         libparse_uri,
         libparse_http,
         libhttp_rfc,
-        libssl
+        libssl,
+        libsuppreacc
     }
 	@Override
 	public String getName() { return "ModuleMgrForUser"; }
