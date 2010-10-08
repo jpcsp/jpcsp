@@ -7,7 +7,7 @@
 // "gl_FrontColorIn[0]".
 // A shader version 150 is provided for these cards.
 //
-void main()  
+void main()
 {
     vec4 v1 = gl_PositionIn[0];
     vec4 v2 = gl_PositionIn[1];
@@ -17,11 +17,13 @@ void main()
     // Flipped:
     //  sprite (16,0)-(0,56) at (0,16,65535)-(56,0,65535)
     // Not flipped:
+    //	sprite (0,0)-(0,0) at (279,440,0)-(272,433,0)
+    // Not flipped:
     //  sprite (24,0)-(0,48) at (226,120,0)-(254,178,0)
     //
     // Remark: gl_Position has already been transformed by MVP,
     // i.e. the Y-axis is already flipped as compared to the PSP
-    bool flippedTexture = (t1.x > t2.x) && (v1.y < v2.y);
+    bool flippedTexture = (t1.x > t2.x && (v1.x < v2.x && v1.y > v2.y));
 
     gl_Position = v1;
     gl_FogFragCoord = gl_FogFragCoordIn[1];
@@ -61,7 +63,7 @@ void main()
 //        gl_TexCoord[0]         = gl_TexCoordIn[i][0];
 //        gl_FrontColor          = gl_FrontColorIn[i];
 //        gl_FrontSecondaryColor = gl_FrontSecondaryColorIn[i];
-//        EmitVertex();  
+//        EmitVertex();
 //    }
 //    EndPrimitive();
 }
