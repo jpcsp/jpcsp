@@ -99,6 +99,25 @@ unsigned char __attribute__((aligned(16))) imageData[] =
                               0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
 							};
 
+unsigned char __attribute__((aligned(16))) imageData2[] =
+							{ 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00,
+                              0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x04, 0x01,
+                              0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00
+							};
+
 struct
 {
 	unsigned char u, v;
@@ -137,6 +156,12 @@ struct
                        { 1, 2, 0x0000FFFF, 0, 0, 0, 0, -1.2, -1.2 },
                        { 2, 0, 0x0000FFFF, 0, 0, 0, 1.2, 1.2, -1.2 },
                        { 2, 2, 0x000000FF, 0, 0, 0, 1.2, -1.2, -1.2 } };
+
+struct
+{
+	unsigned short u, v;
+	signed short px, py, pz;
+} verticesFlip16[32][2];
 
 ScePspFVector3 translation;
 
@@ -208,6 +233,531 @@ void drawTest()
 	translation.z = -4;
 	sceGumTranslate(&translation);
 	sceGumDrawArray(GU_TRIANGLE_STRIP, GU_TEXTURE_32BITF|GU_COLOR_8888|GU_NORMAL_32BITF|GU_VERTEX_32BITF|GU_TRANSFORM_3D, 6, NULL, verticesFloat);
+
+	sceGuEnable(GU_TEXTURE_2D);
+	sceGuTexImage(0, 16, 16, 16, imageData2);
+
+	int x = 10;
+	int y = 10;
+	int i = 0;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	x -= 4 * 20;
+	y += 20;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	x -= 4 * 20;
+	y += 20;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	x -= 4 * 20;
+	y += 20;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 16;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 16;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 0;
+	verticesFlip16[i][0].py = y + 16;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 16;
+	verticesFlip16[i][1].py = y + 0;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	verticesFlip16[i][0].u = 16;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = x + 16;
+	verticesFlip16[i][0].py = y + 0;
+	verticesFlip16[i][0].pz = 0;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 16;
+	verticesFlip16[i][1].px = x + 0;
+	verticesFlip16[i][1].py = y + 16;
+	verticesFlip16[i][1].pz = 0;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_2D, 2, NULL, &verticesFlip16[i][0]);
+	x += 20;
+	i++;
+
+	translation.x = -5.8;
+	translation.y = 0.8;
+	translation.z = -4;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	translation.x -= 4 * 0.6;
+	translation.y -= 0.6;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	translation.x -= 4 * 0.6;
+	translation.y -= 0.6;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	translation.x -= 4 * 0.6;
+	translation.y -= 0.6;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0;
+	verticesFlip16[i][0].v = 0x7FFF;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0x7FFF;
+	verticesFlip16[i][1].v = 0;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = -0x1FFF;
+	verticesFlip16[i][0].py = -0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = 0x1FFF;
+	verticesFlip16[i][1].py = 0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
+
+	sceGumMatrixMode(GU_VIEW);
+	sceGumLoadIdentity();
+	translation.x += 0.6;
+	sceGumTranslate(&translation);
+	verticesFlip16[i][0].u = 0x7FFF;
+	verticesFlip16[i][0].v = 0;
+	verticesFlip16[i][0].px = 0x1FFF;
+	verticesFlip16[i][0].py = 0x1FFF;
+	verticesFlip16[i][0].pz = -0x1FFF;
+	verticesFlip16[i][1].u = 0;
+	verticesFlip16[i][1].v = 0x7FFF;
+	verticesFlip16[i][1].px = -0x1FFF;
+	verticesFlip16[i][1].py = -0x1FFF;
+	verticesFlip16[i][1].pz = -0x1FFF;
+	sceGumDrawArray(GU_SPRITES, GU_TEXTURE_16BIT|GU_VERTEX_16BIT|GU_TRANSFORM_3D, 2, NULL, &verticesFlip16[i][0]);
+	i++;
 }
 
 
