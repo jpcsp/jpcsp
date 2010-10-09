@@ -3709,8 +3709,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // If the thread is stopped, it's current priority is replaced by it's initial priority.
             thread.currentPriority = thread.initPriority;
             cpu.gpr[2] = ERROR_THREAD_ALREADY_DORMANT;
-        } else if (priority < 0x10 || priority > 0x6F) {
-            // Only affects user threads (range from 0x10 to 0x6F).
+        } else if ((priority < 0x10 || priority > 0x6F) && priority != 0x7F) {
+            // Only affects user and idle threads (range from 0x10 to 0x6F and 0x7F).
             log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority) + " newPriority is outside of valid range");
             cpu.gpr[2] = ERROR_ILLEGAL_PRIORITY;
         } else {
@@ -3763,8 +3763,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             priority = currentThread.currentPriority;
         }
 
-        if (priority < 0x10 || priority > 0x6F) {
-            // Only affects user threads (range from 0x10 to 0x6F).
+        if ((priority < 0x10 || priority > 0x6F) && priority != 0x7F) {
+            // Only affects user and idle threads (range from 0x10 to 0x6F and 0x7F).
             log.warn("sceKernelRotateThreadReadyQueue priority:0x" + Integer.toHexString(priority) + " is outside of valid range");
             cpu.gpr[2] = ERROR_ILLEGAL_PRIORITY;
         } else {
