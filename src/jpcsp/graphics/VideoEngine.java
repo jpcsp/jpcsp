@@ -3023,18 +3023,27 @@ public class VideoEngine {
                                 maxSpriteHeight = (int) v2.p[1];
                             }
 
-                            // Flipped:
-                            //  sprite (16,0)-(0,56) at (0,16,65535)-(56,0,65535)
-                            // Not flipped:
-                            //	sprite (0,0)-(0,0) at (279,440,0)-(272,433,0)
-                            // Not flipped:
-                            //	sprite (24,0)-(0,48) at (226,120,0)-(254,178,0)
-                            boolean flippedTexture = (v1.t[0] > v2.t[0] && (v1.p[0] < v2.p[0] && v1.p[1] > v2.p[1]));
+                            // Flipped tested using GElist test application:
+                            // - depends on X and Y coordinates:
+                            //   GU_TRANSFORM_2D:
+                            //     X1 < X2 && Y1 < Y2 : not flipped
+                            //     X1 > X2 && Y1 > Y2 : not flipped
+                            //     X1 < X2 && Y1 > Y2 :     flipped
+                            //     X1 > X2 && Y1 < Y2 :     flipped
+                            //   GU_TRANSFORM_3D: opposite results
+                            //     X1 < X2 && Y1 < Y2 :     flipped
+                            //     X1 > X2 && Y1 > Y2 :     flipped
+                            //     X1 < X2 && Y1 > Y2 : not flipped
+                            //     X1 > X2 && Y1 < Y2 : not flipped
+                            // - texture coordinates are irrelevant
+                            boolean flippedTexture = (v1.p[1] > v2.p[1] && v1.p[0] < v2.p[0]) ||
+                                                     (v1.p[1] < v2.p[1] && v1.p[0] > v2.p[0]);
+                            if (!vinfo.transform2D) {
+                                flippedTexture = !flippedTexture;
+                            }
 
-                            if (flippedTexture && isLogInfoEnabled) {
-                                log.info("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + +((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ") flipped");
-                            } else if (isLogDebugEnabled && context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + +((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
+                            if (isLogDebugEnabled) {
+                            	log(String.format("  sprite (%.0f,%.0f)-(%.0f,%.0f) at (%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)%s", v1.t[0], v1.t[1], v2.t[0], v2.t[1], v1.p[0], v1.p[1], v1.p[2], v2.p[0], v2.p[1], v2.p[2], flippedTexture ? " flipped" : ""));
                             }
 
                             // V1
