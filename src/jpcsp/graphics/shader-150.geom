@@ -11,8 +11,9 @@ void main()
     vec4 t2 = gl_in[1].gl_TexCoord[0];
 
     // Remark: gl_Position has already been transformed by MVP,
-    // i.e. the Y-axis is already flipped as compared to the PSP
-    bool flippedTexture = (v1.y < v2.y && v1.x < v2.x) || (v1.y > v2.y && v1.x > v2.x);
+    // and the Y-axis is already inverted in 2D
+    bool flippedTexture = (v1.y < v2.y && v1.x < v2.x) ||
+                          (v1.y > v2.y && v1.x > v2.x);
 
     gl_Position = v1;
     gl_FogFragCoord = gl_in[1].gl_FogFragCoord;

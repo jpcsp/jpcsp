@@ -3010,7 +3010,16 @@ public class VideoEngine {
 
                 case PRIM_SPRITES:
                 	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
-                    if (cachedVertexInfo == null) {
+
+                	float[] mvpMatrix = null;
+                	if (!vinfo.transform2D) {
+                		mvpMatrix = new float[4 * 4];
+                		// pre-Compute the MVP (Model-View-Projection) matrix
+                		matrixMult(mvpMatrix, context.model_uploaded_matrix, context.view_uploaded_matrix);
+                		matrixMult(mvpMatrix, mvpMatrix, context.proj_uploaded_matrix);
+                	}
+
+                	if (cachedVertexInfo == null) {
                         for (int i = 0; i < numberOfVertex; i += 2) {
                             int addr1 = vinfo.getAddress(mem, i);
                             int addr2 = vinfo.getAddress(mem, i + 1);
@@ -3023,24 +3032,42 @@ public class VideoEngine {
                                 maxSpriteHeight = (int) v2.p[1];
                             }
 
-                            // Flipped tested using GElist test application:
-                            // - depends on X and Y coordinates:
-                            //   GU_TRANSFORM_2D:
-                            //     X1 < X2 && Y1 < Y2 : not flipped
-                            //     X1 > X2 && Y1 > Y2 : not flipped
-                            //     X1 < X2 && Y1 > Y2 :     flipped
-                            //     X1 > X2 && Y1 < Y2 :     flipped
-                            //   GU_TRANSFORM_3D: opposite results
+                            //
+                            // Texture flip tested using the GElist application:
+                            // - it depends on the X and Y coordinates:
+                            //   GU_TRANSFORM_3D:
                             //     X1 < X2 && Y1 < Y2 :     flipped
                             //     X1 > X2 && Y1 > Y2 :     flipped
                             //     X1 < X2 && Y1 > Y2 : not flipped
                             //     X1 > X2 && Y1 < Y2 : not flipped
+                            //   GU_TRANSFORM_2D: opposite results because
+                            //                    the Y-Axis is upside-down in 2D
+                            //     X1 < X2 && Y1 < Y2 : not flipped
+                            //     X1 > X2 && Y1 > Y2 : not flipped
+                            //     X1 < X2 && Y1 > Y2 :     flipped
+                            //     X1 > X2 && Y1 < Y2 :     flipped
+                            // - the tests for GU_TRANSFORM_3D are based on the coordinates
+                            //   after the MVP (Model-View-Projection) transformation
                             // - texture coordinates are irrelevant
-                            boolean flippedTexture = (v1.p[1] > v2.p[1] && v1.p[0] < v2.p[0]) ||
-                                                     (v1.p[1] < v2.p[1] && v1.p[0] > v2.p[0]);
-                            if (!vinfo.transform2D) {
-                                flippedTexture = !flippedTexture;
+                            //
+                            float x1, y1, x2, y2;
+                            if (mvpMatrix == null) {
+                            	x1 =  v1.p[0];
+                            	y1 = -v1.p[1]; // Y-Axis is upside-down in 2D
+                            	x2 =  v2.p[0];
+                            	y2 = -v2.p[1]; // Y-Axis is upside-down in 2D
+                            } else {
+                            	// Apply the MVP transformation to both position coordinates
+                            	float[] mvpPosition = new float[2];
+                            	vectorMult(mvpPosition, mvpMatrix, v1.p);
+                            	x1 = mvpPosition[0];
+                            	y1 = mvpPosition[1];
+                            	vectorMult(mvpPosition, mvpMatrix, v2.p);
+                            	x2 = mvpPosition[0];
+                            	y2 = mvpPosition[1];
                             }
+                            boolean flippedTexture = (y1 < y2 && x1 < x2) ||
+                                                     (y1 > y2 && x1 > x2);
 
                             if (isLogDebugEnabled) {
                             	log(String.format("  sprite (%.0f,%.0f)-(%.0f,%.0f) at (%.0f,%.0f,%.0f)-(%.0f,%.0f,%.0f)%s", v1.t[0], v1.t[1], v2.t[0], v2.t[1], v1.p[0], v1.p[1], v1.p[2], v2.p[0], v2.p[1], v2.p[2], flippedTexture ? " flipped" : ""));
@@ -5260,6 +5287,40 @@ public class VideoEngine {
 
     public void setBaseOffset(int baseOffset) {
     	context.baseOffset = baseOffset;
+    }
+
+    protected void matrixMult(float[] result, float[] m1, float[] m2) {
+    	// If the result has to be stored into one of the input matrix,
+    	// store the result in a temp array first.
+    	float[] origResult = null;
+    	if (result == m1 || result == m2) {
+    		origResult = result;
+    		result = new float[4 * 4];
+    	}
+
+    	for (int i = 0; i < 4; i++) {
+    		for (int j = 0; j < 4; j++) {
+    			float s = 0;
+    			for (int k = 0; k < 4; k++) {
+    				s += m1[k * 4 + j] * m2[i * 4 + k];
+    			}
+    			result[i * 4 + j] = s;
+    		}
+    	}
+
+    	if (origResult != null) {
+    		System.arraycopy(result, 0, origResult, 0, result.length);
+    	}
+    }
+
+    protected void vectorMult(float[] result, float[] m, float[] v) {
+    	for (int i = 0; i < result.length; i++) {
+    		float s = 0;
+    		for (int j = 0; j < v.length; j++) {
+    			s += v[j] * m[j * 4 + i];
+    		}
+    		result[i] = s;
+    	}
     }
 
     private class SaveContextAction implements IAction {
