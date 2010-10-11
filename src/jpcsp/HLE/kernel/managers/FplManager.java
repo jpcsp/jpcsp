@@ -41,6 +41,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceKernelFplInfo;
+import jpcsp.HLE.kernel.types.SceKernelFplOptParam;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
@@ -186,22 +187,27 @@ public class FplManager {
             log.debug("sceKernelCreateFpl(name='" + name + "',partition=" + partitionid + ",attr=0x" + Integer.toHexString(attr) + ",blocksize=0x" + Integer.toHexString(blocksize) + ",blocks=" + blocks + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
         }
 
-        if (mem.isAddressGood(opt_addr)) {
-            int optsize = mem.read32(opt_addr);
-            log.warn("sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
-            // [1] = 0x40 phantasy star
-            for (int i = 4; i < optsize && i < 200; i += 4) {
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("opt[%d] = %08X", (i / 4), mem.read32(opt_addr + i)));
-                }
-            }
-        }
-
         int memType = PSP_SMEM_Low;
         if ((attr & PSP_FPL_ATTR_ADDR_HIGH) == PSP_FPL_ATTR_ADDR_HIGH) {
             memType = PSP_SMEM_High;
         }
-
+        int memAlign = 4;  // 4-bytes is default.
+        if (mem.isAddressGood(opt_addr)) {
+            int optsize = mem.read32(opt_addr);
+            // Up to firmware 6.20 only three FplOptParam fields exist, being the
+            // first one the struct size, the second is the memory alignment (0 is default,
+            // which is 4-byte/32-bit), and the third is an unknown address.
+            if((optsize >= 0) && (optsize <= 8)) {
+                SceKernelFplOptParam optParams = new SceKernelFplOptParam();
+                optParams.read(mem, opt_addr);
+                if(optParams.align > 0) {
+                    memAlign = optParams.align;
+                }
+                log.info("sceKernelCreateFpl: size=" + optParams.size + ", alignment=0x" + Integer.toHexString(optParams.align) + ", unk=0x" + Integer.toHexString(optParams.unk));
+            } else {
+                log.warn("sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
+            }
+        }
         if ((attr & ~PSP_FPL_ATTR_MASK) != 0) {
             log.warn("sceKernelCreateFpl bad attr value 0x" + Integer.toHexString(attr));
             cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
@@ -209,7 +215,7 @@ public class FplManager {
             log.warn("sceKernelCreateFpl bad blocksize, cannot be 0");
             cpu.gpr[2] = ERROR_ILLEGAL_MEMSIZE;
         } else {
-            SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks, memType);
+            SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks, memType, memAlign);
             if (info != null) {
                 if (log.isDebugEnabled()) {
                     log.debug("sceKernelCreateFpl '" + name + "' assigned uid " + Integer.toHexString(info.uid));

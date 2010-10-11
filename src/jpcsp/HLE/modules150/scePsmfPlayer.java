@@ -420,7 +420,7 @@ public class scePsmfPlayer implements HLEModule {
             log.debug("scePsmfPlayerSetPsmfCB redirecting to scePsmfPlayerSetPsmf");
         }
         scePsmfPlayerSetPsmf(processor);
-        //Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
+        Modules.ThreadManForUserModule.hleRescheduleCurrentThread(true);
     }
 
     public void scePsmfPlayerReleasePsmf(Processor processor) {

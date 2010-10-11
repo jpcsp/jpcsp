@@ -319,8 +319,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         return -1;
     }
 
-    protected int endianSwap(int x) {
+    protected int endianSwap32(int x) {
         return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | ((x >> 24) & 0xFF);
+    }
+
+    protected int endianSwap16(int x) {
+        return (x >> 8) | ((x << 8) & 0xFF00);
     }
 
     protected int getTimestampMSB(long ts) {
@@ -362,10 +366,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 mpegVersion = -1;
                 break;
         }
-        mpegOffset = endianSwap(mem.read32(buffer_addr + 8));
-        mpegStreamSize = endianSwap(mem.read32(buffer_addr + 12));
-        mpegFirstTimestamp = endianSwap(mem.read32(buffer_addr + 112));
-        mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 118));
+        mpegOffset = endianSwap32(mem.read32(buffer_addr + 8));
+        mpegStreamSize = endianSwap32(mem.read32(buffer_addr + 12));
+        mpegFirstTimestamp = (endianSwap16(mem.read16(buffer_addr + 86)) << 16) | endianSwap16(mem.read16(buffer_addr + 88)); // 4-byte aligned.
+        mpegLastTimestamp = (endianSwap16(mem.read16(buffer_addr + 92)) << 16) | endianSwap16(mem.read16(buffer_addr + 94));  // 4-byte aligned.
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);
