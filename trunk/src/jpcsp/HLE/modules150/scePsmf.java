@@ -213,8 +213,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
             streamOffset = endianSwap32(mem.read32(addr + 8));
             streamSize = endianSwap32(mem.read32(addr + 12));
 
-            presentationStartTime = endianSwap32(mem.read32(addr + 112));  // First PTS in EPMap (90000).
-            presentationEndTime = endianSwap32(mem.read32(addr + 118));    // mpegLastTimestamp.
+            presentationStartTime = (endianSwap16(mem.read16(addr + 86)) << 16) | endianSwap16(mem.read16(addr + 88));  // First PTS in EPMap (90000).
+            presentationEndTime = (endianSwap16(mem.read16(addr + 92)) << 16) | endianSwap16(mem.read16(addr + 94));    // mpegLastTimestamp.
 
             streamStructSize = mem.read8(addr + 127);                      // 16 bytes per stream + 2 bytes for total stream number.
             streamNum = endianSwap16(mem.read16(addr + 128));              // Number of total registered streams.

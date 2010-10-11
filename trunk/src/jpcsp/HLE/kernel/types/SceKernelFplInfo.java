@@ -41,7 +41,7 @@ public class SceKernelFplInfo {
 
     /** do not instantiate unless there is enough free mem.
      * use the static helper function tryCreateFpl. */
-    private SceKernelFplInfo(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType) {
+    private SceKernelFplInfo(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType, int memAlign) {
         this.name = name;
         this.attr = attr;
         this.blockSize = blockSize;
@@ -59,7 +59,7 @@ public class SceKernelFplInfo {
         }
 
         // Reserve psp memory
-        int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
+        int alignedBlockSize = (blockSize + (memAlign - 1)) & (~(memAlign - 1));
         int totalFplSize = alignedBlockSize * numBlocks;
         sysMemInfo = Modules.SysMemUserForUserModule.malloc(partitionid, "ThreadMan-Fpl", memType, totalFplSize, 0);
         if (sysMemInfo == null)
@@ -71,16 +71,16 @@ public class SceKernelFplInfo {
         }
     }
 
-    public static SceKernelFplInfo tryCreateFpl(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType) {
+    public static SceKernelFplInfo tryCreateFpl(String name, int partitionid, int attr, int blockSize, int numBlocks, int memType, int memAlign) {
         SceKernelFplInfo info = null;
-        int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
+        int alignedBlockSize = (blockSize + (memAlign - 1)) & (~(memAlign - 1));
         int totalFplSize = alignedBlockSize * numBlocks;
         int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
 
         if (totalFplSize <= maxFreeSize) {
-            info = new SceKernelFplInfo(name, partitionid, attr, blockSize, numBlocks, memType);
+            info = new SceKernelFplInfo(name, partitionid, attr, blockSize, numBlocks, memType, memAlign);
         } else {
-            Modules.log.warn("tryCreateFpl not enough free mem (want=" + totalFplSize + ",free=" + maxFreeSize + ",diff=" + (totalFplSize - maxFreeSize) + ")");
+            Modules.log.warn("tryCreateFpl not enough free mem (want=" + totalFplSize + ", free=" + maxFreeSize + ", diff=" + (totalFplSize - maxFreeSize) + ")");
         }
 
         return info;

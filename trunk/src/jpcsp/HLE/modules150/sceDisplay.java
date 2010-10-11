@@ -959,7 +959,9 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 	            			srcBuffer.limit(startOffset + (width + 1) / pixelsPerElement);
 	            			srcBuffer.position(startOffset);
 	            			dstBuffer.position(startOffset);
-	            			dstBuffer.put(srcBuffer);
+                            if(srcBuffer.remaining() < dstBuffer.remaining()) {
+                                dstBuffer.put(srcBuffer);
+                            }
 	            		}
 	            	} else {
 	            		((IntBuffer) pixels).put((IntBuffer) temp);

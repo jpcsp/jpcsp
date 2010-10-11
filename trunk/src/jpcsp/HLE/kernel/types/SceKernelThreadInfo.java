@@ -230,7 +230,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     }
 
     public void write(Memory mem, int address) {
-        mem.write32(address, 108); // size
+        mem.write32(address, 104); // size
         Utilities.writeStringNZ(mem, address + 4, 32, name);
         mem.write32(address + 36, attr);
         mem.write32(address + 40, status);
@@ -248,14 +248,13 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 92, intrPreemptCount);
         mem.write32(address + 96, threadPreemptCount);
         mem.write32(address + 100, releaseCount);
-        mem.write32(address + 104, notifyCallback);
     }
 
     // SceKernelThreadRunStatus.
     // Represents a smaller subset of SceKernelThreadInfo containing only the most volatile parts
     // of the thread (mostly used for debugging).
     public void writeRunStatus(Memory mem, int address) {
-        mem.write32(address, 44); // size
+        mem.write32(address, 40); // size
         mem.write32(address + 4, status);
         mem.write32(address + 8, currentPriority);
         mem.write32(address + 12, waitType);
@@ -265,7 +264,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 28, intrPreemptCount);
         mem.write32(address + 32, threadPreemptCount);
         mem.write32(address + 36, releaseCount);
-        mem.write32(address + 40, notifyCallback);
     }
 
 	@Override
