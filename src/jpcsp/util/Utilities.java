@@ -137,7 +137,7 @@ public class Utilities {
      public static String readStringNZ(Memory mem, int address, int n) {
          address &= Memory.addressMask;
          if (address + n > MemoryMap.END_RAM) {
-                 n = MemoryMap.END_RAM - address + 1;
+             n = MemoryMap.END_RAM - address + 1;
          }
 
          // Allocate a byte array to store the bytes of the string.
@@ -146,8 +146,9 @@ public class Utilities {
          byte[] bytes = new byte[Math.min(n, 10000)];
 
          int length = 0;
+         IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, n, 1);
          for (; n > 0; n--) {
-             int b = mem.read8(address++);
+             int b = memoryReader.readNext();
              if (b == 0) {
                  break;
              }
@@ -246,7 +247,7 @@ public class Utilities {
              value = value.substring(2);
          }
 
-         if (Integer.SIZE == 32 && value.length() == 8 && value.charAt(0) >= '8') {
+         if (value.length() == 8 && value.charAt(0) >= '8') {
              address = (int) Long.parseLong(value, 16);
          } else {
              address = Integer.parseInt(value, 16);

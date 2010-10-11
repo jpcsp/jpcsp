@@ -25,6 +25,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.hardware.Wlan;
 
 import org.apache.log4j.Logger;
 
@@ -56,10 +57,6 @@ public class sceWlan implements HLEModule {
 
         }
     }
-    
-    public static int PSP_WLAN_SWITCH_OFF = 0;
-    public static int PSP_WLAN_SWITCH_ON = 1;
-    private byte[] fakeWlanAddr = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x00, 0x00};
 
     public void sceWlanGetEtherAddr(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -76,8 +73,9 @@ public class sceWlan implements HLEModule {
             return;
         }
         if (mem.isAddressGood(ether_addr)) {
-            for (int i = 0; i < fakeWlanAddr.length; i++) {
-                mem.write8(ether_addr + i, fakeWlanAddr[i]);
+        	byte[] wlanAddr = Wlan.getMacAddress();
+            for (int i = 0; i < wlanAddr.length; i++) {
+                mem.write8(ether_addr + i, wlanAddr[i]);
             }
             cpu.gpr[2] = 0;
         } else {
@@ -92,7 +90,7 @@ public class sceWlan implements HLEModule {
             log.debug("sceWlanGetSwitchState");
         }
 
-        cpu.gpr[2] = PSP_WLAN_SWITCH_ON;
+        cpu.gpr[2] = Wlan.getSwitchState();
     }
 
     public final HLEModuleFunction sceWlanGetEtherAddrFunction = new HLEModuleFunction("sceWlan", "sceWlanGetEtherAddr") {
