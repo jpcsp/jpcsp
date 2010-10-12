@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import java.util.Stack;
 import java.util.concurrent.Semaphore;
 
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -28,6 +29,7 @@ public class RuntimeThread extends Thread {
 	private Semaphore semaphore = new Semaphore(1);
 	private SceKernelThreadInfo threadInfo;
 	private boolean isInSyscall;
+	public Stack<JumpState> stack = new Stack<JumpState>();
 
 	public RuntimeThread(SceKernelThreadInfo threadInfo) {
 		this.threadInfo = threadInfo;
@@ -71,5 +73,42 @@ public class RuntimeThread extends Thread {
 
 	public void setInSyscall(boolean isInSyscall) {
 		this.isInSyscall = isInSyscall;
+	}
+
+	public void pushStackState(int ra, int sp) {
+		stack.add(new JumpState(ra, sp));
+	}
+
+	public JumpState popStackState() {
+		return stack.pop();
+	}
+
+	public boolean hasStackState(int ra, int sp) {
+		for (JumpState state : stack) {
+			if (state.ra == ra) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public Stack<JumpState> getStack() {
+		return stack;
+	}
+
+	public static class JumpState {
+		public int ra;
+		public int sp;
+
+		public JumpState(int ra, int sp) {
+			this.ra = ra;
+			this.sp = sp;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("(ra=0x%08X, sp=0x%08X)", ra, sp);
+		}
 	}
 }
