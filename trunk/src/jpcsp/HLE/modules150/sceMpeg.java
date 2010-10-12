@@ -320,11 +320,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     }
 
     protected int endianSwap32(int x) {
-        return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | ((x >> 24) & 0xFF);
+    	return Integer.reverseBytes(x);
     }
 
-    protected int endianSwap16(int x) {
-        return (x >> 8) | ((x << 8) & 0xFF00);
+    protected int readUnaligned32(Memory mem, int address) {
+        switch (address & 3) {
+            case 0: return mem.read32(address);
+            case 2: return mem.read16(address) | (mem.read16(address + 2) << 16);
+            default:
+                return (mem.read8(address + 3) << 24) |
+                       (mem.read8(address + 2) << 16) |
+                       (mem.read8(address + 1) <<  8) |
+                       (mem.read8(address));
+        }
     }
 
     protected int getTimestampMSB(long ts) {
@@ -368,8 +376,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         mpegOffset = endianSwap32(mem.read32(buffer_addr + 8));
         mpegStreamSize = endianSwap32(mem.read32(buffer_addr + 12));
-        mpegFirstTimestamp = (endianSwap16(mem.read16(buffer_addr + 86)) << 16) | endianSwap16(mem.read16(buffer_addr + 88)); // 4-byte aligned.
-        mpegLastTimestamp = (endianSwap16(mem.read16(buffer_addr + 92)) << 16) | endianSwap16(mem.read16(buffer_addr + 94));  // 4-byte aligned.
+        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + 86));
+        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + 92));
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);
