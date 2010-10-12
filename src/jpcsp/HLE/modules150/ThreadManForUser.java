@@ -1174,7 +1174,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, int[] parameters) {
-        if (thread != null && thread != currentThread) {
+        if (thread != null) {
             // Save the wait state of the thread to restore it after the call
             int status = thread.status;
             int waitType = thread.waitType;
