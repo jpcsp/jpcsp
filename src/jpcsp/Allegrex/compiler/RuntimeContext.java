@@ -123,11 +123,70 @@ public class RuntimeContext {
         return returnValue;
 	}
 
-	public static int jump(int address, int returnAddress) throws Exception {
+	public static int jump(int address, int returnAddress, int alternativeReturnAddress) throws Exception {
+		int returnValue;
+
 		if (log.isDebugEnabled()) {
-			log.debug("RuntimeContext.jump address=0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress));
+			log.debug(String.format("RuntimeContext.jump address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X", address, returnAddress, alternativeReturnAddress));
 		}
-	    return jumpCall(address, returnAddress, true);
+
+		if (IntrManager.getInstance().isInsideInterrupt() || currentRuntimeThread == null) {
+			// No setjmp/longjmp handling inside interrupts and idle state
+			returnValue = jumpCall(address, returnAddress, true);
+		} else {
+			int sp = cpu.gpr[29];
+
+			if (log.isTraceEnabled()) {
+				log.trace(String.format("RuntimeContext.jump sp=0x%08X, stack=%s", sp, currentRuntimeThread.getStack().toString()));
+			}
+
+			// Handle setjmp/longjmp C-like calls
+			if (currentRuntimeThread.hasStackState(address, sp)) {
+		    	StackPopException e = new StackPopException(address, sp);
+		    	if (log.isDebugEnabled()) {
+		    		log.debug("RuntimeContext.jump throwing " + e.toString());
+		    	}
+		    	throw e;
+			}
+
+			currentRuntimeThread.pushStackState(returnAddress, sp);
+			while (true) {
+				try {
+					returnValue = jumpCall(address, returnAddress, true);
+				} catch (StackPopException e) {
+					if (log.isDebugEnabled()) {
+						log.debug("RuntimeContext.jump catched " + e.toString());
+					}
+
+					if (e.getRa() == returnAddress || e.getRa() == alternativeReturnAddress) {
+						returnValue = e.getRa();
+						break;
+					} else {
+						currentRuntimeThread.popStackState();
+						throw e;
+					}
+				}
+
+			    if (returnValue == returnAddress || returnValue == alternativeReturnAddress) {
+			    	break;
+			    } else if (currentRuntimeThread.hasStackState(returnValue, cpu.gpr[29])) {
+			    	StackPopException e = new StackPopException(returnValue, cpu.gpr[29]);
+			    	if (log.isDebugEnabled()) {
+			    		log.debug("RuntimeContext.jump throwing " + e.toString());
+			    	}
+			    	throw e;
+			    } else {
+			    	address = returnValue;
+			    }
+			}
+	    	currentRuntimeThread.popStackState();
+		}
+
+    	if (log.isDebugEnabled()) {
+			log.debug(String.format("RuntimeContext.jump returning 0x%08X, address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X", returnValue, address, returnAddress, alternativeReturnAddress));
+    	}
+
+    	return returnValue;
 	}
 
     public static void call(int address, int returnAddress) throws Exception {

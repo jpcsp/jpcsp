@@ -581,7 +581,8 @@ public class CompilerContext implements ICompilerContext {
 
         mv.visitLabel(jumpLabel);
         loadLocalVar(LOCAL_RETURN_ADDRESS);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(II)I");
+        loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(III)I");
         visitJump(Opcodes.GOTO, jumpLoop);
     }
 
