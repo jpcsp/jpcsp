@@ -91,8 +91,9 @@ public interface IRenderingEngine {
 
 	// Blend functions:
 	public static final int GU_FIX_BLEND_COLOR     = 10;
-	public static final int GU_FIX_BLACK           = 11;
-	public static final int GU_FIX_WHITE           = 12;
+	public static final int GU_FIX_BLEND_ONE_MINUS_COLOR = 11;
+	public static final int GU_FIX_BLACK           = 12;
+	public static final int GU_FIX_WHITE           = 13;
 
 	// setTexEnv names:
 	public static final int RE_TEXENV_COMBINE_RGB  = 0;
