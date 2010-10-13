@@ -30,6 +30,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Debugger.MemoryViewer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
@@ -405,6 +406,16 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         // the MPEG ringbuffer.
         // Mark the current MPEG as analyzed to filter this, and restore it at sceMpegFinish.
         setCurrentMpegAnalyzed(true);
+
+        if (log.isDebugEnabled()) {
+	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", mpegOffset, mpegStreamSize));
+	    	log.debug(String.format("First timestamp: %d, Last timestamp: %d", mpegFirstTimestamp, mpegLastTimestamp));
+	        if (log.isTraceEnabled()) {
+	        	for (int i = 0; i < 2048; i+= 16) {
+	        		log.trace(MemoryViewer.getMemoryView(buffer_addr + i));
+	        	}
+	        }
+        }
     }
 
     private void generateFakeMPEGVideo(int dest_addr, int frameWidth) {
@@ -1503,9 +1514,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcQueryYCbCrSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
+        } else if ((width & 15) != 0 || (height & 15) != 0 || width > 480 || height > 272) {
+            log.warn("sceMpegAvcQueryYCbCrSize invalid size width=" + width + ", height=" + height);
+        	cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         } else if (mem.isAddressGood(resultAddr)) {
-            // Write the size of the buffer used by sceMpegAvcDecodeYCbCr (assume 2 bytes per pixel).
-            mem.write32(resultAddr, width * height * 2);
+        	// Write the size of the buffer used by sceMpegAvcDecodeYCbCr
+    		int size = (width / 2) * (height / 2) * 6 + 128;
+            mem.write32(resultAddr, size);
             cpu.gpr[2] = 0;
         } else {
             log.warn("sceMpegAvcQueryYCbCrSize bad result address 0x" + Integer.toHexString(resultAddr));
