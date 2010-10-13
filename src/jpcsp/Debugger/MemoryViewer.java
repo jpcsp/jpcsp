@@ -52,7 +52,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         RefreshMemory();
     }
-    private char converttochar(int character)
+    public static char converttochar(int character)
     {
       //char newone = (char)Memory.getInstance().read8(address);
       //if(newone <32 || newone >127)
@@ -64,43 +64,49 @@ public class MemoryViewer extends javax.swing.JFrame {
 
     }
 
-    private byte safeRead8(int address)
-    {
+    private static byte safeRead8(Memory mem, int address) {
         byte value = 0;
-        if (Memory.getInstance().isAddressGood(address))
-            value = (byte)Memory.getInstance().read8(address);
+        if (mem.isAddressGood(address)) {
+            value = (byte)mem.read8(address);
+        }
+
         return value;
+    }
+
+    public static String getMemoryView(int addr) {
+    	byte[] line = new byte[16];
+    	Memory mem = Memory.getInstance();
+
+    	for (int i = 0; i < line.length; i++) {
+            line[i] = safeRead8(mem, addr + i);
+    	}
+
+    	return String.format("%08x : %02x %02x %02x %02x %02x %02x " +
+                "%02x %02x %02x %02x %02x %02x %02x %02x " +
+                "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
+                line[0], line[1], line[2], line[3], line[4], line[5], line[6], line[7],
+                line[8], line[9], line[10], line[11], line[12], line[13], line[14], line[15],
+                converttochar(line[0]), converttochar(line[1]),
+                converttochar(line[2]), converttochar(line[3]),
+                converttochar(line[4]), converttochar(line[5]),
+                converttochar(line[6]), converttochar(line[7]),
+                converttochar(line[8]), converttochar(line[9]),
+                converttochar(line[10]), converttochar(line[11]),
+                converttochar(line[12]), converttochar(line[13]),
+                converttochar(line[14]), converttochar(line[15])
+                );
     }
 
     public void RefreshMemory()
     {
-        byte[] line = new byte[16];
         int addr = startaddress;
         memoryview.setText("");
-        for(int y=0; y<22; y++)//21 lines
-        {
-            for (int i = 0; i < line.length; i++)
-                line[i] = safeRead8(addr + i);
-
-            memoryview.append(String.format("%08x : %02x %02x %02x %02x %02x %02x " +
-                    "%02x %02x %02x %02x %02x %02x %02x %02x " +
-                    "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
-                    line[0], line[1], line[2], line[3], line[4], line[5], line[6], line[7],
-                    line[8], line[9], line[10], line[11], line[12], line[13], line[14], line[15],
-                    converttochar(line[0]), converttochar(line[1]),
-                    converttochar(line[2]), converttochar(line[3]),
-                    converttochar(line[4]), converttochar(line[5]),
-                    converttochar(line[6]), converttochar(line[7]),
-                    converttochar(line[8]), converttochar(line[9]),
-                    converttochar(line[10]), converttochar(line[11]),
-                    converttochar(line[12]), converttochar(line[13]),
-                    converttochar(line[14]), converttochar(line[15])
-                    )
-                );
-            if(y !=21) memoryview.append("\n");
-        // }
-        addr +=16;
-
+        for (int y = 0; y < 22; y++) { //21 lines
+        	if (y > 0) {
+                memoryview.append("\n");
+        	}
+            memoryview.append(getMemoryView(addr));
+            addr +=16;
         }
     }
     /** This method is called from within the constructor to
@@ -296,9 +302,10 @@ private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
    try
    {
        out = new BufferedWriter( new FileWriter(f) );
+       Memory mem = Memory.getInstance();
        for(int i = 0x08000000; i<=0x09ffffff; i++ )
        {
-          out.write(safeRead8(i));
+          out.write(safeRead8(mem, i));
        }
 
    }

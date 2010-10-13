@@ -1297,6 +1297,10 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         int pixelformat = cpu.gpr[6];
         int syncType = cpu.gpr[7];
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceDisplaySetFrameBuf(topaddr=0x%08X, bufferwidth=%d, pixelformat=%d, syncType=%d)", topaddr, bufferwidth, pixelformat, syncType));
+        }
+
         cpu.gpr[2] = hleDisplaySetFrameBuf(topaddr, bufferwidth, pixelformat, syncType);
     }
 
