@@ -134,6 +134,7 @@ public class GeContext {
     public float[] sfix_color = new float[4];
     public int blend_src;
     public int blend_dst;
+    public int blendEquation;
     public int[] dither_matrix = new int[16];
     public int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
     public int tex_proj_map_mode = TMAP_TEXTURE_PROJECTION_MODE_POSITION;

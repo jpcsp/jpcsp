@@ -766,6 +766,13 @@ public class VideoEngine {
         }
     }
 
+    private int getColorInt(float[] color) {
+    	return (((int) (color[0] * 255))      ) |
+    	       (((int) (color[1] * 255)) <<  8) |
+    	       (((int) (color[2] * 255)) << 16) |
+    	       (((int) (color[3] * 255)) << 24);
+    }
+
     private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
         float[] blend_color = null;
         if (gl_blend_src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
@@ -775,7 +782,7 @@ public class VideoEngine {
                         || context.sfix_color[1] != context.dfix_color[1]
                         || context.sfix_color[2] != context.dfix_color[2]
                         || context.sfix_color[3] != context.dfix_color[3]) {
-                    log.warn("UNSUPPORTED: Both different SFIX and DFIX are not supported");
+                    log.warn(String.format("UNSUPPORTED: Both different SFIX (%08X) and DFIX (%08X) are not supported (blend equation=%d)", getColorInt(context.sfix_color), getColorInt(context.dfix_color), context.blendEquation));
                 }
             }
         } else if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
@@ -800,7 +807,14 @@ public class VideoEngine {
             error("Unhandled alpha blend dst used " + context.blend_dst);
             reBlendDst = 0;
     	} else if (context.blend_dst == 10) { // GU_FIX
-    		reBlendDst = getBlendFix(context.dfix_color);
+        	if (reBlendSrc == IRenderingEngine.GU_FIX_BLEND_COLOR
+        	        && context.sfix_color[0] + context.dfix_color[0] == 1
+        	        && context.sfix_color[1] + context.dfix_color[1] == 1
+        	        && context.sfix_color[2] + context.dfix_color[2] == 1) {
+        		reBlendDst = IRenderingEngine.GU_FIX_BLEND_ONE_MINUS_COLOR;
+        	} else {
+        		reBlendDst = getBlendFix(context.dfix_color);
+        	}
     	}
 
         float[] blend_color = getBlendColor(reBlendSrc, reBlendDst);
@@ -2427,20 +2441,20 @@ public class VideoEngine {
                 int old_blend_dst = context.blend_dst;
                 context.blend_src = normalArgument & 0xF;
                 context.blend_dst = (normalArgument >> 4) & 0xF;
-                int op = (normalArgument >> 8) & 0xF;
-                if (op > ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE) {
-                    log.warn("Unhandled blend operation " + op);
-                    op = ALPHA_SOURCE_BLEND_OPERATION_ADD;
+                context.blendEquation = (normalArgument >> 8) & 0xF;
+                if (context.blendEquation > ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE) {
+                    log.warn("Unhandled blend operation " + context.blendEquation);
+                    context.blendEquation = ALPHA_SOURCE_BLEND_OPERATION_ADD;
                 }
 
-                re.setBlendEquation(op);
+                re.setBlendEquation(context.blendEquation);
 
                 if (old_blend_src != context.blend_src || old_blend_dst != context.blend_dst) {
                     blendChanged = true;
                 }
 
                 if (isLogDebugEnabled) {
-                    log("sceGuBlendFunc(op=" + op + ", src=" + context.blend_src + ", dst=" + context.blend_dst + ")");
+                    log("sceGuBlendFunc(op=" + context.blendEquation + ", src=" + context.blend_src + ", dst=" + context.blend_dst + ")");
                 }
                 break;
             }

@@ -85,7 +85,8 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 		GL.GL_ONE_MINUS_SRC_ALPHA, // 7
 		GL.GL_DST_ALPHA,           // 8
 		GL.GL_ONE_MINUS_DST_ALPHA, // 9
-		GL.GL_CONSTANT_COLOR,      // GU_FIX for blend color
+		GL.GL_CONSTANT_COLOR,      // GU_FIX_BLEND_COLOR
+		GL.GL_ONE_MINUS_CONSTANT_COLOR, // GU_FIX_BLEND_ONE_MINUS_COLOR
 		GL.GL_ZERO,                // GU_FIX for 0x000000
 		GL.GL_ONE                  // GU_FIX for 0xFFFFFF
 	};
@@ -101,6 +102,7 @@ public class RenderingEngineJogl extends BaseRenderingEngine {
 		GL.GL_DST_ALPHA,           // 8
 		GL.GL_ONE_MINUS_DST_ALPHA, // 9
 		GL.GL_CONSTANT_COLOR,      // GU_FIX_BLEND_COLOR
+		GL.GL_ONE_MINUS_CONSTANT_COLOR, // GU_FIX_BLEND_ONE_MINUS_COLOR
 		GL.GL_ZERO,                // GU_FIX_BLACK
 		GL.GL_ONE                  // GU_FIX_WHITE
 	};
