@@ -41,6 +41,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.connector.MpegCodec;
+import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryWriter;
@@ -594,6 +595,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mpegCodec.finish();
         }
         setCurrentMpegAnalyzed(false);
+        VideoEngine.getInstance().resetVideoTextures();
+
         cpu.gpr[2] = 0;
     }
 
@@ -1260,6 +1263,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 log.debug(String.format("sceMpegAvcDecode *au=0x%08X, *buffer=0x%08X, init=%d", au, buffer, init));
             }
 
+            // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
+            VideoEngine.getInstance().addVideoTexture(buffer);
+
             long currentSystemTime = Emulator.getClock().milliTime();
             int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
             if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
@@ -1746,6 +1752,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceMpegAvcCsc range -" + " x:" + rangeWidthStart + " y:" + rangeHeightStart + " xLen:" + rangeWidthEnd + " yLen:" + rangeHeigtEnd);
             }
+
+            // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
+            VideoEngine.getInstance().addVideoTexture(dest_addr);
 
             // sceMpegAvcDecodeYCbCr() is performing the video decoding and
             // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
