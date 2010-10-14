@@ -81,19 +81,15 @@ public class sceAudio implements HLEModule, HLEThread {
                 return true;
             }
 
-            if (!outputDataLine.isRunning()) {
-                return true;
+            if (outputDataLine.available() < outputDataLine.getBufferSize()) {
+            	return false;
             }
 
             if (buffer != null && bufferIndex < buffer.length) {
                 return false;
             }
 
-            if (outputDataLine.available() >= outputDataLine.getBufferSize()) {
-                return true;
-            }
-
-            return false;
+            return true;
         }
 
         private float getSampleRate() {
