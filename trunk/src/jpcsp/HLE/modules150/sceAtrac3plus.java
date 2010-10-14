@@ -176,6 +176,15 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         sceAtrac3plus.useAtracCodec = useConnector;
     }
 
+    protected String getStringFromInt32(int n) {
+    	char c1 = (char) ((n      ) & 0xFF);
+    	char c2 = (char) ((n >>  8) & 0xFF);
+    	char c3 = (char) ((n >> 16) & 0xFF);
+    	char c4 = (char) ((n >> 24) & 0xFF);
+
+    	return String.format("%c%c%c%c", c1, c2, c3, c4);
+    }
+
     protected void analyzeAtracHeader() {
         Memory mem = Memory.getInstance();
 
@@ -189,8 +198,8 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
         // Check for a valid "WAVE" header.
         int WAVEMagic = mem.read32(inputBufferAddr + 8);
-        if (WAVEMagic == WAVE_MAGIC) {
-            // Parse the "fmt" chunk.
+        if (WAVEMagic == WAVE_MAGIC && inputBufferSize >= 36) {
+            // Parse the "fmt " chunk.
             int fmtMagic = mem.read32(inputBufferAddr + 12);
             int fmtChunkSize = mem.read32(inputBufferAddr + 16);
             int compressionCode = mem.read16(inputBufferAddr + 20);
@@ -199,7 +208,18 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             atracBitrate = mem.read32(inputBufferAddr + 28);
             int chunkAlign = mem.read16(inputBufferAddr + 32);
             int hiBytesPerSample = mem.read16(inputBufferAddr + 34);
-            int fmtExtraBytes = mem.read16(inputBufferAddr + 36);
+
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("WAVE format: magic=0x%08X ('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", fmtMagic, getStringFromInt32(fmtMagic), fmtChunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, chunkAlign, hiBytesPerSample));
+            	StringBuilder restChunk = new StringBuilder();
+            	for (int i = 36; i < 20 + fmtChunkSize && i < inputBufferSize; i++) {
+            		int b = mem.read8(inputBufferAddr + i);
+            		restChunk.append(String.format(" %02X", b));
+            	}
+            	if (restChunk.length() > 0) {
+            		log.debug(String.format("Additional chunk data:%s", restChunk));
+            	}
+            }
         }
     }
 
@@ -651,6 +671,10 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                 }
             }
             cpu.gpr[2] = result;
+
+            // Delay the thread decoding the Atrac data (for how long?),
+            // the thread is also blocking using semaphores/event flags on a real PSP.
+            Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false, result);
         }
     }
 
