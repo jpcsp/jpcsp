@@ -53,11 +53,17 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                     re.setTexEnv(RE_TEXENV_SRC1_RGB, RE_TEXENV_PREVIOUS);
                     re.setTexEnv(RE_TEXENV_OPERAND1_RGB, RE_TEXENV_SRC_COLOR);
 
-                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_MODULATE);
-                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
-                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
-                    re.setTexEnv(RE_TEXENV_SRC1_ALPHA, RE_TEXENV_PREVIOUS);
-                    re.setTexEnv(RE_TEXENV_OPERAND1_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    if (alphaUsed) {
+	                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_MODULATE);
+	                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
+	                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+	                    re.setTexEnv(RE_TEXENV_SRC1_ALPHA, RE_TEXENV_PREVIOUS);
+	                    re.setTexEnv(RE_TEXENV_OPERAND1_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    } else {
+                        re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_REPLACE);
+                        re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_PREVIOUS);
+                        re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    }
                     break;
                 case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_DECAL:
                 	func = RE_TEXENV_COMBINE;
@@ -97,11 +103,17 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                     re.setTexEnv(RE_TEXENV_SRC2_RGB, RE_TEXENV_TEXTURE);
                     re.setTexEnv(RE_TEXENV_OPERAND2_RGB, RE_TEXENV_SRC_COLOR);
 
-                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_MODULATE);
-                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
-                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
-                    re.setTexEnv(RE_TEXENV_SRC1_ALPHA, RE_TEXENV_PREVIOUS);
-                    re.setTexEnv(RE_TEXENV_OPERAND1_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    if (alphaUsed) {
+	                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_MODULATE);
+	                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
+	                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+	                    re.setTexEnv(RE_TEXENV_SRC1_ALPHA, RE_TEXENV_PREVIOUS);
+	                    re.setTexEnv(RE_TEXENV_OPERAND1_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    } else {
+                        re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_REPLACE);
+                        re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_PREVIOUS);
+                        re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    }
                     break;
                 case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_REPLACE:
                     // Cv = Cs
@@ -111,9 +123,15 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                     re.setTexEnv(RE_TEXENV_SRC0_RGB, RE_TEXENV_TEXTURE);
                     re.setTexEnv(RE_TEXENV_OPERAND0_RGB, RE_TEXENV_SRC_COLOR);
 
-                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_REPLACE);
-                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
-                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    if (alphaUsed) {
+	                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_REPLACE);
+	                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
+	                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    } else {
+                        re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_REPLACE);
+                        re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_PREVIOUS);
+                        re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    }
                     break;
                 case GeCommands.TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_ADD:
                     // Cv = Cp + Cs
@@ -125,11 +143,17 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
                     re.setTexEnv(RE_TEXENV_SRC1_RGB, RE_TEXENV_PREVIOUS);
                     re.setTexEnv(RE_TEXENV_OPERAND1_RGB, RE_TEXENV_SRC_COLOR);
 
-                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_MODULATE);
-                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
-                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
-                    re.setTexEnv(RE_TEXENV_SRC1_ALPHA, RE_TEXENV_PREVIOUS);
-                    re.setTexEnv(RE_TEXENV_OPERAND1_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    if (alphaUsed) {
+	                    re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_MODULATE);
+	                    re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_TEXTURE);
+	                    re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+	                    re.setTexEnv(RE_TEXENV_SRC1_ALPHA, RE_TEXENV_PREVIOUS);
+	                    re.setTexEnv(RE_TEXENV_OPERAND1_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    } else {
+                        re.setTexEnv(RE_TEXENV_COMBINE_ALPHA, RE_TEXENV_REPLACE);
+                        re.setTexEnv(RE_TEXENV_SRC0_ALPHA, RE_TEXENV_PREVIOUS);
+                        re.setTexEnv(RE_TEXENV_OPERAND0_ALPHA, RE_TEXENV_SRC_ALPHA);
+                    }
                     break;
             }
         }
