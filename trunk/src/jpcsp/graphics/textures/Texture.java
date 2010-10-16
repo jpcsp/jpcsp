@@ -36,7 +36,6 @@ public class Texture {
 	private int hashCode;
 	private int mipmapLevels;
 	private boolean mipmapShareClut;
-	private boolean hashCodeComputed = false;
 	private int textureId = -1;	// id created by genTexture
 	private boolean loaded = false;	// is the texture already loaded?
 	private TextureCache textureCache;
@@ -57,18 +56,29 @@ public class Texture {
 		this.clutNumBlocks = clutNumBlocks;
 		this.mipmapLevels = mipmapLevels;
 		this.mipmapShareClut = mipmapShareClut;
+
+		hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
 	}
 
+	/**
+	 * Compute the Texture hashCode value,
+	 * based on the pixel buffer and the clut table.
+	 *
+	 * @param addr          pixel buffer
+	 * @param lineWidth     texture buffer width
+	 * @param width         texture width
+	 * @param height        texture height
+	 * @param pixelStorage  texture storage
+	 * @param clutAddr      clut table address
+	 * @param clutMode      clut mode
+	 * @param clutStart     clut start
+	 * @param clutShift     clut shift
+	 * @param clutMask      clut mask
+	 * @param clutNumBlocks clut number of blocks
+	 * @param mipmapLevels  number of mipmaps
+	 * @return              hashcode value
+	 */
 	private static int hashCode(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
-	    //
-		// HashCode is computed as follows:
-	    // - XOR of pixel buffer
-	    // - XOR of clut table
-	    //
-	    // Rem: to detect simple circular rotation of the values
-	    // (e.g. rotating the clut entries like in blend.pbp),
-	    // the address index (i) is added to the value itself.
-	    //
 		int hashCode = mipmapLevels;
 
 		if (addr != 0) {
@@ -101,7 +111,11 @@ public class Texture {
 				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
 			}
 
-			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes, hashStride);
+			int stride = hashStride;
+			if (lineWidth < hashStride) {
+				stride = lineWidth - 4;
+			}
+			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes, stride);
 		}
 
 		if (clutAddr != 0) {
@@ -113,11 +127,6 @@ public class Texture {
 
 	@Override
 	public int hashCode() {
-		if (!hashCodeComputed) {
-			hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
-			hashCodeComputed = true;
-		}
-
 		return hashCode;
 	}
 
