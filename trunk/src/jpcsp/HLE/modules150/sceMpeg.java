@@ -778,6 +778,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(stream_addr));
                     break;
             }
+            setCurrentMpegAnalyzed(false);
             cpu.gpr[2] = 0;
         }
     }
