@@ -440,4 +440,8 @@ public class Utilities {
     public static long getRegister64(CpuState cpu, int register) {
     	return makeValue64(cpu.gpr[register], cpu.gpr[register + 1]);
     }
+
+    public static int getSizeKb(long sizeByte) {
+    	return (int) ((sizeByte + 1023) / 1024);
+    }
 }

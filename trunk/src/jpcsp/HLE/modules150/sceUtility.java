@@ -841,7 +841,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     private int computeMemoryStickRequiredSpaceKb(int sizeByte) {
-        int sizeKb = (sizeByte + 1023) / 1024;
+        int sizeKb = Utilities.getSizeKb(sizeByte);
         int sectorSizeKb = MemoryStick.getSectorSizeKb();
         int numberSectors = (sizeKb + sectorSizeKb - 1) / sectorSizeKb;
 
@@ -1032,7 +1032,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 if (mem.isAddressGood(buffer2Addr)) {
                     gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
                     saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
-                    int savedataSizeKb = savedataParams.getSize(gameName, saveName);
+                    int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
                     int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
 
                     mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors
@@ -1309,7 +1309,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                         int entryAddr = saveFileSecureEntriesAddr + i * 24;
                         long size = mem.read64(entryAddr);
                         String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
-                        int sizeKb = (int) ((size + 1023) / 1024);
+                        int sizeKb = Utilities.getSizeKb(size);
                         if (log.isDebugEnabled()) {
                         	log.debug(String.format("   Secure File '%s', size %d (%d KB)", fileName, size, sizeKb));
                         }
@@ -1320,7 +1320,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                         int entryAddr = saveFileEntriesAddr + i * 24;
                         long size = mem.read64(entryAddr);
                         String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
-                        int sizeKb = (int) ((size + 1023) / 1024);
+                        int sizeKb = Utilities.getSizeKb(size);
                         if (log.isDebugEnabled()) {
                         	log.debug(String.format("   File '%s', size %d (%d KB)", fileName, size, sizeKb));
                         }

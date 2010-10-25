@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
+import jpcsp.util.Utilities;
+
 public class MemoryStick {
     public final static int PSP_MEMORYSTICK_STATE_INSERTED  = 1;
     public final static int PSP_MEMORYSTICK_STATE_EJECTED   = 2;
@@ -39,7 +41,7 @@ public class MemoryStick {
 	}
 
 	public static int getFreeSizeKb() {
-		return (int) (getFreeSize() / 1024);
+		return Utilities.getSizeKb(getFreeSize());
 	}
 
 	public static void setFreeSize(long freeSize) {
@@ -51,7 +53,7 @@ public class MemoryStick {
 	}
 
 	public static int getSectorSizeKb() {
-		return getSectorSize() / 1024;
+		return Utilities.getSizeKb(getSectorSize());
 	}
 
 	public static int getSize32Kb(int sizeKb) {

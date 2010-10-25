@@ -339,17 +339,17 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return size;
 	}
 
-	public int getSize(String gameName, String saveName) {
-		int size;
+    public int getSizeKb(String gameName, String saveName) {
+		int sizeKb;
 
-		size  = getFileSize(fileName);
-		size += getFileSize(icon0FileName);
-		size += getFileSize(icon1FileName);
-		size += getFileSize(pic1FileName);
-		size += getFileSize(snd0FileName);
-		size += getFileSize(paramSfoFileName);
+		sizeKb  = Utilities.getSizeKb(getFileSize(fileName));
+		sizeKb += Utilities.getSizeKb(getFileSize(icon0FileName));
+		sizeKb += Utilities.getSizeKb(getFileSize(icon1FileName));
+		sizeKb += Utilities.getSizeKb(getFileSize(pic1FileName));
+		sizeKb += Utilities.getSizeKb(getFileSize(snd0FileName));
+		sizeKb += Utilities.getSizeKb(getFileSize(paramSfoFileName));
 
-        return size;
+        return sizeKb;
 	}
 
 	private SeekableDataInput getDataInput(String path, String name) {
