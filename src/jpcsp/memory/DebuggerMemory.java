@@ -211,7 +211,8 @@ public class DebuggerMemory extends Memory {
     		} else if (width == 16) {
     			message.append(String.format("%04X", mem.read16(address)));
     		} else if (width == 32) {
-    			message.append(String.format("%08X", mem.read32(address)));
+    			int value = mem.read32(address);
+    			message.append(String.format("%08X (%f)", value, Float.intBitsToFloat(value)));
     		}
 		} else {
 			int length = width / 8;
@@ -243,7 +244,7 @@ public class DebuggerMemory extends Memory {
 		} else if (width == 16) {
 			message.append(String.format("%04X", value & 0xFFFF));
 		} else if (width == 32) {
-			message.append(String.format("%08X", value));
+			message.append(String.format("%08X (%f)", value, Float.intBitsToFloat(value)));
 		}
 		message.append(")");
 

@@ -45,6 +45,7 @@ public class RuntimeThread extends Thread {
 	@Override
 	public void run() {
 		RuntimeContext.runThread(this);
+		setInSyscall(true);
 	}
 
 	public void suspendRuntimeExecution() {
