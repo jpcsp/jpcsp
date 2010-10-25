@@ -66,8 +66,7 @@ int T_Decoder(SceSize _args, void *_argp)
 
 		if( iThreadsRunning == 0 &&
 			IsRingbufferFull(D->Reader) &&
-			D->Video->m_iNumBuffers == D->Video->m_iFullBuffers && 
-			D->Audio->m_iNumBuffers == D->Audio->m_iFullBuffers )
+			D->Video->m_iNumBuffers == D->Video->m_iFullBuffers)
 		{
 			iThreadsRunning = 1;
 			sceKernelSignalSema(D->Video->m_SemaphoreStart, 1);
