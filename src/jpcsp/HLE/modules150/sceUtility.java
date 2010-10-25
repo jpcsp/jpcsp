@@ -1301,47 +1301,55 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
                     int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
 
-                    int totalSize = 0;
-                    int neededSize = 0;
-                    int freeSize = MemoryStick.getFreeSizeKb();
+                    int totalSizeKb = 0;
+                    int neededSizeKb = 0;
+                    int freeSizeKb = MemoryStick.getFreeSizeKb();
 
                     for (int i = 0; i < saveFileSecureNumEntries; i++) {
                         int entryAddr = saveFileSecureEntriesAddr + i * 24;
                         long size = mem.read64(entryAddr);
                         String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
+                        int sizeKb = (int) ((size + 1023) / 1024);
+                        if (log.isDebugEnabled()) {
+                        	log.debug(String.format("   Secure File '%s', size %d (%d KB)", fileName, size, sizeKb));
+                        }
 
-                        totalSize += size;
+                        totalSizeKb += sizeKb;
                     }
                     for (int i = 0; i < saveFileNumEntries; i++) {
                         int entryAddr = saveFileEntriesAddr + i * 24;
                         long size = mem.read64(entryAddr);
                         String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
+                        int sizeKb = (int) ((size + 1023) / 1024);
+                        if (log.isDebugEnabled()) {
+                        	log.debug(String.format("   File '%s', size %d (%d KB)", fileName, size, sizeKb));
+                        }
 
-                        totalSize += size;
+                        totalSizeKb += sizeKb;
                     }
 
                     // If there's not enough size, we have to write how much size we need.
                     // With enough size, our needed size is always 0.
-                    if (totalSize > freeSize) {
-                        neededSize = totalSize;
+                    if (totalSizeKb > freeSizeKb) {
+                        neededSizeKb = totalSizeKb;
                     }
 
                     // Free MS size.
-                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSize);
+                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSizeKb);
                     mem.write32(buffer6Addr + 16, MemoryStick.getSectorSize());
-                    mem.write32(buffer6Addr + 20, freeSize / MemoryStick.getSectorSizeKb());
-                    mem.write32(buffer6Addr + 24, freeSize);
+                    mem.write32(buffer6Addr + 20, freeSizeKb / MemoryStick.getSectorSizeKb());
+                    mem.write32(buffer6Addr + 24, freeSizeKb);
                     Utilities.writeStringNZ(mem, buffer6Addr + 28, 8, memoryStickFreeSpaceString);
 
                     // Size needed to write savedata.
-                    mem.write32(buffer6Addr + 36, neededSize);
-                    Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, neededSize + " KB");
+                    mem.write32(buffer6Addr + 36, neededSizeKb);
+                    Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, MemoryStick.getSizeKbString(neededSizeKb));
 
                     // Size needed to overwrite savedata.
-                    mem.write32(buffer6Addr + 48, neededSize);
-                    Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, neededSize + " KB");
-
+                    mem.write32(buffer6Addr + 48, neededSizeKb);
+                    Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, MemoryStick.getSizeKbString(neededSizeKb));
                 }
+
                 // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
                 if (MemoryStick.getState() != MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED) {
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
@@ -1437,6 +1445,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
             }
         } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
             JOptionPane.showMessageDialog(null, formatMessageForDialog(msgDialogParams.message), title, JOptionPane.INFORMATION_MESSAGE);
+        } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_ERROR) {
+        	String message = String.format("Error 0x%08X", msgDialogParams.errorValue);
+            JOptionPane.showMessageDialog(null, formatMessageForDialog(message), title, JOptionPane.INFORMATION_MESSAGE);
         }
         msgDialogParams.base.result = 0;
         msgDialogParams.write(mem);
