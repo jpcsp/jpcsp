@@ -28,6 +28,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -166,9 +169,17 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     private long tryLockTimestamp;
 
     // VBLANK Multi.
-    private int vblankMultiCurrentVcount;
-    private int vblankMultiCycleNum;
-    private int vblankMultiThreadID = -1;
+    private List<WaitVblankInfo> waitingOnVblank;
+
+    private static class WaitVblankInfo {
+    	public int threadId;
+    	public int unblockVcount;
+
+    	public WaitVblankInfo(int threadId, int unblockVcount) {
+    		this.threadId = threadId;
+    		this.unblockVcount = unblockVcount;
+    	}
+    }
 
     private static class AsyncDisplayThread extends Thread {
 		private Semaphore displaySemaphore;
@@ -233,10 +244,6 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 	private class DisplayVblankAction implements IAction {
 		@Override
 		public void execute() {
-            // Check for previous VBLANK status (multi).
-            if(vblankMultiThreadID > 0) {
-                checkVblankMulti();
-            }
 			hleVblankStart();
 		}
 	}
@@ -251,7 +258,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 		@Override
 		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
 			// Continue the wait state until the vcount changes
-			return sceDisplay.this.vcount == vcount;
+			return sceDisplay.this.vcount < vcount;
 		}
 	}
 
@@ -384,6 +391,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     		displayVblankAction = new DisplayVblankAction();
     		IntrManager.getInstance().addVBlankAction(displayVblankAction);
     	}
+
+    	waitingOnVblank = new LinkedList<WaitVblankInfo>();
 
     	// The VideoEngine needs to be started when a valid GL is available.
     	// Start the VideoEngine at the next display(GLAutoDrawable).
@@ -974,46 +983,30 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         }
     }
 
-    protected void blockCurrentThreadOnVblank(boolean doCallbacks) {
-    	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+    protected void blockCurrentThreadOnVblank(int cycles, boolean doCallbacks) {
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        SceKernelThreadInfo thread = threadMan.getCurrentThread();
         int threadId = threadMan.getCurrentThreadID();
 
-        // Add a Vblank action to unblock the thread
-        UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
-        IntrManager.getInstance().addVBlankActionOnce(vblankAction);
-
-        // Block the current thread
-        if (doCallbacks) {
-        	threadMan.hleBlockCurrentThreadCB(null, new VblankWaitStateChecker(vcount));
+        int lastWaitVblank = thread.displayLastWaitVcount;
+        int unblockVcount = lastWaitVblank + cycles;
+        if (unblockVcount <= vcount) {
+        	// This thread has just to wait for the next VBLANK.
+            // Add a Vblank action to unblock the thread
+            UnblockThreadAction vblankAction = new UnblockThreadAction(threadId);
+            IntrManager.getInstance().addVBlankActionOnce(vblankAction);
+            thread.displayLastWaitVcount = vcount + 1;
         } else {
-        	threadMan.hleBlockCurrentThread();
+        	// This thread has to wait for multiple VBLANK's
+        	WaitVblankInfo waitVblankInfo = new WaitVblankInfo(threadId, unblockVcount);
+        	waitingOnVblank.add(waitVblankInfo);
         }
-    }
 
-    protected void blockCurrentThreadOnVblankMulti(int cycles, boolean doCallbacks) {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        // Save the current status.
-        vblankMultiCurrentVcount = vcount;
-        vblankMultiCycleNum = cycles;
-        vblankMultiThreadID = threadMan.getCurrentThreadID();
         // Block the current thread.
         if (doCallbacks) {
-        	threadMan.hleBlockCurrentThreadCB(null, new VblankWaitStateChecker(vcount));
+        	threadMan.hleBlockCurrentThreadCB(null, new VblankWaitStateChecker(vcount + cycles));
         } else {
         	threadMan.hleBlockCurrentThread();
-        }
-    }
-
-    protected void checkVblankMulti() {
-        // If the current vcount matches the desired sum of cycles, add a new action.
-        if(vcount == (vblankMultiCurrentVcount + vblankMultiCycleNum)) {
-            // Add a Vblank action to unblock the thread.
-            UnblockThreadAction vblankAction = new UnblockThreadAction(vblankMultiThreadID);
-            IntrManager.getInstance().addVBlankActionOnce(vblankAction);
-            // Reset the status.
-            vblankMultiCurrentVcount = 0;
-            vblankMultiCycleNum = 0;
-            vblankMultiThreadID = -1;
         }
     }
 
@@ -1021,6 +1014,22 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     	lastVblankMicroTime = Emulator.getClock().microTime();
     	// Vcount increases at each VBLANK.
     	vcount++;
+
+    	// Check the threads waiting for VBLANK (multi).
+    	if (waitingOnVblank.size() > 0) {
+    		for (ListIterator<WaitVblankInfo> lit = waitingOnVblank.listIterator(); lit.hasNext();) {
+    			WaitVblankInfo waitVblankInfo = lit.next();
+    			if (waitVblankInfo.unblockVcount <= vcount) {
+    				ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+    				SceKernelThreadInfo thread = threadMan.getThreadById(waitVblankInfo.threadId);
+    				if (thread != null) {
+    					thread.displayLastWaitVcount = vcount;
+    					threadMan.hleUnblockThread(waitVblankInfo.threadId);
+    				}
+    				lit.remove();
+    			}
+    		}
+    	}
     }
 
     private boolean isVblank() {
@@ -1486,7 +1495,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             return;
         }
         cpu.gpr[2] = 0;
-        blockCurrentThreadOnVblank(false);
+        blockCurrentThreadOnVblank(1, false);
     }
 
     public void sceDisplayWaitVblankStartCB(Processor processor) {
@@ -1501,7 +1510,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             return;
         }
         cpu.gpr[2] = 0;
-        blockCurrentThreadOnVblank(true);
+        blockCurrentThreadOnVblank(1, true);
     }
 
     public void sceDisplayGetCurrentHcount(Processor processor) {
