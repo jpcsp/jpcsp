@@ -59,8 +59,8 @@ public class MsgPipeManager {
     private static final int PSP_MPP_ATTR_SEND_PRIORITY = 0x100;
     private static final int PSP_MPP_ATTR_RECEIVE_FIFO = 0;
     private static final int PSP_MPP_ATTR_RECEIVE_PRIORITY = 0x1000;
-    private static final int PSP_MPP_ATTR_FIFO = 0;
-    private static final int PSP_MPP_ATTR_PRIORITY = 0x1100;
+    private static final int PSP_MPP_ATTR_SEND = PSP_MPP_ATTR_SEND_FIFO | PSP_MPP_ATTR_SEND_PRIORITY;
+    private static final int PSP_MPP_ATTR_RECEIVE = PSP_MPP_ATTR_RECEIVE_FIFO | PSP_MPP_ATTR_RECEIVE_PRIORITY;
     private final static int PSP_MPP_ATTR_ADDR_HIGH = 0x4000;
 
     private static final int PSP_MPP_WAIT_MODE_COMPLETE = 0; // receive always a complete buffer
@@ -122,7 +122,7 @@ public class MsgPipeManager {
     private void updateWaitingMsgPipeSend(SceKernelMppInfo info) {
         Memory mem = Memory.getInstance();
         // Find threads waiting on this XXX and wake them up.
-        if (((info.attr & PSP_MPP_ATTR_SEND_FIFO) == PSP_MPP_ATTR_SEND_FIFO) || ((info.attr & PSP_MPP_ATTR_FIFO) == PSP_MPP_ATTR_FIFO)) {
+        if ((info.attr & PSP_MPP_ATTR_SEND) == PSP_MPP_ATTR_SEND_FIFO) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
@@ -140,7 +140,7 @@ public class MsgPipeManager {
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 }
             }
-        } else if (((info.attr & PSP_MPP_ATTR_SEND_PRIORITY) == PSP_MPP_ATTR_SEND_PRIORITY) || ((info.attr & PSP_MPP_ATTR_PRIORITY) == PSP_MPP_ATTR_PRIORITY)) {
+        } else if ((info.attr & PSP_MPP_ATTR_SEND) == PSP_MPP_ATTR_SEND_PRIORITY) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
@@ -164,7 +164,7 @@ public class MsgPipeManager {
     private void updateWaitingMsgPipeReceive(SceKernelMppInfo info) {
         Memory mem = Memory.getInstance();
         // Find threads waiting on this XXX and wake them up.
-        if (((info.attr & PSP_MPP_ATTR_RECEIVE_FIFO) == PSP_MPP_ATTR_RECEIVE_FIFO) || ((info.attr & PSP_MPP_ATTR_FIFO) == PSP_MPP_ATTR_FIFO)) {
+        if ((info.attr & PSP_MPP_ATTR_RECEIVE) == PSP_MPP_ATTR_RECEIVE_FIFO) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
@@ -182,7 +182,7 @@ public class MsgPipeManager {
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 }
             }
-        } else if (((info.attr & PSP_MPP_ATTR_RECEIVE_PRIORITY) == PSP_MPP_ATTR_RECEIVE_PRIORITY) || ((info.attr & PSP_MPP_ATTR_PRIORITY) == PSP_MPP_ATTR_PRIORITY)) {
+        } else if ((info.attr & PSP_MPP_ATTR_RECEIVE) == PSP_MPP_ATTR_RECEIVE_PRIORITY) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
