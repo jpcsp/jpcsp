@@ -479,6 +479,15 @@ public class VideoEngine {
         }
     }
 
+    public void hleSetFrameBuf(int topAddr, int bufferWidth, int pixelFormat) {
+    	if (context.fbp != topAddr || context.fbw != bufferWidth || context.psm != pixelFormat) {
+    		context.fbp = topAddr;
+    		context.fbw = bufferWidth;
+    		context.psm = pixelFormat;
+    		geBufChanged = true;
+    	}
+    }
+
     private void startUpdate() {
         statistics.start();
 
@@ -1644,7 +1653,7 @@ public class VideoEngine {
             	context.ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
                 re.setLightModelAmbientColor(context.ambient_light);
                 if (isLogDebugEnabled) {
-                    log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                    log.debug(String.format("ambient light r=%.1f g=%.1f b=%.1f (%06X)",
                     		context.ambient_light[0], context.ambient_light[1], context.ambient_light[2], normalArgument));
                 }
                 break;
@@ -1657,11 +1666,11 @@ public class VideoEngine {
             case LMODE: {
                 re.setLightMode(normalArgument & 1);
                 if (isLogDebugEnabled) {
-                    VideoEngine.log.info("sceGuLightMode(" + (((normalArgument & 1) != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
+                    log.debug("sceGuLightMode(" + (((normalArgument & 1) != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
                 }
                 // Check if other values than 0 and 1 are set
                 if ((normalArgument & ~1) != 0) {
-                    VideoEngine.log.warn(String.format("Unknown light mode sceGuLightMode(%06X)", normalArgument));
+                    log.warn(String.format("Unknown light mode sceGuLightMode(%06X)", normalArgument));
                 }
                 break;
             }

@@ -1381,6 +1381,9 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             }
 
             isFbShowing = true;
+
+            VideoEngine.getInstance().hleSetFrameBuf(topaddrFb, bufferwidthFb, pixelformatFb);
+
             return 0;
         }
         return -1;
