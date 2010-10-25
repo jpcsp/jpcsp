@@ -66,8 +66,12 @@ public class AtracCodec {
     protected int currentLoopCount;
     protected static boolean useMediaEngine = false;
 
-    public static boolean checkMediaEngineState() {
-        return useMediaEngine;
+    public boolean checkMediaEngineState() {
+    	return useMediaEngine && me != null;
+    }
+
+    public static boolean useMediaEngine() {
+    	return useMediaEngine;
     }
 
     public static void setEnableMediaEngine(boolean state) {
@@ -75,7 +79,7 @@ public class AtracCodec {
     }
 
 	public AtracCodec() {
-        if(checkMediaEngineState()) {
+        if (useMediaEngine()) {
             me = new MediaEngine();
             me.setAudioSamplesSize(sceAtrac3plus.maxSamples);
             atracChannel = new PacketChannel();
@@ -175,7 +179,7 @@ public class AtracCodec {
         } else if(codecType == 0x00001000) {
             Modules.log.info("Undecodable AT3+ data detected.");
         }
-        setEnableMediaEngine(false);
+        me = null;
 
 		File decodedFile = new File(getCompleteFileName(decodedAtracSuffix));
 

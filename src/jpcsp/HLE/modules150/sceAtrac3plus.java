@@ -275,7 +275,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
         if (isEnableConnector()) {
             codec.atracSetData(atracID, getIDCodecType(atracID), buffer, bufferSize, inputFileSize, true);
-        } else if (AtracCodec.checkMediaEngineState()) {
+        } else if (codec.checkMediaEngineState()) {
             codec.atracSetData(atracID, getIDCodecType(atracID), buffer, bufferSize, inputFileSize, false);
         }
     }
