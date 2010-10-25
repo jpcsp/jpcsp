@@ -69,7 +69,7 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
             return;
         }
         cpu.gpr[2] = 0;
-        blockCurrentThreadOnVblankMulti(cycleNum, false);
+        blockCurrentThreadOnVblank(cycleNum, false);
 	}
 
 	public void sceDisplayWaitVblankStartMultiCB(Processor processor) {
@@ -86,7 +86,7 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
             return;
         }
         cpu.gpr[2] = 0;
-        blockCurrentThreadOnVblankMulti(cycleNum, true);
+        blockCurrentThreadOnVblank(cycleNum, true);
 	}
 
 	public final HLEModuleFunction sceDisplayWaitVblankStartMultiFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMulti") {

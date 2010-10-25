@@ -106,6 +106,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final ThreadWaitInfo wait;
     public IAction onUnblockAction;
 
+    public int displayLastWaitVcount;
+
     // Callbacks, only 1 of each type can be registered per thread.
     public final static int THREAD_CALLBACK_UMD         = 0;
     public final static int THREAD_CALLBACK_IO          = 1;
