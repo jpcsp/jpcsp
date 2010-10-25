@@ -330,6 +330,10 @@ public class Compiler implements ICompiler {
     		return null;
     	}
 
+    	// Disable the PSP clock while compiling. This could cause timing problems
+    	// in some applications while compiling large MIPS functions.
+    	Emulator.getClock().pause();
+
     	compileDuration.start();
         CompilerContext context = new CompilerContext(classLoader);
         IExecutable executable = null;
@@ -366,6 +370,9 @@ public class Compiler implements ICompiler {
                 Compiler.log.debug("Compilation was now correct with maxInstruction=" + context.getMethodMaxInstructions());
             }
         }
+
+        // Resume the PSP clock after compilation
+        Emulator.getClock().resume();
 
         return executable;
     }
