@@ -26,6 +26,7 @@ import java.io.RandomAccessFile;
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules150.sceDisplay;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
@@ -93,14 +94,14 @@ public class MpegCodec {
 		mpegFileState.write(address, length);
 	}
 
-	public boolean readVideoFrame(int buffer, int frameWidth, int width, int height, int frameCount) {
+	public boolean readVideoFrame(int buffer, int frameWidth, int width, int height, int pixelMode, int frameCount) {
 		if (videoRawFileState.currentInputPosition >= videoRawFileState.currentInputLength) {
 			if (!readNextRawFile(videoRawFileState, frameCount)) {
 				return false;
 			}
 		}
 
-    	decodeVideoFrame(videoRawFileState, buffer, frameWidth, width, height);
+    	decodeVideoFrame(videoRawFileState, buffer, frameWidth, width, height, pixelMode);
 
     	return true;
 	}
@@ -149,7 +150,7 @@ public class MpegCodec {
     	return result;
 	}
 
-	protected void decodeVideoFrame(RawFileState rawFileState, int buffer, int frameWidth, int width, int height) {
+	protected void decodeVideoFrame(RawFileState rawFileState, int buffer, int frameWidth, int width, int height, int pixelMode) {
     	int fileSize = 0;
     	int fileStartPosition = rawFileState.currentInputPosition;
 		if (rawFileState.currentInputLength - rawFileState.currentInputPosition >= 4) {
@@ -174,6 +175,7 @@ public class MpegCodec {
 
 		Memory mem = Memory.getInstance();
 		int dst = buffer;
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
 		for (int y = 0; y < height && rawFileState.currentInputPosition < rawFileState.currentInputLength; y++) {
 			int x;
 			for (x = 0; x < width; rawFileState.currentInputPosition += 4) {
@@ -181,32 +183,36 @@ public class MpegCodec {
 				int c1    = rawFileState.currentInputBuffer[rawFileState.currentInputPosition + 1] & 0xFF;
 				int c2    = rawFileState.currentInputBuffer[rawFileState.currentInputPosition + 2] & 0xFF;
 				int flags = rawFileState.currentInputBuffer[rawFileState.currentInputPosition + 3] & 0xFF;
-				int c = c0 | (c1 << 8) | (c2 << 16) | 0xFF000000;
+				int c = Debug.getPixelColor(c0 | (c1 << 8) | (c2 << 16) | 0xFF000000, pixelMode);
 				int count = (flags & 0x7F) + 1;
 				if ((flags & 0x80) == 0) {
 					// Run Length Encoding (RLE): copy count time the same pixel
-					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dst, count * 4, 4);
+					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dst, count * bytesPerPixel, bytesPerPixel);
 					for (int i = 0; i < count; i++) {
 						memoryWriter.writeNext(c);
 					}
 					memoryWriter.flush();
 					x += count;
-					dst += count * 4;
+					dst += count * bytesPerPixel;
 				} else {
 					// Copy count pixels from the previous video image
 					if (buffer != previousVideoBuffer) {
 						int offset = dst - buffer;
-						mem.memcpy(dst, previousVideoBuffer + offset, count * 4);
+						mem.memcpy(dst, previousVideoBuffer + offset, count * bytesPerPixel);
 					}
-					dst += count * 4;
+					dst += count * bytesPerPixel;
 					x += count;
 
-					mem.write32(dst, c);
-					dst += 4;
+					if (bytesPerPixel == 2) {
+						mem.write16(dst, (short) c);
+					} else {
+						mem.write32(dst, c);
+					}
+					dst += bytesPerPixel;
 					x++;
 				}
 			}
-			dst += (frameWidth - x) * 4;
+			dst += (frameWidth - x) * bytesPerPixel;
 		}
 		previousVideoBuffer = buffer;
 

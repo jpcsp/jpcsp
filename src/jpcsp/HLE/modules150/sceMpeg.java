@@ -337,12 +337,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
-    protected int getTimestampMSB(long ts) {
-        return (int) ((ts >> 32) & 0x1);
-    }
-
-    protected int getTimestampLSB(long ts) {
-        return (int) (ts & 0xFFFFFFFFL);
+    protected void writeTimestamp(Memory mem, int address, long ts) {
+        mem.write32(address, (int) ((ts >> 32) & 0x1));
+        mem.write32(address + 4, (int) ts);
     }
 
     protected boolean isCurrentMpegAnalyzed() {
@@ -384,6 +381,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);
         avcDetailFrameHeight = (mem.read8(buffer_addr + 143) * 0x10);
+        avcDecodeResult = MPEG_AVC_DECODE_SUCCESS;
+        avcFrameStatus = 0;
         if ((mpegRingbuffer != null) && !isCurrentMpegAnalyzed()) {
             mpegRingbuffer.reset();
             mpegRingbuffer.write(mem, mpegRingbufferAddr);
@@ -917,21 +916,17 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // and write the proper AU (access unit) struct.
             if (buffer_addr == MPEG_AVC_ES_HANDLE) {
                 // Presentation Timestamp.
-                mem.write32(au_addr, getTimestampMSB(mpegAvcCurrentPresentationTimestamp));     // MSB (bit 33).
-                mem.write32(au_addr + 4, getTimestampLSB(mpegAvcCurrentPresentationTimestamp)); // LSB (32-bit TimeStamp).
+            	writeTimestamp(mem, au_addr, mpegAvcCurrentPresentationTimestamp);
                 // Decoding Timestamp.
-                mem.write32(au_addr + 8, getTimestampMSB(mpegAvcCurrentDecodingTimestamp));     // MSB (bit 33).
-                mem.write32(au_addr + 12, getTimestampLSB(mpegAvcCurrentDecodingTimestamp));    // LSB (32-bit TimeStamp).
+            	writeTimestamp(mem, au_addr + 8, mpegAvcCurrentDecodingTimestamp);
                 // Allocated buffer.
                 mem.write32(au_addr + 16, buffer_addr);
                 mem.write32(au_addr + 20, MPEG_AVC_ES_SIZE);
             } else {
                 // Presentation Timestamp.
-                mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));     // MSB (bit 33).
-                mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp)); // LSB (32-bit TimeStamp).
+            	writeTimestamp(mem, au_addr, mpegAtracCurrentPresentationTimestamp);
                 // Decoding Timestamp.
-                mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));     // MSB (bit 33).
-                mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));    // LSB (32-bit TimeStamp).
+            	writeTimestamp(mem, au_addr + 8, mpegAtracCurrentDecodingTimestamp);
                 // Allocated buffer.
                 mem.write32(au_addr + 16, buffer_addr);
                 mem.write32(au_addr + 20, MPEG_ATRAC_ES_SIZE);
@@ -1042,11 +1037,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the video timestamp (AVC).
-                if(!ignoreAvc) {
-                    mem.write32(au_addr, getTimestampMSB(mpegAvcCurrentPresentationTimestamp));
-                    mem.write32(au_addr + 4, getTimestampLSB(mpegAvcCurrentPresentationTimestamp));
-                    mem.write32(au_addr + 8, getTimestampMSB(mpegAvcCurrentDecodingTimestamp));
-                    mem.write32(au_addr + 12, getTimestampLSB(mpegAvcCurrentDecodingTimestamp));
+                if (!ignoreAvc) {
+                	writeTimestamp(mem, au_addr, mpegAvcCurrentPresentationTimestamp);
+                	writeTimestamp(mem, au_addr + 8, mpegAvcCurrentDecodingTimestamp);
                 }
                 // Bitfield used to store data attributes.
                 if (mem.isAddressGood(attr_addr)) {
@@ -1093,11 +1086,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
             // Update the audio timestamp (Atrac).
-            if(!ignorePcm) {
-                mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
-                mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
-                mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
-                mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
+            if (!ignorePcm) {
+            	writeTimestamp(mem, au_addr, mpegAtracCurrentPresentationTimestamp);
+            	writeTimestamp(mem, au_addr + 8, mpegAtracCurrentDecodingTimestamp);
             }
             // Bitfield used to store data attributes.
             if (mem.isAddressGood(attr_addr)) {
@@ -1154,11 +1145,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the audio timestamp (Atrac).
-                if(!ignoreAtrac) {
-                    mem.write32(au_addr, getTimestampMSB(mpegAtracCurrentPresentationTimestamp));
-                    mem.write32(au_addr + 4, getTimestampLSB(mpegAtracCurrentPresentationTimestamp));
-                    mem.write32(au_addr + 8, getTimestampMSB(mpegAtracCurrentDecodingTimestamp));
-                    mem.write32(au_addr + 12, getTimestampLSB(mpegAtracCurrentDecodingTimestamp));
+                if (!ignoreAtrac) {
+                	writeTimestamp(mem, au_addr, mpegAtracCurrentPresentationTimestamp);
+                	writeTimestamp(mem, au_addr + 8, mpegAtracCurrentDecodingTimestamp);
                 }
                 // Bitfield used to store data attributes.
                 if (mem.isAddressGood(attr_addr)) {
@@ -1317,7 +1306,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     me.init(meChannel.getFilePath(), true, true);
                     avcFrameStatus = 0;
                 }
-            } else if (isEnableConnector() && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoFrameCount)) {
+            } else if (isEnableConnector() && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoPixelMode, videoFrameCount)) {
                 packetsConsumed = mpegCodec.getPacketsConsumed();
                 mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
                 avcFrameStatus = 1;
@@ -1804,7 +1793,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     }
                 }
 
-                if (isEnableConnector() && mpegCodec.readVideoFrame(dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoFrameCount)) {
+                if (isEnableConnector() && mpegCodec.readVideoFrame(dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoPixelMode, videoFrameCount)) {
                     packetsConsumed = mpegCodec.getPacketsConsumed();
                     mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
                 } else {
