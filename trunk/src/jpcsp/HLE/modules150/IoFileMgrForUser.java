@@ -131,8 +131,27 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public final static int PSP_DEV_TYPE_ALIAS = 0x20;
     public final static int PSP_DEV_TYPE_MOUNT = 0x40;
 
-    // One async operation takes at least 10 millis to complete
-    private final static int ASYNC_DELAY_MILLIS = 10;
+    protected static enum IoOperation {
+    	open(5), close, read(5), write(5), seek, ioctl, remove, rename, mkdir;
+
+    	int delayMillis;
+    	int asyncDelayMillis;
+
+    	IoOperation() {
+    		this.delayMillis = 0;
+    		this.asyncDelayMillis = 0;
+    	}
+
+    	IoOperation(int delayMillis) {
+    		this.delayMillis = delayMillis;
+    		this.asyncDelayMillis = delayMillis;
+    	}
+
+    	IoOperation(int delayMillis, int asyncDelayMillis) {
+    		this.delayMillis = delayMillis;
+    		this.asyncDelayMillis = asyncDelayMillis;
+    	}
+    }
 
     // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
     // SeekableRandomFile doesn't support write only: take "rw",
@@ -662,11 +681,11 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     }
 
     // Handle returning/storing result for sync/async operations
-    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit) {
+    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation) {
         if (info != null) {
             if (async) {
                 if (!info.asyncPending) {
-                    startIoAsync(info, result);
+                    startIoAsync(info, result, ioOperation);
                     result = 0;
                 }
             } else {
@@ -705,6 +724,12 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     public UmdIsoReader getIsoReader() {
         return iso;
+    }
+
+    protected void delayIoOperation(IoOperation ioOperation) {
+    	if (ioOperation.delayMillis > 0) {
+    		Modules.ThreadManForUserModule.hleKernelDelayThread(ioOperation.delayMillis * 1000, false, Emulator.getProcessor().cpu.gpr[2]);
+    	}
     }
 
     /*
@@ -756,12 +781,12 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
      * @param info   the file
      * @param result the result the async IO should return
      */
-    private void startIoAsync(IoInfo info, long result) {
+    private void startIoAsync(IoInfo info, long result, IoOperation ioOperation) {
         if (info == null) {
             return;
         }
         info.asyncPending = true;
-        info.asyncDoneMillis = Emulator.getClock().currentTimeMillis() + ASYNC_DELAY_MILLIS;
+        info.asyncDoneMillis = Emulator.getClock().currentTimeMillis() + ioOperation.asyncDelayMillis;
         info.result = result;
         if (info.asyncThread == null) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -1046,7 +1071,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 Emulator.getProcessor().cpu.gpr[2] = info.uid;
             }
 
-            startIoAsync(info, result);
+            startIoAsync(info, result, IoOperation.open);
         }
     }
 
@@ -1146,7 +1171,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 result = -1;
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.write);
         State.fileLogger.logIoWrite(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
     }
 
@@ -1206,7 +1231,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 Emulator.PauseEmu();
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read);
         State.fileLogger.logIoRead(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
     }
 
@@ -1287,7 +1312,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 result = -1;
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, resultIs64bit);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, resultIs64bit, IoOperation.seek);
 
         if (resultIs64bit) {
             State.fileLogger.logIoSeek64(
@@ -1496,7 +1521,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.ioctl);
         State.fileLogger.logIoIoctl(Emulator.getProcessor().cpu.gpr[2], uid, cmd, indata_addr, inlen, outdata_addr, outlen);
     }
 
@@ -1651,6 +1676,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoClose(uid);
+        delayIoOperation(IoOperation.close);
     }
 
     public void sceIoCloseAsync(Processor processor) {
@@ -1674,7 +1700,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 cpu.gpr[2] = ERROR_ASYNC_BUSY;
             } else {
                 info.closePending = true;
-                updateResult(cpu, info, 0, true, false);
+                updateResult(cpu, info, 0, true, false, IoOperation.close);
             }
         } else {
             cpu.gpr[2] = ERROR_BAD_FILE_DESCRIPTOR;
@@ -1697,6 +1723,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoOpen(filename_addr, flags, permissions, false);
+        delayIoOperation(IoOperation.open);
     }
 
     public void sceIoOpenAsync(Processor processor) {
@@ -1729,6 +1756,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoRead(uid, data_addr, size, false);
+        delayIoOperation(IoOperation.read);
     }
 
     public void sceIoReadAsync(Processor processor) {
@@ -1757,6 +1785,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoWrite(uid, data_addr, size, false);
+        delayIoOperation(IoOperation.write);
     }
 
     public void sceIoWriteAsync(Processor processor) {
@@ -1789,6 +1818,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoLseek(uid, offset, whence, true, false);
+        delayIoOperation(IoOperation.seek);
     }
 
     public void sceIoLseekAsync(Processor processor) {
@@ -1825,6 +1855,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoLseek(uid, (long) offset, whence, false, false);
+        delayIoOperation(IoOperation.seek);
     }
 
     public void sceIoLseek32Async(Processor processor) {
@@ -1860,6 +1891,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoIoctl(uid, cmd, indata_addr, inlen, outdata_addr, outlen, false);
+        delayIoOperation(IoOperation.ioctl);
     }
 
     public void sceIoIoctlAsync(Processor processor) {
@@ -1946,6 +1978,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         }
         State.fileLogger.logIoDopen(Emulator.getProcessor().cpu.gpr[2], dirname_addr, dirname);
+        delayIoOperation(IoOperation.open);
     }
 
     public void sceIoDread(Processor processor) {
@@ -1987,6 +2020,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0;
         }
         State.fileLogger.logIoDread(cpu.gpr[2], uid, dirent_addr);
+        delayIoOperation(IoOperation.read);
     }
 
     public void sceIoDclose(Processor processor) {
@@ -2013,6 +2047,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
 
         State.fileLogger.logIoDclose(cpu.gpr[2], uid);
+        delayIoOperation(IoOperation.close);
     }
 
     public void sceIoRemove(Processor processor) {
@@ -2047,6 +2082,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
 
         State.fileLogger.logIoRemove(cpu.gpr[2], file_addr, filename);
+        delayIoOperation(IoOperation.remove);
     }
 
     public void sceIoMkdir(Processor processor) {
@@ -2074,6 +2110,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
 
         State.fileLogger.logIoMkdir(cpu.gpr[2], dir_addr, dir, permissions);
+        delayIoOperation(IoOperation.mkdir);
     }
 
     public void sceIoRmdir(Processor processor) {
@@ -2100,6 +2137,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
 
         State.fileLogger.logIoRmdir(cpu.gpr[2], dir_addr, dir);
+        delayIoOperation(IoOperation.remove);
     }
 
     public void sceIoChdir(Processor processor) {
@@ -2291,6 +2329,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
 
         State.fileLogger.logIoRename(cpu.gpr[2], file_addr, filename, new_file_addr, newfilename);
+        delayIoOperation(IoOperation.rename);
     }
 
     public void sceIoDevctl(Processor processor) {
@@ -2327,7 +2366,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         switch (cmd) {
             // Get UMD disc type.
             case 0x01F20001: {
-                log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " get disc type");
+            	if (log.isDebugEnabled()) {
+            		log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " get disc type");
+            	}
                 if (mem.isAddressGood(outdata_addr) && outlen >= 8) {
                     // 0 = No disc.
                     // 0x10 = Game disc.
@@ -2349,9 +2390,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
             // Seek UMD disc (raw).
             case 0x01F100A4: {
-                log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " seek UMD disc");
+            	if (log.isDebugEnabled()) {
+            		log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " seek UMD disc");
+            	}
                 if ((mem.isAddressGood(indata_addr) && inlen >= 4)) {
                     int sector = mem.read32(indata_addr);
+                    if (log.isDebugEnabled()) {
+                    	log.debug("sector=" + sector);
+                    }
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;
@@ -2360,10 +2406,15 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
             // Prepare UMD data into cache.
             case 0x01F300A5: {
-                log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " prepare UMD data to cache");
+            	if (log.isDebugEnabled()) {
+            		log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " prepare UMD data to cache");
+            	}
                 if ((mem.isAddressGood(indata_addr) && inlen >= 4) && (mem.isAddressGood(outdata_addr) && outlen >= 4)) {
                     int sector = mem.read32(indata_addr + 4);  // First sector of data to read.
                     int sectorNum = mem.read32(indata_addr + 12);  // Length of data to read.
+                    if (log.isDebugEnabled()) {
+                    	log.debug("sector=" + sector + ", sectorNum=" + sectorNum);
+                    }
                     mem.write32(outdata_addr, 1); // Status (unitary index with unknown meaning).
                     cpu.gpr[2] = 0;
                 } else {
@@ -2373,7 +2424,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
             // Register memorystick insert/eject callback (mscmhc0).
             case 0x02015804: {
-                log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
+        		log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!device.equals("mscmhc0:")) {
                     cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
@@ -2393,7 +2444,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
             // Unregister memorystick insert/eject callback (mscmhc0).
             case 0x02015805: {
-                log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
+        		log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!device.equals("mscmhc0:")) {
                     cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
@@ -2503,6 +2554,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
             // Get MS capacity (fatms0).
             case 0x02425818: {
+                log.debug("sceIoDevctl get MS capacity (fatms0)");
                 int sectorSize = 0x200;
                 int sectorCount = 0x08;
                 int maxClusters = (int) ((MemoryStick.getFreeSize() * 95L / 100) / (sectorSize * sectorCount));
@@ -2576,6 +2628,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 break;
         }
         State.fileLogger.logIoDevctl(cpu.gpr[2], device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen);
+        delayIoOperation(IoOperation.ioctl);
     }
 
     public void sceIoGetDevType(Processor processor) {
