@@ -28,15 +28,17 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.graphics.RE.IRenderingEngine;
 
 /**
  * @author gid15
  *
  */
-public class GeContext {
+public class GeContext extends pspAbstractMemoryMappedStructure {
 	private final static Logger log = VideoEngine.log;
-	private IRenderingEngine re;
+	protected IRenderingEngine re;
+	protected boolean dirty;
 
 	public int base;
     // The value of baseOffset has to be added (not ORed) to the base value.
@@ -61,6 +63,8 @@ public class GeContext {
     public float[] boneMatrixLinear = new float[8 * 4 * 4]; // Linearized version of bone_uploaded_matrix
 	public boolean depthMask;
     public int colorMask[] = new int[] { 0x00, 0x00, 0x00, 0x00 };
+    public int alphaFunc;
+    public int alphaRef;
 	public int stencilFunc;
 	public int stencilRef;
 	public int stencilMask;
@@ -75,7 +79,7 @@ public class GeContext {
     public float[] morph_weight = new float[8];
     public float[] tex_envmap_matrix = new float[4 * 4];
     public float[][] light_pos = new float[NUM_LIGHTS][4];
-    public float[][] light_dir = new float[NUM_LIGHTS][3];
+    public float[][] light_dir = new float[NUM_LIGHTS][4];
     public int[] light_enabled = new int[NUM_LIGHTS];
     public int[] light_type = new int[NUM_LIGHTS];
     public int[] light_kind = new int[NUM_LIGHTS];
@@ -84,6 +88,10 @@ public class GeContext {
     public float[][] lightSpecularColor = new float[NUM_LIGHTS][4];
     public float[] spotLightExponent = new float[NUM_LIGHTS];
     public float[] spotLightCutoff = new float[NUM_LIGHTS];
+    public float[] lightConstantAttenuation = new float[NUM_LIGHTS];
+    public float[] lightLinearAttenuation = new float[NUM_LIGHTS];
+    public float[] lightQuadraticAttenuation = new float[NUM_LIGHTS];
+    public int lightMode;
     public float[] fog_color = new float[4];
     public float fog_far = 0.0f, fog_dist = 0.0f;
     public float nearZ = 0.0f, farZ = 0.0f, zscale, zpos;
@@ -93,6 +101,7 @@ public class GeContext {
     public float[] mat_specular = new float[4];
     public float[] mat_emissive = new float[4];
     public float[] ambient_light = new float[4];
+    public float materialShininess;
     public int texture_storage, texture_num_mip_maps;
     public boolean texture_swizzle;
     public int[] texture_base_pointer = new int[8];
@@ -141,6 +150,8 @@ public class GeContext {
     public int colorTestFunc;
     public int[] colorTestRef = { 0, 0, 0 };
     public int[] colorTestMsk = { 0, 0, 0 };
+    public int shadeModel;
+    public int logicOp;
     public final List<EnableDisableFlag> flags = new LinkedList<EnableDisableFlag>();
     public final EnableDisableFlag alphaTestFlag = new EnableDisableFlag("GU_ALPHA_TEST", IRenderingEngine.GU_ALPHA_TEST);
     public final EnableDisableFlag depthTestFlag = new EnableDisableFlag("GU_DEPTH_TEST", IRenderingEngine.GU_DEPTH_TEST);
@@ -165,10 +176,15 @@ public class GeContext {
     public final EnableDisableFlag colorLogicOpFlag = new EnableDisableFlag("GU_COLOR_LOGIC_OP", IRenderingEngine.GU_COLOR_LOGIC_OP);
     public final EnableDisableFlag faceNormalReverseFlag = new EnableDisableFlag("GU_FACE_NORMAL_REVERSE", IRenderingEngine.GU_FACE_NORMAL_REVERSE);
     public final EnableDisableFlag patchFaceFlag = new EnableDisableFlag("GU_PATCH_FACE", IRenderingEngine.GU_PATCH_FACE);
+    public final EnableDisableFlag fragment2xFlag = new EnableDisableFlag("GU_FRAGMENT_2X", IRenderingEngine.GU_FRAGMENT_2X);
+    public final EnableDisableFlag reColorMaterial = new EnableDisableFlag("RE_COLOR_MATERIAL", IRenderingEngine.RE_COLOR_MATERIAL);
+    public final EnableDisableFlag reTextureGenS = new EnableDisableFlag("RE_TEXTURE_GEN_S", IRenderingEngine.RE_TEXTURE_GEN_S);
+    public final EnableDisableFlag reTextureGenT = new EnableDisableFlag("RE_TEXTURE_GEN_T", IRenderingEngine.RE_TEXTURE_GEN_T);
 
     public GeContext() {
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
         light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
+        light_dir[0][3] = light_dir[1][3] = light_dir[2][3] = light_dir[3][3] = 1.f;
         morph_weight[0] = 1.f;
         tex_mipmap_mode = TBIAS_MODE_AUTO;
         tex_mipmap_bias = 0.f;
@@ -181,13 +197,426 @@ public class GeContext {
         light_kind[0] = light_kind[1] = light_kind[2] = light_kind[3] = -1;
         lightSpecularColor[0][0] = lightSpecularColor[1][0] = lightSpecularColor[2][0] = lightSpecularColor[3][0] = -1;
         light_enabled[0] = light_enabled[1] = light_enabled[2] = light_enabled[3] = -1;
+
+        dirty = false;
     }
 
     public void setRenderingEngine(IRenderingEngine re) {
     	this.re = re;
     }
 
-    private static int contextBitCount = 0;
+    /**
+     * Update the RenderingEngine based on the context values.
+     * This method can only be called by a thread being allowed to perform
+     * RenderingEngine calls (i.e. the GUI thread).
+     */
+    public void update() {
+    	if (!dirty) {
+    		return;
+    	}
+
+    	for (EnableDisableFlag flag : flags) {
+    		flag.update();
+    	}
+    	if (fogFlag.isEnabled()) {
+    		re.setFogHint();
+    	}
+    	if (lineSmoothFlag.isEnabled()) {
+    		re.setLineSmoothHint();
+    	}
+    	re.setPatchDiv(patch_div_s, patch_div_t);
+    	re.setPatchPrim(patch_prim);
+    	re.setShadeModel(shadeModel);
+    	re.setMaterialEmissiveColor(mat_emissive);
+    	re.setMaterialShininess(materialShininess);
+    	re.setLightModelAmbientColor(ambient_light);
+    	re.setLightMode(lightMode);
+    	for (int light = 0; light < NUM_LIGHTS; light++) {
+    		re.setLightType(light, light_type[light], light_kind[light]);
+    		re.setLightConstantAttenuation(light, lightConstantAttenuation[light]);
+    		re.setLightLinearAttenuation(light, lightLinearAttenuation[light]);
+    		re.setLightQuadraticAttenuation(light, lightQuadraticAttenuation[light]);
+    		re.setLightAmbientColor(light, lightAmbientColor[light]);
+    		re.setLightDiffuseColor(light, lightDiffuseColor[light]);
+    		re.setLightSpecularColor(light, lightSpecularColor[light]);
+    	}
+    	re.setFrontFace(frontFaceCw);
+    	re.setTextureEnvColor(tex_env_color);
+    	re.setFogColor(fog_color);
+    	re.setColorTestFunc(colorTestFunc);
+    	re.setColorTestReference(colorTestRef);
+    	re.setColorTestMask(colorTestMsk);
+    	re.setAlphaFunc(alphaFunc, alphaRef);
+    	re.setStencilFunc(stencilFunc, stencilRef, stencilMask);
+    	re.setStencilOp(stencilOpFail, stencilOpZFail, stencilOpZPass);
+    	re.setBlendEquation(blendEquation);
+    	re.setLogicOp(logicOp);
+    	re.setDepthMask(depthMask);
+    	re.setColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+    	re.setTextureFunc(textureFunc, textureAlphaUsed, textureColorDoubled);
+
+    	dirty = false;
+    }
+
+    public void setDirty() {
+    	dirty = true;
+    }
+
+    @Override
+	protected void read() {
+		base = read32();
+		baseOffset = read32();
+
+		fbp = read32();
+		fbw = read32();
+		zbp = read32();
+		zbw = read32();
+		psm = read32();
+
+		int flagBits = read32();
+		for (EnableDisableFlag flag : flags) {
+			flag.restore(flagBits);
+		}
+
+		region_x1 = read32();
+		region_y1 = read32();
+		region_x2 = read32();
+		region_y2 = read32();
+
+		region_width = read32();
+		region_height = read32();
+		scissor_x1 = read32();
+		scissor_y1 = read32();
+		scissor_x2 = read32();
+		scissor_y2 = read32();
+		scissor_width = read32();
+		scissor_height = read32();
+		offset_x = read32();
+		offset_y = read32();
+		viewport_width = read32();
+		viewport_height = read32();
+		viewport_cx = read32();
+		viewport_cy = read32();
+
+		readFloatArray(proj_uploaded_matrix);
+		readFloatArray(texture_uploaded_matrix);
+		readFloatArray(model_uploaded_matrix);
+		readFloatArray(view_uploaded_matrix);
+		readFloatArray(bone_uploaded_matrix);
+
+		// Rebuild boneMatrixLinear from bone_uploaded_matrix
+		for (int matrix = 0, j = 0; matrix < bone_uploaded_matrix.length; matrix++) {
+			for (int i = 0; i < 12; i++, j++) {
+				boneMatrixLinear[(j / 3) * 4 + (j % 3)] = bone_uploaded_matrix[matrix][i];
+			}
+		}
+
+		depthMask = readBoolean();
+		read32Array(colorMask);
+		alphaFunc = read32();
+		alphaRef = read32();
+		stencilFunc = read32();
+		stencilRef = read32();
+		stencilMask = read32();
+		stencilOpFail = read32();
+		stencilOpZFail = read32();
+		stencilOpZPass = read32();
+		textureFunc = read32();
+		textureColorDoubled = readBoolean();
+		textureAlphaUsed = readBoolean();
+		frontFaceCw = readBoolean();
+		depthFunc = read32();
+
+		readFloatArray(morph_weight);
+		readFloatArray(tex_envmap_matrix);
+		readFloatArray(light_pos);
+		readFloatArray(light_dir);
+
+		read32Array(light_enabled);
+		read32Array(light_type);
+		read32Array(light_kind);
+		readFloatArray(lightAmbientColor);
+		readFloatArray(lightDiffuseColor);
+		readFloatArray(lightSpecularColor);
+		readFloatArray(spotLightExponent);
+		readFloatArray(spotLightCutoff);
+		readFloatArray(lightConstantAttenuation);
+		readFloatArray(lightLinearAttenuation);
+		readFloatArray(lightQuadraticAttenuation);
+		lightMode = read32();
+
+		readFloatArray(fog_color);
+		fog_far = readFloat();
+		fog_dist = readFloat();
+
+		nearZ = readFloat();
+		farZ = readFloat();
+		zscale = readFloat();
+		zpos = readFloat();
+
+		mat_flags = read32();
+		readFloatArray(mat_ambient);
+		readFloatArray(mat_diffuse);
+		readFloatArray(mat_specular);
+		readFloatArray(mat_emissive);
+
+		readFloatArray(ambient_light);
+		materialShininess = readFloat();
+
+		texture_storage = read32();
+		texture_num_mip_maps = read32();
+		texture_swizzle = readBoolean();
+
+		read32Array(texture_base_pointer);
+		read32Array(texture_width);
+		read32Array(texture_height);
+		read32Array(texture_buffer_width);
+		tex_min_filter = read32();
+		tex_mag_filter = read32();
+		tex_mipmap_mode = read32();
+		tex_mipmap_bias = readFloat();
+		tex_mipmap_bias_int = read32();
+		mipmapShareClut = readBoolean();
+
+		tex_translate_x = readFloat();
+		tex_translate_y = readFloat();
+		tex_scale_x = readFloat();
+		tex_scale_y = readFloat();
+		readFloatArray(tex_env_color);
+
+		tex_clut_addr = read32();
+		tex_clut_num_blocks = read32();
+		tex_clut_mode = read32();
+		tex_clut_shift = read32();
+		tex_clut_mask = read32();
+		tex_clut_start = read32();
+		tex_wrap_s = read32();
+		tex_wrap_t = read32();
+		tex_shade_u = read32();
+		tex_shade_v = read32();
+		patch_div_s = read32();
+		patch_div_t = read32();
+		patch_prim = read32();
+		tslope_level = readFloat();
+
+		transform_mode = read32();
+
+		textureTx_sourceAddress = read32();
+		textureTx_sourceLineWidth = read32();
+		textureTx_destinationAddress = read32();
+		textureTx_destinationLineWidth = read32();
+		textureTx_width = read32();
+		textureTx_height = read32();
+		textureTx_sx = read32();
+		textureTx_sy = read32();
+		textureTx_dx = read32();
+		textureTx_dy = read32();
+		textureTx_pixelSize = read32();
+
+		readFloatArray(dfix_color);
+		readFloatArray(sfix_color);
+		blend_src = read32();
+		blend_dst = read32();
+		blendEquation = read32();
+
+		read32Array(dither_matrix);
+
+		tex_map_mode = read32();
+		tex_proj_map_mode = read32();
+
+		colorTestFunc = read32();
+		read32Array(colorTestRef);
+		read32Array(colorTestMsk);
+
+		shadeModel = read32();
+		logicOp = read32();
+
+		if (getOffset() > sizeof()) {
+			log.error(String.format("GE context overflow: %d (max allowed=%d)", getOffset(), sizeof()));
+		}
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("GE context read size: %d (max allowed=%d)", getOffset(), sizeof()));
+		}
+    }
+
+	@Override
+	protected void write() {
+		write32(base);
+		write32(baseOffset);
+
+		write32(fbp);
+		write32(fbw);
+		write32(zbp);
+		write32(zbw);
+		write32(psm);
+
+		int flagBits = 0;
+		for (EnableDisableFlag flag : flags) {
+			flagBits = flag.save(flagBits);
+		}
+		write32(flagBits);
+
+		write32(region_x1);
+		write32(region_y1);
+		write32(region_x2);
+		write32(region_y2);
+
+		write32(region_width);
+		write32(region_height);
+		write32(scissor_x1);
+		write32(scissor_y1);
+		write32(scissor_x2);
+		write32(scissor_y2);
+		write32(scissor_width);
+		write32(scissor_height);
+		write32(offset_x);
+		write32(offset_y);
+		write32(viewport_width);
+		write32(viewport_height);
+		write32(viewport_cx);
+		write32(viewport_cy);
+
+		writeFloatArray(proj_uploaded_matrix);
+		writeFloatArray(texture_uploaded_matrix);
+		writeFloatArray(model_uploaded_matrix);
+		writeFloatArray(view_uploaded_matrix);
+		writeFloatArray(bone_uploaded_matrix);
+
+		writeBoolean(depthMask);
+		write32Array(colorMask);
+		write32(alphaFunc);
+		write32(alphaRef);
+		write32(stencilFunc);
+		write32(stencilRef);
+		write32(stencilMask);
+		write32(stencilOpFail);
+		write32(stencilOpZFail);
+		write32(stencilOpZPass);
+		write32(textureFunc);
+		writeBoolean(textureColorDoubled);
+		writeBoolean(textureAlphaUsed);
+		writeBoolean(frontFaceCw);
+		write32(depthFunc);
+
+		writeFloatArray(morph_weight);
+		writeFloatArray(tex_envmap_matrix);
+		writeFloatArray(light_pos);
+		writeFloatArray(light_dir);
+
+		write32Array(light_enabled);
+		write32Array(light_type);
+		write32Array(light_kind);
+		writeFloatArray(lightAmbientColor);
+		writeFloatArray(lightDiffuseColor);
+		writeFloatArray(lightSpecularColor);
+		writeFloatArray(spotLightExponent);
+		writeFloatArray(spotLightCutoff);
+		writeFloatArray(lightConstantAttenuation);
+		writeFloatArray(lightLinearAttenuation);
+		writeFloatArray(lightQuadraticAttenuation);
+		write32(lightMode);
+
+		writeFloatArray(fog_color);
+		writeFloat(fog_far);
+		writeFloat(fog_dist);
+
+		writeFloat(nearZ);
+		writeFloat(farZ);
+		writeFloat(zscale);
+		writeFloat(zpos);
+
+		write32(mat_flags);
+		writeFloatArray(mat_ambient);
+		writeFloatArray(mat_diffuse);
+		writeFloatArray(mat_specular);
+		writeFloatArray(mat_emissive);
+
+		writeFloatArray(ambient_light);
+		writeFloat(materialShininess);
+
+		write32(texture_storage);
+		write32(texture_num_mip_maps);
+		writeBoolean(texture_swizzle);
+
+		write32Array(texture_base_pointer);
+		write32Array(texture_width);
+		write32Array(texture_height);
+		write32Array(texture_buffer_width);
+		write32(tex_min_filter);
+		write32(tex_mag_filter);
+		write32(tex_mipmap_mode);
+		writeFloat(tex_mipmap_bias);
+		write32(tex_mipmap_bias_int);
+		writeBoolean(mipmapShareClut);
+
+		writeFloat(tex_translate_x);
+		writeFloat(tex_translate_y);
+		writeFloat(tex_scale_x);
+		writeFloat(tex_scale_y);
+		writeFloatArray(tex_env_color);
+
+		write32(tex_clut_addr);
+		write32(tex_clut_num_blocks);
+		write32(tex_clut_mode);
+		write32(tex_clut_shift);
+		write32(tex_clut_mask);
+		write32(tex_clut_start);
+		write32(tex_wrap_s);
+		write32(tex_wrap_t);
+		write32(tex_shade_u);
+		write32(tex_shade_v);
+		write32(patch_div_s);
+		write32(patch_div_t);
+		write32(patch_prim);
+		writeFloat(tslope_level);
+
+		write32(transform_mode);
+
+		write32(textureTx_sourceAddress);
+		write32(textureTx_sourceLineWidth);
+		write32(textureTx_destinationAddress);
+		write32(textureTx_destinationLineWidth);
+		write32(textureTx_width);
+		write32(textureTx_height);
+		write32(textureTx_sx);
+		write32(textureTx_sy);
+		write32(textureTx_dx);
+		write32(textureTx_dy);
+		write32(textureTx_pixelSize);
+
+		writeFloatArray(dfix_color);
+		writeFloatArray(sfix_color);
+		write32(blend_src);
+		write32(blend_dst);
+		write32(blendEquation);
+
+		write32Array(dither_matrix);
+
+		write32(tex_map_mode);
+		write32(tex_proj_map_mode);
+
+		write32(colorTestFunc);
+		write32Array(colorTestRef);
+		write32Array(colorTestMsk);
+
+		write32(shadeModel);
+		write32(logicOp);
+
+		if (getOffset() > sizeof()) {
+			log.error(String.format("GE context overflow: %d (max allowed=%d)", getOffset(), sizeof()));
+		}
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("GE context write size: %d (max allowed=%d)", getOffset(), sizeof()));
+		}
+	}
+
+	@Override
+	public int sizeof() {
+		// pspsdk defines the context as an array of 512 unsigned int's
+		return 512 * 4;
+	}
+
+	private static int contextBitCount = 0;
     public class EnableDisableFlag {
         private boolean enabled;
         private final int reFlag;
@@ -227,7 +656,7 @@ public class GeContext {
             this.enabled = enabled;
             update();
 
-            if (log.isDebugEnabled()) {
+            if (log.isDebugEnabled() && name != null) {
                 log.debug(String.format("sceGu%s(%s)", enabled ? "Enable" : "Disable", name));
             }
         }
@@ -252,7 +681,7 @@ public class GeContext {
         }
 
         public void restore(int bits) {
-            setEnabled((bits & (1 << contextBit)) != 0);
+        	enabled = (bits & (1 << contextBit)) != 0;
         }
 
 		public int getReFlag() {

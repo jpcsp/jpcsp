@@ -20,9 +20,7 @@ import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -33,13 +31,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import javax.imageio.ImageIO;
-import javax.media.opengl.DebugGL;
-import javax.media.opengl.GLAutoDrawable;
-import javax.media.opengl.GLCanvas;
-import javax.media.opengl.GLCapabilities;
-import javax.media.opengl.GLEventListener;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -69,11 +60,13 @@ import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
-import com.sun.opengl.util.Screenshot;
-
 import org.apache.log4j.Logger;
+import org.lwjgl.LWJGLException;
+import org.lwjgl.opengl.AWTGLCanvas;
+import org.lwjgl.opengl.ContextAttribs;
+import org.lwjgl.opengl.PixelFormat;
 
-public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, HLEStartModule {
+public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule {
     protected static Logger log = Modules.getLogger("sceDisplay");
 
 	private static final long serialVersionUID = 2267866365228834812L;
@@ -132,6 +125,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     private Buffer pixelsFb;
     private Buffer pixelsGe;
     private Buffer temp;
+    private int tempSize;
     private int canvasWidth;
     private int canvasHeight;
     private boolean createTex;
@@ -207,7 +201,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 					if (run) {
 			        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
 			        		display.lockDisplay();
-			        		display.display();
+			        		display.repaint();
 			        		display.unlockDisplay();
 			        	}
 					}
@@ -319,20 +313,12 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         }
     }
 
-    public static final GLCapabilities capabilities = new GLCapabilities();
-
-    static {
-    	capabilities.setStencilBits(8);
-    	capabilities.setAlphaBits(8);
-    }
-
-    public sceDisplay() {
-    	super (capabilities);
-
+    public sceDisplay() throws LWJGLException {
+    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8), null, new ContextAttribs().withDebug(useDebugGL));
         setSize(480, 272);
-        addGLEventListener(this);
         texFb = -1;
         startModules = false;
+        tempSize = 0;
     }
 
     @Override
@@ -583,6 +569,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         // the display height in lines.
 
 		pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+		checkTemp();
 
 		if (loadGEToScreen) {
 			if (VideoEngine.log.isDebugEnabled()) {
@@ -598,7 +585,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
 			// Define the texture from the GE Memory
 		    re.setPixelStore(bufferwidthGe, getPixelFormatBytes(pixelformatGe));
-			re.setTexSubImage(0, 0, 0, bufferwidthGe, heightGe, pixelformatGe, pixelformatGe, pixelsGe);
+		    int textureSize = bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe);
+			re.setTexSubImage(0, 0, 0, bufferwidthGe, heightGe, pixelformatGe, pixelformatGe, textureSize, pixelsGe);
 
 			// Draw the GE
 		    drawFrameBuffer(false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
@@ -616,7 +604,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     }
 
     public static int getPixelFormatBytes(int pixelformat) {
-        return pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888 ? 4 : 2;
+    	return IRenderingEngine.sizeOfTextureType[pixelformat];
     }
 
     private Buffer getPixels(int topaddr, int bottomaddr) {
@@ -706,7 +694,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     }
 
     //Testing screenshot taking function (using disc id)
-    public void savescreen(GLAutoDrawable drawable)
+    public void savescreen()
     {
         int tag = 0;
 
@@ -722,14 +710,15 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             }
         }
 
-        BufferedImage img = Screenshot.readToBufferedImage(width, height);
-        try{
-            ImageIO.write(img, "png", screenshot);
-        }catch(IOException e){
-            return;
-        }finally{
-            img.flush();
-        }
+        // TODO Implement Screenshot using LWJGL
+//        BufferedImage img = Screenshot.readToBufferedImage(width, height);
+//        try{
+//            ImageIO.write(img, "png", screenshot);
+//        }catch(IOException e){
+//            return;
+//        }finally{
+//            img.flush();
+//        }
 
         getscreen = false;
     }
@@ -766,7 +755,8 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             internalTextureFormat,
             bufferwidthGe, Utilities.makePow2(heightGe),
             pixelformatGe,
-            pixelformatGe, null);
+            pixelformatGe,
+            0, null);
 
         re.setTextureMipmapMinFilter(TFLT_NEAREST);
         re.setTextureMipmapMagFilter(TFLT_NEAREST);
@@ -783,7 +773,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         re.getTexImage(0, pixelformatGe, pixelformatGe, temp);
 
         // Capture the GE image
-        CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, pixelformatGe, false, 0, false);
+        CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, pixelformatGe, false, 0, true, false);
 
     	// Delete the GE texture
         re.deleteTexture(texGe);
@@ -868,6 +858,7 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 
         IREBufferManager bufferManager = re.getBufferManager();
         ByteBuffer drawByteBuffer = bufferManager.getBuffer(drawBuffer);
+        drawByteBuffer.clear();
         FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
         drawFloatBuffer.clear();
         drawFloatBuffer.put(texS1);
@@ -956,16 +947,20 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
 	            		IntBuffer srcBuffer = (IntBuffer) temp;
 	            		IntBuffer dstBuffer = (IntBuffer) pixels;
 	            		int pixelsPerElement = 4 / getPixelFormatBytes(pixelformat);
-	            		int maxHeight = VideoEngine.getInstance().getMaxSpriteHeight();
+	            		int maxHeight = videoEngine.getMaxSpriteHeight();
+	            		int maxWidth = videoEngine.getMaxSpriteWidth();
 	            		if (VideoEngine.log.isDebugEnabled()) {
-	            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight);
+	            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight + ", maxSpriteWidth=" + maxWidth);
 	            		}
 	            		if (maxHeight > height) {
 	            			maxHeight = height;
 	            		}
+	            		if (maxWidth > width) {
+	            			maxWidth = width;
+	            		}
 	            		for (int y = 0; y < maxHeight; y++) {
 	            			int startOffset = y * bufferwidth / pixelsPerElement;
-	            			srcBuffer.limit(startOffset + (width + 1) / pixelsPerElement);
+	            			srcBuffer.limit(startOffset + (maxWidth + 1) / pixelsPerElement);
 	            			srcBuffer.position(startOffset);
 	            			dstBuffer.position(startOffset);
                             if(srcBuffer.remaining() < dstBuffer.remaining()) {
@@ -1042,16 +1037,16 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
     }
 
 	@Override
-	public void display(GLAutoDrawable drawable) {
+	protected void paintGL() {
     	if (statistics != null) {
             statistics.start();
         }
 
     	if (re == null) {
     		if (startModules) {
-    			re = RenderingEngineFactory.createRenderingEngine(drawable.getGL());
+    			re = RenderingEngineFactory.createRenderingEngine();
     		} else {
-    			re = RenderingEngineFactory.createInitialRenderingEngine(drawable.getGL());
+    			re = RenderingEngineFactory.createInitialRenderingEngine();
     		}
     	}
 
@@ -1085,23 +1080,15 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
                 internalTextureFormat,
                 bufferwidthFb, Utilities.makePow2(height),
                 pixelformatFb,
-                pixelformatFb, null);
+                pixelformatFb,
+                0, null);
             re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
             re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
             re.setTextureMipmapMinLevel(0);
             re.setTextureMipmapMaxLevel(0);
             re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
 
-            if (Memory.getInstance().getMainMemoryByteBuffer() instanceof IntBuffer) {
-            	temp = IntBuffer.allocate(
-            			bufferwidthFb * Utilities.makePow2(height) *
-            			getPixelFormatBytes(pixelformatFb) / 4);
-            } else {
-            	temp = ByteBuffer.allocate(
-            			bufferwidthFb * Utilities.makePow2(height) *
-            			getPixelFormatBytes(pixelformatFb)).order(ByteOrder.LITTLE_ENDIAN);
-            }
-
+            checkTemp();
             createTex = false;
         }
 
@@ -1115,6 +1102,9 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             VideoEngine.getInstance().update();
             re.endDisplay();
         } else {
+        	if (log.isDebugEnabled()) {
+        		log.debug("sceDisplay.paintGL - start display");
+        	}
         	re.startDisplay();
 
         	// Render GE
@@ -1123,24 +1113,26 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             // If the GE is not at the same address as the FrameBuffer,
             // redisplay the GE so that the VideoEngine can update it
             if (bottomaddrGe != bottomaddrFb) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("sceDisplay.paintGL - reloading the GE from memory 0x%08X", topaddrGe));
+            	}
 	            pixelsGe.clear();
 	            re.bindTexture(texFb);
-
-	            // An alternative to glTexSubImage2D would be to use glDrawPixels to
-	            // render the frame buffer.
-	            // But glDrawPixels is showing around 10% performance decrease
-	            // against glTexSubImage2D.
-
-	            // Use format without alpha channel if the source buffer doesn't have one
+	            re.setPixelStore(bufferwidthGe, pixelformatGe);
+	            int textureSize = bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe);
 				re.setTexSubImage(0,
 	                0, 0, bufferwidthGe, heightGe,
 	                pixelformatGe,
-	                pixelformatGe, pixelsGe);
+	                pixelformatGe,
+	                textureSize, pixelsGe);
 
 	            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
             }
 
             if (VideoEngine.getInstance().update()) {
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("sceDisplay.paintGL - saving the GE to memory 0x%08X", topaddrGe));
+            	}
                 // Update VRAM only if GE actually drew something
                 // Set texFb as the current texture
                 re.bindTexture(texFb);
@@ -1156,12 +1148,18 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             }
 
             // Render FB
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceDisplay.paintGL - rendering the FB 0x%08X", topaddrFb));
+        	}
             pixelsFb.clear();
             re.bindTexture(texFb);
+            re.setPixelStore(bufferwidthFb, pixelformatFb);
+            int textureSize = bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
             re.setTexSubImage(0,
                 0, 0, bufferwidthFb, height,
                 pixelformatFb,
-                pixelformatFb, pixelsFb);
+                pixelformatFb,
+                textureSize, pixelsFb);
 
             //Call the rotating function (if needed)
             if(ang != 4)
@@ -1170,7 +1168,16 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
             drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
 
             re.endDisplay();
+
+            if (log.isDebugEnabled()) {
+        		log.debug("sceDisplay.paintGL - end display");
+        	}
         }
+
+        try {
+			swapBuffers();
+		} catch (LWJGLException e) {
+		}
 
         reportFPSStats();
 
@@ -1179,30 +1186,39 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         }
 
         if (getscreen) {
-        	savescreen(this);
+        	savescreen();
+        }
+	}
+
+	private void checkTemp() {
+        // Buffer large enough to store the complete FB or GE texture
+        int sizeInBytes = Math.max(bufferwidthFb, bufferwidthGe)
+                        * Utilities.makePow2(Math.max(height, heightGe))
+                        * getPixelFormatBytes(Math.max(pixelformatFb, pixelformatGe));
+
+        if (sizeInBytes > tempSize) {
+        	ByteBuffer byteBuffer = ByteBuffer.allocateDirect(sizeInBytes).order(ByteOrder.LITTLE_ENDIAN);
+
+        	if (Memory.getInstance().getMainMemoryByteBuffer() instanceof IntBuffer) {
+        		temp = byteBuffer.asIntBuffer();
+        	} else {
+        		temp = byteBuffer;
+        	}
+        	tempSize = sizeInBytes;
         }
 	}
 
 	@Override
-	public void displayChanged(GLAutoDrawable drawable, boolean arg1, boolean arg2) {
+	protected void initGL() {
+		setSwapInterval(1);
+		super.initGL();
 	}
 
 	@Override
-	public void init(GLAutoDrawable drawable) {
-		// Use DebugGL to get exceptions when some OpenGL operation fails
-    	// Not safe to use in release mode since people could have a few exceptions
-    	// that remained silent when some operations fails but still output the
-    	// intended result
-    	if (useDebugGL) {
-    		drawable.setGL(new DebugGL(drawable.getGL()));
-    	}
-        drawable.getGL().setSwapInterval(1);
-	}
-
-	@Override
-	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+	public void setBounds(int x, int y, int width, int height) {
 		canvasWidth  = width;
         canvasHeight = height;
+        super.setBounds(x, y, width, height);
 	}
 
     public void sceDisplaySetMode(Processor processor) {
@@ -1212,7 +1228,9 @@ public class sceDisplay extends GLCanvas implements GLEventListener, HLEModule, 
         int displayWidth = cpu.gpr[5];
         int displayHeight = cpu.gpr[6];
 
-        log.debug("sceDisplaySetMode(mode=" + displayMode + ",width=" + displayWidth + ",height=" + displayHeight + ")");
+        if (log.isDebugEnabled()) {
+        	log.debug("sceDisplaySetMode(mode=" + displayMode + ",width=" + displayWidth + ",height=" + displayHeight + ")");
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;

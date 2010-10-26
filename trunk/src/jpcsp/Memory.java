@@ -21,7 +21,9 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import jpcsp.memory.DebuggerMemory;
+import jpcsp.memory.DirectBufferMemory;
 import jpcsp.memory.FastMemory;
+import jpcsp.memory.SafeDirectBufferMemory;
 import jpcsp.memory.SafeFastMemory;
 import jpcsp.memory.StandardMemory;
 
@@ -30,6 +32,7 @@ import org.apache.log4j.Logger;
 public abstract class Memory {
     public static Logger log = Logger.getLogger("memory");
     private static Memory instance = null;
+    public static boolean useDirectBufferMemory = false;
     public static boolean useSafeMemory = true;
     public static boolean useDebuggerMemory = false;
 	public static final int addressMask = 0x3FFFFFFF;
@@ -39,18 +42,28 @@ public abstract class Memory {
         if (instance == null) {
         	//
         	// The following memory implementations are available:
-        	// - StandardMemory:  low memory requirements, performs address checking, slow
-        	// - SafeFastMemory: high memory requirements, performs address checking, fast
-        	// - FastMemory    : high memory requirements, no address checking, very fast
+        	// - StandardMemory        :  low memory requirements, performs address checking, slow
+        	// - SafeFastMemory        : high memory requirements, performs address checking, fast
+        	// - FastMemory            : high memory requirements, no address checking, very fast
+        	// - SafeDirectBufferMemory: high memory requirements, performs address checking, moderate
+        	// - DirectBufferMemory    : high memory requirements, no address checking, fast
         	//
         	// Best choices are currently
         	// 1) SafeFastMemory (address check is useful when debugging programs)
         	// 2) StandardMemory when available memory is not sufficient for 1st choice
         	//
-        	if (useSafeMemory) {
-        		instance = new SafeFastMemory();
+        	if (useDirectBufferMemory) {
+        		if (useSafeMemory) {
+        			instance = new SafeDirectBufferMemory();
+        		} else {
+        			instance = new DirectBufferMemory();
+        		}
         	} else {
-        		instance = new FastMemory();
+        		if (useSafeMemory) {
+	        		instance = new SafeFastMemory();
+	        	} else {
+	        		instance = new FastMemory();
+	        	}
         	}
 
         	if (instance != null) {
@@ -167,21 +180,46 @@ public abstract class Memory {
 
 	public abstract boolean allocate();
 	public abstract void Initialise();
-	public abstract boolean isAddressGood(int address);
-    public abstract boolean isRawAddressGood(int address);
     public abstract int read8(int address);
     public abstract int read16(int address);
     public abstract int read32(int address);
-    public abstract long read64(int address);
     public abstract void write8(int address, byte data);
     public abstract void write16(int address, short data);
     public abstract void write32(int address, int data);
-    public abstract void write64(int address, long data);
     public abstract void memset(int address, byte data, int length);
     public abstract Buffer getMainMemoryByteBuffer();
     public abstract Buffer getBuffer(int address, int length);
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
     protected abstract void memcpy(int destination, int source, int length, boolean checkOverlap);
+
+	public boolean isAddressGood(int address) {
+	    return isRawAddressGood(address & addressMask);
+	}
+
+    public boolean isRawAddressGood(int address) {
+        if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
+            return true;
+        }
+        if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
+            return true;
+        }
+        if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
+            return true;
+        }
+
+        return false;
+    }
+
+	public long read64(int address) {
+		long low = read32(address);
+		long high = read32(address + 4);
+		return low | high << 32;
+	}
+
+	public void write64(int address, long data) {
+		write32(address, (int) data);
+		write32(address + 4, (int) (data >> 32));
+	}
 
     // memcpy does not check overlapping source and destination areas
     public void memcpy(int destination, int source, int length) {

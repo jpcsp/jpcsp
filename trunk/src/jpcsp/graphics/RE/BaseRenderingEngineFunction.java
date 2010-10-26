@@ -22,6 +22,7 @@ import static jpcsp.graphics.GeCommands.TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COO
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import org.apache.log4j.Level;
@@ -142,9 +143,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         bufferManager = BufferManagerFactory.createBufferManager(re);
         bufferManager.setRenderingEngine(re);
 
-        queryAvailable = re.isFunctionAvailable("glGenQueries")
-                      && re.isFunctionAvailable("glBeginQuery")
-                      && re.isFunctionAvailable("glEndQuery");
+        queryAvailable = re.isQueryAvailable();
         if (queryAvailable) {
         	bboxQueryId = re.genQuery();
 
@@ -544,7 +543,9 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	        //  0---1
 	        //
 
-			FloatBuffer bboxVertexBuffer = bufferManager.getBuffer(bboxBuffer).asFloatBuffer();
+			ByteBuffer byteBuffer = bufferManager.getBuffer(bboxBuffer);
+			byteBuffer.clear();
+			FloatBuffer bboxVertexBuffer = byteBuffer.asFloatBuffer();
 
 			// Front face
 	        bboxVertexBuffer.put(values[0]);

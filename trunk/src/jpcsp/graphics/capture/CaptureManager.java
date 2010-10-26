@@ -200,7 +200,7 @@ public class CaptureManager {
         }
     }
 
-    public static void captureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize, boolean overwriteFile) {
+    public static void captureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile) {
         if (!captureInProgress) {
             VideoEngine.log.warn("Ignoring captureImage, capture hasn't been started");
             return;
@@ -208,7 +208,7 @@ public class CaptureManager {
 
         try {
             // write image to the file system, not to the capture file itself
-            CaptureImage captureImage = new CaptureImage(imageaddr, level, buffer, width, height, bufferWidth, imageType, compressedImage, compressedImageSize, overwriteFile);
+            CaptureImage captureImage = new CaptureImage(imageaddr, level, buffer, width, height, bufferWidth, imageType, compressedImage, compressedImageSize, invert, overwriteFile);
             captureImage.write();
             if (capturedImages != null) {
             	capturedImages.add(imageaddr);

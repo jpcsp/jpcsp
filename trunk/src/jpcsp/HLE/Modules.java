@@ -62,6 +62,7 @@ import jpcsp.HLE.modules.sceUtility;
 import jpcsp.HLE.modules.sceWlan;
 
 import org.apache.log4j.Logger;
+import org.lwjgl.LWJGLException;
 
 public class Modules {
 
@@ -73,7 +74,7 @@ public class Modules {
     public static LoadExecForUser LoadExecForUserModule = new LoadExecForUser();
     public static StdioForUser StdioForUserModule = new StdioForUser();
     public static sceCtrl sceCtrlModule = new sceCtrl();
-    public static sceDisplay sceDisplayModule = new sceDisplay();
+    public static sceDisplay sceDisplayModule;
     public static sceGe_user sceGe_userModule = new sceGe_user();
     public static scePower scePowerModule = new scePower();
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
@@ -120,5 +121,13 @@ public class Modules {
     }
 
     public void save(ByteBuffer buffer) {
+    }
+
+    static {
+    	try {
+			sceDisplayModule = new sceDisplay();
+		} catch (LWJGLException e) {
+			log.error(e);
+		}
     }
 }

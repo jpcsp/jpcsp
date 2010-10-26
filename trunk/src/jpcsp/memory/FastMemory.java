@@ -71,26 +71,6 @@ public class FastMemory extends Memory {
 	}
 
 	@Override
-	public boolean isAddressGood(int address) {
-	    return isRawAddressGood(address & addressMask);
-	}
-
-    @Override
-    public boolean isRawAddressGood(int address) {
-        if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
-            return true;
-        }
-        if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
-            return true;
-        }
-        if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
-            return true;
-        }
-
-        return false;
-    }
-
-	@Override
 	public int read8(int address) {
 		try {
 			address &= addressMask;

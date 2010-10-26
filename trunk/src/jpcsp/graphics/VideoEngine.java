@@ -54,7 +54,6 @@ import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
-import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.IRenderingEngine;
@@ -156,6 +155,7 @@ public class VideoEngine {
     private boolean clutIsDirty;
     private boolean usingTRXKICK;
     private int maxSpriteHeight;
+    private int maxSpriteWidth;
     private boolean blendChanged;
     private boolean depthChanged;
     private boolean scissorChanged;
@@ -509,7 +509,10 @@ public class VideoEngine {
         errorCount = 0;
         usingTRXKICK = false;
         maxSpriteHeight = 0;
+        maxSpriteWidth = 0;
         primCount = 0;
+
+        context.update();
     }
 
     private void endUpdate() {
@@ -1550,9 +1553,10 @@ public class VideoEngine {
             }
 
             case SHADE: {
-                re.setShadeModel(normalArgument & 1);
+            	context.shadeModel = normalArgument & 1;
+                re.setShadeModel(context.shadeModel);
                 if (isLogDebugEnabled) {
-                    log("sceGuShadeModel(" + ((normalArgument != 0) ? "smooth" : "flat") + ")");
+                    log("sceGuShadeModel(" + ((context.shadeModel != 0) ? "smooth" : "flat") + ")");
                 }
                 break;
             }
@@ -1639,10 +1643,10 @@ public class VideoEngine {
             }
 
             case SPOW: {
-                float floatArgument = floatArgument(normalArgument);
-                re.setMaterialShininess(floatArgument);
+                context.materialShininess = floatArgument(normalArgument);
+                re.setMaterialShininess(context.materialShininess);
                 if (isLogDebugEnabled) {
-                    log("material shininess " + floatArgument);
+                    log("material shininess " + context.materialShininess);
                 }
                 break;
             }
@@ -1664,10 +1668,12 @@ public class VideoEngine {
                 break;
 
             case LMODE: {
-                re.setLightMode(normalArgument & 1);
+            	context.lightMode = normalArgument & 1;
+                re.setLightMode(context.lightMode);
                 if (isLogDebugEnabled) {
-                    log.debug("sceGuLightMode(" + (((normalArgument & 1) != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
+                    log.debug("sceGuLightMode(" + ((context.lightMode != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
                 }
+
                 // Check if other values than 0 and 1 are set
                 if ((normalArgument & ~1) != 0) {
                     log.warn(String.format("Unknown light mode sceGuLightMode(%06X)", normalArgument));
@@ -1739,6 +1745,9 @@ public class VideoEngine {
                 if (old_light_pos != context.light_pos[lnum][component]) {
                     lightingChanged = true;
                 }
+                if (isLogDebugEnabled) {
+                    log.debug(String.format("Light %d position (%f, %f, %f)", lnum, context.light_pos[lnum][0], context.light_pos[lnum][1], context.light_pos[lnum][2]));
+                }
                 break;
             }
 
@@ -1764,6 +1773,9 @@ public class VideoEngine {
                 if (old_light_dir != context.light_dir[lnum][component]) {
                     lightingChanged = true;
                 }
+                if (isLogDebugEnabled) {
+                    log.debug(String.format("Light %d direction (%f, %f, %f)", lnum, context.light_dir[lnum][0], context.light_dir[lnum][1], context.light_dir[lnum][2]));
+                }
                 // OpenGL parameter for light direction is set in initRendering
                 // because it depends on the model/view matrix
                 break;
@@ -1777,7 +1789,8 @@ public class VideoEngine {
             case LCA2:
             case LCA3: {
                 int lnum = (command - LCA0) / 3;
-                re.setLightConstantAttenuation(lnum, floatArgument(normalArgument));
+                context.lightConstantAttenuation[lnum] = floatArgument(normalArgument);
+                re.setLightConstantAttenuation(lnum, context.lightConstantAttenuation[lnum]);
                 break;
             }
 
@@ -1787,7 +1800,8 @@ public class VideoEngine {
             case LLA2:
             case LLA3: {
                 int lnum = (command - LLA0) / 3;
-                re.setLightLinearAttenuation(lnum, floatArgument(normalArgument));
+                context.lightLinearAttenuation[lnum] = floatArgument(normalArgument);
+                re.setLightLinearAttenuation(lnum, context.lightLinearAttenuation[lnum]);
                 break;
             }
 
@@ -1797,7 +1811,8 @@ public class VideoEngine {
             case LQA2:
             case LQA3: {
                 int lnum = (command - LQA0) / 3;
-                re.setLightQuadraticAttenuation(lnum, floatArgument(normalArgument));
+                context.lightQuadraticAttenuation[lnum] = floatArgument(normalArgument);
+                re.setLightQuadraticAttenuation(lnum, context.lightQuadraticAttenuation[lnum]);
                 break;
             }
 
@@ -2388,16 +2403,16 @@ public class VideoEngine {
             }
 
             case ATST: {
-                int func = normalArgument & 0xFF;
-                if (func > ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL) {
-                    log.warn("sceGuAlphaFunc unhandled func " + func);
-                    func = ATST_ALWAYS_PASS_PIXEL;
+                context.alphaFunc = normalArgument & 0xFF;
+                if (context.alphaFunc > ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL) {
+                    log.warn("sceGuAlphaFunc unhandled func " + context.alphaFunc);
+                    context.alphaFunc = ATST_ALWAYS_PASS_PIXEL;
                 }
-                int ref = (normalArgument >> 8) & 0xFF;
-                re.setAlphaFunc(func, ref);
+                context.alphaRef = (normalArgument >> 8) & 0xFF;
+                re.setAlphaFunc(context.alphaFunc, context.alphaRef);
 
                 if (isLogDebugEnabled) {
-                	log("sceGuAlphaFunc(" + func + "," + ref + ")");
+                	log("sceGuAlphaFunc(" + context.alphaFunc + "," + context.alphaRef + ")");
                 }
                 break;
             }
@@ -2556,9 +2571,10 @@ public class VideoEngine {
                 break;
 
             case LOP: {
-            	re.setLogicOp(normalArgument & 0xF);
+            	context.logicOp = normalArgument & 0xF;
+            	re.setLogicOp(context.logicOp);
             	if (isLogDebugEnabled) {
-            		log.debug("sceGuLogicalOp( LogicOp = " + normalArgument + "(" + getLOpName(normalArgument) + ")");
+            		log.debug("sceGuLogicalOp(LogicOp=" + context.logicOp + "(" + getLOpName(context.logicOp) + "))");
             	}
                 break;
             }
@@ -2872,6 +2888,13 @@ public class VideoEngine {
         	mustComputeWeights = false;
         }
 
+    	if (maxSpriteWidth == 0 || context.scissor_x2 < maxSpriteWidth) {
+    		maxSpriteWidth = context.scissor_x2;
+    	}
+    	if (maxSpriteHeight == 0 || context.scissor_y2 < maxSpriteHeight) {
+    		maxSpriteHeight = context.scissor_y2;
+    	}
+
         // Do not use optimized VertexInfo reading when
         // - using Vertex Cache
         // - the Vertex are indexed
@@ -2958,6 +2981,7 @@ public class VideoEngine {
             }
 
             ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
+            byteBuffer.clear();
             FloatBuffer floatBuffer = byteBuffer.asFloatBuffer();
             floatBuffer.clear();
 
@@ -3033,6 +3057,7 @@ public class VideoEngine {
                     setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
                     re.drawArrays(type, 0, numberOfVertex);
                     maxSpriteHeight = Integer.MAX_VALUE;
+                    maxSpriteWidth = Integer.MAX_VALUE;
                     break;
 
                 case PRIM_SPRITES:
@@ -3057,6 +3082,9 @@ public class VideoEngine {
 
                             if (v2.p[1] > maxSpriteHeight) {
                                 maxSpriteHeight = (int) v2.p[1];
+                            }
+                            if (v2.p[1] > maxSpriteWidth) {
+                            	maxSpriteWidth = (int) v2.p[1];
                             }
 
                             //
@@ -3208,7 +3236,17 @@ public class VideoEngine {
     	context.textureTx_destinationAddress &= Memory.addressMask;
 
         if (isLogDebugEnabled) {
-            log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(context.textureTx_sourceAddress) + "(" + context.textureTx_sx + "," + context.textureTx_sy + ") to 0x" + Integer.toHexString(context.textureTx_destinationAddress) + "(" + context.textureTx_dx + "," + context.textureTx_dy + "), width=" + context.textureTx_width + ", height=" + context.textureTx_height + ", pixelSize=" + context.textureTx_pixelSize);
+            log(String.format("%s from 0x%08X(%d,%d) to 0x%08X(%d,%d), width=%d, height=%d, pixelSize=%d",
+                              helper.getCommandString(TRXKICK),
+                              context.textureTx_sourceAddress,
+                              context.textureTx_sx,
+                              context.textureTx_sy,
+                              context.textureTx_destinationAddress,
+                              context.textureTx_dx,
+                              context.textureTx_dy,
+                              context.textureTx_width,
+                              context.textureTx_height,
+                              context.textureTx_pixelSize));
         }
 
         usingTRXKICK = true;
@@ -3281,7 +3319,8 @@ public class VideoEngine {
             re.startDirectRendering(true, false, true, true, false, 480, 272);
             re.setPixelStore(lineWidth, bpp);
 
-            Buffer buffer = Memory.getInstance().getBuffer(context.textureTx_sourceAddress, lineWidth * height * bpp);
+            int textureSize = lineWidth * height * bpp;
+            Buffer buffer = Memory.getInstance().getBuffer(context.textureTx_sourceAddress, textureSize);
 
             if (State.captureGeNextFrame) {
                 log.info("Capture TRXKICK");
@@ -3296,8 +3335,8 @@ public class VideoEngine {
             // This the reason why we are also using glTexSubImage2D.
             //
             int bufferHeight = Utilities.makePow2(height);
-            re.setTexImage(0,pixelFormatGe, lineWidth, bufferHeight, pixelFormatGe, pixelFormatGe, null);
-            re.setTexSubImage(0, context.textureTx_sx, context.textureTx_sy, width, height, pixelFormatGe, pixelFormatGe, buffer);
+            re.setTexImage(0,pixelFormatGe, lineWidth, bufferHeight, pixelFormatGe, pixelFormatGe, 0, null);
+            re.setTexSubImage(0, context.textureTx_sx, context.textureTx_sy, width, height, pixelFormatGe, pixelFormatGe, textureSize, buffer);
 
             re.beginDraw(PRIM_SPRITES);
             re.drawColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -4071,20 +4110,22 @@ public class VideoEngine {
                             compressedTextureSize,
                             final_buffer);
                 } else {
+                	int textureSize = Math.max(context.texture_buffer_width[level], context.texture_width[level]) * context.texture_height[level] * textureByteAlignment;
                     re.setTexImage(
                             level,
                             buffer_storage,
                             context.texture_width[level], context.texture_height[level],
                             buffer_storage,
                             buffer_storage,
+                            textureSize,
                             final_buffer);
                 }
 
                 if (State.captureGeNextFrame) {
-                    if (isVRAM(tex_addr)) {
-                        CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false);
-                    } else if (!CaptureManager.isImageCaptured(texaddr)) {
-                        CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, true);
+                	boolean vramImage = isVRAM(tex_addr);
+                	boolean overwriteFile = !vramImage;
+                    if (vramImage || !CaptureManager.isImageCaptured(texaddr)) {
+                        CaptureManager.captureImage(texaddr, level, final_buffer, context.texture_width[level], context.texture_height[level], context.texture_buffer_width[level], buffer_storage, compressedTexture, compressedTextureSize, false, overwriteFile);
                     }
                 }
 
@@ -4484,8 +4525,8 @@ public class VideoEngine {
             	re.setTextureMapMode(context.tex_map_mode, context.tex_proj_map_mode);
                 switch (context.tex_map_mode) {
                     case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV: {
-                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
-                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
+                    	context.reTextureGenS.setEnabled(false);
+                    	context.reTextureGenT.setEnabled(false);
 
                         float[] textureMatrix = new float[] {
                         		context.tex_scale_x, 0, 0, 0,
@@ -4498,16 +4539,16 @@ public class VideoEngine {
                     }
 
                     case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX: {
-                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
-                        re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
+                    	context.reTextureGenS.setEnabled(false);
+                    	context.reTextureGenT.setEnabled(false);
                     	re.setTextureMatrix(context.texture_uploaded_matrix);
                         break;
                     }
 
                     case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
                     	re.setTextureEnvironmentMapping(context.tex_shade_u, context.tex_shade_v);
-                        re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
-                        re.enableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
+                    	context.reTextureGenS.setEnabled(true);
+                    	context.reTextureGenT.setEnabled(true);
                     	re.setTextureMatrix(context.tex_envmap_matrix);
                         break;
                     }
@@ -4522,7 +4563,7 @@ public class VideoEngine {
 
         boolean useVertexColor = false;
         if (!context.lightingFlag.isEnabled() || context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-        	re.disableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
+        	context.reColorMaterial.setEnabled(false);
             if (vinfo.color != 0) {
                 useVertexColor = true;
             } else {
@@ -4547,11 +4588,11 @@ public class VideoEngine {
                 	re.setMaterialSpecularColor(context.mat_specular);
                 }
                 re.setColorMaterial(ambient, diffuse, specular);
-            	re.enableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
+                context.reColorMaterial.setEnabled(true);
                 materialChanged = false;
             }
         } else {
-        	re.disableFlag(IRenderingEngine.RE_COLOR_MATERIAL);
+        	context.reColorMaterial.setEnabled(false);
             if (materialChanged) {
             	re.setMaterialAmbientColor(context.mat_ambient);
             	re.setMaterialDiffuseColor(context.mat_diffuse);
@@ -4622,8 +4663,8 @@ public class VideoEngine {
 
         switch (context.tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-                re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_S);
-                re.disableFlag(IRenderingEngine.RE_TEXTURE_GEN_T);
+            	context.reTextureGenS.setEnabled(false);
+            	context.reTextureGenT.setEnabled(false);
                 break;
             }
         }
@@ -4840,6 +4881,7 @@ public class VideoEngine {
 		re.setVertexInfo(vinfo, false, useVertexColor);
 
 		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
+		drawByteBuffer.clear();
 		FloatBuffer drawFloatBuffer = drawByteBuffer.asFloatBuffer();
         for(int j = 0; j <= context.patch_div_t - 1; j++) {
         	drawFloatBuffer.clear();
@@ -4954,6 +4996,7 @@ public class VideoEngine {
 
             textureChanged = true;
             maxSpriteHeight = 0;
+            maxSpriteWidth = 0;
             projectionMatrixUpload.setChanged(true);
             modelMatrixUpload.setChanged(true);
             viewMatrixUpload.setChanged(true);
@@ -5009,289 +5052,37 @@ public class VideoEngine {
         }
     }
 
-    public void hleSaveContext(pspGeContext pspContext) {
+    public void hleSaveContext(int addr) {
         // If we are rendering, we have to wait for a consistent state
         // before saving the context: let the display thread perform
         // the save when appropriate.
         if (hasDrawLists() || currentList != null) {
             Semaphore sync = new Semaphore(0);
-            hlePerformAction(new SaveContextAction(pspContext, sync), sync);
+            hlePerformAction(new SaveContextAction(addr, sync), sync);
         } else {
-            saveContext(pspContext);
+            saveContext(addr);
         }
     }
 
-    public void hleRestoreContext(pspGeContext pspContext) {
+    public void hleRestoreContext(int addr) {
         // If we are rendering, we have to wait for a consistent state
         // before restoring the context: let the display thread perform
         // the restore when appropriate.
         if (hasDrawLists() || currentList != null) {
             Semaphore sync = new Semaphore(0);
-            hlePerformAction(new RestoreContextAction(pspContext, sync), sync);
+            hlePerformAction(new RestoreContextAction(addr, sync), sync);
         } else {
-            restoreContext(pspContext);
+            restoreContext(addr);
         }
     }
 
-    private void saveContext(pspGeContext pspContext) {
-        pspContext.base = context.base;
-        pspContext.baseOffset = context.baseOffset;
-
-        pspContext.fbp = context.fbp;
-        pspContext.fbw = context.fbw;
-        pspContext.zbp = context.zbp;
-        pspContext.zbw = context.zbw;
-        pspContext.psm = context.psm;
-
-        pspContext.flags = 0;
-        for (EnableDisableFlag flag : context.flags) {
-            pspContext.flags = flag.save(pspContext.flags);
-        }
-
-        pspContext.region_x1 = context.region_x1;
-        pspContext.region_y1 = context.region_y1;
-        pspContext.region_x2 = context.region_x2;
-        pspContext.region_y2 = context.region_y2;
-        pspContext.region_width = context.region_width;
-        pspContext.region_height = context.region_height;
-        pspContext.scissor_x1 = context.scissor_x1;
-        pspContext.scissor_y1 = context.scissor_y1;
-        pspContext.scissor_x2 = context.scissor_x2;
-        pspContext.scissor_y2 = context.scissor_y2;
-        pspContext.scissor_width = context.scissor_width;
-        pspContext.scissor_height = context.scissor_height;
-        pspContext.offset_x = context.offset_x;
-        pspContext.offset_y = context.offset_y;
-        pspContext.viewport_width = context.viewport_width;
-        pspContext.viewport_height = context.viewport_height;
-        pspContext.viewport_cx = context.viewport_cx;
-        pspContext.viewport_cy = context.viewport_cy;
-
-        System.arraycopy(context.proj_uploaded_matrix, 0, pspContext.proj_uploaded_matrix, 0, context.proj_uploaded_matrix.length);
-        System.arraycopy(context.texture_uploaded_matrix, 0, pspContext.texture_uploaded_matrix, 0, context.texture_uploaded_matrix.length);
-        System.arraycopy(context.model_uploaded_matrix, 0, pspContext.model_uploaded_matrix, 0, context.model_uploaded_matrix.length);
-        System.arraycopy(context.view_uploaded_matrix, 0, pspContext.view_uploaded_matrix, 0, context.view_uploaded_matrix.length);
-        System.arraycopy(context.morph_weight, 0, pspContext.morph_weight, 0, context.morph_weight.length);
-        System.arraycopy(context.tex_envmap_matrix, 0, pspContext.tex_envmap_matrix, 0, context.tex_envmap_matrix.length);
-        if (pspGeContext.fullVersion) {
-            for (int i = 0; i < context.bone_uploaded_matrix.length; i++) {
-                System.arraycopy(context.bone_uploaded_matrix[i], 0, pspContext.bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i].length);
-            }
-        }
-        for (int i = 0; i < context.light_pos.length; i++) {
-            System.arraycopy(context.light_pos[i], 0, pspContext.light_pos[i], 0, context.light_pos[i].length);
-            System.arraycopy(context.light_dir[i], 0, pspContext.light_dir[i], 0, context.light_dir[i].length);
-        }
-
-        System.arraycopy(context.light_enabled, 0, pspContext.light_enabled, 0, context.light_enabled.length);
-        System.arraycopy(context.light_type, 0, pspContext.light_type, 0, context.light_type.length);
-        System.arraycopy(context.light_kind, 0, pspContext.light_kind, 0, context.light_kind.length);
-        System.arraycopy(context.spotLightExponent, 0, pspContext.spotLightExponent, 0, context.spotLightExponent.length);
-        System.arraycopy(context.spotLightCutoff, 0, pspContext.spotLightCutoff, 0, context.spotLightCutoff.length);
-
-        System.arraycopy(context.fog_color, 0, pspContext.fog_color, 0, context.fog_color.length);
-        pspContext.fog_far = context.fog_far;
-        pspContext.fog_dist = context.fog_dist;
-
-        pspContext.nearZ = context.nearZ;
-        pspContext.farZ = context.farZ;
-        pspContext.zscale = context.zscale;
-        pspContext.zpos = context.zpos;
-
-        pspContext.mat_flags = context.mat_flags;
-        System.arraycopy(context.mat_ambient, 0, pspContext.mat_ambient, 0, context.mat_ambient.length);
-        System.arraycopy(context.mat_diffuse, 0, pspContext.mat_diffuse, 0, context.mat_diffuse.length);
-        System.arraycopy(context.mat_specular, 0, pspContext.mat_specular, 0, context.mat_specular.length);
-        System.arraycopy(context.mat_emissive, 0, pspContext.mat_emissive, 0, context.mat_emissive.length);
-
-        System.arraycopy(context.ambient_light, 0, pspContext.ambient_light, 0, context.ambient_light.length);
-
-        pspContext.texture_storage = context.texture_storage;
-        pspContext.texture_num_mip_maps = context.texture_num_mip_maps;
-        pspContext.texture_swizzle = context.texture_swizzle;
-
-        System.arraycopy(context.texture_base_pointer, 0, pspContext.texture_base_pointer, 0, context.texture_base_pointer.length);
-        System.arraycopy(context.texture_width, 0, pspContext.texture_width, 0, context.texture_width.length);
-        System.arraycopy(context.texture_height, 0, pspContext.texture_height, 0, context.texture_height.length);
-        System.arraycopy(context.texture_buffer_width, 0, pspContext.texture_buffer_width, 0, context.texture_buffer_width.length);
-        pspContext.tex_min_filter = context.tex_min_filter;
-        pspContext.tex_mag_filter = context.tex_mag_filter;
-
-        pspContext.tex_translate_x = context.tex_translate_x;
-        pspContext.tex_translate_y = context.tex_translate_y;
-        pspContext.tex_scale_x = context.tex_scale_x;
-        pspContext.tex_scale_y = context.tex_scale_y;
-        System.arraycopy(context.tex_env_color, 0, pspContext.tex_env_color, 0, context.tex_env_color.length);
-        pspContext.tex_enable = context.textureFlag.isEnabledInt();
-
-        pspContext.tex_clut_addr = context.tex_clut_addr;
-        pspContext.tex_clut_num_blocks = context.tex_clut_num_blocks;
-        pspContext.tex_clut_mode = context.tex_clut_mode;
-        pspContext.tex_clut_shift = context.tex_clut_shift;
-        pspContext.tex_clut_mask = context.tex_clut_mask;
-        pspContext.tex_clut_start = context.tex_clut_start;
-        pspContext.tex_wrap_s = context.tex_wrap_s;
-        pspContext.tex_wrap_t = context.tex_wrap_t;
-        pspContext.patch_div_s = context.patch_div_s;
-        pspContext.patch_div_t = context.patch_div_t;
-
-        pspContext.transform_mode = context.transform_mode;
-
-        pspContext.textureTx_sourceAddress = context.textureTx_sourceAddress;
-        pspContext.textureTx_sourceLineWidth = context.textureTx_sourceLineWidth;
-        pspContext.textureTx_destinationAddress = context.textureTx_destinationAddress;
-        pspContext.textureTx_destinationLineWidth = context.textureTx_destinationLineWidth;
-        pspContext.textureTx_width = context.textureTx_width;
-        pspContext.textureTx_height = context.textureTx_height;
-        pspContext.textureTx_sx = context.textureTx_sx;
-        pspContext.textureTx_sy = context.textureTx_sy;
-        pspContext.textureTx_dx = context.textureTx_dx;
-        pspContext.textureTx_dy = context.textureTx_dy;
-        pspContext.textureTx_pixelSize = context.textureTx_pixelSize;
-
-        System.arraycopy(context.dfix_color, 0, pspContext.dfix_color, 0, context.dfix_color.length);
-        System.arraycopy(context.sfix_color, 0, pspContext.sfix_color, 0, context.sfix_color.length);
-        pspContext.blend_src = context.blend_src;
-        pspContext.blend_dst = context.blend_dst;
-
-        pspContext.depthFunc = context.depthFunc;
-
-        pspContext.tex_map_mode = context.tex_map_mode;
-        pspContext.tex_proj_map_mode = context.tex_proj_map_mode;
-
-        System.arraycopy(context.colorMask, 0, pspContext.glColorMask, 0, context.colorMask.length);
-
-        pspContext.copyGLToContext(display.getGL());
+    private void saveContext(int addr) {
+    	context.write(Memory.getInstance(), addr);
     }
 
-    private void restoreContext(pspGeContext pspContext) {
-    	context.base = pspContext.base;
-    	context.baseOffset = pspContext.baseOffset;
-
-    	context.fbp = pspContext.fbp;
-    	context.fbw = pspContext.fbw;
-    	context.zbp = pspContext.zbp;
-    	context.zbw = pspContext.zbw;
-    	context.psm = pspContext.psm;
-
-        for (EnableDisableFlag flag : context.flags) {
-            flag.restore(pspContext.flags);
-        }
-
-        context.region_x1 = pspContext.region_x1;
-        context.region_y1 = pspContext.region_y1;
-        context.region_x2 = pspContext.region_x2;
-        context.region_y2 = pspContext.region_y2;
-        context.region_width = pspContext.region_width;
-        context.region_height = pspContext.region_height;
-        context.scissor_x1 = pspContext.scissor_x1;
-        context.scissor_y1 = pspContext.scissor_y1;
-        context.scissor_x2 = pspContext.scissor_x2;
-        context.scissor_y2 = pspContext.scissor_y2;
-        context.scissor_width = pspContext.scissor_width;
-        context.scissor_height = pspContext.scissor_height;
-        context.offset_x = pspContext.offset_x;
-        context.offset_y = pspContext.offset_y;
-        context.viewport_width = pspContext.viewport_width;
-        context.viewport_height = pspContext.viewport_height;
-        context.viewport_cx = pspContext.viewport_cx;
-        context.viewport_cy = pspContext.viewport_cy;
-
-        System.arraycopy(pspContext.proj_uploaded_matrix, 0, context.proj_uploaded_matrix, 0, context.proj_uploaded_matrix.length);
-        System.arraycopy(pspContext.texture_uploaded_matrix, 0, context.texture_uploaded_matrix, 0, context.texture_uploaded_matrix.length);
-        System.arraycopy(pspContext.model_uploaded_matrix, 0, context.model_uploaded_matrix, 0, context.model_uploaded_matrix.length);
-        System.arraycopy(pspContext.view_uploaded_matrix, 0, context.view_uploaded_matrix, 0, context.view_uploaded_matrix.length);
-        System.arraycopy(pspContext.morph_weight, 0, context.morph_weight, 0, context.morph_weight.length);
-        System.arraycopy(pspContext.tex_envmap_matrix, 0, context.tex_envmap_matrix, 0, context.tex_envmap_matrix.length);
-        if (pspGeContext.fullVersion) {
-            for (int i = 0; i < context.bone_uploaded_matrix.length; i++) {
-                System.arraycopy(pspContext.bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i].length);
-            }
-        }
-        for (int i = 0; i < context.light_pos.length; i++) {
-            System.arraycopy(pspContext.light_pos[i], 0, context.light_pos[i], 0, context.light_pos[i].length);
-            System.arraycopy(pspContext.light_dir[i], 0, context.light_dir[i], 0, context.light_dir[i].length);
-        }
-
-        System.arraycopy(pspContext.light_enabled, 0, context.light_enabled, 0, context.light_enabled.length);
-        System.arraycopy(pspContext.light_type, 0, context.light_type, 0, context.light_type.length);
-        System.arraycopy(pspContext.light_kind, 0, context.light_kind, 0, context.light_kind.length);
-        System.arraycopy(pspContext.spotLightExponent, 0, context.spotLightExponent, 0, context.spotLightExponent.length);
-        System.arraycopy(pspContext.spotLightCutoff, 0, context.spotLightCutoff, 0,context. spotLightCutoff.length);
-
-        System.arraycopy(pspContext.fog_color, 0, context.fog_color, 0, context.fog_color.length);
-        context.fog_far = pspContext.fog_far;
-        context.fog_dist = pspContext.fog_dist;
-
-        context.nearZ = pspContext.nearZ;
-        context.farZ = pspContext.farZ;
-        context.zscale = pspContext.zscale;
-        context.zpos = pspContext.zpos;
-
-        context.mat_flags = pspContext.mat_flags;
-        System.arraycopy(pspContext.mat_ambient, 0, context.mat_ambient, 0, context.mat_ambient.length);
-        System.arraycopy(pspContext.mat_diffuse, 0, context.mat_diffuse, 0, context.mat_diffuse.length);
-        System.arraycopy(pspContext.mat_specular, 0, context.mat_specular, 0, context.mat_specular.length);
-        System.arraycopy(pspContext.mat_emissive, 0, context.mat_emissive, 0, context.mat_emissive.length);
-
-        System.arraycopy(pspContext.ambient_light, 0, context.ambient_light, 0, context.ambient_light.length);
-
-        context.texture_storage = pspContext.texture_storage;
-        context.texture_num_mip_maps = pspContext.texture_num_mip_maps;
-        context.texture_swizzle = pspContext.texture_swizzle;
-
-        System.arraycopy(pspContext.texture_base_pointer, 0, context.texture_base_pointer, 0, context.texture_base_pointer.length);
-        System.arraycopy(pspContext.texture_width, 0, context.texture_width, 0, context.texture_width.length);
-        System.arraycopy(pspContext.texture_height, 0, context.texture_height, 0, context.texture_height.length);
-        System.arraycopy(pspContext.texture_buffer_width, 0, context.texture_buffer_width, 0, context.texture_buffer_width.length);
-        context.tex_min_filter = pspContext.tex_min_filter;
-        context.tex_mag_filter = pspContext.tex_mag_filter;
-
-        context.tex_translate_x = pspContext.tex_translate_x;
-        context.tex_translate_y = pspContext.tex_translate_y;
-        context.tex_scale_x = pspContext.tex_scale_x;
-        context.tex_scale_y = pspContext.tex_scale_y;
-        System.arraycopy(pspContext.tex_env_color, 0, context.tex_env_color, 0, context.tex_env_color.length);
-        context.textureFlag.setEnabled(pspContext.tex_enable);
-
-        context.tex_clut_addr = pspContext.tex_clut_addr;
-        context.tex_clut_num_blocks = pspContext.tex_clut_num_blocks;
-        context.tex_clut_mode = pspContext.tex_clut_mode;
-        context.tex_clut_shift = pspContext.tex_clut_shift;
-        context.tex_clut_mask = pspContext.tex_clut_mask;
-        context.tex_clut_start = pspContext.tex_clut_start;
-        context.tex_wrap_s = pspContext.tex_wrap_s;
-        context.tex_wrap_t = pspContext.tex_wrap_t;
-        context.patch_div_s = pspContext.patch_div_s;
-        context.patch_div_t = pspContext.patch_div_t;
-
-        context.transform_mode = pspContext.transform_mode;
-
-        context.textureTx_sourceAddress = pspContext.textureTx_sourceAddress;
-        context.textureTx_sourceLineWidth = pspContext.textureTx_sourceLineWidth;
-        context.textureTx_destinationAddress = pspContext.textureTx_destinationAddress;
-        context.textureTx_destinationLineWidth = pspContext.textureTx_destinationLineWidth;
-        context.textureTx_width = pspContext.textureTx_width;
-        context.textureTx_height = pspContext.textureTx_height;
-        context.textureTx_sx = pspContext.textureTx_sx;
-        context.textureTx_sy = pspContext.textureTx_sy;
-        context.textureTx_dx = pspContext.textureTx_dx;
-        context.textureTx_dy = pspContext.textureTx_dy;
-        context.textureTx_pixelSize = pspContext.textureTx_pixelSize;
-
-        System.arraycopy(pspContext.dfix_color, 0, context.dfix_color, 0, context.dfix_color.length);
-        System.arraycopy(pspContext.sfix_color, 0, context.sfix_color, 0, context.sfix_color.length);
-        context.blend_src = pspContext.blend_src;
-        context.blend_dst = pspContext.blend_dst;
-
-        context.depthFunc = pspContext.depthFunc;
-
-        context.tex_map_mode = pspContext.tex_map_mode;
-        context.tex_proj_map_mode = pspContext.tex_proj_map_mode;
-
-        System.arraycopy(pspContext.glColorMask, 0, context.colorMask, 0, context.colorMask.length);
-
-        pspContext.copyContextToGL(display.getGL());
+    private void restoreContext(int addr) {
+    	context.read(Memory.getInstance(), addr);
+    	context.setDirty();
 
         projectionMatrixUpload.setChanged(true);
         modelMatrixUpload.setChanged(true);
@@ -5312,6 +5103,10 @@ public class VideoEngine {
 
     public int getMaxSpriteHeight() {
         return maxSpriteHeight;
+    }
+
+    public int getMaxSpriteWidth() {
+        return maxSpriteWidth;
     }
 
     public void setUseVertexCache(boolean useVertexCache) {
@@ -5385,35 +5180,34 @@ public class VideoEngine {
     }
 
     private class SaveContextAction implements IAction {
-
-        private pspGeContext context;
+        private int addr;
         private Semaphore sync;
 
-        public SaveContextAction(pspGeContext context, Semaphore sync) {
-            this.context = context;
+        public SaveContextAction(int addr, Semaphore sync) {
+            this.addr = addr;
             this.sync = sync;
         }
 
         @Override
         public void execute() {
-            saveContext(context);
+            saveContext(addr);
             sync.release();
         }
     }
 
     private class RestoreContextAction implements IAction {
-
-        private pspGeContext context;
+        private int addr;
         private Semaphore sync;
 
-        public RestoreContextAction(pspGeContext context, Semaphore sync) {
-            this.context = context;
+        public RestoreContextAction(int addr, Semaphore sync) {
+            this.addr = addr;
             this.sync = sync;
         }
 
         @Override
         public void execute() {
-            restoreContext(context);
+            restoreContext(addr);
+            context.update();
             sync.release();
         }
     }

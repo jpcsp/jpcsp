@@ -29,11 +29,7 @@ import jpcsp.graphics.RE.IRenderingEngine;
 public class BufferManagerVBO extends BaseBufferManager {
 	public static boolean useVBO(IRenderingEngine re) {
         return !Settings.getInstance().readBool("emu.disablevbo")
-             && re.isFunctionAvailable("glGenBuffersARB")
-             && re.isFunctionAvailable("glBindBufferARB")
-             && re.isFunctionAvailable("glBufferDataARB")
-             && re.isFunctionAvailable("glDeleteBuffersARB")
-             && re.isFunctionAvailable("glGenBuffers");
+            && re.isExtensionAvailable("GL_ARB_vertex_buffer_object");
 	}
 
 	protected void init() {

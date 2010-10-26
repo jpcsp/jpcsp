@@ -35,7 +35,6 @@ import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
-import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.HLE.kernel.types.interrupts.GeCallbackInterruptHandler;
 import jpcsp.HLE.kernel.types.interrupts.GeInterruptHandler;
 import jpcsp.HLE.modules.HLEModule;
@@ -436,9 +435,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     		log.debug("sceGeSaveContext contextAddr=" + Integer.toHexString(contextAddr));
     	}
 
-    	pspGeContext context = new pspGeContext();
-    	VideoEngine.getInstance().hleSaveContext(context);
-    	context.write(Memory.getInstance(), contextAddr);
+    	VideoEngine.getInstance().hleSaveContext(contextAddr);
 
     	cpu.gpr[2] = 0;
     }
@@ -452,9 +449,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     		log.debug("sceGeRestoreContext contextAddr=" + Integer.toHexString(contextAddr));
     	}
 
-    	pspGeContext context = new pspGeContext();
-    	context.read(Memory.getInstance(), contextAddr);
-    	VideoEngine.getInstance().hleRestoreContext(context);
+    	VideoEngine.getInstance().hleRestoreContext(contextAddr);
 
     	cpu.gpr[2] = 0;
     }

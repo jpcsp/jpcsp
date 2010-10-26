@@ -339,14 +339,6 @@ public class DebuggerMemory extends Memory {
 	}
 
 	@Override
-	public long read64(int address) {
-		// Perform read64 using read32 to check memory access
-		long low = read32(address);
-		long high = read32(address + 4);
-		return low | high << 32;
-	}
-
-	@Override
 	public void write8(int address, byte data) {
 		memoryWrite(address, data, 8);
 		mem.write8(address, data);
@@ -362,12 +354,5 @@ public class DebuggerMemory extends Memory {
 	public void write32(int address, int data) {
 		memoryWrite(address, data, 32);
 		mem.write32(address, data);
-	}
-
-	@Override
-	public void write64(int address, long data) {
-		// Perform write64 using write32 to check memory access
-		mem.write32(address, (int) data);
-		mem.write32(address + 4, (int) (data >> 32));
 	}
 }
