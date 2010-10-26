@@ -17,14 +17,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules200;
 
+import org.lwjgl.LWJGLException;
+
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 	private static final long serialVersionUID = 7951510954219695582L;
+
+	public sceDisplay() throws LWJGLException {
+		super();
+	}
 
 	@Override
 	public String getName() { return "sceDisplay"; }

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.Buffer;
 
 import jpcsp.Settings;
@@ -97,15 +98,20 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	protected boolean loadShader(int shader, String resourceName, boolean silentError) {
-        String[] srcArray = new String[1];
+        String src = null;
 
         try {
-            srcArray[0] = Utilities.toString(getClass().getResourceAsStream(resourceName), true);
+        	InputStream resourceStream = getClass().getResourceAsStream(resourceName);
+        	if (resourceStream == null) {
+        		return false;
+        	}
+            src = Utilities.toString(resourceStream, true);
         } catch (IOException e) {
         	log.error(e);
+        	return false;
         }
 
-        boolean compiled = re.compilerShader(shader, srcArray);
+        boolean compiled = re.compilerShader(shader, src);
         if (compiled || !silentError) {
         	printShaderInfoLog(shader);
         }
@@ -166,14 +172,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	public static boolean useShaders(IRenderingEngine re) {
 		boolean useShaders = Settings.getInstance().readBool("emu.useshaders");
-		boolean availableShaders = re.isFunctionAvailable("glCreateShader")
-		                        && re.isFunctionAvailable("glShaderSource")
-		                        && re.isFunctionAvailable("glCompileShader")
-		                        && re.isFunctionAvailable("glCreateProgram")
-		                        && re.isFunctionAvailable("glAttachShader")
-		                        && re.isFunctionAvailable("glLinkProgram")
-		                        && re.isFunctionAvailable("glValidateProgram")
-		                        && re.isFunctionAvailable("glUseProgram");
+		boolean availableShaders = re.isShaderAvailable();
 
 		if (useShaders && !availableShaders) {
 			log.info("Shaders are not available on your computer. They have been automatically disabled.");
@@ -381,11 +380,11 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
+	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (size > 0) {
-            re.setVertexAttribPointer(shaderAttribWeights1, Math.min(size, 4), type, false, stride, buffer);
+            re.setVertexAttribPointer(shaderAttribWeights1, Math.min(size, 4), type, false, stride, bufferSize, buffer);
             if (size > 4) {
-                re.setVertexAttribPointer(shaderAttribWeights2, size - 4, type, false, stride, buffer);
+                re.setVertexAttribPointer(shaderAttribWeights2, size - 4, type, false, stride, bufferSize, buffer);
             }
 		}
 	}
@@ -434,8 +433,8 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setVertexPointer(int size, int type, int stride, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribPosition, size, type, false, stride, buffer);
+	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		re.setVertexAttribPointer(shaderAttribPosition, size, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -444,8 +443,8 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setColorPointer(int size, int type, int stride, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribColor, size, type, false, stride, buffer);
+	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		re.setVertexAttribPointer(shaderAttribColor, size, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -454,8 +453,8 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setNormalPointer(int type, int stride, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribNormal, 3, type, false, stride, buffer);
+	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
+		re.setVertexAttribPointer(shaderAttribNormal, 3, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -464,8 +463,8 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setTexCoordPointer(int size, int type, int stride, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribTexture, size, type, false, stride, buffer);
+	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		re.setVertexAttribPointer(shaderAttribTexture, size, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override

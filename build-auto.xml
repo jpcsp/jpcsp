@@ -9,9 +9,8 @@
 	<property name="jpcsp.version" value="0.6" />
 
 	<path id="Jpcsp.classpath">
-		<pathelement location="lib/gluegen-rt.jar" />
+		<pathelement location="lib/lwjgl.jar" />
 		<pathelement location="lib/javassist.jar" />
-		<pathelement location="lib/jogl.jar" />
 		<pathelement location="lib/jgz-0.2.jar" />
 		<pathelement location="lib/jide-oss-2.8.4.jar" />
 		<pathelement location="lib/log4j-1.2.15.jar" />

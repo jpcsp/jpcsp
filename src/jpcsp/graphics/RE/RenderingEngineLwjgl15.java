@@ -16,9 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import java.nio.Buffer;
+import static jpcsp.graphics.RE.DirectBufferUtilities.getDirectBuffer;
 
-import javax.media.opengl.GL;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
+
+import org.lwjgl.opengl.GL15;
 
 /**
  * @author gid15
@@ -27,31 +33,37 @@ import javax.media.opengl.GL;
  * for OpenGL Version >= 1.5.
  * The class contains no rendering logic, it just implements the interface to jogl.
  */
-public class RenderingEngineJogl15 extends RenderingEngineJogl12 {
-	public RenderingEngineJogl15(GL gl) {
-		super(gl);
+public class RenderingEngineLwjgl15 extends RenderingEngineLwjgl12 {
+	public RenderingEngineLwjgl15() {
 	}
 
 	@Override
 	public void deleteBuffer(int buffer) {
-		int[] buffers = new int[] { buffer };
-		gl.glDeleteBuffers(1, buffers, 0);
+		GL15.glDeleteBuffers(buffer);
 	}
 
 	@Override
 	public int genBuffer() {
-		int[] buffers = new int[1];
-		gl.glGenBuffers(1, buffers, 0);
-		return buffers[0];
+		return GL15.glGenBuffers();
 	}
 
 	@Override
 	public void setBufferData(int size, Buffer buffer, int usage) {
-		gl.glBufferData(bufferTarget, size, buffer, bufferUsageToGL[usage]);
+		if (buffer instanceof ByteBuffer) {
+			GL15.glBufferData(bufferTarget, getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
+		} else if (buffer instanceof IntBuffer) {
+			GL15.glBufferData(bufferTarget, getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
+		} else if (buffer instanceof ShortBuffer) {
+			GL15.glBufferData(bufferTarget, getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
+		} else if (buffer instanceof FloatBuffer) {
+			GL15.glBufferData(bufferTarget, getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
+		} else {
+			throw new IllegalArgumentException();
+		}
 	}
 
 	@Override
 	public void bindBuffer(int buffer) {
-		gl.glBindBuffer(bufferTarget, buffer);
+		GL15.glBindBuffer(bufferTarget, buffer);
 	}
 }

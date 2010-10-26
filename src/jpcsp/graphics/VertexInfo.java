@@ -26,8 +26,6 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Hash;
 
-import com.sun.opengl.util.BufferUtil;
-
 // Based on soywiz/pspemulator
 public class VertexInfo {
     // vtype
@@ -723,7 +721,7 @@ public class VertexInfo {
 
 		bindVertex(re);
 
-		cachedBuffer = ByteBuffer.allocateDirect(size * BufferUtil.SIZEOF_FLOAT).order(ByteOrder.LITTLE_ENDIAN);
+		cachedBuffer = ByteBuffer.allocateDirect(size * VideoEngine.SIZEOF_FLOAT).order(ByteOrder.LITTLE_ENDIAN);
 		int oldLimit = buffer.limit();
 		buffer.limit(size);
 		cachedBuffer.asFloatBuffer().put(buffer);
@@ -731,7 +729,7 @@ public class VertexInfo {
 		buffer.rewind();
 		cachedBuffer.rewind();
 
-		re.setBufferData(size * BufferUtil.SIZEOF_FLOAT, cachedBuffer, IRenderingEngine.RE_STATIC_DRAW);
+		re.setBufferData(size * VideoEngine.SIZEOF_FLOAT, cachedBuffer, IRenderingEngine.RE_STATIC_DRAW);
 	}
 
 	public void deleteVertex(IRenderingEngine re) {

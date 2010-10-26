@@ -417,7 +417,7 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public boolean compilerShader(int shader, String[] source) {
+	public boolean compilerShader(int shader, String source) {
 		return proxy.compilerShader(shader, source);
 	}
 
@@ -464,11 +464,6 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void validateProgram(int program) {
 		proxy.validateProgram(program);
-	}
-
-	@Override
-	public boolean isFunctionAvailable(String name) {
-		return proxy.isFunctionAvailable(name);
 	}
 
 	@Override
@@ -527,8 +522,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setColorPointer(int size, int type, int stride, Buffer buffer) {
-		proxy.setColorPointer(size, type, stride, buffer);
+	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		proxy.setColorPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -537,8 +532,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setNormalPointer(int type, int stride, Buffer buffer) {
-		proxy.setNormalPointer(type, stride, buffer);
+	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
+		proxy.setNormalPointer(type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -547,8 +542,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setTexCoordPointer(int size, int type, int stride, Buffer buffer) {
-		proxy.setTexCoordPointer(size, type, stride, buffer);
+	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		proxy.setTexCoordPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -557,8 +552,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setVertexPointer(int size, int type, int stride, Buffer buffer) {
-		proxy.setVertexPointer(size, type, stride, buffer);
+	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		proxy.setVertexPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -567,8 +562,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, Buffer buffer) {
-		proxy.setVertexAttribPointer(id, size, type, normalized, stride, buffer);
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
+		proxy.setVertexAttribPointer(id, size, type, normalized, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -597,8 +592,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, Buffer buffer) {
-		proxy.setTexImage(level, internalFormat, width, height, format, type, buffer);
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
+		proxy.setTexImage(level, internalFormat, width, height, format, type, textureSize, buffer);
 	}
 
 	@Override
@@ -662,8 +657,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, Buffer buffer) {
-		proxy.setTexSubImage(level, xOffset, yOffset, width, height, format, type, buffer);
+	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {
+		proxy.setTexSubImage(level, xOffset, yOffset, width, height, format, type, textureSize, buffer);
 	}
 
 	@Override
@@ -782,8 +777,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
-		proxy.setWeightPointer(size, type, stride, buffer);
+	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
+		proxy.setWeightPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -809,5 +804,15 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setProgramParameter(int program, int parameter, int value) {
 		proxy.setProgramParameter(program, parameter, value);
+	}
+
+	@Override
+	public boolean isQueryAvailable() {
+		return proxy.isQueryAvailable();
+	}
+
+	@Override
+	public boolean isShaderAvailable() {
+		return proxy.isShaderAvailable();
 	}
 }

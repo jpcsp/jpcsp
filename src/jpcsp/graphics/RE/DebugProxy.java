@@ -201,11 +201,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, Buffer buffer) {
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setTexImage level=%d, internalFormat=%d, %dx%d, format=%d, type=%d", level, internalFormat, width, height, format, type));
+			log.debug(String.format("setTexImage level=%d, internalFormat=%d, %dx%d, format=%d, type=%d, textureSize=%d", level, internalFormat, width, height, format, type, textureSize));
 		}
-		super.setTexImage(level, internalFormat, width, height, format, type, buffer);
+		super.setTexImage(level, internalFormat, width, height, format, type, textureSize, buffer);
 	}
 
 	@Override
@@ -393,11 +393,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, Buffer buffer) {
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setVertexAttribPointer id=%d, size=%d, type=%d, normalized=%b, stride=%d", id, size, type, normalized, stride));
+			log.debug(String.format("setVertexAttribPointer id=%d, size=%d, type=%d, normalized=%b, stride=%d, bufferSize=%d", id, size, type, normalized, stride, bufferSize));
 		}
-		super.setVertexAttribPointer(id, size, type, normalized, stride, buffer);
+		super.setVertexAttribPointer(id, size, type, normalized, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -497,11 +497,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setColorPointer(int size, int type, int stride, Buffer buffer) {
+	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
-		super.setColorPointer(size, type, stride, buffer);
+		super.setColorPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -513,11 +513,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setNormalPointer(int type, int stride, Buffer buffer) {
+	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setNormalPointer type=%d, stride=%d, buffer offset=%d", type, stride, buffer.position()));
+			log.debug(String.format("setNormalPointer type=%d, stride=%d, bufferSize=%d, buffer offset=%d", type, stride, bufferSize, buffer.position()));
 		}
-		super.setNormalPointer(type, stride, buffer);
+		super.setNormalPointer(type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -529,11 +529,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setTexCoordPointer(int size, int type, int stride, Buffer buffer) {
+	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
-		super.setTexCoordPointer(size, type, stride, buffer);
+		super.setTexCoordPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -545,11 +545,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setVertexPointer(int size, int type, int stride, Buffer buffer) {
+	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
-		super.setVertexPointer(size, type, stride, buffer);
+		super.setVertexPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -561,11 +561,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setWeightPointer(int size, int type, int stride, Buffer buffer) {
+	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, buffer offset=%d", size, type, stride, buffer.position()));
+			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
-		super.setWeightPointer(size, type, stride, buffer);
+		super.setWeightPointer(size, type, stride, bufferSize, buffer);
 	}
 
 	@Override
@@ -618,11 +618,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, Buffer buffer) {
+	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setTexSubImage level=%d, xOffset=%d, yOffset=%d, width=%d, height=%d, format=%d, type=%d", level, xOffset, yOffset, width, height, format, type));
+			log.debug(String.format("setTexSubImage level=%d, xOffset=%d, yOffset=%d, width=%d, height=%d, format=%d, type=%d, textureSize=%d", level, xOffset, yOffset, width, height, format, type, textureSize));
 		}
-		super.setTexSubImage(level, xOffset, yOffset, width, height, format, type, buffer);
+		super.setTexSubImage(level, xOffset, yOffset, width, height, format, type, textureSize, buffer);
 	}
 
 	@Override
@@ -636,7 +636,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void getTexImage(int level, int format, int type, Buffer buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("getTexImage level=%d, format=%d, type=%d", level, format, type));
+			log.debug(String.format("getTexImage level=%d, format=%d, type=%d, buffer remaining=%d, buffer class=%s", level, format, type, buffer.remaining(), buffer.getClass().getName()));
 		}
 		super.getTexImage(level, format, type, buffer);
 	}

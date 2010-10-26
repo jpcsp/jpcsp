@@ -45,9 +45,10 @@ public class CaptureImage {
 	private int bufferStorage;
 	private boolean compressedImage;
 	private int compressedImageSize;
+	private boolean invert;
 	private boolean overwriteFile;
 
-	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize) {
+	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile) {
 		this.imageaddr = imageaddr;
 		this.level = level;
 		this.buffer = buffer;
@@ -57,19 +58,7 @@ public class CaptureImage {
 		this.bufferStorage = bufferStorage;
 		this.compressedImage = compressedImage;
 		this.compressedImageSize = compressedImageSize;
-		this.overwriteFile = false;
-	}
-
-	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean overwriteFile) {
-		this.imageaddr = imageaddr;
-		this.level = level;
-		this.buffer = buffer;
-		this.width = width;
-		this.height = height;
-		this.bufferWidth = bufferWidth;
-		this.bufferStorage = bufferStorage;
-		this.compressedImage = compressedImage;
-		this.compressedImageSize = compressedImageSize;
+		this.invert = invert;
 		this.overwriteFile = overwriteFile;
 	}
 
@@ -136,6 +125,7 @@ public class CaptureImage {
     	if (buffer instanceof IntBuffer && imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
+				intBuffer.position((invert ? (height - y - 1) : y) * bufferWidth);
 				for (int x = 0; x < width; x++) {
 					try {
 						int pixel = intBuffer.get();
@@ -149,17 +139,11 @@ public class CaptureImage {
 					}
 				}
 				outBmp.write(rowPadBytes);
-				for (int x = width; x < bufferWidth; x++) {
-					try {
-						intBuffer.get();
-					} catch (BufferUnderflowException e) {
-						// Ignore exception
-					}
-				}
 			}
     	} else if (buffer instanceof IntBuffer && !imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
+				intBuffer.position((invert ? (height - y - 1) : y) * bufferWidth / 2);
 				for (int x = 0; x < width; x += 2) {
 					try {
 						int twoPixels = intBuffer.get();
@@ -174,30 +158,21 @@ public class CaptureImage {
 					}
 				}
 				outBmp.write(rowPadBytes);
-				for (int x = width; x < bufferWidth; x += 2) {
-					try {
-						intBuffer.get();
-					} catch (BufferUnderflowException e) {
-						// Ignore exception
-					}
-				}
 			}
     	} else if (buffer instanceof ShortBuffer && !imageType32Bit) {
     		ShortBuffer shortBuffer = (ShortBuffer) buffer;
 			for (int y = 0; y < height; y++) {
+				shortBuffer.position((invert ? (height - y - 1) : y) * bufferWidth);
 				for (int x = 0; x < width; x++) {
 					short pixel = shortBuffer.get();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
 					outBmp.write(pixelBytes);
 				}
 				outBmp.write(rowPadBytes);
-				for (int x = width; x < bufferWidth; x++) {
-					shortBuffer.get();
-				}
 			}
     	} else if (imageType32Bit) {
-    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr, bufferWidth * height * 4, 4);
 			for (int y = 0; y < height; y++) {
+	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (invert ? (height - y - 1) : y) * bufferWidth * 4, bufferWidth * 4, 4);
 				for (int x = 0; x < width; x++) {
 					int pixel = memoryReader.readNext();
 					pixelBytes[0] = (byte) (pixel >> 16);
@@ -206,22 +181,16 @@ public class CaptureImage {
 					outBmp.write(pixelBytes);
 				}
 				outBmp.write(rowPadBytes);
-				for (int x = width; x < bufferWidth; x++) {
-					memoryReader.readNext();
-				}
 			}
     	} else {
-    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr, bufferWidth * height * 2, 2);
 			for (int y = 0; y < height; y++) {
+	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (invert ? (height - y - 1) : y) * bufferWidth * 2, bufferWidth * 2, 2);
 				for (int x = 0; x < width; x++) {
 					short pixel = (short) memoryReader.readNext();
 					getPixelBytes(pixel, bufferStorage, pixelBytes);
 					outBmp.write(pixelBytes);
 				}
 				outBmp.write(rowPadBytes);
-				for (int x = width; x < bufferWidth; x++) {
-					memoryReader.readNext();
-				}
 			}
     	}
     	buffer.rewind();

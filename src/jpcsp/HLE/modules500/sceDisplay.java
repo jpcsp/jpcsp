@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules500;
 
+import org.lwjgl.LWJGLException;
+
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -26,6 +28,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
 	private static final long serialVersionUID = 5006833555228054367L;
+
+	public sceDisplay() throws LWJGLException {
+		super();
+	}
 
 	@Override
 	public String getName() { return "sceDisplay"; }

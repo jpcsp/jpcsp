@@ -16,20 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import javax.media.opengl.GL;
-
 /**
  * @author gid15
  *
  */
 public class RenderingEngineFactory {
-	private static final boolean enableDebugProxy = false;
+	private static final boolean enableDebugProxy = true;
 
-	public static IRenderingEngine createRenderingEngine(GL gl) {
+	public static IRenderingEngine createRenderingEngine() {
 		// Build the rendering pipeline, from the last entry to the first one.
 
 		// The RenderingEngine actually performing the OpenGL calls
-		IRenderingEngine re = RenderingEngineJogl.newInstance(gl);
+		IRenderingEngine re = RenderingEngineLwjgl.newInstance();
 
 		if (enableDebugProxy) {
 			re = new DebugProxy(re);
@@ -46,7 +44,7 @@ public class RenderingEngineFactory {
 		// Proxy removing redundant calls.
 		// E.g. calls setting multiple times the same value,
 		// or calls with an invalid parameter (e.g. for unused shader uniforms).
-		re = new StateProxy(re);
+//		re = new StateProxy(re);
 
 		// Return the first entry in the pipeline
 		return re;
@@ -59,8 +57,8 @@ public class RenderingEngineFactory {
 	 * @param gl
 	 * @return the initial rendering engine
 	 */
-	public static IRenderingEngine createInitialRenderingEngine(GL gl) {
-		IRenderingEngine re = RenderingEngineJogl.newInstance(gl);
+	public static IRenderingEngine createInitialRenderingEngine() {
+		IRenderingEngine re = RenderingEngineLwjgl.newInstance();
 
 		return re;
 	}

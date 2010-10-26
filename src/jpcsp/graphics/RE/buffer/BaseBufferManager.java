@@ -88,6 +88,10 @@ public abstract class BaseBufferManager implements IREBufferManager {
 		public Buffer getBufferPosition(int offset) {
 			return typedBuffer.position(offset / elementSize);
 		}
+
+		public int getBufferSize() {
+			return totalSize;
+		}
 	}
 
 	public BaseBufferManager() {

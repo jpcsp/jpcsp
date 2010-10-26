@@ -28,6 +28,13 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
  * The interface for a RenderingEngine pipeline elements.
  */
 public interface IRenderingEngine {
+	public static final int[] sizeOfTextureType = {
+		2, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
+		2, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
+		2, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
+		4  // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+	};
+
 	// Flags:
 	public static final int GU_ALPHA_TEST          = 0;
 	public static final int GU_DEPTH_TEST          = 1;
@@ -251,7 +258,7 @@ public interface IRenderingEngine {
 	public void startClearMode(boolean color, boolean stencil, boolean depth);
 	public void endClearMode();
 	public int createShader(int type);
-	public boolean compilerShader(int shader, String[] source);
+	public boolean compilerShader(int shader, String source);
 	public int createProgram();
 	public void useProgram(int program);
 	public void attachShader(int program, int shader);
@@ -261,7 +268,6 @@ public interface IRenderingEngine {
 	public int getAttribLocation(int program, String name);
 	public String getShaderInfoLog(int shader);
 	public String getProgramInfoLog(int program);
-	public boolean isFunctionAvailable(String name);
 	public boolean isExtensionAvailable(String name);
 	public void drawArrays(int primitive, int first, int count);
 	public int genBuffer();
@@ -273,24 +279,24 @@ public interface IRenderingEngine {
 	public void enableVertexAttribArray(int id);
 	public void disableVertexAttribArray(int id);
 	public void setTexCoordPointer(int size, int type, int stride, long offset);
-	public void setTexCoordPointer(int size, int type, int stride, Buffer buffer);
+	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer);
 	public void setColorPointer(int size, int type, int stride, long offset);
-	public void setColorPointer(int size, int type, int stride, Buffer buffer);
+	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer);
 	public void setVertexPointer(int size, int type, int stride, long offset);
-	public void setVertexPointer(int size, int type, int stride, Buffer buffer);
+	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer);
 	public void setNormalPointer(int type, int stride, long offset);
-	public void setNormalPointer(int type, int stride, Buffer buffer);
+	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer);
 	public void setWeightPointer(int size, int type, int stride, long offset);
-	public void setWeightPointer(int size, int type, int stride, Buffer buffer);
+	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer);
 	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, long offset);
-	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, Buffer buffer);
+	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer);
 	public void setPixelStore(int rowLength, int alignment);
 	public int genTexture();
 	public void bindTexture(int texture);
 	public void deleteTexture(int texture);
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer);
-	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, Buffer buffer);
-	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, Buffer buffer);
+	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer);
+	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer);
 	public void getTexImage(int level, int format, int type, Buffer buffer);
 	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height);
 	public void setStencilOp(int fail, int zfail, int zpass);
@@ -329,4 +335,6 @@ public interface IRenderingEngine {
 	public boolean canNativeSpritesPrimitive();
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor);
 	public void setProgramParameter(int program, int parameter, int value);
+	public boolean isQueryAvailable();
+	public boolean isShaderAvailable();
 }
