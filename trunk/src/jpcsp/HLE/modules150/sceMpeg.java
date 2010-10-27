@@ -424,9 +424,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         Random random = new Random();
         final int pixelSize = 3;
         final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
-        for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
+        for (int y = 0; y < avcDetailFrameHeight - pixelSize + 1; y += pixelSize) {
             int address = dest_addr + y * frameWidth * bytesPerPixel;
-            final int width = Math.min(480, frameWidth);
+            final int width = Math.min(avcDetailFrameWidth, frameWidth);
             for (int x = 0; x < width; x += pixelSize) {
                 int n = random.nextInt(256);
                 int color = 0xFF000000 | (n << 16) | (n << 8) | n;
@@ -1322,7 +1322,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 }
                 SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video. ");
+                Debug.printFramebuffer(buffer, frameWidth, 10, avcDetailFrameHeight - 22, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video. ");
                 String displayedString;
                 if (mpegLastDate != null) {
                     displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
@@ -2000,8 +2000,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
     }
 
-    protected int ringbufferCallback_ringbuffer_addr;
-
     public class AfterRingbufferPutCallback implements IAction {
 
         @Override
@@ -2015,26 +2013,26 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         Memory mem = Processor.memory;
 
         int packetsAdded = cpu.gpr[2];
-        SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbufferCallback_ringbuffer_addr);
+        mpegRingbuffer.read(mem, mpegRingbufferAddr);
 
         if (log.isDebugEnabled()) {
-            log.debug("sceMpegRingbufferPut packetsAdded=" + packetsAdded + ", packetsRead=" + ringbuffer.packetsRead);
+            log.debug("sceMpegRingbufferPut packetsAdded=" + packetsAdded + ", packetsRead=" + mpegRingbuffer.packetsRead);
         }
 
         if (packetsAdded > 0) {
             if (checkMediaEngineState()) {
-                meChannel.writePacket(ringbuffer.data, packetsAdded * ringbuffer.packetSize);
+                meChannel.writePacket(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             } else if (isEnableConnector()) {
-                mpegCodec.writeVideo(ringbuffer.data, packetsAdded * ringbuffer.packetSize);
+                mpegCodec.writeVideo(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             }
-            if (ringbuffer.packetsFree - packetsAdded < 0) {
-                log.warn("sceMpegRingbufferPut clamping packetsAdded old=" + packetsAdded + " new=" + ringbuffer.packetsFree);
-                packetsAdded = ringbuffer.packetsFree;
+            if (mpegRingbuffer.packetsFree - packetsAdded < 0) {
+                log.warn("sceMpegRingbufferPut clamping packetsAdded old=" + packetsAdded + " new=" + mpegRingbuffer.packetsFree);
+                packetsAdded = mpegRingbuffer.packetsFree;
             }
-            ringbuffer.packetsRead += packetsAdded;
-            ringbuffer.packetsWritten += packetsAdded;
-            ringbuffer.packetsFree -= packetsAdded;
-            ringbuffer.write(mem, ringbufferCallback_ringbuffer_addr);
+            mpegRingbuffer.packetsRead += packetsAdded;
+            mpegRingbuffer.packetsWritten += packetsAdded;
+            mpegRingbuffer.packetsFree -= packetsAdded;
+            mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
         cpu.gpr[2] = packetsAdded;
     }
@@ -2043,13 +2041,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int ringbuffer_addr = cpu.gpr[4];
+        mpegRingbufferAddr = cpu.gpr[4];
         int numPackets = cpu.gpr[5];
         int available = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceMpegRingbufferPut ringbuffer=0x%08X, numPackets=%d, available=%d",
-                    ringbuffer_addr, numPackets, available));
+            		mpegRingbufferAddr, numPackets, available));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -2060,9 +2058,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0;
         } else {
             int numberPackets = Math.min(available, numPackets);
-            SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
-            ringbufferCallback_ringbuffer_addr = ringbuffer_addr;
-            Modules.ThreadManForUserModule.executeCallback(null, ringbuffer.callback_addr, afterRingbufferPutCallback, ringbuffer.data, numberPackets, ringbuffer.callback_args);
+            mpegRingbuffer.read(mem, mpegRingbufferAddr);
+            Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
         }
     }
 
@@ -2070,18 +2067,18 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int ringbuffer_addr = cpu.gpr[4];
+        mpegRingbufferAddr = cpu.gpr[4];
 
         if(log.isDebugEnabled()) {
-            log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
+            log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x" + Integer.toHexString(mpegRingbufferAddr) + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
-        cpu.gpr[2] = ringbuffer.packetsFree;
+    	mpegRingbuffer.read(mem, mpegRingbufferAddr);
+        cpu.gpr[2] = mpegRingbuffer.packetsFree;
     }
 
     public void sceMpeg_11CAB459(Processor processor) {
