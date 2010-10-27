@@ -499,7 +499,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
     public void __sceSasSetADSR(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
@@ -674,7 +673,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
     public void __sceSasCoreWithMix(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
         int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
@@ -682,7 +680,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int rightVol = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasCoreWithMix " + makeLogParams(cpu));
+            log.debug(String.format("__sceSasCoreWithMix 0x%08X, out=0x%08X, leftVol=%d, rightVol=%d", sasCore, sasOut, leftVol, rightVol));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -690,7 +688,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
-            mem.memset(sasOut, (byte) 0, waveformBufMaxSize);  // Empty waveform.
+        	// sasOut points to the output of sceAtracDecodeData
+            //mem.memset(sasOut, (byte) 0, waveformBufMaxSize);  // Empty waveform.
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
@@ -916,13 +915,12 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
     public void __sceSasCore(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
         int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
 
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasCore " + makeLogParams(cpu));
+            log.debug(String.format("__sceSasCore 0x%08X, out=0x%08X", sasCore, sasOut));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -930,7 +928,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-            mem.memset(sasOut, (byte) 0, waveformBufMaxSize);  // Empty waveform.
+        	// sasOut points to the output of sceAtracDecodeData
+            //mem.memset(sasOut, (byte) 0, waveformBufMaxSize);  // Empty waveform.
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
