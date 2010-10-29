@@ -9,6 +9,8 @@
 	<property name="jpcsp.version" value="0.6" />
 
 	<path id="Jpcsp.classpath">
+                <pathelement location="lib/jinput.jar" />
+                <pathelement location="lib/lwjgl_util.jar" />
 		<pathelement location="lib/lwjgl.jar" />
 		<pathelement location="lib/javassist.jar" />
 		<pathelement location="lib/jgz-0.2.jar" />

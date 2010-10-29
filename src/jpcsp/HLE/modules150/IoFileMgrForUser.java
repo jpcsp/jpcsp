@@ -845,48 +845,51 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     /*
      * HLE functions.
      */
-    public void hleIoGetAsyncStat(int uid, int res_addr, boolean wait, boolean callbacks) {
+    public void hleIoWaitAsync(int uid, int res_addr, boolean wait, boolean callbacks) {
         if (log.isDebugEnabled()) {
-            log.debug("hleIoGetAsyncStat(uid=" + Integer.toHexString(uid) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
+            log.debug("hleIoWaitAsync(uid=" + Integer.toHexString(uid) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
         }
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
-            log.warn("hleIoGetAsyncStat - unknown uid " + Integer.toHexString(uid) + ", not waiting");
+            log.warn("hleIoWaitAsync - unknown uid " + Integer.toHexString(uid) + ", not waiting");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.result == ERROR_NO_ASYNC_OP) {
-            log.debug("hleIoGetAsyncStat - PSP_ERROR_NO_ASYNC_OP, not waiting");
+            log.debug("hleIoWaitAsync - PSP_ERROR_NO_ASYNC_OP, not waiting");
             wait = false;
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NO_ASYNC_OP;
         } else if (info.asyncPending && !wait) {
             // Need to wait for context switch before we can allow the good result through
-            log.debug("hleIoGetAsyncStat - poll return=1(busy), not waiting");
+            log.debug("hleIoWaitAsync - poll return = 1(busy), not waiting");
             Emulator.getProcessor().cpu.gpr[2] = 1;
         } else {
             if (info.closePending) {
-                log.debug("hleIoGetAsyncStat - file marked with closePending, calling sceIoClose, not waiting");
+                log.debug("hleIoWaitAsync - file marked with closePending, calling sceIoClose, not waiting");
                 hleIoClose(uid);
                 wait = false;
             }
+
             // Deferred error reporting from sceIoOpenAsync(filenotfound)
             if (info.result == (ERROR_FILE_NOT_FOUND & 0xffffffffL)) {
-                log.debug("hleIoGetAsyncStat - file not found, not waiting");
+                log.debug("hleIoWaitAsync - file not found, not waiting");
                 filelist.remove(info.uid);
                 SceUidManager.releaseUid(info.uid, "IOFileManager-File");
                 wait = false;
             }
+
             // This case happens when the game switches thread before calling waitAsync,
             // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
             // Technically we should wait at least some time, since tests show
             // a load of sceKernelDelayThread before sceIoWaitAsync won't make
             // the async io complete (maybe something to do with thread priorities).
-            if (!info.asyncPending) {
-                log.debug("hleIoGetAsyncStat - already context switched, not waiting");
+            if (!info.asyncPending && wait) {
+                log.debug("hleIoWaitAsync - already context switched, not waiting");
                 wait = false;
             }
+
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(res_addr)) {
-                log.debug("hleIoGetAsyncStat - storing result 0x" + Long.toHexString(info.result));
+                log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
                 mem.write32(res_addr, (int) (info.result & 0xffffffffL));
                 mem.write32(res_addr + 4, (int) ((info.result >> 32) & 0xffffffffL));
                 // flush out result after writing it once
@@ -901,8 +904,8 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             State.fileLogger.logIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
         }
 
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (info != null && wait) {
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
             // wait type
             currentThread.waitType = PSP_WAIT_EVENTFLAG;
@@ -1532,14 +1535,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         int res_addr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoPollAsync redirecting to hleIoGetAsyncStat");
+            log.debug("sceIoPollAsync redirecting to hleIoWaitAsync");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoGetAsyncStat(uid, res_addr, false, false);
+        hleIoWaitAsync(uid, res_addr, false, false);
     }
 
     public void sceIoWaitAsync(Processor processor) {
@@ -1549,14 +1552,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         int res_addr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoWaitAsync redirecting to hleIoGetAsyncStat");
+            log.debug("sceIoWaitAsync redirecting to hleIoWaitAsync");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoGetAsyncStat(uid, res_addr, true, false);
+        hleIoWaitAsync(uid, res_addr, true, false);
     }
 
     public void sceIoWaitAsyncCB(Processor processor) {
@@ -1566,14 +1569,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         int res_addr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoWaitAsyncCB redirecting to hleIoGetAsyncStat");
+            log.debug("sceIoWaitAsyncCB redirecting to hleIoWaitAsync");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoGetAsyncStat(uid, res_addr, true, true);
+        hleIoWaitAsync(uid, res_addr, true, true);
     }
 
     public void sceIoGetAsyncStat(Processor processor) {
@@ -1584,14 +1587,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         int res_addr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoGetAsyncStat");
+            log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoWaitAsync");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoGetAsyncStat(uid, res_addr, (poll == 0), false);
+        hleIoWaitAsync(uid, res_addr, (poll == 0), false);
     }
 
     public void sceIoChangeAsyncPriority(Processor processor) {
