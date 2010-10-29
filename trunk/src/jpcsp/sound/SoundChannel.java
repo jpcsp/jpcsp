@@ -61,6 +61,16 @@ public class SoundChannel {
 				Modules.log.error(e);
 			}
 		}
+        // Add a shutdown hook to automatically remove OpenAL's .dll from Java's
+        // heap to avoid crashing when exiting the emulator.
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (AL.isCreated()) {
+                    AL.destroy();
+                }
+            }
+        }));
     }
 
     public SoundChannel(int index) {

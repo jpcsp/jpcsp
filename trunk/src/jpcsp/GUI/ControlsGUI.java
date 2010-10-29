@@ -24,6 +24,9 @@ import java.util.Iterator;
 import java.util.Map;
 
 import javax.swing.JTextField;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.MutableComboBoxModel;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
@@ -31,6 +34,10 @@ import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.Controller.keyCode;
+
+import net.java.games.input.Controller;
+import net.java.games.input.ControllerEnvironment;
+import net.java.games.input.Controller.Type;
 
 public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 	private static final long serialVersionUID = -732715495873159718L;
@@ -155,6 +162,21 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         this.targetKey = targetKey;
     }
 
+    public ComboBoxModel makeControllerComboBoxModel() {
+        MutableComboBoxModel comboBox = new DefaultComboBoxModel();
+        ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
+        Controller[] controllers = ce.getControllers();
+        for(Controller c : controllers) {
+            if(c.getType() == Type.KEYBOARD) {
+                comboBox.addElement("Keyboard");
+                break;
+            } else if (c.getType() == Type.GAMEPAD) {
+                comboBox.addElement(c.getName());
+            }
+        }
+        return comboBox;
+    }
+
     public void setMainGUI(MainGUI mainWindow) {
         this.mainWindow = mainWindow;
     }
@@ -196,6 +218,8 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogLeft = new javax.swing.JTextField();
         fieldAnalogRight = new javax.swing.JTextField();
         bgLabel1 = new javax.swing.JLabel();
+        controllerBox = new javax.swing.JComboBox();
+        controllerLabel = new javax.swing.JLabel();
 
         setTitle("Controls");
         setResizable(false);
@@ -217,6 +241,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         keyPanel.setMinimumSize(new java.awt.Dimension(1, 1));
         keyPanel.setLayout(new java.awt.GridBagLayout());
 
+        fgPanel.setBorder(javax.swing.BorderFactory.createEtchedBorder(javax.swing.border.EtchedBorder.RAISED));
         fgPanel.setOpaque(false);
         fgPanel.setPreferredSize(new java.awt.Dimension(614, 312));
 
@@ -469,35 +494,35 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 488, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
                 .addComponent(fieldCross, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 488, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
                 .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 488, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
                 .addComponent(fieldCircle, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 488, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
                 .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 488, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 484, Short.MAX_VALUE)
                 .addComponent(fieldTriangle, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
-                .addContainerGap(551, Short.MAX_VALUE)
+                .addContainerGap(547, Short.MAX_VALUE)
                 .addComponent(fieldHold, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
@@ -505,7 +530,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                     .addGroup(fgPanelLayout.createSequentialGroup()
                         .addGap(29, 29, 29)
                         .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 75, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 71, Short.MAX_VALUE)
                         .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -536,7 +561,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addGap(29, 29, 29)
                 .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(532, Short.MAX_VALUE))
+                .addContainerGap(528, Short.MAX_VALUE))
         );
         fgPanelLayout.setVerticalGroup(
             fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -592,11 +617,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(17, Short.MAX_VALUE))
+                .addContainerGap(13, Short.MAX_VALUE))
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addGap(126, 126, 126)
                 .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(173, Short.MAX_VALUE))
+                .addContainerGap(169, Short.MAX_VALUE))
         );
 
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -618,13 +643,23 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         gridBagConstraints.weighty = 1.0;
         keyPanel.add(bgLabel1, gridBagConstraints);
 
+        controllerBox.setModel(makeControllerComboBoxModel());
+
+        controllerLabel.setText("Controller:");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(482, Short.MAX_VALUE)
-                .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(202, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addComponent(controllerLabel)
+                        .addGap(10, 10, 10)
+                        .addComponent(controllerBox, javax.swing.GroupLayout.PREFERRED_SIZE, 209, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(98, 98, 98))
+                    .addComponent(jButtonOK, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -637,7 +672,11 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(374, Short.MAX_VALUE)
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(controllerBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(controllerLabel))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 343, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonCancel)
                     .addComponent(jButtonOK))
@@ -753,6 +792,8 @@ private void fieldStartMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel bgLabel1;
     private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JComboBox controllerBox;
+    private javax.swing.JLabel controllerLabel;
     private javax.swing.JPanel fgPanel;
     private javax.swing.JTextField fieldAnalogDown;
     private javax.swing.JTextField fieldAnalogLeft;
