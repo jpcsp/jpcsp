@@ -4311,7 +4311,7 @@ public class VideoEngine {
         	int scissorWidth = context.scissor_width;
         	int scissorHeight = context.scissor_height;
         	if (scissorHeight < 272) {
-        		scissorY += 272 - scissorHeight;
+        		scissorY = 272 - scissorHeight - scissorY;
         	}
             re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
         	context.scissorTestFlag.setEnabled(true);
