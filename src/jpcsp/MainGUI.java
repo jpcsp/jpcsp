@@ -79,6 +79,7 @@ import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.hardware.Audio;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
 import jpcsp.util.JpcspDialogManager;
@@ -1146,8 +1147,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
 
         boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
-        Modules.sceAudioModule.setAudioMuted(audioMuted);
-        Modules.sceSasCoreModule.setAudioMuted(audioMuted);
+        Audio.setMuted(audioMuted);
 
         boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
         Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
@@ -1425,13 +1425,7 @@ private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_ControlsConfActionPerformed
 
 private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
-    if (MuteOpt.isSelected()) {
-        Modules.sceAudioModule.setAudioMuted(true);
-        Modules.sceSasCoreModule.setAudioMuted(true);
-    } else {
-        Modules.sceAudioModule.setAudioMuted(false);
-        Modules.sceSasCoreModule.setAudioMuted(false);
-    }
+    Audio.setMuted(MuteOpt.isSelected());
 }//GEN-LAST:event_MuteOptActionPerformed
 
 private void ToggleLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleLoggerActionPerformed

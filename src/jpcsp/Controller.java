@@ -37,7 +37,7 @@ import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_UP;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
 
-import jpcsp.HLE.Modules;
+import jpcsp.hardware.Audio;
 
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
@@ -166,11 +166,9 @@ public class Controller {
 
     private void processSpecialKeys() {
         if (isSpecialKeyPressed(keyCode.VOLMIN)) {
-            Modules.sceAudioModule.setAudioVolDown();
-            Modules.sceSasCoreModule.setSasVolDown();
+            Audio.setVolumeDown();
         } else if (isSpecialKeyPressed(keyCode.VOLPLUS)) {
-            Modules.sceAudioModule.setAudioVolUp();
-            Modules.sceSasCoreModule.setSasVolUp();
+        	Audio.setVolumeUp();
         }
     }
 

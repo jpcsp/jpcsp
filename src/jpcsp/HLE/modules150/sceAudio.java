@@ -16,14 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -34,240 +27,17 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.HLEThread;
+import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.hardware.Audio;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.sound.AudioBlockingOutputAction;
+import jpcsp.sound.SoundChannel;
 
 import org.apache.log4j.Logger;
 
-public class sceAudio implements HLEModule, HLEThread {
+public class sceAudio implements HLEModule, HLEStartModule {
     private static Logger log = Modules.getLogger("sceAudio");
-
-    protected class pspChannelInfo {
-        public int index;
-        public boolean reserved;
-        public int allocatedSamples;
-        public int format;
-        public int leftVolume;
-        public int rightVolume;
-        public SourceDataLine outputDataLine;
-        public float outputDataLineSampleRate;
-        public int waitingThreadId;
-        public long referenceFramePosition;
-        public int waitingAudioDataAddr;
-        public int waitingVolumeLeft;
-        public int waitingVolumeRight;
-        public byte[] buffer;
-        public int bufferIndex;
-        public List<byte[]> waitingBuffers;
-
-        public pspChannelInfo(int index) {
-            this.index = index;
-            reserved = false;
-            allocatedSamples = 0;
-            format = 0;
-            leftVolume = 0x8000;
-            rightVolume = 0x8000;
-            outputDataLine = null;
-            waitingThreadId = -1;
-            referenceFramePosition = 0;
-            buffer = null;
-            bufferIndex = 0;
-            waitingBuffers = new LinkedList<byte[]>();
-        }
-
-        public boolean IsEnded() {
-            if (outputDataLine == null) {
-                return true;
-            }
-
-            if (outputDataLine.available() < outputDataLine.getBufferSize()) {
-            	return false;
-            }
-
-            if (buffer != null && bufferIndex < buffer.length) {
-                return false;
-            }
-
-            return true;
-        }
-
-        private float getSampleRate() {
-            return sampleRate;
-        }
-
-        private void init() {
-            float wantedSampleRate = getSampleRate();
-            int wantedBufferSize = 0;
-            if (outputDataLine == null) {
-                //
-                // The PSP is using a buffer equal to the sampleSize.
-                // However, the Java sound system is not nicely handling buffer
-                // underflows, causing discontinuities in the audio
-                // that are perceived as "clicks".
-                //
-                // So, allocate a large buffer: 10 times the sampleSize is an
-                // empirical value.
-                // This has the disadvantage to introduce a small delay when playing
-                // a new sound: a PSP application is typically sending continuously
-                // sound data, even when nothing can be heard ("0" values are sent).
-                // And we have first to play these buffered blanks before hearing
-                // the real sound itself.
-                wantedBufferSize = allocatedSamples * 4 * 10;
-            } else {
-                wantedBufferSize = outputDataLine.getBufferSize();
-            }
-
-            if (outputDataLine == null || wantedSampleRate != outputDataLineSampleRate || wantedBufferSize > outputDataLine.getBufferSize()) {
-                if (outputDataLine != null) {
-                    outputDataLine.close();
-                    outputDataLine = null;
-                }
-
-                try {
-                    AudioFormat aFormat = new AudioFormat(wantedSampleRate, 16, 2, true, false);
-                    outputDataLine = AudioSystem.getSourceDataLine(aFormat);
-                    outputDataLineSampleRate = wantedSampleRate;
-                    if (wantedBufferSize > 0) {
-                        outputDataLine.open(aFormat, wantedBufferSize);
-                    } else {
-                        outputDataLine.open(aFormat);
-                    }
-                } catch (LineUnavailableException e) {
-                    log.info("sceSasCore.pspVoice.init: " + e.toString());
-                }
-            }
-        }
-
-        public synchronized void release() {
-            if (outputDataLine != null) {
-                outputDataLine.stop();
-                outputDataLine.close();
-                outputDataLine = null;
-            }
-            waitingBuffers.clear();
-            buffer = null;
-            waitingAudioDataAddr = 0;
-        }
-
-        public synchronized void play(byte[] buffer) {
-            init();
-            if (outputDataLine != null) {
-                if (this.buffer == null) {
-                    int length = Math.min(outputDataLine.available(), buffer.length);
-                    outputDataLine.start();
-                    int written = outputDataLine.write(buffer, 0, length);
-                    if (log.isDebugEnabled()) {
-                        log.debug("pspChannelInfo.play: written " + written + " bytes (" + toString() + ")");
-                    }
-                    bufferIndex = length;
-                    this.buffer = buffer;
-                } else {
-                    waitingBuffers.add(buffer);
-                }
-                check();
-            }
-        }
-
-        public synchronized boolean isOutputBlocking() {
-            init();
-            check();
-
-            return !waitingBuffers.isEmpty();
-        }
-
-        public synchronized void check() {
-            if (outputDataLine == null || buffer == null) {
-                return;
-            }
-
-            if (bufferIndex < buffer.length) {
-                int length = Math.min(outputDataLine.available(), buffer.length - bufferIndex);
-                if (length > 0) {
-                    outputDataLine.start();
-                    int written = outputDataLine.write(buffer, bufferIndex, length);
-                    if (log.isDebugEnabled()) {
-                        log.debug("pspChannelInfo.check: written " + written);
-                    }
-                    bufferIndex += length;
-                }
-            }
-
-            if (bufferIndex >= buffer.length) {
-                if (!waitingBuffers.isEmpty()) {
-                    buffer = waitingBuffers.remove(0);
-                    bufferIndex = 0;
-                    check();
-                } else {
-                    if (IsEnded()) {
-                        buffer = null;
-                        outputDataLine.stop();
-                    }
-                }
-            }
-        }
-
-        public int getRestLength() {
-            int length = 0;
-
-            check();
-
-            if (outputDataLine != null) {
-                length += outputDataLine.getBufferSize() - outputDataLine.available();
-            }
-
-            for (byte[] buf : waitingBuffers) {
-                length += buf.length;
-            }
-
-            return length;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder result = new StringBuilder();
-
-            result.append("pspChannelInfo[" + index + "](");
-            if (buffer != null) {
-                result.append("buffer " + bufferIndex + " of " + buffer.length + ", ");
-            }
-            if (outputDataLine != null) {
-                result.append("playing " + outputDataLine.available() + " of " + outputDataLine.getBufferSize() + " ,");
-            }
-            result.append("Waiting " + waitingBuffers.size() + ", ");
-            result.append("Ended " + IsEnded() + ", ");
-            result.append("OutputBlocking " + isOutputBlocking() + ", ");
-            result.append("Reserved " + reserved);
-            result.append(")");
-
-            return result.toString();
-        }
-    }
-
-    protected class ChannelsCheckerThread extends Thread {
-
-        private long delayMillis;
-
-        public ChannelsCheckerThread(long delayMillis) {
-            this.delayMillis = delayMillis;
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                for (int i = 0; i < pspPCMChannels.length; i++) {
-                    pspPCMChannels[i].check();
-                }
-                pspSRCChannel.check();
-
-                try {
-                    sleep(delayMillis);
-                } catch (InterruptedException e) {
-                    // Ignore the Exception
-                }
-            }
-        }
-    }
 
     @Override
     public String getName() {
@@ -310,33 +80,6 @@ public class sceAudio implements HLEModule, HLEThread {
             mm.addFunction(0xA2BEAA6C, sceAudioSetFrequencyFunction);
             mm.addFunction(0xB61595C0, sceAudioLoopbackTestFunction);
             mm.addFunction(0x927AC32B, sceAudioSetVolumeOffsetFunction);
-
-            mm.addThread(this);
-        }
-
-        // The audio driver is capable of handling PCM and VAG (ADPCM) playback,
-        // but it uses the same channels for this processing.
-        // E.g.: Use channels 0 to 4 to playback 4 VAG files or use channels 0 to 2
-        // to playback raw PCM data.
-        // Note: Currently, working with pspPCMChannels only is enough.
-        pspPCMChannels = new pspChannelInfo[PSP_AUDIO_CHANNEL_MAX];
-        for (int channel = 0; channel < pspPCMChannels.length; channel++) {
-            pspPCMChannels[channel] = new pspChannelInfo(channel);
-        }
-        pspVAGVoices = new pspChannelInfo[PSP_AUDIO_CHANNEL_MAX];
-        for (int channel = 0; channel < pspVAGVoices.length; channel++) {
-            pspVAGVoices[channel] = new pspChannelInfo(channel);
-        }
-        pspSRCChannel = new pspChannelInfo(8);  // Use a special channel 8 to handle SRC functions.
-
-        sampleRate = 48000;
-        audioVolLevel = 0;
-
-        if (channelsCheckerThread == null) {
-            channelsCheckerThread = new ChannelsCheckerThread(500);
-            channelsCheckerThread.setDaemon(true);
-            channelsCheckerThread.setName("sceAudio Channels Checker");
-            channelsCheckerThread.start();
         }
     }
 
@@ -344,9 +87,7 @@ public class sceAudio implements HLEModule, HLEThread {
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.removeThread(this);
-
-            mm.removeFunction(sceAudioOutputFunction);
+        	mm.removeFunction(sceAudioOutputFunction);
             mm.removeFunction(sceAudioOutputBlockingFunction);
             mm.removeFunction(sceAudioOutputPannedFunction);
             mm.removeFunction(sceAudioOutputPannedBlockingFunction);
@@ -380,59 +121,41 @@ public class sceAudio implements HLEModule, HLEThread {
             mm.removeFunction(sceAudioSetVolumeOffsetFunction);
         }
     }
-    protected static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
+
+	@Override
+	public void start() {
+		SoundChannel.init();
+
+        // The audio driver is capable of handling PCM and VAG (ADPCM) playback,
+        // but it uses the same channels for this processing.
+        // E.g.: Use channels 0 to 4 to playback 4 VAG files or use channels 0 to 2
+        // to playback raw PCM data.
+        // Note: Currently, working with pspPCMChannels only is enough.
+        pspPCMChannels = new SoundChannel[PSP_AUDIO_CHANNEL_MAX];
+        for (int channel = 0; channel < pspPCMChannels.length; channel++) {
+            pspPCMChannels[channel] = new SoundChannel(channel);
+        }
+        pspSRCChannel = new SoundChannel(8);  // Use a special channel 8 to handle SRC functions.
+	}
+
+	@Override
+	public void stop() {
+	}
+
+	protected static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
     protected static final int PSP_AUDIO_CHANNEL_MAX = 8;
     protected static final int PSP_AUDIO_SAMPLE_MIN = 64;
     protected static final int PSP_AUDIO_SAMPLE_MAX = 65472;
     protected static final int PSP_AUDIO_FORMAT_STEREO = 0;
     protected static final int PSP_AUDIO_FORMAT_MONO = 0x10;
 
-    protected pspChannelInfo[] pspPCMChannels;
-    protected pspChannelInfo[] pspVAGVoices;
-    protected pspChannelInfo pspSRCChannel;
+    protected SoundChannel[] pspPCMChannels;
+    protected SoundChannel pspSRCChannel;
 
-    protected int sampleRate;
     protected boolean isAudioOutput2 = false;
 
-    private static ChannelsCheckerThread channelsCheckerThread = null;
-    protected int audioVolLevel;
     protected boolean disableChReserve;
     protected boolean disableBlockingAudio;
-    protected boolean audioMuted;
-
-    public void setAudioMuted(boolean muted) {
-        audioMuted = muted;
-    }
-
-    public boolean isAudioMuted() {
-        return audioMuted;
-    }
-
-    public void setAudioVolUp() {
-        if (audioVolLevel < PSP_AUDIO_VOLUME_MAX) {
-            audioVolLevel += 0x100;
-        }
-    }
-
-    public void setAudioVolDown() {
-        if (audioVolLevel > -PSP_AUDIO_VOLUME_MAX) {
-            audioVolLevel -= 0x100;
-        }
-    }
-
-    private int processVolume(int vol) {
-        if (audioMuted) {
-            return 0;
-        } else {
-            if ((vol + audioVolLevel) > PSP_AUDIO_VOLUME_MAX) {
-                return PSP_AUDIO_VOLUME_MAX;
-            } else if ((vol + audioVolLevel) < 0) {
-                return 0;
-            } else {
-                return (vol + audioVolLevel);
-            }
-        }
-    }
 
     public void setChReserveEnabled(boolean enabled) {
         disableChReserve = !enabled;
@@ -444,127 +167,100 @@ public class sceAudio implements HLEModule, HLEThread {
         log.info("Audio Blocking disabled: " + disableBlockingAudio);
     }
 
-    @Override
-    public void step() {
-        if (disableBlockingAudio) {
-            return;
-        }
-        for (int channel = 0; channel < pspPCMChannels.length; channel++) {
-            if (pspPCMChannels[channel].waitingThreadId >= 0) {
-                if (!pspPCMChannels[channel].isOutputBlocking()) {
-                    ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                    int waitingThreadId = pspPCMChannels[channel].waitingThreadId;
-                    SceKernelThreadInfo waitingThread = threadMan.getThreadById(waitingThreadId);
-                    if (waitingThread != null) {
-                        if (pspPCMChannels[channel].waitingAudioDataAddr != 0) {
-                            changeChannelVolume(pspPCMChannels[channel], pspPCMChannels[channel].waitingVolumeLeft, pspPCMChannels[channel].waitingVolumeRight);
-                            int ret = doAudioOutput(pspPCMChannels[channel], pspPCMChannels[channel].waitingAudioDataAddr);
-                            waitingThread.cpuContext.gpr[2] = ret;
-                        }
-                        threadMan.hleUnblockThread(waitingThreadId);
-                    }
-                    pspPCMChannels[channel].waitingThreadId = -1;
-                    pspPCMChannels[channel].waitingAudioDataAddr = 0;
-                }
-            }
-        }
-        if (pspSRCChannel.waitingThreadId >= 0) {
-            if (!pspSRCChannel.isOutputBlocking()) {
-                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                int waitingThreadId = pspSRCChannel.waitingThreadId;
-                SceKernelThreadInfo waitingThread = threadMan.getThreadById(waitingThreadId);
-                if (waitingThread != null) {
-                    if (pspSRCChannel.waitingAudioDataAddr != 0) {
-                        changeChannelVolume(pspSRCChannel, pspSRCChannel.waitingVolumeLeft, pspSRCChannel.waitingVolumeRight);
-                        int ret = doAudioOutput(pspSRCChannel, pspSRCChannel.waitingAudioDataAddr);
-                        waitingThread.cpuContext.gpr[2] = ret;
-                    }
-                    threadMan.hleUnblockThread(waitingThreadId);
-                }
-                pspSRCChannel.waitingThreadId = -1;
-                pspSRCChannel.waitingAudioDataAddr = 0;
-            }
-        }
-    }
-
-    protected int doAudioOutput(pspChannelInfo channel, int pvoid_buf) {
+    protected int doAudioOutput(SoundChannel channel, int pvoid_buf) {
         int ret = -1;
 
-        if (channel.reserved) {
-            int channels = ((channel.format & 0x10) == 0x10) ? 1 : 2;
-            int bytespersample = 4;
+        if (channel.isReserved()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("doAudioOuput(%s, 0x%08X)", channel.toString(), pvoid_buf));
+        	}
+            int bytesPerSample = channel.isFormatStereo() ? 4 : 2;
+            int nbytes = bytesPerSample * channel.getSampleLength();
+            byte[] data = new byte[nbytes];
 
-            int bytes = bytespersample * channel.allocatedSamples;
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nbytes, 2);
+            if (channel.isFormatMono()) {
+                int volume = Audio.getVolume(channel.getLeftVolume());
+                for (int i = 0; i < nbytes; i += 2) {
+                    short sample = (short) memoryReader.readNext();
 
-            byte[] data = new byte[bytes];
+                    sample = SoundChannel.adjustSample(sample, volume);
 
-            int nsamples = channel.allocatedSamples;
-            int leftVolume = processVolume(channel.leftVolume);
-            int rightVolume = processVolume(channel.rightVolume);
-            if (channels == 1) {
-                IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nsamples * 2, 2);
-                for (int i = 0; i < nsamples; i++) {
-                    short lval = (short) memoryReader.readNext();
-                    short rval = lval;
-
-                    lval = (short) ((((int) lval) * leftVolume) >> 16);
-                    rval = (short) ((((int) rval) * rightVolume) >> 16);
-
-                    data[i * 4 + 0] = (byte) (lval);
-                    data[i * 4 + 1] = (byte) (lval >> 8);
-                    data[i * 4 + 2] = (byte) (rval);
-                    data[i * 4 + 3] = (byte) (rval >> 8);
+                    SoundChannel.storeSample(sample, data, i);
                 }
             } else {
-                IMemoryReader memoryReader = MemoryReader.getMemoryReader(pvoid_buf, nsamples * 4, 2);
-                for (int i = 0; i < nsamples; i++) {
-                    short lval = (short) memoryReader.readNext();
-                    short rval = (short) memoryReader.readNext();
+                int leftVolume = Audio.getVolume(channel.getLeftVolume());
+                int rightVolume = Audio.getVolume(channel.getRightVolume());
+                for (int i = 0; i < nbytes; i += 4) {
+                    short lsample = (short) memoryReader.readNext();
+                    short rsample = (short) memoryReader.readNext();
 
-                    lval = (short) ((((int) lval) * leftVolume) >> 16);
-                    rval = (short) ((((int) rval) * rightVolume) >> 16);
+                    lsample = SoundChannel.adjustSample(lsample, leftVolume);
+                    rsample = SoundChannel.adjustSample(rsample, rightVolume);
 
-                    data[i * 4 + 0] = (byte) (lval);
-                    data[i * 4 + 1] = (byte) (lval >> 8);
-                    data[i * 4 + 2] = (byte) (rval);
-                    data[i * 4 + 3] = (byte) (rval >> 8);
+                    SoundChannel.storeSample(lsample, data, i);
+                    SoundChannel.storeSample(rsample, data, i + 2);
                 }
             }
-            channel.referenceFramePosition = channel.outputDataLine.getLongFramePosition();
             channel.play(data);
-            ret = nsamples;
+            ret = channel.getSampleLength();
         } else {
-            log.warn("sceAudio.doAudioOutput: channel " + channel.index + " not reserved");
+            log.warn("sceAudio.doAudioOutput: channel " + channel.getIndex() + " not reserved");
         }
         return ret;
     }
 
-    protected int doAudioFlush(pspChannelInfo channel) {
-        if (channel.outputDataLine != null) {
-            channel.outputDataLine.drain();
-            return 0;
-        }
-        return -1;
+    protected void blockThreadOutput(SoundChannel channel, int addr, int leftVolume, int rightVolume) {
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+    	blockThreadOutput(threadMan.getCurrentThreadID(), channel, addr, leftVolume, rightVolume);
+    	threadMan.hleBlockCurrentThread();
     }
 
-    protected int changeChannelVolume(pspChannelInfo channel, int leftvol, int rightvol) {
+    protected void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
+    	AudioBlockingOutputAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
+    	int delayMillis = channel.getUnblockOutputDelayMillis();
+    	long schedule = Emulator.getClock().microTime() + 1000 * delayMillis;
+    	Emulator.getScheduler().addAction(schedule, action);
+    }
+
+    public void hleAudioBlockingOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("hleAudioBlockingOutput %s", channel.toString()));
+    	}
+
+    	if (!channel.isOutputBlocking()) {
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+            SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
+            if (thread != null) {
+                if (addr != 0) {
+                    changeChannelVolume(channel, leftVolume, rightVolume);
+                    int ret = doAudioOutput(channel, addr);
+                    thread.cpuContext.gpr[2] = ret;
+                }
+                threadMan.hleUnblockThread(threadId);
+            }
+        } else {
+        	blockThreadOutput(threadId, channel, addr, leftVolume, rightVolume);
+        }
+    }
+
+    protected int changeChannelVolume(SoundChannel channel, int leftvol, int rightvol) {
         int ret = -1;
 
-        if (channel.reserved) {
-            channel.leftVolume = leftvol;
-            channel.rightVolume = rightvol;
+        if (channel.isReserved()) {
+            channel.setLeftVolume(leftvol);
+            channel.setRightVolume(rightvol);
             ret = 0;
         }
+
         return ret;
     }
 
-    protected int hleAudioGetChannelRestLen(pspChannelInfo channel) {
-        int len = 0;
-
-        len = channel.getRestLength();
+    protected int hleAudioGetChannelRestLen(SoundChannel channel) {
+        int len = channel.getRestLength();
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("hleAudioGetChannelRestLen(%d) = %d", channel.index, len));
+            log.debug(String.format("hleAudioGetChannelRestLen(%d) = %d", channel.getIndex(), len));
         }
 
         return len;
@@ -592,7 +288,9 @@ public class sceAudio implements HLEModule, HLEThread {
         int frequency = cpu.gpr[4];
 
         if (frequency == 44100 || frequency == 48000) {
-            sampleRate = frequency;
+        	for (int i = 0; i < pspPCMChannels.length; i++) {
+        		pspPCMChannels[i].setSampleRate(frequency);
+        	}
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;
@@ -677,11 +375,7 @@ public class sceAudio implements HLEModule, HLEThread {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioOutputBlocking[blocking] " + pspPCMChannels[channel].toString());
                 }
-                pspPCMChannels[channel].waitingThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
-                pspPCMChannels[channel].waitingAudioDataAddr = pvoid_buf;
-                pspPCMChannels[channel].waitingVolumeLeft = vol;
-                pspPCMChannels[channel].waitingVolumeRight = vol;
-                Modules.ThreadManForUserModule.hleBlockCurrentThread();
+                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, vol, vol);
             }
         }
     }
@@ -752,11 +446,7 @@ public class sceAudio implements HLEModule, HLEThread {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioOutputPannedBlocking[blocking] " + pspPCMChannels[channel].toString());
                 }
-                pspPCMChannels[channel].waitingThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
-                pspPCMChannels[channel].waitingAudioDataAddr = pvoid_buf;
-                pspPCMChannels[channel].waitingVolumeLeft = leftvol;
-                pspPCMChannels[channel].waitingVolumeRight = rightvol;
-                Modules.ThreadManForUserModule.hleBlockCurrentThread();
+                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, leftvol, rightvol);
             }
         }
     }
@@ -779,13 +469,13 @@ public class sceAudio implements HLEModule, HLEThread {
             log.debug("sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
 
             if (channel != -1) {
-                if (pspPCMChannels[channel].reserved) {
+                if (pspPCMChannels[channel].isReserved()) {
                     log.warn("sceAudioChReserve failed - channel " + channel + " already in use");
                     channel = -1;
                 }
             } else {
                 for (int i = 0; i < pspPCMChannels.length; i++) {
-                    if (!pspPCMChannels[i].reserved) {
+                    if (!pspPCMChannels[i].isReserved()) {
                         channel = i;
                         break;
                     }
@@ -796,10 +486,9 @@ public class sceAudio implements HLEModule, HLEThread {
             }
 
             if (channel != -1) {
-                pspPCMChannels[channel].reserved = true;
-                pspPCMChannels[channel].outputDataLine = null;
-                pspPCMChannels[channel].allocatedSamples = samplecount;
-                pspPCMChannels[channel].format = format;
+                pspPCMChannels[channel].setReserved(true);
+                pspPCMChannels[channel].setSampleLength(samplecount);
+                pspPCMChannels[channel].setFormat(format);
             }
 
             cpu.gpr[2] = channel;
@@ -823,9 +512,9 @@ public class sceAudio implements HLEModule, HLEThread {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (pspPCMChannels[channel].reserved) {
+        if (pspPCMChannels[channel].isReserved()) {
             pspPCMChannels[channel].release();
-            pspPCMChannels[channel].reserved = false;
+            pspPCMChannels[channel].setReserved(false);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;
@@ -854,7 +543,7 @@ public class sceAudio implements HLEModule, HLEThread {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        pspPCMChannels[channel].allocatedSamples = samplecount;
+        pspPCMChannels[channel].setSampleLength(samplecount);
         cpu.gpr[2] = 0;
     }
 
@@ -868,7 +557,7 @@ public class sceAudio implements HLEModule, HLEThread {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        pspPCMChannels[channel].format = format;
+        pspPCMChannels[channel].setFormat(format);
         cpu.gpr[2] = 0;
     }
 
@@ -918,8 +607,8 @@ public class sceAudio implements HLEModule, HLEThread {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (pspSRCChannel.reserved) {
-            pspSRCChannel.allocatedSamples = samplecount;
+        if (pspSRCChannel.isReserved()) {
+            pspSRCChannel.setSampleLength(samplecount);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;
@@ -946,12 +635,11 @@ public class sceAudio implements HLEModule, HLEThread {
             log.warn("IGNORED sceAudioSRCChReserve samplecount= " + samplecount + " freq= " + freq + " format=" + format);
             cpu.gpr[2] = -1;
         } else {
-            sampleRate = freq;
-            if (!pspSRCChannel.reserved) {
-                pspSRCChannel.reserved = true;
-                pspSRCChannel.outputDataLine = null;
-                pspSRCChannel.allocatedSamples = samplecount;
-                pspSRCChannel.format = format;
+            if (!pspSRCChannel.isReserved()) {
+            	pspSRCChannel.setSampleRate(freq);
+                pspSRCChannel.setReserved(true);
+                pspSRCChannel.setSampleLength(samplecount);
+                pspSRCChannel.setFormat(format);
             }
         }
         cpu.gpr[2] = 0;
@@ -964,9 +652,9 @@ public class sceAudio implements HLEModule, HLEThread {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (pspSRCChannel.reserved) {
+        if (pspSRCChannel.isReserved()) {
             pspSRCChannel.release();
-            pspSRCChannel.reserved = false;
+            pspSRCChannel.setReserved(false);
         }
 
         cpu.gpr[2] = 0;
@@ -997,11 +685,7 @@ public class sceAudio implements HLEModule, HLEThread {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioSRCOutputBlocking[blocking] " + pspSRCChannel.toString());
                 }
-                pspSRCChannel.waitingThreadId = Modules.ThreadManForUserModule.getCurrentThreadID();
-                pspSRCChannel.waitingAudioDataAddr = buf;
-                pspSRCChannel.waitingVolumeLeft = vol;
-                pspSRCChannel.waitingVolumeRight = vol;
-                Modules.ThreadManForUserModule.hleBlockCurrentThread();
+                blockThreadOutput(pspSRCChannel, buf, vol, vol);
             }
         }
     }

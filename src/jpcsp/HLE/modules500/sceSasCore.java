@@ -18,7 +18,6 @@ package jpcsp.HLE.modules500;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -57,8 +56,8 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
             sasCore, voice, vagAddr, size, loopmode));
 
         if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
-            voices[voice].samples = decodeSamples(processor, vagAddr, size);
-            voices[voice].loopMode = loopmode;
+            voices[voice].setSamples(decodeSamples(processor, vagAddr, size));
+            voices[voice].setLoopMode(loopmode);
 
             cpu.gpr[2] = 0;
         }
