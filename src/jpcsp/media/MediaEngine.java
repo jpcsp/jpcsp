@@ -40,40 +40,41 @@ import com.xuggle.xuggler.Utils;
 
 public class MediaEngine {
 
-    private static MediaEngine instance;
-    private static IContainer container;
-    private static IPacket packet;
-    private static int numStreams;
-    private static IStreamCoder videoCoder;
-    private static IStreamCoder audioCoder;
-    private static int videoStreamID;
-    private static int audioStreamID;
-    private static SourceDataLine audioLine;
-    private static BufferedImage currentImg;
-    private static byte[] currentSamples;
-    private static int currentSamplesSize = 1024;  // Default size.
-    private static int decodedAudioBytes;
-    private static int decodedVideoBytes;
+	private static boolean initialized = false;
+    private IContainer container;
+    private IPacket packet;
+    private int numStreams;
+    private IStreamCoder videoCoder;
+    private IStreamCoder audioCoder;
+    private int videoStreamID;
+    private int audioStreamID;
+    private SourceDataLine audioLine;
+    private BufferedImage currentImg;
+    private byte[] currentSamples;
+    private int currentSamplesSize = 1024;  // Default size.
+    private int decodedAudioBytes;
+    private int decodedVideoBytes;
 
     // External audio loading vars.
-    private static IContainer extContainer;
-    private static IPacket extPacket;
-    private static IStreamCoder extAudioCoder;
-    private static int extAudioStreamID;
+    private IContainer extContainer;
+    private IPacket extPacket;
+    private IStreamCoder extAudioCoder;
+    private int extAudioStreamID;
 
     public MediaEngine() {
-        // Disable Xuggler's logging, since we do our own.
-        Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
-        Logger.setGlobalIsLogging(Logger.Level.LEVEL_ERROR, false);
-        Logger.setGlobalIsLogging(Logger.Level.LEVEL_INFO, false);
-        Logger.setGlobalIsLogging(Logger.Level.LEVEL_TRACE, false);
-        Logger.setGlobalIsLogging(Logger.Level.LEVEL_WARN, false);
-
-        instance = this;
+    	init();
     }
 
-    public static MediaEngine getInstance() {
-        return instance;
+    private static void init() {
+    	if (!initialized) {
+	        // Disable Xuggler's logging, since we do our own.
+	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
+	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_ERROR, false);
+	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_INFO, false);
+	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_TRACE, false);
+	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_WARN, false);
+	        initialized = true;
+    	}
     }
 
     public IContainer getContainer() {
@@ -369,7 +370,7 @@ public class MediaEngine {
     }
 
     // Sound sampling functions also based on Xuggler's demos (for external audio).
-    private static void startSound(IStreamCoder aAudioCoder) throws LineUnavailableException {
+    private void startSound(IStreamCoder aAudioCoder) throws LineUnavailableException {
         AudioFormat audioFormat = new AudioFormat(aAudioCoder.getSampleRate(),
                 (int) IAudioSamples.findSampleBitDepth(aAudioCoder.getSampleFormat()),
                 aAudioCoder.getChannels(),
@@ -381,13 +382,13 @@ public class MediaEngine {
         audioLine.start();
     }
 
-    private static void playSound(IAudioSamples aSamples) {
+    private void playSound(IAudioSamples aSamples) {
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
         audioLine.write(rawBytes, 0, aSamples.getSize());
     }
 
     // Continuous sample update function for internal audio decoding.
-    private static void updateSoundSamples(IAudioSamples aSamples) {
+    private void updateSoundSamples(IAudioSamples aSamples) {
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
 
         if (currentSamples == null) {
