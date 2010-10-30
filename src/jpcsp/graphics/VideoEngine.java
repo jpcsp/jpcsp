@@ -3821,7 +3821,15 @@ public class VideoEngine {
                 texaddr = context.texture_base_pointer[level];
                 texaddr &= Memory.addressMask;
                 if (!mem.isAddressGood(texaddr)) {
-                	error(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
+                	if (texaddr == 0) {
+                		if (isLogDebugEnabled) {
+                			log.debug(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
+                		}
+                	} else {
+                		if (isLogWarnEnabled) {
+                			log.warn(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
+                		}
+                	}
                 	break;
                 }
                 compressedTexture = false;
