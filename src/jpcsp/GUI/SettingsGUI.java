@@ -17,6 +17,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.GUI;
 
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.GroupLayout;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.MutableComboBoxModel;
+import javax.swing.GroupLayout.Alignment;
+
 import jpcsp.Resource;
 import jpcsp.Settings;
 
@@ -56,7 +64,10 @@ public class SettingsGUI extends javax.swing.JFrame {
         
         enabled = Settings.getInstance().readBool("emu.savedataSizes");
         savedatasizesCheck.setSelected(enabled);
-        
+
+        int language = Settings.getInstance().readInt("emu.impose.language");
+        languageBox.setSelectedIndex(language);
+
         enabled = Settings.getInstance().readBool("emu.disablevbo");
         disableVBOCheck.setSelected(enabled);
 
@@ -95,7 +106,25 @@ public class SettingsGUI extends javax.swing.JFrame {
         
         umdpath.setText(Settings.getInstance().readString("emu.umdpath"));
     }
-    
+
+    private ComboBoxModel makeLanguageComboBoxModel() {
+        MutableComboBoxModel comboBox = new DefaultComboBoxModel();
+        comboBox.addElement(Resource.get("japanese"));
+        comboBox.addElement(Resource.get("english"));
+        comboBox.addElement(Resource.get("french"));
+        comboBox.addElement(Resource.get("spanish"));
+        comboBox.addElement(Resource.get("german"));
+        comboBox.addElement(Resource.get("italian"));
+        comboBox.addElement(Resource.get("dutch"));
+        comboBox.addElement(Resource.get("portuguese"));
+        comboBox.addElement(Resource.get("russian"));
+        comboBox.addElement(Resource.get("korean"));
+        comboBox.addElement(Resource.get("traditionalChinese"));
+        comboBox.addElement(Resource.get("simplifiedChinese"));
+
+        return comboBox;
+    }
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -120,6 +149,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         filelogCheck = new javax.swing.JCheckBox();
         savedatasizesCheck = new javax.swing.JCheckBox();
+        languageBox = new JComboBox();
+        languageLabel = new JLabel();
         VideoPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         disableVBOCheck = new javax.swing.JCheckBox();
@@ -186,6 +217,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         filelogCheck.setText(Resource.get("enablefileIO"));
         savedatasizesCheck.setText(Resource.get("savedatasizes"));
 
+        languageBox.setModel(makeLanguageComboBoxModel());
+        languageLabel.setText(Resource.get("language"));
+
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
         generalPanel.setLayout(generalPanelLayout);
         generalPanelLayout.setHorizontalGroup(
@@ -204,6 +238,11 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addContainerGap())
                     .addGroup(generalPanelLayout.createSequentialGroup()
                         .addComponent(savedatasizesCheck)
+                        .addContainerGap())
+                    .addGroup(generalPanelLayout.createSequentialGroup()
+                        .addComponent(languageLabel)
+                        .addGap(5)
+                        .addComponent(languageBox, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE)
                         .addContainerGap())
                     .addGroup(generalPanelLayout.createSequentialGroup()
                         .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -238,6 +277,10 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(filelogCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(savedatasizesCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(generalPanelLayout.createParallelGroup(Alignment.BASELINE)
+                        .addComponent(languageLabel)
+                        .addComponent(languageBox))
                 .addGap(51, 51, 51)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -487,7 +530,10 @@ public void RefreshWindow() {
 	
 	enabled = Settings.getInstance().readBool("emu.savedataSizes");
 	savedatasizesCheck.setSelected(enabled);
-	
+
+	int language = Settings.getInstance().readInt("emu.impose.language");
+	languageBox.setSelectedItem(language);
+
 	enabled = Settings.getInstance().readBool("emu.disablevbo");
 	disableVBOCheck.setSelected(enabled);
 	
@@ -536,6 +582,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.useGeometryShader", geometryShaderCheck.isSelected());
    Settings.getInstance().writeBool("emu.debug.enablefilelogger", filelogCheck.isSelected());
    Settings.getInstance().writeBool("emu.savedataSizes", savedatasizesCheck.isSelected());
+   Settings.getInstance().writeInt("emu.impose.language", languageBox.getSelectedIndex());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
@@ -583,6 +630,8 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox filelogCheck;
     private javax.swing.JCheckBox savedatasizesCheck;
+    private javax.swing.JComboBox languageBox;
+    private javax.swing.JLabel languageLabel;
     private javax.swing.JPanel generalPanel;
     private javax.swing.JCheckBox ignoreUnmappedImports;
     private javax.swing.JCheckBox invalidMemoryCheck;

@@ -141,8 +141,21 @@ public class Settings {
 		return Integer.parseInt(bool) != 0;
 	}
 
+	public int readInt(String option) {
+		String value = loadedSettings.getProperty(option);
+		if (value == null) return 0;
+
+		return Integer.parseInt(value);
+	}
+
 	public void writeBool(String option, boolean value) {
 		String state = value ? "1" : "0";
+		loadedSettings.setProperty(option, state);
+		writeSettings();
+	}
+
+	public void writeInt(String option, int value) {
+		String state = Integer.toString(value);
 		loadedSettings.setProperty(option, state);
 		writeSettings();
 	}
