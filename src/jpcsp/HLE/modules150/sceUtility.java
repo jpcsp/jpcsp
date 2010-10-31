@@ -859,7 +859,11 @@ public class sceUtility implements HLEModule, HLEStartModule {
         return (saveDir.delete());
     }
 
-    private void hleUtilitySavedataDisplay() {
+    private boolean savedataMode8ReturnsNoError() {
+        return Settings.getInstance().readBool("emu.savedataSizes");
+    }
+
+	private void hleUtilitySavedataDisplay() {
         Memory mem = Processor.memory;
 
         switch (savedataParams.mode) {
@@ -1068,7 +1072,14 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 if (savedataParams.isPresent(gameName, saveName)) {
                     savedataParams.base.result = 0;
                 } else {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
+                	// Tests on a PSP always return ERROR_SAVEDATA_SIZES_NO_DATA
+                	// but some games fail to save when an error is returned.
+                	// TODO Problem solved using a compatibility option :-(
+                	if (savedataMode8ReturnsNoError()) {
+                        savedataParams.base.result = 0;
+                	} else {
+                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
+                	}
                 }
                 break;
             }

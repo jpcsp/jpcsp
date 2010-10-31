@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.GUI;
 
-import jpcsp.MainGUI;
 import jpcsp.Resource;
 import jpcsp.Settings;
 
@@ -54,6 +53,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         
         enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
         filelogCheck.setSelected(enabled);
+        
+        enabled = Settings.getInstance().readBool("emu.savedataSizes");
+        savedatasizesCheck.setSelected(enabled);
         
         enabled = Settings.getInstance().readBool("emu.disablevbo");
         disableVBOCheck.setSelected(enabled);
@@ -117,6 +119,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         filelogCheck = new javax.swing.JCheckBox();
+        savedatasizesCheck = new javax.swing.JCheckBox();
         VideoPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         disableVBOCheck = new javax.swing.JCheckBox();
@@ -181,6 +184,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         });
 
         filelogCheck.setText(Resource.get("enablefileIO"));
+        savedatasizesCheck.setText(Resource.get("savedatasizes"));
 
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
         generalPanel.setLayout(generalPanelLayout);
@@ -197,6 +201,9 @@ public class SettingsGUI extends javax.swing.JFrame {
                         .addContainerGap())
                     .addGroup(generalPanelLayout.createSequentialGroup()
                         .addComponent(filelogCheck)
+                        .addContainerGap())
+                    .addGroup(generalPanelLayout.createSequentialGroup()
+                        .addComponent(savedatasizesCheck)
                         .addContainerGap())
                     .addGroup(generalPanelLayout.createSequentialGroup()
                         .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -229,6 +236,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(profilerCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(filelogCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(savedatasizesCheck)
                 .addGap(51, 51, 51)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -476,6 +485,9 @@ public void RefreshWindow() {
 	enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
 	filelogCheck.setSelected(enabled);
 	
+	enabled = Settings.getInstance().readBool("emu.savedataSizes");
+	savedatasizesCheck.setSelected(enabled);
+	
 	enabled = Settings.getInstance().readBool("emu.disablevbo");
 	disableVBOCheck.setSelected(enabled);
 	
@@ -523,6 +535,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
    Settings.getInstance().writeBool("emu.useGeometryShader", geometryShaderCheck.isSelected());
    Settings.getInstance().writeBool("emu.debug.enablefilelogger", filelogCheck.isSelected());
+   Settings.getInstance().writeBool("emu.savedataSizes", savedatasizesCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
@@ -569,6 +582,7 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox filelogCheck;
+    private javax.swing.JCheckBox savedatasizesCheck;
     private javax.swing.JPanel generalPanel;
     private javax.swing.JCheckBox ignoreUnmappedImports;
     private javax.swing.JCheckBox invalidMemoryCheck;
