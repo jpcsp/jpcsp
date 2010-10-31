@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Settings;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
@@ -69,8 +70,8 @@ public class sceImpose implements HLEModule, HLEStartModule {
 
 	@Override
     public void start() {
+        languageMode_language = Settings.getInstance().readInt("emu.impose.language");
 		// TODO add to settings gui
-        languageMode_language = PSP_LANGUAGE_ENGLISH;
         languageMode_button = PSP_CONFIRM_BUTTON_CROSS;
     }
 
