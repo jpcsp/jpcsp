@@ -44,7 +44,7 @@ public class RenderingEngineFactory {
 		// Proxy removing redundant calls.
 		// E.g. calls setting multiple times the same value,
 		// or calls with an invalid parameter (e.g. for unused shader uniforms).
-//		re = new StateProxy(re);
+		re = new StateProxy(re);
 
 		// Return the first entry in the pipeline
 		return re;
