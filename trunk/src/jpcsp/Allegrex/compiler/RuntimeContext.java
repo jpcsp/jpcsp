@@ -144,7 +144,7 @@ public class RuntimeContext {
 			if (currentRuntimeThread.hasStackState(address, sp)) {
 		    	StackPopException e = new StackPopException(address, sp);
 		    	if (log.isDebugEnabled()) {
-		    		log.debug("RuntimeContext.jump throwing " + e.toString());
+					log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStack().toString()));
 		    	}
 		    	throw e;
 			}
@@ -155,7 +155,7 @@ public class RuntimeContext {
 					returnValue = jumpCall(address, returnAddress, true);
 				} catch (StackPopException e) {
 					if (log.isDebugEnabled()) {
-						log.debug("RuntimeContext.jump catched " + e.toString());
+						log.debug(String.format("RuntimeContext.jump catched %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStack().toString()));
 					}
 
 					if (e.getRa() == returnAddress || e.getRa() == alternativeReturnAddress) {
@@ -172,8 +172,9 @@ public class RuntimeContext {
 			    } else if (currentRuntimeThread.hasStackState(returnValue, cpu.gpr[29])) {
 			    	StackPopException e = new StackPopException(returnValue, cpu.gpr[29]);
 			    	if (log.isDebugEnabled()) {
-			    		log.debug("RuntimeContext.jump throwing " + e.toString());
+						log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStack().toString()));
 			    	}
+			    	currentRuntimeThread.popStackState();
 			    	throw e;
 			    } else {
 			    	address = returnValue;
