@@ -2934,6 +2934,19 @@ public class VideoEngine {
                 // (a direct buffer is required by glXXXPointer())
             	int size = vinfo.vertexSize * numberOfVertex;
             	Buffer vertexData = mem.getBuffer(vinfo.ptr_vertex, size);
+
+            	// Handle buffer address not aligned with memory Buffer object.
+            	// E.g. ptr_vertex = 0xNNNNNN2 and vertexData is an IntBuffer
+            	// starting at 0xNNNNNN0
+            	int nativeBufferOffset = 0;
+            	if (vertexData instanceof IntBuffer || vertexData instanceof FloatBuffer) {
+            		nativeBufferOffset = vinfo.ptr_vertex & 3;
+            	} else if (vertexData instanceof ShortBuffer) {
+            		nativeBufferOffset = vinfo.ptr_vertex & 1;
+            	}
+            	size += nativeBufferOffset;
+            	vertexInfoReader.addNativeOffset(nativeBufferOffset);
+
             	bufferManager.setBufferData(nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
             }
 

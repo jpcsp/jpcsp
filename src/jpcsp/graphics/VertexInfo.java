@@ -779,6 +779,9 @@ public class VertexInfo {
             sb.append(weight_info[weight] + "|");
             sb.append("GU_WEIGHTS(" + skinningWeightCount + ")|");
         }
+        if (morphingVertexCount > 1) {
+            sb.append("GU_VERTICES(" + morphingVertexCount + ")|");
+        }
         if (index_info[index] != null)
             sb.append(index_info[index] + "|");
         if (transform_info[transform2D ? 1 : 0] != null)

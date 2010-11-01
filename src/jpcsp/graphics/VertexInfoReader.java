@@ -218,6 +218,26 @@ public class VertexInfoReader {
 		stride += positionSize;
 	}
 
+	public void addNativeOffset(int offset) {
+		if (offset != 0) {
+			if (weightNative) {
+				weightOffset += offset;
+			}
+			if (textureNative) {
+				textureOffset += offset;
+			}
+			if (colorNative) {
+				colorOffset += offset;
+			}
+			if (normalNative) {
+				normalOffset += offset;
+			}
+			if (positionNative) {
+				positionOffset += offset;
+			}
+		}
+	}
+
 	public int getWeightOffset() {
 		return weightOffset;
 	}
@@ -352,7 +372,7 @@ public class VertexInfoReader {
 		// Don't need to read the vertex data if all elements are native
 		if (isAllNative()) {
 			if (VideoEngine.log.isDebugEnabled()) {
-				VideoEngine.log.debug("Not reading Vertex, all native");
+				VideoEngine.log.debug(String.format("Not reading Vertex, all native at 0x%08X", address));
 			}
 			return null;
 		}
