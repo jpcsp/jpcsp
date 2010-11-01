@@ -29,6 +29,7 @@ public class DirectBufferUtilities {
 	protected static int directBufferSize = 100;
 	protected static ByteBuffer directBuffer = ByteBuffer.allocateDirect(directBufferSize).order(ByteOrder.nativeOrder());
 	protected static FloatBuffer directFloatBuffer = ByteBuffer.allocateDirect(128 * VideoEngine.SIZEOF_FLOAT).order(ByteOrder.nativeOrder()).asFloatBuffer();
+	protected static final int[] round4 = { 0, 3, 2, 1 };
 
 	public static FloatBuffer getDirectBuffer(float[] values) {
 		return getDirectBuffer(values, values.length);
@@ -43,10 +44,20 @@ public class DirectBufferUtilities {
 		return directFloatBuffer;
 	}
 
+	protected static int round4(int n) {
+		return n + round4[n & 3];
+	}
+
+	protected static int round2(int n) {
+		return n + (n & 1);
+	}
+
 	public static IntBuffer getDirectBuffer(int size, IntBuffer buffer) {
 		if (buffer == null) {
 			return buffer;
 		}
+
+		size = round4(size);
 
 		if (buffer.isDirect()) {
 			buffer.limit(size / 4);
@@ -65,6 +76,8 @@ public class DirectBufferUtilities {
 			return buffer;
 		}
 
+		size = round4(size);
+
 		if (buffer.isDirect()) {
 			buffer.limit(size / 4);
 			return buffer;
@@ -81,6 +94,8 @@ public class DirectBufferUtilities {
 		if (buffer == null) {
 			return buffer;
 		}
+
+		size = round2(size);
 
 		if (buffer.isDirect()) {
 			buffer.limit(size / 2);
@@ -116,16 +131,19 @@ public class DirectBufferUtilities {
 			buffer.limit(size);
 			return (ByteBuffer) buffer;
 		} else if (buffer instanceof IntBuffer) {
+			size = round4(size);
 			ByteBuffer directBuffer = allocateDirectBuffer(size);
 			directBuffer.asIntBuffer().put((IntBuffer) ((IntBuffer) buffer).slice().limit(size / 4));
 			directBuffer.rewind();
 			return directBuffer;
 		} else if (buffer instanceof ShortBuffer) {
+			size = round2(size);
 			ByteBuffer directBuffer = allocateDirectBuffer(size);
 			directBuffer.asShortBuffer().put((ShortBuffer) ((ShortBuffer) buffer).slice().limit(size / 2));
 			directBuffer.rewind();
 			return directBuffer;
 		} else if (buffer instanceof FloatBuffer) {
+			size = round4(size);
 			ByteBuffer directBuffer = allocateDirectBuffer(size);
 			directBuffer.asFloatBuffer().put((FloatBuffer) ((FloatBuffer) buffer).slice().limit(size / 4));
 			directBuffer.rewind();
