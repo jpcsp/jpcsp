@@ -56,6 +56,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_THREAD_READY    = 0x00000002;
     public static final int PSP_THREAD_WAITING  = 0x00000004;
     public static final int PSP_THREAD_SUSPEND  = 0x00000008;
+    public static final int PSP_THREAD_WAITING_SUSPEND = PSP_THREAD_WAITING | PSP_THREAD_SUSPEND;
     public static final int PSP_THREAD_STOPPED  = 0x00000010;
     public static final int PSP_THREAD_KILLED   = 0x00000020;
 
