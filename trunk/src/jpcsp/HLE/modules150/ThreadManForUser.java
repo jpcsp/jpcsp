@@ -36,6 +36,7 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_RUNNING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_STOPPED;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_DELAY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_NONE;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SLEEP;
@@ -2222,7 +2223,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
             }
-            hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
+            if (thread.status == PSP_THREAD_WAITING) {
+            	hleChangeThreadState(thread, PSP_THREAD_WAITING_SUSPEND);
+            } else {
+            	hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
+            }
             cpu.gpr[2] = 0;
         }
     }
@@ -2239,7 +2244,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (thread == null) {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else if (thread.status != PSP_THREAD_SUSPEND) {
+        } else if (thread.status != PSP_THREAD_SUSPEND && thread.status != PSP_THREAD_WAITING_SUSPEND) {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
             cpu.gpr[2] = ERROR_THREAD_IS_NOT_SUSPEND;
         } else if (isBannedThread(thread)) {
@@ -2249,7 +2254,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
             }
-            hleChangeThreadState(thread, PSP_THREAD_READY);
+            if (thread.status == PSP_THREAD_WAITING_SUSPEND) {
+                hleChangeThreadState(thread, PSP_THREAD_WAITING);
+            } else {
+            	hleChangeThreadState(thread, PSP_THREAD_READY);
+            }
             cpu.gpr[2] = 0;
         }
     }
