@@ -132,11 +132,6 @@ public class HLEModuleManager {
     		return module;
     	}
 
-    	@SuppressWarnings("unused")
-		public int getFirmwareVersionAsDefault() {
-    		return firmwareVersionAsDefault;
-    	}
-
     	public String[] getPrxNames() {
     		return prxNames;
     	}
@@ -280,30 +275,28 @@ public class HLEModuleManager {
         Managers.modules.removeModule(sceModule.modid);
     }
 
-    public void addFunction(int nid, HLEModuleFunction func) {
-        func.setNid(nid);
-
-        // See if a known syscall code exists for this NID
-        int code = NIDMapper.getInstance().nidToSyscall(func.getNid());
+    public int getSyscallFromNid(int nid) {
+        int code = NIDMapper.getInstance().nidToSyscall(nid);
         if (code == -1) {
             // Allocate an arbitrary syscall code to the function
             code = syscallCodeAllocator;
             // Add the new code to the NIDMapper
-            NIDMapper.getInstance().addSyscallNid(func.getNid(), syscallCodeAllocator);
+            NIDMapper.getInstance().addSyscallNid(nid, syscallCodeAllocator);
             syscallCodeAllocator++;
-        } else {
-        	Modules.log.error("Tried to register a second handler for NID 0x" + Integer.toHexString(nid) + " called " + func.getFunctionName());
         }
 
-        /*
-        System.out.println("HLEModuleManager - registering "
-                + func.getModuleName() + "_"
-                + String.format("%08x", func.getNid()) + "_"
-                + func.getFunctionName()
-                + " to " + Integer.toHexString(code));
-        */
-        func.setSyscallCode(code);
-        syscallCodeToFunction.put(code, func);
+        return code;
+    }
+
+    public void addFunction(int nid, HLEModuleFunction func) {
+        int code = getSyscallFromNid(nid);
+    	if (syscallCodeToFunction.containsKey(code)) {
+        	Modules.log.error(String.format("Tried to register a second handler for NID 0x%08X called %s", nid, func.getFunctionName()));
+    	} else {
+            func.setNid(nid);
+    		func.setSyscallCode(code);
+    		syscallCodeToFunction.put(code, func);
+    	}
     }
 
     public void addHLEFunction(HLEModuleFunction func) {

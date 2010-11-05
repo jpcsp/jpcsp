@@ -46,7 +46,7 @@ public class DirectBufferMemory extends Memory {
 			return false;
 		}
 
-		return true;
+		return super.allocate();
 	}
 
 	@Override

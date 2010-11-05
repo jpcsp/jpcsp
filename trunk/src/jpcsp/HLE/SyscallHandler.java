@@ -35,44 +35,39 @@ public class SyscallHandler {
 
     public static void setEnableIgnoreUnmappedImports(boolean enable){
         ignoreUnmappedImports = enable;
-        if(enable)
+        if (enable) {
             Modules.log.info("Ignore Unmapped Imports enabled");
+        }
     }
 
     public static void syscall(int code) {
-        int gpr[] = Emulator.getProcessor().cpu.gpr;
-        Modules.ThreadManForUserModule.clearSyscallFreeCycles();
-
         durationStatistics.start();
 
-        if(code == 0xfffff) { // special code for unmapped imports
-	        CpuState cpu = Emulator.getProcessor().cpu;
-	        if(isEnableIgnoreUnmappedImports()) {
-	            Modules.log.warn(String.format("IGNORING: Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-	        }
-	        else {
-		        Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		        Emulator.PauseEmu();
-	        }
-	    } else {
-	        // Try and handle as an HLE module export
-	        boolean handled = HLEModuleManager.getInstance().handleSyscall(code);
-	        if (!handled) {
-	            CpuState cpu = Emulator.getProcessor().cpu;
-	            cpu.gpr[2] = 0;
-
-	            String params = String.format("%08x %08x %08x", cpu.gpr[4],
-	                cpu.gpr[5], cpu.gpr[6]);
-
+        // Try and handle as an HLE module export
+        boolean handled = HLEModuleManager.getInstance().handleSyscall(code);
+        if (!handled) {
+            CpuState cpu = Emulator.getProcessor().cpu;
+            if (code == 0xfffff) { // special code for unmapped imports
+    	        if(isEnableIgnoreUnmappedImports()) {
+    	            Modules.log.warn(String.format("IGNORING: Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+    	        }
+    	        else {
+    		        Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+    		        Emulator.PauseEmu();
+    	        }
+    	    } else {
+	            String name = "";
 	            for (SyscallIgnore c : SyscallIgnore.values()) {
 	                if (c.getSyscall() == code) {
-	                    Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + c + " " + params);
-	                    return;
+	                	name = c.toString();
+	                	break;
 	                }
 	            }
-	            Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + params);
-	        }
-		}
+	            Modules.log.warn(String.format("Unsupported syscall %X %s %08X %08X %08X", code, name, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+    	    }
+
+            cpu.gpr[2] = 0;
+        }
 
         durationStatistics.end();
     }

@@ -126,7 +126,6 @@ public class Compiler implements ICompiler {
     public static Logger log = Logger.getLogger("compiler");
 	private static Compiler instance;
 	private static int resetCount = 0;
-	private Memory mem;
 	private CompilerClassLoader classLoader;
 	private DurationStatistics compileDuration = new DurationStatistics("Compilation Time");
 	private Document configuration;
@@ -172,7 +171,6 @@ public class Compiler implements ICompiler {
     }
 
 	private void Initialise() {
-		mem = Memory.getInstance();
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setIgnoringElementContentWhitespace(true);
 		documentBuilderFactory.setIgnoringComments(true);
@@ -233,7 +231,7 @@ public class Compiler implements ICompiler {
         pendingBlockAddresses.push(startAddress);
         while (!pendingBlockAddresses.isEmpty()) {
             int pc = pendingBlockAddresses.pop();
-            if (!mem.isAddressGood(pc)) {
+            if (!Memory.isAddressGood(pc)) {
                 if (isIgnoreInvalidMemory()) {
                     log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", pc));
                 } else {
@@ -320,7 +318,7 @@ public class Compiler implements ICompiler {
 
     @Override
     public IExecutable compile(int address) {
-    	if (!mem.isAddressGood(address)) {
+    	if (!Memory.isAddressGood(address)) {
             if(isIgnoreInvalidMemory())
                 log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", address));
             else {

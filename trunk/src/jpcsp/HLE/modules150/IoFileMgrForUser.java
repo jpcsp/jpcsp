@@ -728,7 +728,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     protected void delayIoOperation(IoOperation ioOperation) {
     	if (ioOperation.delayMillis > 0) {
-    		Modules.ThreadManForUserModule.hleKernelDelayThread(ioOperation.delayMillis * 1000, false, Emulator.getProcessor().cpu.gpr[2]);
+    		Modules.ThreadManForUserModule.hleKernelDelayThread(ioOperation.delayMillis * 1000, false);
     	}
     }
 
@@ -888,7 +888,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
 
             Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(res_addr)) {
+            if (Memory.isAddressGood(res_addr)) {
                 log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
                 mem.write32(res_addr, (int) (info.result & 0xffffffffL));
                 mem.write32(res_addr + 4, (int) ((info.result >> 32) & 0xffffffffL));
@@ -1334,12 +1334,12 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         if (log.isDebugEnabled()) {
             log.debug("hleIoIoctl(uid=" + Integer.toHexString(uid) + ",cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ",async=" + async + ")");
 
-            if (mem.isAddressGood(indata_addr)) {
+            if (Memory.isAddressGood(indata_addr)) {
                 for (int i = 0; i < inlen; i += 4) {
                     log.debug("hleIoIoctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
                 }
             }
-            if (mem.isAddressGood(outdata_addr)) {
+            if (Memory.isAddressGood(outdata_addr)) {
                 for (int i = 0; i < outlen; i += 4) {
                     log.debug("hleIoIoctl outdata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(outdata_addr + i)));
                 }
@@ -1359,7 +1359,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             switch (cmd) {
                 // UMD file seek set.
                 case 0x01010005: {
-                    if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                    if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                         if (info.isUmdFile()) {
                             try {
                                 int offset = mem.read32(indata_addr);
@@ -1383,7 +1383,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 //Get UMD file pointer.
                 case 0x01020004: {
-                    if (mem.isAddressGood(outdata_addr) && outlen >= 4) {
+                    if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                         if (info.isUmdFile()) {
                             try {
                                 int fPointer = (int) info.readOnlyFile.getFilePointer();
@@ -1404,7 +1404,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 // Get UMD file start sector.
                 case 0x01020006: {
-                    if (mem.isAddressGood(outdata_addr) && outlen >= 4) {
+                    if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                         int startSector = 0;
                         if (info.isUmdFile() && info.readOnlyFile instanceof UmdIsoFile) {
                             UmdIsoFile file = (UmdIsoFile) info.readOnlyFile;
@@ -1423,7 +1423,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 // Get UMD file length in bytes.
                 case 0x01020007: {
-                    if (mem.isAddressGood(outdata_addr) && outlen >= 8) {
+                    if (Memory.isAddressGood(outdata_addr) && outlen >= 8) {
                         if (info.isUmdFile()) {
                             try {
                                 long length = info.readOnlyFile.length();
@@ -1445,7 +1445,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 // UMD file seek whence.
                 case 0x01F100A6: {
-                    if (mem.isAddressGood(indata_addr) && inlen >= 16) {
+                    if (Memory.isAddressGood(indata_addr) && inlen >= 16) {
                         if (info.isUmdFile()) {
                             try {
                                 long offset = mem.read64(indata_addr);
@@ -1494,7 +1494,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 // Define decryption key (Kirk / AES-128?).
                 case 0x04100001: {
-                    if (mem.isAddressGood(indata_addr) && inlen == 16) {
+                    if (Memory.isAddressGood(indata_addr) && inlen == 16) {
                         String keyHex = "";
                         for (int i = 0; i < inlen; i++) {
                             AES128Key[i] = (byte) mem.read8(indata_addr + i);
@@ -2350,12 +2350,12 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         if (log.isDebugEnabled()) {
             log.debug("sceIoDevctl(device='" + device + "',cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ")");
 
-            if (mem.isAddressGood(indata_addr)) {
+            if (Memory.isAddressGood(indata_addr)) {
                 for (int i = 0; i < inlen; i += 4) {
                     log.debug("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
                 }
             }
-            if (mem.isAddressGood(outdata_addr)) {
+            if (Memory.isAddressGood(outdata_addr)) {
                 for (int i = 0; i < outlen; i += 4) {
                     log.debug("sceIoDevctl outdata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(outdata_addr + i)));
                 }
@@ -2372,7 +2372,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             	if (log.isDebugEnabled()) {
             		log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " get disc type");
             	}
-                if (mem.isAddressGood(outdata_addr) && outlen >= 8) {
+                if (Memory.isAddressGood(outdata_addr) && outlen >= 8) {
                     // 0 = No disc.
                     // 0x10 = Game disc.
                     // 0x20 = Video disc.
@@ -2396,7 +2396,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             	if (log.isDebugEnabled()) {
             		log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " seek UMD disc");
             	}
-                if ((mem.isAddressGood(indata_addr) && inlen >= 4)) {
+                if ((Memory.isAddressGood(indata_addr) && inlen >= 4)) {
                     int sector = mem.read32(indata_addr);
                     if (log.isDebugEnabled()) {
                     	log.debug("sector=" + sector);
@@ -2412,7 +2412,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             	if (log.isDebugEnabled()) {
             		log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " prepare UMD data to cache");
             	}
-                if ((mem.isAddressGood(indata_addr) && inlen >= 4) && (mem.isAddressGood(outdata_addr) && outlen >= 4)) {
+                if ((Memory.isAddressGood(indata_addr) && inlen >= 4) && (Memory.isAddressGood(outdata_addr) && outlen >= 4)) {
                     int sector = mem.read32(indata_addr + 4);  // First sector of data to read.
                     int sectorNum = mem.read32(indata_addr + 12);  // Length of data to read.
                     if (log.isDebugEnabled()) {
@@ -2431,7 +2431,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!device.equals("mscmhc0:")) {
                     cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
-                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
                         // Trigger callback immediately
@@ -2451,7 +2451,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!device.equals("mscmhc0:")) {
                     cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
-                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
                         cpu.gpr[2] = 0; // Success
@@ -2468,7 +2468,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown ms command (check fs type?)");
                 if (!device.equals("mscmhc0:")) {
                     cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
-                } else if (mem.isAddressGood(outdata_addr)) {
+                } else if (Memory.isAddressGood(outdata_addr)) {
                     // 1 = not inserted
                     // 4 = inserted
                     mem.write32(outdata_addr, 4);
@@ -2483,7 +2483,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 log.debug("sceIoDevctl check ms inserted (mscmhc0)");
                 if (!device.equals("mscmhc0:")) {
                     cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
-                } else if (mem.isAddressGood(outdata_addr)) {
+                } else if (Memory.isAddressGood(outdata_addr)) {
                     // 1 = inserted
                     // 2 = not inserted
                     mem.write32(outdata_addr, MemoryStick.getState());
@@ -2499,7 +2499,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!device.equals("fatms0:")) {
                     cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS;
-                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     // Trigger callback immediately
@@ -2516,7 +2516,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                 if (!device.equals("fatms0:")) {
                     cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS;
-                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     cpu.gpr[2] = 0;  // Success
@@ -2530,7 +2530,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 log.debug("sceIoDevctl set assigned device (fatms0)");
                 if (!device.equals("fatms0:")) {
                     cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS;
-                } else if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                } else if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
                     MemoryStick.setState(mem.read32(indata_addr));
@@ -2545,7 +2545,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 log.debug("sceIoDevctl check write protection (fatms0)");
                 if (!device.equals("fatms0:")) {
                     cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS;
-                } else if (mem.isAddressGood(outdata_addr)) {
+                } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 - Device is not protected.
                     // 1 - Device is protected.
                     mem.write32(outdata_addr, 0);
@@ -2563,9 +2563,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 int maxClusters = (int) ((MemoryStick.getFreeSize() * 95L / 100) / (sectorSize * sectorCount));
                 int freeClusters = maxClusters;
                 int maxSectors = 512;
-                if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     int addr = mem.read32(indata_addr);
-                    if (mem.isAddressGood(addr)) {
+                    if (Memory.isAddressGood(addr)) {
                         log.debug("sceIoDevctl refer ms free space");
                         mem.write32(addr, maxClusters);
                         mem.write32(addr + 4, freeClusters);
@@ -2588,7 +2588,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 log.debug("sceIoDevctl check assigned device (fatms0)");
                 if (!device.equals("fatms0:")) {
                     cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS;
-                } else if (mem.isAddressGood(outdata_addr) && outlen >= 4) {
+                } else if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
                     mem.write32(outdata_addr, MemoryStick.getState());
@@ -2601,7 +2601,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             // Register USB thread.
             case 0x03415001: {
                 log.debug("sceIoDevctl register usb thread");
-                if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // Unknown params.
                     cpu.gpr[2] = 0;
                 } else {
@@ -2612,7 +2612,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             // Unregister USB thread.
             case 0x03415002: {
                 log.debug("sceIoDevctl unregister usb thread");
-                if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // Unknown params.
                     cpu.gpr[2] = 0;
                 } else {
@@ -2622,7 +2622,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
             default:
                 log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown command");
-                if (mem.isAddressGood(indata_addr)) {
+                if (Memory.isAddressGood(indata_addr)) {
                     for (int i = 0; i < inlen; i += 4) {
                         log.warn("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
                     }

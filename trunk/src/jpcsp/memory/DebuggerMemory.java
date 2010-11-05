@@ -30,7 +30,7 @@ import jpcsp.util.Utilities;
 public class DebuggerMemory extends Memory {
 	public boolean traceMemoryRead = false;
 	public boolean traceMemoryWrite = false;
-	public boolean pauseEmulatorOnMemoryBreakpoint = true;
+	public boolean pauseEmulatorOnMemoryBreakpoint = false;
 	// List of breakpoints for memory read
 	public static int[] readBreakpoints  = { 0x1234567, 0x7654321 };
 	// List of breakpoints for memory write
@@ -292,16 +292,6 @@ public class DebuggerMemory extends Memory {
 	@Override
 	public Buffer getMainMemoryByteBuffer() {
 		return mem.getMainMemoryByteBuffer();
-	}
-
-	@Override
-	public boolean isAddressGood(int address) {
-		return mem.isAddressGood(address);
-	}
-
-	@Override
-	public boolean isRawAddressGood(int address) {
-		return mem.isRawAddressGood(address);
 	}
 
 	@Override

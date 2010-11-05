@@ -19,6 +19,7 @@ package jpcsp.Allegrex.compiler;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -35,6 +36,7 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.Allegrex.compiler.nativeCode.Nop;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.memory.SafeFastMemory;
 
 import org.objectweb.asm.ClassVisitor;
@@ -99,10 +101,26 @@ public class CompilerContext implements ICompilerContext {
     private static final String memoryDescriptor = Type.getDescriptor(Memory.class);
     private static final String memoryInternalName = Type.getInternalName(Memory.class);
     private static final String profilerInternalName = Type.getInternalName(Profiler.class);
+	private static Set<Integer> fastSyscalls;
 
     public CompilerContext(CompilerClassLoader classLoader) {
         this.classLoader = classLoader;
         nativeCodeManager = Compiler.getInstance().getNativeCodeManager();
+
+        if (fastSyscalls == null) {
+	        fastSyscalls = new TreeSet<Integer>();
+	        addFastSyscall(0x110DEC9A); // sceKernelUSec2SysClock
+	        addFastSyscall(0xC8CD158C); // sceKernelUSec2SysClockWide
+	        addFastSyscall(0xBA6B92E2); // sceKernelSysClock2USec 
+	        addFastSyscall(0xE1619D7C); // sceKernelSysClock2USecWide 
+	        addFastSyscall(0xDB738F35); // sceKernelGetSystemTime
+	        addFastSyscall(0x82BC5777); // sceKernelGetSystemTimeWide
+	        addFastSyscall(0x369ED59D); // sceKernelGetSystemTimeLow
+        }
+    }
+
+    private void addFastSyscall(int nid) {
+        fastSyscalls.add(HLEModuleManager.getInstance().getSyscallFromNid(nid));
     }
 
     public CompilerClassLoader getClassLoader() {
@@ -665,12 +683,20 @@ public class CompilerContext implements ICompilerContext {
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, instructionInternalName, "interpret", "(" + processorDescriptor + "I)V");
     }
 
-    public void visitSyscall(int opcode) {
+	private boolean isFastSyscall(int code) {
+		return fastSyscalls.contains(code);
+	}
+
+	public void visitSyscall(int opcode) {
     	flushInstructionCount(false, false);
 
     	int code = (opcode >> 6) & 0x000FFFFF;
     	loadImm(code);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
+    	if (isFastSyscall(code)) {
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");
+    	} else {
+    		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscall", "(I)V");
+    	}
 
         if (storeGprLocal) {
         	// Reload "gpr", it could have been changed due to a thread switch

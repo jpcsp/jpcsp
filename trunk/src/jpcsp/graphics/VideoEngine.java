@@ -558,7 +558,7 @@ public class VideoEngine {
 
     private void checkCurrentListPc() {
         Memory mem = Memory.getInstance();
-        while (!mem.isAddressGood(currentList.pc)) {
+        while (!Memory.isAddressGood(currentList.pc)) {
             if (!mem.isIgnoreInvalidMemoryAccess()) {
                 error("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
                 break;
@@ -2769,7 +2769,7 @@ public class VideoEngine {
         int type = ((normalArgument >> 16) & 0x7);
 
         Memory mem = Memory.getInstance();
-        if (!mem.isAddressGood(vinfo.ptr_vertex)) {
+        if (!Memory.isAddressGood(vinfo.ptr_vertex)) {
             // Abort here to avoid a lot of useless memory read errors...
             error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
             return;
@@ -2908,7 +2908,7 @@ public class VideoEngine {
             (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
             !useTextureFromNormalizedNormal &&
             !mustComputeWeights &&
-            mem.isAddressGood(vinfo.ptr_vertex) &&
+            Memory.isAddressGood(vinfo.ptr_vertex) &&
             !isLogTraceEnabled) {
         	//
             // Optimized VertexInfo reading:
@@ -3380,7 +3380,7 @@ public class VideoEngine {
         Memory mem = Memory.getInstance();
         int numberOfVertexBoundingBox = normalArgument & 0xFF;
 
-        if (!mem.isAddressGood(vinfo.ptr_vertex)) {
+        if (!Memory.isAddressGood(vinfo.ptr_vertex)) {
             // Abort here to avoid a lot of useless memory read errors...
             error(String.format("%s Invalid vertex address 0x%08X", helper.getCommandString(BBOX), vinfo.ptr_vertex));
             return;
@@ -3826,14 +3826,13 @@ public class VideoEngine {
             boolean compressedTexture = false;
 
             int numberMipmaps = context.texture_num_mip_maps;
-            Memory mem = Memory.getInstance();
 
             for (int level = 0; level <= numberMipmaps; level++) {
                 // Extract texture information with the minor conversion possible
                 // TODO: Get rid of information copying, and implement all the available formats
                 texaddr = context.texture_base_pointer[level];
                 texaddr &= Memory.addressMask;
-                if (!mem.isAddressGood(texaddr)) {
+                if (!Memory.isAddressGood(texaddr)) {
                 	if (texaddr == 0) {
                 		if (isLogDebugEnabled) {
                 			log.debug(String.format("Invalid texture address 0x%08X for texture level %d", texaddr, level));
@@ -4409,10 +4408,10 @@ public class VideoEngine {
                 }
 
                 int halfHeight = Math.abs(context.viewport_height);
-                int haltWidth = Math.abs(context.viewport_width);
-                int viewportX = context.viewport_cx - haltWidth - context.offset_x;
+                int halfWidth = Math.abs(context.viewport_width);
+                int viewportX = context.viewport_cx - halfWidth - context.offset_x;
                 int viewportY = context.viewport_cy - halfHeight - context.offset_y;
-                int viewportWidth = 2 * haltWidth;
+                int viewportWidth = 2 * halfWidth;
                 int viewportHeight = 2 * halfHeight;
 
                 // Align the viewport to the top of the window

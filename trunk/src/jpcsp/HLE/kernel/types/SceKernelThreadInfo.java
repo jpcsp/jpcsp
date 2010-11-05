@@ -269,12 +269,107 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 36, releaseCount);
     }
 
-	@Override
-	public String toString() {
-		return name;
-	}
-
     public void deleteSysMemInfo() {
         Modules.SysMemUserForUserModule.free(stackSysMemInfo);
     }
+
+    public String getStatusName() {
+        StringBuilder s = new StringBuilder();
+
+        // A thread status is a bitfield so it could be in multiple states
+        if ((status & PSP_THREAD_RUNNING) == PSP_THREAD_RUNNING) {
+            s.append(" | PSP_THREAD_RUNNING");
+        }
+
+        if ((status & PSP_THREAD_READY) == PSP_THREAD_READY) {
+            s.append(" | PSP_THREAD_READY");
+        }
+
+        if ((status & PSP_THREAD_WAITING) == PSP_THREAD_WAITING) {
+            s.append(" | PSP_THREAD_WAITING");
+        }
+
+        if ((status & PSP_THREAD_SUSPEND) == PSP_THREAD_SUSPEND) {
+            s.append(" | PSP_THREAD_SUSPEND");
+        }
+
+        if ((status & PSP_THREAD_STOPPED) == PSP_THREAD_STOPPED) {
+            s.append(" | PSP_THREAD_STOPPED");
+        }
+
+        if ((status & PSP_THREAD_KILLED) == PSP_THREAD_KILLED) {
+            s.append(" | PSP_THREAD_KILLED");
+        }
+
+        // Strip off leading " | "
+        if (s.length() > 0) {
+            s.delete(0, 3);
+        } else {
+            s.append("UNKNOWN");
+        }
+
+        return s.toString();
+    }
+
+    public String getWaitName() {
+        StringBuilder s = new StringBuilder();
+
+        // A thread should only be waiting on at most 1 thing, handle it anyway
+        if (wait.waitingOnThreadEnd) {
+            s.append(String.format(" | ThreadEnd (0x%04X)", wait.ThreadEnd_id));
+        }
+
+        if (wait.waitingOnEventFlag) {
+            s.append(String.format(" | EventFlag (0x%04X)", wait.EventFlag_id));
+        }
+
+        if (wait.waitingOnSemaphore) {
+            s.append(String.format(" | Semaphore (0x%04X)", wait.Semaphore_id));
+        }
+
+        if (wait.waitingOnMutex) {
+            s.append(String.format(" | Mutex (0x%04X)", wait.Mutex_id));
+        }
+
+        if (wait.waitingOnIo) {
+            s.append(String.format(" | Io (0x%04X)", wait.Io_id));
+        }
+
+        if (wait.waitingOnUmd) {
+            s.append(String.format(" | Umd (0x%02X)", wait.wantedUmdStat));
+        }
+
+        // Strip off leading " | "
+        if (s.length() > 0) {
+            s.delete(0, 3);
+        } else {
+        	s.append("None");
+        	if ((status & PSP_THREAD_WAITING) == PSP_THREAD_WAITING) {
+	            if (wait.forever) {
+	                s.append(" (sleeping)");
+	            } else {
+	            	int restDelay = (int) (wait.microTimeTimeout - Emulator.getClock().microTime());
+	            	if (restDelay < 0) {
+	            		restDelay = 0;
+	            	}
+	                s.append(String.format(" (delay %d us, rest %d us)", wait.micros, restDelay));
+	            }
+        	}
+        }
+
+        return s.toString();
+    }
+
+	@Override
+	public String toString() {
+		StringBuilder s = new StringBuilder();
+
+		s.append(name);
+		s.append("(");
+		s.append("Status " + getStatusName());
+		s.append(", Wait " + getWaitName());
+		s.append(")");
+
+		return s.toString();
+	}
 }

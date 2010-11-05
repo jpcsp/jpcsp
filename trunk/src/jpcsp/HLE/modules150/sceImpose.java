@@ -70,7 +70,7 @@ public class sceImpose implements HLEModule, HLEStartModule {
 
 	@Override
     public void start() {
-        languageMode_language = Settings.getInstance().readInt("emu.impose.language");
+        languageMode_language = Settings.getInstance().readInt("emu.impose.language", PSP_LANGUAGE_ENGLISH);
 		// TODO add to settings gui
         languageMode_button = PSP_CONFIRM_BUTTON_CROSS;
     }
