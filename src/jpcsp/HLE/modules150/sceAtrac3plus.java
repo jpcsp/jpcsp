@@ -674,7 +674,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
             // Delay the thread decoding the Atrac data (for how long?),
             // the thread is also blocking using semaphores/event flags on a real PSP.
-            Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false, result);
+            Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
         }
     }
 
