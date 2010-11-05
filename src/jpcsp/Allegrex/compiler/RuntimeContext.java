@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import jpcsp.Emulator;
@@ -40,6 +38,7 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
@@ -100,7 +99,7 @@ public class RuntimeContext {
 	public  static volatile boolean wantSync = false;
 	private static long lastSyncTime;
 	private static RuntimeSyncThread runtimeSyncThread = null;
-	private static Set<Integer> fastSyscalls;
+	private static sceDisplay sceDisplayModule;
 
 	public static void execute(Instruction insn, int opcode) {
 		insn.interpret(processor, opcode);
@@ -235,7 +234,7 @@ public class RuntimeContext {
     	if (log.isDebugEnabled()) {
     		String comment = "";
     		int syscallAddress = address + 4;
-    		if (memory.isAddressGood(syscallAddress)) {
+    		if (Memory.isAddressGood(syscallAddress)) {
         		int syscallOpcode = memory.read32(syscallAddress);
         		Instruction syscallInstruction = Decoder.instruction(syscallOpcode);
         		if (syscallInstruction == Instructions.SYSCALL) {
@@ -243,21 +242,21 @@ public class RuntimeContext {
         			comment = syscallDisasm.substring(19);
         		}
     		}
-    		log.debug("Starting CodeBlock 0x" + Integer.toHexString(address) + comment + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
+    		log.debug(String.format("Starting CodeBlock 0x%X%s, returnAddress=0x%X, alternativeReturnAddress=0x%X, isJump=%b", address, comment, returnAddress, alternativeReturnAddress, isJump));
     	}
     }
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
-    		log.debug("Returning from CodeBlock 0x" + Integer.toHexString(address) + " to 0x" + Integer.toHexString(returnAddress));
+    		log.debug(String.format("Returning from CodeBlock 0x%X to 0x%X", address, returnAddress));
     	}
     }
 
     public static void debugCodeInstruction(int address, int opcode) {
     	if (log.isTraceEnabled()) {
     		Instruction insn = Decoder.instruction(opcode);
-    		String compileFlag = insn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C";
-    		log.trace("Executing 0x" + Integer.toHexString(address).toUpperCase() + " " + compileFlag + " - " + insn.disasm(address, opcode));
+    		char compileFlag = insn.hasFlags(Instruction.FLAG_INTERPRETED) ? 'I' : 'C';
+    		log.trace(String.format("Executing 0x%X %c - %s", address, compileFlag, insn.disasm(address, opcode)));
     	}
     }
 
@@ -265,11 +264,6 @@ public class RuntimeContext {
         if (!isActive) {
             return false;
         }
-
-        fastSyscalls = new TreeSet<Integer>();
-        fastSyscalls.add(0x2058);	// sceKernelGetSystemTime
-        fastSyscalls.add(0x2059);	// sceKernelGetSystemTimeWide
-        fastSyscalls.add(0x205a);	// sceKernelGetSystemTimeLow (used very often by Skate Park City)
 
         if (enableDaemonThreadSync && runtimeSyncThread == null) {
         	runtimeSyncThread = new RuntimeSyncThread(syncIntervalMillis);
@@ -292,6 +286,8 @@ public class RuntimeContext {
         }
 
         Profiler.initialise();
+
+        sceDisplayModule = Modules.sceDisplayModule;
 
         return true;
     }
@@ -635,10 +631,14 @@ public class RuntimeContext {
     	wantSync = false;
     }
 
+    public static void syscallFast(int code) {
+		// Fast syscall: no context switching
+    	SyscallHandler.syscall(code);
+    }
+
     public static void syscall(int code) throws StopThreadException {
-    	if (fastSyscalls.contains(code) || IntrManager.getInstance().isInsideInterrupt()) {
-    		// Fast syscall: no context switching
-    		SyscallHandler.syscall(code);
+    	if (IntrManager.getInstance().isInsideInterrupt()) {
+    		syscallFast(code);
     	} else {
 	    	RuntimeThread runtimeThread = getRuntimeThread();
 	    	if (runtimeThread != null) {
@@ -962,12 +962,12 @@ public class RuntimeContext {
 
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isRawAddressGood(rawAddress)) {
+        if (!Memory.isRawAddressGood(rawAddress)) {
         	if (memory.read32AllowedInvalidAddress(rawAddress)) {
         		rawAddress = 0;
         	} else {
                 int normalizedAddress = memory.normalizeAddress(address);
-                if (memory.isRawAddressGood(normalizedAddress)) {
+                if (Memory.isRawAddressGood(normalizedAddress)) {
                     rawAddress = normalizedAddress;
                 } else {
 		            processor.cpu.pc = pc;
@@ -983,9 +983,9 @@ public class RuntimeContext {
 
     public static int checkMemoryRead16(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isRawAddressGood(rawAddress)) {
+        if (!Memory.isRawAddressGood(rawAddress)) {
             int normalizedAddress = memory.normalizeAddress(address);
-            if (memory.isRawAddressGood(normalizedAddress)) {
+            if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
 	            processor.cpu.pc = pc;
@@ -1000,9 +1000,9 @@ public class RuntimeContext {
 
     public static int checkMemoryRead8(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isRawAddressGood(rawAddress)) {
+        if (!Memory.isRawAddressGood(rawAddress)) {
             int normalizedAddress = memory.normalizeAddress(address);
-            if (memory.isRawAddressGood(normalizedAddress)) {
+            if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
 	            processor.cpu.pc = pc;
@@ -1017,9 +1017,9 @@ public class RuntimeContext {
 
     public static int checkMemoryWrite32(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isRawAddressGood(rawAddress)) {
+        if (!Memory.isRawAddressGood(rawAddress)) {
             int normalizedAddress = memory.normalizeAddress(address);
-            if (memory.isRawAddressGood(normalizedAddress)) {
+            if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
 	            processor.cpu.pc = pc;
@@ -1029,14 +1029,16 @@ public class RuntimeContext {
             }
         }
 
+        sceDisplayModule.write32(rawAddress);
+
         return rawAddress;
     }
 
     public static int checkMemoryWrite16(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isRawAddressGood(rawAddress)) {
+        if (!Memory.isRawAddressGood(rawAddress)) {
             int normalizedAddress = memory.normalizeAddress(address);
-            if (memory.isRawAddressGood(normalizedAddress)) {
+            if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
 	            processor.cpu.pc = pc;
@@ -1046,14 +1048,16 @@ public class RuntimeContext {
             }
         }
 
+        sceDisplayModule.write16(rawAddress);
+
         return rawAddress;
     }
 
     public static int checkMemoryWrite8(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isRawAddressGood(rawAddress)) {
+        if (!Memory.isRawAddressGood(rawAddress)) {
             int normalizedAddress = memory.normalizeAddress(address);
-            if (memory.isRawAddressGood(normalizedAddress)) {
+            if (Memory.isRawAddressGood(normalizedAddress)) {
                 rawAddress = normalizedAddress;
             } else {
 	            processor.cpu.pc = pc;
@@ -1062,6 +1066,8 @@ public class RuntimeContext {
 	            rawAddress = 0;
             }
         }
+
+        sceDisplayModule.write8(rawAddress);
 
         return rawAddress;
     }

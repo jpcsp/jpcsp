@@ -62,7 +62,7 @@ public class FastMemory extends Memory {
 			return false;
 		}
 
-		return true;
+		return super.allocate();
 	}
 
 	@Override
@@ -176,7 +176,7 @@ public class FastMemory extends Memory {
 			}
 
 			all[address >> 2] = memData;
-            Modules.sceDisplayModule.write8(address, data);
+            Modules.sceDisplayModule.write8(address);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -200,7 +200,7 @@ public class FastMemory extends Memory {
 			}
 
 			all[address >> 2] = memData;
-            Modules.sceDisplayModule.write16(address, data);
+            Modules.sceDisplayModule.write16(address);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -218,7 +218,7 @@ public class FastMemory extends Memory {
 				}
 			}
 
-			Modules.sceDisplayModule.write32(address, data);
+			Modules.sceDisplayModule.write32(address);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
 		}

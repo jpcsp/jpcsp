@@ -37,6 +37,8 @@ public abstract class Memory {
     public static boolean useDebuggerMemory = false;
 	public static final int addressMask = 0x3FFFFFFF;
 	private boolean ignoreInvalidMemoryAccess = false;
+    protected static final int MEMORY_PAGE_SHIFT = 12;
+    protected static boolean[] validMemoryPage = new boolean[0x00100000];
 
     public static Memory getInstance() {
         if (instance == null) {
@@ -52,6 +54,13 @@ public abstract class Memory {
         	// 1) SafeFastMemory (address check is useful when debugging programs)
         	// 2) StandardMemory when available memory is not sufficient for 1st choice
         	//
+
+        	// Disable address checking when the option
+        	// "ignoring invalid memory access" is selected.
+        	if (Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess")) {
+        		useSafeMemory = false;
+        	}
+
         	if (useDirectBufferMemory) {
         		if (useSafeMemory) {
         			instance = new SafeDirectBufferMemory();
@@ -178,7 +187,6 @@ public abstract class Memory {
         return false;
 	}
 
-	public abstract boolean allocate();
 	public abstract void Initialise();
     public abstract int read8(int address);
     public abstract int read16(int address);
@@ -192,22 +200,31 @@ public abstract class Memory {
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
     protected abstract void memcpy(int destination, int source, int length, boolean checkOverlap);
 
-	public boolean isAddressGood(int address) {
-	    return isRawAddressGood(address & addressMask);
+	public final static boolean isAddressGood(int address) {
+    	return validMemoryPage[address >>> MEMORY_PAGE_SHIFT];
 	}
 
-    public boolean isRawAddressGood(int address) {
-        if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
-            return true;
-        }
-        if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
-            return true;
-        }
-        if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
-            return true;
-        }
+    public final static boolean isRawAddressGood(int rawAddress) {
+    	return validMemoryPage[rawAddress >> MEMORY_PAGE_SHIFT];
+    }
 
-        return false;
+    public boolean allocate() {
+    	for (int i = 0; i < validMemoryPage.length; i++) {
+    		int address = (i << MEMORY_PAGE_SHIFT) & addressMask;
+
+    		boolean isValid = false;
+            if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
+                isValid = true;
+            } else if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
+                isValid = true;
+            } else if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
+                isValid = true;
+            }
+
+            validMemoryPage[i] = isValid;
+    	}
+
+    	return true;
     }
 
 	public long read64(int address) {

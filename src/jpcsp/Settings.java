@@ -148,6 +148,13 @@ public class Settings {
 		return Integer.parseInt(value);
 	}
 
+	public int readInt(String option, int defaultValue) {
+		String value = loadedSettings.getProperty(option);
+		if (value == null) return defaultValue;
+
+		return Integer.parseInt(value);
+	}
+
 	public void writeBool(String option, boolean value) {
 		String state = value ? "1" : "0";
 		loadedSettings.setProperty(option, state);

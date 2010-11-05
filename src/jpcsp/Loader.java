@@ -668,7 +668,7 @@ public class Loader {
             int A = 0; // addend
 
             int S = (int) baseAddress + phBaseOffset;
-            int GP = (int) baseAddress + (int) module.gp_value; // Note: Only used in R_MIPS_GPREL16 which is untested (fiveofhearts).
+            //int GP = (int) baseAddress + (int) module.gp_value; // Note: Only used in R_MIPS_GPREL16 which is untested (fiveofhearts).
 
             switch (R_TYPE) {
                 case 0: //R_MIPS_NONE
@@ -1017,7 +1017,7 @@ public class Loader {
                             break;
                         default:
                             // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
-                            if (mem.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
+                            if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
                                 nidMapper.addModuleNid(moduleName, nid, exportAddress);
                                 entCount++;
                                 if (Emulator.log.isDebugEnabled()) {

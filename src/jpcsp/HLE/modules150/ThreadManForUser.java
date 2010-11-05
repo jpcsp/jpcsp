@@ -376,16 +376,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     private LinkedList<SceKernelThreadInfo> readyThreads;
     private SceKernelThreadInfo currentThread;
     private SceKernelThreadInfo idle0,  idle1;
-    private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
-    private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
     public Statistics statistics;
     private boolean dispatchThreadEnabled;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED = 0;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED = 1;
 
-    // TODO figure out a decent number of cycles to wait
-    private static final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private static final int WDT_THREAD_HOG_CYCLES = (0x0A000000 - 0x08400000) * 3; // memset can take a while when you're using sb!
     protected static final int CALLBACKID_REGISTER = 16; // $s0
     protected CallbackManager callbackManager = new CallbackManager();
     protected static final int IDLE_THREAD_ADDRESS = MemoryMap.START_RAM;
@@ -443,7 +438,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
 
-        syscallFreeCycles = 0;
         dispatchThreadEnabled = true;
     }
 
@@ -549,8 +543,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         idle1.exitStatus = ERROR_THREAD_IS_NOT_DORMANT;
         threadMap.put(idle1.uid, idle1);
         hleChangeThreadState(idle1, PSP_THREAD_READY);
-
-        continuousIdleCycles = 0;
     }
 
     private void install_thread_exit_handler() {
@@ -638,32 +630,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         if (currentThread != null) {
             currentThread.runClocks++;
-
-            // Watch dog timer
-            if (isIdleThread(currentThread)) {
-                continuousIdleCycles++;
-                if (continuousIdleCycles > WDT_THREAD_IDLE_CYCLES) {
-                    log.info("Watch dog timer - pausing emulator (idle)");
-                    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_WDT_IDLE);
-                    continuousIdleCycles = 0;
-                }
-            } else {
-                continuousIdleCycles = 0;
-                syscallFreeCycles++;
-                if (syscallFreeCycles > WDT_THREAD_HOG_CYCLES) {
-                    log.info("Watch dog timer - pausing emulator (thread hogging)");
-                    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_WDT_HOG);
-                }
-            }
         } else if (!exitCalled) {
             // We always need to be in a thread! we shouldn't get here.
             log.error("No ready threads!");
         }
-    }
-
-    /** Part of watch dog timer */
-    public void clearSyscallFreeCycles() {
-        syscallFreeCycles = 0;
     }
 
     private void internalContextSwitch(SceKernelThreadInfo newThread) {
@@ -697,7 +667,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         currentThread = newThread;
-        syscallFreeCycles = 0;
 
         RuntimeContext.update();
     }
@@ -837,6 +806,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public SceKernelThreadInfo getThreadById(int uid) {
         return threadMap.get(uid);
+    }
+
+    public SceKernelThreadInfo getThreadByName(String name) {
+        for (SceKernelThreadInfo thread : threadMap.values()) {
+            if (name.equals(thread.name)) {
+            	return thread;
+            }
+        }
+
+        return null;
     }
 
     public void hleUnblockThread(int uid) {
@@ -1563,10 +1542,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public void hleKernelDelayThread(int micros, boolean doCallbacks) {
-        hleKernelDelayThread(micros, doCallbacks, 0);
-    }
-
-    public void hleKernelDelayThread(int micros, boolean doCallbacks, int returnCode) {
         // wait type
         currentThread.waitType = PSP_WAIT_DELAY;
 
@@ -1581,7 +1556,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         // Wait on a timeout only
         hleKernelThreadWait(currentThread, micros, false);
         hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-        Emulator.getProcessor().cpu.gpr[2] = returnCode;
         hleRescheduleCurrentThread(doCallbacks);
     }
 
@@ -2117,7 +2091,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (info == null) {
             log.warn("sceKernelReferCallbackStatus unknown uid 0x" + Integer.toHexString(uid));
             cpu.gpr[2] = -1;
-        } else if (!mem.isAddressGood(info_addr)) {
+        } else if (!Memory.isAddressGood(info_addr)) {
             log.warn("sceKernelReferCallbackStatus bad info address 0x" + Integer.toHexString(info_addr));
             cpu.gpr[2] = -1;
         } else {
@@ -2355,7 +2329,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(sysclocks_addr)) {
+        if (Memory.isAddressGood(sysclocks_addr)) {
             long sysclocks = mem.read64(sysclocks_addr);
             int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
             hleKernelDelayThread(micros, false);
@@ -2383,7 +2357,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(sysclocks_addr)) {
+        if (Memory.isAddressGood(sysclocks_addr)) {
             long sysclocks = mem.read64(sysclocks_addr);
             int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
             hleKernelDelayThread(micros, true);
@@ -2870,7 +2844,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.debug(String.format("sceKernelSetSysClockAlarm(0x%08X,0x%08X,0x%08X)", delaySysclockAddr, handlerAddress, handlerArgument));
         }
 
-        if (mem.isAddressGood(delaySysclockAddr)) {
+        if (Memory.isAddressGood(delaySysclockAddr)) {
             long delaySysclock = mem.read64(delaySysclockAddr);
             long delayUsec = SystemTimeManager.hleSysClock2USec(delaySysclock);
 
@@ -2927,7 +2901,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (sceKernelAlarmInfo == null) {
             log.warn(String.format("sceKernelReferAlarmStatus unknown uid=0x%x", alarmUid));
             cpu.gpr[2] = ERROR_NOT_FOUND_ALARM;
-        } else if (!mem.isAddressGood(infoAddr)) {
+        } else if (!Memory.isAddressGood(infoAddr)) {
             cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
             int size = mem.read32(infoAddr);
@@ -3015,7 +2989,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelGetVTimerBase unknown uid=0x%x", vtimerUid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-        } else if (!mem.isAddressGood(baseAddr)) {
+        } else if (!Memory.isAddressGood(baseAddr)) {
             cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
             mem.write64(baseAddr, sceKernelVTimerInfo.base);
@@ -3069,7 +3043,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelGetVTimerTime unknown uid=0x%x", vtimerUid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-        } else if (!mem.isAddressGood(timeAddr)) {
+        } else if (!Memory.isAddressGood(timeAddr)) {
             cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
             long time = getVTimerTime(sceKernelVTimerInfo);
@@ -3135,7 +3109,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelSetVTimerTime unknown uid=0x%x", vtimerUid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-        } else if (!mem.isAddressGood(timeAddr)) {
+        } else if (!Memory.isAddressGood(timeAddr)) {
             cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
             long time = mem.read64(timeAddr);
@@ -3261,7 +3235,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelSetVTimerHandler unknown uid=0x%x", vtimerUid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-        } else if (!mem.isAddressGood(scheduleAddr)) {
+        } else if (!Memory.isAddressGood(scheduleAddr)) {
             cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
             long schedule = mem.read64(scheduleAddr);
@@ -3358,7 +3332,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (sceKernelVTimerInfo == null) {
             log.warn(String.format("sceKernelReferVTimerStatus unknown uid=0x%x", vtimerUid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VTIMER;
-        } else if (!mem.isAddressGood(infoAddr)) {
+        } else if (!Memory.isAddressGood(infoAddr)) {
             cpu.gpr[2] = ERROR_ILLEGAL_ADDR;
         } else {
             int size = mem.read32(infoAddr);
@@ -3991,7 +3965,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int statusAddr = cpu.gpr[4];
 
-        if (mem.isAddressGood(statusAddr)) {
+        if (Memory.isAddressGood(statusAddr)) {
             SceKernelSystemStatus status = new SceKernelSystemStatus();
             status.read(mem, statusAddr);
             status.status = 0;
@@ -4045,7 +4019,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
         }
 
-        if (mem.isAddressGood(idcount_addr)) {
+        if (Memory.isAddressGood(idcount_addr)) {
             mem.write32(idcount_addr, fullCount);
         }
 
@@ -4194,45 +4168,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             return afterAction;
         }
 
-        @SuppressWarnings("unused")
-        public void setAfterAction(IAction afterAction) {
-            this.afterAction = afterAction;
-        }
-
         public int getId() {
             return id;
-        }
-
-        @SuppressWarnings("unused")
-        public void setId(int id) {
-            this.id = id;
         }
 
         public int getSavedIdRegister() {
             return savedIdRegister;
         }
 
-        @SuppressWarnings("unused")
-        public void setSavedIdRegister(int savedIdRegister) {
-            this.savedIdRegister = savedIdRegister;
-        }
-
         public int getSavedRa() {
             return savedRa;
         }
 
-        @SuppressWarnings("unused")
-        public void setSavedRa(int savedRa) {
-            this.savedRa = savedRa;
-        }
-
         public int getSavedPc() {
             return savedPc;
-        }
-
-        @SuppressWarnings("unused")
-        public void setSavedPc(int savedPc) {
-            this.savedPc = savedPc;
         }
 
         @Override

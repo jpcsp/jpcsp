@@ -425,23 +425,23 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	step(false);
     }
 
-    public void write8(int address, int data) {
-        address &= Memory.addressMask;
+    public final void write8(int rawAddress) {
         // vram address is lower than main memory so check the end of the buffer first, it's more likely to fail
-        if (address < bottomaddrFb && address >= topaddrFb)
+        if (rawAddress < bottomaddrFb && rawAddress >= topaddrFb) {
             displayDirty = true;
+        }
     }
 
-    public void write16(int address, int data) {
-        address &= Memory.addressMask;
-        if (address < bottomaddrFb && address >= topaddrFb)
+    public final void write16(int rawAddress) {
+        if (rawAddress < bottomaddrFb && rawAddress >= topaddrFb) {
             displayDirty = true;
+        }
     }
 
-    public void write32(int address, int data) {
-        address &= Memory.addressMask;
-        if (address < bottomaddrFb && address >= topaddrFb)
+    public final void write32(int rawAddress) {
+        if (rawAddress < bottomaddrFb && rawAddress >= topaddrFb) {
             displayDirty = true;
+        }
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -1266,9 +1266,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         int widthAddr = cpu.gpr[5];
         int heightAddr = cpu.gpr[6];
 
-        if (!memory.isAddressGood(modeAddr  ) ||
-            !memory.isAddressGood(widthAddr ) ||
-            !memory.isAddressGood(heightAddr))
+        if (!Memory.isAddressGood(modeAddr  ) ||
+            !Memory.isAddressGood(widthAddr ) ||
+            !Memory.isAddressGood(heightAddr))
         {
             cpu.gpr[2] = -1;
         } else {
@@ -1356,7 +1356,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             isFbShowing = false;
             gotBadFbBufParams = true;
             return 0;
-        } else if (Memory.getInstance().isAddressGood(topaddr)){
+        } else if (Memory.isAddressGood(topaddr)){
             if(topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM) {
                 log.warn("sceDisplaySetFrameBuf (topaddr=0x" + Integer.toHexString(topaddr) + ")"
                         + " is using main memory.");
@@ -1421,9 +1421,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
                     topaddrAddr, bufferwidthAddr, pixelformatAddr, syncType));
         }
 
-        if (!mem.isAddressGood(topaddrAddr    ) ||
-            !mem.isAddressGood(bufferwidthAddr) ||
-            !mem.isAddressGood(pixelformatAddr)) {
+        if (!Memory.isAddressGood(topaddrAddr    ) ||
+            !Memory.isAddressGood(bufferwidthAddr) ||
+            !Memory.isAddressGood(pixelformatAddr)) {
             cpu.gpr[2] = -1;
         } else {
             mem.write32(topaddrAddr    , topaddrFb    );

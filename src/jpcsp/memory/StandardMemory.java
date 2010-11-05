@@ -86,7 +86,7 @@ public class StandardMemory extends Memory {
 			return false;
 		}
 
-        return true;
+        return super.allocate();
     }
 
 	@Override
@@ -140,17 +140,6 @@ public class StandardMemory extends Memory {
                 Integer.toHexString(Emulator.getProcessor().cpu.pc));
         }
         return index;
-    }
-
-	@Override
-    public boolean isAddressGood(int address) {
-        int index = map[address >>> PAGE_SHIFT];
-        return (index != -1);
-    }
-
-    @Override
-    public boolean isRawAddressGood(int address) {
-        return isAddressGood(address);
     }
 
 	@Override
@@ -210,7 +199,7 @@ public class StandardMemory extends Memory {
         try {
             int page = indexFromAddr(address);
             buf.put(page + (address & PAGE_MASK), data);
-            Modules.sceDisplayModule.write8(address, data);
+            Modules.sceDisplayModule.write8(address & addressMask);
         } catch (Exception e) {
         	Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -222,7 +211,7 @@ public class StandardMemory extends Memory {
         try {
             int page = indexFromAddr(address);
             buf.putShort(page + (address & PAGE_MASK), data);
-            Modules.sceDisplayModule.write16(address, data);
+            Modules.sceDisplayModule.write16(address & addressMask);
         } catch (Exception e) {
         	Memory.log.error("write16 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -234,7 +223,7 @@ public class StandardMemory extends Memory {
         try {
             int page = indexFromAddr(address);
             buf.putInt(page + (address & PAGE_MASK), data);
-            Modules.sceDisplayModule.write32(address, data);
+            Modules.sceDisplayModule.write32(address & addressMask);
         } catch (Exception e) {
         	Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);

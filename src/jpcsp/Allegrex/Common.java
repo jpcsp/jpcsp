@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.HLE.Modules;
@@ -658,7 +659,7 @@ public class Common {
 
         // If we think the target is a stub, try and append the syscall name
         if ((opname.equals("jal") || opname.equals("j")) && jump != 0 &&
-                jpcsp.Memory.getInstance().isAddressGood(jump + 4)) {
+                Memory.isAddressGood(jump + 4)) {
             int nextOpcode = jpcsp.Memory.getInstance().read32(jump + 4);
             Instruction nextInsn = Decoder.instruction(nextOpcode);
             String secondTarget = nextInsn.disasm(jump + 4, nextOpcode);

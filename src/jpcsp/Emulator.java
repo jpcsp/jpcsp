@@ -262,7 +262,6 @@ public class Emulator implements Runnable {
         }
 
         Modules.sceDisplayModule.setGeDirty(true);
-        Modules.ThreadManForUserModule.clearSyscallFreeCycles();
 
         gui.RefreshButtons();
         if (State.debugger != null)
