@@ -55,18 +55,18 @@ typedef struct SceMpegRingbuffer
 
 typedef struct SceMpegAu
 {
-    /** unknown */
-	SceUInt32			iUnk0;
-    /** presentation timestamp? */
-	SceInt32 			iTimestamp;
-    /** unknown */
-	SceUInt32			iUnk1;
-    /** unknown */
-	SceUInt32			iUnk2;
-    /** unknown */
-	SceUInt32			iUnk3;
-    /** unknown */
-	SceUInt32			iUnk4;
+    /** presentation timestamp MSB */
+	SceUInt32			iPtsMSB;
+    /** presentation timestamp LSB */
+	SceUInt32 			iPts;
+    /** decode timestamp MSB */
+	SceUInt32			iDtsMSB;
+    /** decode timestamp LSB */
+	SceUInt32			iDts;
+    /** Es buffer handle. */
+	SceUInt32			iEsBuffer;
+    /** Au size. */
+	SceUInt32			iAuSize;
 
 } SceMpegAu;
 

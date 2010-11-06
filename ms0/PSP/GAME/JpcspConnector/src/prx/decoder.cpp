@@ -12,6 +12,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define DEBUG_TIMING	0
+
 SceInt32 IsRingbufferFull(ReaderThreadData* D)
 {
 	if(D->m_Status == ReaderThreadData::READER_EOF)
@@ -29,6 +31,10 @@ int T_Decoder(SceSize _args, void *_argp)
 	int retVal;
 	int oldButtons = 0;
 	SceCtrlData pad;
+#if DEBUG_TIMING
+	int start, end;
+	char s[100];
+#endif
 
 	int iInitAudio = 1;
 	SceInt32 iVideoStatus = 0;
@@ -95,7 +101,21 @@ int T_Decoder(SceSize _args, void *_argp)
 
 		if(D->Audio->m_iFullBuffers < D->Audio->m_iNumBuffers)
 		{
+#if DEBUG_TIMING
+			start = sceKernelGetSystemTimeLow();
+#endif
 			retVal = sceMpegGetAtracAu(&D->m_Mpeg, D->m_MpegStreamAtrac, D->m_MpegAuAtrac, &unknown);
+#if DEBUG_TIMING
+			end = sceKernelGetSystemTimeLow();
+			sprintf(s, "Duration sceMpegGetAtracAu %d, return %X, presentation timeStamp %d (%d), decode timeStamp %d", end - start, retVal, D->m_MpegAuAtrac->iPts, m_iAudioCurrentTimeStamp + D->m_iAudioFrameDuration, D->m_MpegAuAtrac->iDts);
+			debug(s);
+			sprintf(s, "sceMpegGetAtracAu Pts %08X %08X", D->m_MpegAuAtrac->iPtsMSB, D->m_MpegAuAtrac->iPts);
+			debug(s);
+			sprintf(s, "sceMpegGetAtracAu Dts %08X %08X", D->m_MpegAuAtrac->iDtsMSB, D->m_MpegAuAtrac->iDts);
+			debug(s);
+			sprintf(s, "sceMpegGetAtracAu EsBuffer %08X AuSize %08X", D->m_MpegAuAtrac->iEsBuffer, D->m_MpegAuAtrac->iAuSize);
+			debug(s);
+#endif
 			if(retVal != 0)
 			{
 				if(!IsRingbufferFull(D->Reader))
@@ -111,17 +131,25 @@ int T_Decoder(SceSize _args, void *_argp)
 				if(m_iAudioCurrentTimeStamp >= D->m_iLastTimeStamp - D->m_iVideoFrameDuration)
 					break;
 
+#if DEBUG_TIMING
+				start = sceKernelGetSystemTimeLow();
+#endif
 				retVal = sceMpegAtracDecode(&D->m_Mpeg, D->m_MpegAuAtrac, D->Audio->m_pAudioBuffer[D->Audio->m_iDecodeBuffer], iInitAudio);
+#if DEBUG_TIMING
+				end = sceKernelGetSystemTimeLow();
+				sprintf(s, "Duration sceMpegAtracDecode %d, return %X", end - start, retVal);
+				debug(s);
+#endif
 				if(retVal != 0)
 				{
 					sprintf(D->m_LastError, "sceMpegAtracDecode() failed: 0x%08X", retVal);
 					break;
 				}
 
-				if(D->m_MpegAuAtrac->iTimestamp < 0)
+				if(D->m_MpegAuAtrac->iPts == 0xFFFFFFFF)
 					m_iAudioCurrentTimeStamp += D->m_iAudioFrameDuration;
 				else
-					m_iAudioCurrentTimeStamp = D->m_MpegAuAtrac->iTimestamp;
+					m_iAudioCurrentTimeStamp = D->m_MpegAuAtrac->iPts;
 
 				if(m_iAudioCurrentTimeStamp <= 0x15F90 /* video start ts */ - D->m_iAudioFrameDuration)
 					iInitAudio = 1;
@@ -156,7 +184,21 @@ int T_Decoder(SceSize _args, void *_argp)
 
 		if(D->Video->m_iFullBuffers < D->Video->m_iNumBuffers)
 		{
+#if DEBUG_TIMING
+			start = sceKernelGetSystemTimeLow();
+#endif
 			retVal = sceMpegGetAvcAu(&D->m_Mpeg, D->m_MpegStreamAVC, D->m_MpegAuAVC, &unknown);
+#if DEBUG_TIMING
+			end = sceKernelGetSystemTimeLow();
+			sprintf(s, "Duration sceMpegGetAvcAu %d, return %X, presentation timeStamp %d (%d), decode timeStamp %d", end - start, retVal, D->m_MpegAuAVC->iPts, m_iVideoCurrentTimeStamp + 3004, D->m_MpegAuAVC->iDts);
+			debug(s);
+			sprintf(s, "sceMpegGetAvcAu Pts %08X %08X", D->m_MpegAuAVC->iPtsMSB, D->m_MpegAuAVC->iPts);
+			debug(s);
+			sprintf(s, "sceMpegGetAvcAu Dts %08X %08X", D->m_MpegAuAVC->iDtsMSB, D->m_MpegAuAVC->iDts);
+			debug(s);
+			sprintf(s, "sceMpegGetAvcAu EsBuffer %08X AuSize %08X", D->m_MpegAuAVC->iEsBuffer, D->m_MpegAuAVC->iAuSize);
+			debug(s);
+#endif
 			if((SceUInt32)retVal == 0x80618001)
 			{
 				if(!IsRingbufferFull(D->Reader))
@@ -177,17 +219,25 @@ int T_Decoder(SceSize _args, void *_argp)
 				if(m_iVideoCurrentTimeStamp >= D->m_iLastTimeStamp - D->m_iVideoFrameDuration)
 					break;
 
+#if DEBUG_TIMING
+				start = sceKernelGetSystemTimeLow();
+#endif
 				retVal = sceMpegAvcDecode(&D->m_Mpeg, D->m_MpegAuAVC, BUFFER_WIDTH, &D->Video->m_pVideoBuffer[D->Video->m_iPlayBuffer], &iVideoStatus);
+#if DEBUG_TIMING
+				end = sceKernelGetSystemTimeLow();
+				sprintf(s, "Duration sceMpegAvcDecode %d, return %X", end - start, retVal);
+				debug(s);
+#endif
 				if(retVal != 0)
 				{
 					sprintf(D->m_LastError, "sceMpegAvcDecode() failed: 0x%08X", retVal);
 					break;
 				}
 
-				if(D->m_MpegAuAVC->iTimestamp < 0)
+				if(D->m_MpegAuAVC->iPts == 0xFFFFFFFF)
 					m_iVideoCurrentTimeStamp += 0x0BBC;
 				else
-					m_iVideoCurrentTimeStamp = D->m_MpegAuAVC->iTimestamp;
+					m_iVideoCurrentTimeStamp = D->m_MpegAuAVC->iPts;
 
 				if(iVideoStatus == 1)
 				{

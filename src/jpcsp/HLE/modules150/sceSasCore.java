@@ -148,7 +148,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     /** If sasCore isn't a valid handle this function will print a log message and set $v0 to -1.
      * @return true if sasCore is good. */
     protected boolean isSasHandleGood(int sasCore, String functionName, CpuState cpu) {
-        if (Processor.memory.isAddressGood(sasCore)) {
+        if (Memory.isAddressGood(sasCore)) {
             if (Processor.memory.read32(sasCore) == sasCoreUid) {
                 return true;
             }
@@ -386,7 +386,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             log.warn("UNIMPLEMENTED:__sceSasInit multiple instances not yet supported");
         }
 
-        if (mem.isAddressGood(sasCore)) {
+        if (Memory.isAddressGood(sasCore)) {
             sasCoreUid = SceUidManager.getNewUid("sceSasCore-SasCore");
             mem.write32(sasCore, sasCoreUid);
         }
@@ -442,6 +442,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         	// sasOut points to the output of sceAtracDecodeData
             //mem.memset(sasOut, (byte) 0, waveformBufMaxSize);  // Empty waveform.
             cpu.gpr[2] = 0;
+
+            // TODO Delay the thread. For how long?
+            Modules.ThreadManForUserModule.hleKernelDelayThread(3000, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }

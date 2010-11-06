@@ -22,16 +22,19 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules150.sceDisplay;
-import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
-import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Debug;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -75,6 +78,14 @@ public class MpegCodec {
 	}
 
 	public void finish() {
+		try {
+			videoRawFileState.close();
+		} catch (IOException e) {
+		}
+		try {
+			audioRawFileState.close();
+		} catch (IOException e) {
+		}
 		mpegFileState.finish();
 	}
 
@@ -94,26 +105,106 @@ public class MpegCodec {
 		mpegFileState.write(address, length);
 	}
 
-	public boolean readVideoFrame(int buffer, int frameWidth, int width, int height, int pixelMode, int frameCount) {
-		if (videoRawFileState.currentInputPosition >= videoRawFileState.currentInputLength) {
-			if (!readNextRawFile(videoRawFileState, frameCount)) {
+	private boolean checkRawFileState(RawFileState rawFileState, int frameCount) {
+		if (rawFileState.currentInputPosition >= rawFileState.currentInputLength) {
+			if (!readNextRawFile(rawFileState, frameCount)) {
 				return false;
 			}
 		}
 
-    	decodeVideoFrame(videoRawFileState, buffer, frameWidth, width, height, pixelMode);
+		return true;
+	}
+
+	public boolean readVideoAu(SceMpegAu au, int frameCount) {
+		if (!checkRawFileState(videoRawFileState, frameCount)) {
+			return false;
+		}
+
+		try {
+			decodeVideoAu(videoRawFileState, au);
+		} catch (IOException e) {
+		}
+
+		return true;
+	}
+
+	public boolean readVideoFrame(int buffer, int frameWidth, int width, int height, int pixelMode, int frameCount) {
+		if (!checkRawFileState(videoRawFileState, frameCount)) {
+			return false;
+		}
+
+    	try {
+			decodeVideoFrame(videoRawFileState, buffer, frameWidth, width, height, pixelMode);
+		} catch (IOException e) {
+		}
 
     	return true;
 	}
 
-	public boolean readAudioFrame(int buffer, int frameCount) {
-		if (audioRawFileState.currentInputPosition >= audioRawFileState.currentInputLength) {
-			if (!readNextRawFile(audioRawFileState, frameCount)) {
-				return false;
-			}
+	public byte[] readEncodedVideoFrame(int frameCount) {
+		if (!checkRawFileState(videoRawFileState, frameCount)) {
+			return null;
 		}
 
-		decodeAudioFrame(audioRawFileState, buffer);
+		try {
+			return readEncodedVideoFrame(videoRawFileState, frameCount);
+		} catch (IOException e) {
+		}
+
+		return null;
+	}
+
+	private byte[] readEncodedVideoFrame(RawFileState rawFileState, int frameCount) throws IOException {
+		byte[] encodedVideoFrame = null;
+
+		rawFileState.read(4);
+		if (rawFileState.currentInputLength - rawFileState.currentInputPosition >= 4) {
+			int fileSize = getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition);
+			if (rawFileState.currentInputLength - rawFileState.currentInputPosition < fileSize) {
+				fileSize = rawFileState.currentInputLength - rawFileState.currentInputPosition;
+			}
+			rawFileState.read(fileSize);
+
+			encodedVideoFrame = new byte[fileSize];
+			System.arraycopy(rawFileState.currentInputBuffer, rawFileState.currentInputPosition, encodedVideoFrame, 0, fileSize);
+
+			rawFileState.currentInputPosition += fileSize;
+		}
+
+		return encodedVideoFrame;
+	}
+
+	public void decodeVideoFrame(byte[] encodedVideoFrame, int buffer, int frameWidth, int width, int height, int pixelMode, int frameCount) {
+		RawBufferState rawBufferState = new RawBufferState(encodedVideoFrame);
+
+		try {
+			decodeVideoFrame(rawBufferState, buffer, frameWidth, width, height, pixelMode);
+		} catch (IOException e) {
+		}
+	}
+
+	public boolean readAudioAu(SceMpegAu au, int frameCount) {
+		if (!checkRawFileState(audioRawFileState, frameCount)) {
+			return false;
+		}
+
+		try {
+			decodeAudioAu(audioRawFileState, au);
+		} catch (IOException e) {
+		}
+
+		return true;
+	}
+
+	public boolean readAudioFrame(int buffer, int frameCount) {
+		if (!checkRawFileState(audioRawFileState, frameCount)) {
+			return false;
+		}
+
+		try {
+			decodeAudioFrame(audioRawFileState, buffer);
+		} catch (IOException e) {
+		}
 
 		return true;
 	}
@@ -128,13 +219,12 @@ public class MpegCodec {
 				if (rawFileState.currentInputBuffer == null || rawStreamFile.length() > rawFileState.currentInputBuffer.length) {
 					rawFileState.currentInputBuffer = new byte[(int) rawStreamFile.length()];
 				}
-				FileInputStream inputStream = new FileInputStream(rawStreamFile);
-				int length = inputStream.read(rawFileState.currentInputBuffer);
-				inputStream.close();
+				rawFileState.open(rawStreamFile);
 
 				rawFileState.currentInputPosition = 0;
-				rawFileState.currentInputLength = length;
+				rawFileState.currentInputLength = (int) rawStreamFile.length();
 
+				rawFileState.read(4);
 				rawFileState.currentFileVersion = getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition);
 				rawFileState.currentInputPosition += 4;
 				if (rawFileState.currentFileVersion <= 0 || rawFileState.currentFileVersion > 1) {
@@ -150,9 +240,17 @@ public class MpegCodec {
     	return result;
 	}
 
-	protected void decodeVideoFrame(RawFileState rawFileState, int buffer, int frameWidth, int width, int height, int pixelMode) {
+	protected void decodeVideoAu(RawFileState rawFileState, SceMpegAu au) throws IOException {
+		rawFileState.read(8);
+		if (rawFileState.currentInputLength - rawFileState.currentInputPosition >= 8) {
+			au.pts = getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition + 4);
+		}
+	}
+
+	protected void decodeVideoFrame(RawFileState rawFileState, int buffer, int frameWidth, int width, int height, int pixelMode) throws IOException {
     	int fileSize = 0;
     	int fileStartPosition = rawFileState.currentInputPosition;
+    	rawFileState.read(16);
 		if (rawFileState.currentInputLength - rawFileState.currentInputPosition >= 4) {
 			fileSize = getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition);
 			rawFileState.currentInputPosition += 4;
@@ -173,6 +271,7 @@ public class MpegCodec {
 			}
 		}
 
+		rawFileState.read(fileSize - 16);
 		Memory mem = Memory.getInstance();
 		int dst = buffer;
         final int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
@@ -225,8 +324,16 @@ public class MpegCodec {
 		}
 	}
 
-	protected void decodeAudioFrame(RawFileState rawFileState, int buffer) {
+	protected void decodeAudioAu(RawFileState rawFileState, SceMpegAu au) throws IOException {
+		rawFileState.read(8);
+		if (rawFileState.currentInputLength - rawFileState.currentInputPosition >= 8) {
+			au.pts = getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition + 4);
+		}
+	}
+
+	protected void decodeAudioFrame(RawFileState rawFileState, int buffer) throws IOException {
     	int fileSize = 0;
+    	rawFileState.read(8);
     	int fileStartPosition = rawFileState.currentInputPosition;
 		if (rawFileState.currentInputLength - rawFileState.currentInputPosition >= 4) {
 			fileSize = getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition);
@@ -239,11 +346,13 @@ public class MpegCodec {
 		}
 
 		int length = Math.min(8192, rawFileState.currentInputLength - rawFileState.currentInputPosition);
-		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(buffer, length, 4);
-		for (int i = 0; i < length; i += 4, rawFileState.currentInputPosition += 4) {
-			memoryWriter.writeNext(getInt32(rawFileState.currentInputBuffer, rawFileState.currentInputPosition));
+		if (fileSize != 8192 + 8) {
+			Modules.log.warn("Unknown fileSize " + fileSize);
 		}
-		memoryWriter.flush();
+		rawFileState.read(length);
+		ByteBuffer byteBuffer = ByteBuffer.wrap(rawFileState.currentInputBuffer, rawFileState.currentInputPosition, length);
+		rawFileState.currentInputPosition += length;
+		Memory.getInstance().copyToMemory(buffer, byteBuffer, length);
 
 		if (rawFileState.currentInputPosition - fileStartPosition != fileSize) {
 			// Something went wrong during compression or decompression...
@@ -313,6 +422,8 @@ public class MpegCodec {
 		public int currentInputLength;
 		public int currentInputPosition;
 		public int currentFileVersion;
+		private FileInputStream inputStream;
+		protected int inputStreamPosition;
 
 		public RawFileState(String name) {
 			this.name = name;
@@ -322,6 +433,39 @@ public class MpegCodec {
 			currentInputLength = 0;
 			currentInputPosition = 0;
 		}
+
+		public void read(int length) throws IOException {
+			int requiredPosition = currentInputPosition + length;
+			if (inputStreamPosition < requiredPosition) {
+				int readLength = requiredPosition - inputStreamPosition;
+				readLength = inputStream.read(currentInputBuffer, inputStreamPosition, readLength);
+				inputStreamPosition += readLength;
+			}
+		}
+
+		public void open(File rawFile) throws IOException {
+			close();
+			inputStream = new FileInputStream(rawFile);
+			inputStreamPosition = 0;
+		}
+
+		public void close() throws IOException {
+			if (inputStream != null) {
+				inputStream.close();
+				inputStream = null;
+				inputStreamPosition = 0;
+			}
+		}
+	}
+
+	protected static class RawBufferState extends RawFileState {
+		public RawBufferState(byte[] buffer) {
+			super(null);
+			currentInputBuffer = buffer;
+			currentInputLength = buffer.length;
+			currentInputPosition = 0;
+			inputStreamPosition = currentInputLength;
+		}
 	}
 
 	protected static class FileState {
@@ -329,6 +473,7 @@ public class MpegCodec {
 		public String id;
 		protected RandomAccessFile output;
 		public int mpegVersion;
+		protected ByteBuffer byteBuffer;
 
 		public FileState(String name) {
 			this.name = name;
@@ -356,7 +501,7 @@ public class MpegCodec {
 		}
 
 		public void write(int address, int length) {
-			if (length <= 0 || !Memory.getInstance().isAddressGood(address)) {
+			if (length <= 0 || !Memory.isAddressGood(address)) {
 				return;
 			}
 
@@ -365,13 +510,16 @@ public class MpegCodec {
 					output = new RandomAccessFile(getFileName(), "rw");
 				}
 
-				byte[] buffer = new byte[length];
-				IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
-				for (int i = 0; i < length; i++) {
-					buffer[i] = (byte) memoryReader.readNext();
+				if (byteBuffer == null || byteBuffer.capacity() < length) {
+					byteBuffer = ByteBuffer.allocateDirect(length);
 				}
 
-				output.write(buffer);
+				byteBuffer.clear();
+				byteBuffer.limit(length);
+				Buffer memoryBuffer = Memory.getInstance().getBuffer(address, length);
+				Utilities.putBuffer(byteBuffer, memoryBuffer, ByteOrder.LITTLE_ENDIAN);
+				byteBuffer.rewind();
+				output.getChannel().write(byteBuffer);
 			} catch (FileNotFoundException e) {
 				// Ignore this exception
 			} catch (IOException e) {

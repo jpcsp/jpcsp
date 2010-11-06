@@ -2,7 +2,7 @@ TARGET = JpcspConnector
 
 OBJS = decoder.o reader.o video.o audio.o pmfplayer.o main.o debug.o JpcspConnector.o
 
-INCDIR = -I../libmpeg
+INCDIR = ../libmpeg
 CFLAGS = -O2 -G0 -Wall
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
