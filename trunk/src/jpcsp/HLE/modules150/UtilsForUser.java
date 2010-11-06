@@ -295,7 +295,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		int time_t_addr = cpu.gpr[4];
 
         int seconds = (int)(Calendar.getInstance().getTimeInMillis() / 1000);
-        if (mem.isAddressGood(time_t_addr)) {
+        if (Memory.isAddressGood(time_t_addr)) {
             mem.write32(time_t_addr, seconds);
         }
         Emulator.getProcessor().cpu.gpr[2] = seconds;
@@ -308,7 +308,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		int tp = cpu.gpr[4];
 		int tzp = cpu.gpr[5];
 
-        if (mem.isAddressGood(tp)) {
+        if (Memory.isAddressGood(tp)) {
         	Clock.TimeNanos currentTimeNano = Emulator.getClock().currentTimeNanos();
             int tv_sec = currentTimeNano.seconds;
             int tv_usec = currentTimeNano.millis * 1000 + currentTimeNano.micros;
@@ -316,7 +316,7 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
             mem.write32(tp + 4, tv_usec);
         }
 
-        if (mem.isAddressGood(tzp)) {
+        if (Memory.isAddressGood(tzp)) {
             int tz_minuteswest = 0;
             int tz_dsttime = 0;
             mem.write32(tzp, tz_minuteswest);

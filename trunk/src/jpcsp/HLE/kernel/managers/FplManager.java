@@ -192,7 +192,7 @@ public class FplManager {
             memType = PSP_SMEM_High;
         }
         int memAlign = 4;  // 4-bytes is default.
-        if (mem.isAddressGood(opt_addr)) {
+        if (Memory.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
             // Up to firmware 6.20 only three FplOptParam fields exist, being the
             // first one the struct size, the second is the memory alignment (0 is default,
@@ -268,7 +268,7 @@ public class FplManager {
             int addr = tryAllocateFpl(fpl);
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             int micros = 0;
-            if (mem.isAddressGood(timeout_addr)) {
+            if (Memory.isAddressGood(timeout_addr)) {
                 micros = mem.read32(timeout_addr);
             }
             if (addr == 0) {
@@ -363,7 +363,7 @@ public class FplManager {
             cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
             Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(numWaitThreadAddr)) {
+            if (Memory.isAddressGood(numWaitThreadAddr)) {
                 mem.write32(numWaitThreadAddr, info.numWaitThreads);
             }
             cpu.gpr[2] = 0;

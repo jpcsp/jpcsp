@@ -541,11 +541,11 @@ public class sceCtrl implements HLEModule, HLEStartModule {
 
         log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr) + ",idleback=0x" + Integer.toHexString(idleback_addr) + ")" + " returning idlereset=" + idlereset + " idleback=" + idleback);
 
-        if (mem.isAddressGood(idlereset_addr)) {
+        if (Memory.isAddressGood(idlereset_addr)) {
             mem.write32(idlereset_addr, idlereset);
         }
 
-        if (mem.isAddressGood(idleback_addr)) {
+        if (Memory.isAddressGood(idleback_addr)) {
             mem.write32(idleback_addr, idleback);
         }
 

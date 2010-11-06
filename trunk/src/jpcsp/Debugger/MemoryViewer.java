@@ -66,7 +66,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
     private static byte safeRead8(Memory mem, int address) {
         byte value = 0;
-        if (mem.isAddressGood(address)) {
+        if (Memory.isAddressGood(address)) {
             value = (byte)mem.read8(address);
         }
 

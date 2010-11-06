@@ -161,10 +161,10 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         } else {
             if (!volatileMemLocked) {
                 volatileMemLocked = true;
-                if (mem.isAddressGood(paddr)) {
+                if (Memory.isAddressGood(paddr)) {
                     mem.write32(paddr, 0x08400000); // Volatile mem is always at 0x08400000
                 }
-                if (mem.isAddressGood(psize)) {
+                if (Memory.isAddressGood(psize)) {
                     mem.write32(psize, 0x400000);   // Volatile mem size is 4Megs
                 }
                 cpu.gpr[2] = 0;

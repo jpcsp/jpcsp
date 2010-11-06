@@ -56,15 +56,15 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 
                         switch(joker) {
                             case 0:
-                                if(mem.isAddressGood(addr))
+                                if(Memory.isAddressGood(addr))
                                     mem.write8(addr, (byte)data);
                                 break;
                             case 1:
-                                if(mem.isAddressGood(addr))
+                                if(Memory.isAddressGood(addr))
                                     mem.write16(addr, (short)data);
                                 break;
                             case 2:
-                                if(mem.isAddressGood(addr))
+                                if(Memory.isAddressGood(addr))
                                     mem.write32(addr, data);
                                 break;
                             default: break;

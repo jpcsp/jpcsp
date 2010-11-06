@@ -63,7 +63,7 @@ public class SystemTimeManager {
 
     public void sceKernelUSec2SysClock(int usec, int clock_addr) {
         Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(clock_addr)) {
+        if (Memory.isAddressGood(clock_addr)) {
             mem.write64(clock_addr, usec);
         } else {
             log.warn("sceKernelUSec2SysClock bad clock pointer 0x" + Integer.toHexString(clock_addr));
@@ -81,18 +81,18 @@ public class SystemTimeManager {
 
     public void sceKernelSysClock2USec(int clock_addr, int low_addr, int high_addr) {
         Memory mem = Memory.getInstance();
-        if (!mem.isAddressGood(clock_addr)) {
+        if (!Memory.isAddressGood(clock_addr)) {
             log.warn("sceKernelSysClock2USec bad clock pointer 0x" + Integer.toHexString(clock_addr));
         } else {
             boolean ok = false;
             long clocks = mem.read64(clock_addr);
 
-            if (mem.isAddressGood(low_addr)) {
+            if (Memory.isAddressGood(low_addr)) {
                 mem.write32(low_addr, (int) (clocks / 1000000));
                 ok = true;
             }
 
-            if (mem.isAddressGood(high_addr)) {
+            if (Memory.isAddressGood(high_addr)) {
                 mem.write32(high_addr, (int) (clocks % 1000000));
                 ok = true;
             }
@@ -112,12 +112,12 @@ public class SystemTimeManager {
 
         Memory mem = Memory.getInstance();
         boolean ok = false;
-        if (mem.isAddressGood(low_addr)) {
+        if (Memory.isAddressGood(low_addr)) {
             mem.write32(low_addr, (int) (clocks / 1000000));
             ok = true;
         }
 
-        if (mem.isAddressGood(high_addr)) {
+        if (Memory.isAddressGood(high_addr)) {
             mem.write32(high_addr, (int) (clocks % 1000000));
             ok = true;
         }
@@ -140,7 +140,7 @@ public class SystemTimeManager {
         }
 
         Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(time_addr)) {
+        if (Memory.isAddressGood(time_addr)) {
             long systemTime = getSystemTime();
             mem.write64(time_addr, systemTime);
             Emulator.getProcessor().cpu.gpr[2] = 0;

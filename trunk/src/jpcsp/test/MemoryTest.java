@@ -201,13 +201,13 @@ public class MemoryTest {
 		// Test isAddressGood
 		{
 			boolean success = true;
-			if (mem.isAddressGood(MemoryMap.START_RAM - 1)) {
+			if (Memory.isAddressGood(MemoryMap.START_RAM - 1)) {
 				success = fail("isAddressGood START_RAM - 1");
 			}
-			if (!mem.isAddressGood(MemoryMap.START_RAM)) {
+			if (!Memory.isAddressGood(MemoryMap.START_RAM)) {
 				success = fail("isAddressGood START_RAM");
 			}
-			if (mem.isAddressGood(0)) {
+			if (Memory.isAddressGood(0)) {
 				success = fail("isAddressGood 0");
 			}
 

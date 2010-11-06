@@ -45,7 +45,7 @@ public class CaptureRAM {
         this.length = length;
 
         Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(address)) {
+        if (Memory.isAddressGood(address)) {
         	buffer = mem.getBuffer(address, length);
         }
 

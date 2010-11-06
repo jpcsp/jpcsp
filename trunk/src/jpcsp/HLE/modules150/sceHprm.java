@@ -140,7 +140,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
 
         int key_addr = cpu.gpr[4];
 
-        if (mem.isAddressGood(key_addr)) {
+        if (Memory.isAddressGood(key_addr)) {
             if (peekCurrentKeyWarningLogged) {
                 if (log.isTraceEnabled()) {
                     log.trace("IGNORING:sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ")");

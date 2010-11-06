@@ -118,7 +118,7 @@ public class SceKernelVplInfo {
     /** @return true on success */
     public boolean free(int addr) {
         Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(addr - 8)) {
+        if (Memory.isAddressGood(addr - 8)) {
             // Check block header.
             int top = mem.read32(addr - 8);
             if (top != allocAddress) {

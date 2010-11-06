@@ -152,7 +152,7 @@ public class sceRtc implements HLEModule {
 
         log.debug("hleRtcTickAdd64 " + multiplier + " * " + value);
 
-        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
+        if (Memory.isAddressGood(src_addr) && Memory.isAddressGood(dest_addr)) {
             long src = mem.read64(src_addr);
             mem.write64(dest_addr, src + multiplier * value);
             cpu.gpr[2] = 0;
@@ -174,7 +174,7 @@ public class sceRtc implements HLEModule {
 
         log.debug("hleRtcTickAdd32 " + multiplier + " * " + value);
 
-        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
+        if (Memory.isAddressGood(src_addr) && Memory.isAddressGood(dest_addr)) {
             long src = mem.read64(src_addr);
             mem.write64(dest_addr, src + multiplier * value);
             cpu.gpr[2] = 0;
@@ -342,7 +342,7 @@ public class sceRtc implements HLEModule {
 
         int time_addr = cpu.gpr[4];
 
-        if (mem.isAddressGood(time_addr)) {
+        if (Memory.isAddressGood(time_addr)) {
             ScePspDateTime time = new ScePspDateTime();
             time.read(mem, time_addr);
             Calendar cal = new GregorianCalendar(time.year, time.month - 1, time.day,
@@ -384,7 +384,7 @@ public class sceRtc implements HLEModule {
         int date_addr = cpu.gpr[4];
         int time = cpu.gpr[5];
 
-        if (mem.isAddressGood(date_addr)) {
+        if (Memory.isAddressGood(date_addr)) {
             ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
             dateTime.write(mem, date_addr);
             cpu.gpr[2] = 0;
@@ -401,7 +401,7 @@ public class sceRtc implements HLEModule {
         int date_addr = cpu.gpr[4];
         int time_addr = cpu.gpr[5];
 
-        if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
+        if (Memory.isAddressGood(date_addr) && Memory.isAddressGood(time_addr)) {
             ScePspDateTime dateTime = new ScePspDateTime();
             dateTime.read(mem, date_addr);
             Calendar cal = Calendar.getInstance();
@@ -423,7 +423,7 @@ public class sceRtc implements HLEModule {
         int date_addr = cpu.gpr[4];
         int time = cpu.gpr[5];
 
-        if (mem.isAddressGood(date_addr)) {
+        if (Memory.isAddressGood(date_addr)) {
             ScePspDateTime dateTime = ScePspDateTime.fromMSDOSTime(time);
             dateTime.write(mem, date_addr);
             cpu.gpr[2] = 0;
@@ -440,7 +440,7 @@ public class sceRtc implements HLEModule {
         int date_addr = cpu.gpr[4];
         int time_addr = cpu.gpr[5];
 
-        if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
+        if (Memory.isAddressGood(date_addr) && Memory.isAddressGood(time_addr)) {
             ScePspDateTime dateTime = new ScePspDateTime();
             dateTime.read(mem, date_addr);
             Calendar cal = Calendar.getInstance();
@@ -462,7 +462,7 @@ public class sceRtc implements HLEModule {
         int date_addr = cpu.gpr[4];
         long time = Utilities.getRegister64(cpu, cpu.gpr[5]);
 
-        if (mem.isAddressGood(date_addr)) {
+        if (Memory.isAddressGood(date_addr)) {
             ScePspDateTime dateTime = ScePspDateTime.fromFILETIMETime(time);
             dateTime.write(mem, date_addr);
             cpu.gpr[2] = 0;
@@ -479,7 +479,7 @@ public class sceRtc implements HLEModule {
         int date_addr = cpu.gpr[4];
         int time_addr = cpu.gpr[5];
 
-        if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
+        if (Memory.isAddressGood(date_addr) && Memory.isAddressGood(time_addr)) {
             ScePspDateTime dateTime = new ScePspDateTime();
             dateTime.read(mem, date_addr);
             Calendar cal = Calendar.getInstance();
@@ -504,7 +504,7 @@ public class sceRtc implements HLEModule {
 
         log.debug("sceRtcSetTick");
 
-        if (mem.isAddressGood(time_addr) && mem.isAddressGood(ticks_addr)) {
+        if (Memory.isAddressGood(time_addr) && Memory.isAddressGood(ticks_addr)) {
             long ticks = mem.read64(ticks_addr) - rtcMagicOffset;
             ScePspDateTime time = ScePspDateTime.fromMicros(ticks);
             time.write(mem, time_addr);
@@ -524,7 +524,7 @@ public class sceRtc implements HLEModule {
         int time_addr = cpu.gpr[4];
         int ticks_addr = cpu.gpr[5];
 
-        if (mem.isAddressGood(time_addr) && mem.isAddressGood(ticks_addr)) {
+        if (Memory.isAddressGood(time_addr) && Memory.isAddressGood(ticks_addr)) {
             // use java library to convert a date to seconds, then multiply it by the tick resolution
             ScePspDateTime time = new ScePspDateTime();
             time.read(mem, time_addr);
@@ -551,7 +551,7 @@ public class sceRtc implements HLEModule {
 
         log.debug("sceRtcCompareTick");
 
-        if (mem.isAddressGood(first) && mem.isAddressGood(second)) {
+        if (Memory.isAddressGood(first) && Memory.isAddressGood(second)) {
             long tick1 = mem.read64(first);
             long tick2 = mem.read64(second);
 

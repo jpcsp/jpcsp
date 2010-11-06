@@ -40,7 +40,7 @@ public class Elf32SectionHeader {
     private int sh_addralign;
     private long sh_entsize;
 
-    private static int sizeof() {
+    public static int sizeof() {
         return 40;
     }
 

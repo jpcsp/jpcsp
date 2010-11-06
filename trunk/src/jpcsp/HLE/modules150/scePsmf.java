@@ -899,7 +899,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(buffer_addr)) {
+        if (Memory.isAddressGood(buffer_addr)) {
             int version = mem.read32(buffer_addr + 4);
             if (version > sceMpeg.PSMF_VERSION_0015) {
                 cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_PSMF;

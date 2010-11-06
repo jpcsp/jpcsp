@@ -49,12 +49,12 @@ public class EventFlagManager {
     private static HashMap<Integer, SceKernelEventFlagInfo> eventMap;
     private EventFlagWaitStateChecker eventFlagWaitStateChecker;
 
-    private final static int PSP_EVENT_WAITSINGLE = 0;
-    private final static int PSP_EVENT_WAITMULTIPLE = 0x200;
-    private final static int PSP_EVENT_WAITAND = 0x00;
-    private final static int PSP_EVENT_WAITOR = 0x01;
-    private final static int PSP_EVENT_WAITCLEARALL = 0x10;
-    private final static int PSP_EVENT_WAITCLEAR = 0x20;
+    protected final static int PSP_EVENT_WAITSINGLE = 0;
+    protected final static int PSP_EVENT_WAITMULTIPLE = 0x200;
+    protected final static int PSP_EVENT_WAITAND = 0x00;
+    protected final static int PSP_EVENT_WAITOR = 0x01;
+    protected final static int PSP_EVENT_WAITCLEARALL = 0x10;
+    protected final static int PSP_EVENT_WAITCLEAR = 0x20;
 
     public void reset() {
         eventMap = new HashMap<Integer, SceKernelEventFlagInfo>();
@@ -173,7 +173,7 @@ public class EventFlagManager {
         if (matched) {
             // Write current pattern.
             Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(outBits_addr)) {
+            if (Memory.isAddressGood(outBits_addr)) {
                 mem.write32(outBits_addr, event.currentPattern);
             }
             if ((wait & PSP_EVENT_WAITCLEARALL) == PSP_EVENT_WAITCLEARALL) {
@@ -279,7 +279,7 @@ public class EventFlagManager {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             Memory mem = Memory.getInstance();
             int micros = 0;
-            if (mem.isAddressGood(timeout_addr)) {
+            if (Memory.isAddressGood(timeout_addr)) {
                 micros = mem.read32(timeout_addr);
             }
             if (!checkEventFlag(event, bits, wait, outBits_addr)) {
@@ -356,7 +356,7 @@ public class EventFlagManager {
             cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
         } else {
             Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(numWaitThreadAddr)) {
+            if (Memory.isAddressGood(numWaitThreadAddr)) {
                 mem.write32(numWaitThreadAddr, event.numWaitThreads);
             }
             event.currentPattern = newPattern;

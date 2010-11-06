@@ -71,7 +71,7 @@ public class sceOpenPSID implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(openPSIDAddr)) {
+        if(Memory.isAddressGood(openPSIDAddr)) {
             for(int i = 0; i < 16 ; i++) {
                 mem.write8(openPSIDAddr + i, (byte)dummyOpenPSID[i]);
             }

@@ -49,7 +49,7 @@ public class SceIoStat {
     }
 
     public void write(Memory mem, int address) {
-        if (!mem.isAddressGood(address) || !mem.isAddressGood(address + sizeof()))
+        if (!Memory.isAddressGood(address) || !Memory.isAddressGood(address + sizeof()))
             Modules.log.warn("SceIoStat write bad address " + String.format("0x%08X", address));
 
         mem.write32(address, mode);
@@ -70,7 +70,7 @@ public class SceIoStat {
     }
 
     public void read(Memory mem, int address) {
-        if (!mem.isAddressGood(address) || !mem.isAddressGood(address + sizeof()))
+        if (!Memory.isAddressGood(address) || !Memory.isAddressGood(address + sizeof()))
             Modules.log.warn("SceIoStat read bad address " + String.format("0x%08X", address));
 
         mode = mem.read32(address);

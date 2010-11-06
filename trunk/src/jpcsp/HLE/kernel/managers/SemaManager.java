@@ -126,7 +126,7 @@ public class SemaManager {
         }
 
         Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(option)) {
+        if (Memory.isAddressGood(option)) {
             // The first int does not seem to be the size of the struct, found values:
             // SSX On Tour: 0, 0x08B0F9E4, 0x0892E664, 0x08AF7257 (some values are used in more than one semaphore)
             int optsize = mem.read32(option);
@@ -206,7 +206,7 @@ public class SemaManager {
             Memory mem = Memory.getInstance();
             int micros = 0;
 
-            if (mem.isAddressGood(timeout_addr)) {
+            if (Memory.isAddressGood(timeout_addr)) {
                 micros = mem.read32(timeout_addr);
             }
 
@@ -371,7 +371,7 @@ public class SemaManager {
             Memory mem = Memory.getInstance();
 
             // Write previous numWaitThreads count.
-            if (mem.isAddressGood(numWaitThreadAddr)) {
+            if (Memory.isAddressGood(numWaitThreadAddr)) {
                 mem.write32(numWaitThreadAddr, sema.numWaitThreads);
             }
 

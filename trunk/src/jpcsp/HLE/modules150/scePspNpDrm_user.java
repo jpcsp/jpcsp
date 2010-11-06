@@ -84,7 +84,7 @@ public class scePspNpDrm_user implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(npDrmKeyAddr)) {
+        if(Memory.isAddressGood(npDrmKeyAddr)) {
             String key = "";
             for(int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {
                 npDrmKey[i] = mem.read8(npDrmKeyAddr + i);

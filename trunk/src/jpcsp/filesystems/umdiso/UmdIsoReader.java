@@ -511,7 +511,6 @@ public class UmdIsoReader {
                 Iso9660File info = null;
                 int fileStart = 0;
                 long fileLength = 0;
-                Date timestamp = null;
 
                 //out.println(path);
                 //out.println(file);
@@ -528,7 +527,6 @@ public class UmdIsoReader {
                     {
                         fileStart = info.getLBA();
                         fileLength = info.getSize();
-                        timestamp = info.getTimestamp();
                         size += (fileLength + 0x7FF) & ~0x7FF;
                     }
                 }

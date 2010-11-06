@@ -50,7 +50,7 @@ public class StepFrame {
         threadName = Modules.ThreadManForUserModule.getThreadName(threadID);
 
         Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(cpu.pc)) {
+        if (Memory.isAddressGood(cpu.pc)) {
             opcode = mem.read32(cpu.pc);
             Common.Instruction insn = Decoder.instruction(opcode);
             asm = insn.disasm(cpu.pc, opcode);

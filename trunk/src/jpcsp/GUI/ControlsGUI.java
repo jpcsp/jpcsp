@@ -29,7 +29,6 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.MutableComboBoxModel;
 
 import jpcsp.Emulator;
-import jpcsp.MainGUI;
 import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.State;
@@ -46,7 +45,6 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     private keyCode targetKey;
     private HashMap<Integer, keyCode> currentKeys;
     private HashMap<keyCode, Integer> revertKeys;
-    private MainGUI mainWindow = null;
     
     public ControlsGUI() {
         initComponents();
@@ -177,10 +175,6 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         return comboBox;
     }
 
-    public void setMainGUI(MainGUI mainWindow) {
-        this.mainWindow = mainWindow;
-    }
-    
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -190,7 +184,6 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        buttonGroup1 = new javax.swing.ButtonGroup();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         keyPanel = new javax.swing.JPanel();
@@ -791,7 +784,6 @@ private void fieldStartMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel bgLabel1;
-    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JComboBox controllerBox;
     private javax.swing.JLabel controllerLabel;
     private javax.swing.JPanel fgPanel;
