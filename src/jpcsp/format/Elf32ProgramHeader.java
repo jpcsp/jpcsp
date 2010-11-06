@@ -33,7 +33,7 @@ public class Elf32ProgramHeader {
     private long p_flags; // Bits: 0x1=executable, 0x2=writable, 0x4=readable, demo PRX's were found to be not writable
     private long p_align;
 
-    private static int sizeof() {
+    public static int sizeof() {
         return 32;
     }
 

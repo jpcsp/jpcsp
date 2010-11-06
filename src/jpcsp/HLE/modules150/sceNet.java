@@ -158,7 +158,7 @@ public class sceNet implements HLEModule {
                     + ", strAddr=0x" + Integer.toHexString(strAddr) + ")");
         }
    
-        if (mem.isAddressGood(etherAddr) && mem.isAddressGood(strAddr)) {
+        if (Memory.isAddressGood(etherAddr) && Memory.isAddressGood(strAddr)) {
             // Convert 6-byte Mac address into string representation (XX:XX:XX:XX:XX:XX).
             StringBuilder str = new StringBuilder();
             IMemoryReader memoryReader = MemoryReader.getMemoryReader(etherAddr, Wlan.MAC_ADDRESS_LENGTH, 1);
@@ -190,7 +190,6 @@ public class sceNet implements HLEModule {
 
     public void sceNetEtherStrton(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
         
         int strAddr = cpu.gpr[4];
         int etherAddr = cpu.gpr[5];
@@ -200,7 +199,7 @@ public class sceNet implements HLEModule {
                     + ", etherAddr=0x" + Integer.toHexString(etherAddr) + ")");
         }
 
-        if (mem.isAddressGood(strAddr) && mem.isAddressGood(etherAddr)) {
+        if (Memory.isAddressGood(strAddr) && Memory.isAddressGood(etherAddr)) {
             // Convert string Mac address string representation (XX:XX:XX:XX:XX:XX)
         	// into 6-byte representation.
         	IMemoryReader memoryReader = MemoryReader.getMemoryReader(strAddr, 17, 1);
@@ -293,7 +292,7 @@ public class sceNet implements HLEModule {
             return;
         }
 
-        if (mem.isAddressGood(etherAddr)) {
+        if (Memory.isAddressGood(etherAddr)) {
             // Return WLAN MAC address
         	byte[] netAddr = Wlan.getMacAddress();
             for (int i = 0; i < netAddr.length; i++) {
@@ -317,7 +316,7 @@ public class sceNet implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }     
-        if(mem.isAddressGood(statAddr)) {
+        if(Memory.isAddressGood(statAddr)) {
             // Faking. Assume no free size.
             mem.write32(statAddr, netMemSize);      // Poolsize from sceNetInit.
             mem.write32(statAddr + 4, netMemSize);  // Currently in use size.

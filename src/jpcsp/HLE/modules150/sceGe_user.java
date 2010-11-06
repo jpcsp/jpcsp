@@ -291,7 +291,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 				if (!list.isFinished()) {
 					// If the list is still on the END command, skip it.
 					Memory mem = Memory.getInstance();
-					if (mem.isAddressGood(list.pc)) {
+					if (Memory.isAddressGood(list.pc)) {
 						if (VideoEngine.command(mem.read32(list.pc)) == GeCommands.END) {
 							list.pc += 4;
 						}
@@ -415,7 +415,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         VideoEngine ve = VideoEngine.getInstance();
         float[] mtx = ve.getMatrix(mtxtype);
 
-        if(mem.isAddressGood(mtx_addr)) {
+        if(Memory.isAddressGood(mtx_addr)) {
             for(int i = 0; i < mtx.length; i++) {
                 mem.write32(mtx_addr, (int)mtx[i]);
             }

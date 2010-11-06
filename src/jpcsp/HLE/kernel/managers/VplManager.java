@@ -54,11 +54,11 @@ public class VplManager {
     private HashMap<Integer, SceKernelVplInfo> vplMap;
     private VplWaitStateChecker vplWaitStateChecker;
 
-    private final static int PSP_VPL_ATTR_FIFO = 0;
-    private final static int PSP_VPL_ATTR_PRIORITY = 0x100;
-    private final static int PSP_VPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
-    private final static int PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
-    private final static int PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
+    protected final static int PSP_VPL_ATTR_FIFO = 0;
+    protected final static int PSP_VPL_ATTR_PRIORITY = 0x100;
+    protected final static int PSP_VPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
+    protected final static int PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
+    protected final static int PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
 
     public void reset() {
         vplMap = new HashMap<Integer, SceKernelVplInfo>();
@@ -195,7 +195,7 @@ public class VplManager {
             log.debug("sceKernelCreateVpl(name=" + name + ",partition=" + partitionid + ",attr=0x" + Integer.toHexString(attr) + ",size=0x" + Integer.toHexString(size) + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
         }
 
-        if (mem.isAddressGood(opt_addr)) {
+        if (Memory.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
             log.warn("sceKernelCreateVpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
         }
@@ -258,7 +258,7 @@ public class VplManager {
             int addr = tryAllocateVpl(vpl, size);
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             int micros = 0;
-            if (mem.isAddressGood(timeout_addr)) {
+            if (Memory.isAddressGood(timeout_addr)) {
                 micros = mem.read32(timeout_addr);
             }
             if (addr == 0) {
@@ -347,7 +347,7 @@ public class VplManager {
             cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
             Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(numWaitThreadAddr)) {
+            if (Memory.isAddressGood(numWaitThreadAddr)) {
                 mem.write32(numWaitThreadAddr, info.numWaitThreads);
             }
             cpu.gpr[2] = 0;

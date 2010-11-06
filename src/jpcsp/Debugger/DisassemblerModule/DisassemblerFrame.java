@@ -75,7 +75,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private DefaultListModel listmodel = new DefaultListModel();
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     private volatile boolean wantStep;
-    private int gpi, gpo;
+    protected int gpi, gpo;
 
     private int selectedRegCount;
     private final Color[] selectedRegColors = new Color[] { new Color(128, 255, 255), new Color(255, 255, 128), new Color(128, 255, 128) };
@@ -244,7 +244,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             listmodel.clear();
 
             for (pc = DebuggerPC, cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
-                if (Memory.getInstance().isAddressGood(pc)) {
+                if (Memory.isAddressGood(pc)) {
                     int opcode = Memory.getInstance().read32(pc);
 
                     Instruction insn = Decoder.instruction(opcode);
@@ -1208,7 +1208,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
             int Start = Utilities.parseAddress(opt.getInput()[0]);
             int End = Utilities.parseAddress(opt.getInput()[1]);
             for (int i = Start; i <= End; i += 4) {
-                if (Memory.getInstance().isAddressGood(i)) {
+                if (Memory.isAddressGood(i)) {
                     int opcode = Memory.getInstance().read32(i);
                     Instruction insn = Decoder.instruction(opcode);
                     bufferedWriter.write(String.format("%08X:[%08X]: %s", i, opcode, insn.disasm(i, opcode)));
@@ -1290,7 +1290,7 @@ private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
 
            //check if we should enable set pc to cursor
            int addr = DebuggerPC + disasmListGetSelectedIndex() * 4;
-           if (Memory.getInstance().isAddressGood(addr)) {
+           if (Memory.isAddressGood(addr)) {
                SetPCToCursor.setEnabled(true);
            }
 

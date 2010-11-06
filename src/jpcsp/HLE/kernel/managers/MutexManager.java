@@ -186,7 +186,7 @@ public class MutexManager {
         Memory mem = Processor.memory;
 
         String name = "";
-        if (mem.isAddressGood(name_addr)) {
+        if (Memory.isAddressGood(name_addr)) {
             name = Utilities.readStringNZ(mem, name_addr, 32);
         }
 
@@ -246,7 +246,7 @@ public class MutexManager {
                     int timeout = 0;
                     boolean forever = (timeout_addr == 0);
                     if (timeout_addr != 0) {
-                        if (mem.isAddressGood(timeout_addr)) {
+                        if (Memory.isAddressGood(timeout_addr)) {
                             timeout = mem.read32(timeout_addr);
                         } else {
                             log.warn(message + " - bad timeout address");
@@ -340,7 +340,7 @@ public class MutexManager {
             cpu.gpr[2] = -1;
         } else {
             // Write previous numWaitThreads count.
-            if (mem.isAddressGood(numWaitThreadAddr)) {
+            if (Memory.isAddressGood(numWaitThreadAddr)) {
                 mem.write32(numWaitThreadAddr, info.numWaitThreads);
             }
             // Wake all threads waiting on this mutex.
@@ -368,7 +368,7 @@ public class MutexManager {
             cpu.gpr[2] = ERROR_MUTEX_NOT_FOUND;
         } else {
             Memory mem = Memory.getInstance();
-            if (mem.isAddressGood(addr)) {
+            if (Memory.isAddressGood(addr)) {
                 info.write(mem, addr);
                 cpu.gpr[2] = 0;
             } else {

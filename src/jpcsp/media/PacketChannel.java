@@ -48,7 +48,7 @@ public class PacketChannel {
     }
 
     public void writePacket(int address, int length) {
-        if (length > 0 && Memory.getInstance().isAddressGood(address)) {
+        if (length > 0 && Memory.isAddressGood(address)) {
             try {
                 if(pcRaf == null) {
                     pcRaf = new RandomAccessFile(pcRafPath, "rw");

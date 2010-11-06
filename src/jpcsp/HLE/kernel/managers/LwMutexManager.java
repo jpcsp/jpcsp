@@ -206,7 +206,7 @@ public class LwMutexManager {
                     int timeout = 0;
                     boolean forever = (timeout_addr == 0);
                     if (timeout_addr != 0) {
-                        if (mem.isAddressGood(timeout_addr)) {
+                        if (Memory.isAddressGood(timeout_addr)) {
                             timeout = mem.read32(timeout_addr);
                         } else {
                             log.warn(message + " - bad timeout address");
@@ -351,7 +351,7 @@ public class LwMutexManager {
             log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
         } else {
-            if (mem.isAddressGood(addr)) {
+            if (Memory.isAddressGood(addr)) {
                 info.write(mem, addr);
                 cpu.gpr[2] = 0;
             } else {
@@ -374,7 +374,7 @@ public class LwMutexManager {
             log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
         } else {
-            if (mem.isAddressGood(addr)) {
+            if (Memory.isAddressGood(addr)) {
                 info.write(mem, addr);
                 cpu.gpr[2] = 0;
             } else {

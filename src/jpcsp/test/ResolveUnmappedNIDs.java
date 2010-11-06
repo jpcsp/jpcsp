@@ -115,8 +115,6 @@ class Firmware {
 
         Iterator<?> i = LibList.iterator();
 
-        int x = 0;
-
         while (i.hasNext()) {
             Element curEl = (Element) i.next();
             String modName = curEl.getChild("NAME").getText();
@@ -207,7 +205,7 @@ public class ResolveUnmappedNIDs {
     public static void processNIDs(LinkedList<Firmware> firmware, HashMap<Integer, NIDInfo> nids) {
         for (NIDInfo info : nids.values()) {
             for (Firmware fw : firmware) {
-                boolean found = fw.resolveNID(info);
+                fw.resolveNID(info);
                 // keep resolving in newer fw, since later libdoc have nids decoded to function names
                 //if (found)
                 //    break;

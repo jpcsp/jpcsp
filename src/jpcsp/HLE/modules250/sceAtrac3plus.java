@@ -69,7 +69,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(outputChannelAddr)) {
+        if (Memory.isAddressGood(outputChannelAddr)) {
         	mem.write32(outputChannelAddr, 2);
         }
         cpu.gpr[2] = 0;

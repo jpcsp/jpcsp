@@ -420,8 +420,8 @@ public class ModuleMgrForUser implements HLEModule {
                 attribute = sceModule.module_start_thread_attr;
             }
 
-            if (mem.isAddressGood(entryAddr)) {
-                if (mem.isAddressGood(status_addr)) {
+            if (Memory.isAddressGood(entryAddr)) {
+                if (Memory.isAddressGood(status_addr)) {
                     mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
                 }
 
@@ -486,8 +486,8 @@ public class ModuleMgrForUser implements HLEModule {
             cpu.gpr[2] = 0; // Fake success.
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            if (mem.isAddressGood(sceModule.module_stop_func)) {
-                if (mem.isAddressGood(status_addr)) {
+            if (Memory.isAddressGood(sceModule.module_stop_func)) {
+                if (Memory.isAddressGood(status_addr)) {
                     mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
                 }
                 SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
@@ -607,7 +607,7 @@ public class ModuleMgrForUser implements HLEModule {
         if (sceModule == null) {
             log.warn("sceKernelQueryModuleInfo unknown module UID 0x" + Integer.toHexString(uid));
             cpu.gpr[2] = -1;
-        } else if (!mem.isAddressGood(info_addr)) {
+        } else if (!Memory.isAddressGood(info_addr)) {
             log.warn("sceKernelQueryModuleInfo bad info pointer " + String.format("0x%08X", info_addr));
             cpu.gpr[2] = -1;
         } else {

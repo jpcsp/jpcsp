@@ -27,39 +27,39 @@ import jpcsp.format.PGF;
 
 public class SceFontInfo {
     // PGF file.
-    private String fileName;  // The PGF file name.
-    private String fileType;  // The file type (only PGF support for now).
-    private int[] fontdata;   // Fontdata extracted from the PGF.
+    protected String fileName;  // The PGF file name.
+    protected String fileType;  // The file type (only PGF support for now).
+    protected int[] fontdata;   // Fontdata extracted from the PGF.
 
     // Texture (generated from glyph).
-    private int[] texture;
-    private int texWidth;
-    private int texHeight;
-    private int texX;
-    private int texY;
-    private int texYSize;
+    protected int[] texture;
+    protected int texWidth;
+    protected int texHeight;
+    protected int texX;
+    protected int texY;
+    protected int texYSize;
 
     // Characters properties and glyphs.
-    private int n_chars;
-    private int advancex;
-    private int advancey;
-    private int charmap_compr_len;
-    private int[] charmap_compr;
-    private int[] charmap;
-    private Glyph glyph;
+    protected int n_chars;
+    protected int advancex;
+    protected int advancey;
+    protected int charmap_compr_len;
+    protected int[] charmap_compr;
+    protected int[] charmap;
+    protected Glyph glyph;
 
     // Shadow characters properties and glyphs.
-    private int n_shadows;
-    private int shadowscale;
-    private Glyph shadowGlyph;
-    private float size;
-    private int color;
-    private int shadowColor;
+    protected int n_shadows;
+    protected int shadowscale;
+    protected Glyph shadowGlyph;
+    protected float size;
+    protected int color;
+    protected int shadowColor;
 
     // Tables from PGF.
-    private int[] advanceMap;
-    private int[] shadowCharMap;
-    private int[] charPointerTable;
+    protected int[] advanceMap;
+    protected int[] shadowCharMap;
+    protected int[] charPointerTable;
 
     public SceFontInfo(PGF fontFile) {
         // Parse the file and fill the structs parameters
@@ -127,7 +127,7 @@ public class SceFontInfo {
     }
 
     // Create and retrieve a glyph from the font data.
-    private Glyph getGlyph(int[] fontdata, int charPtr, int glyphType, int[] advancemap) {
+    protected Glyph getGlyph(int[] fontdata, int charPtr, int glyphType, int[] advancemap) {
         Glyph out = new Glyph();
         if (glyphType == 0x20) {
             charPtr += 14;
@@ -161,16 +161,16 @@ public class SceFontInfo {
 
     // Glyph class.
     private static class Glyph {
-        private int x;
-        private int y;
-        private int w;
-        private int h;
-        private int left;
-        private int top;
-        private int flags;
-        private int shadowID;
-        private int advance;
-        private long ptr;
+    	protected int x;
+    	protected int y;
+    	protected int w;
+    	protected int h;
+    	protected int left;
+    	protected int top;
+    	protected int flags;
+    	protected int shadowID;
+    	protected int advance;
+    	protected long ptr;
 
         private Glyph() {
             x = 0;

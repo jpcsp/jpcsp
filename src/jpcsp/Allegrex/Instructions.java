@@ -81,8 +81,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -108,8 +108,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -135,8 +135,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -162,8 +162,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -189,8 +189,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -216,8 +216,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -243,8 +243,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -270,8 +270,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -297,8 +297,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -324,8 +324,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -351,8 +351,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -378,8 +378,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -405,8 +405,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -432,8 +432,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm16 = (insn>>0)&65535;
-	int rs = (insn>>21)&31;
+	//int imm16 = (insn>>0)&65535;
+	//int rs = (insn>>21)&31;
 
 
 }
@@ -509,7 +509,7 @@ public final String category() { return "MIPS I"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm20 = (insn>>6)&1048575;
+	//int imm20 = (insn>>6)&1048575;
 
 
             
@@ -583,7 +583,7 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int rt = (insn>>21)&31;
+	//int rt = (insn>>21)&31;
 
 
             
@@ -609,7 +609,7 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int rt = (insn>>21)&31;
+	//int rt = (insn>>21)&31;
 
 
             
@@ -5030,8 +5030,8 @@ public final String category() { return "MIPS I"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int c0dr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0dr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 
             
@@ -5042,8 +5042,8 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int c0dr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0dr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 return "Unimplemented MFC0";
 }
@@ -5058,8 +5058,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int c0cr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0cr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 
             
@@ -5070,8 +5070,8 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int c0cr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0cr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 return "Unimplemented CFC0";
 }
@@ -5086,8 +5086,8 @@ public final String category() { return "MIPS I"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int c0dr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0dr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 
             
@@ -5098,8 +5098,8 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int c0dr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0dr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 return "Unimplemented MTC0";
 }
@@ -5114,8 +5114,8 @@ public final String category() { return "ALLEGREX"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int c0cr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0cr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 
             
@@ -5126,8 +5126,8 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int c0cr = (insn>>11)&31;
-	int rt = (insn>>16)&31;
+	//int c0cr = (insn>>11)&31;
+	//int rt = (insn>>16)&31;
 
 return "Unimplemented CTC0";
 }
@@ -5606,7 +5606,7 @@ public String disasm(int address, int insn) {
 	int imm7 = (insn>>0)&127;
 	int rt = (insn>>16)&31;
 
-return "Unimplemented MFVC";
+return "Unimplemented MFVC imm7=" + imm7 + ", rt=" + rt;
 }
 };
 public static final Instruction MTV = new Instruction(161) {
@@ -5667,7 +5667,7 @@ public String disasm(int address, int insn) {
 	int imm7 = (insn>>0)&127;
 	int rt = (insn>>16)&31;
 
-return "Unimplemented MTVC";
+return "Unimplemented MTVC imm7=" + imm7 + ", rt=" + rt;
 }
 };
 public static final Instruction VCMP = new Instruction(163, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXT) {
@@ -6744,7 +6744,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VSBZ";
+return Common.disasmVDVS("VSBZ", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VLGB = new Instruction(195) {
@@ -6843,7 +6843,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VC2I";
+	return Common.disasmVDVS("VC2I", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VUS2I = new Instruction(198, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7433,7 +7433,7 @@ public String disasm(int address, int insn) {
 	int vd = (insn>>0)&127;
 	int imm7 = (insn>>8)&127;
 
-return "Unimplemented VMFVC";
+return "Unimplemented VMFVC imm7=" + imm7 + ", vd=" + vd;
 }
 };
 public static final Instruction VMTVC = new Instruction(215) {
@@ -7462,7 +7462,7 @@ public String disasm(int address, int insn) {
 	int imm7 = (insn>>0)&127;
 	int vs = (insn>>8)&127;
 
-return "Unimplemented VMTVC";
+return "Unimplemented VMTVC imm7=" + imm7 + ", vs=" + vs;
 }
 };
 public static final Instruction VT4444 = new Instruction(216, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7818,7 +7818,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm3 = (insn>>16)&7;
 
-return "Unimplemented VCMOVT";
+	return Common.disasmVDVSIMM("VCMOVT", 1+one+(two<<1), vd, vs, imm3);
 }
 };
 public static final Instruction VCMOVF = new Instruction(226, FLAG_USE_VFPU_PFXS | FLAG_USE_VFPU_PFXD) {
@@ -7853,7 +7853,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm3 = (insn>>16)&7;
 
-return "Unimplemented VCMOVF";
+	return Common.disasmVDVSIMM("VCMOVF", 1+one+(two<<1), vd, vs, imm3);
 }
 };
 public static final Instruction VWBN = new Instruction(227) {
@@ -7888,7 +7888,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm8 = (insn>>16)&255;
 
-return "Unimplemented VWBN";
+	return Common.disasmVDVSIMM("VWBN", 1+one+(two<<1), vd, vs, imm8);
 }
 };
 public static final Instruction VPFXS = new Instruction(228) {

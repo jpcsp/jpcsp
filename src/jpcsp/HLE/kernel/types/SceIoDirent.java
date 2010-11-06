@@ -32,7 +32,7 @@ public class SceIoDirent {
     public void write(Memory mem, int address) {
         int len, i;
 
-        if (!mem.isAddressGood(address) || !mem.isAddressGood(address + sizeof()))
+        if (!Memory.isAddressGood(address) || !Memory.isAddressGood(address + sizeof()))
             Modules.log.warn("SceIoDirent write bad address " + String.format("0x%08X", address));
 
         stat.write(mem, address);

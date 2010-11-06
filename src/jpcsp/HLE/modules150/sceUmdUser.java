@@ -375,7 +375,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(pspUmdInfoAddr)) {
+        if (Memory.isAddressGood(pspUmdInfoAddr)) {
             pspUmdInfo umdInfo = new pspUmdInfo();
             umdInfo.read(mem, pspUmdInfoAddr);
             umdInfo.type = pspUmdInfo.PSP_UMD_TYPE_GAME;

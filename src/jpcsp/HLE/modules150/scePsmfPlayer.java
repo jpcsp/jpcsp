@@ -469,7 +469,7 @@ public class scePsmfPlayer implements HLEModule {
             return;
         }
         // Read the playback parameters.
-        if (mem.isAddressGood(initPlayInfoAddr)) {
+        if (Memory.isAddressGood(initPlayInfoAddr)) {
             videoCodec = mem.read32(initPlayInfoAddr);
             videoStreamNum = mem.read32(initPlayInfoAddr + 4);
             audioCodec = mem.read32(initPlayInfoAddr + 8);
@@ -584,14 +584,14 @@ public class scePsmfPlayer implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(videoDataAddr)) {
+        if (Memory.isAddressGood(videoDataAddr)) {
             videoDataFrameWidth = mem.read32(videoDataAddr);
             videoDataDisplayBuffer = mem.read32(videoDataAddr + 4);
             videoDataDisplayPts = mem.read32(videoDataAddr + 8);
         }
         // Check if there's already a valid pointer at videoDataAddr.
         // If not, use the displayBuffer from scePsmfPlayerCreate.
-        if (mem.isAddressGood(videoDataDisplayBuffer)) {
+        if (Memory.isAddressGood(videoDataDisplayBuffer)) {
             displayBuffer = videoDataDisplayBuffer;
         } else {
             mem.write32(videoDataAddr + 4, displayBuffer);
@@ -637,7 +637,7 @@ public class scePsmfPlayer implements HLEModule {
             return;
         }
         // Set empty data.
-        if (mem.isAddressGood(audioDataAddr)) {
+        if (Memory.isAddressGood(audioDataAddr)) {
             mem.memset(audioDataAddr, (byte) 0, audioSize);
         }
         // Update audio timestamp.
@@ -682,7 +682,7 @@ public class scePsmfPlayer implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(psmfInfoAddr)) {
+        if (Memory.isAddressGood(psmfInfoAddr)) {
             mem.write32(psmfInfoAddr, psmfCurrentPts);
             mem.write32(psmfInfoAddr + 4, psmfAvcStreamNum);
             mem.write32(psmfInfoAddr + 8, psmfAtracStreamNum);
@@ -753,10 +753,10 @@ public class scePsmfPlayer implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(audioCodecAddr)) {
+        if (Memory.isAddressGood(audioCodecAddr)) {
             mem.write32(audioCodecAddr, audioCodec);
         }
-        if (mem.isAddressGood(audioStreamNumAddr)) {
+        if (Memory.isAddressGood(audioStreamNumAddr)) {
             mem.write32(audioStreamNumAddr, audioStreamNum);
         }
         cpu.gpr[2] = 0;
@@ -778,10 +778,10 @@ public class scePsmfPlayer implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(playModeAddr)) {
+        if (Memory.isAddressGood(playModeAddr)) {
             mem.write32(playModeAddr, playMode);
         }
-        if (mem.isAddressGood(playSpeedAddr)) {
+        if (Memory.isAddressGood(playSpeedAddr)) {
             mem.write32(playSpeedAddr, playSpeed);
         }
         cpu.gpr[2] = 0;
@@ -803,7 +803,7 @@ public class scePsmfPlayer implements HLEModule {
             return;
         }
         // Write our current video presentation timestamp.
-        if (mem.isAddressGood(currentPtsAddr)) {
+        if (Memory.isAddressGood(currentPtsAddr)) {
             mem.write32(currentPtsAddr, psmfPlayerAvcCurrentPresentationTimestamp);
         }
         cpu.gpr[2] = 0;
@@ -825,10 +825,10 @@ public class scePsmfPlayer implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(videoCodecAddr)) {
+        if (Memory.isAddressGood(videoCodecAddr)) {
             mem.write32(videoCodecAddr, videoCodec);
         }
-        if (mem.isAddressGood(videoStreamNumAddr)) {
+        if (Memory.isAddressGood(videoStreamNumAddr)) {
             mem.write32(videoStreamNumAddr, videoStreamNum);
         }
         cpu.gpr[2] = 0;

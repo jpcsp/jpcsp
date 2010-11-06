@@ -72,7 +72,7 @@ public class sceWlan implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(ether_addr)) {
+        if (Memory.isAddressGood(ether_addr)) {
         	byte[] wlanAddr = Wlan.getMacAddress();
             for (int i = 0; i < wlanAddr.length; i++) {
                 mem.write8(ether_addr + i, wlanAddr[i]);

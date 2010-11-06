@@ -74,7 +74,7 @@ public class sceNetIfhandle implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(mem.isAddressGood(dropRateAddr) && mem.isAddressGood(dropDurationAddr)) {
+        if(Memory.isAddressGood(dropRateAddr) && Memory.isAddressGood(dropDurationAddr)) {
             mem.write32(dropRateAddr, netDropRate);
             mem.write32(dropDurationAddr, netDropDuration);
         }

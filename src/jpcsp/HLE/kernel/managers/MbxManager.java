@@ -169,7 +169,7 @@ public class MbxManager {
             log.debug("sceKernelCreateMbx(name=" + name + ",attr=0x" + Integer.toHexString(attr) + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
         }
 
-        if (mem.isAddressGood(opt_addr)) {
+        if (Memory.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
             log.warn("sceKernelCreateMbx option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
         }
@@ -232,7 +232,7 @@ public class MbxManager {
         Memory mem = Processor.memory;
 
         int micros = 0;
-        if (!poll && mem.isAddressGood(timeout_addr)) {
+        if (!poll && Memory.isAddressGood(timeout_addr)) {
             micros = mem.read32(timeout_addr);
         }
 
@@ -312,7 +312,7 @@ public class MbxManager {
             log.warn("sceKernelCancelReceiveMbx unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
         } else {
-            if (mem.isAddressGood(pnum_addr)) {
+            if (Memory.isAddressGood(pnum_addr)) {
                 mem.write32(pnum_addr, info.numWaitThreads);
             }
             cancelWaitingMbxReceive(info);

@@ -68,7 +68,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         }
         // Returns the last tick that was saved upon a battery shutdown.
         // Just return our current tick, since there's no need to mimick such behaviour.
-        if(mem.isAddressGood(tick_addr)) {
+        if(Memory.isAddressGood(tick_addr)) {
             mem.write64(tick_addr, hleGetCurrentTick());
         }
         cpu.gpr[2] = 0;
@@ -85,7 +85,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         }
         // Returns the last time that was manually set by the user.
         // Just return our current tick, since there's no need to mimick such behaviour.
-        if(mem.isAddressGood(tick_addr)) {
+        if(Memory.isAddressGood(tick_addr)) {
             mem.write64(tick_addr, hleGetCurrentTick());
         }
         cpu.gpr[2] = 0;
@@ -98,7 +98,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         int date_addr = cpu.gpr[4];
         long time = Utilities.getRegister64(cpu, cpu.gpr[5]);
 
-        if (mem.isAddressGood(date_addr)) {
+        if (Memory.isAddressGood(date_addr)) {
             ScePspDateTime dateTime = ScePspDateTime.fromUnixTime(time);
             dateTime.write(mem, date_addr);
             cpu.gpr[2] = 0;
@@ -115,7 +115,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
         int date_addr = cpu.gpr[4];
         int time_addr = cpu.gpr[5];
 
-        if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
+        if (Memory.isAddressGood(date_addr) && Memory.isAddressGood(time_addr)) {
             ScePspDateTime dateTime = new ScePspDateTime();
             dateTime.read(mem, date_addr);
             Calendar cal = Calendar.getInstance();

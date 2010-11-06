@@ -1311,14 +1311,14 @@ private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
 }//GEN-LAST:event_RotateItemActionPerformed
     private byte safeRead8(int address) {
         byte value = 0;
-        if (Memory.getInstance().isAddressGood(address)) {
+		if (Memory.isAddressGood(address)) {
             value = (byte) Memory.getInstance().read8(address);
         }
         return value;
     }
 
     private void safeWrite8(byte value, int address) {
-        if (Memory.getInstance().isAddressGood(address)) {
+        if (Memory.isAddressGood(address)) {
             Memory.getInstance().write8(address, value);
         }
     }
@@ -1418,7 +1418,6 @@ private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         ctrlgui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
         ctrlgui.setVisible(true);
         /* add a direct link to the main window*/
-        ctrlgui.setMainGUI(this);
     } else {
         ctrlgui.setVisible(true);
     }

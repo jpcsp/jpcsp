@@ -117,8 +117,8 @@ public class sceNetAdhocctl implements HLEModule {
     public static final int PSP_ADHOCCTL_STATE_DISCOVER = 4;
     public static final int PSP_ADHOCCTL_STATE_WOL = 5;
 
-    private int adhocctlCurrentState;
-    private String adhocctlCurrentGroup;
+    protected int adhocctlCurrentState;
+    protected String adhocctlCurrentGroup;
 
     private HashMap<Integer, AdhocctlHandler> adhocctlHandlerMap = new HashMap<Integer, AdhocctlHandler>();
     private int adhocctlHandlerCount = 0;
@@ -183,7 +183,7 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(adhocIDAddr)) {
+        if (Memory.isAddressGood(adhocIDAddr)) {
             int adhocType = mem.read32(adhocIDAddr); // 0 - Commercial type / 1 - Debug type.
             String adhocParams = Utilities.readStringNZ(mem, adhocIDAddr + 4, 9);
             log.info("Found Adhoc ID data: type=" + adhocType + ", params=" + adhocParams);
@@ -215,7 +215,7 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(groupNameAddr)) {
+        if (Memory.isAddressGood(groupNameAddr)) {
             String groupName = Utilities.readStringNZ(mem, groupNameAddr, 8);
             adhocctlCurrentGroup = groupName;
         }
@@ -236,7 +236,7 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(groupNameAddr)) {
+        if (Memory.isAddressGood(groupNameAddr)) {
             String groupName = Utilities.readStringNZ(mem, groupNameAddr, 8);
             adhocctlCurrentGroup = groupName;
         }
@@ -257,7 +257,7 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(scanInfoAddr)) {
+        if (Memory.isAddressGood(scanInfoAddr)) {
             // IBSS Data field.
             int nextAddr = mem.read32(scanInfoAddr);  // Next group data.
             int ch = mem.read32(scanInfoAddr + 4);
@@ -265,6 +265,9 @@ public class sceNetAdhocctl implements HLEModule {
             String bssID = Utilities.readStringNZ(mem, scanInfoAddr + 16, 6);
             int mode = mem.read32(scanInfoAddr + 24);
 
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("sceNetAdhocctlJoin nextAddr 0x%08X, ch %d, groupName '%s', bssID '%s', mode %d", nextAddr, ch, groupName, bssID, mode));
+            }
             adhocctlCurrentGroup = groupName;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_CONNECTED;
@@ -345,7 +348,7 @@ public class sceNetAdhocctl implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(stateAddr)) {
+        if (Memory.isAddressGood(stateAddr)) {
             mem.write32(stateAddr, adhocctlCurrentState);
         }
         cpu.gpr[2] = 0;

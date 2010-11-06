@@ -476,8 +476,8 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         /** Configures a tree cell renderer and sets up sizing and the
          * backing image from it */
         public boolean configure (Object nd, JScrollPane tv, JTree tree, TreePath path, int row) {
-            boolean sameVn = setLastRendereredObject(nd);
-            boolean sameComp = setLastRenderedScrollPane (tv);
+            setLastRendereredObject(nd);
+            setLastRenderedScrollPane (tv);
             Component renderer = null;
             bg = tree.getBackground();
             boolean sel = tree.isSelectionEmpty() ? false :
@@ -495,8 +495,8 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         /** Configures a list cell renderer and sets up sizing and the
          * backing image from it */
         public boolean configure (Object nd, JScrollPane tv, JList list, int row) {
-            boolean sameVn = setLastRendereredObject(nd);
-            boolean sameComp = setLastRenderedScrollPane (tv);
+            setLastRendereredObject(nd);
+            setLastRenderedScrollPane (tv);
             Component renderer = null;
             bg = list.getBackground();
             boolean sel = list.isSelectionEmpty() ? false :

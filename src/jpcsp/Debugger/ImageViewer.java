@@ -72,7 +72,6 @@ public class ImageViewer extends JFrame {
 	private int clutMask = 0xFF;
 
 	private MemoryImage memoryImage;
-	private Memory mem;
 	private JTextField addressField;
 	private JTextField widthField;
 	private JTextField heightField;
@@ -89,8 +88,6 @@ public class ImageViewer extends JFrame {
 	}
 
 	private void init() {
-		mem = Memory.getInstance();
-
 		initComponents();
 	}
 
@@ -364,7 +361,7 @@ public class ImageViewer extends JFrame {
 
 		@Override
 		public void paintComponent(Graphics g) {
-			if (mem.isAddressGood(startAddress)) {
+			if (Memory.isAddressGood(startAddress)) {
 				Insets insets = getInsets();
 				int minWidth = Math.min(imageWidth, bufferWidth);
 				IMemoryReader imageReader = ImageReader.getImageReader(startAddress, imageWidth, imageHeight, bufferWidth, pixelFormat, imageSwizzle, clutAddress, clutFormat, clutNumberBlocks, clutStart, clutShift, clutMask);

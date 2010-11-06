@@ -181,11 +181,11 @@ public class sceImpose implements HLEModule, HLEStartModule {
             + ",button=0x" + Integer.toHexString(button_addr) + ")"
             + " returning lang=" + languageMode_language + " button=" + languageMode_button);
 
-        if (mem.isAddressGood(lang_addr)) {
+        if (Memory.isAddressGood(lang_addr)) {
             mem.write32(lang_addr, languageMode_language);
         }
 
-        if (mem.isAddressGood(button_addr)) {
+        if (Memory.isAddressGood(button_addr)) {
             mem.write32(button_addr, languageMode_button);
         }
 
@@ -203,10 +203,10 @@ public class sceImpose implements HLEModule, HLEStartModule {
         int iconStatus = Math.min(batteryPowerPercent / 25, 3);
         boolean charging = Battery.isCharging();
 
-        if (mem.isAddressGood(addrCharging)) {
+        if (Memory.isAddressGood(addrCharging)) {
             mem.write32(addrCharging, charging ? 1 : 0); // Values: 0..1
         }
-        if (mem.isAddressGood(addrIconStatus)) {
+        if (Memory.isAddressGood(addrIconStatus)) {
             mem.write32(addrIconStatus, iconStatus); // Values: 0..3
         }
 

@@ -63,8 +63,8 @@ public class MsgPipeManager {
     private static final int PSP_MPP_ATTR_RECEIVE = PSP_MPP_ATTR_RECEIVE_FIFO | PSP_MPP_ATTR_RECEIVE_PRIORITY;
     private final static int PSP_MPP_ATTR_ADDR_HIGH = 0x4000;
 
-    private static final int PSP_MPP_WAIT_MODE_COMPLETE = 0; // receive always a complete buffer
-    private static final int PSP_MPP_WAIT_MODE_PARTIAL = 1;  // can receive a partial buffer
+    protected static final int PSP_MPP_WAIT_MODE_COMPLETE = 0; // receive always a complete buffer
+    protected static final int PSP_MPP_WAIT_MODE_PARTIAL = 1;  // can receive a partial buffer
 
     public void reset() {
         msgMap = new HashMap<Integer, SceKernelMppInfo>();
@@ -220,7 +220,7 @@ public class MsgPipeManager {
             }
         }
         info.append(mem, addr, size);
-        if (mem.isAddressGood(resultSize_addr)) {
+        if (Memory.isAddressGood(resultSize_addr)) {
             mem.write32(resultSize_addr, size);
         }
         return true;
@@ -242,7 +242,7 @@ public class MsgPipeManager {
                 size = availableSize;
             }
         }
-        if (mem.isAddressGood(resultSize_addr)) {
+        if (Memory.isAddressGood(resultSize_addr)) {
             mem.write32(resultSize_addr, size);
         }
         info.consume(mem, addr, size);
@@ -258,7 +258,7 @@ public class MsgPipeManager {
             log.debug("sceKernelCreateMsgPipe(name=" + name + ", partition=" + partitionid + ", attr=0x" + Integer.toHexString(attr) + ", size=0x" + Integer.toHexString(size) + ", opt=0x" + Integer.toHexString(opt_addr) + ")");
         }
 
-        if (mem.isAddressGood(opt_addr)) {
+        if (Memory.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
             log.warn("sceKernelCreateMsgPipe option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
         }
@@ -318,7 +318,7 @@ public class MsgPipeManager {
         Memory mem = Processor.memory;
 
         int micros = 0;
-        if (!poll && mem.isAddressGood(timeout_addr)) {
+        if (!poll && Memory.isAddressGood(timeout_addr)) {
             micros = mem.read32(timeout_addr);
         }
 
@@ -396,7 +396,7 @@ public class MsgPipeManager {
         Memory mem = Processor.memory;
 
         int micros = 0;
-        if (!poll && mem.isAddressGood(timeout_addr)) {
+        if (!poll && Memory.isAddressGood(timeout_addr)) {
             micros = mem.read32(timeout_addr);
         }
 
@@ -484,10 +484,10 @@ public class MsgPipeManager {
             log.warn("sceKernelCancelMsgPipe unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
         } else {
-            if (mem.isAddressGood(send_addr)) {
+            if (Memory.isAddressGood(send_addr)) {
                 mem.write32(send_addr, info.numSendWaitThreads);
             }
-            if (mem.isAddressGood(recv_addr)) {
+            if (Memory.isAddressGood(recv_addr)) {
                 mem.write32(recv_addr, info.numReceiveWaitThreads);
             }
             info.numSendWaitThreads = 0;

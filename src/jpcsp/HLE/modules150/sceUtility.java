@@ -319,11 +319,11 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected static class UtilityDialogState {
 
         protected String name;
-        private pspAbstractMemoryMappedStructure params;
-        private int paramsAddr;
-        private int status;
-        private int result;
-        private boolean displayLocked;
+        protected pspAbstractMemoryMappedStructure params;
+        protected int paramsAddr;
+        protected int status;
+        protected int result;
+        protected boolean displayLocked;
 
         public UtilityDialogState(String name) {
             this.name = name;
@@ -337,7 +337,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             Memory mem = Memory.getInstance();
 
             paramsAddr = cpu.gpr[4];
-            if (!mem.isAddressGood(paramsAddr)) {
+            if (!Memory.isAddressGood(paramsAddr)) {
                 log.error(name + "InitStart bad address " + String.format("0x%08X", paramsAddr));
                 cpu.gpr[2] = -1;
             } else {
@@ -1020,7 +1020,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
                 // ms free size
                 int buffer1Addr = savedataParams.msFreeAddr;
-                if (mem.isAddressGood(buffer1Addr)) {
+                if (Memory.isAddressGood(buffer1Addr)) {
                     String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
 
                     mem.write32(buffer1Addr + 0, MemoryStick.getSectorSize());
@@ -1033,7 +1033,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
                 // ms data size
                 int buffer2Addr = savedataParams.msDataAddr;
-                if (mem.isAddressGood(buffer2Addr)) {
+                if (Memory.isAddressGood(buffer2Addr)) {
                     gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
                     saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
                     int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
@@ -1048,7 +1048,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
                 // utility data size
                 int buffer3Addr = savedataParams.utilityDataAddr;
-                if (mem.isAddressGood(buffer3Addr)) {
+                if (Memory.isAddressGood(buffer3Addr)) {
                     int memoryStickRequiredSpaceKb = 0;
                     memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
                     memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize);
@@ -1097,7 +1097,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
             case SceUtilitySavedataParam.MODE_LIST: {
                 int buffer4Addr = savedataParams.idListAddr;
-                if (mem.isAddressGood(buffer4Addr)) {
+                if (Memory.isAddressGood(buffer4Addr)) {
                     int maxEntries = mem.read32(buffer4Addr + 0);
                     int entriesAddr = mem.read32(buffer4Addr + 8);
                     String saveName = savedataParams.saveName;
@@ -1136,7 +1136,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
             case SceUtilitySavedataParam.MODE_FILES: {
                 int buffer5Addr = savedataParams.fileListAddr;
-                if (mem.isAddressGood(buffer5Addr)) {
+                if (Memory.isAddressGood(buffer5Addr)) {
                     int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
                     int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
                     int systemEntriesAddr = mem.read32(buffer5Addr + 32);
@@ -1156,7 +1156,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
                         // System files.
                         if (filePath.contains(".SFO") || filePath.contains("ICON") || filePath.contains("PIC") || filePath.contains("SND")) {
-                            if (mem.isAddressGood(systemEntriesAddr)) {
+                            if (Memory.isAddressGood(systemEntriesAddr)) {
                                 int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
                                 if (stat != null) {
                                     mem.write32(entryAddr + 0, stat.mode);
@@ -1170,7 +1170,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                             }
                             systemFileNumEntries++;
                         } else { // Write to secure and normal.
-                            if (mem.isAddressGood(saveFileSecureEntriesAddr)) {
+                            if (Memory.isAddressGood(saveFileSecureEntriesAddr)) {
                                 int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
                                 if (stat != null) {
                                     mem.write32(entryAddr + 0, stat.mode);
@@ -1184,7 +1184,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                             }
                             saveFileSecureNumEntries++;
 
-                            if (mem.isAddressGood(saveFileEntriesAddr)) {
+                            if (Memory.isAddressGood(saveFileEntriesAddr)) {
                                 int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
                                 if (stat != null) {
                                     mem.write32(entryAddr + 0, stat.mode);
@@ -1306,7 +1306,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
             case SceUtilitySavedataParam.MODE_GETSIZE:
                 int buffer6Addr = savedataParams.sizeAddr;
-                if (mem.isAddressGood(buffer6Addr)) {
+                if (Memory.isAddressGood(buffer6Addr)) {
                     int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
                     int saveFileNumEntries = mem.read32(buffer6Addr + 4);
                     int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
@@ -1521,7 +1521,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         int id = cpu.gpr[4];
         int value_addr = cpu.gpr[5];
 
-        if (!mem.isAddressGood(value_addr)) {
+        if (!Memory.isAddressGood(value_addr)) {
             log.warn("sceUtilitySetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
             cpu.gpr[2] = -1;
         } else {
@@ -1571,12 +1571,11 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
     public void sceUtilitySetSystemParamString(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int id = cpu.gpr[4];
         int str_addr = cpu.gpr[5];
 
-        if (!mem.isAddressGood(str_addr)) {
+        if (!Memory.isAddressGood(str_addr)) {
             log.warn("sceUtilitySetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ") bad address");
             cpu.gpr[2] = -1;
         } else {
@@ -1603,7 +1602,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         int id = cpu.gpr[4];
         int value_addr = cpu.gpr[5];
 
-        if (!mem.isAddressGood(value_addr)) {
+        if (!Memory.isAddressGood(value_addr)) {
             log.warn("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
             cpu.gpr[2] = -1;
         } else {
@@ -1659,7 +1658,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         int str_addr = cpu.gpr[5];
         int len = cpu.gpr[6];
 
-        if (!mem.isAddressGood(str_addr)) {
+        if (!Memory.isAddressGood(str_addr)) {
             log.warn("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") bad address");
             cpu.gpr[2] = -1;
         } else {

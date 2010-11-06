@@ -48,7 +48,7 @@ public class CaptureList {
         if (list.getStallAddr() == 0) {
             // Scan list for END command
         	Memory mem = Memory.getInstance();
-        	for (int listPc = list.list_addr; mem.isAddressGood(listPc); listPc += 4) {
+        	for (int listPc = list.list_addr; Memory.isAddressGood(listPc); listPc += 4) {
         		int instruction = mem.read32(listPc);
         		int command = VideoEngine.command(instruction);
         		if (command == GeCommands.END) {
