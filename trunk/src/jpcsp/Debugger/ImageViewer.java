@@ -94,7 +94,8 @@ public class ImageViewer extends JFrame {
 	private void initComponents() {
 		setTitle(Resource.get("imageviewer"));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+            @Override
+			public void windowDeactivated(java.awt.event.WindowEvent evt) {
                 formWindowDeactivated(evt);
             }
         });

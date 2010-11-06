@@ -160,10 +160,9 @@ public class RuntimeContext {
 					if (e.getRa() == returnAddress || e.getRa() == alternativeReturnAddress) {
 						returnValue = e.getRa();
 						break;
-					} else {
-						currentRuntimeThread.popStackState();
-						throw e;
 					}
+					currentRuntimeThread.popStackState();
+					throw e;
 				}
 
 			    if (returnValue == returnAddress || returnValue == alternativeReturnAddress) {

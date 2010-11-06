@@ -202,10 +202,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                 if (predict_nr >= VAG_f.length) {
                     if (predict_nr == 7) {
                         break; // A predict_nr of 7 indicates the end of audio data.
-                    } else {
-                        log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
-                        predict_nr = 0;
                     }
+                    log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
+                    predict_nr = 0;
                 }
                 int shift_factor = n & 0x0F;
                 int flag = memoryReader.readNext();

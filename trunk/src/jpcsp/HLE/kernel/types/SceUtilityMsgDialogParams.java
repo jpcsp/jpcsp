@@ -87,17 +87,15 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
     public boolean isOptionYesNoDefaultYes() {
         if((options & PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) == PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) {
             return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES;
-        } else {
-            return false;
         }
+        return false;
     }
 
     public boolean isOptionYesNoDefaultNo() {
     	if((options & PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) == PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) {
             return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO;
-        } else {
-            return false;
         }
+        return false;
     }
 
     public boolean isOptionYesNo() {
