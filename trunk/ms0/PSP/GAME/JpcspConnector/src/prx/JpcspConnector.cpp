@@ -17,6 +17,7 @@
 
 #define	DAEMON	0
 #define USE_USB	0
+#define DEBUG_TIMING	0
 
 JpcspConnector::JpcspConnector(void)
 {
@@ -145,6 +146,7 @@ void JpcspConnector::run(SceSize _argc, void* _argp)
 #endif
 
 	deactivateUsb();
+	debugFlush();
 }
 
 
@@ -887,6 +889,10 @@ int JpcspConnector::commandDecodeAtrac3(char *parameters)
 	int atracBufferSize = (int) fileBufferSize[0];
 	char *decodeBuffer = currentFileBuffer[1];
 	int decodeBufferSize = (int) fileBufferSize[1];
+#if DEBUG_TIMING
+	int start;
+	char s[100];
+#endif
 
 	int result = sceIoGetstat(fileName, &stat);
 	if (result < 0)
@@ -943,7 +949,14 @@ int JpcspConnector::commandDecodeAtrac3(char *parameters)
 		}
 
 		int samples = 0;
+#if DEBUG_TIMING
+		start = sceKernelGetSystemTimeLow();
+#endif
 		result = sceAtracDecodeData(atracID, (u16 *) (decodeBuffer + decodeBufferPosition), &samples, &end, &remainFrame);
+#if DEBUG_TIMING
+		sprintf(s, "Duration sceAtracDecodeData %d, return %X", sceKernelGetSystemTimeLow() - start, result);
+		debug(s);
+#endif
 		if (result == 0 && samples > 0)
 		{
 			if (!muted)

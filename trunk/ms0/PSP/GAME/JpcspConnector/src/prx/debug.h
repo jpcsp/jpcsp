@@ -16,6 +16,7 @@ extern "C"
 {
 #endif
 void debug(char *s);
+void debugFlush();
 #ifdef __cplusplus
 }
 #endif 

@@ -162,6 +162,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     protected int atracBitrate = 64;
     protected int atracChannels = 2;
     protected int atracSampleRate = 0xAC44;
+    protected static final int atracDecodeDelay = 2300; // Microseconds, based on PSP tests
 
     public static boolean useAtracCodec = false;
     protected HashMap<Integer, AtracCodec> atrac3Codecs;
@@ -323,7 +324,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     protected void hleAtracGetBufferInfoForReseting(int atracID, int sample, int bufferInfoAddr) {
         Memory mem = Memory.getInstance();
 
-        if (mem.isAddressGood(bufferInfoAddr)) {
+        if (Memory.isAddressGood(bufferInfoAddr)) {
             // Holds buffer related parameters.
             // Main buffer.
             mem.write32(bufferInfoAddr, inputBufferAddr);                       // Pointer to current writing position in the buffer.
@@ -437,7 +438,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         } else {
             int codecType = 0;
             int at3magic = 0;
-            if (mem.isAddressGood(buffer)) {
+            if (Memory.isAddressGood(buffer)) {
                 at3magic = mem.read32(buffer + 20);
                 at3magic &= 0x0000FFFF;
 
@@ -481,7 +482,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         } else {
             int codecType = 0;
             int at3magic = 0;
-            if (mem.isAddressGood(halfBuffer)) {
+            if (Memory.isAddressGood(halfBuffer)) {
                 at3magic = mem.read32(halfBuffer + 20);
                 at3magic &= 0x0000FFFF;
 
@@ -521,7 +522,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(buffer)) {
+        if (Memory.isAddressGood(buffer)) {
             at3magic = mem.read32(buffer + 20);
             at3magic &= 0x0000FFFF;
 
@@ -566,7 +567,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(halfBuffer)) {
+        if (Memory.isAddressGood(halfBuffer)) {
             at3magic = mem.read32(halfBuffer + 20);
             at3magic &= 0x0000FFFF;
 
@@ -642,16 +643,16 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                     }
                     int end = inputFileOffset >= inputFileSize ? 1 : 0;
 
-                    if (mem.isAddressGood(samplesAddr)) {
+                    if (Memory.isAddressGood(samplesAddr)) {
                         mem.memset(samplesAddr, (byte) 0, fakedSamples * 4);  // 4 empty bytes per sample.
                     }
-                    if (mem.isAddressGood(samplesNbrAddr)) {
+                    if (Memory.isAddressGood(samplesNbrAddr)) {
                         mem.write32(samplesNbrAddr, fakedSamples);
                     }
-                    if (mem.isAddressGood(outEndAddr)) {
+                    if (Memory.isAddressGood(outEndAddr)) {
                         mem.write32(outEndAddr, end);
                     }
-                    if (mem.isAddressGood(remainFramesAddr)) {
+                    if (Memory.isAddressGood(remainFramesAddr)) {
                         mem.write32(remainFramesAddr, getRemainFrames(atID));
                     }
                 } else if (samples == 0){
@@ -659,22 +660,22 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                     result = SceKernelErrors.ERROR_ATRAC_ALL_DATA_DECODED;
                 } else {
                     // Using decoded data.
-                    if (mem.isAddressGood(samplesNbrAddr)) {
+                    if (Memory.isAddressGood(samplesNbrAddr)) {
                         mem.write32(samplesNbrAddr, samples);
                     }
-                    if (mem.isAddressGood(outEndAddr)) {
+                    if (Memory.isAddressGood(outEndAddr)) {
                         mem.write32(outEndAddr, atracCodec.getAtracEnd());
                     }
-                    if (mem.isAddressGood(remainFramesAddr)) {
+                    if (Memory.isAddressGood(remainFramesAddr)) {
                         mem.write32(remainFramesAddr, atracCodec.getAtracRemainFrames());
                     }
                 }
             }
             cpu.gpr[2] = result;
 
-            // Delay the thread decoding the Atrac data (for how long?),
+            // Delay the thread decoding the Atrac data,
             // the thread is also blocking using semaphores/event flags on a real PSP.
-            Modules.ThreadManForUserModule.hleKernelDelayThread(10000, false);
+            Modules.ThreadManForUserModule.hleKernelDelayThread(atracDecodeDelay, false);
         }
     }
 
@@ -699,7 +700,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
             AtracCodec atracCodec = getAtracCodec(atID);
-            if (mem.isAddressGood(remainFramesAddr)) {
+            if (Memory.isAddressGood(remainFramesAddr)) {
                 if (atracCodec != null) {
                      mem.write32(remainFramesAddr, atracCodec.getAtracRemainFrames());
                 } else {
@@ -740,13 +741,13 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                 // Do not need more data than input file size
                 inputBufferAvailableBytes = inputFileSize - inputFileOffset;
             }
-            if (mem.isAddressGood(writeAddr)) {
+            if (Memory.isAddressGood(writeAddr)) {
                 mem.write32(writeAddr, inputBufferAddr);
             }
-            if (mem.isAddressGood(availableBytesAddr)) {
+            if (Memory.isAddressGood(availableBytesAddr)) {
                 mem.write32(availableBytesAddr, inputBufferAvailableBytes);
             }
-            if (mem.isAddressGood(readOffsetAddr)) {
+            if (Memory.isAddressGood(readOffsetAddr)) {
                 mem.write32(readOffsetAddr, inputFileOffset);
             }
             cpu.gpr[2] = 0;
@@ -795,7 +796,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
             if(isSecondBufferNeeded()) {
-                if(mem.isAddressGood(outPosition) && mem.isAddressGood(outBytes)) {
+                if(Memory.isAddressGood(outPosition) && Memory.isAddressGood(outBytes)) {
                     mem.write32(outPosition, secondInputBufferAddr);
                     mem.write32(outBytes, secondInputBufferSize);
                 }
@@ -828,7 +829,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         } else {
             int codecType = 0;
             int at3magic = 0;
-            if (mem.isAddressGood(secondBuffer)) {
+            if (Memory.isAddressGood(secondBuffer)) {
                 at3magic = mem.read32(secondBuffer + 20);
                 at3magic &= 0x0000FFFF;
 
@@ -975,7 +976,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             log.warn("sceAtracGetMaxSample: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
-            if (mem.isAddressGood(maxSamplesAddr)) {
+            if (Memory.isAddressGood(maxSamplesAddr)) {
                 mem.write32(maxSamplesAddr, maxSamples);
             }
             cpu.gpr[2] = 0;
@@ -1005,7 +1006,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             if (inputBufferOffset >= inputBufferSize) {
                 samples = 0; // No more data available in input buffer
             }
-            if (mem.isAddressGood(nbrSamplesAddr)) {
+            if (Memory.isAddressGood(nbrSamplesAddr)) {
                 mem.write32(nbrSamplesAddr, samples);
             }
             cpu.gpr[2] = 0;
@@ -1060,10 +1061,10 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             if (atracLoopMap.containsKey(atID)) {
                 loops = atracLoopMap.get(atID);
             }
-            if (mem.isAddressGood(loopNbr)) {
+            if (Memory.isAddressGood(loopNbr)) {
                 mem.write32(loopNbr, loops);
             }
-            if (mem.isAddressGood(statusAddr)) {
+            if (Memory.isAddressGood(statusAddr)) {
                 mem.write32(statusAddr, PSP_ATRAC_STATUS_LOOP_STREAM_DATA);
             }
             cpu.gpr[2] = 0;

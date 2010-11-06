@@ -164,6 +164,7 @@ public class AtracCodec {
 		id = generateID(address, length, atracFileSize);
 		closeStreams();
 		atracEndSample = -1;
+		atracRemainFrames = 1;
 
         if(codecType == 0x00001001) {
             Modules.log.info("Decodable AT3 data detected.");

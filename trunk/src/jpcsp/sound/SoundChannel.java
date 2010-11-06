@@ -23,6 +23,7 @@ import jpcsp.HLE.Modules;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.AL10;
+import org.lwjgl.openal.AL11;
 
 public class SoundChannel {
 	public static final int FORMAT_MONO = 0x10;
@@ -190,21 +191,35 @@ public class SoundChannel {
     	return AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_QUEUED);
     }
 
+    private int getSourceSampleOffset() {
+    	int sampleOffset = AL10.alGetSourcei(alSource, AL11.AL_SAMPLE_OFFSET);
+    	if (isFormatStereo()) {
+    		sampleOffset /= 2;
+    	}
+
+    	return sampleOffset;
+    }
+
     public boolean isOutputBlocking() {
     	return getWaitingBuffers() >= NUMBER_BLOCKING_BUFFERS;
     }
 
-    public int getUnblockOutputDelayMillis() {
-    	// Return the delay required for the processing of one buffer
-    	float delaySecs = sampleLength / (float) getSampleRate();
-    	int delayMillis = (int) (delaySecs * 1000);
+    public int getUnblockOutputDelayMicros() {
+    	// Return the delay required for the processing of the playing buffer
+    	if (isEnded()) {
+    		return 0;
+    	}
+    	float delaySecs = (getSampleLength() - getSourceSampleOffset()) / (float) getSampleRate();
+    	int delayMicros = (int) (delaySecs * 1000000);
 
-    	return delayMillis;
+    	return delayMicros;
     }
 
     public int getRestLength() {
-    	int waitingBuffers = getWaitingBuffers();
-    	int restLength = waitingBuffers * sampleLength;
+    	int restLength = getWaitingBuffers() * getSampleLength();
+    	if (!isEnded()) {
+    		restLength += getSampleLength() - getSourceSampleOffset();
+    	}
 
     	return restLength;
     }
@@ -225,11 +240,14 @@ public class SoundChannel {
 		StringBuilder s = new StringBuilder();
 
 		s.append(String.format("SoundChannel[%d](", index));
-		s.append(String.format("restLength=%d, ", getRestLength()));
-		s.append(String.format("buffers queued=%d, ", getWaitingBuffers()));
-		s.append(String.format("isOutputBlock=%b, ", isOutputBlocking()));
-		s.append(String.format("%s, ", isFormatStereo() ? "Stereo" : "Mono"));
-		s.append(String.format("reserved=%b", reserved));
+		s.append(String.format("sourceSampleOffset=%d", getSourceSampleOffset()));
+		s.append(String.format(", restLength=%d", getRestLength()));
+		s.append(String.format(", buffers queued=%d", getWaitingBuffers()));
+		s.append(String.format(", isOutputBlock=%b", isOutputBlocking()));
+		s.append(String.format(", %s", isFormatStereo() ? "Stereo" : "Mono"));
+		s.append(String.format(", reserved=%b", reserved));
+		s.append(String.format(", sampleLength=%d", getSampleLength()));
+		s.append(String.format(", sampleRate=%d", getSampleRate()));
 		s.append(")");
 
 		return s.toString();

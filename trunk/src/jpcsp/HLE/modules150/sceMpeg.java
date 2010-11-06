@@ -35,6 +35,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -173,6 +174,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         atracStreamsMap = new HashMap<Integer, Integer>();
         avcStreamsMap = new HashMap<Integer, Integer>();
         pcmStreamsMap = new HashMap<Integer, Integer>();
+        mpegAtracAu = new SceMpegAu();
+        mpegAvcAu = new SceMpegAu();
         afterRingbufferPutCallback = new AfterRingbufferPutCallback();
         if (isEnableConnector()) {
             mpegCodec = new MpegCodec();
@@ -181,6 +184,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             me = new MediaEngine();
             meChannel = new PacketChannel();
         }
+
+        encodedVideoFramesYCbCr = new HashMap<Integer, byte[]>();
     }
 
     @Override
@@ -196,9 +201,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final int PSMF_VERSION_0014 = 0x34313030;
     public static final int PSMF_VERSION_0015 = 0x35313030;
     protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
-    protected static final int atracDecodeDelay = 1000 / 30;    // Milliseconds.
-    protected static final int avcDecodeDelay = 1000 / 30;      // Milliseconds (decoding video at 30 FPS, .PMF standard).
-    protected static final int maxAheadTimestamp = 100000;
+    protected static final int atracDecodeDelay = 3000;         // Microseconds
+    protected static final int avcDecodeDelay = 5400;           // Microseconds
+    protected static final int maxAheadTimestamp = 40000;
     protected static final int mpegTimestampPerSecond = 90000;  // How many MPEG Timestamp units in a second.
     protected static final int videoTimestampStep = 3003;       // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
     protected static final int audioTimestampStep = 4180;       // Value based on pmfplayer.
@@ -209,11 +214,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected AfterRingbufferPutCallback afterRingbufferPutCallback;
     protected int mpegRingbufferAddr;
     protected int mpegStreamSize;
-    protected long mpegAtracCurrentDecodingTimestamp;
-    protected long mpegAtracCurrentPresentationTimestamp;
+    protected SceMpegAu mpegAtracAu;
+    protected SceMpegAu mpegAvcAu;
     protected long lastAtracSystemTime;
-    protected long mpegAvcCurrentDecodingTimestamp;
-    protected long mpegAvcCurrentPresentationTimestamp;
     protected long lastAvcSystemTime;
     protected int avcAuAddr;
     protected int atracAuAddr;
@@ -272,6 +275,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected MpegCodec mpegCodec;
     protected MediaEngine me;
     protected PacketChannel meChannel;
+    protected HashMap<Integer, byte[]> encodedVideoFramesYCbCr;
 
     public static boolean isEnableConnector() {
         return useMpegCodec;
@@ -313,9 +317,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     }
 
     protected int getMpegHandle(int mpegAddr) {
-        Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(mpegAddr)) {
-            return mem.read32(mpegAddr);
+        if (Memory.isAddressGood(mpegAddr)) {
+            return Processor.memory.read32(mpegAddr);
         }
 
         return -1;
@@ -387,10 +390,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mpegRingbuffer.reset();
             mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
-        mpegAtracCurrentDecodingTimestamp = 0;
-        mpegAtracCurrentPresentationTimestamp = 0;
-        mpegAvcCurrentDecodingTimestamp = 0;
-        mpegAvcCurrentPresentationTimestamp = 0;
+        mpegAtracAu.dts = -1;
+        mpegAtracAu.pts = 0;
+        mpegAvcAu.dts = 0;
+        mpegAvcAu.pts = 0;
         videoFrameCount = 0;
         audioFrameCount = 0;
         if ((mpegStreamSize > 0) && !isCurrentMpegAnalyzed()) {
@@ -477,6 +480,18 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    private void delayThread(long startMicros, int delayMicros) {
+    	long now = Emulator.getClock().microTime();
+    	int threadDelayMicros = delayMicros - (int) (now - startMicros);
+    	if (threadDelayMicros > 0) {
+    		Modules.ThreadManForUserModule.hleKernelDelayThread(threadDelayMicros, false);
+    	}
+    }
+
+    protected void updateAvcDts() {
+        mpegAvcAu.dts = mpegAvcAu.pts - videoTimestampStep; // DTS is always 1 frame before PTS
+    }
+
     public void sceMpegQueryStreamOffset(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -496,7 +511,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegQueryStreamOffset bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(offset_addr)) {
+        } else if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(offset_addr)) {
             analyseMpeg(buffer_addr);
             if (mpegMagic == PSMF_MAGIC) {
                 if (mpegVersion < 0) {
@@ -539,7 +554,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(size_addr)) {
+        if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(size_addr)) {
             analyseMpeg(buffer_addr);
             if (mpegMagic == PSMF_MAGIC) {
                 if ((mpegStreamSize & 2047) == 0) {
@@ -639,7 +654,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (size < MPEG_MEMSIZE) {
             log.warn("sceMpegCreate bad size " + size);
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_MEMORY;
-        } else if (mem.isAddressGood(mpeg) && mem.isAddressGood(data) && mem.isAddressGood(ringbuffer_addr)) {
+        } else if (Memory.isAddressGood(mpeg) && Memory.isAddressGood(data) && Memory.isAddressGood(ringbuffer_addr)) {
             // Update the ring buffer struct.
             SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
             if (ringbuffer.packetSize == 0) {
@@ -853,7 +868,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegQueryAtracEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(outSize_addr)) {
+        } else if (Memory.isAddressGood(esSize_addr) && Memory.isAddressGood(outSize_addr)) {
             mem.write32(esSize_addr, MPEG_ATRAC_ES_SIZE);
             mem.write32(outSize_addr, MPEG_ATRAC_ES_OUTPUT_SIZE);
             cpu.gpr[2] = 0;
@@ -882,7 +897,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegQueryPcmEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(outSize_addr)) {
+        } else if (Memory.isAddressGood(esSize_addr) && Memory.isAddressGood(outSize_addr)) {
             mem.write32(esSize_addr, MPEG_PCM_ES_SIZE);
             mem.write32(outSize_addr, MPEG_PCM_ES_OUTPUT_SIZE);
             cpu.gpr[2] = 0;
@@ -915,21 +930,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // Check if sceMpegInitAu is being called for AVC or ATRAC
             // and write the proper AU (access unit) struct.
             if (buffer_addr == MPEG_AVC_ES_HANDLE) {
-                // Presentation Timestamp.
-            	writeTimestamp(mem, au_addr, mpegAvcCurrentPresentationTimestamp);
-                // Decoding Timestamp.
-            	writeTimestamp(mem, au_addr + 8, mpegAvcCurrentDecodingTimestamp);
-                // Allocated buffer.
-                mem.write32(au_addr + 16, buffer_addr);
-                mem.write32(au_addr + 20, MPEG_AVC_ES_SIZE);
+            	mpegAvcAu.esBuffer = buffer_addr;
+            	mpegAvcAu.esSize = MPEG_AVC_ES_SIZE;
+            	mpegAvcAu.write(mem, au_addr);
             } else {
-                // Presentation Timestamp.
-            	writeTimestamp(mem, au_addr, mpegAtracCurrentPresentationTimestamp);
-                // Decoding Timestamp.
-            	writeTimestamp(mem, au_addr + 8, mpegAtracCurrentDecodingTimestamp);
-                // Allocated buffer.
-                mem.write32(au_addr + 16, buffer_addr);
-                mem.write32(au_addr + 20, MPEG_ATRAC_ES_SIZE);
+            	mpegAtracAu.esBuffer = buffer_addr;
+            	mpegAtracAu.esSize = MPEG_ATRAC_ES_SIZE;
+            	mpegAtracAu.write(mem, au_addr);
             }
             cpu.gpr[2] = 0;
         }
@@ -1024,25 +1031,32 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-        } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
+        } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAvcAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
-            if ((mpegAvcCurrentDecodingTimestamp > mpegAtracCurrentDecodingTimestamp + maxAheadTimestamp) && isAtracRegistered) {
+            if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered) {
                 // Video is ahead of audio, deliver no video data to wait for audio.
                 if (log.isDebugEnabled()) {
-                    log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcCurrentDecodingTimestamp + " - " + mpegAtracCurrentDecodingTimestamp);
+                    log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcAu.pts + " - " + mpegAtracAu.pts);
                 }
                 cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the video timestamp (AVC).
                 if (!ignoreAvc) {
-                	writeTimestamp(mem, au_addr, mpegAvcCurrentPresentationTimestamp);
-                	writeTimestamp(mem, au_addr + 8, mpegAvcCurrentDecodingTimestamp);
+                	// Read Au of next Avc frame
+                	if (isEnableConnector() && mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
+                		// Avc Au updated by the MpegCodec
+                		updateAvcDts();
+                	}
+                	mpegAvcAu.write(mem, au_addr);
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("sceMpegGetAvcAu returning AvcAu=%s", mpegAvcAu.toString()));
+                	}
                 }
                 // Bitfield used to store data attributes.
-                if (mem.isAddressGood(attr_addr)) {
+                if (Memory.isAddressGood(attr_addr)) {
                     mem.write32(attr_addr, 1);     // Unknown.
                 }
                 cpu.gpr[2] = 0;
@@ -1081,17 +1095,23 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         }else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-        } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
+        } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetPcmAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
             // Update the audio timestamp (Atrac).
             if (!ignorePcm) {
-            	writeTimestamp(mem, au_addr, mpegAtracCurrentPresentationTimestamp);
-            	writeTimestamp(mem, au_addr + 8, mpegAtracCurrentDecodingTimestamp);
+            	// Read Au of next Atrac frame
+            	if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
+            		// Atrac Au updated by the MpegCodec
+            	}
+            	mpegAtracAu.write(mem, au_addr);
+            	if (log.isDebugEnabled()) {
+            		log.debug(String.format("sceMpegGetPcmAu returning AtracAu=%s", mpegAtracAu.toString()));
+            	}
             }
             // Bitfield used to store data attributes.
-            if (mem.isAddressGood(attr_addr)) {
+            if (Memory.isAddressGood(attr_addr)) {
                 // Uses same bitfield as the one in the PSMF header.
                 mem.write32(attr_addr, (1 << 7));     // Sampling rate (1 = 44.1kHz).
                 mem.write32(attr_addr, 2);            // Number of channels (1 - MONO / 2 - STEREO).
@@ -1132,25 +1152,31 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegGetAtracAu ringbuffer empty");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-        } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
+        } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAtracAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
-            if ((mpegAtracCurrentDecodingTimestamp > mpegAvcCurrentDecodingTimestamp + maxAheadTimestamp) && isAvcRegistered) {
+            if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered) {
                 // Audio is ahead of video, deliver no audio data to wait for video.
                 if (log.isDebugEnabled()) {
-                    log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracCurrentDecodingTimestamp + " - " + mpegAvcCurrentDecodingTimestamp);
+                    log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracAu.pts + " - " + mpegAvcAu.pts);
                 }
                 cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 // Update the audio timestamp (Atrac).
                 if (!ignoreAtrac) {
-                	writeTimestamp(mem, au_addr, mpegAtracCurrentPresentationTimestamp);
-                	writeTimestamp(mem, au_addr + 8, mpegAtracCurrentDecodingTimestamp);
+                	// Read Au of next Atrac frame
+                	if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
+                		// Atrac Au updated by the MpegCodec
+                	}
+                	mpegAtracAu.write(mem, au_addr);
+                	if (log.isDebugEnabled()) {
+                		log.debug(String.format("sceMpegGetAtracAu returning AtracAu=%s", mpegAtracAu.toString()));
+                	}
                 }
                 // Bitfield used to store data attributes.
-                if (mem.isAddressGood(attr_addr)) {
+                if (Memory.isAddressGood(attr_addr)) {
                     mem.write32(attr_addr, 0);     // Pointer to ATRAC3plus stream (from PSMF file).
                 }
                 cpu.gpr[2] = 0;
@@ -1245,7 +1271,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcDecode ringbuffer empty");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_VIDEO_FATAL;
-        } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
+        } else if (Memory.isAddressGood(au_addr) && Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(init_addr)) {
             int au = mem.read32(au_addr);
             int buffer = mem.read32(buffer_addr);
             int init = mem.read32(init_addr);
@@ -1256,20 +1282,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
             VideoEngine.getInstance().addVideoTexture(buffer);
 
-            long currentSystemTime = Emulator.getClock().milliTime();
-            int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
-            if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
-                int delayMillis = avcDecodeDelay - elapsedTime;
-                if (log.isDebugEnabled()) {
-                    log.debug("Delaying sceMpegAvcDecode for " + delayMillis + "ms");
-                }
-                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-                lastAvcSystemTime = currentSystemTime + delayMillis;
-            } else {
-                lastAvcSystemTime = currentSystemTime;
-            }
-
-            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
+            long startTime = Emulator.getClock().microTime();
 
             int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
             int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
@@ -1279,7 +1292,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             int packetsConsumed = 3;
             if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
                 // Try a better approximation of the packets consumed based on the timestamp
-                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
+                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / mpegLastTimestamp) * mpegStreamSize);
                 if (processedSizeBasedOnTimestamp < processedSize) {
                     packetsConsumed = 0;
                 } else {
@@ -1308,15 +1321,17 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 }
             } else if (isEnableConnector() && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoPixelMode, videoFrameCount)) {
                 packetsConsumed = mpegCodec.getPacketsConsumed();
-                mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
                 avcFrameStatus = 1;
             } else {
+                mpegAvcAu.pts += videoTimestampStep;
+                updateAvcDts();
+
                 // Generate static.
                 generateFakeMPEGVideo(buffer, frameWidth);
                 if (isEnableConnector()) {
                     mpegCodec.postFakedVideo(buffer, frameWidth, videoPixelMode);
                 }
-                Date currentDate = convertTimestampToDate(mpegAvcCurrentDecodingTimestamp);
+                Date currentDate = convertTimestampToDate(mpegAvcAu.pts);
                 if(log.isDebugEnabled()) {
                     log.debug("currentDate: " + currentDate.toString());
                 }
@@ -1335,7 +1350,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 }
                 Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
                 if (log.isDebugEnabled()) {
-                    log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+                    log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcAu.pts);
                 }
                 avcFrameStatus = 1;
             }
@@ -1343,7 +1358,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             videoFrameCount++;
 
             if (log.isDebugEnabled()) {
-                log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+                log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcAu.pts);
             }
             if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                 mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
@@ -1356,6 +1371,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mem.write32(init_addr, avcFrameStatus);
 
             cpu.gpr[2] = 0;
+            delayThread(startTime, avcDecodeDelay);
         } else {
             log.warn(String.format("sceMpegAvcDecode bad address 0x%08X 0x%08X", au_addr, buffer_addr));
             cpu.gpr[2] = -1;
@@ -1380,7 +1396,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeDetail bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (!mem.isAddressGood(detailAddr)) {
+        } else if (!Memory.isAddressGood(detailAddr)) {
             log.warn(String.format("sceMpegAvcDecodeDetail bad address 0x%08X", detailAddr));
             cpu.gpr[2] = -1;
         } else {
@@ -1416,7 +1432,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn(String.format("sceMpegAvcDecodeMode bad mpeg handle 0x%08X", mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(mode_addr)) {
+        } else if (Memory.isAddressGood(mode_addr)) {
             // -1 is a defualt value.
             int mode = mem.read32(mode_addr);
             int pixelMode = mem.read32(mode_addr + 4);
@@ -1455,7 +1471,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeStop bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(status_addr)) {
+        } else if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(status_addr)) {
             // Return the last frame status.
             mem.write32(status_addr, avcFrameStatus);
             cpu.gpr[2] = 0;
@@ -1513,7 +1529,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if ((width & 15) != 0 || (height & 15) != 0 || width > 480 || height > 272) {
             log.warn("sceMpegAvcQueryYCbCrSize invalid size width=" + width + ", height=" + height);
         	cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
-        } else if (mem.isAddressGood(resultAddr)) {
+        } else if (Memory.isAddressGood(resultAddr)) {
         	// Write the size of the buffer used by sceMpegAvcDecodeYCbCr
     		int size = (width / 2) * (height / 2) * 6 + 128;
             mem.write32(resultAddr, size);
@@ -1545,6 +1561,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+        encodedVideoFramesYCbCr.remove(ycbcr_addr);
         cpu.gpr[2] = 0;
     }
 
@@ -1580,22 +1597,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcDecodeYCbCr ringbuffer empty");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_VIDEO_FATAL;
-        } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
+        } else if (Memory.isAddressGood(au_addr) && Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(init_addr)) {
             // Decode the video data in YCbCr mode.
-            long currentSystemTime = Emulator.getClock().milliTime();
-            int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
-            if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
-                int delayMillis = avcDecodeDelay - elapsedTime;
-                if(log.isDebugEnabled()) {
-                    log.debug("Delaying sceMpegAvcDecodeYCbCr for " + delayMillis + "ms");
-                }
-                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-                lastAvcSystemTime = currentSystemTime + delayMillis;
-            } else {
-                lastAvcSystemTime = currentSystemTime;
-            }
-
-            mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
+        	long startTime = Emulator.getClock().microTime();
 
             int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
             int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
@@ -1605,7 +1609,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             int packetsConsumed = 3;
             if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
                 // Try a better approximation of the packets consumed based on the timestamp
-                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
+                int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / mpegLastTimestamp) * mpegStreamSize);
                 if (processedSizeBasedOnTimestamp < processedSize) {
                     packetsConsumed = 0;
                 } else {
@@ -1621,9 +1625,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
             // sceMpegAvcDecodeYCbCr() is performing the video decoding and
             // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
-            // Currently, only the MediaEngine is supporting these 2 steps approach.
-            // The other methods (JpcspConnector and Faked video) are performing
-            // both steps together: this will be done in sceMpegAvcCsc().
+            // Both the MediaEngine and the JpcspConnector are supporting
+            // this 2 steps approach.
             if (checkMediaEngineState()) {
                 if (me.getContainer() != null) {
                     mpegLastTimestamp = me.getPacketTimestamp("Video", "DTS"); // Use the Media Engine's timestamp.
@@ -1633,7 +1636,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     me.init(meChannel.getFilePath(), true, true);
                     avcFrameStatus = 0;
                 }
+            } else if (isEnableConnector()) {
+            	// Store the encoded video frame for real decoding in sceMpegAvcCsc()
+            	byte[] encodedVideoFrame = mpegCodec.readEncodedVideoFrame(videoFrameCount);
+            	if (encodedVideoFrame != null) {
+	            	int buffer = mem.read32(buffer_addr);
+	            	encodedVideoFramesYCbCr.put(buffer, encodedVideoFrame);
+            	}
+            	packetsConsumed = 0;
+            	avcFrameStatus = 1;
             } else {
+                mpegAvcAu.pts += videoTimestampStep;
+                updateAvcDts();
+
                 packetsConsumed = 0;
                 avcFrameStatus = 1;
             }
@@ -1641,7 +1656,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             videoFrameCount++;
 
             if (log.isDebugEnabled()) {
-                log.debug("sceMpegAvcDecodeYCbCr currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+                log.debug("sceMpegAvcDecodeYCbCr currentTimestamp=" + mpegAvcAu.pts);
             }
 
             if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets && packetsConsumed > 0) {
@@ -1654,6 +1669,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // Save the current frame's status (0 - not showing / 1 - showing).
             mem.write32(init_addr, avcFrameStatus);
             cpu.gpr[2] = 0;
+            delayThread(startTime, avcDecodeDelay);
         } else {
             log.warn("sceMpegAvcDecodeYCbCr bad address " + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
 
@@ -1682,7 +1698,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAvcDecodeStopYCbCr bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(status_addr)) {
+        } else if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(status_addr)) {
             // Return the last frame status.
             mem.write32(status_addr, avcFrameStatus);
             cpu.gpr[2] = 0;
@@ -1734,7 +1750,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegAvcCsc ringbuffer empty");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_VIDEO_FATAL;
-        } else if (mem.isAddressGood(dest_addr) && mem.isAddressGood(source_addr) && mem.isAddressGood(range_addr)) {
+        } else if (Memory.isAddressGood(dest_addr) && Memory.isAddressGood(source_addr) && Memory.isAddressGood(range_addr)) {
             int rangeWidthStart = mem.read32(range_addr);
             int rangeHeightStart = mem.read32(range_addr + 4);
             int rangeWidthEnd = mem.read32(range_addr + 8);
@@ -1756,20 +1772,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     writeVideoImage(dest_addr, frameWidth);
                 }
             } else {
-                long currentSystemTime = Emulator.getClock().milliTime();
-                int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
-                if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
-                    int delayMillis = avcDecodeDelay - elapsedTime;
-                    if(log.isDebugEnabled()) {
-                        log.debug("Delaying sceMpegAvcCsc for " + delayMillis + "ms");
-                    }
-                    Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-                    lastAvcSystemTime = currentSystemTime + delayMillis;
-                } else {
-                    lastAvcSystemTime = currentSystemTime;
-                }
-
-                mpegAvcCurrentDecodingTimestamp += videoTimestampStep;
+            	long startTime = Emulator.getClock().microTime();
 
                 int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
                 int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
@@ -1779,7 +1782,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 int packetsConsumed = 3;
                 if (mpegStreamSize > 0 && mpegLastTimestamp > 0) {
                     // Try a better approximation of the packets consumed based on the timestamp
-                    int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcCurrentDecodingTimestamp) / mpegLastTimestamp) * mpegStreamSize);
+                    int processedSizeBasedOnTimestamp = (int) ((((float) mpegAvcAu.pts) / mpegLastTimestamp) * mpegStreamSize);
                     if (processedSizeBasedOnTimestamp < processedSize) {
                         packetsConsumed = 0;
                     } else {
@@ -1793,16 +1796,17 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     }
                 }
 
-                if (isEnableConnector() && mpegCodec.readVideoFrame(dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoPixelMode, videoFrameCount)) {
+                if (isEnableConnector() && encodedVideoFramesYCbCr.containsKey(source_addr)) {
+                	byte[] encodedVideoFrame = encodedVideoFramesYCbCr.get(source_addr);
+                    mpegCodec.decodeVideoFrame(encodedVideoFrame, dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoPixelMode, videoFrameCount);
                     packetsConsumed = mpegCodec.getPacketsConsumed();
-                    mpegAvcCurrentDecodingTimestamp = mpegCodec.getMpegAvcCurrentTimestamp();
                 } else {
                     // Generate static.
                     generateFakeMPEGVideo(dest_addr, frameWidth);
                     if (isEnableConnector()) {
                         mpegCodec.postFakedVideo(dest_addr, frameWidth, videoPixelMode);
                     }
-                    Date currentDate = convertTimestampToDate(mpegAvcCurrentDecodingTimestamp);
+                    Date currentDate = convertTimestampToDate(mpegAvcAu.pts);
                     if(log.isDebugEnabled()) {
                         log.debug("currentDate: " + currentDate.toString());
                     }
@@ -1821,19 +1825,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     }
                     Debug.printFramebuffer(dest_addr, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
                     if (log.isDebugEnabled()) {
-                        log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+                        log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcAu.pts);
                     }
                 }
 
-                videoFrameCount++;
                 if (log.isDebugEnabled()) {
-                    log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentDecodingTimestamp);
+                    log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcAu.pts);
                 }
 
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                     mpegRingbuffer.write(mem, mpegRingbufferAddr);
                 }
+                delayThread(startTime, avcDecodeDelay);
             }
             cpu.gpr[2] = 0;
         } else {
@@ -1866,21 +1870,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegAtracDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr)) {
-            mpegAtracCurrentDecodingTimestamp += audioTimestampStep;
-
-            long currentSystemTime = Emulator.getClock().milliTime();
-            int elapsedTime = (int) (currentSystemTime - lastAtracSystemTime);
-            if (elapsedTime >= 0 && elapsedTime <= atracDecodeDelay) {
-                int delayMillis = atracDecodeDelay - elapsedTime;
-                if (log.isDebugEnabled()) {
-                    log.debug("Delaying sceMpegAtracDecode for " + delayMillis + "ms");
-                }
-                Modules.ThreadManForUserModule.hleKernelDelayThread(delayMillis * 1000, false);
-                lastAtracSystemTime = currentSystemTime + delayMillis;
-            } else {
-                lastAtracSystemTime = currentSystemTime;
-            }
+        } else if (Memory.isAddressGood(au_addr) && Memory.isAddressGood(buffer_addr)) {
+        	long startTime = Emulator.getClock().microTime();
+            mpegAtracAu.pts += audioTimestampStep;
 
             // External audio setup.
             if (checkMediaEngineState()) {
@@ -1907,18 +1899,17 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 } catch (Exception e) {
                     // Ignore.
                 }
-            } else if (isEnableConnector()) {
-                if (mpegCodec.readAudioFrame(buffer_addr, audioFrameCount)) {
-                    mpegAtracCurrentDecodingTimestamp = mpegCodec.getMpegAtracCurrentTimestamp();
-                }
+            } else if (isEnableConnector() && mpegCodec.readAudioFrame(buffer_addr, audioFrameCount)) {
+                mpegAtracAu.pts = mpegCodec.getMpegAtracCurrentTimestamp();
             } else {
                 mem.memset(buffer_addr, (byte) 0, 8192);
             }
             audioFrameCount++;
             if (log.isDebugEnabled()) {
-                log.debug("sceMpegAtracDecode currentTimestamp=" + mpegAtracCurrentDecodingTimestamp);
+                log.debug("sceMpegAtracDecode currentTimestamp=" + mpegAtracAu.pts);
             }
             cpu.gpr[2] = 0;
+            delayThread(startTime, atracDecodeDelay);
         } else {
             log.warn("sceMpegAtracDecode bad address " + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
             cpu.gpr[2] = -1;
@@ -1974,7 +1965,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         if (size < getSizeFromPackets(packets)) {
             log.warn("sceMpegRingbufferConstruct insufficient space: size=" + size + ", packets=" + packets);
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_MEMORY;
-        } else if (mem.isAddressGood(ringbuffer_addr)) {
+        } else if (Memory.isAddressGood(ringbuffer_addr)) {
             SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(packets, data, size, callback_addr, callback_args);
             ringbuffer.write(mem, ringbuffer_addr);
             cpu.gpr[2] = 0;

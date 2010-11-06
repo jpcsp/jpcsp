@@ -22,6 +22,7 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
@@ -217,9 +218,9 @@ public class sceAudio implements HLEModule, HLEStartModule {
     }
 
     protected void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
-    	AudioBlockingOutputAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
-    	int delayMillis = channel.getUnblockOutputDelayMillis();
-    	long schedule = Emulator.getClock().microTime() + 1000 * delayMillis;
+    	IAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
+    	int delayMicros = channel.getUnblockOutputDelayMicros();
+    	long schedule = Emulator.getClock().microTime() + delayMicros;
     	Emulator.getScheduler().addAction(schedule, action);
     }
 
@@ -228,7 +229,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
     		log.debug(String.format("hleAudioBlockingOutput %s", channel.toString()));
     	}
 
-    	if (!channel.isOutputBlocking()) {
+    	if (addr == 0 || !channel.isOutputBlocking()) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
             if (thread != null) {
@@ -315,7 +316,6 @@ public class sceAudio implements HLEModule, HLEStartModule {
 
     public void sceAudioOutput(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4];
         int vol = cpu.gpr[5];
@@ -325,13 +325,14 @@ public class sceAudio implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (!mem.isAddressGood(pvoid_buf)) {
+        if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
         } else {
             if (!pspPCMChannels[channel].isOutputBlocking()) {
                 changeChannelVolume(pspPCMChannels[channel], vol, vol);
                 cpu.gpr[2] = doAudioOutput(pspPCMChannels[channel], pvoid_buf);
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
             }
@@ -340,7 +341,6 @@ public class sceAudio implements HLEModule, HLEStartModule {
 
     public void sceAudioOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4];
         int vol = cpu.gpr[5];
@@ -358,7 +358,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
                 log.warn("sceAudioOutputBlocking (pvoid_buf==0): not delaying current thread");
                 cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
             }
-        } else if (!mem.isAddressGood(pvoid_buf)) {
+        } else if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
         } else {
@@ -371,6 +371,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioOutputBlocking[not blocking] returning " + cpu.gpr[2] + " (" + pspPCMChannels[channel].toString() + ")");
                 }
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioOutputBlocking[blocking] " + pspPCMChannels[channel].toString());
@@ -382,7 +383,6 @@ public class sceAudio implements HLEModule, HLEStartModule {
 
     public void sceAudioOutputPanned(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4];
         int leftvol = cpu.gpr[5];
@@ -393,13 +393,14 @@ public class sceAudio implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (!mem.isAddressGood(pvoid_buf)) {
+        if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
         } else {
             if (!pspPCMChannels[channel].isOutputBlocking()) {
                 changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
                 cpu.gpr[2] = doAudioOutput(pspPCMChannels[channel], pvoid_buf);
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
             }
@@ -408,7 +409,6 @@ public class sceAudio implements HLEModule, HLEStartModule {
 
     public void sceAudioOutputPannedBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4];
         int leftvol = cpu.gpr[5];
@@ -432,19 +432,20 @@ public class sceAudio implements HLEModule, HLEStartModule {
                 log.warn("sceAudioOutputPannedBlocking (pvoid_buf==0): not delaying current thread");
                 cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
             }
-        } else if (!mem.isAddressGood(pvoid_buf)) {
+        } else if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputPannedBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
         } else {
             if (!pspPCMChannels[channel].isOutputBlocking() || disableBlockingAudio) {
                 if (log.isDebugEnabled()) {
-                    log.debug("sceAudioOutputPannedBlocking[not blocking] " + pspPCMChannels[channel].toString());
+                    log.debug(String.format("sceAudioOutputPannedBlocking[not blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
                 }
                 changeChannelVolume(pspPCMChannels[channel], leftvol, rightvol);
                 cpu.gpr[2] = doAudioOutput(pspPCMChannels[channel], pvoid_buf);
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 if (log.isDebugEnabled()) {
-                    log.debug("sceAudioOutputPannedBlocking[blocking] " + pspPCMChannels[channel].toString());
+                    log.debug(String.format("sceAudioOutputPannedBlocking[blocking] leftVol=%d, rightVol=%d, channel=%s", leftvol, rightvol, pspPCMChannels[channel].toString()));
                 }
                 blockThreadOutput(pspPCMChannels[channel], pvoid_buf, leftvol, rightvol);
             }
@@ -539,6 +540,10 @@ public class sceAudio implements HLEModule, HLEStartModule {
         int channel = cpu.gpr[4];
         int samplecount = cpu.gpr[5];
 
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAudioSetChannelDataLen channel=%d, sampleCount=%d", channel, samplecount));
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
@@ -622,6 +627,14 @@ public class sceAudio implements HLEModule, HLEStartModule {
         int freq = cpu.gpr[5];
         int format = cpu.gpr[6];
 
+        if (log.isDebugEnabled()) {
+        	if (isAudioOutput2) {
+        		log.debug(String.format("sceAudioOutput2Reserve sampleCount=%d", samplecount));
+        	} else {
+        		log.debug(String.format("sceAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", samplecount, freq, format));
+        	}
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
@@ -662,7 +675,6 @@ public class sceAudio implements HLEModule, HLEStartModule {
 
     public void sceAudioSRCOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int vol = cpu.gpr[4];
         int buf = cpu.gpr[5];
@@ -671,7 +683,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (!mem.isAddressGood(buf)) {
+        if (!Memory.isAddressGood(buf)) {
             log.warn("sceAudioSRCOutputBlocking bad pointer " + String.format("0x%08X", buf));
             cpu.gpr[2] = -1;
         } else {
@@ -681,6 +693,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
                 }
                 changeChannelVolume(pspSRCChannel, vol, vol);
                 cpu.gpr[2] = doAudioOutput(pspSRCChannel, buf);
+                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("sceAudioSRCOutputBlocking[blocking] " + pspSRCChannel.toString());
