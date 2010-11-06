@@ -509,9 +509,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             File f = new File("ms0/PSP/SAVEDATA/" + gameName + saveName);
             if(f.list() == null) {
                 return false;
-            } else {
-                return true;
             }
+            return true;
 	    }
 	    try {
             SeekableDataInput fileInput = getDataInput(path, fileName);

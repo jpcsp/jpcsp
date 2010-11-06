@@ -372,17 +372,15 @@ public class scePsmf implements HLEModule, HLEStartModule {
         public int getCurrentStreamType() {
             if (streamMap.get(currentStreamNumber) != null) {
                 return streamMap.get(currentStreamNumber).getStreamType();
-            } else {
-                return -1;
             }
+            return -1;
         }
 
         public int getCurrentStreamChannel() {
             if (streamMap.get(currentStreamNumber) != null) {
                 return streamMap.get(currentStreamNumber).getStreamChannel();
-            } else {
-                return -1;
             }
+            return -1;
         }
 
         public int getSpecificStreamNum(int type) {

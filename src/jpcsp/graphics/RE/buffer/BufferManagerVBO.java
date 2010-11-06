@@ -32,6 +32,7 @@ public class BufferManagerVBO extends BaseBufferManager {
             && re.isExtensionAvailable("GL_ARB_vertex_buffer_object");
 	}
 
+	@Override
 	protected void init() {
 		super.init();
     	log.info("Using VBO");

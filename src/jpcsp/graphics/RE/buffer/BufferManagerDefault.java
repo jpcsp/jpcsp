@@ -29,6 +29,7 @@ import jpcsp.util.Utilities;
 public class BufferManagerDefault extends BaseBufferManager {
 	protected int currentBufferId;
 
+	@Override
 	protected void init() {
 		super.init();
 		currentBufferId = 12345678;

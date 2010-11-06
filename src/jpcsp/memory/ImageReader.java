@@ -251,10 +251,9 @@ public class ImageReader {
 				value = memoryReader.readNext();
 				index = 1;
 				return (value & 0xFFFF);
-			} else {
-				index = 0;
-				return (value >>> 16);
 			}
+			index = 0;
+			return (value >>> 16);
 		}
 	}
 

@@ -57,13 +57,12 @@ public class SoundBufferManager {
         	int processedBuffers = AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_PROCESSED);
         	if (processedBuffers <= 0) {
         		break;
-        	} else {
-        		int alBuffer = AL10.alSourceUnqueueBuffers(alSource);
-        		if (Modules.log.isDebugEnabled()) {
-        			Modules.log.debug(String.format("free buffer %d", alBuffer));
-        		}
-        		freeBuffers.push(alBuffer);
         	}
+    		int alBuffer = AL10.alSourceUnqueueBuffers(alSource);
+    		if (Modules.log.isDebugEnabled()) {
+    			Modules.log.debug(String.format("free buffer %d", alBuffer));
+    		}
+    		freeBuffers.push(alBuffer);
         }
 	}
 
