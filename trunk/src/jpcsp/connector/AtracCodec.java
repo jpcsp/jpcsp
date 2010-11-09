@@ -169,10 +169,10 @@ public class AtracCodec {
         if(codecType == 0x00001001) {
             Modules.log.info("Decodable AT3 data detected.");
             if(checkMediaEngineState()) {
-                atracChannel.flush();
+                atracChannel.clear();
                 me.finish();
                 atracChannel.writePacket(address, length);
-                me.init(atracChannel.getFilePath(), false, true);
+                me.init(atracChannel, false, true);
                 memBufOffset = 0;
                 atracEndSample = 0;
                 return;

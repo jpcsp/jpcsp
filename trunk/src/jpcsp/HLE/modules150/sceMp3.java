@@ -230,12 +230,6 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         public Mp3Stream(int args) {
             Memory mem = Memory.getInstance();
 
-            if(checkMediaEngineState()) {
-                me = new MediaEngine();
-                me.setAudioSamplesSize(PSP_MP3_MAX_SAMPLES);
-                mp3Channel = new PacketChannel();
-            }
-
             // SceMp3InitArg struct.
             mp3StreamStart = mem.read64(args);
             mp3StreamEnd = mem.read64(args + 8);
@@ -259,6 +253,12 @@ public class sceMp3 implements HLEModule, HLEStartModule {
             mp3DecodedBytes = 0;
 
             mp3Handle = makeFakeMp3StreamHandle();
+
+            if (checkMediaEngineState()) {
+                me = new MediaEngine();
+                me.setAudioSamplesSize(PSP_MP3_MAX_SAMPLES);
+                mp3Channel = new PacketChannel();
+            }
         }
 
         private void parseMp3FrameHeader() {
@@ -359,9 +359,9 @@ public class sceMp3 implements HLEModule, HLEStartModule {
             parseMp3FrameHeader();
             if(checkMediaEngineState()) {
                 memBufOffset = 0;
-                mp3Channel.flush();
+                mp3Channel = null;
                 me.finish();
-                me.init(mp3Channel.getFilePath(), false, true);
+                me.init(mp3Channel, false, true);
             }
         }
 
