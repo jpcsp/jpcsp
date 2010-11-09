@@ -17,8 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.media;
 
-import java.io.File;
-import java.io.RandomAccessFile;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 import jpcsp.Memory;
 import jpcsp.memory.IMemoryReader;
@@ -27,68 +28,106 @@ import jpcsp.memory.MemoryReader;
 /*
  * Common interface for PSMF/MPEG -> Media Engine communication.
  *
- * Currently, it's working with temporary RandomAccessFiles.
- * TODO: Make this class implement ByteChannel and operate
- * only internally.
- *
  */
-public class PacketChannel {
-    private static final String basePath = "tmp/";
-    private static final String defaultPath = "tmp/ME.tmp";
-    private RandomAccessFile pcRaf;
-    private String pcRafPath;
+public class PacketChannel implements ReadableByteChannel {
+    private byte[] buffer;
+    private int bufferReadOffset;
+    private int bufferWriteOffset;
+    private int bufferLength;
 
     public PacketChannel() {
-        pcRaf = null;
-        pcRafPath = defaultPath;
+    	buffer = new byte[0];
+    	clear();
     }
-    public PacketChannel(String path) {
-        pcRaf = null;
-        pcRafPath = basePath + path;
+
+    public PacketChannel(byte[] buffer) {
+    	this.buffer = buffer;
+    	bufferReadOffset = 0;
+    	bufferWriteOffset = 0;
+    	bufferLength = buffer.length;
+    }
+
+    private int incrementOffset(int offset) {
+    	return incrementOffset(offset, 1);
+    }
+
+    private int incrementOffset(int offset, int n) {
+    	offset += n;
+    	if (offset >= buffer.length) {
+    		offset -= buffer.length;
+    	}
+
+    	return offset;
+    }
+
+    public void clear() {
+    	bufferReadOffset = 0;
+    	bufferWriteOffset = 0;
+    	bufferLength = 0;
     }
 
     public void writePacket(int address, int length) {
         if (length > 0 && Memory.isAddressGood(address)) {
-            try {
-                if(pcRaf == null) {
-                    pcRaf = new RandomAccessFile(pcRafPath, "rw");
-                }
-                byte[] buffer = new byte[length];
-                IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
-                for (int i = 0; i < length; i++) {
-                    buffer[i] = (byte)memoryReader.readNext();
-                }
-                pcRaf.write(buffer);
-            } catch (Exception e) {
-                e.printStackTrace();
+        	if (bufferLength + length > buffer.length) {
+        		// The buffer has to be extended
+        		byte[] extendedBuffer = new byte[bufferLength + length];
+        		if (bufferReadOffset + bufferLength <= buffer.length) {
+        			System.arraycopy(buffer, bufferReadOffset, extendedBuffer, 0, bufferLength);
+        		} else {
+        			int lengthEndBuffer = buffer.length - bufferReadOffset;
+        			System.arraycopy(buffer, bufferReadOffset, extendedBuffer, 0, lengthEndBuffer);
+        			System.arraycopy(buffer, 0, extendedBuffer, lengthEndBuffer, bufferLength - lengthEndBuffer);
+        		}
+        		buffer = extendedBuffer;
+    			bufferReadOffset = 0;
+    			bufferWriteOffset = bufferLength;
+        	}
+
+        	IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
+            for (int i = 0; i < length; i++) {
+                buffer[bufferWriteOffset] = (byte) memoryReader.readNext();
+                bufferWriteOffset = incrementOffset(bufferWriteOffset);
             }
+            bufferLength += length;
         }
     }
 
-    public void writeFile(byte[] buffer) {
-        try {
-            if(pcRaf == null) {
-                pcRaf = new RandomAccessFile(pcRafPath, "rw");
-            }
-            pcRaf.write(buffer);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    @Override
+	public int read(ByteBuffer dst) throws IOException {
+    	int length = dst.remaining();
+    	if (length > bufferLength) {
+    		length = bufferLength;
+    	}
+
+    	if (bufferReadOffset + length > buffer.length) {
+    		int lengthEndBuffer = buffer.length - bufferReadOffset;
+    		dst.put(buffer, bufferReadOffset, lengthEndBuffer);
+    		dst.put(buffer, 0, length - lengthEndBuffer);
+    	} else {
+    		dst.put(buffer, bufferReadOffset, length);
+    	}
+		bufferReadOffset = incrementOffset(bufferReadOffset, length);
+		bufferLength -= length;
+
+    	return length;
+	}
+
+    @Override
+	public void close() throws IOException {
+    	buffer = null;
+	}
+
+    @Override
+	public boolean isOpen() {
+		return true;
+	}
+
+    public int length() {
+    	return bufferLength;
     }
 
-    public void flush() {
-        try {
-            new File(pcRafPath).delete();
-            if(pcRaf != null) {
-                pcRaf.close();
-                pcRaf = null;
-            }
-        } catch (Exception e) {
-            // Ignore.
-        }
-    }
-
-    public String getFilePath() {
-        return pcRafPath;
-    }
+    @Override
+	public String toString() {
+		return String.format("PacketChannel(size=%d, bufferLength=%d, readOffset=%d, writeOffset=%d)", buffer.length, bufferLength, bufferReadOffset, bufferWriteOffset);
+	}
 }

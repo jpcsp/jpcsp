@@ -367,7 +367,7 @@ public class scePsmfPlayer implements HLEModule {
                 me.finish();
             }
             if (pmfFileChannel != null) {
-                pmfFileChannel.flush();
+            	pmfFileChannel = null;
             }
         }
 
@@ -402,8 +402,7 @@ public class scePsmfPlayer implements HLEModule {
             log.info("'" + pmfFilePath + "' PSMF file loaded.");
 
             if (checkMediaEngineState()) {
-                pmfFileChannel = new PacketChannel();
-                pmfFileChannel.writeFile(pmfFileData);
+                pmfFileChannel = new PacketChannel(pmfFileData);
             }
         } catch (Exception e) {
             //TODO
@@ -441,7 +440,7 @@ public class scePsmfPlayer implements HLEModule {
                 me.finish();
             }
             if (pmfFileChannel != null) {
-                pmfFileChannel.flush();
+            	pmfFileChannel = null;
             }
         }
 
@@ -491,7 +490,7 @@ public class scePsmfPlayer implements HLEModule {
         if (checkMediaEngineState()) {
             if (pmfFileChannel != null) {
                 me = new MediaEngine();
-                me.init(pmfFileChannel.getFilePath(), true, true);
+                me.init(pmfFileChannel, true, true);
             }
         }
 
@@ -535,7 +534,7 @@ public class scePsmfPlayer implements HLEModule {
                 me.finish();
             }
             if (pmfFileChannel != null) {
-                pmfFileChannel.flush();
+            	pmfFileChannel = null;
             }
         }
 
@@ -603,7 +602,6 @@ public class scePsmfPlayer implements HLEModule {
                 if (me.getContainer() != null) {
                     me.step();
                     writePSMFVideoImage(displayBuffer, videoDataFrameWidth);
-                    psmfPlayerLastTimestamp = me.getPacketTimestamp("Video", "DTS");
                 }
             }
         } else {

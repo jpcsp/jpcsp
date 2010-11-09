@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.channels.ReadableByteChannel;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -25,6 +27,12 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceMpegAu;
+import jpcsp.HLE.modules.sceMpeg;
+import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
+import jpcsp.util.Debug;
 
 import com.xuggle.ferry.Logger;
 import com.xuggle.xuggler.IAudioSamples;
@@ -36,7 +44,8 @@ import com.xuggle.xuggler.IStream;
 import com.xuggle.xuggler.IStreamCoder;
 import com.xuggle.xuggler.IVideoPicture;
 import com.xuggle.xuggler.IVideoResampler;
-import com.xuggle.xuggler.Utils;
+import com.xuggle.xuggler.video.ConverterFactory;
+import com.xuggle.xuggler.video.IConverter;
 
 public class MediaEngine {
 
@@ -52,8 +61,17 @@ public class MediaEngine {
     private BufferedImage currentImg;
     private byte[] currentSamples;
     private int currentSamplesSize = 1024;  // Default size.
-    private int decodedAudioBytes;
-    private int decodedVideoBytes;
+    private IVideoPicture videoPicture;
+    private IAudioSamples audioSamples;
+    private IConverter videoConverter;
+    private IVideoResampler videoResampler;
+    private static final long timestampMask = 0x7FFFFFFFFFFFFFFFL;
+    private boolean extAudioChecked;
+    private long audioPts;
+    private long audioDts;
+    private long videoPts;
+    private long videoDts;
+    private int[] videoImagePixels;
 
     // External audio loading vars.
     private IContainer extContainer;
@@ -62,10 +80,6 @@ public class MediaEngine {
     private int extAudioStreamID;
 
     public MediaEngine() {
-    	init();
-    }
-
-    private static void init() {
     	if (!initialized) {
 	        // Disable Xuggler's logging, since we do our own.
 	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
@@ -113,14 +127,6 @@ public class MediaEngine {
         return currentSamples;
     }
 
-    public int getDecodedVideoBytes() {
-        return decodedVideoBytes;
-    }
-
-    public int getDecodedAudioBytes() {
-        return decodedAudioBytes;
-    }
-
     public int getAudioSamplesSize() {
         return currentSamplesSize;
     }
@@ -129,34 +135,27 @@ public class MediaEngine {
         currentSamplesSize = newSize;
     }
 
-    /**
-     * Method getPacketTimestamp() - analyzes the current packet
-     * and returns it's timestamp.
-     * Note: Only call this after a sucessful Media Engine init().
-     *
-     * @param stream the stream to check for (video or audio).
-     * @param type the timestamp format (PTS or DTS).
-     * @return the timestamp of the current packet or 0 if none.
-     */
-    public long getPacketTimestamp(String stream, String type) {
-        if (stream.equals("Video")) {
-            if (packet.getStreamIndex() == getVideoStreamID()) {
-                if (type.equals("DTS")) {
-                    return packet.getDts();
-                } else if (type.equals("PTS")) {
-                    return packet.getPts();
-                }
-            }
-        } else if (stream.equals("Audio")) {
-            if (packet.getStreamIndex() == getAudioStreamID()) {
-                if (type.equals("DTS")) {
-                    return packet.getDts();
-                } else if (type.equals("PTS")) {
-                    return packet.getPts();
-                }
-            }
-        }
-        return 0;
+    public void getVideoTimestamp(SceMpegAu au) {
+		// Timestamps have sometimes high bit set. Clear it
+    	au.pts = videoPts & timestampMask;
+    	au.dts = videoDts & timestampMask;
+    }
+
+    public void getAudioTimestamp(SceMpegAu au) {
+		// Timestamps have sometimes high bit set. Clear it
+    	au.pts = audioPts & timestampMask;
+    	au.dts = audioDts & timestampMask;
+    }
+
+    public void init() {
+    	finish();
+        videoStreamID = -1;
+        audioStreamID = -1;
+        extAudioChecked = false;
+        videoDts = 0;
+        videoPts = 0;
+        audioDts = 0;
+        audioPts = 0;
     }
 
     /*
@@ -167,19 +166,16 @@ public class MediaEngine {
      * The sceMpeg functions must call init() first for each MPEG stream and then
      * keep calling step() until the video is finished and finish() is called.
      */
-    public void init(String file, boolean decodeVideo, boolean decodeAudio) {
-        container = IContainer.make();
+    public void init(ReadableByteChannel channel, boolean decodeVideo, boolean decodeAudio) {
+    	init();
 
-        if (container.open(file, IContainer.Type.READ, null) < 0) {
-            Modules.log.error("MediaEngine: Invalid file or container format!");
+    	container = IContainer.make();
+
+        if (container.open(channel, null) < 0) {
+            Modules.log.error("MediaEngine: Invalid container format!");
         }
 
         numStreams = container.getNumStreams();
-
-        videoStreamID = -1;
-        videoCoder = null;
-        audioStreamID = -1;
-        audioCoder = null;
 
         for (int i = 0; i < numStreams; i++) {
             IStream stream = container.getStream(i);
@@ -199,6 +195,14 @@ public class MediaEngine {
                 Modules.log.error("MediaEngine: No video streams found!");
             } else if (videoCoder.open() < 0) {
                 Modules.log.error("MediaEngine: Can't open video decoder!");
+            } else {
+            	videoConverter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
+            	if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
+	                videoResampler = IVideoResampler.make(videoCoder.getWidth(),
+	                        videoCoder.getHeight(), IPixelFormat.Type.BGR24,
+	                        videoCoder.getWidth(), videoCoder.getHeight(),
+	                        videoCoder.getPixelType());
+            	}
             }
         }
 
@@ -213,56 +217,96 @@ public class MediaEngine {
         packet = IPacket.make();
     }
 
-    @SuppressWarnings("deprecation")
-    public void step() {
-        container.readNextPacket(packet);
+    public boolean step() {
+        if (container.readNextPacket(packet) < 0) {
+        	audioPts += sceMpeg.audioTimestampStep;
+        	videoPts += sceMpeg.videoTimestampStep;
+        	return false;
+        }
 
         if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
+        	videoDts = packet.getDts();
+        	videoPts = packet.getPts();
+        	int decodedBytes;
+            for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
+            	if (videoPicture == null) {
+                    videoPicture = IVideoPicture.make(videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
 
-            IVideoPicture picture = IVideoPicture.make(videoCoder.getPixelType(),
-                    videoCoder.getWidth(), videoCoder.getHeight());
+                    if (videoResampler != null) {
+                    	videoPicture = IVideoPicture.make(videoResampler.getOutputPixelFormat(), videoPicture.getWidth(), videoPicture.getHeight());
+                    }
+            	}
 
-            if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
-                picture = resample(picture, IPixelFormat.Type.BGR24);
-            }
+            	decodedBytes = videoCoder.decodeVideo(videoPicture, packet, 0);
 
-            decodedVideoBytes = videoCoder.decodeVideo(picture, packet, 0);
+	            if (decodedBytes < 0) {
+	            	// An error occured with this packet, skip it
+	            	break;
+	            }
 
-            if (decodedVideoBytes < 0) {
-                Modules.log.error("MediaEngine: No video bytes decoded!");
-                return;
-            }
-
-            if (picture.isComplete()) {
-                currentImg = Utils.videoPictureToImage(picture);
+	            if (videoPicture.isComplete()) {
+	            	if (videoConverter != null) {
+	            		currentImg = videoConverter.toImage(videoPicture);
+	            	}
+	                videoPicture = null;
+	            }
             }
         } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
-            IAudioSamples samples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
+        	audioDts = packet.getDts();
+        	audioPts = packet.getPts();
+            int decodedBytes;
+            for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
+            	if (audioSamples == null) {
+            		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
+            	}
 
-            int offset = 0;
-            while (offset < packet.getSize()) {
-                decodedAudioBytes = audioCoder.decodeAudio(samples, packet, offset);
+            	decodedBytes = audioCoder.decodeAudio(audioSamples, packet, offset);
 
-                if (decodedAudioBytes < 0) {
-                    Modules.log.error("MediaEngine: No audio bytes decoded!");
-                    return;
-                }
+	            if (decodedBytes < 0) {
+	            	// An error occured with this packet, skip it
+	            	break;
+	            }
 
-                offset += decodedAudioBytes;
-
-                if (samples.isComplete()) {
-                    updateSoundSamples(samples);
+                if (audioSamples.isComplete()) {
+                    updateSoundSamples(audioSamples);
+                    audioSamples = null;
                 }
             }
         }
+
+        return true;
+    }
+
+    public void stepExtAudio(int mpegStreamSize) {
+    	if (extContainer != null) {
+    		stepExtAudio();
+    	} else if (!extAudioChecked) {
+            extAudioChecked = true;
+            audioPts = 90000;
+            String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.";
+            String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac"};
+            for (int i = 0; i < supportedFormats.length; i++) {
+                File f = new File(pmfExtAudioPath + supportedFormats[i]);
+                if (f.exists()) {
+                    pmfExtAudioPath += supportedFormats[i];
+                    initExtAudio(pmfExtAudioPath);
+                    break;
+                }
+            }
+    	} else {
+    		audioPts += sceMpeg.audioTimestampStep;
+    	}
     }
 
     // Override audio data line with one from an external file.
-    public void initExtAudio(String file) {
+    private void initExtAudio(String file) {
         extContainer = IContainer.make();
 
         if (extContainer.open(file, IContainer.Type.READ, null) < 0) {
-            Modules.log.error("MediaEngine: Invalid file or container format!");
+            Modules.log.error("MediaEngine: Invalid file or container format: " + file);
+            extContainer.close();
+            extContainer = null;
+            return;
         }
 
         int extNumStreams = extContainer.getNumStreams();
@@ -282,23 +326,34 @@ public class MediaEngine {
 
         if (extAudioStreamID == -1) {
             Modules.log.error("MediaEngine: No audio streams found!");
+            extContainer.close();
+            extContainer = null;
+            return;
         } else if (extAudioCoder.open() < 0) {
             Modules.log.error("MediaEngine: Can't open audio decoder!");
+            extContainer.close();
+            extContainer = null;
+            return;
         }
 
         try {
             startSound(extAudioCoder);
         } catch (LineUnavailableException ex) {
             Modules.log.error("MediaEngine: Can't start audio line!");
-
+            extContainer.close();
+            extContainer = null;
+            return;
         }
+
         extPacket = IPacket.make();
     }
 
-    public void stepExtAudio() {
-        extContainer.readNextPacket(extPacket);
+    private void stepExtAudio() {
+    	extContainer.readNextPacket(extPacket);
 
         if (extPacket.getStreamIndex() == extAudioStreamID && extAudioCoder != null) {
+        	audioDts = extPacket.getDts();
+        	audioPts = extPacket.getPts();
             IAudioSamples samples = IAudioSamples.make(1024, extAudioCoder.getChannels());
 
             int offset = 0;
@@ -321,52 +376,56 @@ public class MediaEngine {
 
     // Cleanup function.
     public void finish() {
-        if (container != null) {
-            container.close();
-            container = null;
-        }
-        if (extContainer != null) {
-            extContainer.close();
-            extContainer = null;
-        }
-        if (videoCoder != null) {
-            videoCoder.close();
-            videoCoder = null;
-        }
-        if (audioCoder != null) {
-            audioCoder.close();
-            audioCoder = null;
-        }
-        if (extAudioCoder != null) {
-            extAudioCoder.close();
-            extAudioCoder = null;
-        }
+    	if (container != null) {
+    		container.close();
+        	container = null;
+    	}
+    	if (packet != null) {
+    		packet.delete();
+    		packet = null;
+    	}
+    	if (videoCoder != null) {
+    		videoCoder.close();
+    		videoCoder = null;
+    	}
+    	if (audioCoder != null) {
+    		audioCoder.close();
+    		audioCoder = null;
+    	}
+    	if (videoConverter != null) {
+    		videoConverter.delete();
+    		videoConverter = null;
+    	}
+    	if (videoPicture != null) {
+    		videoPicture.delete();
+    		videoPicture = null;
+    	}
+    	if (audioSamples != null) {
+    		audioSamples.delete();
+    		audioSamples = null;
+    	}
+    	if (videoResampler != null) {
+    		videoResampler.delete();
+    		videoResampler = null;
+    	}
+    	if (extContainer != null) {
+    		extContainer.close();
+    		extContainer = null;
+    	}
+    	if (extAudioCoder != null) {
+    		extAudioCoder.close();
+    		extAudioCoder = null;
+    	}
+    	if (extPacket != null) {
+    		extPacket.delete();
+    		extPacket = null;
+    	}
         if (audioLine != null) {
             audioLine.drain();
             audioLine.close();
             audioLine = null;
         }
-        if (currentSamples != null) {
-            currentSamples = null;
-        }
-    }
-
-    // This function attempts to resample an IVideoPicture to any given
-    // pixel format.
-    private IVideoPicture resample(IVideoPicture picture, IPixelFormat.Type pixel) {
-        IVideoResampler resampler = null;
-
-        resampler = IVideoResampler.make(videoCoder.getWidth(),
-                videoCoder.getHeight(), pixel,
-                videoCoder.getWidth(), videoCoder.getHeight(),
-                videoCoder.getPixelType());
-
-        if (resampler != null) {
-            picture = IVideoPicture.make(resampler.getOutputPixelFormat(),
-                    picture.getWidth(), picture.getHeight());
-        }
-
-        return picture;
+        currentSamples = null;
     }
 
     // Sound sampling functions also based on Xuggler's demos (for external audio).
@@ -399,6 +458,37 @@ public class MediaEngine {
             System.arraycopy(rawBytes, 0, temp, currentSamples.length, rawBytes.length);
 
             currentSamples = temp;
+        }
+    }
+
+    public void writeVideoImage(int dest_addr, int frameWidth, int videoPixelMode) {
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+        // Get the current generated image, convert it to pixels and write it
+        // to memory.
+        if (getCurrentImg() != null) {
+            // Override the base dimensions with the image's real dimensions.
+            int width = getCurrentImg().getWidth();
+            int height = getCurrentImg().getHeight();
+            int imageSize = height * width;
+            if (videoImagePixels == null || videoImagePixels.length < imageSize) {
+            	videoImagePixels = new int[imageSize];
+            }
+            videoImagePixels = getCurrentImg().getRGB(0, 0, width, height, videoImagePixels, 0, width);
+            for (int y = 0; y < height; y++) {
+                int address = dest_addr + y * frameWidth * bytesPerPixel;
+                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
+                for (int x = 0; x < width; x++) {
+                    int colorARGB = videoImagePixels[y * width + x];
+                    // Convert from ARGB to ABGR.
+                    int a = (colorARGB >>> 24) & 0xFF;
+                    int r = (colorARGB >>> 16) & 0xFF;
+                    int g = (colorARGB >>> 8) & 0xFF;
+                    int b = colorARGB & 0xFF;
+                    int colorABGR = a << 24 | b << 16 | g << 8 | r;
+                    int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
+                    memoryWriter.writeNext(pixelColor);
+                }
+            }
         }
     }
 }
