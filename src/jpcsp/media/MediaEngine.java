@@ -74,6 +74,7 @@ public class MediaEngine {
     private IPacket extPacket;
     private IStreamCoder extAudioCoder;
     private int extAudioStreamID;
+    private IAudioSamples extAudioSamples;
 
     public MediaEngine() {
     	if (!initialized) {
@@ -193,11 +194,13 @@ public class MediaEngine {
                 Modules.log.error("MediaEngine: Can't open video decoder!");
             } else {
             	videoConverter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
+                videoPicture = IVideoPicture.make(videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
             	if (videoCoder.getPixelType() != IPixelFormat.Type.BGR24) {
 	                videoResampler = IVideoResampler.make(videoCoder.getWidth(),
 	                        videoCoder.getHeight(), IPixelFormat.Type.BGR24,
 	                        videoCoder.getWidth(), videoCoder.getHeight(),
 	                        videoCoder.getPixelType());
+                	videoPicture = IVideoPicture.make(videoResampler.getOutputPixelFormat(), videoPicture.getWidth(), videoPicture.getHeight());
             	}
             }
         }
@@ -207,6 +210,8 @@ public class MediaEngine {
                 Modules.log.error("MediaEngine: No audio streams found!");
             } else if (audioCoder.open() < 0) {
                 Modules.log.error("MediaEngine: Can't open audio decoder!");
+            } else {
+        		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
             }
         }
 
@@ -227,14 +232,6 @@ public class MediaEngine {
         if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
         	int decodedBytes;
             for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
-            	if (videoPicture == null) {
-                    videoPicture = IVideoPicture.make(videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
-
-                    if (videoResampler != null) {
-                    	videoPicture = IVideoPicture.make(videoResampler.getOutputPixelFormat(), videoPicture.getWidth(), videoPicture.getHeight());
-                    }
-            	}
-
             	decodedBytes = videoCoder.decodeVideo(videoPicture, packet, 0);
 
 	            if (decodedBytes < 0) {
@@ -249,16 +246,11 @@ public class MediaEngine {
 	            	if (videoConverter != null) {
 	            		currentImg = videoConverter.toImage(videoPicture);
 	            	}
-	                videoPicture = null;
 	            }
             }
         } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
             int decodedBytes;
             for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
-            	if (audioSamples == null) {
-            		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
-            	}
-
             	decodedBytes = audioCoder.decodeAudio(audioSamples, packet, offset);
 
 	            if (decodedBytes < 0) {
@@ -271,7 +263,6 @@ public class MediaEngine {
 
 	        	if (audioSamples.isComplete()) {
                     updateSoundSamples(audioSamples);
-                    audioSamples = null;
                 }
             }
         }
@@ -338,6 +329,8 @@ public class MediaEngine {
             return;
         }
 
+		extAudioSamples = IAudioSamples.make(2048, extAudioCoder.getChannels());
+
         startSound(extAudioCoder);
 
         extPacket = IPacket.make();
@@ -353,19 +346,17 @@ public class MediaEngine {
 	    		return;
 	    	}
 
-	    	IAudioSamples samples = IAudioSamples.make(2048, extAudioCoder.getChannels());
-
         	int decodedBytes;
             for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
-            	decodedBytes = extAudioCoder.decodeAudio(samples, extPacket, offset);
+            	decodedBytes = extAudioCoder.decodeAudio(extAudioSamples, extPacket, offset);
 
                 if (decodedBytes < 0) {
 	            	// An error occured with this packet, skip it
                 	break;
                 }
 
-                if (samples.isComplete()) {
-                    playSound(samples);
+                if (extAudioSamples.isComplete()) {
+                    playSound(extAudioSamples);
                 }
             }
         }
@@ -420,6 +411,10 @@ public class MediaEngine {
     	if (extSoundChannel != null) {
     		extSoundChannel.release();
     		extSoundChannel = null;
+    	}
+    	if (extAudioSamples != null) {
+    		extAudioSamples.delete();
+    		extAudioSamples = null;
     	}
         currentSamples = null;
     }
