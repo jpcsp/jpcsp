@@ -201,7 +201,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected static final int atracDecodeDelay = 3000;         // Microseconds
     protected static final int avcDecodeDelay = 5400;           // Microseconds
     protected static final int maxAheadTimestamp = 40000;
-    protected static final int mpegTimestampPerSecond = 90000;  // How many MPEG Timestamp units in a second.
+    public static final int mpegTimestampPerSecond = 90000;  // How many MPEG Timestamp units in a second.
     public static final int videoTimestampStep = 3003;       // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
     public static final int audioTimestampStep = 4180;       // Value based on pmfplayer.
 
