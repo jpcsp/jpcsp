@@ -7,7 +7,7 @@
 #   extension GL_ARB_uniform_buffer_object : enable
 #endif
 #if __VERSION__ >= 140
-#   extension ARB_compatibility : enable
+#   extension GL_ARB_compatibility : enable
 #endif
 
 #if USE_UBO
