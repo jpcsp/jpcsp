@@ -577,19 +577,19 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setBufferData(int size, Buffer buffer, int usage) {
+	public void setBufferData(int target, int size, Buffer buffer, int usage) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setBufferData size=%d, buffer size=%d, usage=%d", size, buffer.capacity(), usage));
+			log.debug(String.format("setBufferData target=%d, size=%d, buffer size=%d, usage=%d", target, size, buffer.capacity(), usage));
 		}
-		super.setBufferData(size, buffer, usage);
+		super.setBufferData(target, size, buffer, usage);
 	}
 
 	@Override
-	public void bindBuffer(int buffer) {
+	public void bindBuffer(int target, int buffer) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("bindBuffer %d", buffer));
+			log.debug(String.format("bindBuffer %d, %d", target, buffer));
 		}
-		super.bindBuffer(buffer);
+		super.bindBuffer(target, buffer);
 	}
 
 	@Override

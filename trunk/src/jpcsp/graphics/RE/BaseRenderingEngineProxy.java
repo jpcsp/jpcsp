@@ -487,13 +487,18 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setBufferData(int size, Buffer buffer, int usage) {
-		proxy.setBufferData(size, buffer, usage);
+	public void setBufferData(int target, int size, Buffer buffer, int usage) {
+		proxy.setBufferData(target, size, buffer, usage);
 	}
 
 	@Override
-	public void bindBuffer(int buffer) {
-		proxy.bindBuffer(buffer);
+	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
+		proxy.setBufferSubData(target, offset, size, buffer);
+	}
+
+	@Override
+	public void bindBuffer(int target, int buffer) {
+		proxy.bindBuffer(target, buffer);
 	}
 
 	@Override
@@ -814,5 +819,20 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public boolean isShaderAvailable() {
 		return proxy.isShaderAvailable();
+	}
+
+	@Override
+	public void bindBufferBase(int target, int bindingPoint, int buffer) {
+		proxy.bindBufferBase(target, bindingPoint, buffer);
+	}
+
+	@Override
+	public int getUniformBlockIndex(int program, String name) {
+		return proxy.getUniformBlockIndex(program, name);
+	}
+
+	@Override
+	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
+		proxy.setUniformBlockBinding(program, blockIndex, bindingPoint);
 	}
 }

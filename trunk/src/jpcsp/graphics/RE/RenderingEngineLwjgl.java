@@ -30,6 +30,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import org.lwjgl.opengl.ARBBufferObject;
+import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.EXTGeometryShader4;
 import org.lwjgl.opengl.EXTTextureCompressionS3TC;
 import org.lwjgl.opengl.GL11;
@@ -51,7 +52,6 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
  * The class contains no rendering logic, it just implements the interface to LWJGL.
  */
 public class RenderingEngineLwjgl extends BaseRenderingEngine {
-	protected final static int bufferTarget = GL15.GL_ARRAY_BUFFER;
 	protected static final int[] flagToGL = {
 		GL11.GL_ALPHA_TEST,     // GU_ALPHA_TEST
 		GL11.GL_DEPTH_TEST,     // GU_DEPTH_TEST
@@ -323,10 +323,16 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL32.GL_GEOMETRY_OUTPUT_TYPE, // RE_GEOMETRY_OUTPUT_TYPE
 		GL32.GL_GEOMETRY_VERTICES_OUT // RE_GEOMETRY_VERTICES_OUT
 	};
+	protected static final int[] bufferTargetToGL = {
+		GL15.GL_ARRAY_BUFFER,         // RE_ARRAY_BUFFER
+		ARBUniformBufferObject.GL_UNIFORM_BUFFER // RE_UNIFORM_BUFFER
+	};
 
 	public static IRenderingEngine newInstance() {
 		String openGLVersion = GL11.glGetString(GL11.GL_VERSION);
-		if (openGLVersion.compareTo("1.5") >= 0) {
+		if (openGLVersion.compareTo("3.1") >= 0) {
+			return new RenderingEngineLwjgl31();
+		} else if (openGLVersion.compareTo("1.5") >= 0) {
 			return new RenderingEngineLwjgl15();
 		} else if (openGLVersion.compareTo("1.2") >= 0) {
 			return new RenderingEngineLwjgl12();
@@ -805,23 +811,35 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setBufferData(int size, Buffer buffer, int usage) {
+	public void setBufferData(int target, int size, Buffer buffer, int usage) {
 		if (buffer instanceof ByteBuffer) {
-			ARBBufferObject.glBufferDataARB(bufferTarget, getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
+			ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ByteBuffer) buffer), bufferUsageToGL[usage]);
 		} else if (buffer instanceof IntBuffer) {
-			ARBBufferObject.glBufferDataARB(bufferTarget, getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
+			ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (IntBuffer) buffer), bufferUsageToGL[usage]);
 		} else if (buffer instanceof ShortBuffer) {
-			ARBBufferObject.glBufferDataARB(bufferTarget, getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
+			ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (ShortBuffer) buffer), bufferUsageToGL[usage]);
 		} else if (buffer instanceof FloatBuffer) {
-			ARBBufferObject.glBufferDataARB(bufferTarget, getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
+			ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], getDirectBuffer(size, (FloatBuffer) buffer), bufferUsageToGL[usage]);
+		} else if (buffer == null) {
+			ARBBufferObject.glBufferDataARB(bufferTargetToGL[target], size, bufferUsageToGL[usage]);
 		} else {
 			throw new IllegalArgumentException();
 		}
 	}
 
 	@Override
-	public void bindBuffer(int buffer) {
-		ARBBufferObject.glBindBufferARB(bufferTarget, buffer);
+	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
+		if (buffer instanceof ByteBuffer) {
+			ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ByteBuffer) buffer));
+		} else if (buffer instanceof IntBuffer) {
+			ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (IntBuffer) buffer));
+		} else if (buffer instanceof ShortBuffer) {
+			ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (ShortBuffer) buffer));
+		} else if (buffer instanceof FloatBuffer) {
+			ARBBufferObject.glBufferSubDataARB(bufferTargetToGL[target], offset, getDirectBuffer(size, (FloatBuffer) buffer));
+		} else {
+			throw new IllegalArgumentException();
+		}
 	}
 
 	@Override
@@ -1287,5 +1305,25 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public boolean isShaderAvailable() {
 		// glCreateShader is available only if the GL version is 2.0 or greater
 		return GLContext.getCapabilities().OpenGL20;
+	}
+
+	@Override
+	public void bindBuffer(int target, int buffer) {
+		GL15.glBindBuffer(bufferTargetToGL[target], buffer);
+	}
+
+	@Override
+	public void bindBufferBase(int target, int bindingPoint, int buffer) {
+		ARBUniformBufferObject.glBindBufferBase(bufferTargetToGL[target], bindingPoint, buffer);
+	}
+
+	@Override
+	public int getUniformBlockIndex(int program, String name) {
+		return ARBUniformBufferObject.glGetUniformBlockIndex(program, name);
+	}
+
+	@Override
+	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
+		ARBUniformBufferObject.glUniformBlockBinding(program, blockIndex, bindingPoint);
 	}
 }

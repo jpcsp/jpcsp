@@ -58,6 +58,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected final static int spriteGeometryShaderInputType = GU_LINES;
 	protected final static int spriteGeometryShaderOutputType = GU_TRIANGLE_STRIP;
 	protected boolean useGeometryShader = true;
+	protected boolean useUniformBufferObject = true;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -76,9 +77,22 @@ public class REShader extends BaseRenderingEngineFunction {
 			log.info("Using Geometry Shader for SPRITES");
 		}
 
+		if (!ShaderContextUBO.useUBO(re)) {
+			useUniformBufferObject = false;
+		}
+		if (useUniformBufferObject) {
+			log.info("Using Uniform Buffer Object (UBO)");
+		}
+
 		loadShaders();
 
-		shaderContext = new ShaderContext();
+		if (useUniformBufferObject) {
+			shaderContext = new ShaderContextUBO(re);
+		} else {
+			shaderContext = new ShaderContext();
+		}
+
+		shaderContext.initShaderProgram(re, shaderProgram);
 
 		for (Uniforms uniform : Uniforms.values()) {
             uniform.allocateId(re, shaderProgram);
@@ -94,24 +108,82 @@ public class REShader extends BaseRenderingEngineFunction {
         shaderAttribColor    = re.getAttribLocation(shaderProgram, "color");
         shaderAttribTexture  = re.getAttribLocation(shaderProgram, "texture");
 
-		shaderContext.colorDoubling = 1;
+		shaderContext.setColorDoubling(1);
+	}
+
+	protected void addDefine(StringBuilder defines, String name, String value) {
+		defines.append(String.format("#define %s %s%s", name, escapeString(value), System.getProperty("line.separator")));
+	}
+
+	protected void addDefine(StringBuilder defines, String name, int value) {
+		addDefine(defines, name, Integer.toString(value));
+	}
+
+	protected void addDefine(StringBuilder defines, String name, boolean value) {
+		addDefine(defines, name, value ? 1 : 0);
+	}
+
+	protected void replace(StringBuilder s, String oldText, String newText) {
+		int offset = s.indexOf(oldText);
+		if (offset >= 0) {
+			s.replace(offset, offset + oldText.length(), newText);
+		}
+	}
+
+	protected String escapeString(String s) {
+		return s.replace('\n', ' ');
+	}
+
+	protected void preprocessShader(StringBuilder src) {
+		StringBuilder defines = new StringBuilder();
+		int shaderVersion = 120;
+
+		addDefine(defines, "USE_GEOMETRY_SHADER", useGeometryShader);
+		addDefine(defines, "USE_UBO", useUniformBufferObject);
+		if (useUniformBufferObject) {
+			// UBO requires at least shader version 1.40
+			shaderVersion = Math.max(140, shaderVersion);
+			addDefine(defines, "UBO_STRUCTURE", ShaderContextUBO.getShaderUniformText());
+		}
+
+		if (shaderContext != null) {
+			addDefine(defines, "VINFO_TRANSFORM2D", shaderContext.getVinfoTransform2D());
+			addDefine(defines, "VINFO_COLOR", shaderContext.getVinfoColor());
+			addDefine(defines, "VINFO_POSITION", shaderContext.getVinfoPosition());
+			addDefine(defines, "COLOR_ADDITION", shaderContext.getLightMode());
+			addDefine(defines, "TEX_MAP_MODE", shaderContext.getTexMapMode());
+			addDefine(defines, "TEX_MAP_PROJ", shaderContext.getTexMapProj());
+			addDefine(defines, "NUMBER_BONES", shaderContext.getNumberBones());
+			addDefine(defines, "LIGHTING_ENABLE", shaderContext.getLightingEnable());
+			addDefine(defines, "TEX_ENABLE", shaderContext.getTexEnable());
+			addDefine(defines, "TEX_ENABLE", shaderContext.getTexEnable());
+			addDefine(defines, "TEX_ENV_MODE_FUNC", shaderContext.getTexEnvMode(0));
+			addDefine(defines, "TEX_ENV_MODE_USE_ALPHA", shaderContext.getTexEnvMode(1));
+			addDefine(defines, "CTEST_ENABLE", shaderContext.getCtestEnable());
+			addDefine(defines, "CTEST_FUNC", shaderContext.getCtestFunc());
+		}
+
+		replace(src, "// INSERT VERSION", String.format("#version %d", shaderVersion));
+		replace(src, "// INSERT DEFINES", defines.toString());
 	}
 
 	protected boolean loadShader(int shader, String resourceName, boolean silentError) {
-        String src = null;
+		StringBuilder src = new StringBuilder();
 
         try {
         	InputStream resourceStream = getClass().getResourceAsStream(resourceName);
         	if (resourceStream == null) {
         		return false;
         	}
-            src = Utilities.toString(resourceStream, true);
+            src.append(Utilities.toString(resourceStream, true));
         } catch (IOException e) {
         	log.error(e);
         	return false;
         }
 
-        boolean compiled = re.compilerShader(shader, src);
+        preprocessShader(src);
+
+        boolean compiled = re.compilerShader(shader, src.toString());
         if (compiled || !silentError) {
         	printShaderInfoLog(shader);
         }
@@ -201,16 +273,16 @@ public class REShader extends BaseRenderingEngineFunction {
 			case IRenderingEngine.GU_LIGHT1:
 			case IRenderingEngine.GU_LIGHT2:
 			case IRenderingEngine.GU_LIGHT3:
-				shaderContext.lightEnabled[flag - IRenderingEngine.GU_LIGHT0] = value;
+				shaderContext.setLightEnabled(flag - IRenderingEngine.GU_LIGHT0, value);
 				break;
 			case IRenderingEngine.GU_COLOR_TEST:
-				shaderContext.ctestEnable = value;
+				shaderContext.setCtestEnable(value);
 				break;
 			case IRenderingEngine.GU_LIGHTING:
-				shaderContext.lightingEnable = value;
+				shaderContext.setLightingEnable(value);
 				break;
 			case IRenderingEngine.GU_TEXTURE_2D:
-				shaderContext.texEnable = value;
+				shaderContext.setTexEnable(value);
 				break;
 		}
 	}
@@ -233,67 +305,65 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void setDepthRange(float zpos, float zscale, float near, float far) {
-		shaderContext.zPos = zpos;
-		shaderContext.zScale = zscale;
+		shaderContext.setZPos(zpos);
+		shaderContext.setZScale(zscale);
 		super.setDepthRange(zpos, zscale, near, far);
 	}
 
 	@Override
 	public void setLightMode(int mode) {
-		shaderContext.lightMode = mode;
+		shaderContext.setLightMode(mode);
 		super.setLightMode(mode);
 	}
 
 	@Override
 	public void setLightType(int light, int type, int kind) {
-		shaderContext.lightType[light] = type;
-		shaderContext.lightKind[light] = kind;
+		shaderContext.setLightType(light, type);
+		shaderContext.setLightKind(light, kind);
 		super.setLightType(light, type, kind);
 	}
 
 	@Override
 	public void setTextureEnvironmentMapping(int u, int v) {
-		shaderContext.texShade[0] = u;
-		shaderContext.texShade[1] = v;
+		shaderContext.setTexShade(0, u);
+		shaderContext.setTexShade(1, v);
 		super.setTextureEnvironmentMapping(u, v);
 	}
 
 	@Override
 	public void setColorTestFunc(int func) {
-		shaderContext.ctestFunc = func;
+		shaderContext.setCtestFunc(func);
 		super.setColorTestFunc(func);
 	}
 
 	@Override
 	public void setColorTestMask(int[] values) {
-		shaderContext.ctestMsk[0] = values[0];
-		shaderContext.ctestMsk[1] = values[1];
-		shaderContext.ctestMsk[2] = values[2];
+		shaderContext.setCtestMsk(0, values[0]);
+		shaderContext.setCtestMsk(1, values[1]);
+		shaderContext.setCtestMsk(2, values[2]);
 		super.setColorTestMask(values);
 	}
 
 	@Override
 	public void setColorTestReference(int[] values) {
-		shaderContext.ctestRef[0] = values[0];
-		shaderContext.ctestRef[1] = values[1];
-		shaderContext.ctestRef[2] = values[2];
+		shaderContext.setCtestRef(0, values[0]);
+		shaderContext.setCtestRef(1, values[1]);
+		shaderContext.setCtestRef(2, values[2]);
 		super.setColorTestReference(values);
 	}
 
 	@Override
 	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
-		shaderContext.texEnvMode[0] = func;
-		shaderContext.texEnvMode[1] = alphaUsed ? 1 : 0;
-		shaderContext.colorDoubling = colorDoubled ? 2.0f : 1.0f;
+		shaderContext.setTexEnvMode(0, func);
+		shaderContext.setTexEnvMode(1, alphaUsed ? 1 : 0);
+		shaderContext.setColorDoubling(colorDoubled ? 2.f : 1.f);
 		super.setTextureFunc(func, alphaUsed, colorDoubled);
 	}
 
 	@Override
 	public int setBones(int count, float[] values) {
-		shaderContext.numberBones = count;
-		if (count > 0) {
-			System.arraycopy(values, 0, shaderContext.boneMatrix, 0, 16 * count);
-		}
+		shaderContext.setNumberBones(count);
+		shaderContext.setBoneMatrix(count, values);
         numberOfWeightsForShader = count;
 		super.setBones(count, values);
 
@@ -302,16 +372,16 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void setTextureMapMode(int mode, int proj) {
-		shaderContext.texMapMode = mode;
-		shaderContext.texMapProj = proj;
+		shaderContext.setTexMapMode(mode);
+		shaderContext.setTexMapProj(proj);
 		super.setTextureMapMode(mode, proj);
 	}
 
 	@Override
 	public void setColorMaterial(boolean ambient, boolean diffuse, boolean specular) {
-		shaderContext.matFlags[0] = ambient  ? 1 : 0;
-		shaderContext.matFlags[1] = diffuse  ? 1 : 0;
-		shaderContext.matFlags[2] = specular ? 1 : 0;
+		shaderContext.setMatFlags(0, ambient  ? 1 : 0);
+		shaderContext.setMatFlags(1, diffuse  ? 1 : 0);
+		shaderContext.setMatFlags(2, specular ? 1 : 0);
 		super.setColorMaterial(ambient, diffuse, specular);
 	}
 
@@ -414,21 +484,21 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor) {
 		if (allNativeVertexInfo) {
-			shaderContext.weightScale = weightScale[vinfo.weight];
-			shaderContext.textureScale = vinfo.transform2D ? 1.f : textureScale[vinfo.texture];
-			shaderContext.vinfoColor = useVertexColor ? vinfo.color : -1;
-			shaderContext.normalScale = vinfo.transform2D ? 1.f : normalScale[vinfo.normal];
-			shaderContext.vinfoPosition = vinfo.position;
-			shaderContext.positionScale = vinfo.transform2D ? 1.f : positionScale[vinfo.position];
+			shaderContext.setWeightScale(weightScale[vinfo.weight]);
+			shaderContext.setTextureScale(vinfo.transform2D ? 1.f : textureScale[vinfo.texture]);
+			shaderContext.setVinfoColor(useVertexColor ? vinfo.color : -1);
+			shaderContext.setNormalScale(vinfo.transform2D ? 1.f : normalScale[vinfo.normal]);
+			shaderContext.setVinfoPosition(vinfo.position);
+			shaderContext.setPositionScale(vinfo.transform2D ? 1.f : positionScale[vinfo.position]);
 		} else {
-			shaderContext.weightScale = 1;
-			shaderContext.textureScale = 1;
-			shaderContext.vinfoColor = useVertexColor ? 0 : -1;
-			shaderContext.normalScale = 1;
-			shaderContext.vinfoPosition = 0;
-			shaderContext.positionScale = 1;
+			shaderContext.setWeightScale(1);
+			shaderContext.setTextureScale(1);
+			shaderContext.setVinfoColor(useVertexColor ? 0 : -1);
+			shaderContext.setNormalScale(1);
+			shaderContext.setVinfoPosition(0);
+			shaderContext.setPositionScale(1);
 		}
-		shaderContext.vinfoTransform2D = vinfo == null || vinfo.transform2D ? 1 : 0;
+		shaderContext.setVinfoTransform2D(vinfo == null || vinfo.transform2D ? 1 : 0);
 		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor);
 	}
 

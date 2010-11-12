@@ -49,8 +49,8 @@ public class BufferManagerVBO extends BaseBufferManager {
 		ByteBuffer byteBuffer = createByteBuffer(totalSize);
 
 		int buffer = re.genBuffer();
-		re.bindBuffer(buffer);
-		re.setBufferData(totalSize, byteBuffer, usage);
+		re.bindBuffer(IRenderingEngine.RE_ARRAY_BUFFER, buffer);
+		re.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, totalSize, byteBuffer, usage);
 
 		buffers.put(buffer, new BufferInfo(buffer, byteBuffer, type, size));
 
@@ -59,7 +59,7 @@ public class BufferManagerVBO extends BaseBufferManager {
 
 	@Override
 	public void bindBuffer(int buffer) {
-		re.bindBuffer(buffer);
+		re.bindBuffer(IRenderingEngine.RE_ARRAY_BUFFER, buffer);
 	}
 
 	@Override
@@ -106,7 +106,7 @@ public class BufferManagerVBO extends BaseBufferManager {
 
 	@Override
 	public void setBufferData(int buffer, int size, Buffer data, int usage) {
-		re.bindBuffer(buffer);
-		re.setBufferData(size, data, usage);
+		re.bindBuffer(IRenderingEngine.RE_ARRAY_BUFFER, buffer);
+		re.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, size, data, usage);
 	}
 }

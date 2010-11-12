@@ -60,7 +60,7 @@ public class DirectBufferUtilities {
 		size = round4(size);
 
 		if (buffer.isDirect()) {
-			buffer.limit(size / 4);
+			buffer.limit(size / 4 + buffer.position());
 			return buffer;
 		}
 
@@ -79,7 +79,7 @@ public class DirectBufferUtilities {
 		size = round4(size);
 
 		if (buffer.isDirect()) {
-			buffer.limit(size / 4);
+			buffer.limit(size / 4 + buffer.position());
 			return buffer;
 		}
 
@@ -98,7 +98,7 @@ public class DirectBufferUtilities {
 		size = round2(size);
 
 		if (buffer.isDirect()) {
-			buffer.limit(size / 2);
+			buffer.limit(size / 2 + buffer.position());
 			return buffer;
 		}
 
@@ -115,7 +115,7 @@ public class DirectBufferUtilities {
 		}
 
 		if (buffer.isDirect()) {
-			buffer.limit(size);
+			buffer.limit(size + buffer.position());
 			return buffer;
 		}
 

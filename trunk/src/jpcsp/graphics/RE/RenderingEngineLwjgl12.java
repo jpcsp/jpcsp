@@ -22,9 +22,9 @@ import org.lwjgl.opengl.GL12;
 /**
  * @author gid15
  *
- * A RenderingEngine implementing calls to OpenGL using jogl
+ * A RenderingEngine implementing calls to OpenGL using LWJGL
  * for OpenGL Version >= 1.2.
- * The class contains no rendering logic, it just implements the interface to jogl.
+ * The class contains no rendering logic, it just implements the interface to LWJGL.
  */
 public class RenderingEngineLwjgl12 extends RenderingEngineLwjgl {
 	protected static final int[] textureTypeToGL = {

@@ -711,7 +711,7 @@ public class VertexInfo {
 	}
 
 	public void bindVertex(IRenderingEngine re) {
-		re.bindBuffer(bufferId);
+		re.bindBuffer(IRenderingEngine.RE_ARRAY_BUFFER, bufferId);
 	}
 
 	public void loadVertex(IRenderingEngine re, FloatBuffer buffer, int size) {
@@ -729,7 +729,7 @@ public class VertexInfo {
 		buffer.rewind();
 		cachedBuffer.rewind();
 
-		re.setBufferData(size * VideoEngine.SIZEOF_FLOAT, cachedBuffer, IRenderingEngine.RE_STATIC_DRAW);
+		re.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, size * VideoEngine.SIZEOF_FLOAT, cachedBuffer, IRenderingEngine.RE_STATIC_DRAW);
 	}
 
 	public void deleteVertex(IRenderingEngine re) {
