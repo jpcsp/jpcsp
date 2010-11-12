@@ -124,12 +124,20 @@ public class UmdBrowser extends JDialog {
 	private final class MemStickTableModel extends AbstractTableModel {
 		private static final long serialVersionUID = -1675488447176776560L;
 		private UmdInfoLoader umdInfoLoader;
+		private String pathPrefix;
 
 		public MemStickTableModel(File path) {
 			if(!path.isDirectory()) {
 				Emulator.log.error(path + Resource.get("nodirectory"));
 				return;
 			}
+
+			try {
+				this.pathPrefix = path.getCanonicalPath();
+			} catch (IOException e) {
+				this.pathPrefix = path.getPath();
+			}
+
 			programs = path.listFiles(new FileFilter() {
 				@Override
 				public boolean accept(File file) {
@@ -210,9 +218,13 @@ public class UmdBrowser extends JDialog {
 					}
 
 					String prgPath = programs[rowIndex].getCanonicalPath();
-					File cwd = new File(".");
-					if (prgPath.startsWith(cwd.getCanonicalPath())) {
-						prgPath = prgPath.substring(cwd.getCanonicalPath().length() + 1);
+					if (prgPath.startsWith(pathPrefix)) {
+						prgPath = prgPath.substring(pathPrefix.length() + 1);
+					} else {
+						String cwdPath = new File(".").getCanonicalPath();
+						if (prgPath.startsWith(cwdPath)) {
+							prgPath = prgPath.substring(cwdPath.length() + 1);
+						}
 					}
 
 					String text = String.format("%s\n%s\n%s\n%s", title, discid, firmware, prgPath);
