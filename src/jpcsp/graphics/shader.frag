@@ -1,16 +1,28 @@
-#version 120
+// INSERT VERSION
+
+// INSERT DEFINES
+
 #extension GL_EXT_gpu_shader4 : enable
+#if USE_VBO
+#   extension GL_ARB_uniform_buffer_object : enable
+#endif
+#if __VERSION__ >= 140
+#   extension ARB_compatibility : enable
+#endif
 
+#if USE_UBO
+	UBO_STRUCTURE
+#else
+    uniform bool      texEnable;
+    uniform ivec2     texEnvMode;
+    uniform int       texMapMode;
+    uniform float     colorDoubling;
+    uniform bool      ctestEnable;
+    uniform int       ctestFunc;
+    uniform ivec3     ctestRef;
+    uniform ivec3     ctestMsk;
+#endif
 uniform sampler2D tex;
-uniform bool      texEnable;
-uniform ivec2     texEnvMode;
-uniform int       texMapMode;
-uniform float     colorDoubling;
-
-uniform bool      ctestEnable;
-uniform int       ctestFunc;
-uniform ivec3     ctestRef;
-uniform ivec3     ctestMsk;
 
 vec4 getFragColor()
 {

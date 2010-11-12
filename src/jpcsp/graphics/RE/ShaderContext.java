@@ -24,37 +24,35 @@ import jpcsp.graphics.Uniforms;
  * The current values for the Shader uniform variables.
  * The Shader uniform values have to be updated when switching the active
  * shader program.
- *
- * TODO Use a Uniform Buffer Object (UBO) to allow a faster shader program switch.
  */
 public class ShaderContext {
-	public float zPos;
-	public float zScale;
-	public int[] matFlags = new int[3];
-	public int lightingEnable;
-	public int lightMode;
-	public int[] lightType = new int[4];
-	public int[] lightKind = new int[4];
-	public int[] lightEnabled = new int[4];
-	public float[] boneMatrix = new float[8 * 16];
-	public int numberBones;
-	public int texEnable;
-	public int texMapMode;
-	public int texMapProj;
-	public int[] texShade = new int[2];
-	public int ctestEnable;
-	public int ctestFunc;
-	public int[] ctestMsk = new int[3];
-	public int[] ctestRef = new int[3];
-	public int[] texEnvMode = new int[2];
-	public float colorDoubling;
-	public int vinfoColor;
-	public int vinfoPosition;
-	public int vinfoTransform2D;
-	public float positionScale;
-	public float normalScale;
-	public float textureScale;
-	public float weightScale;
+	private float zPos;
+	private float zScale;
+	private int[] matFlags = new int[3];
+	private int lightingEnable;
+	private int lightMode;
+	private int[] lightType = new int[4];
+	private int[] lightKind = new int[4];
+	private int[] lightEnabled = new int[4];
+	private float[] boneMatrix = new float[8 * 16];
+	private int numberBones;
+	private int texEnable;
+	private int texMapMode;
+	private int texMapProj;
+	private int[] texShade = new int[2];
+	private int ctestEnable;
+	private int ctestFunc;
+	private int[] ctestMsk = new int[3];
+	private int[] ctestRef = new int[3];
+	private int[] texEnvMode = new int[2];
+	private float colorDoubling;
+	private int vinfoColor;
+	private int vinfoPosition;
+	private int vinfoTransform2D;
+	private float positionScale;
+	private float normalScale;
+	private float textureScale;
+	private float weightScale;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -84,5 +82,231 @@ public class ShaderContext {
 		re.setUniform(Uniforms.normalScale.getId(shaderProgram), normalScale);
 		re.setUniform(Uniforms.textureScale.getId(shaderProgram), textureScale);
 		re.setUniform(Uniforms.weightScale.getId(shaderProgram), weightScale);
+	}
+
+	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
+		// Nothing to do here
+	}
+
+	public float getZPos() {
+		return zPos;
+	}
+
+	public void setZPos(float pos) {
+		zPos = pos;
+	}
+
+	public float getZScale() {
+		return zScale;
+	}
+
+	public void setZScale(float scale) {
+		zScale = scale;
+	}
+
+	public int getMatFlags(int index) {
+		return matFlags[index];
+	}
+
+	public void setMatFlags(int index, int matFlags) {
+		this.matFlags[index] = matFlags;
+	}
+
+	public int getLightingEnable() {
+		return lightingEnable;
+	}
+
+	public void setLightingEnable(int lightingEnable) {
+		this.lightingEnable = lightingEnable;
+	}
+
+	public int getLightMode() {
+		return lightMode;
+	}
+
+	public void setLightMode(int lightMode) {
+		this.lightMode = lightMode;
+	}
+
+	public int getLightType(int light) {
+		return lightType[light];
+	}
+
+	public void setLightType(int light, int lightType) {
+		this.lightType[light] = lightType;
+	}
+
+	public int getLightKind(int light) {
+		return lightKind[light];
+	}
+
+	public void setLightKind(int light, int lightKind) {
+		this.lightKind[light] = lightKind;
+	}
+
+	public int getLightEnabled(int light) {
+		return lightEnabled[light];
+	}
+
+	public void setLightEnabled(int light, int lightEnabled) {
+		this.lightEnabled[light] = lightEnabled;
+	}
+
+	public int getBoneMatrixLength() {
+		return boneMatrix.length;
+	}
+
+	public float[] getBoneMatrix() {
+		return boneMatrix;
+	}
+
+	public void setBoneMatrix(int count, float[] boneMatrix) {
+		if (count > 0) {
+			System.arraycopy(boneMatrix, 0, this.boneMatrix, 0, 16 * count);
+		}
+	}
+
+	public int getNumberBones() {
+		return numberBones;
+	}
+
+	public void setNumberBones(int numberBones) {
+		this.numberBones = numberBones;
+	}
+
+	public int getTexEnable() {
+		return texEnable;
+	}
+
+	public void setTexEnable(int texEnable) {
+		this.texEnable = texEnable;
+	}
+
+	public int getTexMapMode() {
+		return texMapMode;
+	}
+
+	public void setTexMapMode(int texMapMode) {
+		this.texMapMode = texMapMode;
+	}
+
+	public int getTexMapProj() {
+		return texMapProj;
+	}
+
+	public void setTexMapProj(int texMapProj) {
+		this.texMapProj = texMapProj;
+	}
+
+	public int getTexShade(int index) {
+		return texShade[index];
+	}
+
+	public void setTexShade(int index, int texShade) {
+		this.texShade[index] = texShade;
+	}
+
+	public int getCtestEnable() {
+		return ctestEnable;
+	}
+
+	public void setCtestEnable(int ctestEnable) {
+		this.ctestEnable = ctestEnable;
+	}
+
+	public int getCtestFunc() {
+		return ctestFunc;
+	}
+
+	public void setCtestFunc(int ctestFunc) {
+		this.ctestFunc = ctestFunc;
+	}
+
+	public int getCtestMsk(int index) {
+		return ctestMsk[index];
+	}
+
+	public void setCtestMsk(int index, int ctestMsk) {
+		this.ctestMsk[index] = ctestMsk;
+	}
+
+	public int getCtestRef(int index) {
+		return ctestRef[index];
+	}
+
+	public void setCtestRef(int index, int ctestRef) {
+		this.ctestRef[index] = ctestRef;
+	}
+
+	public int getTexEnvMode(int index) {
+		return texEnvMode[index];
+	}
+
+	public void setTexEnvMode(int index, int texEnvMode) {
+		this.texEnvMode[index] = texEnvMode;
+	}
+
+	public float getColorDoubling() {
+		return colorDoubling;
+	}
+
+	public void setColorDoubling(float colorDoubling) {
+		this.colorDoubling = colorDoubling;
+	}
+
+	public int getVinfoColor() {
+		return vinfoColor;
+	}
+
+	public void setVinfoColor(int vinfoColor) {
+		this.vinfoColor = vinfoColor;
+	}
+
+	public int getVinfoPosition() {
+		return vinfoPosition;
+	}
+
+	public void setVinfoPosition(int vinfoPosition) {
+		this.vinfoPosition = vinfoPosition;
+	}
+
+	public int getVinfoTransform2D() {
+		return vinfoTransform2D;
+	}
+
+	public void setVinfoTransform2D(int vinfoTransform2D) {
+		this.vinfoTransform2D = vinfoTransform2D;
+	}
+
+	public float getPositionScale() {
+		return positionScale;
+	}
+
+	public void setPositionScale(float positionScale) {
+		this.positionScale = positionScale;
+	}
+
+	public float getNormalScale() {
+		return normalScale;
+	}
+
+	public void setNormalScale(float normalScale) {
+		this.normalScale = normalScale;
+	}
+
+	public float getTextureScale() {
+		return textureScale;
+	}
+
+	public void setTextureScale(float textureScale) {
+		this.textureScale = textureScale;
+	}
+
+	public float getWeightScale() {
+		return weightScale;
+	}
+
+	public void setWeightScale(float weightScale) {
+		this.weightScale = weightScale;
 	}
 }

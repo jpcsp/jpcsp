@@ -184,6 +184,10 @@ public interface IRenderingEngine {
 	public static final int RE_GEOMETRY_OUTPUT_TYPE  = 1;
 	public static final int RE_GEOMETRY_VERTICES_OUT = 2;
 
+	// Buffer Target
+	public static final int RE_ARRAY_BUFFER        = 0;
+	public static final int RE_UNIFORM_BUFFER      = 1;
+
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
 	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height);
@@ -272,8 +276,9 @@ public interface IRenderingEngine {
 	public void drawArrays(int primitive, int first, int count);
 	public int genBuffer();
 	public void deleteBuffer(int buffer);
-	public void setBufferData(int size, Buffer buffer, int usage);
-	public void bindBuffer(int buffer);
+	public void setBufferData(int target, int size, Buffer buffer, int usage);
+	public void setBufferSubData(int target, int offset, int size, Buffer buffer);
+	public void bindBuffer(int target, int buffer);
 	public void enableClientState(int type);
 	public void disableClientState(int type);
 	public void enableVertexAttribArray(int id);
@@ -337,4 +342,7 @@ public interface IRenderingEngine {
 	public void setProgramParameter(int program, int parameter, int value);
 	public boolean isQueryAvailable();
 	public boolean isShaderAvailable();
+	public int getUniformBlockIndex(int program, String name);
+	public void bindBufferBase(int target, int bindingPoint, int buffer);
+	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint);
 }

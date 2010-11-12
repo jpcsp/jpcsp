@@ -61,6 +61,10 @@ public enum Uniforms {
 		return uniformId[shaderProgram];
 	}
 
+	public String getUniformString() {
+		return uniformString;
+	}
+
 	public void allocateId(IRenderingEngine re, int shaderProgram) {
 		uniformId[shaderProgram] = re.getUniformLocation(shaderProgram, uniformString);
 	}

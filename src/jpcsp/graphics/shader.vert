@@ -1,36 +1,52 @@
-#version 120
+// INSERT VERSION
+
+// INSERT DEFINES
+
 #extension GL_EXT_gpu_shader4 : enable
+#if USE_VBO
+#   extension GL_ARB_uniform_buffer_object : enable
+#endif
+#if __VERSION__ >= 140
+#   extension ARB_compatibility : enable
+#endif
 
 // Use attributes instead of gl_Vertex, gl_Normal...: attributes support all the
 // data types used by the PSP (signed/unsigned bytes/shorts/floats).
-attribute vec4 texture;
-attribute vec4 color;
-attribute vec3 normal;
-attribute vec4 position;
-attribute vec4 weights1;
-attribute vec4 weights2;
+#if __VERSION__ >= 140
+#   define ATTRIBUTE in
+#else
+#   define ATTRIBUTE attribute
+#endif
+ATTRIBUTE vec4 texture;
+ATTRIBUTE vec4 color;
+ATTRIBUTE vec3 normal;
+ATTRIBUTE vec4 position;
+ATTRIBUTE vec4 weights1;
+ATTRIBUTE vec4 weights2;
 
-uniform float psp_zPos;
-uniform float psp_zScale;
-uniform ivec3 psp_matFlags; // Ambient, Diffuse, Specular
-uniform ivec4 psp_lightType;
-uniform ivec4 psp_lightKind;
-uniform ivec4 psp_lightEnabled;
-uniform mat4  psp_boneMatrix[8];
-uniform int   psp_numberBones;
-uniform bool  texEnable;
-uniform int   texMapMode;
-uniform int   texMapProj;
-uniform ivec2 texShade;
-uniform bool  lightingEnable;
-uniform bool  colorAddition;
-uniform int   vinfoColor;
-uniform int   vinfoPosition;
-uniform bool  vinfoTransform2D;
-uniform float positionScale;
-uniform float normalScale;
-uniform float textureScale;
-uniform float weightScale;
+#if USE_UBO
+	UBO_STRUCTURE
+#else
+    uniform ivec3 psp_matFlags; // Ambient, Diffuse, Specular
+    uniform ivec4 psp_lightType;
+    uniform ivec4 psp_lightKind;
+    uniform ivec4 psp_lightEnabled;
+    uniform mat4  psp_boneMatrix[8];
+    uniform int   psp_numberBones;
+    uniform bool  texEnable;
+    uniform int   texMapMode;
+    uniform int   texMapProj;
+    uniform ivec2 texShade;
+    uniform bool  lightingEnable;
+    uniform bool  colorAddition;
+    uniform int   vinfoColor;
+    uniform int   vinfoPosition;
+    uniform bool  vinfoTransform2D;
+    uniform float positionScale;
+    uniform float normalScale;
+    uniform float textureScale;
+    uniform float weightScale;
+#endif
 
 void ComputeLight(in int i, in vec3 N, in vec3 V, inout vec3 A, inout vec3 D, inout vec3 S)
 {

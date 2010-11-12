@@ -616,7 +616,23 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
 		return 512 * 4;
 	}
 
-	private static int contextBitCount = 0;
+    @Override
+	public String toString() {
+		StringBuilder result = new StringBuilder();
+
+		for (EnableDisableFlag flag : flags) {
+			if (flag.isEnabled()) {
+				if (result.length() > 0) {
+					result.append(", ");
+				}
+				result.append(flag.toString());
+			}
+		}
+
+		return result.toString();
+	}
+
+    private static int contextBitCount = 0;
     public class EnableDisableFlag {
         private boolean enabled;
         private final int reFlag;

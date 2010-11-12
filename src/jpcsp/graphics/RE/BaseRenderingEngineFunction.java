@@ -592,7 +592,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	@Override
 	public void endBoundingBox() {
 		if (bboxQueryInitialized) {
-			re.bindBuffer(0);
+			re.bindBuffer(RE_ARRAY_BUFFER, 0);
 	        re.disableClientState(IRenderingEngine.RE_TEXTURE);
 	        re.disableClientState(IRenderingEngine.RE_COLOR);
 	        re.disableClientState(IRenderingEngine.RE_NORMAL);

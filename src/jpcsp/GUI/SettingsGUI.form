@@ -324,6 +324,7 @@
                               <Component id="useVertexCache" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="shadersCheck" alignment="0" max="32767" attributes="1"/>
                               <Component id="geometryShaderCheck" alignment="0" max="32767" attributes="1"/>
+                              <Component id="disableUBOCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
                       </Group>
@@ -341,6 +342,8 @@
                           <Component id="shadersCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="geometryShaderCheck" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="disableUBOCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -379,6 +382,13 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="Resource.get(&quot;useGeometryShader&quot;)" type="code"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="disableUBOCheck">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="Resource.get(&quot;disableubo&quot;)" type="code"/>
                     </Property>
                   </Properties>
                 </Component>

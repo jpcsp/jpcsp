@@ -16,6 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.HashMap;
+
 /**
  * @author gid15
  * 
@@ -68,6 +73,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int viewportY;
 	protected int viewportWidth;
 	protected int viewportHeight;
+	protected HashMap<Integer, int[]> bufferDataInt;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -117,6 +123,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		}
 		vertexAttribArray = new boolean[maxUniformId];
 		colorMask = new int[4];
+		bufferDataInt = new HashMap<Integer, int[]>();
 	}
 
 	@Override
@@ -552,9 +559,9 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void bindBuffer(int buffer) {
+	public void bindBuffer(int target, int buffer) {
 		if (bindBuffer != buffer) {
-			super.bindBuffer(buffer);
+			super.bindBuffer(target, buffer);
 			bindBuffer = buffer;
 		}
 	}
@@ -595,6 +602,56 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			super.setTextureMapMode(mode, proj);
 			textureMapMode = mode;
 			textureProjMapMode = proj;
+		}
+	}
+
+	private void setBufferData(int target, int size, IntBuffer buffer, int usage) {
+		int[] oldData = bufferDataInt.get(bindBuffer);
+		int[] newData = new int[size / 4];
+		int position = buffer.position();
+		buffer.get(newData);
+		buffer.position(position);
+
+		boolean differ = true;
+		boolean setBufferData = true;
+		if (oldData != null && newData.length == oldData.length) {
+			differ = false;
+			setBufferData = false;
+			int limit = buffer.limit();
+			for (int i = 0; i < newData.length; i++) {
+				if (newData[i] != oldData[i]) {
+					differ = true;
+					int end = i + 1;
+					for (int j = i + 1; j < newData.length; j++) {
+						if (newData[j] == oldData[j]) {
+							end = j;
+							break;
+						}
+					}
+					buffer.position(i);
+					super.setBufferSubData(target, i * 4, (end - i) * 4, buffer);
+					buffer.limit(limit);
+					i = end;
+				}
+			}
+		}
+
+		if (setBufferData) {
+			super.setBufferData(target, size, buffer, usage);
+		}
+		if (differ) {
+			bufferDataInt.put(bindBuffer, newData);
+		}
+	}
+
+	@Override
+	public void setBufferData(int target, int size, Buffer buffer, int usage) {
+		if (target == RE_UNIFORM_BUFFER && size <= 1024 && (size & 3) == 0 && buffer instanceof IntBuffer) {
+			setBufferData(target, size, (IntBuffer) buffer, usage);
+		} else if (target == RE_UNIFORM_BUFFER && size <= 1024 && (size & 3) == 0 && buffer instanceof ByteBuffer) {
+			setBufferData(target, size, ((ByteBuffer) buffer).asIntBuffer(), usage);
+		} else {
+			super.setBufferData(target, size, buffer, usage);
 		}
 	}
 }
