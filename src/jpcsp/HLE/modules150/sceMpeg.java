@@ -197,6 +197,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
     public static final int PSMF_VERSION_0015 = 0x35313030;
+    public static final int PSMF_STREAM_OFFSET_OFFSET = 8;
+    public static final int PSMF_STREAM_SIZE_OFFSET = 12;
+    public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 86;
+    public static final int PSMF_LAST_TIMESTAMP_OFFSET = 92;
     protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
     protected static final int atracDecodeDelay = 3000;         // Microseconds
     protected static final int avcDecodeDelay = 5400;           // Microseconds
@@ -373,10 +377,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 mpegVersion = -1;
                 break;
         }
-        mpegOffset = endianSwap32(mem.read32(buffer_addr + 8));
-        mpegStreamSize = endianSwap32(mem.read32(buffer_addr + 12));
-        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + 86));
-        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + 92));
+        mpegOffset = endianSwap32(mem.read32(buffer_addr + PSMF_STREAM_OFFSET_OFFSET));
+        mpegStreamSize = endianSwap32(mem.read32(buffer_addr + PSMF_STREAM_SIZE_OFFSET));
+        mpegFirstTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + PSMF_FIRST_TIMESTAMP_OFFSET));
+        mpegLastTimestamp = endianSwap32(readUnaligned32(mem, buffer_addr + PSMF_LAST_TIMESTAMP_OFFSET));
         mpegFirstDate = convertTimestampToDate(mpegFirstTimestamp);
         mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
         avcDetailFrameWidth = (mem.read8(buffer_addr + 142) * 0x10);

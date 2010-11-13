@@ -251,7 +251,8 @@ public class LwMutexManager {
 
         info.threadid = Modules.ThreadManForUserModule.getCurrentThreadID();
 
-        cpu.gpr[2] = info.uid;
+        // Return 0 in case of no error, do not return the UID of the created mutex
+        cpu.gpr[2] = 0;
     }
 
     public void sceKernelDeleteLwMutex(int workAreaAddr) {
