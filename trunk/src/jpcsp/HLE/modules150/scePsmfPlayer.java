@@ -30,6 +30,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
@@ -313,10 +314,21 @@ public class scePsmfPlayer implements HLEModule {
         }
     }
 
+    protected int getPsmfFileDataInt8(int index) {
+    	return pmfFileData[index] & 0xFF;
+    }
+
+    protected int getPsmfFileDataInt32(int index) {
+        return (getPsmfFileDataInt8(index    ) << 24) |
+               (getPsmfFileDataInt8(index + 1) << 16) |
+               (getPsmfFileDataInt8(index + 2) <<  8) |
+               (getPsmfFileDataInt8(index + 3)      );
+    }
+
     protected void analyzePSMFLastTimestamp() {
         if (pmfFileData != null) {
             // Endian swapped inside the buffer.
-            psmfPlayerLastTimestamp = ((pmfFileData[92] << 24) | (pmfFileData[93] << 16) | (pmfFileData[94] << 8) | (pmfFileData[95]));
+            psmfPlayerLastTimestamp = getPsmfFileDataInt32(sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET);
             psmfPlayerLastDate = convertPsmfTimestampToDate(psmfPlayerLastTimestamp);
         }
     }
