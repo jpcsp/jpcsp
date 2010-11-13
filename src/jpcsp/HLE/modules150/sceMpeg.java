@@ -679,7 +679,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (checkMediaEngineState()) {
             me.finish();
-            meChannel.clear();
+            if (meChannel != null) {
+            	meChannel.clear();
+            }
         }
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
@@ -1187,7 +1189,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (checkMediaEngineState()) {
             me.finish();
-            meChannel.clear();
+            if (meChannel != null) {
+            	meChannel.clear();
+            }
         }
         cpu.gpr[2] = 0;
     }
@@ -1207,7 +1211,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (checkMediaEngineState()) {
             me.finish();
-            meChannel.clear();
+            if (meChannel != null) {
+            	meChannel.clear();
+            }
         }
         cpu.gpr[2] = 0;
     }
@@ -1486,7 +1492,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (checkMediaEngineState()) {
             me.finish();
-            meChannel.clear();
+            if (meChannel != null) {
+            	meChannel.clear();
+            }
         }
         cpu.gpr[2] = 0;
     }
