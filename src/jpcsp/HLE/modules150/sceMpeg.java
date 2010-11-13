@@ -575,7 +575,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
         if (checkMediaEngineState()) {
             me.finish();
-            meChannel.clear();
+            if (meChannel != null) {
+            	meChannel.clear();
+            }
         } else if (isEnableConnector()) {
             mpegCodec.finish();
         }
