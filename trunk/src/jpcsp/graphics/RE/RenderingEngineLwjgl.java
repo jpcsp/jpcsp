@@ -39,6 +39,7 @@ import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GLContext;
 
@@ -329,15 +330,18 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	};
 
 	public static IRenderingEngine newInstance() {
-		String openGLVersion = GL11.glGetString(GL11.GL_VERSION);
-		if (openGLVersion.compareTo("3.1") >= 0) {
+		if (GLContext.getCapabilities().OpenGL31) {
+			log.info("Using RenderingEngineLwjgl31");
 			return new RenderingEngineLwjgl31();
-		} else if (openGLVersion.compareTo("1.5") >= 0) {
+		} else if (GLContext.getCapabilities().OpenGL15) {
+			log.info("Using RenderingEngineLwjgl15");
 			return new RenderingEngineLwjgl15();
-		} else if (openGLVersion.compareTo("1.2") >= 0) {
+		} else if (GLContext.getCapabilities().OpenGL12) {
+			log.info("Using RenderingEngineLwjgl12");
 			return new RenderingEngineLwjgl12();
 		}
 
+		log.info("Using RenderingEngineLwjgl");
 		return new RenderingEngineLwjgl();
 	}
 
@@ -348,6 +352,32 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	protected void init() {
 		String openGLVersion = GL11.glGetString(GL11.GL_VERSION);
         log.info("OpenGL version: " + openGLVersion);
+
+        if (GLContext.getCapabilities().OpenGL20) {
+        	String shadingLanguageVersion = GL11.glGetString(GL20.GL_SHADING_LANGUAGE_VERSION);
+        	log.info("Shading Language version: " + shadingLanguageVersion);
+        }
+
+        if (GLContext.getCapabilities().OpenGL30) {
+        	int contextFlags = GL11.glGetInteger(GL30.GL_CONTEXT_FLAGS);
+        	String s = String.format("GL_CONTEXT_FLAGS; 0x%X", contextFlags);
+        	if ((contextFlags & GL30.GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0) {
+        		s += " (GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT)";
+        	}
+        	log.info(s);
+        }
+
+        if (GLContext.getCapabilities().OpenGL32) {
+        	int contextProfileMask = GL11.glGetInteger(GL32.GL_CONTEXT_PROFILE_MASK);
+        	String s = String.format("GL_CONTEXT_PROFILE_MASK: 0x%X", contextProfileMask);
+        	if ((contextProfileMask & GL32.GL_CONTEXT_CORE_PROFILE_BIT) != 0) {
+        		s += " (GL_CONTEXT_CORE_PROFILE_BIT)";
+        	}
+        	if ((contextProfileMask & GL32.GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) != 0) {
+        		s += " (GL_CONTEXT_COMPATIBILITY_PROFILE_BIT)";
+        	}
+        	log.info(s);
+        }
 	}
 
 	@Override
