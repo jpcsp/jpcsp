@@ -579,7 +579,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void setBufferData(int target, int size, Buffer buffer, int usage) {
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("setBufferData target=%d, size=%d, buffer size=%d, usage=%d", target, size, buffer.capacity(), usage));
+			log.debug(String.format("setBufferData target=%d, size=%d, buffer size=%d, usage=%d", target, size, buffer == null ? 0 : buffer.capacity(), usage));
 		}
 		super.setBufferData(target, size, buffer, usage);
 	}
