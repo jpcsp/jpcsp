@@ -266,7 +266,12 @@ public class ModuleMgrForUser implements HLEModule {
                 // Allocate the memory for the memory header itself,
                 // the space required by the module will be allocated by the Loader.
                 SysMemInfo moduleInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr", SysMemUserForUser.PSP_SMEM_Addr, moduleHeaderSize, testBase);
-                if (moduleInfo == null || moduleInfo.addr != testBase) {
+                if (moduleInfo == null) {
+                    log.error(String.format("Failed module allocation 0x%08X != null for '%s'", testBase, name));
+                    cpu.gpr[2] = -1;
+                    return;
+                }
+                if (moduleInfo.addr != testBase) {
                     log.error(String.format("Failed module allocation 0x%08X != 0x%08X for '%s'", testBase, moduleInfo.addr, name));
                     cpu.gpr[2] = -1;
                     return;
