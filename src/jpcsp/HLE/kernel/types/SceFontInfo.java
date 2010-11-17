@@ -57,7 +57,6 @@ public class SceFontInfo {
     protected int shadowColor;
 
     // Tables from PGF.
-    protected int[] advanceMap;
     protected int[] shadowCharMap;
     protected int[] charPointerTable;
 
@@ -70,17 +69,17 @@ public class SceFontInfo {
         fileType = fontFile.getPGFMagic();
 
         // Characters/Shadow characters' variables.
-        n_chars = fontFile.getCharPointerLenght();
+        n_chars = fontFile.getCharPointerLength();
         charmap_compr_len = (fontFile.getRevision() == 3) ? 7 : 1;
         texYSize = 0;
         advancex = fontFile.getMaxAdvance()[0]/16;
         advancey = fontFile.getMaxAdvance()[1]/16;
-        n_shadows = fontFile.getShadowMapLenght();
+        n_shadows = fontFile.getShadowMapLength();
         shadowscale = fontFile.getShadowScale()[0];
         glyph = new Glyph();
         shadowGlyph = new Glyph();
-        charmap_compr = new int[fontFile.getCompCharMapLenght()];
-        charmap = new int[fontFile.getCharMapLenght()];
+        charmap_compr = new int[fontFile.getCompCharMapLength()];
+        charmap = new int[fontFile.getCharMapLength()];
 
         // Texture's variables (using 512 as default size for now).
         texWidth = 512;
@@ -93,15 +92,14 @@ public class SceFontInfo {
         texture = new int[texWidth*texHeight];
 
         // Convert and retrieve the necessary tables.
-        advanceMap = fontFile.getAdvanceTable();
-        shadowCharMap = getTable(fontFile.getShadowCharMap(), fontFile.getShadowMapLenght(), fontFile.getShadowMapBpe());
+        shadowCharMap = getTable(fontFile.getShadowCharMap(), fontFile.getShadowMapLength(), fontFile.getShadowMapBpe());
         if(fontFile.getCharMapBpe() == 16) {
             charmap = fontFile.getCharMap();
         }
         else {
-            charmap = getTable(fontFile.getCharMap(), fontFile.getCharMapLenght(), fontFile.getCharMapBpe());
+            charmap = getTable(fontFile.getCharMap(), fontFile.getCharMapLength(), fontFile.getCharMapBpe());
         }
-        charPointerTable = getTable(fontFile.getCharPointerTable(), fontFile.getCharPointerLenght(), fontFile.getCharPointerBpe());
+        charPointerTable = getTable(fontFile.getCharPointerTable(), fontFile.getCharPointerLength(), fontFile.getCharPointerBpe());
 
         // Get the font data.
         fontdata = fontFile.getFontdata();
