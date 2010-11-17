@@ -1608,21 +1608,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         return dispatchThreadEnabled ? SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED : SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED;
     }
 
-    /** Registers a callback on the current thread.
+    /** Registers a callback on the thread that created the callback.
      * @return true on success (the cbid was a valid callback uid) */
     public boolean hleKernelRegisterCallback(int callbackType, int cbid) {
-        // Consistency check
-        if (currentThread.callbackReady[callbackType]) {
-            log.warn("hleKernelRegisterCallback(type=" + callbackType + ") ready=true");
-        }
-
         SceKernelCallbackInfo callback = callbackMap.get(cbid);
         if (callback == null) {
             log.warn("hleKernelRegisterCallback(type=" + callbackType + ") unknown uid " + Integer.toHexString(cbid));
             return false;
         }
-        currentThread.callbackRegistered[callbackType] = true;
-        currentThread.callbackInfo[callbackType] = callback;
+
+        SceKernelThreadInfo thread = getThreadById(callback.threadId);
+        // Consistency check
+        if (thread.callbackReady[callbackType]) {
+            log.warn("hleKernelRegisterCallback(type=" + callbackType + ") ready=true");
+        }
+
+        thread.callbackRegistered[callbackType] = true;
+        thread.callbackInfo[callbackType] = callback;
         return true;
     }
 
@@ -2074,6 +2076,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         cpu.gpr[2] = 0;
         currentThread.doCallbacks = true;
         checkCallbacks();
+        currentThread.doCallbacks = false;
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {
