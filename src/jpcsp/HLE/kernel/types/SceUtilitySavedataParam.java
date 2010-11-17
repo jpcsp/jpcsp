@@ -388,6 +388,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         safeLoad(mem, pic1FileName, pic1FileData);
         safeLoad(mem, snd0FileName, snd0FileData);
 		loadPsf(mem, path, paramSfoFileName, sfoParam);
+		bind = BIND_IS_OK;
 	}
 
     private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {

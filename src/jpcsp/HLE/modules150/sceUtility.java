@@ -269,6 +269,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
     public static final int PSP_SYSTEMPARAM_TIME_FORMAT_24HR = 0;
     public static final int PSP_SYSTEMPARAM_TIME_FORMAT_12HR = 1;
 
+    public static final int PSP_SYSTEMPARAM_BUTTON_CONFIRM_IS_CIRCLE = 0;
+    public static final int PSP_SYSTEMPARAM_BUTTON_CONFIRM_IS_CROSS = 1;
+
     public static final int PSP_UTILITY_DIALOG_STATUS_NONE = 0;
     public static final int PSP_UTILITY_DIALOG_STATUS_INIT = 1;
     public static final int PSP_UTILITY_DIALOG_STATUS_VISIBLE = 2;
@@ -310,7 +313,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected int systemParam_timeZone = 0;
     protected int systemParam_daylightSavingTime = 0;
     protected int systemParam_language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
-    protected int systemParam_buttonPreference = 0;
+    protected int systemParam_buttonPreference = PSP_SYSTEMPARAM_BUTTON_CONFIRM_IS_CROSS;
 
     // Save list vars.
     protected Object saveListSelection;
