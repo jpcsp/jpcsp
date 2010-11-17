@@ -3,7 +3,7 @@
 // INSERT DEFINES
 
 #extension GL_EXT_gpu_shader4 : enable
-#if USE_VBO
+#if USE_UBO
 #   extension GL_ARB_uniform_buffer_object : enable
 #endif
 #if __VERSION__ >= 140
