@@ -447,8 +447,8 @@ public class sceFont implements HLEModule, HLEStartModule {
                 // Bitmap dimensions.
                 mem.write16(fontInfoAddr + 80, (short) currentPGF.getMaxGlyphWidth());
                 mem.write16(fontInfoAddr + 82, (short) currentPGF.getMaxGlyphHeight());
-                mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLenght());     // Number of elements in the font's charmap.
-                mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLenght());   // Number of elements in the font's shadow charmap.
+                mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLength());     // Number of elements in the font's charmap.
+                mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLength());   // Number of elements in the font's shadow charmap.
                 // Font style (used by font comparison functions).
                 mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));            // Horizontal size.
                 mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));            // Vertical size.
@@ -774,6 +774,9 @@ public class sceFont implements HLEModule, HLEStartModule {
                 // the proper values for the Debug font.
                 yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
                 yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+                if (yPosI < 0) {
+                	yPosI = 0;
+                }
             }
             // Use our Debug font.
             Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
@@ -991,8 +994,8 @@ public class sceFont implements HLEModule, HLEStartModule {
                     // Bitmap dimensions.
                     mem.write16(fontInfoAddr + 80, (short) currentPGF.getMaxGlyphWidth());
                     mem.write16(fontInfoAddr + 82, (short) currentPGF.getMaxGlyphHeight());
-                    mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLenght()); // Number of elements in the font's charmap.
-                    mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLenght());   // Number of elements in the font's shadow charmap.
+                    mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLength()); // Number of elements in the font's charmap.
+                    mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLength());   // Number of elements in the font's shadow charmap.
                     // Font style (used by font comparison functions).
                     mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));   // Horizontal size.
                     mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));   // Vertical size.
