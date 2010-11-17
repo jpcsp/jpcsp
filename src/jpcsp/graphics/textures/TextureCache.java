@@ -123,4 +123,8 @@ public class TextureCache {
 	public void setTextureAlreadyHashed(int addr, int clutAddr) {
 		textureAlreadyHashed.add(getKey(addr, clutAddr));
 	}
+
+	public void resetTextureAlreadyHashed(int addr, int clutAddr) {
+		textureAlreadyHashed.remove(getKey(addr, clutAddr));
+	}
 }
