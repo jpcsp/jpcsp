@@ -359,7 +359,6 @@ public class sceMp3 implements HLEModule, HLEStartModule {
             parseMp3FrameHeader();
             if(checkMediaEngineState()) {
                 memBufOffset = 0;
-                mp3Channel = null;
                 me.finish();
                 me.init(mp3Channel, false, true);
             }
