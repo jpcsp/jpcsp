@@ -83,16 +83,19 @@ public class Texture {
 
 		if (addr != 0) {
 			int bufferLengthInBytes = lineWidth * height;
+			int lineWidthInBytes = lineWidth;
 			switch (pixelStorage) {
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED:
-					bufferLengthInBytes = bufferLengthInBytes * 2;
+					bufferLengthInBytes *= 2;
+					lineWidthInBytes *= 2;
 					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
-					bufferLengthInBytes = bufferLengthInBytes * 4;
+					bufferLengthInBytes *= 4;
+					lineWidthInBytes *= 4;
 					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1:
 					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 8);
@@ -102,7 +105,8 @@ public class Texture {
 					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 4);
 					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
-					bufferLengthInBytes = bufferLengthInBytes / 2;
+					bufferLengthInBytes /= 2;
+					lineWidthInBytes /= 2;
 					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
 					break;
@@ -111,11 +115,16 @@ public class Texture {
 				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
 			}
 
-			int stride = hashStride;
-			if (lineWidth < hashStride) {
-				stride = lineWidth - 4;
+			int strideInBytes = hashStride;
+			if (lineWidthInBytes < hashStride) {
+				if (lineWidthInBytes <= 32) {
+					// No stride at all for narrow textures
+					strideInBytes = 0;
+				} else {
+					strideInBytes = lineWidthInBytes - 4;
+				}
 			}
-			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes, stride);
+			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes, strideInBytes);
 		}
 
 		if (clutAddr != 0) {

@@ -3279,6 +3279,17 @@ public class VideoEngine {
                     log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
                 }
             }
+
+            // Remove the destination address from the texture cache
+            if (canCacheTexture(context.textureTx_destinationAddress)) {
+	            TextureCache textureCache = TextureCache.getInstance();
+	            textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, context.tex_clut_addr);
+	            textureCache.resetTextureAlreadyHashed(context.textureTx_destinationAddress, 0);
+            }
+            if (context.textureTx_destinationAddress == (context.texture_base_pointer[0] & Memory.addressMask)) {
+            	textureChanged = true;
+            }
+
             int width = context.textureTx_width;
             int height = context.textureTx_height;
 
