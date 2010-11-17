@@ -30,11 +30,7 @@ vec4 getFragColor()
     vec4 Cs = gl_SecondaryColor;
     vec4 Cd = vec4(vec3(colorDoubling), 1.0);
 
-    if (!texEnable)
-    {
-        return clamp(Cp + Cs, 0.0, 1.0);
-    }
-    else
+    if (texEnable)
     {
         vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz);
 
@@ -66,6 +62,10 @@ vec4 getFragColor()
         }
 
         return clamp(Cd * (Cp + Cs), 0.0, 1.0);
+    }
+    else
+    {
+        return clamp(Cp + Cs, 0.0, 1.0);
     }
 }
 
