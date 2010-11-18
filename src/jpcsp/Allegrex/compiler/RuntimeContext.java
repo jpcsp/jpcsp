@@ -257,7 +257,7 @@ public class RuntimeContext {
     		char compileFlag = insn.hasFlags(Instruction.FLAG_INTERPRETED) ? 'I' : 'C';
     		log.trace(String.format("Executing 0x%X %c - %s", address, compileFlag, insn.disasm(address, opcode)));
     	}
-    }
+}
 
     private static boolean initialise() {
         if (!isActive) {
@@ -1082,7 +1082,7 @@ public class RuntimeContext {
 	    		} else if (width == 16) {
 	    			message.append(String.format("%04X", memory.read16(address)));
 	    		} else if (width == 32) {
-	    			message.append(String.format("%08X", memory.read32(address)));
+	    			message.append(String.format("%08X (%f)", memory.read32(address), Float.intBitsToFloat(memory.read32(address))));
 	    		}
 	    	} else {
 	    		message.append(String.format("write%d(0x%08X, 0x", width, address));
@@ -1091,7 +1091,7 @@ public class RuntimeContext {
 	    		} else if (width == 16) {
 	    			message.append(String.format("%04X", value));
 	    		} else if (width == 32) {
-	    			message.append(String.format("%08X", value));
+	    			message.append(String.format("%08X (%f)", value, Float.intBitsToFloat(value)));
 	    		}
 	    		message.append(")");
 	    	}
