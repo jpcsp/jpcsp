@@ -167,7 +167,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         log.warn(functionName + " bad voice number " + voice);
-        cpu.gpr[2] = -1;
+        cpu.gpr[2] = SceKernelErrors.ERROR_SAS_INVALID_VOICE;
         return false;
     }
 
@@ -265,7 +265,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
+        if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu) && isVoiceNumberGood(voice, "__sceSasSetADSR", cpu)) {
             if ((flag & 0x1) == 0x1) {
                 voices[voice].getEnvelope().AttackRate = attack;
             }
@@ -464,7 +464,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isSasHandleGood(sasCore, "__sceSasSetSL", cpu)) {
+        if (isSasHandleGood(sasCore, "__sceSasSetSL", cpu) && isVoiceNumberGood(voice, "__sceSasSetSL", cpu)) {
             voices[voice].getEnvelope().SustainLevel = level;
             cpu.gpr[2] = 0;
         } else {
@@ -510,7 +510,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isSasHandleGood(sasCore, "__sceSasGetEnvelopeHeight", cpu)) {
+        if (isSasHandleGood(sasCore, "__sceSasGetEnvelopeHeight", cpu) && isVoiceNumberGood(voice, "__sceSasGetEnvelopeHeight", cpu)) {
             cpu.gpr[2] = voices[voice].getEnvelope().height;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
@@ -614,7 +614,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
+        if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu) && isVoiceNumberGood(voice, "__sceSasSetADSRmode", cpu)) {
             if ((flag & 0x1) == 0x1) {
                 voices[voice].getEnvelope().AttackCurveType = attackType;
             }
@@ -779,7 +779,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int env1Bitfield = (ADSREnv1 & 0xFFFF);
         int env2Bitfield = (ADSREnv2 & 0xFFFF);
 
-        if (isSasHandleGood(sasCore, "__sceSasSetSimpleADSR", cpu)) {
+        if (isSasHandleGood(sasCore, "__sceSasSetSimpleADSR", cpu) && isVoiceNumberGood(voice, "__sceSasSetSimpleADSR", cpu)) {
             // The bitfields represent every value except for the decay curve shape,
             // which seems to be unchanged in simple mode.
             voices[voice].getEnvelope().SustainLevel = (env1Bitfield & 0xF);
