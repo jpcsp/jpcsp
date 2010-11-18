@@ -18,6 +18,7 @@ package jpcsp.media;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import jpcsp.HLE.Modules;
@@ -28,6 +29,7 @@ import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.sound.SoundChannel;
 import jpcsp.util.Debug;
+import jpcsp.util.FIFOByteBuffer;
 
 import com.xuggle.ferry.Logger;
 import com.xuggle.xuggler.IAudioSamples;
@@ -55,7 +57,7 @@ public class MediaEngine {
     private int audioStreamID;
     private SoundChannel extSoundChannel;
     private BufferedImage currentImg;
-    private byte[] currentSamples;
+    private FIFOByteBuffer currentSamples;
     private int currentSamplesSize = 1024;  // Default size.
     private IVideoPicture videoPicture;
     private IAudioSamples audioSamples;
@@ -120,8 +122,14 @@ public class MediaEngine {
         return currentImg;
     }
 
-    public byte[] getCurrentAudioSamples() {
-        return currentSamples;
+    public int getCurrentAudioSamples(byte[] buffer) {
+    	int length = Math.min(buffer.length, currentSamples.length());
+    	if (length > 0) {
+    		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, length);
+    		length = currentSamples.readByteBuffer(byteBuffer);
+    	}
+
+    	return length;
     }
 
     public int getAudioSamplesSize() {
@@ -168,6 +176,9 @@ public class MediaEngine {
 
     	container = IContainer.make();
 
+        // Keep trying to read
+        container.setReadRetryCount(-1);
+
         if (container.open(channel, null) < 0) {
             Modules.log.error("MediaEngine: Invalid container format!");
         }
@@ -212,6 +223,7 @@ public class MediaEngine {
                 Modules.log.error("MediaEngine: Can't open audio decoder!");
             } else {
         		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
+        		currentSamples = new FIFOByteBuffer();
             }
         }
 
@@ -416,7 +428,10 @@ public class MediaEngine {
     		extAudioSamples.delete();
     		extAudioSamples = null;
     	}
-        currentSamples = null;
+    	if (currentSamples != null) {
+    		currentSamples.delete();
+            currentSamples = null;
+    	}
     }
 
     private void startSound(IStreamCoder aAudioCoder) {
@@ -434,15 +449,7 @@ public class MediaEngine {
     private void updateSoundSamples(IAudioSamples aSamples) {
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
 
-        if (currentSamples == null) {
-            currentSamples = rawBytes;
-        } else {
-            byte[] temp = new byte[rawBytes.length + currentSamples.length];
-            System.arraycopy(currentSamples, 0, temp, 0, currentSamples.length);
-            System.arraycopy(rawBytes, 0, temp, currentSamples.length, rawBytes.length);
-
-            currentSamples = temp;
-        }
+        currentSamples.write(rawBytes);
     }
 
     public void writeVideoImage(int dest_addr, int frameWidth, int videoPixelMode) {

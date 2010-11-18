@@ -380,6 +380,31 @@ public class Utilities {
 		destination.order(order);
     }
 
+    public static void putBuffer(ByteBuffer destination, Buffer source, ByteOrder sourceByteOrder, int lengthInBytes) {
+        // Set the destination to the desired ByteOrder
+		ByteOrder order = destination.order();
+		destination.order(sourceByteOrder);
+
+		int srcLimit = source.limit();
+		if (source instanceof IntBuffer) {
+    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + lengthInBytes / 4));
+    	} else if (source instanceof ShortBuffer) {
+    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + lengthInBytes / 2));
+    	} else if (source instanceof ByteBuffer) {
+    		destination.put((ByteBuffer) source.limit(source.position() + lengthInBytes));
+    	} else if (source instanceof FloatBuffer) {
+    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + lengthInBytes / 4));
+    	} else {
+    		Modules.log.error("Utilities.putBuffer: Unsupported Buffer type " + source.getClass().getName());
+    		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+    	}
+
+		// Reset the original ByteOrder of the destination
+		destination.order(order);
+		// Reset the original limit of the source
+		source.limit(srcLimit);
+    }
+
         /**
      * Reads inputstream i into a String with the UTF-8 charset
      * until the inputstream is finished (don't use with infinite streams).
