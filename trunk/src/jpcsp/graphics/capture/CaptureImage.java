@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
@@ -248,9 +249,23 @@ public class CaptureImage {
     	return (n + 3) & ~3;
     }
 
+    private int getInt32(Buffer buffer) {
+    	if (buffer instanceof IntBuffer) {
+    		return ((IntBuffer) buffer).get();
+    	} else if (buffer instanceof ShortBuffer) {
+    		ShortBuffer shortBuffer = (ShortBuffer) buffer;
+    		int n0 = shortBuffer.get() & 0xFFFF;
+    		int n1 = shortBuffer.get() & 0xFFFF;
+    		return (n1 << 16) | n0;
+    	} else if (buffer instanceof ByteBuffer) {
+    		return ((ByteBuffer) buffer).getInt();
+    	}
+
+    	return 0;
+    }
+
     private void decompressImageDXT(int dxtLevel) {
 		IntBuffer decompressedBuffer = IntBuffer.allocate(round4(width) * round4(height));
-		IntBuffer compressedBuffer = (IntBuffer) buffer;
 
 		int strideX = 0;
 		int strideY = 0;
@@ -259,10 +274,10 @@ public class CaptureImage {
 		for (int i = 0; i < compressedImageSize; i += strideSize) {
 			if (dxtLevel > 1) {
 				// Skip Alpha values
-				compressedBuffer.get();
-				compressedBuffer.get();
+				getInt32(buffer);
+				getInt32(buffer);
 			}
-			int color = compressedBuffer.get();
+			int color = getInt32(buffer);
 			int color0 = (color >>  0) & 0xFFFF;
 			int color1 = (color >> 16) & 0xFFFF;
 
@@ -301,7 +316,7 @@ public class CaptureImage {
 			colors[2] = ((b2 & 0xFF) << 16) | ((g2 & 0xFF) << 8) | (r2 & 0xFF);
 			colors[3] = ((b3 & 0xFF) << 16) | ((g3 & 0xFF) << 8) | (r3 & 0xFF);
 
-			int bits = compressedBuffer.get();
+			int bits = getInt32(buffer);
 			for (int y = 0; y < 4; y++) {
 				for (int x = 0; x < 4; x++, bits >>>= 2) {
 					storePixel(decompressedBuffer, strideX + x, strideY + y, colors[bits & 3]);
@@ -315,7 +330,7 @@ public class CaptureImage {
 			}
 		}
 
-		compressedBuffer.rewind();
+		buffer.rewind();
 		compressedImage = false;
 		buffer = decompressedBuffer;
 		bufferWidth = width;
