@@ -50,6 +50,7 @@ public class MediaEngine {
 	private static boolean initialized = false;
     private IContainer container;
     private IPacket packet;
+    private int packetOffset;
     private int numStreams;
     private IStreamCoder videoCoder;
     private IStreamCoder audioCoder;
@@ -228,6 +229,7 @@ public class MediaEngine {
         }
 
         packet = IPacket.make();
+        packetOffset = -1;
     }
 
     private long convertTimestamp(long ts, IRational timeBase, int timestampsPerSecond) {
@@ -235,49 +237,65 @@ public class MediaEngine {
     }
 
     public boolean step() {
-        if (container.readNextPacket(packet) < 0) {
-        	audioPts += sceMpeg.audioTimestampStep;
-        	videoPts += sceMpeg.videoTimestampStep;
-        	return false;
-        }
+    	boolean complete = false;
 
-        if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
-        	int decodedBytes;
-            for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
-            	decodedBytes = videoCoder.decodeVideo(videoPicture, packet, 0);
+    	do {
+	    	if (packetOffset < 0 || packetOffset >= packet.getSize()) {
+		        if (container.readNextPacket(packet) < 0) {
+		        	audioPts += sceMpeg.audioTimestampStep;
+		        	videoPts += sceMpeg.videoTimestampStep;
+		        	packetOffset = -1;
+		        	return false;
+		        }
+	    		packetOffset = 0;
+	    	}
 
-	            if (decodedBytes < 0) {
-	            	// An error occured with this packet, skip it
-	            	break;
+	        if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
+	        	int decodedBytes;
+	            while (packetOffset < packet.getSize()) {
+	            	decodedBytes = videoCoder.decodeVideo(videoPicture, packet, packetOffset);
+
+		            if (decodedBytes < 0) {
+		            	// An error occured with this packet, skip it
+		            	packetOffset = -1;
+		            	break;
+		            }
+
+		            packetOffset += decodedBytes;
+		        	videoDts = convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+		        	videoPts = convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+
+		        	if (videoPicture.isComplete()) {
+		            	if (videoConverter != null) {
+		            		currentImg = videoConverter.toImage(videoPicture);
+		            	}
+		            	complete = true;
+		            	break;
+		            }
 	            }
+	        } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
+	            int decodedBytes;
+	            while (packetOffset < packet.getSize()) {
+	            	decodedBytes = audioCoder.decodeAudio(audioSamples, packet, packetOffset);
 
-	        	videoDts = convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-	        	videoPts = convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+		            if (decodedBytes < 0) {
+		            	// An error occured with this packet, skip it
+		            	packetOffset = -1;
+		            	break;
+		            }
 
-	        	if (videoPicture.isComplete()) {
-	            	if (videoConverter != null) {
-	            		currentImg = videoConverter.toImage(videoPicture);
-	            	}
+		            packetOffset += decodedBytes;
+		        	audioDts = convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+		        	audioPts = convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+
+		        	if (audioSamples.isComplete()) {
+	                    updateSoundSamples(audioSamples);
+	                    complete = true;
+	                    break;
+	                }
 	            }
-            }
-        } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
-            int decodedBytes;
-            for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
-            	decodedBytes = audioCoder.decodeAudio(audioSamples, packet, offset);
-
-	            if (decodedBytes < 0) {
-	            	// An error occured with this packet, skip it
-	            	break;
-	            }
-
-	        	audioDts = convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-	        	audioPts = convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-
-	        	if (audioSamples.isComplete()) {
-                    updateSoundSamples(audioSamples);
-                }
-            }
-        }
+	        }
+    	} while (!complete);
 
         return true;
     }
