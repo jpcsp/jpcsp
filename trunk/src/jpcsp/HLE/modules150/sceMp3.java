@@ -755,9 +755,6 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
             stream = mp3Map.get(mp3handle);
             pcmSamples = stream.decode();
-            if (pcmSamples == 0) {
-            	log.info("sceMp3Decode nothing to decode");
-            }
             mem.write32(outPcmAddr, stream.getMp3PcmBufAddr());
 
             delayThread(startTime, mp3DecodeDelay);
