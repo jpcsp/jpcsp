@@ -1881,6 +1881,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
             // External audio setup.
             if (checkMediaEngineState()) {
+                mem.memset(buffer_addr, (byte) 0, 8192);
             	me.stepExtAudio(mpegStreamSize);
             } else if (isEnableConnector() && mpegCodec.readAudioFrame(buffer_addr, audioFrameCount)) {
                 mpegAtracAu.pts = mpegCodec.getMpegAtracCurrentTimestamp();
