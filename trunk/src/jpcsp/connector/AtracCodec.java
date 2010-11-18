@@ -65,6 +65,7 @@ public class AtracCodec {
     protected int memBufOffset;
     protected int currentLoopCount;
     protected static boolean useMediaEngine = false;
+    protected byte[] samplesBuffer;
 
     public boolean checkMediaEngineState() {
     	return useMediaEngine && me != null;
@@ -88,6 +89,7 @@ public class AtracCodec {
         }
 
 		atracDecodeBuffer = new byte[sceAtrac3plus.maxSamples * 4];
+		samplesBuffer = new byte[sceAtrac3plus.maxSamples * 4];
 		generateCommandFile();
 	}
 
@@ -171,7 +173,7 @@ public class AtracCodec {
             if(checkMediaEngineState()) {
                 atracChannel.clear();
                 me.finish();
-                atracChannel.writePacket(address, length);
+                atracChannel.write(address, length);
                 me.init(atracChannel, false, true);
                 memBufOffset = 0;
                 atracEndSample = 0;
@@ -253,7 +255,7 @@ public class AtracCodec {
 
 	public void atracAddStreamData(int address, int length) {
         if(checkMediaEngineState()) {
-            atracChannel.writePacket(address, length);
+            atracChannel.write(address, length);
             return;
         }
 
@@ -343,24 +345,13 @@ public class AtracCodec {
     protected int copySamplesToMem(int address) {
         Memory mem = Memory.getInstance();
 
-        int samples = 0;
-        byte[] buf = me.getCurrentAudioSamples();
-        
-        if((buf != null) && (memBufOffset < buf.length)) {
-            atracEndSample = buf.length;
-            if((memBufOffset + sceAtrac3plus.maxSamples * 4) < buf.length) {
-                mem.copyToMemory(address, ByteBuffer.wrap(buf, memBufOffset, sceAtrac3plus.maxSamples * 4), sceAtrac3plus.maxSamples * 4);
-                memBufOffset += (sceAtrac3plus.maxSamples * 4);
-                samples = sceAtrac3plus.maxSamples;
-            } else {
-                int length = buf.length - memBufOffset;
-                mem.copyToMemory(address, ByteBuffer.wrap(buf, memBufOffset, length), length);
-                memBufOffset += length;
-                samples = length;
-            }
+        int bytes = me.getCurrentAudioSamples(samplesBuffer);
+        if (bytes > 0) {
+            atracEndSample += bytes;
+            mem.copyToMemory(address, ByteBuffer.wrap(samplesBuffer, 0, bytes), bytes);
         }
 
-        return samples;
+        return bytes / 4;
     }
 
     public void finish() {

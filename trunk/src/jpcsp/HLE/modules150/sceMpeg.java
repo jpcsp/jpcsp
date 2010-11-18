@@ -401,7 +401,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             if (checkMediaEngineState()) {
             	me.init();
             	meChannel = new PacketChannel();
-                meChannel.writePacket(buffer_addr, mpegOffset);
+                meChannel.write(buffer_addr, mpegOffset);
             } else if (isEnableConnector()) {
                 mpegCodec.init(mpegVersion, mpegStreamSize, mpegLastTimestamp);
                 mpegCodec.writeVideo(buffer_addr, mpegOffset);
@@ -1995,7 +1995,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         if (packetsAdded > 0) {
             if (checkMediaEngineState()) {
-                meChannel.writePacket(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
+                meChannel.write(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             } else if (isEnableConnector()) {
                 mpegCodec.writeVideo(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             }

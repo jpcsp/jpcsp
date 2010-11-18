@@ -2776,7 +2776,7 @@ public class VideoEngine {
         }
 
         if (type > PRIM_SPRITES) {
-            error(helper.getCommandString(PRIM) + " Type unhandled " + type);
+            error(String.format("%s: Type %d unhandled at 0x%08X", helper.getCommandString(PRIM), type, currentList.pc - 4));
             return;
         }
 
