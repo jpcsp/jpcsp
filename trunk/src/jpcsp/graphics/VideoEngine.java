@@ -4834,7 +4834,7 @@ public class VideoEngine {
 	}
 
     private void drawBezier(int ucount, int vcount) {
-        if ((ucount - 1) % 3 != 0 && (vcount - 1) % 3 != 0) {
+        if ((ucount - 1) % 3 != 0 || (vcount - 1) % 3 != 0) {
             log.warn("Unsupported bezier parameters ucount=" + ucount + " vcount=" + vcount);
             return;
         }
