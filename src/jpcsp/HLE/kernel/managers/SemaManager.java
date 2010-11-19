@@ -271,7 +271,7 @@ public class SemaManager {
 
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
-            if ((sema.attr & PSP_SEMA_ATTR_FIFO) == PSP_SEMA_ATTR_FIFO) {
+            if ((sema.attr & PSP_SEMA_ATTR_PRIORITY) == PSP_SEMA_ATTR_FIFO) {
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
 

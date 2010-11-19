@@ -136,7 +136,7 @@ public class LwMutexManager {
             // No thread is having control of LwMutex.
             info.threadid = -1;
         } else {
-            if ((info.attr & PSP_LWMUTEX_ATTR_FIFO) == PSP_LWMUTEX_ATTR_FIFO) {
+            if ((info.attr & PSP_LWMUTEX_ATTR_PRIORITY) == PSP_LWMUTEX_ATTR_FIFO) {
                 for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_LWMUTEX &&

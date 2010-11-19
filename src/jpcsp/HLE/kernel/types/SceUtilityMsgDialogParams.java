@@ -36,6 +36,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_OK     = 0x00000020;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_ENABLE_CANCEL      = 0x00000000;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_DISABLE_CANCEL     = 0x00000080;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_MASK = 0x00000100;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NONE = 0x00000000;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES  = 0x00000000;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO   = 0x00000100;
@@ -86,14 +87,14 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
 
     public boolean isOptionYesNoDefaultYes() {
         if((options & PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) == PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) {
-            return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES;
+            return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_MASK) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES;
         }
         return false;
     }
 
     public boolean isOptionYesNoDefaultNo() {
     	if((options & PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) == PSP_UTILITY_MSGDIALOG_OPTION_BUTTON_TYPE_YESNO) {
-            return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO;
+            return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_MASK) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO;
         }
         return false;
     }
