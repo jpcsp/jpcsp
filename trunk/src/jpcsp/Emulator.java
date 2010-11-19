@@ -36,6 +36,7 @@ import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.sound.SoundChannel;
 import jpcsp.util.JpcspDialogManager;
 
 import org.apache.log4j.Logger;
@@ -115,6 +116,7 @@ public class Emulator implements Runnable {
                 log.info("PSP CPU Speed: " + String.format("%.2f", cpuCycles / cpuSecs / 1000000.0) + "MHz (" + (long) (cpuCycles / cpuSecs) + " instructions per second)");
             }
         }
+        SoundChannel.exit();
     }
 
     private boolean isBootModuleBad(String name) {
