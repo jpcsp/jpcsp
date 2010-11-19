@@ -128,6 +128,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         private static final int PSMF_AVC_STREAM = 0;
         private static final int PSMF_ATRAC_STREAM = 1;
         private static final int PSMF_PCM_STREAM = 2;
+        private static final int PSMF_UNKNOWN_STREAM = 3;
         private static final int PSMF_AUDIO_STREAM = 15;
 
         // Header vars.
@@ -384,17 +385,25 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
 
         public int getSpecificStreamNum(int type) {
-            if ((type & PSMF_AVC_STREAM) == PSMF_AVC_STREAM && (currentVideoStreamNumber != -1)) {
-                return videoStreamNum;
-            } else if ((type & PSMF_ATRAC_STREAM) == PSMF_ATRAC_STREAM && (currentAudioStreamNumber != -1)) {
-                return audioStreamNum;
-            } else if ((type & PSMF_PCM_STREAM) == PSMF_PCM_STREAM && (currentAudioStreamNumber != -1)) {
-                return audioStreamNum;
-            } else if ((type & PSMF_AUDIO_STREAM) == PSMF_AUDIO_STREAM && (currentAudioStreamNumber != -1)) {
-                return audioStreamNum;
-            } else {
-                return -1;
-            }
+        	switch (type) {
+        		case PSMF_AVC_STREAM:
+        			if (currentVideoStreamNumber != -1) {
+        				return videoStreamNum;
+        			}
+        			break;
+        		case PSMF_ATRAC_STREAM:
+        		case PSMF_PCM_STREAM:
+        		case PSMF_UNKNOWN_STREAM:
+        		case PSMF_AUDIO_STREAM:
+        			if (currentAudioStreamNumber != -1) {
+        				return audioStreamNum;
+        			}
+        			break;
+    			default:
+    				log.warn(String.format("scePsmfGetNumberOfSpecificStreams unknown stream type %d", type));
+        	}
+
+        	return -1;
         }
 
         public void setStreamNum(int id) {
@@ -402,15 +411,23 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
 
         public void setStreamType(int type, int channel) {
-            if ((type & PSMF_AVC_STREAM) == PSMF_AVC_STREAM && (currentVideoStreamNumber != -1)) {
-                currentStreamNumber = currentVideoStreamNumber;
-            } else if ((type & PSMF_ATRAC_STREAM) == PSMF_ATRAC_STREAM && (currentAudioStreamNumber != -1)) {
-                currentStreamNumber = currentAudioStreamNumber;
-            } else if ((type & PSMF_PCM_STREAM) == PSMF_PCM_STREAM && (currentAudioStreamNumber != -1)) {
-                currentStreamNumber = currentAudioStreamNumber;
-            } else if ((type & PSMF_AUDIO_STREAM) == PSMF_AUDIO_STREAM && (currentAudioStreamNumber != -1)) {
-                currentStreamNumber = currentAudioStreamNumber;
-            }
+        	switch (type) {
+	    		case PSMF_AVC_STREAM:
+	    			if (currentVideoStreamNumber != -1) {
+	                    currentStreamNumber = currentVideoStreamNumber;
+	    			}
+	    			break;
+	    		case PSMF_ATRAC_STREAM:
+	    		case PSMF_PCM_STREAM:
+        		case PSMF_UNKNOWN_STREAM:
+	    		case PSMF_AUDIO_STREAM:
+	    			if (currentAudioStreamNumber != -1) {
+	                    currentStreamNumber = currentAudioStreamNumber;
+	    			}
+	    			break;
+				default:
+					log.warn(String.format("scePsmfSpecifyStreamWithStreamType unknown stream type %d", type));
+        	}
         }
 
         public void setStreamTypeNum(int type, int tid) {
