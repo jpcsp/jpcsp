@@ -365,13 +365,9 @@ public class MbxManager {
             return true;
         }
     }
-    public static final MbxManager singleton;
+    public static final MbxManager singleton = new MbxManager();
 
     private MbxManager() {
     }
 
-
-    static {
-        singleton = new MbxManager();
-    }
 }

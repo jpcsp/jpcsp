@@ -407,13 +407,9 @@ public class LwMutexManager {
             return true;
         }
     }
-    public static final LwMutexManager singleton;
+    public static final LwMutexManager singleton = new LwMutexManager();
 
     private LwMutexManager() {
     }
 
-
-    static {
-        singleton = new LwMutexManager();
-    }
 }

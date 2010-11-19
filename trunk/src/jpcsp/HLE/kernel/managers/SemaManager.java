@@ -440,13 +440,9 @@ public class SemaManager {
             return true;
         }
     }
-    public static final SemaManager singleton;
+    public static final SemaManager singleton = new SemaManager();
 
     private SemaManager() {
     }
 
-
-    static {
-        singleton = new SemaManager();
-    }
 }

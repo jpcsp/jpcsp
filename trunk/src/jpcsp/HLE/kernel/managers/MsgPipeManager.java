@@ -574,13 +574,9 @@ public class MsgPipeManager {
             return true;
         }
     }
-    public static final MsgPipeManager singleton;
+    public static final MsgPipeManager singleton = new MsgPipeManager();
 
     private MsgPipeManager() {
     }
-
-
-    static {
-        singleton = new MsgPipeManager();
-    }
+    
 }
