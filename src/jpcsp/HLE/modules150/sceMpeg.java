@@ -1027,10 +1027,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 	// Read Au of next Avc frame
                     if (checkMediaEngineState()) {
                     	me.getVideoTimestamp(mpegAvcAu);
-                    } else if (isEnableConnector() && mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
-                		// Avc Au updated by the MpegCodec
+                    } else if (isEnableConnector()) {
+                    	if (!mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
+                    		// Avc Au was not updated by the MpegCodec
+                            mpegAvcAu.pts += videoTimestampStep;
+                    	}
                 		updateAvcDts();
-                	}
+                    }
                 	mpegAvcAu.write(mem, au_addr);
                 	if (log.isDebugEnabled()) {
                 		log.debug(String.format("sceMpegGetAvcAu returning AvcAu=%s", mpegAvcAu.toString()));
@@ -1301,7 +1304,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             if (checkMediaEngineState()) {
                 if (me.getContainer() != null) {
                 	int previousChannelLength = meChannel.length();
-                    if (me.step()) {
+                    if (me.stepVideo()) {
                     	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
                     	int channelLength = meChannel.length();
                     	packetsConsumed = (previousChannelLength - channelLength) / mpegRingbuffer.packetSize;
@@ -1628,7 +1631,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             if (checkMediaEngineState()) {
                 if (me.getContainer() != null) {
                 	int previousChannelLength = meChannel.length();
-                    if (me.step()) {
+                    if (me.stepVideo()) {
                     	int channelLength = meChannel.length();
                     	packetsConsumed = (previousChannelLength - channelLength) / mpegRingbuffer.packetSize;
                     } else {

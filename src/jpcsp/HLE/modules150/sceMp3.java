@@ -378,7 +378,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
         }
 
         public int decode() {
-            if(checkMediaEngineState()) {
+            if (checkMediaEngineState()) {
             	// Wait to fill the ME Channel with enough data before opening the
             	// audio channel, otherwise the decoding might stop and assume
             	// an "End Of File" condition.
@@ -387,7 +387,7 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 	            		me.init(mp3Channel, false, true);
 	            		meInitialized = true;
 	            	}
-            		me.step();
+            		me.stepAudio();
 	                mp3DecodedBytes = copySamplesToMem(mp3PcmBuf, mp3PcmBufSize, mp3PcmBuffer);
             	} else {
             		mp3DecodedBytes = 0;
