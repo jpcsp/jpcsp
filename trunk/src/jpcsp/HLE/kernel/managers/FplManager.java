@@ -131,7 +131,7 @@ public class FplManager {
 
     private void onFplFree(SceKernelFplInfo info) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        if ((info.attr & PSP_FPL_ATTR_FIFO) == PSP_FPL_ATTR_FIFO) {
+        if ((info.attr & PSP_FPL_ATTR_PRIORITY) == PSP_FPL_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_FPL &&

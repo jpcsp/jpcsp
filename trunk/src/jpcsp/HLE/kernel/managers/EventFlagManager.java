@@ -51,6 +51,7 @@ public class EventFlagManager {
 
     protected final static int PSP_EVENT_WAITSINGLE = 0;
     protected final static int PSP_EVENT_WAITMULTIPLE = 0x200;
+    protected final static int PSP_EVENT_WAITANDOR_MASK = 0x01;
     protected final static int PSP_EVENT_WAITAND = 0x00;
     protected final static int PSP_EVENT_WAITOR = 0x01;
     protected final static int PSP_EVENT_WAITCLEARALL = 0x10;
@@ -162,10 +163,10 @@ public class EventFlagManager {
     private boolean checkEventFlag(SceKernelEventFlagInfo event, int bits, int wait, int outBits_addr) {
         boolean matched = false;
 
-        if (((wait & PSP_EVENT_WAITAND) == PSP_EVENT_WAITAND) &&
+        if (((wait & PSP_EVENT_WAITANDOR_MASK) == PSP_EVENT_WAITAND) &&
                 ((event.currentPattern & bits) == bits)) {
             matched = true;
-        } else if (((wait & PSP_EVENT_WAITOR) == PSP_EVENT_WAITOR) &&
+        } else if (((wait & PSP_EVENT_WAITANDOR_MASK) == PSP_EVENT_WAITOR) &&
                 ((event.currentPattern & bits) != 0)) {
             matched = true;
         }

@@ -139,7 +139,7 @@ public class MutexManager {
             // No thread is having control of Mutex.
             info.threadid = -1;
         } else {
-            if ((info.attr & PSP_MUTEX_ATTR_FIFO) == PSP_MUTEX_ATTR_FIFO) {
+            if ((info.attr & PSP_MUTEX_ATTR_PRIORITY) == PSP_MUTEX_ATTR_FIFO) {
                 for (Iterator<SceKernelThreadInfo> it = Modules.ThreadManForUserModule.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == PSP_WAIT_MUTEX &&

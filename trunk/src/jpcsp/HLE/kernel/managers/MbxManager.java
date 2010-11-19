@@ -89,7 +89,7 @@ public class MbxManager {
 
     private void updateWaitingMbxReceive(SceKernelMbxInfo info) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        if ((info.attr & PSP_MBX_ATTR_FIFO) == PSP_MBX_ATTR_FIFO) {
+        if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_MBX &&
@@ -216,7 +216,7 @@ public class MbxManager {
             log.warn("sceKernelSendMbx unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
         } else {
-            if ((info.attr & PSP_MBX_ATTR_MSG_FIFO) == PSP_MBX_ATTR_MSG_FIFO) {
+            if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_FIFO) {
                 info.addMsg(mem, msg_addr);
             } else if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_PRIORITY) {
                 info.addMsgByPriority(mem, msg_addr);
