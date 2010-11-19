@@ -18,6 +18,8 @@ package jpcsp.Allegrex.compiler.nativeCode;
 
 import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.Compiler;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 
 /**
  * @author gid15
@@ -85,9 +87,11 @@ public class Memset extends AbstractNativeCodeSequence {
 					dstAddr += 2;
 					n--;
 				}
+				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, n * 2, 4);
 				for (int i = 0; i < n; i += 2, dstAddr += 4) {
-					mem.write32(dstAddr, value32);
+					memoryWriter.writeNext(value32);
 				}
+				memoryWriter.flush();
 				if ((n & 1) != 0) {
 					mem.write16(dstAddr, value16);
 				}
@@ -98,10 +102,11 @@ public class Memset extends AbstractNativeCodeSequence {
 				// This is equivalent to a normal memset
 				getMemory().memset(dstAddr, (byte) c, n * 4);
 			} else {
-				Memory mem = getMemory();
-				for (int i = 0; i < n; i++, dstAddr += 4) {
-					mem.write32(dstAddr, c);
+				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dstAddr, n * 4, 4);
+				for (int i = 0; i < n; i++) {
+					memoryWriter.writeNext(c);
 				}
+				memoryWriter.flush();
 			}
 		} else {
 			Compiler.log.error("Memset.call: unsupported cLength=0x" + Integer.toHexString(cLength));
