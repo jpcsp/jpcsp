@@ -400,13 +400,8 @@ public class MutexManager {
             return true;
         }
     }
-    public static final MutexManager singleton;
+    public static final MutexManager singleton = new MutexManager();
 
     private MutexManager() {
-    }
-
-
-    static {
-        singleton = new MutexManager();
     }
 }

@@ -411,13 +411,9 @@ public class FplManager {
             return true;
         }
     }
-    public static final FplManager singleton;
+    public static final FplManager singleton = new FplManager();
 
     private FplManager() {
     }
 
-
-    static {
-        singleton = new FplManager();
-    }
 }

@@ -163,13 +163,9 @@ public class SystemTimeManager {
         int low = (int) (systemTime & 0xffffffffL);
         Emulator.getProcessor().cpu.gpr[2] = low;
     }
-    public static final SystemTimeManager singleton;
+    public static final SystemTimeManager singleton = new SystemTimeManager();
 
     private SystemTimeManager() {
     }
-
-
-    static {
-        singleton = new SystemTimeManager();
-    }
+    
 }

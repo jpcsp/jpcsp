@@ -406,13 +406,9 @@ public class EventFlagManager {
             return true;
         }
     }
-    public static final EventFlagManager singleton;
+    public static final EventFlagManager singleton = new EventFlagManager();
 
     private EventFlagManager() {
     }
 
-
-    static {
-        singleton = new EventFlagManager();
-    }
 }

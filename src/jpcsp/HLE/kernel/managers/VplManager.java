@@ -395,13 +395,9 @@ public class VplManager {
             return true;
         }
     }
-    public static final VplManager singleton;
+    public static final VplManager singleton = new VplManager();
 
     private VplManager() {
     }
-
-
-    static {
-        singleton = new VplManager();
-    }
+    
 }

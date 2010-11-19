@@ -27,13 +27,9 @@ import jpcsp.HLE.kernel.types.SceUid;
  */
 public class SceUidManager {
 
-    private static HashMap<Integer, SceUid> uidMap;
-    private static int uidNext;
-
-    static {
-        uidMap = new HashMap<Integer, SceUid>();
-        uidNext = 0x1; // LocoRoco expects UID to be 8bit
-    }
+    private static HashMap<Integer, SceUid> uidMap = new HashMap<Integer, SceUid>();
+    private static int uidNext = 0x1; // LocoRoco expects UID to be 8bit
+    
 
     /** classes should call getUid to get a new unique SceUID */
     static public int getNewUid(Object purpose) {
