@@ -612,7 +612,7 @@ public class scePsmfPlayer implements HLEModule {
         if (checkMediaEngineState()) {
             if (me != null) {
                 if (me.getContainer() != null) {
-                    me.step();
+                    me.stepVideo();
                     writePSMFVideoImage(displayBuffer, videoDataFrameWidth);
                 }
             }

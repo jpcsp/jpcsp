@@ -20,6 +20,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceMpegAu;
@@ -37,7 +39,6 @@ import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
 import com.xuggle.xuggler.IPacket;
 import com.xuggle.xuggler.IPixelFormat;
-import com.xuggle.xuggler.IRational;
 import com.xuggle.xuggler.IStream;
 import com.xuggle.xuggler.IStreamCoder;
 import com.xuggle.xuggler.IVideoPicture;
@@ -49,8 +50,6 @@ public class MediaEngine {
 
 	private static boolean initialized = false;
     private IContainer container;
-    private IPacket packet;
-    private int packetOffset;
     private int numStreams;
     private IStreamCoder videoCoder;
     private IStreamCoder audioCoder;
@@ -64,13 +63,11 @@ public class MediaEngine {
     private IAudioSamples audioSamples;
     private IConverter videoConverter;
     private IVideoResampler videoResampler;
-    private static final long timestampMask = 0x7FFFFFFFFFFFFFFFL;
     private boolean extAudioChecked;
-    private long audioPts;
-    private long audioDts;
-    private long videoPts;
-    private long videoDts;
     private int[] videoImagePixels;
+    private StreamState videoStreamState;
+    private StreamState audioStreamState;
+    private List<IPacket> freePackets = new LinkedList<IPacket>();
 
     // External audio loading vars.
     private IContainer extContainer;
@@ -141,16 +138,35 @@ public class MediaEngine {
         currentSamplesSize = newSize;
     }
 
+    public void release(IPacket packet) {
+    	if (packet != null) {
+    		freePackets.add(packet);
+    	}
+    }
+
+    public IPacket getPacket() {
+    	if (!freePackets.isEmpty()) {
+    		return freePackets.remove(0);
+    	}
+
+    	return IPacket.make();
+    }
+
+    private void getTimestamps(StreamState state, SceMpegAu au) {
+    	if (state == null) {
+    		au.dts = 0;
+    		au.pts = 0;
+    	} else {
+    		state.getTimestamps(au);
+    	}
+    }
+
     public void getVideoTimestamp(SceMpegAu au) {
-		// Timestamps have sometimes high bit set. Clear it
-    	au.pts = videoPts & timestampMask;
-    	au.dts = videoDts & timestampMask;
+    	getTimestamps(videoStreamState, au);
     }
 
     public void getAudioTimestamp(SceMpegAu au) {
-		// Timestamps have sometimes high bit set. Clear it
-    	au.pts = audioPts & timestampMask;
-    	au.dts = audioDts & timestampMask;
+    	getTimestamps(audioStreamState, au);
     }
 
     public void init() {
@@ -158,10 +174,6 @@ public class MediaEngine {
         videoStreamID = -1;
         audioStreamID = -1;
         extAudioChecked = false;
-        videoDts = 0;
-        videoPts = 0;
-        audioDts = 0;
-        audioPts = 0;
     }
 
     /*
@@ -228,76 +240,148 @@ public class MediaEngine {
             }
         }
 
-        packet = IPacket.make();
-        packetOffset = -1;
+        videoStreamState = new StreamState(this, videoStreamID);
+        audioStreamState = new StreamState(this, audioStreamID);
     }
 
-    private long convertTimestamp(long ts, IRational timeBase, int timestampsPerSecond) {
-    	return Math.round((ts & timestampMask) * timeBase.getDouble() * timestampsPerSecond);
+    private boolean getNextPacket(StreamState state) {
+    	if (state.isPacketEmpty()) {
+    		// Retrieve the next packet for the stream.
+    		// First try if there is a pending packet for this stream.
+    		state.releasePacket();
+    		IPacket packet = state.getNextPacket();
+    		if (packet != null) {
+    			// use the pending packet
+    			state.setPacket(packet);
+    		} else {
+    			// There is no pending packet, read packets from the container
+    			// until a packet for this stream is found.
+    			while (state.isPacketEmpty()) {
+    				packet = getPacket();
+			        if (container.readNextPacket(packet) < 0) {
+			        	// No more packets available in the container...
+			        	release(packet);
+			        	return false;
+			        }
+
+			        // Process the packet
+			        if (packet.getSize() <= 0) {
+			        	// Empty packet, drop it
+			        	release(packet);
+			        } else if (state.isStream(packet.getStreamIndex())) {
+			        	// This is the kind of packet we are looking for
+			        	state.setPacket(packet);
+			        } else if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
+			        	// We are currently not interested in video packets,
+			        	// add this packet to the video pending packets
+			        	videoStreamState.addPacket(packet);
+			        } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
+			        	// We are currently not interested in audio packets,
+			        	// add this packet to the audio pending packets
+			        	audioStreamState.addPacket(packet);
+			        } else {
+			        	// Packet with unknown stream index, ignore it
+			        	release(packet);
+			        }
+    			}
+    		}
+    	}
+
+    	return true;
     }
 
-    public boolean step() {
+    private boolean decodeVideoPacket(StreamState state) {
+    	boolean complete = false;
+        while (!state.isPacketEmpty()) {
+        	int decodedBytes = videoCoder.decodeVideo(videoPicture, state.getPacket(), state.getOffset());
+
+            if (decodedBytes < 0) {
+            	// An error occured with this packet, skip it
+            	state.releasePacket();
+            	break;
+            }
+
+            state.consume(decodedBytes);
+            state.updateTimestamps();
+
+        	if (videoPicture.isComplete()) {
+            	if (videoConverter != null) {
+            		currentImg = videoConverter.toImage(videoPicture);
+            	}
+            	complete = true;
+            	break;
+            }
+        }
+
+        return complete;
+    }
+
+    private boolean decodeAudioPacket(StreamState state) {
+    	boolean complete = false;
+        while (!state.isPacketEmpty()) {
+        	int decodedBytes = audioCoder.decodeAudio(audioSamples, state.getPacket(), state.getOffset());
+
+            if (decodedBytes < 0) {
+            	// An error occured with this packet, skip it
+            	state.releasePacket();
+            	break;
+            }
+
+            state.consume(decodedBytes);
+            state.updateTimestamps();
+
+        	if (audioSamples.isComplete()) {
+                updateSoundSamples(audioSamples);
+                complete = true;
+                break;
+            }
+        }
+
+        return complete;
+    }
+
+    public boolean stepVideo() {
+    	return step(videoStreamState);
+    }
+
+    public boolean stepAudio() {
+    	return step(audioStreamState);
+    }
+
+    private boolean step(StreamState state) {
     	boolean complete = false;
 
-    	do {
-	    	if (packetOffset < 0 || packetOffset >= packet.getSize()) {
-		        if (container.readNextPacket(packet) < 0) {
-		        	audioPts += sceMpeg.audioTimestampStep;
-		        	videoPts += sceMpeg.videoTimestampStep;
-		        	packetOffset = -1;
-		        	return false;
-		        }
-	    		packetOffset = 0;
-	    	}
+    	while (!complete) {
+    		if (!getNextPacket(state)) {
+	        	videoStreamState.incrementTimestamps(sceMpeg.videoTimestampStep);
+	        	audioStreamState.incrementTimestamps(sceMpeg.audioTimestampStep);
+	        	break;
+    		}
 
-	        if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
-	        	int decodedBytes;
-	            while (packetOffset < packet.getSize()) {
-	            	decodedBytes = videoCoder.decodeVideo(videoPicture, packet, packetOffset);
-
-		            if (decodedBytes < 0) {
-		            	// An error occured with this packet, skip it
-		            	packetOffset = -1;
-		            	break;
-		            }
-
-		            packetOffset += decodedBytes;
-		        	videoDts = convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-		        	videoPts = convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-
-		        	if (videoPicture.isComplete()) {
-		            	if (videoConverter != null) {
-		            		currentImg = videoConverter.toImage(videoPicture);
-		            	}
-		            	complete = true;
-		            	break;
-		            }
+	        if (state.isStream(videoStreamID)) {
+	        	if (videoCoder == null) {
+	        		// No video coder, skip all the video packets
+	        		state.releasePacket();
+	        		complete = true;
+	        	} else {
+	        		// Decode the current video packet
+	        		// and check if we have a complete video sample
+	        		complete = decodeVideoPacket(state);
 	            }
-	        } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
-	            int decodedBytes;
-	            while (packetOffset < packet.getSize()) {
-	            	decodedBytes = audioCoder.decodeAudio(audioSamples, packet, packetOffset);
-
-		            if (decodedBytes < 0) {
-		            	// An error occured with this packet, skip it
-		            	packetOffset = -1;
-		            	break;
-		            }
-
-		            packetOffset += decodedBytes;
-		        	audioDts = convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-		        	audioPts = convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-
-		        	if (audioSamples.isComplete()) {
-	                    updateSoundSamples(audioSamples);
-	                    complete = true;
-	                    break;
-	                }
+	        } else if (state.isStream(audioStreamID)) {
+	        	if (audioCoder == null) {
+	        		// No audio coder, skip all the audio packets
+	        		state.releasePacket();
+	        		complete = true;
+	        	} else {
+	        		// Decode the current audio packet
+	        		// and check if we have a complete audio sample
+	        		complete = decodeAudioPacket(state);
 	            }
 	        }
-    	} while (!complete);
+    	}
 
-        return true;
+        return complete;
     }
 
     public void stepExtAudio(int mpegStreamSize) {
@@ -305,7 +389,8 @@ public class MediaEngine {
     		stepExtAudio();
     	} else if (!extAudioChecked) {
             extAudioChecked = true;
-            audioPts = sceMpeg.mpegTimestampPerSecond;
+            audioStreamState = new StreamState(this, -1);
+            audioStreamState.setTimestamps(sceMpeg.mpegTimestampPerSecond);
             String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.";
             String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac"};
             for (int i = 0; i < supportedFormats.length; i++) {
@@ -317,7 +402,7 @@ public class MediaEngine {
                 }
             }
     	} else {
-    		audioPts += sceMpeg.audioTimestampStep;
+    		audioStreamState.incrementTimestamps(sceMpeg.audioTimestampStep);
     	}
     }
 
@@ -367,8 +452,7 @@ public class MediaEngine {
     }
 
     private void stepExtAudio() {
-		audioDts += sceMpeg.audioTimestampStep;
-		audioPts += sceMpeg.audioTimestampStep;
+    	audioStreamState.incrementTimestamps(sceMpeg.audioTimestampStep);
 
 		// Keep the SoundChannel full to avoid sound pauses
 		while (!extSoundChannel.isOutputBlocking()) {
@@ -377,7 +461,7 @@ public class MediaEngine {
 	    	}
 
         	int decodedBytes;
-            for (int offset = 0; offset < packet.getSize(); offset += decodedBytes) {
+            for (int offset = 0; offset < extPacket.getSize(); offset += decodedBytes) {
             	decodedBytes = extAudioCoder.decodeAudio(extAudioSamples, extPacket, offset);
 
                 if (decodedBytes < 0) {
@@ -398,9 +482,17 @@ public class MediaEngine {
     		container.close();
         	container = null;
     	}
-    	if (packet != null) {
+    	if (videoStreamState != null) {
+    		videoStreamState.finish();
+    		videoStreamState = null;
+    	}
+    	if (audioStreamState != null) {
+        	audioStreamState.finish();
+    		audioStreamState = null;
+    	}
+    	while (!freePackets.isEmpty()) {
+    		IPacket packet = getPacket();
     		packet.delete();
-    		packet = null;
     	}
     	if (videoCoder != null) {
     		videoCoder.close();

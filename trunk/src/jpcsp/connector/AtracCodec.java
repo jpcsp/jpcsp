@@ -274,8 +274,8 @@ public class AtracCodec {
 	}
 
 	public int atracDecodeData(int atracID, int address) {
-        if(checkMediaEngineState()) {
-            me.step();
+        if (checkMediaEngineState()) {
+            me.stepAudio();
             return copySamplesToMem(address);
         }
 
