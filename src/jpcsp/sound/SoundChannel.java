@@ -26,6 +26,7 @@ import org.lwjgl.openal.AL10;
 import org.lwjgl.openal.AL11;
 
 public class SoundChannel {
+	private static volatile boolean isExit = false;
 	public static final int FORMAT_MONO = 0x10;
 	public static final int FORMAT_STEREO = 0x00;
     //
@@ -58,20 +59,18 @@ public class SoundChannel {
 		if (!AL.isCreated()) {
 			try {
 				AL.create();
+				isExit = false;
 			} catch (LWJGLException e) {
 				Modules.log.error(e);
 			}
 		}
-        // Add a shutdown hook to automatically remove OpenAL's .dll from Java's
-        // heap to avoid crashing when exiting the emulator.
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if (AL.isCreated()) {
-                    AL.destroy();
-                }
-            }
-        }));
+    }
+
+    public static void exit() {
+    	if (AL.isCreated()) {
+    		isExit = true;
+    		AL.destroy();
+    	}
     }
 
     public SoundChannel(int index) {
@@ -201,6 +200,10 @@ public class SoundChannel {
     }
 
     public boolean isOutputBlocking() {
+    	if (isExit) {
+    		return true;
+    	}
+
     	return getWaitingBuffers() >= NUMBER_BLOCKING_BUFFERS;
     }
 
