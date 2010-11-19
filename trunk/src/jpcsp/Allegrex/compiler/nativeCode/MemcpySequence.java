@@ -103,4 +103,18 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		gpr[srcAddrReg] = srcAddr + length;
 		gpr[lengthReg]  = 0;
 	}
+
+	static public void callWithCountStep(int dstAddrReg, int srcAddrReg, int lengthReg, int count, int step) {
+		int[] gpr = getGpr();
+		int dstAddr = gpr[dstAddrReg];
+		int srcAddr = gpr[srcAddrReg];
+		int length  = (count - gpr[lengthReg]) * step;
+
+		getMemory().memcpy(dstAddr, srcAddr, length);
+
+		// Update registers
+		gpr[dstAddrReg] = dstAddr + length;
+		gpr[srcAddrReg] = srcAddr + length;
+		gpr[lengthReg]  = count;
+	}
 }

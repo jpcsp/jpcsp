@@ -2439,6 +2439,101 @@
 088ABFD8:[25080002]: addiu      $t0, $t0, 2
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Parameters>$a1,$a2,$a0,42,24</Parameters>
+		<Method>callWithCountStep</Method>
+		<CodeInstructions><![CDATA[
+0885C91C:[C4CC0000]: lwc1       $f12, 0($a2)
+0885C920:[44076000]: mfc1       $a3, $f12
+0885C924:[8CC80004]: lw         $t0, 4($a2)
+0885C928:[8CC90008]: lw         $t1, 8($a2)
+0885C92C:[ACA70000]: sw         $a3, 0($a1)
+0885C930:[ACA80004]: sw         $t0, 4($a1)
+0885C934:[ACA90008]: sw         $t1, 8($a1)
+0885C938:[8CC7000C]: lw         $a3, 12($a2)
+0885C93C:[8CC80010]: lw         $t0, 16($a2)
+0885C940:[8CC90014]: lw         $t1, 20($a2)
+0885C944:[ACA7000C]: sw         $a3, 12($a1)
+0885C948:[ACA80010]: sw         $t0, 16($a1)
+0885C94C:[ACA90014]: sw         $t1, 20($a1)
+0885C950:[24840001]: addiu      $a0, $a0, 1
+0885C954:[24A50018]: addiu      $a1, $a1, 24
+0885C958:[2887002A]: slti       $a3, $a0, 42
+0885C95C:[14E0FFEF]: bne        $a3, $zr, 0x0885C91C
+0885C960:[24C60018]: addiu      $a2, $a2, 24
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Parameters>$a1,$a2,$a0,107,24</Parameters>
+		<Method>callWithCountStep</Method>
+		<CodeInstructions><![CDATA[
+0885D0F4:[C4CC0000]: lwc1       $f12, 0($a2)
+0885D0F8:[44076000]: mfc1       $a3, $f12
+0885D0FC:[8CC80004]: lw         $t0, 4($a2)
+0885D100:[8CC90008]: lw         $t1, 8($a2)
+0885D104:[ACA70000]: sw         $a3, 0($a1)
+0885D108:[ACA80004]: sw         $t0, 4($a1)
+0885D10C:[ACA90008]: sw         $t1, 8($a1)
+0885D110:[8CC7000C]: lw         $a3, 12($a2)
+0885D114:[8CC80010]: lw         $t0, 16($a2)
+0885D118:[8CC90014]: lw         $t1, 20($a2)
+0885D11C:[ACA7000C]: sw         $a3, 12($a1)
+0885D120:[ACA80010]: sw         $t0, 16($a1)
+0885D124:[ACA90014]: sw         $t1, 20($a1)
+0885D128:[24840001]: addiu      $a0, $a0, 1
+0885D12C:[24A50018]: addiu      $a1, $a1, 24
+0885D130:[2887006B]: slti       $a3, $a0, 107
+0885D134:[14E0FFEF]: bne        $a3, $zr, 0x0885D0F4
+0885D138:[24C60018]: addiu      $a2, $a2, 24
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Parameters>$a1,$a2,$a0,5,24</Parameters>
+		<Method>callWithCountStep</Method>
+		<CodeInstructions><![CDATA[
+0881C884:[C4CC0000]: lwc1       $f12, 0($a2)
+0881C888:[8CC70004]: lw         $a3, 4($a2)
+0881C88C:[44086000]: mfc1       $t0, $f12
+0881C890:[8CC90008]: lw         $t1, 8($a2)
+0881C894:[ACA80000]: sw         $t0, 0($a1)
+0881C898:[8CC8000C]: lw         $t0, 12($a2)
+0881C89C:[ACA70004]: sw         $a3, 4($a1)
+0881C8A0:[8CC70010]: lw         $a3, 16($a2)
+0881C8A4:[ACA90008]: sw         $t1, 8($a1)
+0881C8A8:[8CC90014]: lw         $t1, 20($a2)
+0881C8AC:[ACA8000C]: sw         $t0, 12($a1)
+0881C8B0:[ACA70010]: sw         $a3, 16($a1)
+0881C8B4:[ACA90014]: sw         $t1, 20($a1)
+0881C8B8:[24840001]: addiu      $a0, $a0, 1
+0881C8BC:[24A50018]: addiu      $a1, $a1, 24
+0881C8C0:[28870005]: slti       $a3, $a0, 5
+0881C8C4:[14E0FFEF]: bne        $a3, $zr, 0x0881C884
+0881C8C8:[24C60018]: addiu      $a2, $a2, 24
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Parameters>$a2,$a1,$a3,6,16</Parameters>
+		<Method>callWithCountStep</Method>
+		<CodeInstructions><![CDATA[
+08812F3C:[C4AC0000]: lwc1       $f12, 0($a1)
+08812F40:[E4CC0000]: swc1       $f12, 0($a2)
+08812F44:[C4AC0004]: lwc1       $f12, 4($a1)
+08812F48:[24E70001]: addiu      $a3, $a3, 1
+08812F4C:[E4CC0004]: swc1       $f12, 4($a2)
+08812F50:[C4AC0008]: lwc1       $f12, 8($a1)
+08812F54:[2CE80006]: sltiu      $t0, $a3, 6
+08812F58:[E4CC0008]: swc1       $f12, 8($a2)
+08812F5C:[C4AC000C]: lwc1       $f12, 12($a1)
+08812F60:[24A50010]: addiu      $a1, $a1, 16
+08812F64:[E4CC000C]: swc1       $f12, 12($a2)
+08812F68:[1500FFF4]: bne        $t0, $zr, 0x08812F3C
+08812F6C:[24C60010]: addiu      $a2, $a2, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="sleep">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Sleep</Class>
 		<Parameters>$a2,$a3</Parameters>
