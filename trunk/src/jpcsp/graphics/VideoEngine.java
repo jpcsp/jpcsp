@@ -3262,6 +3262,15 @@ public class VideoEngine {
                               context.textureTx_pixelSize));
         }
 
+        if (!Memory.isAddressGood(context.textureTx_sourceAddress)) {
+        	error(String.format("%s invalid source address 0x%08X", helper.getCommandString(TRXKICK), context.textureTx_sourceAddress));
+        	return;
+        }
+        if (!Memory.isAddressGood(context.textureTx_destinationAddress)) {
+        	error(String.format("%s invalid destination address 0x%08X", helper.getCommandString(TRXKICK), context.textureTx_destinationAddress));
+        	return;
+        }
+
         usingTRXKICK = true;
         updateGeBuf();
 
