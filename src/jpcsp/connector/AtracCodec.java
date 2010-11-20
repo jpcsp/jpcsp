@@ -307,7 +307,7 @@ public class AtracCodec {
 
 		if (decodedStream != null) {
 			try {
-				decodedStream.seek(sample * 4);
+				decodedStream.seek(sample * 4L);
 			} catch (IOException e) {
 				Modules.log.error(e);
 			}
