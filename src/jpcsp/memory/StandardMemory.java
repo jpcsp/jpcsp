@@ -42,8 +42,7 @@ public class StandardMemory extends Memory {
     private static final int INDEX_RAM         = INDEX_VRAM +
                                                  (SIZE_VRAM >>> PAGE_SHIFT);
 
-    private static final int SIZE_ALLMEM       = SIZE_SCRATCHPAD +
-                                                 SIZE_VRAM + SIZE_RAM;
+    private static       int SIZE_ALLMEM;
 
     private byte[] all;       // all psp memory is held in here
     private static int[] map; // hold map of memory
@@ -55,6 +54,12 @@ public class StandardMemory extends Memory {
 
 	@Override
 	public boolean allocate() {
+		// This value can change depending on the PSP memory configuration (32MB/64MB)
+		SIZE_ALLMEM = SIZE_SCRATCHPAD + SIZE_VRAM + SIZE_RAM;
+		// Free previously allocated memory
+		all = null;
+		map = null;
+
 		try {
 	        all = new byte[SIZE_ALLMEM];
 	        map = new int[PAGE_COUNT];

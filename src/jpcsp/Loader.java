@@ -143,6 +143,7 @@ public class Loader {
                 if (!loadedFirstModule) {
                     // Set firmware version from PSF embedded in PBP
                     Emulator.getInstance().setFirmwareVersion(module.psf.getString("PSP_SYSTEM_VER"));
+                    Modules.SysMemUserForUserModule.setMemory64MB(module.psf.getNumeric("MEMSIZE") == 1);
                 }
             }
 

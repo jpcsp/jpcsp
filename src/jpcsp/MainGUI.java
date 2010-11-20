@@ -1083,6 +1083,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
             emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
             RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
+            Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
 
             // use regular settings first
             installCompatibilitySettings();
