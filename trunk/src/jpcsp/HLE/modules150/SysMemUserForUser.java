@@ -57,6 +57,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     protected static MemoryChunkList freeMemoryChunks;
     protected int firmwareVersion = 150;
     public static final int defaultSizeAlignment = 256;
+    protected boolean memory64MB = false;
 
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
@@ -102,16 +103,10 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
 	@Override
 	public void start() {
-		if(started) return;
-
-		blockList = new HashMap<Integer, SysMemInfo>();
-
-        int startFreeMem = MemoryMap.START_USERSPACE;
-        int endFreeMem = MemoryMap.END_USERSPACE;
-        MemoryChunk initialMemory = new MemoryChunk(startFreeMem, endFreeMem - startFreeMem + 1);
-        freeMemoryChunks = new MemoryChunkList(initialMemory);
-
-        started = true;
+		if (!started) {
+			reset();
+			started = true;
+		}
 	}
 
 	@Override
@@ -127,6 +122,28 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         MemoryChunk initialMemory = new MemoryChunk(startFreeMem, endFreeMem - startFreeMem + 1);
         freeMemoryChunks = new MemoryChunkList(initialMemory);
 	}
+
+    public void setMemory64MB(boolean isMemory64MB) {
+    	if (memory64MB != isMemory64MB) {
+    		memory64MB = isMemory64MB;
+
+	    	if (memory64MB) {
+	    		MemoryMap.END_RAM = MemoryMap.END_RAM_64MB;
+	    		MemoryMap.END_USERSPACE = MemoryMap.END_USERSPACE_64MB;
+	    	} else {
+	    		MemoryMap.END_RAM = MemoryMap.END_RAM_32MB;
+	    		MemoryMap.END_USERSPACE = MemoryMap.END_USERSPACE_32MB;
+	    	}
+			MemoryMap.SIZE_RAM = MemoryMap.END_RAM - MemoryMap.START_RAM + 1;
+
+			if (!Memory.getInstance().allocate()) {
+				log.error(String.format("Failed to resize the PSP memory from %s to %s", memory64MB ? "32MB" : "64MB", memory64MB ? "64MB" : "32MB"));
+				Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_ANY);
+			}
+
+			reset();
+    	}
+    }
 
     public static class SysMemInfo implements Comparable<SysMemInfo> {
 

@@ -52,6 +52,9 @@ public class FastMemory extends Memory {
 
 	@Override
 	public boolean allocate() {
+		// Free previously allocated memory
+		all = null;
+
 		int allSize = (MemoryMap.END_RAM + 1) / 4;
 		try {
 			all = new int[allSize];
