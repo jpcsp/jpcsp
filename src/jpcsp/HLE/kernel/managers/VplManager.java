@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.managers;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ATTR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMSIZE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_VPOOL;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
@@ -181,8 +182,8 @@ public class VplManager {
             mem.write32(addr - 4, 0);
 
             info.freeSize -= alignedSize + 8;
+            info.dataBlockMap.put(addr, alignedSize);
         }
-        info.dataBlockMap.put(addr, alignedSize);
         return addr;
     }
 
@@ -208,6 +209,8 @@ public class VplManager {
         if ((attr & ~PSP_VPL_ATTR_MASK) != 0) {
             log.warn("sceKernelCreateVpl bad attr value 0x" + Integer.toHexString(attr));
             cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
+        } else if (size <= 0) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_MEMSIZE;
         } else {
             SceKernelVplInfo info = SceKernelVplInfo.tryCreateVpl(name, partitionid, attr, size, memType);
             if (info != null) {
@@ -254,6 +257,8 @@ public class VplManager {
         if (vpl == null) {
             log.warn("hleKernelAllocateVpl unknown uid=0x" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
+        } else if (size <= 0 || size > vpl.poolSize) {
+        	cpu.gpr[2] = ERROR_ILLEGAL_MEMSIZE;
         } else {
             int addr = tryAllocateVpl(vpl, size);
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
