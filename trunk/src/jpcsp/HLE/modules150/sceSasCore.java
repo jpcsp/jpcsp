@@ -114,6 +114,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     @Override
     public void start() {
         sasCoreUid = -1;
+        isSasInit = false;
         voices = new SoundVoice[32];
         for (int i = 0; i < voices.length; i++) {
             voices[i] = new SoundVoice(i);
@@ -128,6 +129,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     }
 
     protected int sasCoreUid;
+    protected boolean isSasInit;
     protected SoundVoice[] voices;
     protected int grainSamples;
     protected int outputMode;
@@ -374,24 +376,19 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
 
+        log.info("__sceSasInit");
+
         // Tested on PSP:
-        // This function has only one parameter (the external opaque memory handle).
-        // All the other supposed parameters are actually leftovers from sceAudio functions.
-        log.info("PARTIAL: __sceSasInit");
-
-        // We support only 1 sascore instance at a time.
-        // Currently, we overwrite the previous sascore...
-        if (sasCoreUid != -1) {
-            log.warn("UNIMPLEMENTED:__sceSasInit multiple instances not yet supported");
-        }
-
-        if (Memory.isAddressGood(sasCore)) {
-            sasCoreUid = SceUidManager.getNewUid("sceSasCore-SasCore");
-            mem.write32(sasCore, sasCoreUid);
-        }
-
-        for (int i = 0; i < voices.length; i++) {
-        	voices[i].setSampleRate(44100); // Default
+        // Only one instance at a time is supported.
+        if(!isSasInit) {
+            if (Memory.isAddressGood(sasCore)) {
+                sasCoreUid = SceUidManager.getNewUid("sceSasCore-SasCore");
+                mem.write32(sasCore, sasCoreUid);
+            }
+            for (int i = 0; i < voices.length; i++) {
+                voices[i].setSampleRate(44100); // Default.
+            }
+            isSasInit = true;
         }
         cpu.gpr[2] = 0;
     }
@@ -425,12 +422,12 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
+        int sasInOut = cpu.gpr[5];
         int leftVol = cpu.gpr[6];
         int rightVol = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("__sceSasCoreWithMix 0x%08X, out=0x%08X, leftVol=%d, rightVol=%d", sasCore, sasOut, leftVol, rightVol));
+            log.debug(String.format("__sceSasCoreWithMix 0x%08X, sasInOut=0x%08X, leftVol=%d, rightVol=%d", sasCore, sasInOut, leftVol, rightVol));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -438,12 +435,16 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
-        	// sasOut points to the output of sceAtracDecodeData
-            //mem.memset(sasOut, (byte) 0, waveformBufMaxSize);  // Empty waveform.
+            // TODO: __sceSasCoreWithMix differs from __sceSasCore as it uses previous PCM data
+            // from sasInOut to mix with the waveform to be outputted.
+            // Create a mixer that is capable of doing so.
+            // Note: sasInOut is 64-byte aligned.
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(sasInOut, 1);
+            int[] pcmMix = new int[grainSamples * 2]; // 2 bytes per sample.
+            for(int i = 0; i < grainSamples * 2; i++) {
+                pcmMix[i] = memoryReader.readNext();
+            }
             cpu.gpr[2] = 0;
-
-            // TODO Delay the thread. For how long?
-            Modules.ThreadManForUserModule.hleKernelDelayThread(3000, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
@@ -672,7 +673,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
-        int sasOut = cpu.gpr[5]; // Main SAS engine sound bank.
+        int sasOut = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
             log.debug(String.format("__sceSasCore 0x%08X, out=0x%08X", sasCore, sasOut));
@@ -683,8 +684,11 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-        	// sasOut points to the output of sceAtracDecodeData
-            //mem.memset(sasOut, (byte) 0, waveformBufMaxSize);  // Empty waveform.
+            // TODO: __sceSasCore gathers all voices' information and outputs a waveform
+            // (PCM), accordingly to the granularity defined (256), into sasOut.
+            // Create a synthesizer that can take all these variables into account
+            // and process the sound accordingly.
+            // Note: sasOut is 64-byte aligned.
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;

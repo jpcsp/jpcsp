@@ -248,10 +248,6 @@ public enum SyscallIgnore {
 	sceUtilityLoadUsbModule(0x0D5BC6D2), // 2.00+
 	sceUtilitySetNetParam(0xfc4516f3), // 2.00+
 	sceUtilityUnloadUsbModule(0xF64910F0), // 2.71+
-	sceVaudioChRelease(0x67585dfd), // 3.95+
-	sceVaudioChReserve(0x03b6807d), // 3.95+
-	sceVaudioOutputBlocking(0x8986295e), // 3.95+
-	sceVaudioSetEffectType(0x346fbe94), // 3.95+
 	sceVideocodecDecode(0xDBA273FA), // 2.71+
 	sceVideocodecDelete(0x307E6E1C), // 2.71+
 	sceVideocodecGetEDRAM(0x2D31F5B1), // 2.71+

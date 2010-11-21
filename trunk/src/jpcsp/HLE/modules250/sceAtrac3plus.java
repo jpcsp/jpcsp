@@ -38,6 +38,11 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             mm.addFunction(0x132F1ECA, sceAtracReinitFunction);
             mm.addFunction(0x2DD3E298, sceAtracGetBufferInfoForResettingFunction);
             mm.addFunction(0x5CF9D852, sceAtracSetMOutHalfwayBufferFunction);
+            mm.addFunction(0xF6837A1A, sceAtracSetMOutDataFunction);
+            mm.addFunction(0x472E3825, sceAtracSetMOutDataAndGetIDFunction);
+            mm.addFunction(0x9CD7DE03, sceAtracSetMOutHalfwayBufferAndGetIDFunction);
+            mm.addFunction(0x5622B7C1, sceAtracSetAA3DataAndGetIDFunction);
+            mm.addFunction(0x5DD66588, sceAtracSetAA3HalfwayBufferAndGetIDFunction);
         }
     }
 
@@ -51,6 +56,11 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             mm.removeFunction(sceAtracReinitFunction);
             mm.removeFunction(sceAtracGetBufferInfoForResettingFunction);
             mm.removeFunction(sceAtracSetMOutHalfwayBufferFunction);
+            mm.removeFunction(sceAtracSetMOutDataFunction);
+            mm.removeFunction(sceAtracSetMOutDataAndGetIDFunction);
+            mm.removeFunction(sceAtracSetMOutHalfwayBufferAndGetIDFunction);
+            mm.removeFunction(sceAtracSetAA3DataAndGetIDFunction);
+            mm.removeFunction(sceAtracSetAA3HalfwayBufferAndGetIDFunction);
         }
     }
 
@@ -141,6 +151,92 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         cpu.gpr[2] = 0;
     }
 
+    public void sceAtracSetMOutData(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented function sceAtracSetMOutData "
+    			+ String.format("%08x %08x %08x %08x %08x %08x",
+    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+
+        cpu.gpr[2] = 0;
+    }
+
+    public void sceAtracSetMOutDataAndGetID(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented function sceAtracSetMOutDataAndGetID "
+    			+ String.format("%08x %08x %08x %08x %08x %08x",
+    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+
+        cpu.gpr[2] = 0;
+    }
+
+    public void sceAtracSetMOutHalfwayBufferAndGetID(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented function sceAtracSetMOutHalfwayBufferAndGetID "
+    			+ String.format("%08x %08x %08x %08x %08x %08x",
+    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+
+        cpu.gpr[2] = 0;
+    }
+
+    public void sceAtracSetAA3DataAndGetID(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
+
+        int buffer = cpu.gpr[4];
+        int bufferSize = cpu.gpr[5];
+        int fileSize = cpu.gpr[6];
+        int metadataSizeAddr = cpu.gpr[7];
+
+        int codecType = 0;
+        int at3magic = 0;
+        int atID = 0;
+
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracSetAA3DataAndGetID buffer = 0x%08X, bufferSize = 0x%08X, fileSize = 0x%08X, metadataSizeAddr = 0x%08X", buffer, bufferSize, fileSize, metadataSizeAddr));
+        }
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (Memory.isAddressGood(buffer)) {
+            at3magic = mem.read32(buffer + 20);
+            at3magic &= 0x0000FFFF;
+
+            if (at3magic == AT3_MAGIC) {
+                codecType = PSP_MODE_AT_3;
+            } else if (at3magic == AT3_PLUS_MAGIC) {
+                codecType = PSP_MODE_AT_3_PLUS;
+            }
+
+            if (codecType == PSP_MODE_AT_3 && atrac3Codecs.size() < atrac3MaxIDsCount) {
+                maxSamples = 1024;
+                atID = hleCreateAtracID(codecType);
+            } else if (codecType == PSP_MODE_AT_3_PLUS && atrac3plusCodecs.size() < atrac3plusMaxIDsCount) {
+                maxSamples = 2048;
+                atID = hleCreateAtracID(codecType);
+            } else {
+                atID = SceKernelErrors.ERROR_ATRAC_NO_ID;
+            }
+            hleAtracSetData(atID, buffer, bufferSize, bufferSize);
+            mem.write32(metadataSizeAddr, 0x400); // Dummy common value found in most .AA3 files.
+        }
+        cpu.gpr[2] = atID;
+    }
+
+    public void sceAtracSetAA3HalfwayBufferAndGetID(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented function sceAtracSetAA3HalfwayBufferAndGetID "
+    			+ String.format("%08x %08x %08x %08x %08x %08x",
+    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+
+        cpu.gpr[2] = 0;
+    }
+
     public final HLEModuleFunction sceAtracGetOutputChannelFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetOutputChannel") {
         @Override
         public final void execute(Processor processor) {
@@ -193,6 +289,61 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetMOutHalfwayBuffer(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceAtracSetMOutDataFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetMOutData") {
+        @Override
+        public final void execute(Processor processor) {
+        	sceAtracSetMOutData(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetMOutData(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceAtracSetMOutDataAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetMOutDataAndGetID") {
+        @Override
+        public final void execute(Processor processor) {
+        	sceAtracSetMOutDataAndGetID(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetMOutDataAndGetID(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceAtracSetMOutHalfwayBufferAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetMOutHalfwayBufferAndGetID") {
+        @Override
+        public final void execute(Processor processor) {
+        	sceAtracSetMOutHalfwayBufferAndGetID(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetMOutHalfwayBufferAndGetID(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceAtracSetAA3DataAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetAA3DataAndGetID") {
+        @Override
+        public final void execute(Processor processor) {
+        	sceAtracSetAA3DataAndGetID(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetAA3DataAndGetID(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceAtracSetAA3HalfwayBufferAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetAA3HalfwayBufferAndGetID") {
+        @Override
+        public final void execute(Processor processor) {
+        	sceAtracSetAA3HalfwayBufferAndGetID(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetAA3HalfwayBufferAndGetID(processor);";
         }
     };
 }

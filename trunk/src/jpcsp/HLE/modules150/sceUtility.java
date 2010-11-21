@@ -233,6 +233,16 @@ public class sceUtility implements HLEModule, HLEStartModule {
         rssSubscriberState = new NotImplementedUtilityDialogState("sceUtilityRssSubscriber");
         screenshotState = new NotImplementedUtilityDialogState("sceUtilityScreenshot");
         htmlViewerState = new NotImplementedUtilityDialogState("sceUtilityHtmlViewer");
+
+        systemParam_nickname = Settings.getInstance().readString("emu.sysparam.nickname");
+        systemParam_adhocChannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel", 0);
+        systemParam_wlanPowersave = Settings.getInstance().readInt("emu.sysparam.wlanpowersave", 0);
+        systemParam_dateFormat = Settings.getInstance().readInt("emu.sysparam.dateformat", PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD);
+        systemParam_timeFormat = Settings.getInstance().readInt("emu.sysparam.timeformat", PSP_SYSTEMPARAM_TIME_FORMAT_24HR);
+        systemParam_timeZone = Settings.getInstance().readInt("emu.sysparam.timezone", 0);
+        systemParam_daylightSavingTime = Settings.getInstance().readInt("emu.sysparam.daylightsavings", 0);
+        systemParam_language = Settings.getInstance().readInt("emu.impose.language", PSP_SYSTEMPARAM_LANGUAGE_ENGLISH);
+        systemParam_buttonPreference = Settings.getInstance().readInt("emu.impose.button", PSP_SYSTEMPARAM_BUTTON_CROSS);
     }
 
     @Override
@@ -269,8 +279,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     public static final int PSP_SYSTEMPARAM_TIME_FORMAT_24HR = 0;
     public static final int PSP_SYSTEMPARAM_TIME_FORMAT_12HR = 1;
 
-    public static final int PSP_SYSTEMPARAM_BUTTON_CONFIRM_IS_CIRCLE = 0;
-    public static final int PSP_SYSTEMPARAM_BUTTON_CONFIRM_IS_CROSS = 1;
+    public final static int PSP_SYSTEMPARAM_BUTTON_CIRCLE = 0;
+    public final static int PSP_SYSTEMPARAM_BUTTON_CROSS = 1;
 
     public static final int PSP_UTILITY_DIALOG_STATUS_NONE = 0;
     public static final int PSP_UTILITY_DIALOG_STATUS_INIT = 1;
@@ -304,16 +314,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected UtilityDialogState screenshotState;
     protected UtilityDialogState htmlViewerState;
 
-    // TODO expose via settings GUI
-    protected String systemParam_nickname = "JPCSP";
-    protected int systemParam_adhocChannel = 0;
-    protected int systemParam_wlanPowersave = 0;
-    protected int systemParam_dateFormat = PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD;
-    protected int systemParam_timeFormat = PSP_SYSTEMPARAM_TIME_FORMAT_24HR;
-    protected int systemParam_timeZone = 0;
-    protected int systemParam_daylightSavingTime = 0;
-    protected int systemParam_language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
-    protected int systemParam_buttonPreference = PSP_SYSTEMPARAM_BUTTON_CONFIRM_IS_CROSS;
+    protected String systemParam_nickname;
+    protected int systemParam_adhocChannel;
+    protected int systemParam_wlanPowersave;
+    protected int systemParam_dateFormat;
+    protected int systemParam_timeFormat;
+    protected int systemParam_timeZone;
+    protected int systemParam_daylightSavingTime;
+    protected int systemParam_language;
+    protected int systemParam_buttonPreference;
 
     // Save list vars.
     protected Object saveListSelection;
@@ -862,10 +871,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
         return (saveDir.delete());
     }
 
-    private boolean savedataMode8ReturnsNoError() {
-        return Settings.getInstance().readBool("emu.savedataSizes");
-    }
-
 	private void hleUtilitySavedataDisplay() {
         Memory mem = Processor.memory;
 
@@ -1021,7 +1026,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 String gameName = savedataParams.gameName;
                 String saveName = savedataParams.saveName;
 
-                // ms free size
+                // MS free size.
                 int buffer1Addr = savedataParams.msFreeAddr;
                 if (Memory.isAddressGood(buffer1Addr)) {
                     String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
@@ -1034,7 +1039,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
                 }
 
-                // ms data size
+                // MS data size.
                 int buffer2Addr = savedataParams.msDataAddr;
                 if (Memory.isAddressGood(buffer2Addr)) {
                     gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
@@ -1042,14 +1047,16 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
                     int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
 
-                    mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors
-                    mem.write32(buffer2Addr + 40, savedataSizeKb); // Size in Kb
+                    mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors.
+                    mem.write32(buffer2Addr + 40, savedataSizeKb); // Size in Kb.
                     Utilities.writeStringNZ(mem, buffer2Addr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
                     mem.write32(buffer2Addr + 52, savedataSize32Kb);
                     Utilities.writeStringNZ(mem, buffer2Addr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
+
+                    log.debug("Memory Stick Full Space = " +  MemoryStick.getSizeKbString(savedataSizeKb));
                 }
 
-                // utility data size
+                // Utility data size.
                 int buffer3Addr = savedataParams.utilityDataAddr;
                 if (Memory.isAddressGood(buffer3Addr)) {
                     int memoryStickRequiredSpaceKb = 0;
@@ -1072,17 +1079,20 @@ public class sceUtility implements HLEModule, HLEStartModule {
                     log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
                 }
 
-                if (savedataParams.isPresent(gameName, saveName)) {
-                    savedataParams.base.result = 0;
-                } else {
-                	// Tests on a PSP always return ERROR_SAVEDATA_SIZES_NO_DATA
-                	// but some games fail to save when an error is returned.
-                	// TODO Problem solved using a compatibility option :-(
-                	if (savedataMode8ReturnsNoError()) {
+                // More tests on a PSP revealed that the output depends on the
+                // overwrite mode. When the overwrite mode is on (1), ERROR_SAVEDATA_SIZES_NO_DATA
+                // is output when there're no data to overwrite, but no error is output if
+                // overwrite mode is off.
+                // Note: When msDataAddr is set to NULL, this condition is discarded, as the data
+                // in the Memory Stick is ignored on purpose.
+                if(savedataParams.overwrite && (savedataParams.msDataAddr != 0)) {
+                    if (savedataParams.isPresent(gameName, saveName)) {
                         savedataParams.base.result = 0;
-                	} else {
-                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
-                	}
+                    } else {
+                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
+                    }
+                } else {
+                    savedataParams.base.result = 0;
                 }
                 break;
             }

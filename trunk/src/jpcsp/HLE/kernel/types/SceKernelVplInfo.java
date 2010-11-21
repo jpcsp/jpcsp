@@ -21,6 +21,7 @@ import java.util.HashMap;
 import jpcsp.Memory;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.VplManager;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
@@ -122,22 +123,25 @@ public class SceKernelVplInfo {
             // Check block header.
             int top = mem.read32(addr - 8);
             if (top != allocAddress) {
-                Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
+                Modules.getLogger("ThreadManForUser").warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
                 return false;
-             }
-
-			// Recover free size from deallocated block.
-			int deallocSize = (dataBlockMap.get(addr) + 8);
-			freeSize += deallocSize;
-			dataBlockMap.remove(addr);
-
-			Modules.log.debug("Free VPL: Block 0x" + Integer.toHexString(addr) + " with size=" +
-			        deallocSize + " freed");
-
-			return true;
+            }
+            // Recover free size from deallocated block.
+            int deallocSize = (dataBlockMap.get(addr) + 8);
+            if ((attr & VplManager.PSP_VPL_ATTR_ADDR_HIGH) == VplManager.PSP_VPL_ATTR_ADDR_HIGH) {
+                freeHighAddress += deallocSize;
+            } else {
+                freeLowAddress += deallocSize;
+            }
+            freeSize += deallocSize;
+            dataBlockMap.remove(addr);
+            Modules.getLogger("ThreadManForUser").debug("Free VPL: Block 0x" + Integer.toHexString(addr)
+                    + " with size=" + deallocSize + " freed");
+            return true;
         }
-		// Address is not in valid range.
-		Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
-		return false;
+        // Address is not in valid range.
+        Modules.getLogger("ThreadManForUser").warn("Free VPL 0x" + Integer.toHexString(addr)
+                    + " bad address");
+        return false;
     }
 }

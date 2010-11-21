@@ -71,30 +71,27 @@ public class sceImpose implements HLEModule, HLEStartModule {
 	@Override
     public void start() {
         languageMode_language = Settings.getInstance().readInt("emu.impose.language", PSP_LANGUAGE_ENGLISH);
-		// TODO add to settings gui
-        languageMode_button = PSP_CONFIRM_BUTTON_CROSS;
+        languageMode_button = Settings.getInstance().readInt("emu.impose.button", PSP_CONFIRM_BUTTON_CROSS);
     }
 
     @Override
     public void stop() {
     }
 
-    // TODO get all the language codes
     public final static int PSP_LANGUAGE_JAPANESE = 0;
     public final static int PSP_LANGUAGE_ENGLISH = 1;
     public final static int PSP_LANGUAGE_FRENCH = 2;
-    public final static int PSP_LANGUAGE_SPANISH = 3; // unconfirmed
-    public final static int PSP_LANGUAGE_GERMAN = 4; // unconfirmed
-    public final static int PSP_LANGUAGE_ITALIAN = 5; // unconfirmed
-    public final static int PSP_LANGUAGE_DUTCH = 6; // unconfirmed
-    public final static int PSP_LANGUAGE_PORTUGUESE = 7; // unconfirmed
-    public final static int PSP_LANGUAGE_RUSSIAN = 8; // unconfirmed
+    public final static int PSP_LANGUAGE_SPANISH = 3;
+    public final static int PSP_LANGUAGE_GERMAN = 4;
+    public final static int PSP_LANGUAGE_ITALIAN = 5;
+    public final static int PSP_LANGUAGE_DUTCH = 6;
+    public final static int PSP_LANGUAGE_PORTUGUESE = 7;
+    public final static int PSP_LANGUAGE_RUSSIAN = 8;
     public final static int PSP_LANGUAGE_KOREAN = 9;
-    public final static int PSP_LANGUAGE_TRADITIONAL_CHINESE = 10; // unconfirmed
-    public final static int PSP_LANGUAGE_SIMPLIFIED_CHINESE = 11; // unconfirmed
+    public final static int PSP_LANGUAGE_TRADITIONAL_CHINESE = 10;
+    public final static int PSP_LANGUAGE_SIMPLIFIED_CHINESE = 11;
     private int languageMode_language;
 
-    // TODO check assignment
     public final static int PSP_CONFIRM_BUTTON_CIRCLE = 0;
     public final static int PSP_CONFIRM_BUTTON_CROSS = 1;
     private int languageMode_button;

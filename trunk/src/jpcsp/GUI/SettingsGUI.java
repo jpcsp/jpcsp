@@ -19,11 +19,7 @@ package jpcsp.GUI;
 
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.GroupLayout;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
 import javax.swing.MutableComboBoxModel;
-import javax.swing.GroupLayout.Alignment;
 
 import jpcsp.Resource;
 import jpcsp.Settings;
@@ -62,11 +58,32 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
         filelogCheck.setSelected(enabled);
         
-        enabled = Settings.getInstance().readBool("emu.savedataSizes");
-        savedatasizesCheck.setSelected(enabled);
-
         int language = Settings.getInstance().readInt("emu.impose.language");
         languageBox.setSelectedIndex(language);
+
+        int button = Settings.getInstance().readInt("emu.impose.button");
+        buttonBox.setSelectedIndex(button);
+
+        int daylight = Settings.getInstance().readInt("emu.sysparam.daylightsavings");
+        daylightBox.setSelectedIndex(daylight);
+
+        int timezone = Settings.getInstance().readInt("emu.sysparam.timezone");
+        timezoneSpinner.setValue(timezone);
+
+        int timeformat = Settings.getInstance().readInt("emu.sysparam.timeformat");
+        timeFormatBox.setSelectedIndex(timeformat);
+
+        int dateformat = Settings.getInstance().readInt("emu.sysparam.dateformat");
+        dateFormatBox.setSelectedIndex(dateformat);
+
+        int wlanpowersave = Settings.getInstance().readInt("emu.sysparam.wlanpowersave");
+        wlanPowerBox.setSelectedIndex(wlanpowersave);
+
+        int adhocchannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel");
+        adhocChannelBox.setSelectedIndex(adhocchannel);
+
+        String nickname = Settings.getInstance().readString("emu.sysparam.nickname");
+        nicknameTextField.setText(nickname);
 
         enabled = Settings.getInstance().readBool("emu.disablevbo");
         disableVBOCheck.setSelected(enabled);
@@ -151,17 +168,36 @@ public class SettingsGUI extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         filelogCheck = new javax.swing.JCheckBox();
-        savedatasizesCheck = new javax.swing.JCheckBox();
-        languageBox = new JComboBox();
-        languageLabel = new JLabel();
+        RegionPanel = new javax.swing.JPanel();
+        languageLabel = new javax.swing.JLabel();
+        languageBox = new javax.swing.JComboBox();
+        buttonLabel = new javax.swing.JLabel();
+        buttonBox = new javax.swing.JComboBox();
+        daylightLabel = new javax.swing.JLabel();
+        daylightBox = new javax.swing.JComboBox();
+        timeFormatLabel = new javax.swing.JLabel();
+        timeFormatBox = new javax.swing.JComboBox();
+        dateFormatLabel = new javax.swing.JLabel();
+        dateFormatBox = new javax.swing.JComboBox();
+        wlanPowerLabel = new javax.swing.JLabel();
+        wlanPowerBox = new javax.swing.JComboBox();
+        adhocChannelLabel = new javax.swing.JLabel();
+        adhocChannelBox = new javax.swing.JComboBox();
+        timezoneLabel = new javax.swing.JLabel();
+        timezoneSpinner = new javax.swing.JSpinner();
+        nicknamelLabel = new javax.swing.JLabel();
+        nicknameTextField = new javax.swing.JTextField();
+        imposeLabel = new javax.swing.JLabel();
+        imposeLabel1 = new javax.swing.JLabel();
+        jSeparator1 = new javax.swing.JSeparator();
         VideoPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         disableVBOCheck = new javax.swing.JCheckBox();
-        disableUBOCheck = new javax.swing.JCheckBox();
         onlyGEGraphicsCheck = new javax.swing.JCheckBox();
         useVertexCache = new javax.swing.JCheckBox();
         shadersCheck = new javax.swing.JCheckBox();
         geometryShaderCheck = new javax.swing.JCheckBox();
+        disableUBOCheck = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -219,10 +255,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         });
 
         filelogCheck.setText(Resource.get("enablefileIO"));
-        savedatasizesCheck.setText(Resource.get("savedatasizes"));
-
-        languageBox.setModel(makeLanguageComboBoxModel());
-        languageLabel.setText(Resource.get("language"));
 
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
         generalPanel.setLayout(generalPanelLayout);
@@ -231,40 +263,22 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(generalPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(filelogCheck)
+                    .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(profilerCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(compilerCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(umdBrowser, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(ClassicOpenDialogumd, javax.swing.GroupLayout.Alignment.LEADING))
                     .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(ClassicOpenDialogumd, javax.swing.GroupLayout.DEFAULT_SIZE, 665, Short.MAX_VALUE)
-                        .addContainerGap())
-                    .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(umdBrowser, javax.swing.GroupLayout.DEFAULT_SIZE, 665, Short.MAX_VALUE)
-                        .addContainerGap())
-                    .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(filelogCheck)
-                        .addContainerGap())
-                    .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(savedatasizesCheck)
-                        .addContainerGap())
-                    .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(languageLabel)
-                        .addGap(5)
-                        .addComponent(languageBox, GroupLayout.PREFERRED_SIZE, 150, GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap())
-                    .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, generalPanelLayout.createSequentialGroup()
-                                .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(generalPanelLayout.createSequentialGroup()
-                                        .addComponent(jLabel1)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                    .addComponent(compilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 276, Short.MAX_VALUE))
-                                .addGap(91, 91, 91))
-                            .addComponent(profilerCheck, javax.swing.GroupLayout.Alignment.LEADING))
-                        .addGap(304, 304, 304))))
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(14, 14, 14)
+                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(542, Short.MAX_VALUE))
         );
         generalPanelLayout.setVerticalGroup(
             generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -279,29 +293,150 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(profilerCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(filelogCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(savedatasizesCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(generalPanelLayout.createParallelGroup(Alignment.BASELINE)
-                        .addComponent(languageLabel)
-                        .addComponent(languageBox))
-                .addGap(51, 51, 51)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 93, Short.MAX_VALUE)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(ClassicOpenDialogumd)
-                .addGap(17, 17, 17)
+                .addGap(18, 18, 18)
                 .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1)
                     .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel1))
-                .addContainerGap(51, Short.MAX_VALUE))
+                .addGap(33, 33, 33))
         );
 
         jTabbedPane1.addTab(Resource.get("general"), generalPanel);
 
-        disableVBOCheck.setText(Resource.get("disablevbo"));
+        languageLabel.setText(Resource.get("language"));
 
-        disableUBOCheck.setText(Resource.get("disableubo"));
+        languageBox.setModel(makeLanguageComboBoxModel());
+
+        buttonLabel.setText(Resource.get("buttonpref"));
+
+        buttonBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "\"O\" for \"Enter\"", "\"X\" for \"Enter\"" }));
+
+        daylightLabel.setText(Resource.get("daylightSavings"));
+
+        daylightBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
+
+        timeFormatLabel.setText(Resource.get("timeformat"));
+
+        timeFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "24H", "12H" }));
+
+        dateFormatLabel.setText(Resource.get("dateformat"));
+
+        dateFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY" }));
+
+        wlanPowerLabel.setText(Resource.get("wlanpowersaving"));
+
+        wlanPowerBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
+
+        adhocChannelLabel.setText(Resource.get("adhocChannel"));
+
+        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Auto", "1", "2", "3", "4" }));
+
+        timezoneLabel.setText(Resource.get("timezone"));
+
+        timezoneSpinner.setModel(new javax.swing.SpinnerNumberModel(0, -720, 720, 1));
+
+        nicknamelLabel.setText(Resource.get("nickname"));
+
+        nicknameTextField.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
+        nicknameTextField.setText("JPCSP");
+
+        imposeLabel.setText("Impose:");
+
+        imposeLabel1.setText("System param:");
+
+        javax.swing.GroupLayout RegionPanelLayout = new javax.swing.GroupLayout(RegionPanel);
+        RegionPanel.setLayout(RegionPanelLayout);
+        RegionPanelLayout.setHorizontalGroup(
+            RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(RegionPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(imposeLabel)
+                    .addGroup(RegionPanelLayout.createSequentialGroup()
+                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(imposeLabel1)
+                            .addComponent(daylightLabel)
+                            .addComponent(timezoneLabel)
+                            .addComponent(timeFormatLabel)
+                            .addComponent(dateFormatLabel)
+                            .addComponent(wlanPowerLabel)
+                            .addComponent(adhocChannelLabel)
+                            .addComponent(nicknamelLabel))
+                        .addGap(29, 29, 29)
+                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(timezoneSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(daylightBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(timeFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(dateFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(wlanPowerBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(adhocChannelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(nicknameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(RegionPanelLayout.createSequentialGroup()
+                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(languageLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(buttonLabel))
+                        .addGap(117, 117, 117)
+                        .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(languageBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(buttonBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 819, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(11, Short.MAX_VALUE))
+        );
+        RegionPanelLayout.setVerticalGroup(
+            RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(RegionPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(imposeLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(languageLabel)
+                    .addComponent(languageBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(buttonLabel)
+                    .addComponent(buttonBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(24, 24, 24)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(imposeLabel1)
+                .addGap(18, 18, 18)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(daylightLabel)
+                    .addComponent(daylightBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(timezoneLabel)
+                    .addComponent(timezoneSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(timeFormatLabel)
+                    .addComponent(timeFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(dateFormatLabel)
+                    .addComponent(dateFormatBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(wlanPowerLabel)
+                    .addComponent(wlanPowerBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(adhocChannelLabel)
+                    .addComponent(adhocChannelBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(RegionPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(nicknamelLabel)
+                    .addComponent(nicknameTextField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(31, 31, 31))
+        );
+
+        jTabbedPane1.addTab(Resource.get("region"), RegionPanel);
+
+        disableVBOCheck.setText(Resource.get("disablevbo"));
 
         onlyGEGraphicsCheck.setText(Resource.get("onlyGeGraphics"));
 
@@ -310,6 +445,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         shadersCheck.setText(Resource.get("useshader"));
 
         geometryShaderCheck.setText(Resource.get("useGeometryShader"));
+
+        disableUBOCheck.setText(Resource.get("disableubo"));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -320,8 +457,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(disableVBOCheck)
                     .addComponent(onlyGEGraphicsCheck)
                     .addComponent(useVertexCache)
-                    .addComponent(shadersCheck)
-                    .addComponent(geometryShaderCheck)
+                    .addComponent(shadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(geometryShaderCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(disableUBOCheck))
                 .addContainerGap())
         );
@@ -349,14 +486,14 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(574, Short.MAX_VALUE))
+                .addContainerGap(733, Short.MAX_VALUE))
         );
         VideoPanelLayout.setVerticalGroup(
             VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(191, Short.MAX_VALUE))
+                .addContainerGap(193, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("video"), VideoPanel);
@@ -393,13 +530,13 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(AudioPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(580, Short.MAX_VALUE))
+                .addContainerGap(739, Short.MAX_VALUE))
         );
         AudioPanelLayout.setVerticalGroup(
             AudioPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(AudioPanelLayout.createSequentialGroup()
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(248, Short.MAX_VALUE))
+                .addContainerGap(273, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("audio"), AudioPanel);
@@ -434,17 +571,17 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(MemoryPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(574, Short.MAX_VALUE))
+                .addContainerGap(733, Short.MAX_VALUE))
         );
         MemoryPanelLayout.setVerticalGroup(
             MemoryPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(MemoryPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(260, Short.MAX_VALUE))
+                .addContainerGap(285, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("Memory", MemoryPanel);
+        jTabbedPane1.addTab(Resource.get("memory"), MemoryPanel);
 
         useMediaEngine.setText(Resource.get("useMediaEngine"));
 
@@ -455,9 +592,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(useMediaEngine, javax.swing.GroupLayout.PREFERRED_SIZE, 259, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(useConnector))
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useConnector, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
@@ -476,14 +613,14 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(MiscPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(406, Short.MAX_VALUE))
+                .addContainerGap(733, Short.MAX_VALUE))
         );
         MiscPanelLayout.setVerticalGroup(
             MiscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(MiscPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(260, Short.MAX_VALUE))
+                .addContainerGap(285, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("misc"), MiscPanel);
@@ -492,20 +629,21 @@ public class SettingsGUI extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(659, Short.MAX_VALUE)
+                .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18))
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 686, Short.MAX_VALUE))
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 845, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 352, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 377, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonCancel)
@@ -537,11 +675,32 @@ public void RefreshWindow() {
 	enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
 	filelogCheck.setSelected(enabled);
 	
-	enabled = Settings.getInstance().readBool("emu.savedataSizes");
-	savedatasizesCheck.setSelected(enabled);
-
 	int language = Settings.getInstance().readInt("emu.impose.language");
 	languageBox.setSelectedItem(language);
+
+    int button = Settings.getInstance().readInt("emu.impose.button");
+	buttonBox.setSelectedItem(button);
+
+    int daylight = Settings.getInstance().readInt("emu.sysparam.daylightsavings");
+    daylightBox.setSelectedIndex(daylight);
+
+    int timezone = Settings.getInstance().readInt("emu.sysparam.timezone");
+    timezoneSpinner.setValue(timezone);
+
+    int timeformat = Settings.getInstance().readInt("emu.sysparam.timeformat");
+    timeFormatBox.setSelectedIndex(timeformat);
+
+    int dateformat = Settings.getInstance().readInt("emu.sysparam.dateformat");
+    dateFormatBox.setSelectedIndex(dateformat);
+
+    int wlanpowersave = Settings.getInstance().readInt("emu.sysparam.wlanpowersave");
+    wlanPowerBox.setSelectedIndex(wlanpowersave);
+
+    int adhocchannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel");
+    adhocChannelBox.setSelectedIndex(adhocchannel);
+
+    String nickname = Settings.getInstance().readString("emu.sysparam.nickname");
+    nicknameTextField.setText(nickname);
 
 	enabled = Settings.getInstance().readBool("emu.disablevbo");
 	disableVBOCheck.setSelected(enabled);
@@ -593,8 +752,15 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
    Settings.getInstance().writeBool("emu.useGeometryShader", geometryShaderCheck.isSelected());
    Settings.getInstance().writeBool("emu.debug.enablefilelogger", filelogCheck.isSelected());
-   Settings.getInstance().writeBool("emu.savedataSizes", savedatasizesCheck.isSelected());
    Settings.getInstance().writeInt("emu.impose.language", languageBox.getSelectedIndex());
+   Settings.getInstance().writeInt("emu.impose.button", buttonBox.getSelectedIndex());
+   Settings.getInstance().writeInt("emu.sysparam.daylightsavings", daylightBox.getSelectedIndex());
+   Settings.getInstance().writeInt("emu.sysparam.timezone", Integer.parseInt(timezoneSpinner.getValue().toString()));
+   Settings.getInstance().writeInt("emu.sysparam.timeformat", timeFormatBox.getSelectedIndex());
+   Settings.getInstance().writeInt("emu.sysparam.dateformat", dateFormatBox.getSelectedIndex());
+   Settings.getInstance().writeInt("emu.sysparam.wlanpowersave", wlanPowerBox.getSelectedIndex());
+   Settings.getInstance().writeInt("emu.sysparam.adhocchannel", adhocChannelBox.getSelectedIndex());
+   Settings.getInstance().writeString("emu.sysparam.nickname", nicknameTextField.getText());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.disableubo", disableUBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
@@ -636,18 +802,27 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JCheckBox IgnoreAudioThreadsCheck;
     private javax.swing.JPanel MemoryPanel;
     private javax.swing.JPanel MiscPanel;
+    private javax.swing.JPanel RegionPanel;
     private javax.swing.JPanel VideoPanel;
+    private javax.swing.JComboBox adhocChannelBox;
+    private javax.swing.JLabel adhocChannelLabel;
+    private javax.swing.JComboBox buttonBox;
     private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JLabel buttonLabel;
     private javax.swing.JCheckBox compilerCheck;
+    private javax.swing.JComboBox dateFormatBox;
+    private javax.swing.JLabel dateFormatLabel;
+    private javax.swing.JComboBox daylightBox;
+    private javax.swing.JLabel daylightLabel;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
-    private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox disableUBOCheck;
+    private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox filelogCheck;
-    private javax.swing.JCheckBox savedatasizesCheck;
-    private javax.swing.JComboBox languageBox;
-    private javax.swing.JLabel languageLabel;
     private javax.swing.JPanel generalPanel;
+    private javax.swing.JCheckBox geometryShaderCheck;
     private javax.swing.JCheckBox ignoreUnmappedImports;
+    private javax.swing.JLabel imposeLabel;
+    private javax.swing.JLabel imposeLabel1;
     private javax.swing.JCheckBox invalidMemoryCheck;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButtonCancel;
@@ -657,18 +832,28 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
+    private javax.swing.JSeparator jSeparator1;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JComboBox languageBox;
+    private javax.swing.JLabel languageLabel;
+    private javax.swing.JTextField nicknameTextField;
+    private javax.swing.JLabel nicknamelLabel;
     private javax.swing.JCheckBox onlyGEGraphicsCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox shadersCheck;
-    private javax.swing.JCheckBox geometryShaderCheck;
+    private javax.swing.JComboBox timeFormatBox;
+    private javax.swing.JLabel timeFormatLabel;
+    private javax.swing.JLabel timezoneLabel;
+    private javax.swing.JSpinner timezoneSpinner;
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JTextField umdpath;
     private javax.swing.JCheckBox useConnector;
     private javax.swing.JCheckBox useMediaEngine;
     private javax.swing.JCheckBox useVertexCache;
+    private javax.swing.JComboBox wlanPowerBox;
+    private javax.swing.JLabel wlanPowerLabel;
     // End of variables declaration//GEN-END:variables
 
 }

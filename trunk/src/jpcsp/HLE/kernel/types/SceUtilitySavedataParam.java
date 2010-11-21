@@ -219,17 +219,17 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		saveName    = readStringNZ(20);
 		saveNameListAddr = read32();
 		if (saveNameListAddr != 0) {
-			List<String> saveNameList = new ArrayList<String>();
+			List<String> newSaveNameList = new ArrayList<String>();
 			boolean endOfList = false;
 			for (int i = 0; !endOfList; i += 20) {
 				String saveNameItem = Utilities.readStringNZ(mem, saveNameListAddr + i, 20);
 				if (saveNameItem == null || saveNameItem.length() == 0) {
 					endOfList = true;
 				} else {
-					saveNameList.add(saveNameItem);
+					newSaveNameList.add(saveNameItem);
 				}
 			}
-			this.saveNameList = saveNameList.toArray(new String[saveNameList.size()]);
+			saveNameList = newSaveNameList.toArray(new String[newSaveNameList.size()]);
 		}
 		fileName    = readStringNZ(13);
 		readUnknown(3);
@@ -388,7 +388,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         safeLoad(mem, pic1FileName, pic1FileData);
         safeLoad(mem, snd0FileName, snd0FileData);
 		loadPsf(mem, path, paramSfoFileName, sfoParam);
-		bind = BIND_IS_OK;
+        bind = BIND_IS_OK;
 	}
 
     private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {
@@ -505,6 +505,23 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
 	public boolean isPresent(String gameName, String saveName) {
 	    String path = getBasePath();
+        // NULL can also be sent in saveName (seen in MODE_SIZES).
+        // It means any save from the current game, since all saves share a common
+        // save data file.
+        if(saveName == null || saveName.length() <= 0) {
+            File f = new File("ms0/PSP/SAVEDATA/");
+            if(f.list() == null) {
+                return false;
+            } else {
+                for(int i = 0; i < f.list().length; i++) {
+                    if(!f.list()[i].equals(gameName) && f.list()[i].contains(gameName)) {
+                        saveName = f.list()[i].replace(gameName, "");
+                        break;
+                    }
+                }
+            }
+            path = getBasePath(saveName);
+        }
         // When NULL is sent in fileName, it means any file inside the savedata folder.
         if (fileName == null || fileName.length() <= 0) {
             File f = new File("ms0/PSP/SAVEDATA/" + gameName + saveName);

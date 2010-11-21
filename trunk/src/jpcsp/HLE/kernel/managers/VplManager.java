@@ -57,9 +57,10 @@ public class VplManager {
 
     protected final static int PSP_VPL_ATTR_FIFO = 0;
     protected final static int PSP_VPL_ATTR_PRIORITY = 0x100;
-    protected final static int PSP_VPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
-    protected final static int PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
-    protected final static int PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
+
+    public final static int PSP_VPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
+    public final static int PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
+    public final static int PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
 
     public void reset() {
         vplMap = new HashMap<Integer, SceKernelVplInfo>();
@@ -176,14 +177,13 @@ public class VplManager {
                 addr = info.freeLowAddress + 8;
                 info.freeLowAddress += alignedSize + 8;
             }
-
+            // 8-byte header per data block.
             Memory mem = Memory.getInstance();
             mem.write32(addr - 8, info.allocAddress);
             mem.write32(addr - 4, 0);
-
             info.freeSize -= alignedSize + 8;
-            info.dataBlockMap.put(addr, alignedSize);
         }
+        info.dataBlockMap.put(addr, alignedSize);
         return addr;
     }
 

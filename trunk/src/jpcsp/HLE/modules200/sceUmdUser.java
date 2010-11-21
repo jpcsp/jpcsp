@@ -58,7 +58,8 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
         }
 
         umdAllowReplace = false;
-        if ((getUmdStat() & PSP_UMD_READY) == 0) {
+        if(((getUmdStat() & PSP_UMD_READY) != PSP_UMD_READY)
+                || ((getUmdStat() & PSP_UMD_READABLE) != PSP_UMD_READABLE)) {
             cpu.gpr[2] = ERROR_UMD_NOT_READY;
         } else {
             cpu.gpr[2] = 0;

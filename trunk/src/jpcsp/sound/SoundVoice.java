@@ -25,6 +25,8 @@ public class SoundVoice extends SoundChannel {
     private int pitch;
     private int noise;
     private boolean paused;
+    private boolean on;
+    private boolean off;
     private VoiceADSREnvelope envelope;
 
     public class VoiceADSREnvelope {
@@ -56,6 +58,8 @@ public class SoundVoice extends SoundChannel {
         pitch = NORMAL_PITCH;
         noise = 0;
         paused = false;
+        on = false;
+        off = true;
         envelope = new VoiceADSREnvelope();
 	}
 
@@ -77,18 +81,30 @@ public class SoundVoice extends SoundChannel {
     }
 
     public void on() {
+        on = true;
+        off = false;
 		if (samples != null) {
 			play(encodeSamples());
 		}
 	}
 
     public void off() {
+        on = false;
+        off = true;
     	release();
     }
 
     public VoiceADSREnvelope getEnvelope() {
     	return envelope;
     }
+
+    public boolean isOn() {
+		return on;
+	}
+
+    public boolean isOff() {
+		return off;
+	}
 
 	public boolean isPaused() {
 		return paused;
@@ -100,6 +116,10 @@ public class SoundVoice extends SoundChannel {
 
 	public void setSamples(short[] samples) {
 		this.samples = samples;
+	}
+
+    public short[] getSamples() {
+		return samples;
 	}
 
 	public int getLoopMode() {
