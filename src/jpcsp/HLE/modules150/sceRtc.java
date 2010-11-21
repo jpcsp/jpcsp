@@ -135,6 +135,14 @@ public class sceRtc implements HLEModule {
     final static int PSP_TIME_INVALID_SECONDS = -6;
     final static int PSP_TIME_INVALID_MICROSECONDS = -7;
 
+    // Statics verified on PSP.
+    final static int PSP_TIME_SECONDS_IN_MINUTE = 60;
+    final static int PSP_TIME_SECONDS_IN_HOUR = 3600;
+    final static int PSP_TIME_SECONDS_IN_DAY = 86400;
+    final static int PSP_TIME_SECONDS_IN_WEEK = 604800;
+    final static int PSP_TIME_SECONDS_IN_MONTH = 2629743;
+    final static int PSP_TIME_SECONDS_IN_YEAR = 31556926;
+
     private long rtcMagicOffset = 62135596800000000L;
 
     protected long hleGetCurrentTick() {
@@ -585,39 +593,32 @@ public class sceRtc implements HLEModule {
 
     public void sceRtcTickAddMinutes(Processor processor) {
         log.debug("sceRtcTickAddMinutes redirecting to hleRtcTickAdd64(60*1000000)");
-        hleRtcTickAdd64(processor, 60*1000000L);
+        hleRtcTickAdd64(processor, PSP_TIME_SECONDS_IN_MINUTE*1000000L);
     }
 
     public void sceRtcTickAddHours(Processor processor) {
         log.debug("sceRtcTickAddHours redirecting to hleRtcTickAdd32(60*60*1000000)");
-        hleRtcTickAdd32(processor, 60*60*1000000L);
+        hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_HOUR*1000000L);
     }
 
     public void sceRtcTickAddDays(Processor processor) {
         log.debug("sceRtcTickAddDays redirecting to hleRtcTickAdd32(24*60*60*1000000)");
-        hleRtcTickAdd32(processor, 24*60*60*1000000L);
+        hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_DAY*1000000L);
     }
 
     public void sceRtcTickAddWeeks(Processor processor) {
         log.debug("sceRtcTickAddWeeks redirecting to hleRtcTickAdd32(7*24*60*60*1000000)");
-        hleRtcTickAdd32(processor, 7*24*60*60*1000000L);
+        hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_WEEK*1000000L);
     }
 
-    /** TODO check on real psp.
-     * maybe take account of different number of days in each month,
-     * decompose the source ticks into parts add months, re-assemble.
-     * setting 1 month as 30 days */
     public void sceRtcTickAddMonths(Processor processor) {
-        log.warn("PARTIAL: sceRtcTickAddMonths redirecting to hleRtcTickAdd32(30*24*60*60*1000000)");
-        hleRtcTickAdd32(processor, 30*24*60*60*1000000L);
+        log.debug("sceRtcTickAddMonths redirecting to hleRtcTickAdd32(30*24*60*60*1000000)");
+        hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_MONTH*1000000L);
     }
 
-    /** TODO check on real psp.
-     * maybe take account of different number of days in each year.
-     * setting 1 year as 365 days */
     public void sceRtcTickAddYears(Processor processor) {
-        log.warn("PARTIAL: sceRtcTickAddYears redirecting to hleRtcTickAdd32(365*24*60*60*1000000)");
-        hleRtcTickAdd32(processor, 365*24*60*60*1000000L);
+        log.debug("sceRtcTickAddYears redirecting to hleRtcTickAdd32(365*24*60*60*1000000)");
+        hleRtcTickAdd32(processor, PSP_TIME_SECONDS_IN_YEAR*1000000L);
     }
 
     public void sceRtcFormatRFC2822(Processor processor) {

@@ -206,7 +206,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
             channel.play(data);
             ret = channel.getSampleLength();
         } else {
-            log.warn("sceAudio.doAudioOutput: channel " + channel.getIndex() + " not reserved");
+            log.warn("doAudioOutput: channel " + channel.getIndex() + " not reserved");
         }
         return ret;
     }
@@ -683,9 +683,20 @@ public class sceAudio implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (!Memory.isAddressGood(buf)) {
+        if (buf == 0) {
+            // Tested on PSP:
+            // SRC audio also delays when buf == 0, in order to drain all
+            // audio samples from the audio driver.
+            if (hleAudioGetChannelRestLen(pspSRCChannel) != 0) {
+                log.warn("sceAudioSRCOutputBlocking (buf==0): delaying current thread");
+                Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+            } else {
+                log.warn("sceAudioSRCOutputBlocking (buf==0): not delaying current thread");
+                cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
+            }
+        } else if (!Memory.isAddressGood(buf)) {
             log.warn("sceAudioSRCOutputBlocking bad pointer " + String.format("0x%08X", buf));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
         } else {
             if (!pspSRCChannel.isOutputBlocking() || disableBlockingAudio) {
                 if (log.isDebugEnabled()) {

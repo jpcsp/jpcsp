@@ -667,7 +667,7 @@ public class scePsmfPlayer implements HLEModule {
         int psmfPlayer = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-            log.debug("PARTIAL: scePsmfPlayerGetCurrentStatus psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
+            log.debug("scePsmfPlayerGetCurrentStatus psmfPlayer=0x" + Integer.toHexString(psmfPlayer));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {

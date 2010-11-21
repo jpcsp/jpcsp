@@ -126,6 +126,10 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     protected static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
     protected static final int RIFF_MAGIC = 0x46464952; // "RIFF"
     protected static final int WAVE_MAGIC = 0x45564157; // "WAVE"
+    protected static final int FMT_CHUNK_MAGIC = 0x20746D66; // "FMT"
+    protected static final int FACT_CHUNK_MAGIC = 0x74636166; // "FACT"
+    protected static final int SMPL_CHUNK_MAGIC = 0x6C706D73; // "SMPL"
+    protected static final int DATA_CHUNK_MAGIC = 0x61746164; // "DATA"
 
     // Assume ATRAC3 is compressing its data to 10% of its original size
     protected static final float atracCompressedRate = 0.10f;
@@ -204,7 +208,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         // Check for a valid "WAVE" header.
         int WAVEMagic = mem.read32(inputBufferAddr + 8);
         if (WAVEMagic == WAVE_MAGIC && inputBufferSize >= 36) {
-            // Parse the "fmt " chunk.
+            // Parse the "fmt" chunk.
             int fmtMagic = mem.read32(inputBufferAddr + 12);
             int fmtChunkSize = mem.read32(inputBufferAddr + 16);
             int compressionCode = mem.read16(inputBufferAddr + 20);
@@ -213,17 +217,29 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             atracBitrate = mem.read32(inputBufferAddr + 28);
             int chunkAlign = mem.read16(inputBufferAddr + 32);
             int hiBytesPerSample = mem.read16(inputBufferAddr + 34);
-
             if (log.isDebugEnabled()) {
-            	log.debug(String.format("WAVE format: magic=0x%08X ('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", fmtMagic, getStringFromInt32(fmtMagic), fmtChunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, chunkAlign, hiBytesPerSample));
-            	StringBuilder restChunk = new StringBuilder();
-            	for (int i = 36; i < 20 + fmtChunkSize && i < inputBufferSize; i++) {
-            		int b = mem.read8(inputBufferAddr + i);
-            		restChunk.append(String.format(" %02X", b));
-            	}
-            	if (restChunk.length() > 0) {
-            		log.debug(String.format("Additional chunk data:%s", restChunk));
-            	}
+                log.debug(String.format("WAVE format: magic=0x%08X ('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", fmtMagic, getStringFromInt32(fmtMagic), fmtChunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, chunkAlign, hiBytesPerSample));
+            }
+            StringBuilder restChunk = new StringBuilder();
+            for (int i = 36; i < 20 + fmtChunkSize && i < inputBufferSize; i++) {
+                int b = mem.read8(inputBufferAddr + i);
+                restChunk.append(String.format(" %02X", b));
+            }
+            if ((restChunk.length() > 0) && (log.isDebugEnabled())) {
+                log.debug(String.format("Additional chunk data:%s", restChunk));
+            }
+            // Skip the "fact" chunk.
+            int factMagic = mem.read32(inputBufferAddr + 20 + fmtChunkSize);
+            int factChunkSize = mem.read32(inputBufferAddr + 24 + fmtChunkSize);
+            // Check if there is a "smpl" chunk.
+            // Based on PSP tests, files that contain a "smpl" chunk always
+            // have post loop process data and need a second buffer
+            // (e.g.: .at3 files from Gran Turismo).
+            int smplMagic = mem.read32(inputBufferAddr + 28 + fmtChunkSize + factChunkSize);
+            if(smplMagic == SMPL_CHUNK_MAGIC) {
+                setSecondBufferNeeded(true);
+            } else {
+                setSecondBufferNeeded(false);
             }
         }
     }
@@ -265,11 +281,6 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         inputFileOffset = inputBufferSize;
 
         analyzeAtracHeader();
-
-        // Don't use the second buffer.
-        // TODO: The second buffer is used to store post loop process data.
-        // Parse the decrypted data and accquire it's offset.
-        setSecondBufferNeeded(false);
 
         log.info(String.format("hleAtracSetData atracID=%d, bufferSize=0x%x, fileSize=0x%x", atracID, inputBufferSize, inputFileSize));
 

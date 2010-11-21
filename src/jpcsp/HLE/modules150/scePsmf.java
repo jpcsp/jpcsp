@@ -828,6 +828,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
         int offset = endianSwap32(mem.read32(buffer_addr + 8));
         mem.write32(offset_addr, offset);
 
+        // Always let sceMpeg handle the PSMF analysis.
+        Modules.sceMpegModule.analyseMpeg(buffer_addr);
+
         cpu.gpr[2] = 0;
     }
 
@@ -854,6 +857,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
             mem.write32(size_addr, size);
             cpu.gpr[2] = 0;
         }
+        // Always let sceMpeg handle the PSMF analysis.
+        Modules.sceMpegModule.analyseMpeg(buffer_addr);
     }
 
     public void scePsmfGetNumberOfSpecificStreams(Processor processor) {

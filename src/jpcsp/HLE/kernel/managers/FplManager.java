@@ -203,7 +203,7 @@ public class FplManager {
                 if(optParams.align > 0) {
                     memAlign = optParams.align;
                 }
-                log.info("sceKernelCreateFpl: size=" + optParams.size + ", alignment=0x" + Integer.toHexString(optParams.align) + ", unk=0x" + Integer.toHexString(optParams.unk));
+                log.info("sceKernelCreateFpl options: struct size=" + optParams.size + ", alignment=0x" + Integer.toHexString(optParams.align) + ", unk=0x" + Integer.toHexString(optParams.unk));
             } else {
                 log.warn("sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
             }
