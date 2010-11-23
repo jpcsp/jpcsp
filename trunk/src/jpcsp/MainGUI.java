@@ -737,7 +737,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             RecentMenu.add(item);
         }
 
-        if (recentUMD.isEmpty() && recentFile.isEmpty()) {
+        if (!recentUMD.isEmpty() && !recentFile.isEmpty()) {
             RecentMenu.addSeparator();
         }
 
