@@ -1359,7 +1359,7 @@ private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 // Called from Emulator
 public void step() {
     //check if there is a breakpoint
-    if (wantStep || (breakpoints.size() > 0 && breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1)) {
+    if (wantStep || (breakpoints.isEmpty() && breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1)) {
     	wantStep = false;
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
 
