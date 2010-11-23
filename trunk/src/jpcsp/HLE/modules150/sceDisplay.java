@@ -1011,7 +1011,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	vcount++;
 
     	// Check the threads waiting for VBLANK (multi).
-    	if (waitingOnVblank.size() > 0) {
+    	if (waitingOnVblank.isEmpty()) {
     		for (ListIterator<WaitVblankInfo> lit = waitingOnVblank.listIterator(); lit.hasNext();) {
     			WaitVblankInfo waitVblankInfo = lit.next();
     			if (waitVblankInfo.unblockVcount <= vcount) {
