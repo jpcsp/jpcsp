@@ -153,6 +153,12 @@ public class MemoryWriter {
 		@Override
 		public void flush() {
 		}
+
+		@Override
+		public void skip(int n) {
+			address += n * step;
+			length -= n * step;
+		}
 	}
 
 	private static class MemoryWriterIntArray8 implements IMemoryWriter {
@@ -164,7 +170,7 @@ public class MemoryWriter {
 
 		public MemoryWriterIntArray8(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr / 4;
+			offset = addr >> 2;
 			index = addr & 3;
 			if (index > 0) {
 				value = buffer[offset] & mask[index];
@@ -190,6 +196,17 @@ public class MemoryWriter {
 				buffer[offset] = (buffer[offset] & ~mask[index]) | value;
 			}
 		}
+
+		@Override
+		public final void skip(int n) {
+			flush();
+			index += n;
+			offset += index >> 2;
+			index &= 3;
+			if (index > 0) {
+				value = buffer[offset] & mask[index];
+			}
+		}
 	}
 
 	private static class MemoryWriterIntArray16 implements IMemoryWriter {
@@ -200,8 +217,8 @@ public class MemoryWriter {
 
 		public MemoryWriterIntArray16(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr / 4;
-			index = (addr / 2) & 1;
+			offset = addr >> 2;
+			index = (addr >> 1) & 1;
 			if (index != 0) {
 				value = buffer[offset] & 0x0000FFFF;
 			}
@@ -224,6 +241,17 @@ public class MemoryWriter {
 				buffer[offset] = (buffer[offset] & 0xFFFF0000) | value;
 			}
 		}
+
+		@Override
+		public void skip(int n) {
+			flush();
+			index += n;
+			offset += index >> 1;
+			index &= 1;
+			if (index != 0) {
+				value = buffer[offset] & 0x0000FFFF;
+			}
+		}
 	}
 
 	private static class MemoryWriterIntArray32 implements IMemoryWriter {
@@ -242,6 +270,11 @@ public class MemoryWriter {
 
 		@Override
 		public void flush() {
+		}
+
+		@Override
+		public void skip(int n) {
+			offset += n;
 		}
 	}
 
@@ -278,6 +311,11 @@ public class MemoryWriter {
 				buffer.put((buffer.get(buffer.position()) & ~mask[index]) | value);
 			}
 		}
+
+		@Override
+		public void skip(int n) {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	private static class MemoryWriterInt16 implements IMemoryWriter {
@@ -310,6 +348,11 @@ public class MemoryWriter {
 				buffer.put((buffer.get(buffer.position()) & 0xFFFF0000) | value);
 			}
 		}
+
+		@Override
+		public void skip(int n) {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	private static class MemoryWriterInt32 implements IMemoryWriter {
@@ -326,6 +369,11 @@ public class MemoryWriter {
 
 		@Override
 		public void flush() {
+		}
+
+		@Override
+		public void skip(int n) {
+			buffer.position(buffer.position() + n);
 		}
 	}
 
@@ -344,6 +392,11 @@ public class MemoryWriter {
 		@Override
 		public void flush() {
 		}
+
+		@Override
+		public final void skip(int n) {
+			buffer.position(buffer.position() + n);
+		}
 	}
 
 	private static class MemoryWriterByte16 implements IMemoryWriter {
@@ -361,6 +414,11 @@ public class MemoryWriter {
 		@Override
 		public void flush() {
 		}
+
+		@Override
+		public final void skip(int n) {
+			buffer.position(buffer.position() + (n << 1));
+		}
 	}
 
 	private static class MemoryWriterByte32 implements IMemoryWriter {
@@ -377,6 +435,11 @@ public class MemoryWriter {
 
 		@Override
 		public void flush() {
+		}
+
+		@Override
+		public final void skip(int n) {
+			buffer.position(buffer.position() + (n << 2));
 		}
 	}
 }

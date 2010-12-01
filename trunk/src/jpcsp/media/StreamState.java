@@ -22,6 +22,7 @@ import java.util.List;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
 
+import com.xuggle.xuggler.IContainer;
 import com.xuggle.xuggler.IPacket;
 import com.xuggle.xuggler.IRational;
 
@@ -34,10 +35,16 @@ public class StreamState {
 	private int offset;
 	private long dts;
 	private long pts;
+	private IContainer container;
+	private int timestampOffset;
 
-	public StreamState(MediaEngine me, int streamID) {
+	public StreamState(MediaEngine me, int streamID, IContainer container, int timestampOffset) {
 		this.me = me;
 		this.streamID = streamID;
+		this.container = container;
+		this.timestampOffset = timestampOffset;
+		pts = timestampOffset;
+		dts = timestampOffset;
 		pendingPackets = new LinkedList<IPacket>();
 	}
 
@@ -88,8 +95,16 @@ public class StreamState {
     }
 
 	public void updateTimestamps() {
-    	dts = convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
-		pts = convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+		// If multiple picture / audio samples are stored into one packet,
+		// the timestamp of the packet is only valid for the first picture / sample.
+		// Further pictures /samples in the same packet have an unknown timestamp.
+		if (getOffset() == 0) {
+			dts = timestampOffset + convertTimestamp(packet.getDts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+			pts = timestampOffset + convertTimestamp(packet.getPts(), packet.getTimeBase(), sceMpeg.mpegTimestampPerSecond);
+		} else {
+			dts = sceMpeg.UNKNOWN_TIMESTAMP;
+			pts = sceMpeg.UNKNOWN_TIMESTAMP;
+		}
 	}
 
 	public void getTimestamps(SceMpegAu au) {
@@ -120,7 +135,20 @@ public class StreamState {
 		dts = ts;
 	}
 
-	public boolean isStream(int streamID) {
-		return getStreamID() == streamID;
+	public boolean isStream(IContainer container, int streamID) {
+		return getContainer() == container && getStreamID() == streamID;
+	}
+
+	public IContainer getContainer() {
+		return container;
+	}
+
+	public long getPts() {
+		return pts;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("StreamID=%d, Pts=%d", getStreamID(), getPts());
 	}
 }

@@ -33,12 +33,14 @@ import javax.swing.table.TableColumnModel;
 import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
+import jpcsp.filesystems.SeekableDataInput;
 
 /**
  *
  * @author  fiveofhearts
  */
-public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
+public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIoListener {
     private static final long serialVersionUID = 8455039521164613143L;
     private FileHandleModel fileHandleModel;
     private FileCommandModel fileCommandModel;
@@ -342,15 +344,15 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         resetLogging();
 
         // file handle table
-        logIoOpen(1, 0x08800000, "test1.txt", 0xFF, 0xFF, "rw");
-        logIoOpen(2, 0x08800000, "test2.txt", 0xFF, 0xFF, "rw");
-        logIoOpen(3, 0x08800000, System.currentTimeMillis() + ".txt", 0xFF, 0xFF, "rw");
-        logIoClose(0, 1);
-        logIoClose(0, 2);
-        logIoOpen(1, 0x08800000, "test1.txt", 0xFF, 0xFF, "rw");
+        sceIoOpen(1, 0x08800000, "test1.txt", 0xFF, 0xFF, "rw");
+        sceIoOpen(2, 0x08800000, "test2.txt", 0xFF, 0xFF, "rw");
+        sceIoOpen(3, 0x08800000, System.currentTimeMillis() + ".txt", 0xFF, 0xFF, "rw");
+        sceIoClose(0, 1);
+        sceIoClose(0, 2);
+        sceIoOpen(1, 0x08800000, "test1.txt", 0xFF, 0xFF, "rw");
 
         // file command table
-        logIoRead(0x0, 1, 0x08800000, 0x400, 0x0);
+        sceIoRead(0x0, 1, 0x08800000, 0x400, 0x0, 0, null);
 
         System.err.println("test done");
     }
@@ -441,6 +443,12 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
             dirty = true;
             getInstance().notify();
         }
+
+        if (isLoggingDisabled()) {
+        	Modules.IoFileMgrForUserModule.unregisterIoListener(this);
+        } else {
+        	Modules.IoFileMgrForUserModule.registerIoListener(this);
+        }
     }
 
     private void sortLists() {
@@ -475,26 +483,30 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         }
     }
 
-    public void logIoSync(int result, int device_addr, String device, int unknown) {
+	@Override
+    public void sceIoSync(int result, int device_addr, String device, int unknown) {
         logFileCommand(new FileCommandInfo(
                 "sync", result,
                 String.format("device=0x%08X('%s') unknown=0x%08X",
                 device_addr, device, unknown)));
     }
 
-    public void logIoPollAsync(int result, int uid, int res_addr) {
+	@Override
+    public void sceIoPollAsync(int result, int uid, int res_addr) {
         logFileCommand(new FileCommandInfo(
                 uid, "poll async", result,
                 String.format("result=0x%08X", res_addr)));
     }
 
-    public void logIoWaitAsync(int result, int uid, int res_addr) {
+	@Override
+    public void sceIoWaitAsync(int result, int uid, int res_addr) {
         logFileCommand(new FileCommandInfo(
                 uid, "wait async", result,
                 String.format("result=0x%08X", res_addr)));
     }
 
-    public void logIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
+	@Override
+    public void sceIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
         if (isLoggingDisabled()) {
             return;
         }
@@ -513,7 +525,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 filename_addr, filename, flags, permissions, mode)));
     }
 
-    public void logIoClose(int result, int uid) {
+	@Override
+    public void sceIoClose(int result, int uid) {
         if (isLoggingDisabled()) {
             return;
         }
@@ -532,7 +545,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 ""));
     }
 
-    public void logIoWrite(int result, int uid, int data_addr, int size, int bytesWritten) {
+	@Override
+    public void sceIoWrite(int result, int uid, int data_addr, int size, int bytesWritten) {
         FileHandleInfo info = fileHandleIdMap.get(uid);
         if (result >= 0 && info != null) {
             info.bytesWritten += bytesWritten;
@@ -544,7 +558,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 data_addr, size)));
     }
 
-    public void logIoRead(int result, int uid, int data_addr, int size, int bytesRead) {
+	@Override
+    public void sceIoRead(int result, int uid, int data_addr, int size, int bytesRead, long position, SeekableDataInput dataInput) {
         FileHandleInfo info = fileHandleIdMap.get(uid);
         if (result >= 0 && info != null) {
             info.bytesRead += bytesRead;
@@ -556,7 +571,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 data_addr, size)));
     }
 
-    public void logIoCancel(int result, int uid) {
+	@Override
+    public void sceIoCancel(int result, int uid) {
         logFileCommand(new FileCommandInfo(
                 uid, "cancel", result,
                 ""));
@@ -575,52 +591,61 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         }
     }
 
-    public void logIoSeek32(int result, int uid, int offset, int whence) {
+	@Override
+    public void sceIoSeek32(int result, int uid, int offset, int whence) {
         logFileCommand(new FileCommandInfo(
                 uid, "seek32", result,
                 String.format("offset=0x%08X whence=%s",
                 offset, getWhenceName(whence))));
     }
 
-    public void logIoSeek64(long result, int uid, long offset, int whence) {
+	@Override
+    public void sceIoSeek64(long result, int uid, long offset, int whence) {
         logFileCommand(new FileCommandInfo(
                 uid, "seek64", (int) result, // HACK back to 32bit result
                 String.format("offset=0x%08X whence=%s", offset, getWhenceName(whence))));
     }
 
-    public void logIoMkdir(int result, int path_addr, String path, int permissions) {
+	@Override
+    public void sceIoMkdir(int result, int path_addr, String path, int permissions) {
         logFileCommand(new FileCommandInfo(
                 "mkdir", result,
                 String.format("path=0x%08X('%s') permissions=%04X", path_addr, path, permissions)));
     }
 
-    public void logIoRmdir(int result, int path_addr, String path) {
+	@Override
+    public void sceIoRmdir(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "rmdir", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
 
-    public void logIoChdir(int result, int path_addr, String path) {
+	@Override
+    public void sceIoChdir(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "chdir", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
 
-    public void logIoDopen(int result, int path_addr, String path) {
+	@Override
+    public void sceIoDopen(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "dopen", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
 
-    public void logIoDread(int result, int uid, int dirent_addr) {
+	@Override
+    public void sceIoDread(int result, int uid, int dirent_addr) {
         logFileCommand(new FileCommandInfo(uid, "dread", result, String.format("dirent=0x%08X", dirent_addr)));
     }
 
-    public void logIoDclose(int result, int uid) {
+	@Override
+    public void sceIoDclose(int result, int uid) {
         logFileCommand(new FileCommandInfo(uid, "dclose", result, ""));
     }
 
-    public void logIoDevctl(int result, int device_addr, String device, int cmd,
+	@Override
+    public void sceIoDevctl(int result, int device_addr, String device, int cmd,
             int indata_addr, int inlen, int outdata_addr, int outlen) {
         logFileCommand(new FileCommandInfo(
                 "devctl", result,
@@ -628,7 +653,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen)));
     }
 
-    public void logIoIoctl(int result, int uid, int cmd,
+	@Override
+    public void sceIoIoctl(int result, int uid, int cmd,
             int indata_addr, int inlen, int outdata_addr, int outlen) {
         logFileCommand(new FileCommandInfo(
                 uid, "ioctl", result,
@@ -636,7 +662,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 cmd, indata_addr, inlen, outdata_addr, outlen)));
     }
 
-    public void logIoAssign(int result, int dev1_addr, String dev1,
+	@Override
+    public void sceIoAssign(int result, int dev1_addr, String dev1,
             int dev2_addr, String dev2, int dev3_addr, String dev3,
             int mode, int unk1, int unk2) {
         logFileCommand(new FileCommandInfo(
@@ -645,26 +672,30 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 dev1_addr, dev1, dev2_addr, dev2, dev3_addr, dev3, mode, unk1, unk2)));
     }
 
-    public void logIoGetStat(int result, int path_addr, String path, int stat_addr) {
+	@Override
+    public void sceIoGetStat(int result, int path_addr, String path, int stat_addr) {
         logFileCommand(new FileCommandInfo(
                 "stat", result,
                 String.format("path=0x%08X('%s') stat=0x%08X", path_addr, path, stat_addr)));
     }
 
-    public void logIoRemove(int result, int path_addr, String path) {
+	@Override
+    public void sceIoRemove(int result, int path_addr, String path) {
         logFileCommand(new FileCommandInfo(
                 "remove", result,
                 String.format("path=0x%08X('%s')", path_addr, path)));
     }
 
-    public void logIoChstat(int result, int path_addr, String path, int stat_addr, int bits) {
+	@Override
+    public void sceIoChstat(int result, int path_addr, String path, int stat_addr, int bits) {
         logFileCommand(new FileCommandInfo(
                 "chstat", result,
                 String.format("path=0x%08X('%s') stat=0x%08X bits=0x%08X",
                 path_addr, path, stat_addr, bits)));
     }
 
-    public void logIoRename(int result, int path_addr, String path, int new_path_addr, String newpath) {
+	@Override
+    public void sceIoRename(int result, int path_addr, String path, int new_path_addr, String newpath) {
         logFileCommand(new FileCommandInfo(
                 "rename", result,
                 String.format("path=0x%08X('%s') newpath=0x%08X('%s')",

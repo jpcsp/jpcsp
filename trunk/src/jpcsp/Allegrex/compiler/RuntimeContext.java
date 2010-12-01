@@ -75,7 +75,7 @@ public class RuntimeContext {
 	public  static final String logInfo = "logInfo";
 	public  static final String pauseEmuWithStatus = "pauseEmuWithStatus";
 	public  static final boolean enableLineNumbers = true;
-	private static final int idleSleepMillis = 1;
+	private static final int idleSleepMicros = 1000;
 	private static final Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static final Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
@@ -481,7 +481,10 @@ public class RuntimeContext {
                 }
 
                 if (isIdle) {
-                    sleep(idleSleepMillis);
+                	long delay = scheduler.getNextActionDelay(idleSleepMicros);
+                	if (delay >= idleSleepMicros) {
+                		sleep(idleSleepMicros / 1000);
+                	}
                 }
             }
             idleDuration.end();

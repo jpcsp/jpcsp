@@ -169,7 +169,6 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         protected MediaEngine me;
         protected PacketChannel mp3Channel;
-        private boolean meInitialized;
         private byte[] mp3PcmBuffer;
 
         //
@@ -251,7 +250,6 @@ public class sceMp3 implements HLEModule, HLEStartModule {
             }
 
             mp3PcmBuffer = new byte[mp3PcmBufSize];
-            meInitialized = false;
         }
 
         private void parseMp3FrameHeader() {
@@ -357,9 +355,8 @@ public class sceMp3 implements HLEModule, HLEStartModule {
 
         public void init() {
             parseMp3FrameHeader();
-            if(checkMediaEngineState()) {
+            if (checkMediaEngineState()) {
                 me.finish();
-                meInitialized = false;
             }
         }
 
@@ -383,11 +380,10 @@ public class sceMp3 implements HLEModule, HLEStartModule {
             	// audio channel, otherwise the decoding might stop and assume
             	// an "End Of File" condition.
             	if (checkMediaEngineChannel()) {
-	            	if (!meInitialized) {
+            		if (me.getContainer() == null) {
 	            		me.init(mp3Channel, false, true);
-	            		meInitialized = true;
 	            	}
-            		me.stepAudio();
+            		me.stepAudio(0);
 	                mp3DecodedBytes = copySamplesToMem(mp3PcmBuf, mp3PcmBufSize, mp3PcmBuffer);
             	} else {
             		mp3DecodedBytes = 0;

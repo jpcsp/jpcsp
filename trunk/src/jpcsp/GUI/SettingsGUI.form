@@ -817,6 +817,7 @@
                           <Group type="103" groupAlignment="1" max="-2" attributes="0">
                               <Component id="useMediaEngine" alignment="0" max="32767" attributes="1"/>
                               <Component id="useConnector" alignment="0" max="32767" attributes="1"/>
+                              <Component id="useExternalDecoder" alignment="0" max="32767" attributes="1"/>
                           </Group>
                           <EmptySpace max="32767" attributes="0"/>
                       </Group>
@@ -828,6 +829,8 @@
                           <Component id="useMediaEngine" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="useConnector" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="useExternalDecoder" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -845,6 +848,13 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="Resource.get(&quot;useConnector&quot;)" type="code"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="useExternalDecoder">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="Resource.get(&quot;useExternalDecoder&quot;)" type="code"/>
                     </Property>
                   </Properties>
                 </Component>

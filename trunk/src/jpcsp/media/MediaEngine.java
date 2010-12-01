@@ -17,19 +17,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.LinkedList;
 import java.util.List;
 
+import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.connector.Connector;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
-import jpcsp.sound.SoundChannel;
 import jpcsp.util.Debug;
 import jpcsp.util.FIFOByteBuffer;
 
@@ -47,7 +50,7 @@ import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
 
 public class MediaEngine {
-
+	private static org.apache.log4j.Logger log = Modules.log;
 	private static boolean initialized = false;
     private IContainer container;
     private int numStreams;
@@ -55,26 +58,25 @@ public class MediaEngine {
     private IStreamCoder audioCoder;
     private int videoStreamID;
     private int audioStreamID;
-    private SoundChannel extSoundChannel;
     private BufferedImage currentImg;
-    private FIFOByteBuffer currentSamples;
+    private FIFOByteBuffer decodedAudioSamples;
     private int currentSamplesSize = 1024;  // Default size.
     private IVideoPicture videoPicture;
     private IAudioSamples audioSamples;
     private IConverter videoConverter;
     private IVideoResampler videoResampler;
-    private boolean extAudioChecked;
     private int[] videoImagePixels;
+    private int bufferAddress;
+    private int bufferSize;
+    private int bufferMpegOffset;
     private StreamState videoStreamState;
     private StreamState audioStreamState;
     private List<IPacket> freePackets = new LinkedList<IPacket>();
+    private ExternalDecoder externalDecoder = new ExternalDecoder();
+    private byte[] tempBuffer;
 
     // External audio loading vars.
     private IContainer extContainer;
-    private IPacket extPacket;
-    private IStreamCoder extAudioCoder;
-    private int extAudioStreamID;
-    private IAudioSamples extAudioSamples;
 
     public MediaEngine() {
     	if (!initialized) {
@@ -84,7 +86,7 @@ public class MediaEngine {
 	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_INFO, false);
 	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_TRACE, false);
 	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_WARN, false);
-	        initialized = true;
+            initialized = true;
     	}
     }
 
@@ -121,10 +123,10 @@ public class MediaEngine {
     }
 
     public int getCurrentAudioSamples(byte[] buffer) {
-    	int length = Math.min(buffer.length, currentSamples.length());
+    	int length = Math.min(buffer.length, decodedAudioSamples.length());
     	if (length > 0) {
     		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, length);
-    		length = currentSamples.readByteBuffer(byteBuffer);
+    		length = decodedAudioSamples.readByteBuffer(byteBuffer);
     	}
 
     	return length;
@@ -152,28 +154,59 @@ public class MediaEngine {
     	return IPacket.make();
     }
 
-    private void getTimestamps(StreamState state, SceMpegAu au) {
+    private void readAu(StreamState state, SceMpegAu au) {
     	if (state == null) {
     		au.dts = 0;
     		au.pts = 0;
     	} else {
+    		while (true) {
+    			if (!getNextPacket(state)) {
+    				if (state == videoStreamState) {
+    					state.incrementTimestamps(sceMpeg.videoTimestampStep);
+    				} else if (state == audioStreamState) {
+    					state.incrementTimestamps(sceMpeg.audioTimestampStep);
+    				}
+    				break;
+    			}
+
+    			state.updateTimestamps();
+    			if (state.getPts() >= 90000) {
+    				break;
+    			}
+
+    			decodePacket(state, 0);
+    		}
     		state.getTimestamps(au);
     	}
     }
 
-    public void getVideoTimestamp(SceMpegAu au) {
-    	getTimestamps(videoStreamState, au);
+    public void readVideoAu(SceMpegAu au) {
+    	readAu(videoStreamState, au);
+
+    	// On PSP, video DTS is always 1 frame behind PTS
+    	if (au.pts >= sceMpeg.videoTimestampStep) {
+    		au.dts = au.pts - sceMpeg.videoTimestampStep;
+    	}
     }
 
-    public void getAudioTimestamp(SceMpegAu au) {
-    	getTimestamps(audioStreamState, au);
+    public void readAudioAu(SceMpegAu au) {
+    	readAu(audioStreamState, au);
+
+    	// On PSP, audio DTS is always set to -1
+    	au.dts = sceMpeg.UNKNOWN_TIMESTAMP;
+    }
+
+    public void init(int bufferAddress, int bufferSize, int bufferMpegOffset) {
+    	this.bufferAddress = bufferAddress;
+    	this.bufferSize = bufferSize;
+    	this.bufferMpegOffset = bufferMpegOffset;
+    	init();
     }
 
     public void init() {
     	finish();
         videoStreamID = -1;
         audioStreamID = -1;
-        extAudioChecked = false;
     }
 
     /*
@@ -193,7 +226,7 @@ public class MediaEngine {
         container.setReadRetryCount(-1);
 
         if (container.open(channel, null) < 0) {
-            Modules.log.error("MediaEngine: Invalid container format!");
+            log.error("MediaEngine: Invalid container format!");
         }
 
         numStreams = container.getNumStreams();
@@ -213,9 +246,11 @@ public class MediaEngine {
 
         if (decodeVideo) {
             if (videoStreamID == -1) {
-                Modules.log.error("MediaEngine: No video streams found!");
+                log.error("MediaEngine: No video streams found!");
             } else if (videoCoder.open() < 0) {
-                Modules.log.error("MediaEngine: Can't open video decoder!");
+            	videoCoder.delete();
+            	videoCoder = null;
+                log.error("MediaEngine: Can't open video decoder!");
             } else {
             	videoConverter = ConverterFactory.createConverter(ConverterFactory.XUGGLER_BGR_24, videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
                 videoPicture = IVideoPicture.make(videoCoder.getPixelType(), videoCoder.getWidth(), videoCoder.getHeight());
@@ -226,22 +261,27 @@ public class MediaEngine {
 	                        videoCoder.getPixelType());
                 	videoPicture = IVideoPicture.make(videoResampler.getOutputPixelFormat(), videoPicture.getWidth(), videoPicture.getHeight());
             	}
+                videoStreamState = new StreamState(this, videoStreamID, container, 0);
             }
         }
 
         if (decodeAudio) {
             if (audioStreamID == -1) {
-                Modules.log.error("MediaEngine: No audio streams found!");
+            	// Try to use an external audio file instead
+            	if (!initExtAudio()) {
+            		log.error("MediaEngine: No audio streams found!");
+            		audioStreamState = new StreamState(this, -1, null, 0);
+            	}
             } else if (audioCoder.open() < 0) {
-                Modules.log.error("MediaEngine: Can't open audio decoder!");
+            	audioCoder.delete();
+            	audioCoder = null;
+                log.error("MediaEngine: Can't open audio decoder!");
             } else {
         		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
-        		currentSamples = new FIFOByteBuffer();
+        		decodedAudioSamples = new FIFOByteBuffer();
+                audioStreamState = new StreamState(this, audioStreamID, container, 0);
             }
         }
-
-        videoStreamState = new StreamState(this, videoStreamID);
-        audioStreamState = new StreamState(this, audioStreamID);
     }
 
     private boolean getNextPacket(StreamState state) {
@@ -256,6 +296,10 @@ public class MediaEngine {
     		} else {
     			// There is no pending packet, read packets from the container
     			// until a packet for this stream is found.
+    			IContainer container = state.getContainer();
+    			if (container == null) {
+    				return false;
+    			}
     			while (state.isPacketEmpty()) {
     				packet = getPacket();
 			        if (container.readNextPacket(packet) < 0) {
@@ -265,17 +309,18 @@ public class MediaEngine {
 			        }
 
 			        // Process the packet
+			        int streamIndex = packet.getStreamIndex();
 			        if (packet.getSize() <= 0) {
 			        	// Empty packet, drop it
 			        	release(packet);
-			        } else if (state.isStream(packet.getStreamIndex())) {
+			        } else if (state.isStream(container, streamIndex)) {
 			        	// This is the kind of packet we are looking for
 			        	state.setPacket(packet);
-			        } else if (packet.getStreamIndex() == videoStreamID && videoCoder != null) {
+			        } else if (videoCoder != null && videoStreamState.isStream(container, streamIndex)) {
 			        	// We are currently not interested in video packets,
 			        	// add this packet to the video pending packets
 			        	videoStreamState.addPacket(packet);
-			        } else if (packet.getStreamIndex() == audioStreamID && audioCoder != null) {
+			        } else if (audioCoder != null && audioStreamState.isStream(container, streamIndex)) {
 			        	// We are currently not interested in audio packets,
 			        	// add this packet to the audio pending packets
 			        	audioStreamState.addPacket(packet);
@@ -290,6 +335,38 @@ public class MediaEngine {
     	return true;
     }
 
+    private boolean decodePacket(StreamState state, int requiredAudioBytes) {
+    	boolean complete = false;
+        if (state == videoStreamState) {
+        	if (videoCoder == null) {
+        		// No video coder, skip all the video packets
+        		state.releasePacket();
+        		complete = true;
+        	} else {
+        		// Decode the current video packet
+        		// and check if we have a complete video sample
+        		complete = decodeVideoPacket(state);
+            }
+        } else if (state == audioStreamState) {
+        	if (audioCoder == null) {
+        		// No audio coder, skip all the audio packets
+        		state.releasePacket();
+        		complete = true;
+        	} else {
+        		// Decode the current audio packet
+        		// and check if we have a complete audio sample,
+        		// with the minimum required sample bytes
+        		if (decodeAudioPacket(state)) {
+        			if (decodedAudioSamples.length() >= requiredAudioBytes) {
+    					complete = true;
+        			}
+        		}
+            }
+        }
+
+        return complete;
+    }
+
     private boolean decodeVideoPacket(StreamState state) {
     	boolean complete = false;
         while (!state.isPacketEmpty()) {
@@ -301,8 +378,8 @@ public class MediaEngine {
             	break;
             }
 
-            state.consume(decodedBytes);
             state.updateTimestamps();
+            state.consume(decodedBytes);
 
         	if (videoPicture.isComplete()) {
             	if (videoConverter != null) {
@@ -327,8 +404,8 @@ public class MediaEngine {
             	break;
             }
 
-            state.consume(decodedBytes);
             state.updateTimestamps();
+            state.consume(decodedBytes);
 
         	if (audioSamples.isComplete()) {
                 updateSoundSamples(audioSamples);
@@ -340,140 +417,121 @@ public class MediaEngine {
         return complete;
     }
 
+    public static String getExtAudioBasePath(int mpegStreamSize) {
+    	return String.format("%s%s/Mpeg-%d/", Connector.baseDirectory, State.discId, mpegStreamSize);
+    }
+
+    public static String getExtAudioPath(int mpegStreamSize, String suffix) {
+        return String.format("%sExtAudio.%s", getExtAudioBasePath(mpegStreamSize), suffix);
+    }
+
     public boolean stepVideo() {
-    	return step(videoStreamState);
+    	return step(videoStreamState, 0);
     }
 
-    public boolean stepAudio() {
-    	return step(audioStreamState);
+    public boolean stepAudio(int requiredAudioBytes) {
+    	return step(audioStreamState, requiredAudioBytes);
     }
 
-    private boolean step(StreamState state) {
+    private boolean step(StreamState state, int requiredAudioBytes) {
     	boolean complete = false;
 
-    	while (!complete) {
-    		if (!getNextPacket(state)) {
-	        	videoStreamState.incrementTimestamps(sceMpeg.videoTimestampStep);
-	        	audioStreamState.incrementTimestamps(sceMpeg.audioTimestampStep);
-	        	break;
-    		}
+    	if (state != null) {
+	    	while (!complete) {
+	    		if (!getNextPacket(state)) {
+		        	break;
+	    		}
 
-	        if (state.isStream(videoStreamID)) {
-	        	if (videoCoder == null) {
-	        		// No video coder, skip all the video packets
-	        		state.releasePacket();
-	        		complete = true;
-	        	} else {
-	        		// Decode the current video packet
-	        		// and check if we have a complete video sample
-	        		complete = decodeVideoPacket(state);
-	            }
-	        } else if (state.isStream(audioStreamID)) {
-	        	if (audioCoder == null) {
-	        		// No audio coder, skip all the audio packets
-	        		state.releasePacket();
-	        		complete = true;
-	        	} else {
-	        		// Decode the current audio packet
-	        		// and check if we have a complete audio sample
-	        		complete = decodeAudioPacket(state);
-	            }
-	        }
+	    		complete = decodePacket(state, requiredAudioBytes);
+	    	}
     	}
 
         return complete;
     }
 
-    public void stepExtAudio(int mpegStreamSize) {
-    	if (extContainer != null) {
-    		stepExtAudio();
-    	} else if (!extAudioChecked) {
-            extAudioChecked = true;
-            audioStreamState = new StreamState(this, -1);
-            audioStreamState.setTimestamps(sceMpeg.mpegTimestampPerSecond);
-            String pmfExtAudioPath = "tmp/" + jpcsp.State.discId + "/Mpeg-" + mpegStreamSize + "/ExtAudio.";
-            String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac"};
-            for (int i = 0; i < supportedFormats.length; i++) {
-                File f = new File(pmfExtAudioPath + supportedFormats[i]);
-                if (f.exists()) {
-                    pmfExtAudioPath += supportedFormats[i];
-                    initExtAudio(pmfExtAudioPath);
-                    break;
-                }
+    private File getExtAudioFile() {
+        String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac", "m4a"};
+        for (int i = 0; i < supportedFormats.length; i++) {
+            File f = new File(getExtAudioPath(bufferSize, supportedFormats[i]));
+            if (f.exists()) {
+            	return f;
             }
-    	} else {
-    		audioStreamState.incrementTimestamps(sceMpeg.audioTimestampStep);
+        }
+
+        return null;
+    }
+
+    private boolean initExtAudio() {
+    	boolean useExtAudio = false;
+
+    	File extAudioFile = getExtAudioFile();
+    	if (extAudioFile == null && ExternalDecoder.isEnabled()) {
+    		// Try to decode the audio using the external decoder
+			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset);
+			extAudioFile = getExtAudioFile();
     	}
+
+    	if (extAudioFile != null) {
+    		useExtAudio = initExtAudio(extAudioFile.toString());
+    	}
+
+        return useExtAudio;
     }
 
     // Override audio data line with one from an external file.
-    private void initExtAudio(String file) {
+    private boolean initExtAudio(String file) {
         extContainer = IContainer.make();
 
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("initExtAudio %s", file));
+        }
+
         if (extContainer.open(file, IContainer.Type.READ, null) < 0) {
-            Modules.log.error("MediaEngine: Invalid file or container format: " + file);
+            log.error("MediaEngine: Invalid file or container format: " + file);
             extContainer.close();
             extContainer = null;
-            return;
+            return false;
         }
 
         int extNumStreams = extContainer.getNumStreams();
 
-        extAudioStreamID = -1;
-        extAudioCoder = null;
+        audioStreamID = -1;
+        audioCoder = null;
 
         for (int i = 0; i < extNumStreams; i++) {
             IStream stream = extContainer.getStream(i);
             IStreamCoder coder = stream.getStreamCoder();
 
-            if (extAudioStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
-                extAudioStreamID = i;
-                extAudioCoder = coder;
+            if (audioStreamID == -1 && coder.getCodecType() == ICodec.Type.CODEC_TYPE_AUDIO) {
+                audioStreamID = i;
+                audioCoder = coder;
             }
         }
 
-        if (extAudioStreamID == -1) {
-            Modules.log.error("MediaEngine: No audio streams found!");
+        if (audioStreamID == -1) {
+            log.error("MediaEngine: No audio streams found!");
             extContainer.close();
             extContainer = null;
-            return;
-        } else if (extAudioCoder.open() < 0) {
-            Modules.log.error("MediaEngine: Can't open audio decoder!");
+            return false;
+        } else if (audioCoder.open() < 0) {
+            log.error("MediaEngine: Can't open audio decoder!");
             extContainer.close();
             extContainer = null;
-            return;
+            return false;
         }
 
-		extAudioSamples = IAudioSamples.make(2048, extAudioCoder.getChannels());
+		audioSamples = IAudioSamples.make(getAudioSamplesSize(), audioCoder.getChannels());
+		decodedAudioSamples = new FIFOByteBuffer();
 
-        startSound(extAudioCoder);
+		// External audio is starting at timestamp 0,
+		// but the PSP audio is starting at timestamp 89249:
+		// offset the external audio timestamp by this value.
+		audioStreamState = new StreamState(this, audioStreamID, extContainer, sceMpeg.audioFirstTimestamp);
+        audioStreamState.setTimestamps(sceMpeg.mpegTimestampPerSecond);
 
-        extPacket = IPacket.make();
-    }
+        log.info(String.format("Using external audio '%s'", file));
 
-    private void stepExtAudio() {
-    	audioStreamState.incrementTimestamps(sceMpeg.audioTimestampStep);
-
-		// Keep the SoundChannel full to avoid sound pauses
-		while (!extSoundChannel.isOutputBlocking()) {
-	    	if (extContainer.readNextPacket(extPacket) < 0) {
-	    		return;
-	    	}
-
-        	int decodedBytes;
-            for (int offset = 0; offset < extPacket.getSize(); offset += decodedBytes) {
-            	decodedBytes = extAudioCoder.decodeAudio(extAudioSamples, extPacket, offset);
-
-                if (decodedBytes < 0) {
-	            	// An error occured with this packet, skip it
-                	break;
-                }
-
-                if (extAudioSamples.isComplete()) {
-                    playSound(extAudioSamples);
-                }
-            }
-        }
+        return true;
     }
 
     // Cleanup function.
@@ -522,46 +580,30 @@ public class MediaEngine {
     		extContainer.close();
     		extContainer = null;
     	}
-    	if (extAudioCoder != null) {
-    		extAudioCoder.close();
-    		extAudioCoder = null;
+    	if (decodedAudioSamples != null) {
+    		decodedAudioSamples.delete();
+            decodedAudioSamples = null;
     	}
-    	if (extPacket != null) {
-    		extPacket.delete();
-    		extPacket = null;
-    	}
-    	if (extSoundChannel != null) {
-    		extSoundChannel.release();
-    		extSoundChannel = null;
-    	}
-    	if (extAudioSamples != null) {
-    		extAudioSamples.delete();
-    		extAudioSamples = null;
-    	}
-    	if (currentSamples != null) {
-    		currentSamples.delete();
-            currentSamples = null;
-    	}
+    	tempBuffer = null;
     }
 
-    private void startSound(IStreamCoder aAudioCoder) {
-    	extSoundChannel = new SoundChannel(0);
-    	extSoundChannel.setSampleRate(aAudioCoder.getSampleRate());
-    	extSoundChannel.setFormat(aAudioCoder.getChannels() >= 2 ? SoundChannel.FORMAT_STEREO : SoundChannel.FORMAT_MONO);
+    /**
+     * Add the audio samples to the decoded audio samples buffer.
+     * 
+     * @param samples          the samples to be added
+     */
+    private void updateSoundSamples(IAudioSamples samples) {
+    	int sampleSizes = samples.getSize();
+    	if (tempBuffer == null || sampleSizes > tempBuffer.length) {
+    		tempBuffer = new byte[sampleSizes];
+    	}
+    	samples.get(0, tempBuffer, 0, sampleSizes);
+
+        decodedAudioSamples.write(tempBuffer, 0, sampleSizes);
     }
 
-    private void playSound(IAudioSamples aSamples) {
-        byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
-        extSoundChannel.play(rawBytes);
-    }
-
-    // Continuous sample update function for internal audio decoding.
-    private void updateSoundSamples(IAudioSamples aSamples) {
-        byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
-
-        currentSamples.write(rawBytes);
-    }
-
+    // This function is time critical and has to execute under
+    // sceMpeg.avcDecodeDelay to match the PSP and allow a fluid video rendering
     public void writeVideoImage(int dest_addr, int frameWidth, int videoPixelMode) {
         final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         // Get the current generated image, convert it to pixels and write it
@@ -571,24 +613,64 @@ public class MediaEngine {
             int width = getCurrentImg().getWidth();
             int height = getCurrentImg().getHeight();
             int imageSize = height * width;
-            if (videoImagePixels == null || videoImagePixels.length < imageSize) {
-            	videoImagePixels = new int[imageSize];
-            }
-            videoImagePixels = getCurrentImg().getRGB(0, 0, width, height, videoImagePixels, 0, width);
-            for (int y = 0; y < height; y++) {
-                int address = dest_addr + y * frameWidth * bytesPerPixel;
-                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
-                for (int x = 0; x < width; x++) {
-                    int colorARGB = videoImagePixels[y * width + x];
-                    // Convert from ARGB to ABGR.
-                    int a = (colorARGB >>> 24) & 0xFF;
-                    int r = (colorARGB >>> 16) & 0xFF;
-                    int g = (colorARGB >>> 8) & 0xFF;
-                    int b = colorARGB & 0xFF;
-                    int colorABGR = a << 24 | b << 16 | g << 8 | r;
-                    int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
-                    memoryWriter.writeNext(pixelColor);
-                }
+            BufferedImage image = getCurrentImg();
+            if (image.getColorModel() instanceof ComponentColorModel && image.getRaster().getDataBuffer() instanceof DataBufferByte) {
+            	// Optimized version for most common case: 1 pixel stored in 3 bytes in BGR format
+            	byte[] imageData = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+            	if (videoPixelMode == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) {
+            		// Fastest version for pixel format 8888
+	                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest_addr, bytesPerPixel);
+	            	for (int y = 0, i = 0; y < height; y++) {
+		                for (int x = 0; x < width; x++) {
+		                    int b = imageData[i++] & 0xFF;
+		                    int g = imageData[i++] & 0xFF;
+		                    int r = imageData[i++] & 0xFF;
+		                    int colorABGR = 0xFF000000 | b << 16 | g << 8 | r;
+		                    memoryWriter.writeNext(colorABGR);
+		                }
+    	                memoryWriter.skip(frameWidth - width);
+	            	}
+	                memoryWriter.flush();
+            	} else {
+            		// Slower version for pixel format other than 8888
+	                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest_addr, bytesPerPixel);
+	            	for (int y = 0, i = 0; y < height; y++) {
+		                for (int x = 0; x < width; x++) {
+		                    int b = imageData[i++] & 0xFF;
+		                    int g = imageData[i++] & 0xFF;
+		                    int r = imageData[i++] & 0xFF;
+		                    int colorABGR = 0xFF000000 | b << 16 | g << 8 | r;
+		                    int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
+		                    memoryWriter.writeNext(pixelColor);
+		                }
+    	                memoryWriter.skip(frameWidth - width);
+	            	}
+	                memoryWriter.flush();
+            	}
+            } else {
+            	// Non-optimized version supporting any image format,
+            	// but very slow (due to BufferImage.getRGB() call)
+	            if (videoImagePixels == null || videoImagePixels.length < imageSize) {
+	            	videoImagePixels = new int[imageSize];
+	            }
+	            // getRGB is very slow...
+				videoImagePixels = image.getRGB(0, 0, width, height, videoImagePixels, 0, width);
+                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest_addr, bytesPerPixel);
+	            for (int y = 0; y < height; y++) {
+	                for (int x = 0; x < width; x++) {
+	                    int colorARGB = videoImagePixels[y * width + x];
+	                    // Convert from ARGB to ABGR.
+	                    int a = (colorARGB >>> 24) & 0xFF;
+	                    int r = (colorARGB >>> 16) & 0xFF;
+	                    int g = (colorARGB >>> 8) & 0xFF;
+	                    int b = colorARGB & 0xFF;
+	                    int colorABGR = a << 24 | b << 16 | g << 8 | r;
+	                    int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
+	                    memoryWriter.writeNext(pixelColor);
+	                }
+	                memoryWriter.skip(frameWidth - width);
+	            }
+                memoryWriter.flush();
             }
         }
     }

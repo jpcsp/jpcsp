@@ -30,6 +30,7 @@ import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.SceMpegAu;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules150.sceDisplay;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryWriter;
@@ -247,6 +248,8 @@ public class MpegCodec {
 		}
 	}
 
+    // This function is time critical and has to execute under
+    // sceMpeg.avcDecodeDelay to match the PSP and allow a fluid video rendering
 	protected void decodeVideoFrame(RawFileState rawFileState, int buffer, int frameWidth, int width, int height, int pixelMode) throws IOException {
     	int fileSize = 0;
     	int fileStartPosition = rawFileState.currentInputPosition;
@@ -275,6 +278,7 @@ public class MpegCodec {
 		Memory mem = Memory.getInstance();
 		int dst = buffer;
         final int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dst, frameWidth * height * bytesPerPixel, bytesPerPixel);
 		for (int y = 0; y < height && rawFileState.currentInputPosition < rawFileState.currentInputLength; y++) {
 			int x;
 			for (x = 0; x < width; rawFileState.currentInputPosition += 4) {
@@ -286,15 +290,14 @@ public class MpegCodec {
 				int count = (flags & 0x7F) + 1;
 				if ((flags & 0x80) == 0) {
 					// Run Length Encoding (RLE): copy count time the same pixel
-					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dst, count * bytesPerPixel, bytesPerPixel);
 					for (int i = 0; i < count; i++) {
 						memoryWriter.writeNext(c);
 					}
-					memoryWriter.flush();
 					x += count;
 					dst += count * bytesPerPixel;
 				} else {
 					// Copy count pixels from the previous video image
+					memoryWriter.skip(count);
 					if (buffer != previousVideoBuffer) {
 						int offset = dst - buffer;
 						mem.memcpy(dst, previousVideoBuffer + offset, count * bytesPerPixel);
@@ -302,17 +305,15 @@ public class MpegCodec {
 					dst += count * bytesPerPixel;
 					x += count;
 
-					if (bytesPerPixel == 2) {
-						mem.write16(dst, (short) c);
-					} else {
-						mem.write32(dst, c);
-					}
+					memoryWriter.writeNext(c);
 					dst += bytesPerPixel;
 					x++;
 				}
 			}
+			memoryWriter.skip(frameWidth - x);
 			dst += (frameWidth - x) * bytesPerPixel;
 		}
+		memoryWriter.flush();
 		previousVideoBuffer = buffer;
 
 		if (rawFileState.currentInputPosition - fileStartPosition != fileSize) {
@@ -345,8 +346,8 @@ public class MpegCodec {
 			rawFileState.currentInputPosition += 4;
 		}
 
-		int length = Math.min(8192, rawFileState.currentInputLength - rawFileState.currentInputPosition);
-		if (fileSize != 8192 + 8) {
+		int length = Math.min(sceMpeg.MPEG_ATRAC_ES_OUTPUT_SIZE, rawFileState.currentInputLength - rawFileState.currentInputPosition);
+		if (fileSize != sceMpeg.MPEG_ATRAC_ES_OUTPUT_SIZE + 8) {
 			Modules.log.warn("Unknown fileSize " + fileSize);
 		}
 		rawFileState.read(length);

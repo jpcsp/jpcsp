@@ -2622,6 +2622,16 @@
 0882E9C0:[24630001]: addiu      $v1, $v1, 1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="bzeroSequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<Parameters>$v0,$zr,$v1,-1</Parameters>
+		<CodeInstructions><![CDATA[
+0896751C:[2463FFFF]: addiu      $v1, $v1, -1
+08967520:[A0400000]: sb         $zr, 0($v0)
+08967524:[0461FFFD]: bgez       $v1, 0x0896751C
+08967528:[24420001]: addiu      $v0, $v0, 1
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memcmpSequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memcmp</Class>
 		<IsReturning>true</IsReturning>

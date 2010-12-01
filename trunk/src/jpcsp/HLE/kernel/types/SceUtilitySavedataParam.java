@@ -512,12 +512,11 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             File f = new File("ms0/PSP/SAVEDATA/");
             if(f.list() == null) {
                 return false;
-            } else {
-                for(int i = 0; i < f.list().length; i++) {
-                    if(!f.list()[i].equals(gameName) && f.list()[i].contains(gameName)) {
-                        saveName = f.list()[i].replace(gameName, "");
-                        break;
-                    }
+            }
+            for(int i = 0; i < f.list().length; i++) {
+                if(!f.list()[i].equals(gameName) && f.list()[i].contains(gameName)) {
+                    saveName = f.list()[i].replace(gameName, "");
+                    break;
                 }
             }
             path = getBasePath(saveName);

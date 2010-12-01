@@ -609,12 +609,9 @@ public class scePsmfPlayer implements HLEModule {
         }
 
         // Write video data.
-        if (checkMediaEngineState()) {
-            if (me != null) {
-                if (me.getContainer() != null) {
-                    me.stepVideo();
-                    writePSMFVideoImage(displayBuffer, videoDataFrameWidth);
-                }
+        if (checkMediaEngineState() && me != null && me.getContainer() != null) {
+            if (me.stepVideo()) {
+            	writePSMFVideoImage(displayBuffer, videoDataFrameWidth);
             }
         } else {
             generateFakePSMFVideo(displayBuffer, videoDataFrameWidth);

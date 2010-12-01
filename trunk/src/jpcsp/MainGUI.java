@@ -82,6 +82,7 @@ import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Audio;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
+import jpcsp.media.ExternalDecoder;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 import jpcsp.util.Utilities;
@@ -1141,6 +1142,9 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         scePsmfPlayer.setEnableMediaEngine(useMediaEngine);
         AtracCodec.setEnableMediaEngine(useMediaEngine);
         sceMp3.setEnableMediaEngine(useMediaEngine);
+
+        boolean useExternalDecoder = Settings.getInstance().readBool("emu.useExternalDecoder");
+        ExternalDecoder.setEnabled(useExternalDecoder);
 
         boolean useVertexCache = Settings.getInstance().readBool("emu.useVertexCache");
         VideoEngine.getInstance().setUseVertexCache(useVertexCache);

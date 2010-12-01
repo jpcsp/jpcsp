@@ -233,15 +233,14 @@ public class SemaManager {
                 currentThread.wait.waitStateChecker = semaWaitStateChecker;
 
                 threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
+                threadMan.hleRescheduleCurrentThread(doCallbacks);
             } else {
-                // Success
+                // Success, do not reschedule the current thread
                 if (log.isDebugEnabled()) {
                     log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
                 }
                 Emulator.getProcessor().cpu.gpr[2] = 0;
             }
-
-            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 
@@ -271,6 +270,7 @@ public class SemaManager {
 
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
+            boolean reschedule = false;
             if ((sema.attr & PSP_SEMA_ATTR_PRIORITY) == PSP_SEMA_ATTR_FIFO) {
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
@@ -287,6 +287,7 @@ public class SemaManager {
                         thread.wait.waitingOnSemaphore = false;
                         thread.cpuContext.gpr[2] = 0;
                         threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                        reschedule = true;
 
                         sema.numWaitThreads--;
                         if (sema.currentCount == 0) {
@@ -310,6 +311,7 @@ public class SemaManager {
                         thread.wait.waitingOnSemaphore = false;
                         thread.cpuContext.gpr[2] = 0;
                         threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                        reschedule = true;
 
                         sema.numWaitThreads--;
                         if (sema.currentCount == 0) {
@@ -319,7 +321,11 @@ public class SemaManager {
                 }
             }
             Emulator.getProcessor().cpu.gpr[2] = 0;
-            threadMan.hleRescheduleCurrentThread();
+
+            // Reschedule only if threads waked up
+            if (reschedule) {
+            	threadMan.hleRescheduleCurrentThread();
+            }
         }
     }
 
