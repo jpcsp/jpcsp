@@ -41,7 +41,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -123,6 +122,9 @@ public class VideoEngine {
     public static final boolean useTextureCache = true;
     private boolean useVertexCache = false;
     private static GeCommands helper;
+    private int command;
+    private int normalArgument;
+    private int waitForSyncCount;
     private VertexInfo vinfo = new VertexInfo();
     private VertexInfoReader vertexInfoReader = new VertexInfoReader();
     private static final char SPACE = ' ';
@@ -175,7 +177,7 @@ public class VideoEngine {
     private boolean somethingDisplayed;
     private boolean geBufChanged;
     private IAction hleAction;
-    private HashMap<Integer, Integer> currentCMDValues;
+    private int[] currentCMDValues;
     private boolean bboxWarningDisplayed = false;
     private Set<Integer> videoTextures;
 
@@ -266,7 +268,7 @@ public class VideoEngine {
             bboxVertices[i] = new float[3];
         }
 
-        currentCMDValues = new HashMap<Integer, Integer>();
+        currentCMDValues = new int[256];
         videoTextures = new HashSet<Integer>();
     }
 
@@ -579,6 +581,79 @@ public class VideoEngine {
         }
     }
 
+    private void executeListStalled() {
+        waitStallStatistics.start();
+        if (isLogDebugEnabled) {
+            log.debug(String.format("Stall address 0x%08X reached, waiting for Sync", currentList.pc));
+        }
+        currentList.status = PSP_GE_LIST_STALL_REACHED;
+        if (!currentList.waitForSync(10)) {
+            if (isLogDebugEnabled) {
+                log.debug("Wait for sync while stall reached");
+            }
+            waitForSyncCount++;
+
+            // Waiting maximum 100 * 10ms (= 1 second) on a stall address.
+            // After this timeout, abort the list.
+            //
+            // When the stall address is at the very beginning of the list
+            // (i.e. the list has just been enqueued, but the stall has not yet been updated),
+            // allow waiting for a longer time (the CPU might be busy
+            // compiling a huge CodeBlock on the first call).
+            // This avoids aborting the first list enqueued.
+            int maxStallCount = (currentList.pc != currentList.list_addr ? 100 : 400);
+
+            if (waitForSyncCount > maxStallCount) {
+                error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.pc, currentList));
+            }
+        } else {
+            waitForSyncCount = 0;
+        }
+        executeHleAction();
+        if (!currentList.isStallReached()) {
+            currentList.status = PSP_GE_LIST_DRAWING;
+        }
+        waitStallStatistics.end();
+    }
+
+    private boolean executeListPaused() {
+		waitSignalStatistics.start();
+		if (isLogDebugEnabled) {
+		    log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync"));
+		}
+		currentList.status = PSP_GE_LIST_END_REACHED;
+		if (!currentList.waitForSync(10)) {
+		    if (isLogDebugEnabled) {
+		        log.debug("Wait for sync while END reached");
+		    }
+		    waitForSyncCount++;
+
+		    // Waiting maximum 100 * 10ms (= 1 second) on an END command.
+		    // After this timeout, abort the list.
+		    if (waitForSyncCount > 100) {
+		        error(String.format("Waiting too long on an END command, aborting the list %s", currentList));
+		    }
+		} else {
+		    waitForSyncCount = 0;
+		}
+
+		executeHleAction();
+		if (currentList.isRestarted()) {
+			currentList.clearRestart();
+			currentList.clearPaused();
+		}
+		if (!currentList.isPaused()) {
+            if (currentList.isFinished()) {
+                listHasEnded = true;
+                return true;
+            }
+		    currentList.status = PSP_GE_LIST_DRAWING;
+		}
+		waitSignalStatistics.end();
+
+		return false;
+    }
+
     // call from GL thread
     // There is an issue here with Emulator.pause
     // - We want to stop on errors
@@ -598,75 +673,14 @@ public class VideoEngine {
 
         IMemoryReader memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
         int memoryReaderPc = currentList.pc;
-        int waitForSyncCount = 0;
+        waitForSyncCount = 0;
         while (!listHasEnded && (!Emulator.pause || State.captureGeNextFrame)) {
             if (currentList.isPaused() || currentList.isEnded()) {
-				waitSignalStatistics.start();
-				if (isLogDebugEnabled) {
-				    log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync"));
-				}
-				currentList.status = PSP_GE_LIST_END_REACHED;
-				if (!currentList.waitForSync(10)) {
-				    if (isLogDebugEnabled) {
-				        log.debug("Wait for sync while END reached");
-				    }
-				    waitForSyncCount++;
-
-				    // Waiting maximum 100 * 10ms (= 1 second) on an END command.
-				    // After this timeout, abort the list.
-				    if (waitForSyncCount > 100) {
-				        error(String.format("Waiting too long on an END command, aborting the list %s", currentList));
-				    }
-				} else {
-				    waitForSyncCount = 0;
-				}
-
-				executeHleAction();
-				if (currentList.isRestarted()) {
-					currentList.clearRestart();
-					currentList.clearPaused();
-				}
-				if (!currentList.isPaused()) {
-	                if (currentList.isFinished()) {
-	                    listHasEnded = true;
-	                    break;
-	                }
-				    currentList.status = PSP_GE_LIST_DRAWING;
-				}
-				waitSignalStatistics.end();
+            	if (executeListPaused()) {
+            		break;
+            	}
             } else if (currentList.isStallReached()) {
-                waitStallStatistics.start();
-                if (isLogDebugEnabled) {
-                    log.debug(String.format("Stall address 0x%08X reached, waiting for Sync", currentList.pc));
-                }
-                currentList.status = PSP_GE_LIST_STALL_REACHED;
-                if (!currentList.waitForSync(10)) {
-                    if (isLogDebugEnabled) {
-                        log.debug("Wait for sync while stall reached");
-                    }
-                    waitForSyncCount++;
-
-                    // Waiting maximum 100 * 10ms (= 1 second) on a stall address.
-                    // After this timeout, abort the list.
-                    //
-                    // When the stall address is at the very beginning of the list
-                    // (i.e. the list has just been enqueued, but the stall has not yet been updated),
-                    // allow waiting for a longer time (the CPU might be busy
-                    // compiling a huge CodeBlock on the first call).
-                    // This avoids aborting the first list enqueued.
-                    int maxStallCount = (currentList.pc != currentList.list_addr ? 100 : 400);
-
-                    if (waitForSyncCount > maxStallCount) {
-                        error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.pc, currentList));
-                    }
-                } else {
-                    waitForSyncCount = 0;
-                }
-                executeHleAction();
-                if (!currentList.isStallReached()) {
-                    currentList.status = PSP_GE_LIST_DRAWING;
-                }
-                waitStallStatistics.end();
+            	executeListStalled();
             } else {
                 if (currentList.pc != memoryReaderPc) {
                     // The currentList.pc is no longer reading in sequence
@@ -745,7 +759,10 @@ public class VideoEngine {
     }
 
     public int getCommandValue(int cmd) {
-        return currentCMDValues.get(cmd);
+    	if (cmd < 0 || cmd >= currentCMDValues.length) {
+    		return 0;
+    	}
+        return currentCMDValues[cmd];
     }
 
     public String commandToString(int cmd) {
@@ -983,1739 +1000,264 @@ public class VideoEngine {
     }
 
     public void executeCommand(int instruction) {
-        int normalArgument = intArgument(instruction);
+        normalArgument = intArgument(instruction);
         // Compute floatArgument only on demand, most commands do not use it.
         //float floatArgument = floatArgument(instruction);
 
-        int command = command(instruction);
-        currentCMDValues.put(command, normalArgument);
+        command = command(instruction);
+        currentCMDValues[command] = normalArgument;
         if (isLogInfoEnabled) {
             commandStatistics[command].start();
         }
         switch (command) {
-            case NOP:
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(NOP));
-                }
-
-                // Check if we are not reading from an invalid memory region.
-                // Abort the list if this is the case.
-                // This is only done in the NOP command to not impact performance.
-                checkCurrentListPc();
-                break;
-
-            case VADDR:
-                vinfo.ptr_vertex = currentList.getAddress(normalArgument);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
-                }
-                break;
-
-            case IADDR:
-                vinfo.ptr_index = currentList.getAddress(normalArgument);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
-                }
-                break;
-
-            case PRIM:
-                executeCommandPRIM(normalArgument);
-                break;
-
-            case BEZIER:
-                int ucount = normalArgument & 0xFF;
-                int vcount = (normalArgument >> 8) & 0xFF;
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
-                }
-
-                updateGeBuf();
-                loadTexture();
-
-                drawBezier(ucount, vcount);
-                break;
-
-            case SPLINE: {
-                // Number of control points.
-                int sp_ucount = normalArgument & 0xFF;
-                int sp_vcount = (normalArgument >> 8) & 0xFF;
-                // Knot types.
-                int sp_utype = (normalArgument >> 16) & 0x3;
-                int sp_vtype = (normalArgument >> 18) & 0x3;
-
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(SPLINE) + " sp_ucount=" + sp_ucount + ", sp_vcount=" + sp_vcount +
-                            " sp_utype=" + sp_utype + ", sp_vtype=" + sp_vtype);
-                }
-
-                updateGeBuf();
-                loadTexture();
-
-                drawSpline(sp_ucount, sp_vcount, sp_utype, sp_vtype);
-                break;
-            }
-
-            case BBOX:
-                executeCommandBBOX(normalArgument);
-                break;
-
-            case JUMP: {
-                int oldPc = currentList.pc;
-                currentList.jump(normalArgument);
-                int newPc = currentList.pc;
-                if (isLogDebugEnabled) {
-                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
-                }
-                break;
-            }
-
-            case BJUMP:
-                executeCommandBJUMP(normalArgument);
-                break;
-
-            case CALL: {
-                int oldPc = currentList.pc;
-                currentList.call(normalArgument);
-                int newPc = currentList.pc;
-                if (isLogDebugEnabled) {
-                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
-                }
-                break;
-            }
-
-            case RET: {
-                int oldPc = currentList.pc;
-                currentList.ret();
-                int newPc = currentList.pc;
-                if (isLogDebugEnabled) {
-                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
-                }
-                break;
-            }
-
-            case END:
-                // Try to end the current list.
-                // The list only ends (isEnded() == true) if FINISH was called previously.
-                // In SIGNAL + END cases, isEnded() still remains false.
-                currentList.endList();
-                currentList.pauseList();
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.pc));
-                }
-                updateGeBuf();
-                break;
-
-            case SIGNAL:
-                int behavior = (normalArgument >> 16) & 0xFF;
-                int signal = normalArgument & 0xFFFF;
-                if (behavior < 1 || behavior > 3) {
-                    if (isLogWarnEnabled) {
-                        log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ") unknown behavior");
-                    }
-                } else if (isLogDebugEnabled) {
-                    log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
-                }
-                currentList.clearRestart();
-                currentList.pushSignalCallback(currentList.id, behavior, signal);
-                break;
-
-            case FINISH:
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
-                }
-                currentList.clearRestart();
-                currentList.finishList();
-                currentList.pushFinishCallback(currentList.id, normalArgument);
-                break;
-
-            case BASE:
-            	context.base = (normalArgument << 8) & 0xff000000;
-                // Bits of (normalArgument & 0x0000FFFF) are ignored
-                // (tested: "Ape Escape On the Loose")
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(BASE) + " " + String.format("%08x", context.base));
-                }
-                break;
-
-            case VTYPE: {
-                int old_transform_mode = context.transform_mode;
-                boolean old_vertex_hasColor = vinfo.color != 0;
-                vinfo.processType(normalArgument);
-                context.transform_mode = (normalArgument >> 23) & 0x1;
-                boolean vertex_hasColor = vinfo.color != 0;
-
-                //Switching from 2D to 3D or 3D to 2D?
-                if (old_transform_mode != context.transform_mode) {
-                    projectionMatrixUpload.setChanged(true);
-                    modelMatrixUpload.setChanged(true);
-                    viewMatrixUpload.setChanged(true);
-                    textureMatrixUpload.setChanged(true);
-                    viewportChanged = true;
-                    depthChanged = true;
-                    materialChanged = true;
-                    // Switching from 2D to 3D?
-                    if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                        lightingChanged = true;
-                    }
-                } else if (old_vertex_hasColor != vertex_hasColor) {
-                    // Materials have to be reloaded when the vertex color presence is changing
-                    materialChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
-                }
-                break;
-            }
-
-            case OFFSET_ADDR:
-            	context.baseOffset = normalArgument << 8;
-                if (isLogDebugEnabled) {
-                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), context.baseOffset));
-                }
-                break;
-
-            case ORIGIN_ADDR:
-            	context.baseOffset = currentList.pc - 4;
-                if (normalArgument != 0) {
-                    log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
-                } else if (isLogDebugEnabled) {
-                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, context.baseOffset));
-                }
-                break;
-
-            case REGION1:
-            	context.region_x1 = normalArgument & 0x3ff;
-            	context.region_y1 = (normalArgument >> 10) & 0x3ff;
-            	scissorChanged = true;
-                break;
-
-            case REGION2:
-            	context.region_x2 = normalArgument & 0x3ff;
-            	context.region_y2 = (normalArgument >> 10) & 0x3ff;
-            	context.region_width = (context.region_x2 + 1) - context.region_x1;
-            	context.region_height = (context.region_y2 + 1) - context.region_y1;
-                if (isLogDebugEnabled) {
-                    log("drawRegion(" + context.region_x1 + "," + context.region_y1 + "," + context.region_width + "," + context.region_height + ")");
-                }
-            	scissorChanged = true;
-                break;
-
-            /*
-             * Lighting enable/disable
-             */
-            case LTE: {
-            	context.lightingFlag.setEnabled(normalArgument);
-                if (context.lightingFlag.isEnabled()) {
-                    lightingChanged = true;
-                    materialChanged = true;
-                }
-                break;
-            }
-
-            /*
-             * Individual lights enable/disable
-             */
-            case LTE0:
-            case LTE1:
-            case LTE2:
-            case LTE3: {
-                int lnum = command - LTE0;
-                EnableDisableFlag lightFlag = context.lightFlags[lnum];
-                lightFlag.setEnabled(normalArgument);
-                if (lightFlag.isEnabled()) {
-                    lightingChanged = true;
-                }
-                break;
-            }
-
-            case CPE:
-            	context.clipPlanesFlag.setEnabled(normalArgument);
-                break;
-
-            case BCE:
-            	context.cullFaceFlag.setEnabled(normalArgument);
-                break;
-
-            case TME:
-            	context.textureFlag.setEnabled(normalArgument);
-                break;
-
-            case FGE:
-            	context.fogFlag.setEnabled(normalArgument);
-                if (context.fogFlag.isEnabled()) {
-                	re.setFogHint();
-                }
-                break;
-
-            case DTE:
-            	context.ditherFlag.setEnabled(normalArgument);
-                break;
-
-            case ABE:
-            	context.blendFlag.setEnabled(normalArgument);
-                break;
-
-            case ATE:
-            	context.alphaTestFlag.setEnabled(normalArgument);
-                break;
-
-            case ZTE:
-            	context.depthTestFlag.setEnabled(normalArgument);
-                if (context.depthTestFlag.isEnabled()) {
-                    // OpenGL requires the Depth parameters to be reloaded
-                    depthChanged = true;
-                }
-                break;
-
-            case STE:
-            	context.stencilTestFlag.setEnabled(normalArgument);
-                break;
-
-            case AAE:
-            	context.lineSmoothFlag.setEnabled(normalArgument);
-                if (context.lineSmoothFlag.isEnabled()) {
-                	re.setLineSmoothHint();
-                }
-                break;
-
-            case PCE: {
-            	context.patchCullFaceFlag.setEnabled(normalArgument);
-                break;
-            }
-
-            case CTE: {
-            	context.colorTestFlag.setEnabled(normalArgument);
-                break;
-            }
-
-            case LOE:
-            	context.colorLogicOpFlag.setEnabled(normalArgument);
-                break;
-
-            /*
-             * Skinning
-             */
-            case BOFS: {
-                boneMatrixIndex = normalArgument;
-                if (isLogDebugEnabled) {
-                    log("bone matrix offset", normalArgument);
-                }
-                break;
-            }
-
-            case BONE:
-            	executeCommandBONE(normalArgument);
-                break;
-
-            /*
-             * Morphing
-             */
-            case MW0:
-            case MW1:
-            case MW2:
-            case MW3:
-            case MW4:
-            case MW5:
-            case MW6:
-            case MW7: {
-                int index = command - MW0;
-                float floatArgument = floatArgument(normalArgument);
-                context.morph_weight[index] = floatArgument;
-                re.setMorphWeight(index, floatArgument);
-                if (isLogDebugEnabled) {
-                    log("morph weight " + index, floatArgument);
-                }
-                break;
-            }
-
-            case PSUB:
-            	context.patch_div_s = normalArgument & 0xFF;
-            	context.patch_div_t = (normalArgument >> 8) & 0xFF;
-                re.setPatchDiv(context.patch_div_s, context.patch_div_t);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(PSUB) + " patch_div_s=" + context.patch_div_s + ", patch_div_t=" + context.patch_div_t);
-                }
-                break;
-
-            case PPRIM: {
-            	context.patch_prim = (normalArgument & 0x3);
-                // Primitive type to use in patch division:
-                // 0 - Triangle.
-                // 1 - Line.
-                // 2 - Point.
-                re.setPatchPrim(context.patch_prim);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(PPRIM) + " patch_prim=" + context.patch_prim);
-                }
-                break;
-            }
-
-            case PFACE: {
-                // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
-            	context.patchFaceFlag.setEnabled(normalArgument);
-                break;
-            }
-
-            case MMS:
-                modelMatrixUpload.startUpload(normalArgument);
-                if (isLogDebugEnabled) {
-                    log("sceGumMatrixMode GU_MODEL " + normalArgument);
-                }
-                break;
-
-            case MODEL:
-                if (modelMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", context.model_uploaded_matrix);
-                }
-                break;
-
-            case VMS:
-                viewMatrixUpload.startUpload(normalArgument);
-                if (isLogDebugEnabled) {
-                    log("sceGumMatrixMode GU_VIEW " + normalArgument);
-                }
-                break;
-
-            case VIEW:
-                if (viewMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", context.view_uploaded_matrix);
-                }
-                break;
-
-            case PMS:
-                projectionMatrixUpload.startUpload(normalArgument);
-                if (isLogDebugEnabled) {
-                    log("sceGumMatrixMode GU_PROJECTION " + normalArgument);
-                }
-                break;
-
-            case PROJ:
-                if (projectionMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", context.proj_uploaded_matrix);
-                }
-                break;
-
-            case TMS:
-                textureMatrixUpload.startUpload(normalArgument);
-                if (isLogDebugEnabled) {
-                    log("sceGumMatrixMode GU_TEXTURE " + normalArgument);
-                }
-                break;
-
-            case TMATRIX:
-                if (textureMatrixUpload.uploadValue(floatArgument(normalArgument))) {
-                    log("glLoadMatrixf", context.texture_uploaded_matrix);
-                }
-                break;
-
-            case XSCALE: {
-                int old_viewport_width = context.viewport_width;
-                context.viewport_width = (int) floatArgument(normalArgument);
-                if (old_viewport_width != context.viewport_width) {
-                    viewportChanged = true;
-                }
-                break;
-            }
-
-            case YSCALE: {
-                int old_viewport_height = context.viewport_height;
-                context.viewport_height = (int) floatArgument(normalArgument);
-                if (old_viewport_height != context.viewport_height) {
-                    viewportChanged = true;
-                }
-                break;
-            }
-
-            case ZSCALE: {
-                float old_zscale = context.zscale;
-                float floatArgument = floatArgument(normalArgument);
-                context.zscale = floatArgument / 65535.f;
-                if (old_zscale != context.zscale) {
-                    depthChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(ZSCALE) + " " + floatArgument);
-                }
-                break;
-            }
-
-            case XPOS: {
-                int old_viewport_cx = context.viewport_cx;
-                context.viewport_cx = (int) floatArgument(normalArgument);
-                if (old_viewport_cx != context.viewport_cx) {
-                    viewportChanged = true;
-                }
-                break;
-            }
-
-            case YPOS: {
-                int old_viewport_cy = context.viewport_cy;
-                context.viewport_cy = (int) floatArgument(normalArgument);
-                if (old_viewport_cy != context.viewport_cy) {
-                    viewportChanged = true;
-                }
-
-                // Log only on the last called command (always XSCALE -> YSCALE -> XPOS -> YPOS).
-                if (isLogDebugEnabled) {
-                    log.debug("sceGuViewport(cx=" + context.viewport_cx + ", cy=" + context.viewport_cy + ", w=" + context.viewport_width + " h=" + context.viewport_height + ")");
-                }
-                break;
-            }
-
-            case ZPOS: {
-                float old_zpos = context.zpos;
-                float floatArgument = floatArgument(normalArgument);
-                context.zpos = floatArgument / 65535.f;
-                if (old_zpos != context.zpos) {
-                    depthChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(ZPOS), floatArgument);
-                }
-                break;
-            }
-
-            /*
-             * Texture transformations
-             */
-            case USCALE: {
-                float old_tex_scale_x = context.tex_scale_x;
-                context.tex_scale_x = floatArgument(normalArgument);
-
-                if (old_tex_scale_x != context.tex_scale_x) {
-                    textureMatrixUpload.setChanged(true);
-                }
-                break;
-            }
-
-            case VSCALE: {
-                float old_tex_scale_y = context.tex_scale_y;
-                context.tex_scale_y = floatArgument(normalArgument);
-
-                if (old_tex_scale_y != context.tex_scale_y) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexScale(u=" + context.tex_scale_x + ", v=" + context.tex_scale_y + ")");
-                }
-                break;
-            }
-
-            case UOFFSET: {
-                float old_tex_translate_x = context.tex_translate_x;
-                context.tex_translate_x = floatArgument(normalArgument);
-
-                if (old_tex_translate_x != context.tex_translate_x) {
-                    textureMatrixUpload.setChanged(true);
-                }
-                break;
-            }
-
-            case VOFFSET: {
-                float old_tex_translate_y = context.tex_translate_y;
-                context.tex_translate_y = floatArgument(normalArgument);
-
-                if (old_tex_translate_y != context.tex_translate_y) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexOffset(u=" + context.tex_translate_x + ", v=" + context.tex_translate_y + ")");
-                }
-                break;
-            }
-
-            case OFFSETX: {
-                int old_offset_x = context.offset_x;
-                context.offset_x = normalArgument >> 4;
-                if (old_offset_x != context.offset_x) {
-                    viewportChanged = true;
-                }
-                break;
-            }
-
-            case OFFSETY: {
-                int old_offset_y = context.offset_y;
-                context.offset_y = normalArgument >> 4;
-                if (old_offset_y != context.offset_y) {
-                    viewportChanged = true;
-                }
-
-                if(isLogDebugEnabled) {
-                    log.debug("sceGuOffset(x=" + context.offset_x + ",y=" + context.offset_y + ")");
-                }
-
-                break;
-            }
-
-            case SHADE: {
-            	context.shadeModel = normalArgument & 1;
-                re.setShadeModel(context.shadeModel);
-                if (isLogDebugEnabled) {
-                    log("sceGuShadeModel(" + ((context.shadeModel != 0) ? "smooth" : "flat") + ")");
-                }
-                break;
-            }
-
-            case RNORM: {
-                // This seems to be taked into account when calculating the lighting
-                // for the current normal.
-            	context.faceNormalReverseFlag.setEnabled(normalArgument);
-                break;
-            }
-
-            /*
-             * Material setup
-             */
-            case CMAT: {
-                int old_mat_flags = context.mat_flags;
-                context.mat_flags = normalArgument & 7;
-                if (old_mat_flags != context.mat_flags) {
-                    materialChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuColorMaterial " + context.mat_flags);
-                }
-                break;
-            }
-
-            case EMC:
-            	context.mat_emissive[0] = ((normalArgument) & 255) / 255.f;
-            	context.mat_emissive[1] = ((normalArgument >> 8) & 255) / 255.f;
-            	context.mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	context.mat_emissive[3] = 1.f;
-                materialChanged = true;
-                re.setMaterialEmissiveColor(context.mat_emissive);
-                if (isLogDebugEnabled) {
-                    log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                    		context.mat_emissive[0], context.mat_emissive[1], context.mat_emissive[2], normalArgument));
-                }
-                break;
-
-            case AMC:
-                context.mat_ambient[0] = ((normalArgument) & 255) / 255.f;
-                context.mat_ambient[1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
-                            context.mat_ambient[0], context.mat_ambient[1], context.mat_ambient[2], normalArgument));
-                }
-                break;
-
-            case DMC:
-                context.mat_diffuse[0] = ((normalArgument) & 255) / 255.f;
-                context.mat_diffuse[1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.mat_diffuse[3] = 1.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            context.mat_diffuse[0], context.mat_diffuse[1], context.mat_diffuse[2], normalArgument));
-                }
-                break;
-
-            case SMC:
-                context.mat_specular[0] = ((normalArgument) & 255) / 255.f;
-                context.mat_specular[1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.mat_specular[3] = 1.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                            context.mat_specular[0], context.mat_specular[1], context.mat_specular[2], normalArgument));
-                }
-                break;
-
-            case AMA: {
-                context.mat_ambient[3] = ((normalArgument) & 255) / 255.f;
-                materialChanged = true;
-                if (isLogDebugEnabled) {
-                    log(String.format("material ambient a=%.1f (%02X)",
-                            context.mat_ambient[3], normalArgument & 255));
-                }
-                break;
-            }
-
-            case SPOW: {
-                context.materialShininess = floatArgument(normalArgument);
-                re.setMaterialShininess(context.materialShininess);
-                if (isLogDebugEnabled) {
-                    log("material shininess " + context.materialShininess);
-                }
-                break;
-            }
-
-            case ALC:
-            	context.ambient_light[0] = ((normalArgument) & 255) / 255.f;
-            	context.ambient_light[1] = ((normalArgument >> 8) & 255) / 255.f;
-            	context.ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
-                re.setLightModelAmbientColor(context.ambient_light);
-                if (isLogDebugEnabled) {
-                    log.debug(String.format("ambient light r=%.1f g=%.1f b=%.1f (%06X)",
-                    		context.ambient_light[0], context.ambient_light[1], context.ambient_light[2], normalArgument));
-                }
-                break;
-
-            case ALA:
-            	context.ambient_light[3] = ((normalArgument) & 255) / 255.f;
-                re.setLightModelAmbientColor(context.ambient_light);
-                break;
-
-            case LMODE: {
-            	context.lightMode = normalArgument & 1;
-                re.setLightMode(context.lightMode);
-                if (isLogDebugEnabled) {
-                    log.debug("sceGuLightMode(" + ((context.lightMode != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
-                }
-
-                // Check if other values than 0 and 1 are set
-                if ((normalArgument & ~1) != 0) {
-                    log.warn(String.format("Unknown light mode sceGuLightMode(%06X)", normalArgument));
-                }
-                break;
-            }
-
-            /*
-             * Light types
-             */
-            case LT0:
-            case LT1:
-            case LT2:
-            case LT3: {
-                int lnum = command - LT0;
-                int old_light_type = context.light_type[lnum];
-                int old_light_kind = context.light_kind[lnum];
-                context.light_type[lnum] = (normalArgument >> 8) & 3;
-                context.light_kind[lnum] = normalArgument & 3;
-
-                if (old_light_type != context.light_type[lnum] || old_light_kind != context.light_kind[lnum]) {
-                    lightingChanged = true;
-                }
-
-                switch (context.light_type[lnum]) {
-                    case LIGHT_DIRECTIONAL:
-                    	context.light_pos[lnum][3] = 0.f;
-                        break;
-                    case LIGHT_POINT:
-                    	re.setLightSpotCutoff(lnum, 180);
-                    	context.light_pos[lnum][3] = 1.f;
-                        break;
-                    case LIGHT_SPOT:
-                    	context.light_pos[lnum][3] = 1.f;
-                        break;
-                    default:
-                        error("Unknown light type : " + normalArgument);
-                }
-                re.setLightType(lnum, context.light_type[lnum], context.light_kind[lnum]);
-
-                if (isLogDebugEnabled) {
-                    log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
-                }
-                break;
-            }
-
-            /*
-             *  Light attributes
-             */
-
-            // Position
-            case LXP0:
-            case LXP1:
-            case LXP2:
-            case LXP3:
-            case LYP0:
-            case LYP1:
-            case LYP2:
-            case LYP3:
-            case LZP0:
-            case LZP1:
-            case LZP2:
-            case LZP3: {
-                int lnum = (command - LXP0) / 3;
-                int component = (command - LXP0) % 3;
-                float old_light_pos = context.light_pos[lnum][component];
-                context.light_pos[lnum][component] = floatArgument(normalArgument);
-
-                if (old_light_pos != context.light_pos[lnum][component]) {
-                    lightingChanged = true;
-                }
-                if (isLogDebugEnabled) {
-                    log.debug(String.format("Light %d position (%f, %f, %f)", lnum, context.light_pos[lnum][0], context.light_pos[lnum][1], context.light_pos[lnum][2]));
-                }
-                break;
-            }
-
-            case LXD0:
-            case LXD1:
-            case LXD2:
-            case LXD3:
-            case LYD0:
-            case LYD1:
-            case LYD2:
-            case LYD3:
-            case LZD0:
-            case LZD1:
-            case LZD2:
-            case LZD3: {
-                int lnum = (command - LXD0) / 3;
-                int component = (command - LXD0) % 3;
-                float old_light_dir = context.light_dir[lnum][component];
-
-                // OpenGL requires a normal in the opposite direction as the PSP
-                context.light_dir[lnum][component] = -floatArgument(normalArgument);
-
-                if (old_light_dir != context.light_dir[lnum][component]) {
-                    lightingChanged = true;
-                }
-                if (isLogDebugEnabled) {
-                    log.debug(String.format("Light %d direction (%f, %f, %f)", lnum, context.light_dir[lnum][0], context.light_dir[lnum][1], context.light_dir[lnum][2]));
-                }
-                // OpenGL parameter for light direction is set in initRendering
-                // because it depends on the model/view matrix
-                break;
-            }
-
-            // Light Attenuation
-
-            // Constant
-            case LCA0:
-            case LCA1:
-            case LCA2:
-            case LCA3: {
-                int lnum = (command - LCA0) / 3;
-                context.lightConstantAttenuation[lnum] = floatArgument(normalArgument);
-                re.setLightConstantAttenuation(lnum, context.lightConstantAttenuation[lnum]);
-                break;
-            }
-
-            // Linear
-            case LLA0:
-            case LLA1:
-            case LLA2:
-            case LLA3: {
-                int lnum = (command - LLA0) / 3;
-                context.lightLinearAttenuation[lnum] = floatArgument(normalArgument);
-                re.setLightLinearAttenuation(lnum, context.lightLinearAttenuation[lnum]);
-                break;
-            }
-
-            // Quadratic
-            case LQA0:
-            case LQA1:
-            case LQA2:
-            case LQA3: {
-                int lnum = (command - LQA0) / 3;
-                context.lightQuadraticAttenuation[lnum] = floatArgument(normalArgument);
-                re.setLightQuadraticAttenuation(lnum, context.lightQuadraticAttenuation[lnum]);
-                break;
-            }
-
-            /*
-             * Spot light exponent
-             */
-            case SLE0:
-            case SLE1:
-            case SLE2:
-            case SLE3: {
-                int lnum = command - SLE0;
-                float old_spotLightExponent = context.spotLightExponent[lnum];
-                context.spotLightExponent[lnum] = floatArgument(normalArgument);
-
-                if (old_spotLightExponent != context.spotLightExponent[lnum]) {
-                    lightingChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + context.spotLightExponent[lnum] + ",X)");
-                }
-                break;
-            }
-
-            /*
-             * Spot light cutoff angle
-             */
-            case SLF0:
-            case SLF1:
-            case SLF2:
-            case SLF3: {
-                int lnum = command - SLF0;
-                float old_spotLightCutoff = context.spotLightCutoff[lnum];
-
-                // PSP Cutoff is cosine of angle, OpenGL expects degrees
-                float floatArgument = floatArgument(normalArgument);
-                float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
-                if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
-                	context.spotLightCutoff[lnum] = degreeCutoff;
-
-                    if (old_spotLightCutoff != context.spotLightCutoff[lnum]) {
-                        lightingChanged = true;
-                    }
-
-                    if (isLogDebugEnabled) {
-                        log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + "=" + degreeCutoff + ")");
-                    }
-                } else {
-                    log.warn("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ") invalid argument value");
-                }
-                break;
-            }
-
-            // Color
-
-            // Ambient
-            case ALC0:
-            case ALC1:
-            case ALC2:
-            case ALC3: {
-                int lnum = (command - ALC0) / 3;
-                context.lightAmbientColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                context.lightAmbientColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.lightAmbientColor[lnum][3] = 1.f;
-                re.setLightAmbientColor(lnum, context.lightAmbientColor[lnum]);
-                log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
-                break;
-            }
-
-            // Diffuse
-            case DLC0:
-            case DLC1:
-            case DLC2:
-            case DLC3: {
-                int lnum = (command - DLC0) / 3;
-                context.lightDiffuseColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                context.lightDiffuseColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.lightDiffuseColor[lnum][3] = 1.f;
-                re.setLightDiffuseColor(lnum, context.lightDiffuseColor[lnum]);
-                log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
-                break;
-            }
-
-            // Specular
-            case SLC0:
-            case SLC1:
-            case SLC2:
-            case SLC3: {
-                int lnum = (command - SLC0) / 3;
-                float old_lightSpecularColor0 = context.lightSpecularColor[lnum][0];
-                float old_lightSpecularColor1 = context.lightSpecularColor[lnum][1];
-                float old_lightSpecularColor2 = context.lightSpecularColor[lnum][2];
-                context.lightSpecularColor[lnum][0] = ((normalArgument) & 255) / 255.f;
-                context.lightSpecularColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.lightSpecularColor[lnum][3] = 1.f;
-
-                if (old_lightSpecularColor0 != context.lightSpecularColor[lnum][0] || old_lightSpecularColor1 != context.lightSpecularColor[lnum][1] || old_lightSpecularColor2 != context.lightSpecularColor[lnum][2]) {
-                    lightingChanged = true;
-                }
-                re.setLightSpecularColor(lnum, context.lightDiffuseColor[lnum]);
-                log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
-                break;
-            }
-
-            case FFACE: {
-            	context.frontFaceCw = normalArgument != 0;
-                re.setFrontFace(context.frontFaceCw);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
-                }
-                break;
-            }
-
-            case FBP:
-                // FBP can be called before or after FBW
-            	context.fbp = (context.fbp & 0xff000000) | normalArgument;
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(context.fbp) + ", fbw=" + context.fbw);
-                }
-                geBufChanged = true;
-                break;
-
-            case FBW:
-            	context.fbp = (context.fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-            	context.fbw = normalArgument & 0xffff;
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(context.fbp) + ", fbw=" + context.fbw);
-                }
-                geBufChanged = true;
-                break;
-
-            case ZBP:
-            	context.zbp = (context.zbp & 0xff000000) | normalArgument;
-                if (isLogDebugEnabled) {
-                    log("zbp=" + Integer.toHexString(context.zbp) + ", zbw=" +context. zbw);
-                }
-                break;
-
-            case ZBW:
-            	context.zbp = (context.zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-                context.zbw = normalArgument & 0xffff;
-                if (isLogDebugEnabled) {
-                    log("zbp=" + Integer.toHexString(context.zbp) + ", zbw=" + context.zbw);
-                }
-                break;
-
-            case TBP0:
-            case TBP1:
-            case TBP2:
-            case TBP3:
-            case TBP4:
-            case TBP5:
-            case TBP6:
-            case TBP7: {
-                int level = command - TBP0;
-                int old_texture_base_pointer = context.texture_base_pointer[level];
-                context.texture_base_pointer[level] = (context.texture_base_pointer[level] & 0xff000000) | normalArgument;
-
-                if (old_texture_base_pointer != context.texture_base_pointer[level]) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
-                }
-                break;
-            }
-
-            case TBW0:
-            case TBW1:
-            case TBW2:
-            case TBW3:
-            case TBW4:
-            case TBW5:
-            case TBW6:
-            case TBW7: {
-                int level = command - TBW0;
-                int old_texture_base_pointer = context.texture_base_pointer[level];
-                int old_texture_buffer_width = context.texture_buffer_width[level];
-                context.texture_base_pointer[level] = (context.texture_base_pointer[level] & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
-                context.texture_buffer_width[level] = normalArgument & 0xffff;
-
-                if (old_texture_base_pointer != context.texture_base_pointer[level] || old_texture_buffer_width != context.texture_buffer_width[level]) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + context.texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
-                }
-                break;
-            }
-
-            case CBP: {
-                int old_tex_clut_addr = context.tex_clut_addr;
-                context.tex_clut_addr = (context.tex_clut_addr & 0xff000000) | normalArgument;
-
-                clutIsDirty = true;
-                if (old_tex_clut_addr != context.tex_clut_addr) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(context.tex_clut_addr) + "))");
-                }
-                break;
-            }
-
-            case CBPH: {
-                int old_tex_clut_addr = context.tex_clut_addr;
-                context.tex_clut_addr = (context.tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
-
-                clutIsDirty = true;
-                if (old_tex_clut_addr != context.tex_clut_addr) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(context.tex_clut_addr) + "))");
-                }
-                break;
-            }
-
-            case TRXSBP:
-                context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0xFF000000) | normalArgument;
-                break;
-
-            case TRXSBW:
-                context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
-                context.textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
-
-                // TODO Check when sx and sy are reset to 0. Here or after TRXKICK?
-                context.textureTx_sx = 0;
-                context.textureTx_sy = 0;
-                break;
-
-            case TRXDBP:
-                context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0xFF000000) | normalArgument;
-                break;
-
-            case TRXDBW:
-                context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
-                context.textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
-
-                // TODO Check when dx and dy are reset to 0. Here or after TRXKICK?
-                context.textureTx_dx = 0;
-                context.textureTx_dy = 0;
-                break;
-
-            case TSIZE0:
-            case TSIZE1:
-            case TSIZE2:
-            case TSIZE3:
-            case TSIZE4:
-            case TSIZE5:
-            case TSIZE6:
-            case TSIZE7: {
-                int level = command - TSIZE0;
-                int old_texture_height = context.texture_height[level];
-                int old_texture_width = context.texture_width[level];
-                // Astonishia Story is using normalArgument = 0x1804
-                // -> use texture_height = 1 << 0x08 (and not 1 << 0x18)
-                //        texture_width  = 1 << 0x04
-                // The maximum texture size is 512x512: the exponent value must be [0..9]
-                int height_exp2 = Math.min((normalArgument >> 8) & 0x0F, 9);
-                int width_exp2 = Math.min((normalArgument) & 0x0F, 9);
-                context.texture_height[level] = 1 << height_exp2;
-                context.texture_width[level] = 1 << width_exp2;
-
-                if (old_texture_height != context.texture_height[level] || old_texture_width != context.texture_width[level]) {
-                    if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD && level == 0) {
-                        textureMatrixUpload.setChanged(true);
-                    }
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexImage(level=" + level + ", width=" + context.texture_width[level] + ", height=" + context.texture_height[level] + ", X, X)");
-                }
-                break;
-            }
-
-            case TMAP:
-                int old_tex_map_mode = context.tex_map_mode;
-                context.tex_map_mode = normalArgument & 3;
-                context.tex_proj_map_mode = (normalArgument >> 8) & 3;
-
-                if (old_tex_map_mode != context.tex_map_mode) {
-                    textureMatrixUpload.setChanged(true);
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexMapMode(mode=" + context.tex_map_mode + ", X, X)");
-                    log("sceGuTexProjMapMode(mode=" + context.tex_proj_map_mode + ")");
-                }
-                break;
-
-            case TEXTURE_ENV_MAP_MATRIX: {
-            	context.tex_shade_u = (normalArgument >> 0) & 0x3;
-            	context.tex_shade_v = (normalArgument >> 8) & 0x3;
-
-                for (int i = 0; i < 3; i++) {
-                	context.tex_envmap_matrix[i + 0] = context.light_pos[context.tex_shade_u][i];
-                	context.tex_envmap_matrix[i + 4] = context.light_pos[context.tex_shade_v][i];
-                }
-
-                textureMatrixUpload.setChanged(true);
-                if (isLogDebugEnabled) {
-                    log("sceGuTexMapMode(X, " + context.tex_shade_u + ", " + context.tex_shade_v + ")");
-                }
-                break;
-            }
-
-            case TMODE: {
-                int old_texture_num_mip_maps = context.texture_num_mip_maps;
-                boolean old_mipmapShareClut = context.mipmapShareClut;
-                boolean old_texture_swizzle = context.texture_swizzle;
-                context.texture_num_mip_maps = (normalArgument >> 16) & 0x7;
-                // This parameter has only a meaning when
-                //  texture_storage == GU_PSM_T4 and texture_num_mip_maps > 0
-                // when parameter==0: all the mipmaps share the same clut entries (normal behavior)
-                // when parameter==1: each mipmap has its own clut table, 16 entries each, stored sequentially
-                context.mipmapShareClut = ((normalArgument >> 8) & 0x1) == 0;
-                context.texture_swizzle = ((normalArgument) & 0x1) != 0;
-
-                if (old_texture_num_mip_maps != context.texture_num_mip_maps || old_mipmapShareClut != context.mipmapShareClut || old_texture_swizzle != context.texture_swizzle) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexMode(X, mipmaps=" + context.texture_num_mip_maps + ", mipmapShareClut=" + context.mipmapShareClut + ", swizzle=" + context.texture_swizzle + ")");
-                }
-                break;
-            }
-
-            case TPSM: {
-                int old_texture_storage = context.texture_storage;
-                context.texture_storage = normalArgument & 0xF; // Lower four bits.
-
-                if (old_texture_storage != context.texture_storage) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexMode(tpsm=" + context.texture_storage + "(" + getPsmName(context.texture_storage) + "), X, X, X)");
-                }
-                break;
-            }
-
-            case CLOAD: {
-                int old_tex_clut_num_blocks = context.tex_clut_num_blocks;
-                context.tex_clut_num_blocks = normalArgument & 0x3F;
-
-                clutIsDirty = true;
-                if (old_tex_clut_num_blocks != context.tex_clut_num_blocks) {
-                    textureChanged = true;
-                }
-
-                // Some games use the following sequence:
-                // - sceGuClutLoad(num_blocks=32, X)
-                // - sceGuClutLoad(num_blocks=1, X)
-                // - tflush
-                // - prim ... (texture data is referencing the clut entries from 32 blocks)
-                //
-                readClut();
-
-                if (isLogDebugEnabled) {
-                    log("sceGuClutLoad(num_blocks=" + context.tex_clut_num_blocks + ", X)");
-                }
-                break;
-            }
-
-            case CMODE: {
-                int old_tex_clut_mode = context.tex_clut_mode;
-                int old_tex_clut_shift = context.tex_clut_shift;
-                int old_tex_clut_mask = context.tex_clut_mask;
-                int old_tex_clut_start = context.tex_clut_start;
-                context.tex_clut_mode = normalArgument & 0x03;
-                context.tex_clut_shift = (normalArgument >> 2) & 0x1F;
-                context.tex_clut_mask = (normalArgument >> 8) & 0xFF;
-                context.tex_clut_start = (normalArgument >> 16) & 0x1F;
-
-                clutIsDirty = true;
-                if (old_tex_clut_mode != context.tex_clut_mode || old_tex_clut_shift != context.tex_clut_shift || old_tex_clut_mask != context.tex_clut_mask || old_tex_clut_start != context.tex_clut_start) {
-                    textureChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuClutMode(cpsm=" + context.tex_clut_mode + "(" + getPsmName(context.tex_clut_mode) + "), shift=" + context.tex_clut_shift + ", mask=0x" + Integer.toHexString(context.tex_clut_mask) + ", start=" + context.tex_clut_start + ")");
-                }
-                break;
-            }
-
-            case TFLT: {
-                int old_tex_mag_filter = context.tex_mag_filter;
-                int old_tex_min_filter = context.tex_min_filter;
-
-                context.tex_min_filter = normalArgument & 0x7;
-                context.tex_mag_filter = (normalArgument >> 8) & 0x1;
-
-                if (isLogDebugEnabled) {
-                    log("sceGuTexFilter(min=" + context.tex_min_filter + ", mag=" + context.tex_mag_filter + ") (mm#" + context.texture_num_mip_maps + ")");
-                }
-
-                if (context.tex_min_filter == TFLT_UNKNOW1 || context.tex_min_filter == TFLT_UNKNOW2) {
-                    log.warn("Unknown minimizing filter " + (normalArgument & 0xFF));
-                    context.tex_min_filter = TFLT_NEAREST;
-                }
-
-                if (old_tex_mag_filter != context.tex_mag_filter || old_tex_min_filter != context.tex_min_filter) {
-                    textureChanged = true;
-                }
-                break;
-            }
-
-            case TWRAP: {
-            	context.tex_wrap_s = normalArgument & 0xFF;
-            	context.tex_wrap_t = (normalArgument >> 8) & 0xFF;
-
-                if (context.tex_wrap_s > TWRAP_WRAP_MODE_CLAMP) {
-                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_s);
-                    context.tex_wrap_s = TWRAP_WRAP_MODE_REPEAT;
-                }
-                if (context.tex_wrap_t > TWRAP_WRAP_MODE_CLAMP) {
-                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_t);
-                    context.tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
-                }
-                break;
-            }
-
-            case TBIAS: {
-            	context.tex_mipmap_mode = normalArgument & 0x3;
-            	context.tex_mipmap_bias_int = (int) (byte) (normalArgument >> 16); // Signed 8-bit integer
-            	context.tex_mipmap_bias = context.tex_mipmap_bias_int / 16.0f;
-                if (isLogDebugEnabled) {
-                    log.debug("sceGuTexLevelMode(mode=" + context.tex_mipmap_mode + ", bias=" + context.tex_mipmap_bias + ")");
-                }
-                break;
-            }
-
-            case TFUNC:
-                executeCommandTFUNC(normalArgument);
-                break;
-
-            case TEC: {
-            	context.tex_env_color[0] = ((normalArgument) & 255) / 255.f;
-            	context.tex_env_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-            	context.tex_env_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	context.tex_env_color[3] = 1.f;
-                re.setTextureEnvColor(context.tex_env_color);
-
-                if (isLogDebugEnabled) {
-                    log(String.format("sceGuTexEnvColor %08X (no alpha)", normalArgument));
-                }
-                break;
-            }
-
-            case TFLUSH: {
-                // Do not load the texture right now, clut parameters can still be
-                // defined after the TFLUSH and before the PRIM command.
-                // Delay the texture loading until the PRIM command.
-                if (isLogDebugEnabled) {
-                    log("tflush (deferring to prim)");
-                }
-                break;
-            }
-
-            case TSYNC: {
-                // Probably synchronizing the GE when a drawing result
-            	// is used as a texture. Currently ignored.
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(TSYNC) + " waiting for drawing.");
-                }
-                break;
-            }
-
-            case FFAR:
-            	context.fog_far = floatArgument(normalArgument);
-                break;
-
-            case FDIST:
-            	context.fog_dist = floatArgument(normalArgument);
-                if ((context.fog_far != 0.0f) && (context.fog_dist != 0.0f)) {
-                    float end = context.fog_far;
-                    float start = end - (1 / context.fog_dist);
-                    re.setFogDist(start, end);
-                }
-                break;
-
-            case FCOL:
-            	context.fog_color[0] = ((normalArgument) & 255) / 255.f;
-                context.fog_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.fog_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.fog_color[3] = 1.f;
-                re.setFogColor(context.fog_color);
-
-                if (isLogDebugEnabled) {
-                    log(String.format("sceGuFog(X, X, color=%08X) (no alpha)", normalArgument));
-                }
-                break;
-
-            case TSLOPE: {
-            	context.tslope_level = floatArgument(normalArgument);
-                if (isLogDebugEnabled) {
-                    log(helper.getCommandString(TSLOPE) + " tslope_level=" + context.tslope_level);
-                }
-                break;
-            }
-
-            case PSM:
-            	context.psm = normalArgument;
-                if (isLogDebugEnabled) {
-                    log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
-                }
-                geBufChanged = true;
-                break;
-
-            case CLEAR:
-                executeCommandCLEAR(normalArgument);
-                break;
-
-            case SCISSOR1:
-            	context.scissor_x1 = normalArgument & 0x3ff;
-            	context.scissor_y1 = (normalArgument >> 10) & 0x3ff;
-            	scissorChanged = true;
-                break;
-
-            case SCISSOR2:
-            	context.scissor_x2 = normalArgument & 0x3ff;
-            	context.scissor_y2 = (normalArgument >> 10) & 0x3ff;
-            	context.scissor_width = 1 + context.scissor_x2 - context.scissor_x1;
-            	context.scissor_height = 1 + context.scissor_y2 - context.scissor_y1;
-                if (isLogDebugEnabled) {
-                    log("sceGuScissor(" + context.scissor_x1 + "," + context.scissor_y1 + "," + context.scissor_width + "," + context.scissor_height + ")");
-                }
-            	scissorChanged = true;
-                break;
-
-            case NEARZ: {
-                float old_nearZ = context.nearZ;
-                context.nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-                if (old_nearZ != context.nearZ) {
-                    depthChanged = true;
-                }
-                break;
-            }
-
-            case FARZ: {
-                float old_farZ = context.farZ;
-                context.farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-                if (old_farZ != context.farZ) {
-                    // OpenGL requires the Depth parameters to be reloaded
-                    depthChanged = true;
-                }
-
-                if (depthChanged) {
-                    re.setDepthRange(context.zpos, context.zscale, context.nearZ, context.farZ);
-                }
-
-                if (isLogDebugEnabled) {
-                    log.debug("sceGuDepthRange(" + context.nearZ + ", " + context.farZ + ")");
-                }
-                break;
-            }
-
-            case CTST: {
-            	context.colorTestFunc = normalArgument & 3;
-                re.setColorTestFunc(context.colorTestFunc);
-                break;
-            }
-
-            case CREF: {
-            	context.colorTestRef[0] = (normalArgument) & 0xFF;
-            	context.colorTestRef[1] = (normalArgument >> 8) & 0xFF;
-            	context.colorTestRef[2] = (normalArgument >> 16) & 0xFF;
-                re.setColorTestReference(context.colorTestRef);
-                break;
-            }
-
-            case CMSK: {
-            	context.colorTestMsk[0] = (normalArgument) & 0xFF;
-                context.colorTestMsk[1] = (normalArgument >> 8) & 0xFF;
-                context.colorTestMsk[2] = (normalArgument >> 16) & 0xFF;
-                re.setColorTestMask(context.colorTestMsk);
-                break;
-            }
-
-            case ATST: {
-                context.alphaFunc = normalArgument & 0xFF;
-                if (context.alphaFunc > ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL) {
-                    log.warn("sceGuAlphaFunc unhandled func " + context.alphaFunc);
-                    context.alphaFunc = ATST_ALWAYS_PASS_PIXEL;
-                }
-                context.alphaRef = (normalArgument >> 8) & 0xFF;
-                re.setAlphaFunc(context.alphaFunc, context.alphaRef);
-
-                if (isLogDebugEnabled) {
-                	log("sceGuAlphaFunc(" + context.alphaFunc + "," + context.alphaRef + ")");
-                }
-                break;
-            }
-
-            case STST: {
-            	context.stencilFunc = normalArgument & 0xFF;
-            	if (context.stencilFunc > STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL) {
-            		log.warn("Unknown stencil function " + context.stencilFunc);
-            		context.stencilFunc = STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST;
-            	}
-                context.stencilRef = (normalArgument >> 8) & 0xff;
-                context.stencilMask = (normalArgument >> 16) & 0xff;
-                re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilMask);
-
-                if (isLogDebugEnabled) {
-                	log("sceGuStencilFunc(func=" + (normalArgument & 0xFF) + ", ref=" + context.stencilRef + ", mask=" + context.stencilMask + ")");
-                }
-                break;
-            }
-
-            case SOP: {
-                context.stencilOpFail = getStencilOp(normalArgument & 0xFF);
-                context.stencilOpZFail = getStencilOp((normalArgument >> 8) & 0xFF);
-                context.stencilOpZPass = getStencilOp((normalArgument >> 16) & 0xFF);
-                re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
-
-                if (isLogDebugEnabled) {
-                	log("sceGuStencilOp(fail=" + (normalArgument & 0xFF) + ", zfail=" + ((normalArgument >> 8) & 0xFF) + ", zpass=" + ((normalArgument >> 16) & 0xFF) + ")");
-                }
-                break;
-            }
-
-            case ZTST: {
-                int oldDepthFunc = context.depthFunc;
-
-                context.depthFunc = normalArgument & 0xFF;
-                if (context.depthFunc > ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL) {
-                	error(String.format("%s unknown depth function %d", commandToString(ZTST), context.depthFunc));
-                	context.depthFunc = ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS;
-                }
-
-                if (oldDepthFunc != context.depthFunc) {
-                    depthChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuDepthFunc(" + normalArgument + ")");
-                }
-                break;
-            }
-
-            case ALPHA: {
-                int old_blend_src = context.blend_src;
-                int old_blend_dst = context.blend_dst;
-                context.blend_src = normalArgument & 0xF;
-                context.blend_dst = (normalArgument >> 4) & 0xF;
-                context.blendEquation = (normalArgument >> 8) & 0xF;
-                if (context.blendEquation > ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE) {
-                    log.warn("Unhandled blend operation " + context.blendEquation);
-                    context.blendEquation = ALPHA_SOURCE_BLEND_OPERATION_ADD;
-                }
-
-                re.setBlendEquation(context.blendEquation);
-
-                if (old_blend_src != context.blend_src || old_blend_dst != context.blend_dst) {
-                    blendChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log("sceGuBlendFunc(op=" + context.blendEquation + ", src=" + context.blend_src + ", dst=" + context.blend_dst + ")");
-                }
-                break;
-            }
-
-            case SFIX: {
-                float old_sfix_color0 = context.sfix_color[0];
-                float old_sfix_color1 = context.sfix_color[1];
-                float old_sfix_color2 = context.sfix_color[2];
-                context.sfix_color[0] = ((normalArgument) & 255) / 255.f;
-                context.sfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.sfix_color[3] = 1.f;
-
-                if (old_sfix_color0 != context.sfix_color[0] || old_sfix_color1 != context.sfix_color[1] || old_sfix_color2 != context.sfix_color[2]) {
-                    blendChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
-                }
-                break;
-            }
-
-            case DFIX: {
-                float old_dfix_color0 = context.dfix_color[0];
-                float old_dfix_color1 = context.dfix_color[1];
-                float old_dfix_color2 = context.dfix_color[2];
-                context.dfix_color[0] = ((normalArgument) & 255) / 255.f;
-                context.dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
-                context.dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
-                context.dfix_color[3] = 1.f;
-
-                if (old_dfix_color0 != context.dfix_color[0] || old_dfix_color1 != context.dfix_color[1] || old_dfix_color2 != context.dfix_color[2]) {
-                    blendChanged = true;
-                }
-
-                if (isLogDebugEnabled) {
-                    log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
-                }
-                break;
-            }
-
-            case DTH0:
-            	context.dither_matrix[0] = (normalArgument) & 0xF;
-                context.dither_matrix[1] = (normalArgument >> 4) & 0xF;
-                context.dither_matrix[2] = (normalArgument >> 8) & 0xF;
-                context.dither_matrix[3] = (normalArgument >> 12) & 0xF;
-                break;
-
-            case DTH1:
-            	context.dither_matrix[4] = (normalArgument) & 0xF;
-                context.dither_matrix[5] = (normalArgument >> 4) & 0xF;
-                context.dither_matrix[6] = (normalArgument >> 8) & 0xF;
-                context.dither_matrix[7] = (normalArgument >> 12) & 0xF;
-                break;
-
-            case DTH2:
-            	context.dither_matrix[8] = (normalArgument) & 0xF;
-                context.dither_matrix[9] = (normalArgument >> 4) & 0xF;
-                context.dither_matrix[10] = (normalArgument >> 8) & 0xF;
-                context.dither_matrix[11] = (normalArgument >> 12) & 0xF;
-                break;
-
-            case DTH3:
-            	context.dither_matrix[12] = (normalArgument) & 0xF;
-                context.dither_matrix[13] = (normalArgument >> 4) & 0xF;
-                context.dither_matrix[14] = (normalArgument >> 8) & 0xF;
-                context.dither_matrix[15] = (normalArgument >> 12) & 0xF;
-
-                // The dither matrix's values can vary between -8 and 7.
-                // The most significant bit acts as sign bit.
-                // Translate and log only at the last command.
-
-                for (int i = 0; i < 16; i++) {
-                    if (context.dither_matrix[i] > 7) {
-                    	context.dither_matrix[i] |= 0xFFFFFFF0;
-                    }
-                }
-
-                if (isLogDebugEnabled) {
-                    log.debug("DTH0:" + "  " + context.dither_matrix[0] + "  " + context.dither_matrix[1] + "  " + context.dither_matrix[2] + "  " + context.dither_matrix[3]);
-                    log.debug("DTH1:" + "  " + context.dither_matrix[4] + "  " + context.dither_matrix[5] + "  " + context.dither_matrix[6] + "  " + context.dither_matrix[7]);
-                    log.debug("DTH2:" + "  " + context.dither_matrix[8] + "  " + context.dither_matrix[9] + "  " + context.dither_matrix[10] + "  " + context.dither_matrix[11]);
-                    log.debug("DTH3:" + "  " + context.dither_matrix[12] + "  " + context.dither_matrix[13] + "  " + context.dither_matrix[14] + "  " + context.dither_matrix[15]);
-                }
-                break;
-
-            case LOP: {
-            	context.logicOp = normalArgument & 0xF;
-            	re.setLogicOp(context.logicOp);
-            	if (isLogDebugEnabled) {
-            		log.debug("sceGuLogicalOp(LogicOp=" + context.logicOp + "(" + getLOpName(context.logicOp) + "))");
-            	}
-                break;
-            }
-
-            case ZMSK: {
-                // NOTE: PSP depth mask as 1 is meant to avoid depth writes,
-                //       with OpenGL it's the opposite
-            	context.depthMask = (normalArgument == 0);
-            	re.setDepthMask(context.depthMask);
-            	if (context.depthMask) {
-                    // OpenGL requires the Depth parameters to be reloaded
-                    depthChanged = true;
-            	}
-
-                if (isLogDebugEnabled) {
-                    log("sceGuDepthMask(" + (normalArgument != 0 ? "disableWrites" : "enableWrites") + ")");
-                }
-                break;
-            }
-
-            case PMSKC: {
-                context.colorMask[0] = normalArgument & 0xFF;
-                context.colorMask[1] = (normalArgument >> 8) & 0xFF;
-                context.colorMask[2] = (normalArgument >> 16) & 0xFF;
-            	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
-
-            	if (isLogDebugEnabled) {
-                    log(String.format("%s color mask=0x%06X", helper.getCommandString(PMSKC), normalArgument));
-                }
-                break;
-            }
-
-            case PMSKA: {
-                context.colorMask[3] = normalArgument & 0xFF;
-            	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
-
-                if (isLogDebugEnabled) {
-                    log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
-                }
-                break;
-            }
-
-            case TRXKICK:
-                executeCommandTRXKICK(normalArgument);
-                break;
-
-            case TRXPOS:
-                context.textureTx_sx = normalArgument & 0x1FF;
-                context.textureTx_sy = (normalArgument >> 10) & 0x1FF;
-                break;
-
-            case TRXDPOS:
-                context.textureTx_dx = normalArgument & 0x1FF;
-                context.textureTx_dy = (normalArgument >> 10) & 0x1FF;
-                break;
-
-            case TRXSIZE:
-                context.textureTx_width = (normalArgument & 0x3FF) + 1;
-                context.textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
-                break;
-
-            case VSCX:
-                int coordX = normalArgument & 0xFFFF;
-                log.warn("Unimplemented VSCX: coordX=" + coordX);
-                break;
-
-            case VSCY:
-                int coordY = normalArgument & 0xFFFF;
-                log.warn("Unimplemented VSCY: coordY=" + coordY);
-                break;
-
-            case VSCZ:
-                int coordZ = normalArgument & 0xFFFF;
-                log.warn("Unimplemented VSCZ: coordZ=" + coordZ);
-                break;
-
-            case VTCS:
-                float coordS = floatArgument(normalArgument);
-                log.warn("Unimplemented VTCS: coordS=" + coordS);
-                break;
-
-            case VTCT:
-                float coordT = floatArgument(normalArgument);
-                log.warn("Unimplemented VTCT: coordT=" + coordT);
-                break;
-
-            case VTCQ:
-                float coordQ = floatArgument(normalArgument);
-                log.warn("Unimplemented VTCQ: coordQ=" + coordQ);
-                break;
-
-            case VCV:
-                int colorR = normalArgument & 0xFF;
-                int colorG = (normalArgument >> 8) & 0xFF;
-                int colorB = (normalArgument >> 16) & 0xFF;
-                log.warn("Unimplemented VCV: colorR=" + colorR + ", colorG=" + colorG + ", colorB=" + colorB);
-                break;
-
-            case VAP:
-                int alpha = normalArgument & 0xFF;
-                int prim_type = (normalArgument >> 8) & 0x7;
-                log.warn("Unimplemented VAP: alpha=" + alpha + ", prim_type=" + prim_type);
-                break;
-
-            case VFC:
-                int fog = normalArgument & 0xFF;
-                log.warn("Unimplemented VFC: fog=" + fog);
-                break;
-
-            case VSCV:
-                int colorR2 = normalArgument & 0xFF;
-                int colorG2 = (normalArgument >> 8) & 0xFF;
-                int colorB2 = (normalArgument >> 16) & 0xFF;
-                log.warn("Unimplemented VSCV: colorR2=" + colorR2 + ", colorG2=" + colorG2 + ", colorB2=" + colorB2);
-                break;
-
-            case DUMMY: {
-                // This command always appears before a BOFS command and seems to have
-                // no special meaning.
-                // The command also appears sometimes after a PRIM command.
-
-                // Confirmed on PSP to be a dummy command and can be safely ignored.
-                // This commands' normalArgument may not be always 0, as it's totally
-                // discarded on the PSP.
-                if (isLogDebugEnabled) {
-                    log.debug("Ignored DUMMY video command.");
-                }
-                break;
-            }
-
-            default:
-                if (isLogWarnEnabled) {
-                    log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
-                }
+	        case NOP: executeCommandNOP(); break;
+	        case VADDR: executeCommandVADDR(); break;
+	        case IADDR: executeCommandIADDR(); break;
+	        case PRIM: executeCommandPRIM(); break;
+	        case BEZIER: executeCommandBEZIER(); break;
+	        case SPLINE: executeCommandSPLINE(); break;
+	        case BBOX: executeCommandBBOX(); break;
+	        case JUMP: executeCommandJUMP(); break;
+	        case BJUMP: executeCommandBJUMP(); break;
+	        case CALL: executeCommandCALL(); break;
+	        case RET: executeCommandRET(); break;
+	        case END: executeCommandEND(); break;
+	        case SIGNAL: executeCommandSIGNAL(); break;
+	        case FINISH: executeCommandFINISH(); break;
+	        case BASE: executeCommandBASE(); break;
+	        case VTYPE: executeCommandVTYPE(); break;
+	        case OFFSET_ADDR: executeCommandOFFSET_ADDR(); break;
+	        case ORIGIN_ADDR: executeCommandORIGIN_ADDR(); break;
+	        case REGION1: executeCommandREGION1(); break;
+	        case REGION2: executeCommandREGION2(); break;
+	        case LTE: executeCommandLTE(); break;
+	        case LTE0:
+	        case LTE1:
+	        case LTE2:
+	        case LTE3: executeCommandLTEn(); break;
+	        case CPE: executeCommandCPE(); break;
+	        case BCE: executeCommandBCE(); break;
+	        case TME: executeCommandTME(); break;
+	        case FGE: executeCommandFGE(); break;
+	        case DTE: executeCommandDTE(); break;
+	        case ABE: executeCommandABE(); break;
+	        case ATE: executeCommandATE(); break;
+	        case ZTE: executeCommandZTE(); break;
+	        case STE: executeCommandSTE(); break;
+	        case AAE: executeCommandAAE(); break;
+	        case PCE: executeCommandPCE(); break;
+	        case CTE: executeCommandCTE(); break;
+	        case LOE: executeCommandLOE(); break;
+	        case BOFS: executeCommandBOFS(); break;
+	        case BONE: executeCommandBONE(); break;
+	        case MW0:
+	        case MW1:
+	        case MW2:
+	        case MW3:
+	        case MW4:
+	        case MW5:
+	        case MW6:
+	        case MW7: executeCommandMWn(); break;
+	        case PSUB: executeCommandPSUB(); break;
+	        case PPRIM: executeCommandPPRIM(); break;
+	        case PFACE: executeCommandPFACE(); break;
+	        case MMS: executeCommandMMS(); break;
+	        case MODEL: executeCommandMODEL(); break;
+	        case VMS: executeCommandVMS(); break;
+	        case VIEW: executeCommandVIEW(); break;
+	        case PMS: executeCommandPMS(); break;
+	        case PROJ: executeCommandPROJ(); break;
+	        case TMS: executeCommandTMS(); break;
+	        case TMATRIX: executeCommandTMATRIX(); break;
+	        case XSCALE: executeCommandXSCALE(); break;
+	        case YSCALE: executeCommandYSCALE(); break;
+	        case ZSCALE: executeCommandZSCALE(); break;
+	        case XPOS: executeCommandXPOS(); break;
+	        case YPOS: executeCommandYPOS(); break;
+	        case ZPOS: executeCommandZPOS(); break;
+	        case USCALE: executeCommandUSCALE(); break;
+	        case VSCALE: executeCommandVSCALE(); break;
+	        case UOFFSET: executeCommandUOFFSET(); break;
+	        case VOFFSET: executeCommandVOFFSET(); break;
+	        case OFFSETX: executeCommandOFFSETX(); break;
+	        case OFFSETY: executeCommandOFFSETY(); break;
+	        case SHADE: executeCommandSHADE(); break;
+	        case RNORM: executeCommandRNORM(); break;
+	        case CMAT: executeCommandCMAT(); break;
+	        case EMC: executeCommandEMC(); break;
+	        case AMC: executeCommandAMC(); break;
+	        case DMC: executeCommandDMC(); break;
+	        case SMC: executeCommandSMC(); break;
+	        case AMA: executeCommandAMA(); break;
+	        case SPOW: executeCommandSPOW(); break;
+	        case ALC: executeCommandALC(); break;
+	        case ALA: executeCommandALA(); break;
+	        case LMODE: executeCommandLMODE(); break;
+	        case LT0:
+	        case LT1:
+	        case LT2:
+	        case LT3: executeCommandLTn(); break;
+	        case LXP0:
+	        case LXP1:
+	        case LXP2:
+	        case LXP3:
+	        case LYP0:
+	        case LYP1:
+	        case LYP2:
+	        case LYP3:
+	        case LZP0:
+	        case LZP1:
+	        case LZP2:
+	        case LZP3: executeCommandLXPn(); break;
+	        case LXD0:
+	        case LXD1:
+	        case LXD2:
+	        case LXD3:
+	        case LYD0:
+	        case LYD1:
+	        case LYD2:
+	        case LYD3:
+	        case LZD0:
+	        case LZD1:
+	        case LZD2:
+	        case LZD3: executeCommandLXDn(); break;
+	        case LCA0:
+	        case LCA1:
+	        case LCA2:
+	        case LCA3: executeCommandLCAn(); break;
+	        case LLA0:
+	        case LLA1:
+	        case LLA2:
+	        case LLA3: executeCommandLLAn(); break;
+	        case LQA0:
+	        case LQA1:
+	        case LQA2:
+	        case LQA3: executeCommandLQAn(); break;
+	        case SLE0:
+	        case SLE1:
+	        case SLE2:
+	        case SLE3: executeCommandSLEn(); break;
+	        case SLF0:
+	        case SLF1:
+	        case SLF2:
+	        case SLF3: executeCommandSLFn(); break;
+	        case ALC0:
+	        case ALC1:
+	        case ALC2:
+	        case ALC3: executeCommandALCn(); break;
+	        case DLC0:
+	        case DLC1:
+	        case DLC2:
+	        case DLC3: executeCommandDLCn(); break;
+	        case SLC0:
+	        case SLC1:
+	        case SLC2:
+	        case SLC3: executeCommandSLCn(); break;
+	        case FFACE: executeCommandFFACE(); break;
+	        case FBP: executeCommandFBP(); break;
+	        case FBW: executeCommandFBW(); break;
+	        case ZBP: executeCommandZBP(); break;
+	        case ZBW: executeCommandZBW(); break;
+	        case TBP0:
+	        case TBP1:
+	        case TBP2:
+	        case TBP3:
+	        case TBP4:
+	        case TBP5:
+	        case TBP6:
+	        case TBP7: executeCommandTBPn(); break;
+	        case TBW0:
+	        case TBW1:
+	        case TBW2:
+	        case TBW3:
+	        case TBW4:
+	        case TBW5:
+	        case TBW6:
+	        case TBW7: executeCommandTBWn(); break;
+	        case CBP: executeCommandCBP(); break;
+	        case CBPH: executeCommandCBPH(); break;
+	        case TRXSBP: executeCommandTRXSBP(); break;
+	        case TRXSBW: executeCommandTRXSBW(); break;
+	        case TRXDBP: executeCommandTRXDBP(); break;
+	        case TRXDBW: executeCommandTRXDBW(); break;
+	        case TSIZE0:
+	        case TSIZE1:
+	        case TSIZE2:
+	        case TSIZE3:
+	        case TSIZE4:
+	        case TSIZE5:
+	        case TSIZE6:
+	        case TSIZE7: executeCommandTSIZEn(); break;
+	        case TMAP: executeCommandTMAP(); break;
+	        case TEXTURE_ENV_MAP_MATRIX: executeCommandTEXTURE_ENV_MAP_MATRIX(); break;
+	        case TMODE: executeCommandTMODE(); break;
+	        case TPSM: executeCommandTPSM(); break;
+	        case CLOAD: executeCommandCLOAD(); break;
+	        case CMODE: executeCommandCMODE(); break;
+	        case TFLT: executeCommandTFLT(); break;
+	        case TWRAP: executeCommandTWRAP(); break;
+	        case TBIAS: executeCommandTBIAS(); break;
+	        case TFUNC: executeCommandTFUNC(); break;
+	        case TEC: executeCommandTEC(); break;
+	        case TFLUSH: executeCommandTFLUSH(); break;
+	        case TSYNC: executeCommandTSYNC(); break;
+	        case FFAR: executeCommandFFAR(); break;
+	        case FDIST: executeCommandFDIST(); break;
+	        case FCOL: executeCommandFCOL(); break;
+	        case TSLOPE: executeCommandTSLOPE(); break;
+	        case PSM: executeCommandPSM(); break;
+	        case CLEAR: executeCommandCLEAR(); break;
+	        case SCISSOR1: executeCommandSCISSOR1(); break;
+	        case SCISSOR2: executeCommandSCISSOR2(); break;
+	        case NEARZ: executeCommandNEARZ(); break;
+	        case FARZ: executeCommandFARZ(); break;
+	        case CTST: executeCommandCTST(); break;
+	        case CREF: executeCommandCREF(); break;
+	        case CMSK: executeCommandCMSK(); break;
+	        case ATST: executeCommandATST(); break;
+	        case STST: executeCommandSTST(); break;
+	        case SOP: executeCommandSOP(); break;
+	        case ZTST: executeCommandZTST(); break;
+	        case ALPHA: executeCommandALPHA(); break;
+	        case SFIX: executeCommandSFIX(); break;
+	        case DFIX: executeCommandDFIX(); break;
+	        case DTH0: executeCommandDTH0(); break;
+	        case DTH1: executeCommandDTH1(); break;
+	        case DTH2: executeCommandDTH2(); break;
+	        case DTH3: executeCommandDTH3(); break;
+	        case LOP: executeCommandLOP(); break;
+	        case ZMSK: executeCommandZMSK(); break;
+	        case PMSKC: executeCommandPMSKC(); break;
+	        case PMSKA: executeCommandPMSKA(); break;
+	        case TRXKICK: executeCommandTRXKICK(); break;
+	        case TRXPOS: executeCommandTRXPOS(); break;
+	        case TRXDPOS: executeCommandTRXDPOS(); break;
+	        case TRXSIZE: executeCommandTRXSIZE(); break;
+	        case VSCX: executeCommandVSCX(); break;
+	        case VSCY: executeCommandVSCY(); break;
+	        case VSCZ: executeCommandVSCZ(); break;
+	        case VTCS: executeCommandVTCS(); break;
+	        case VTCT: executeCommandVTCT(); break;
+	        case VTCQ: executeCommandVTCQ(); break;
+	        case VCV: executeCommandVCV(); break;
+	        case VAP: executeCommandVAP(); break;
+	        case VFC: executeCommandVFC(); break;
+	        case VSCV: executeCommandVSCV(); break;
+	        case DUMMY: executeCommandDUMMY(); break;
+	        default: executeCommandUNKNOWN(); break;
         }
         if (isLogInfoEnabled) {
             commandStatistics[command].end();
         }
     }
 
-    private void executeCommandCLEAR(int normalArgument) {
+    private void executeCommandUNKNOWN() {
+        if (isLogWarnEnabled) {
+            log.warn(String.format("Unknown/unimplemented video command [%s]%s", helper.getCommandString(command), getArgumentLog(normalArgument)));
+        }
+    }
+
+    private void executeCommandCLEAR() {
         if ((normalArgument & 1) == 0) {
             re.endClearMode();
             if (isLogDebugEnabled) {
@@ -2745,7 +1287,7 @@ public class VideoEngine {
         materialChanged = true;
     }
 
-    private void executeCommandTFUNC(int normalArgument) {
+    private void executeCommandTFUNC() {
     	context.textureFunc = normalArgument & 0x7;
     	if (context.textureFunc >= TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_UNKNOW1) {
             VideoEngine.log.warn("Unimplemented tfunc mode " + context.textureFunc);
@@ -2764,7 +1306,7 @@ public class VideoEngine {
         }
     }
 
-    private void executeCommandPRIM(int normalArgument) {
+    private void executeCommandPRIM() {
         int numberOfVertex = normalArgument & 0xFFFF;
         int type = ((normalArgument >> 16) & 0x7);
 
@@ -3242,7 +1784,7 @@ public class VideoEngine {
 
     }
 
-    private void executeCommandTRXKICK(int normalArgument) {
+    private void executeCommandTRXKICK() {
     	context.textureTx_pixelSize = normalArgument & 0x1;
 
     	context.textureTx_sourceAddress &= Memory.addressMask;
@@ -3396,7 +1938,7 @@ public class VideoEngine {
         }
     }
 
-    private void executeCommandBBOX(int normalArgument) {
+    private void executeCommandBBOX() {
         Memory mem = Memory.getInstance();
         int numberOfVertexBoundingBox = normalArgument & 0xFF;
 
@@ -3446,7 +1988,7 @@ public class VideoEngine {
         endRendering(useVertexColor, false, numberOfVertexBoundingBox);
     }
 
-    private void executeCommandBJUMP(int normalArgument) {
+    private void executeCommandBJUMP() {
         boolean takeConditionalJump = false;
 
         if (re.hasBoundingBox()) {
@@ -3467,7 +2009,7 @@ public class VideoEngine {
         }
     }
 
-    private void executeCommandBONE(int normalArgument) {
+    private void executeCommandBONE() {
         // Multiple BONE matrix can be loaded in sequence
         // without having to issue a BOFS for each matrix.
         int matrixIndex = boneMatrixIndex / 12;
@@ -3495,6 +2037,1490 @@ public class VideoEngine {
                             context.bone_uploaded_matrix[matrixIndex][x + 9]));
                 }
             }
+        }
+    }
+
+    private void executeCommandNOP() {
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(NOP));
+        }
+
+        // Check if we are not reading from an invalid memory region.
+        // Abort the list if this is the case.
+        // This is only done in the NOP command to not impact performance.
+        checkCurrentListPc();
+    }
+
+    private void executeCommandVADDR() {
+        vinfo.ptr_vertex = currentList.getAddress(normalArgument);
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
+        }
+    }
+
+    private void executeCommandIADDR() {
+        vinfo.ptr_index = currentList.getAddress(normalArgument);
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
+        }
+    }
+
+    private void executeCommandBEZIER() {
+        int ucount = normalArgument & 0xFF;
+        int vcount = (normalArgument >> 8) & 0xFF;
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
+        }
+
+        updateGeBuf();
+        loadTexture();
+
+        drawBezier(ucount, vcount);
+    }
+
+    private void executeCommandSPLINE() {
+        // Number of control points.
+        int sp_ucount = normalArgument & 0xFF;
+        int sp_vcount = (normalArgument >> 8) & 0xFF;
+        // Knot types.
+        int sp_utype = (normalArgument >> 16) & 0x3;
+        int sp_vtype = (normalArgument >> 18) & 0x3;
+
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(SPLINE) + " sp_ucount=" + sp_ucount + ", sp_vcount=" + sp_vcount +
+                    " sp_utype=" + sp_utype + ", sp_vtype=" + sp_vtype);
+        }
+
+        updateGeBuf();
+        loadTexture();
+
+        drawSpline(sp_ucount, sp_vcount, sp_utype, sp_vtype);
+    }
+
+    private void executeCommandJUMP() {
+        int oldPc = currentList.pc;
+        currentList.jump(normalArgument);
+        int newPc = currentList.pc;
+        if (isLogDebugEnabled) {
+            log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
+        }
+    }
+
+    private void executeCommandCALL() {
+        int oldPc = currentList.pc;
+        currentList.call(normalArgument);
+        int newPc = currentList.pc;
+        if (isLogDebugEnabled) {
+            log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
+        }
+    }
+
+    private void executeCommandRET() {
+        int oldPc = currentList.pc;
+        currentList.ret();
+        int newPc = currentList.pc;
+        if (isLogDebugEnabled) {
+            log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
+        }
+    }
+
+    private void executeCommandEND() {
+        // Try to end the current list.
+        // The list only ends (isEnded() == true) if FINISH was called previously.
+        // In SIGNAL + END cases, isEnded() still remains false.
+        currentList.endList();
+        currentList.pauseList();
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.pc));
+        }
+        updateGeBuf();
+    }
+
+    private void executeCommandSIGNAL() {
+        int behavior = (normalArgument >> 16) & 0xFF;
+        int signal = normalArgument & 0xFFFF;
+        if (behavior < 1 || behavior > 3) {
+            if (isLogWarnEnabled) {
+                log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ") unknown behavior");
+            }
+        } else if (isLogDebugEnabled) {
+            log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
+        }
+        currentList.clearRestart();
+        currentList.pushSignalCallback(currentList.id, behavior, signal);
+    }
+
+    private void executeCommandFINISH() {
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
+        }
+        currentList.clearRestart();
+        currentList.finishList();
+        currentList.pushFinishCallback(currentList.id, normalArgument);
+    }
+
+    private void executeCommandBASE() {
+    	context.base = (normalArgument << 8) & 0xff000000;
+        // Bits of (normalArgument & 0x0000FFFF) are ignored
+        // (tested: "Ape Escape On the Loose")
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(BASE) + " " + String.format("%08x", context.base));
+        }
+    }
+
+    private void executeCommandVTYPE() {
+        int old_transform_mode = context.transform_mode;
+        boolean old_vertex_hasColor = vinfo.color != 0;
+        vinfo.processType(normalArgument);
+        context.transform_mode = (normalArgument >> 23) & 0x1;
+        boolean vertex_hasColor = vinfo.color != 0;
+
+        //Switching from 2D to 3D or 3D to 2D?
+        if (old_transform_mode != context.transform_mode) {
+            projectionMatrixUpload.setChanged(true);
+            modelMatrixUpload.setChanged(true);
+            viewMatrixUpload.setChanged(true);
+            textureMatrixUpload.setChanged(true);
+            viewportChanged = true;
+            depthChanged = true;
+            materialChanged = true;
+            // Switching from 2D to 3D?
+            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+                lightingChanged = true;
+            }
+        } else if (old_vertex_hasColor != vertex_hasColor) {
+            // Materials have to be reloaded when the vertex color presence is changing
+            materialChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
+        }
+    }
+
+    private void executeCommandOFFSET_ADDR() {
+    	context.baseOffset = normalArgument << 8;
+        if (isLogDebugEnabled) {
+            log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), context.baseOffset));
+        }
+    }
+
+    private void executeCommandORIGIN_ADDR() {
+    	context.baseOffset = currentList.pc - 4;
+        if (normalArgument != 0) {
+            log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
+        } else if (isLogDebugEnabled) {
+            log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, context.baseOffset));
+        }
+    }
+
+    private void executeCommandREGION1() {
+    	context.region_x1 = normalArgument & 0x3ff;
+    	context.region_y1 = (normalArgument >> 10) & 0x3ff;
+    	scissorChanged = true;
+    }
+
+    private void executeCommandREGION2() {
+    	context.region_x2 = normalArgument & 0x3ff;
+    	context.region_y2 = (normalArgument >> 10) & 0x3ff;
+    	context.region_width = (context.region_x2 + 1) - context.region_x1;
+    	context.region_height = (context.region_y2 + 1) - context.region_y1;
+        if (isLogDebugEnabled) {
+            log("drawRegion(" + context.region_x1 + "," + context.region_y1 + "," + context.region_width + "," + context.region_height + ")");
+        }
+    	scissorChanged = true;
+    }
+
+    private void executeCommandLTE() {
+    	context.lightingFlag.setEnabled(normalArgument);
+        if (context.lightingFlag.isEnabled()) {
+            lightingChanged = true;
+            materialChanged = true;
+        }
+    }
+
+    private void executeCommandLTEn() {
+        int lnum = command - LTE0;
+        EnableDisableFlag lightFlag = context.lightFlags[lnum];
+        lightFlag.setEnabled(normalArgument);
+        if (lightFlag.isEnabled()) {
+            lightingChanged = true;
+        }
+    }
+
+    private void executeCommandCPE() {
+    	context.clipPlanesFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandBCE() {
+    	context.cullFaceFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandTME() {
+    	context.textureFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandFGE() {
+    	context.fogFlag.setEnabled(normalArgument);
+        if (context.fogFlag.isEnabled()) {
+        	re.setFogHint();
+        }
+    }
+
+    private void executeCommandDTE() {
+    	context.ditherFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandABE() {
+    	context.blendFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandATE() {
+    	context.alphaTestFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandZTE() {
+    	context.depthTestFlag.setEnabled(normalArgument);
+        if (context.depthTestFlag.isEnabled()) {
+            // OpenGL requires the Depth parameters to be reloaded
+            depthChanged = true;
+        }
+    }
+
+    private void executeCommandSTE() {
+    	context.stencilTestFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandAAE() {
+    	context.lineSmoothFlag.setEnabled(normalArgument);
+        if (context.lineSmoothFlag.isEnabled()) {
+        	re.setLineSmoothHint();
+        }
+    }
+
+    private void executeCommandPCE() {
+    	context.patchCullFaceFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandCTE() {
+    	context.colorTestFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandLOE() {
+    	context.colorLogicOpFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandBOFS() {
+        boneMatrixIndex = normalArgument;
+        if (isLogDebugEnabled) {
+            log("bone matrix offset", normalArgument);
+        }
+    }
+
+    private void executeCommandMWn() {
+        int index = command - MW0;
+        float floatArgument = floatArgument(normalArgument);
+        context.morph_weight[index] = floatArgument;
+        re.setMorphWeight(index, floatArgument);
+        if (isLogDebugEnabled) {
+            log("morph weight " + index, floatArgument);
+        }
+    }
+
+    private void executeCommandPSUB() {
+    	context.patch_div_s = normalArgument & 0xFF;
+    	context.patch_div_t = (normalArgument >> 8) & 0xFF;
+        re.setPatchDiv(context.patch_div_s, context.patch_div_t);
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(PSUB) + " patch_div_s=" + context.patch_div_s + ", patch_div_t=" + context.patch_div_t);
+        }
+    }
+
+    private void executeCommandPPRIM() {
+    	context.patch_prim = (normalArgument & 0x3);
+        // Primitive type to use in patch division:
+        // 0 - Triangle.
+        // 1 - Line.
+        // 2 - Point.
+        re.setPatchPrim(context.patch_prim);
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(PPRIM) + " patch_prim=" + context.patch_prim);
+        }
+    }
+
+    private void executeCommandPFACE() {
+        // 0 - Clockwise oriented patch / 1 - Counter clockwise oriented patch.
+    	context.patchFaceFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandMMS() {
+        modelMatrixUpload.startUpload(normalArgument);
+        if (isLogDebugEnabled) {
+            log("sceGumMatrixMode GU_MODEL " + normalArgument);
+        }
+    }
+
+    private void executeCommandMODEL() {
+        if (modelMatrixUpload.uploadValue(floatArgument(normalArgument))) {
+            log("glLoadMatrixf", context.model_uploaded_matrix);
+        }
+    }
+
+    private void executeCommandVMS() {
+        viewMatrixUpload.startUpload(normalArgument);
+        if (isLogDebugEnabled) {
+            log("sceGumMatrixMode GU_VIEW " + normalArgument);
+        }
+    }
+
+    private void executeCommandVIEW() {
+        if (viewMatrixUpload.uploadValue(floatArgument(normalArgument))) {
+            log("glLoadMatrixf", context.view_uploaded_matrix);
+        }
+    }
+
+    private void executeCommandPMS() {
+        projectionMatrixUpload.startUpload(normalArgument);
+        if (isLogDebugEnabled) {
+            log("sceGumMatrixMode GU_PROJECTION " + normalArgument);
+        }
+    }
+
+    private void executeCommandPROJ() {
+        if (projectionMatrixUpload.uploadValue(floatArgument(normalArgument))) {
+            log("glLoadMatrixf", context.proj_uploaded_matrix);
+        }
+    }
+
+    private void executeCommandTMS() {
+        textureMatrixUpload.startUpload(normalArgument);
+        if (isLogDebugEnabled) {
+            log("sceGumMatrixMode GU_TEXTURE " + normalArgument);
+        }
+    }
+
+    private void executeCommandTMATRIX() {
+        if (textureMatrixUpload.uploadValue(floatArgument(normalArgument))) {
+            log("glLoadMatrixf", context.texture_uploaded_matrix);
+        }
+    }
+
+    private void executeCommandXSCALE() {
+        int old_viewport_width = context.viewport_width;
+        context.viewport_width = (int) floatArgument(normalArgument);
+        if (old_viewport_width != context.viewport_width) {
+            viewportChanged = true;
+        }
+    }
+
+    private void executeCommandYSCALE() {
+        int old_viewport_height = context.viewport_height;
+        context.viewport_height = (int) floatArgument(normalArgument);
+        if (old_viewport_height != context.viewport_height) {
+            viewportChanged = true;
+        }
+    }
+
+    private void executeCommandZSCALE() {
+        float old_zscale = context.zscale;
+        float floatArgument = floatArgument(normalArgument);
+        context.zscale = floatArgument / 65535.f;
+        if (old_zscale != context.zscale) {
+            depthChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(ZSCALE) + " " + floatArgument);
+        }
+    }
+
+    private void executeCommandXPOS() {
+        int old_viewport_cx = context.viewport_cx;
+        context.viewport_cx = (int) floatArgument(normalArgument);
+        if (old_viewport_cx != context.viewport_cx) {
+            viewportChanged = true;
+        }
+    }
+
+    private void executeCommandYPOS() {
+        int old_viewport_cy = context.viewport_cy;
+        context.viewport_cy = (int) floatArgument(normalArgument);
+        if (old_viewport_cy != context.viewport_cy) {
+            viewportChanged = true;
+        }
+
+        // Log only on the last called command (always XSCALE -> YSCALE -> XPOS -> YPOS).
+        if (isLogDebugEnabled) {
+            log.debug("sceGuViewport(cx=" + context.viewport_cx + ", cy=" + context.viewport_cy + ", w=" + context.viewport_width + " h=" + context.viewport_height + ")");
+        }
+    }
+
+    private void executeCommandZPOS() {
+        float old_zpos = context.zpos;
+        float floatArgument = floatArgument(normalArgument);
+        context.zpos = floatArgument / 65535.f;
+        if (old_zpos != context.zpos) {
+            depthChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(ZPOS), floatArgument);
+        }
+    }
+
+    private void executeCommandUSCALE() {
+        float old_tex_scale_x = context.tex_scale_x;
+        context.tex_scale_x = floatArgument(normalArgument);
+
+        if (old_tex_scale_x != context.tex_scale_x) {
+            textureMatrixUpload.setChanged(true);
+        }
+    }
+
+    private void executeCommandVSCALE() {
+        float old_tex_scale_y = context.tex_scale_y;
+        context.tex_scale_y = floatArgument(normalArgument);
+
+        if (old_tex_scale_y != context.tex_scale_y) {
+            textureMatrixUpload.setChanged(true);
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexScale(u=" + context.tex_scale_x + ", v=" + context.tex_scale_y + ")");
+        }
+    }
+
+    private void executeCommandUOFFSET() {
+        float old_tex_translate_x = context.tex_translate_x;
+        context.tex_translate_x = floatArgument(normalArgument);
+
+        if (old_tex_translate_x != context.tex_translate_x) {
+            textureMatrixUpload.setChanged(true);
+        }
+    }
+
+    private void executeCommandVOFFSET() {
+        float old_tex_translate_y = context.tex_translate_y;
+        context.tex_translate_y = floatArgument(normalArgument);
+
+        if (old_tex_translate_y != context.tex_translate_y) {
+            textureMatrixUpload.setChanged(true);
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexOffset(u=" + context.tex_translate_x + ", v=" + context.tex_translate_y + ")");
+        }
+    }
+
+    private void executeCommandOFFSETX() {
+        int old_offset_x = context.offset_x;
+        context.offset_x = normalArgument >> 4;
+        if (old_offset_x != context.offset_x) {
+            viewportChanged = true;
+        }
+    }
+
+    private void executeCommandOFFSETY() {
+        int old_offset_y = context.offset_y;
+        context.offset_y = normalArgument >> 4;
+        if (old_offset_y != context.offset_y) {
+            viewportChanged = true;
+        }
+
+        if(isLogDebugEnabled) {
+            log.debug("sceGuOffset(x=" + context.offset_x + ",y=" + context.offset_y + ")");
+        }
+    }
+
+    private void executeCommandSHADE() {
+    	context.shadeModel = normalArgument & 1;
+        re.setShadeModel(context.shadeModel);
+        if (isLogDebugEnabled) {
+            log("sceGuShadeModel(" + ((context.shadeModel != 0) ? "smooth" : "flat") + ")");
+        }
+    }
+
+    private void executeCommandRNORM() {
+        // This seems to be taked into account when calculating the lighting
+        // for the current normal.
+    	context.faceNormalReverseFlag.setEnabled(normalArgument);
+    }
+
+    private void executeCommandCMAT() {
+        int old_mat_flags = context.mat_flags;
+        context.mat_flags = normalArgument & 7;
+        if (old_mat_flags != context.mat_flags) {
+            materialChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuColorMaterial " + context.mat_flags);
+        }
+    }
+
+    private void executeCommandEMC() {
+    	context.mat_emissive[0] = ((normalArgument) & 255) / 255.f;
+    	context.mat_emissive[1] = ((normalArgument >> 8) & 255) / 255.f;
+    	context.mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
+    	context.mat_emissive[3] = 1.f;
+        materialChanged = true;
+        re.setMaterialEmissiveColor(context.mat_emissive);
+        if (isLogDebugEnabled) {
+            log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+            		context.mat_emissive[0], context.mat_emissive[1], context.mat_emissive[2], normalArgument));
+        }
+    }
+
+    private void executeCommandAMC() {
+        context.mat_ambient[0] = ((normalArgument) & 255) / 255.f;
+        context.mat_ambient[1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
+        materialChanged = true;
+        if (isLogDebugEnabled) {
+            log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
+                    context.mat_ambient[0], context.mat_ambient[1], context.mat_ambient[2], normalArgument));
+        }
+    }
+
+    private void executeCommandDMC() {
+        context.mat_diffuse[0] = ((normalArgument) & 255) / 255.f;
+        context.mat_diffuse[1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.mat_diffuse[3] = 1.f;
+        materialChanged = true;
+        if (isLogDebugEnabled) {
+            log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                    context.mat_diffuse[0], context.mat_diffuse[1], context.mat_diffuse[2], normalArgument));
+        }
+    }
+
+    private void executeCommandSMC() {
+        context.mat_specular[0] = ((normalArgument) & 255) / 255.f;
+        context.mat_specular[1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.mat_specular[3] = 1.f;
+        materialChanged = true;
+        if (isLogDebugEnabled) {
+            log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                    context.mat_specular[0], context.mat_specular[1], context.mat_specular[2], normalArgument));
+        }
+    }
+
+    private void executeCommandAMA() {
+        context.mat_ambient[3] = ((normalArgument) & 255) / 255.f;
+        materialChanged = true;
+        if (isLogDebugEnabled) {
+            log(String.format("material ambient a=%.1f (%02X)",
+                    context.mat_ambient[3], normalArgument & 255));
+        }
+    }
+
+    private void executeCommandSPOW() {
+        context.materialShininess = floatArgument(normalArgument);
+        re.setMaterialShininess(context.materialShininess);
+        if (isLogDebugEnabled) {
+            log("material shininess " + context.materialShininess);
+        }
+    }
+
+    private void executeCommandALC() {
+    	context.ambient_light[0] = ((normalArgument) & 255) / 255.f;
+    	context.ambient_light[1] = ((normalArgument >> 8) & 255) / 255.f;
+    	context.ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
+        re.setLightModelAmbientColor(context.ambient_light);
+        if (isLogDebugEnabled) {
+            log.debug(String.format("ambient light r=%.1f g=%.1f b=%.1f (%06X)",
+            		context.ambient_light[0], context.ambient_light[1], context.ambient_light[2], normalArgument));
+        }
+    }
+
+    private void executeCommandALA() {
+    	context.ambient_light[3] = ((normalArgument) & 255) / 255.f;
+        re.setLightModelAmbientColor(context.ambient_light);
+    }
+
+    private void executeCommandLMODE() {
+    	context.lightMode = normalArgument & 1;
+        re.setLightMode(context.lightMode);
+        if (isLogDebugEnabled) {
+            log.debug("sceGuLightMode(" + ((context.lightMode != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
+        }
+
+        // Check if other values than 0 and 1 are set
+        if ((normalArgument & ~1) != 0) {
+            log.warn(String.format("Unknown light mode sceGuLightMode(%06X)", normalArgument));
+        }
+    }
+
+    private void executeCommandLTn() {
+        int lnum = command - LT0;
+        int old_light_type = context.light_type[lnum];
+        int old_light_kind = context.light_kind[lnum];
+        context.light_type[lnum] = (normalArgument >> 8) & 3;
+        context.light_kind[lnum] = normalArgument & 3;
+
+        if (old_light_type != context.light_type[lnum] || old_light_kind != context.light_kind[lnum]) {
+            lightingChanged = true;
+        }
+
+        switch (context.light_type[lnum]) {
+            case LIGHT_DIRECTIONAL:
+            	context.light_pos[lnum][3] = 0.f;
+                break;
+            case LIGHT_POINT:
+            	re.setLightSpotCutoff(lnum, 180);
+            	context.light_pos[lnum][3] = 1.f;
+                break;
+            case LIGHT_SPOT:
+            	context.light_pos[lnum][3] = 1.f;
+                break;
+            default:
+                error("Unknown light type : " + normalArgument);
+        }
+        re.setLightType(lnum, context.light_type[lnum], context.light_kind[lnum]);
+
+        if (isLogDebugEnabled) {
+            log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
+        }
+    }
+
+    private void executeCommandLXPn() {
+        int lnum = (command - LXP0) / 3;
+        int component = (command - LXP0) % 3;
+        float old_light_pos = context.light_pos[lnum][component];
+        context.light_pos[lnum][component] = floatArgument(normalArgument);
+
+        if (old_light_pos != context.light_pos[lnum][component]) {
+            lightingChanged = true;
+        }
+        if (isLogDebugEnabled) {
+            log.debug(String.format("Light %d position (%f, %f, %f)", lnum, context.light_pos[lnum][0], context.light_pos[lnum][1], context.light_pos[lnum][2]));
+        }
+    }
+
+    private void executeCommandLXDn() {
+        int lnum = (command - LXD0) / 3;
+        int component = (command - LXD0) % 3;
+        float old_light_dir = context.light_dir[lnum][component];
+
+        // OpenGL requires a normal in the opposite direction as the PSP
+        context.light_dir[lnum][component] = -floatArgument(normalArgument);
+
+        if (old_light_dir != context.light_dir[lnum][component]) {
+            lightingChanged = true;
+        }
+        if (isLogDebugEnabled) {
+            log.debug(String.format("Light %d direction (%f, %f, %f)", lnum, context.light_dir[lnum][0], context.light_dir[lnum][1], context.light_dir[lnum][2]));
+        }
+        // OpenGL parameter for light direction is set in initRendering
+        // because it depends on the model/view matrix
+    }
+
+    private void executeCommandLCAn() {
+        int lnum = (command - LCA0) / 3;
+        context.lightConstantAttenuation[lnum] = floatArgument(normalArgument);
+        re.setLightConstantAttenuation(lnum, context.lightConstantAttenuation[lnum]);
+    }
+
+    private void executeCommandLLAn() {
+        int lnum = (command - LLA0) / 3;
+        context.lightLinearAttenuation[lnum] = floatArgument(normalArgument);
+        re.setLightLinearAttenuation(lnum, context.lightLinearAttenuation[lnum]);
+    }
+
+    private void executeCommandLQAn() {
+        int lnum = (command - LQA0) / 3;
+        context.lightQuadraticAttenuation[lnum] = floatArgument(normalArgument);
+        re.setLightQuadraticAttenuation(lnum, context.lightQuadraticAttenuation[lnum]);
+    }
+
+    private void executeCommandSLEn() {
+        int lnum = command - SLE0;
+        float old_spotLightExponent = context.spotLightExponent[lnum];
+        context.spotLightExponent[lnum] = floatArgument(normalArgument);
+
+        if (old_spotLightExponent != context.spotLightExponent[lnum]) {
+            lightingChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + context.spotLightExponent[lnum] + ",X)");
+        }
+    }
+
+    private void executeCommandSLFn() {
+        int lnum = command - SLF0;
+        float old_spotLightCutoff = context.spotLightCutoff[lnum];
+
+        // PSP Cutoff is cosine of angle, OpenGL expects degrees
+        float floatArgument = floatArgument(normalArgument);
+        float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
+        if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
+        	context.spotLightCutoff[lnum] = degreeCutoff;
+
+            if (old_spotLightCutoff != context.spotLightCutoff[lnum]) {
+                lightingChanged = true;
+            }
+
+            if (isLogDebugEnabled) {
+                log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + "=" + degreeCutoff + ")");
+            }
+        } else {
+            log.warn("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ") invalid argument value");
+        }
+    }
+
+    private void executeCommandALCn() {
+        int lnum = (command - ALC0) / 3;
+        context.lightAmbientColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+        context.lightAmbientColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.lightAmbientColor[lnum][3] = 1.f;
+        re.setLightAmbientColor(lnum, context.lightAmbientColor[lnum]);
+        log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
+    }
+
+    private void executeCommandDLCn() {
+        int lnum = (command - DLC0) / 3;
+        context.lightDiffuseColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+        context.lightDiffuseColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.lightDiffuseColor[lnum][3] = 1.f;
+        re.setLightDiffuseColor(lnum, context.lightDiffuseColor[lnum]);
+        log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
+    }
+
+    private void executeCommandSLCn() {
+        int lnum = (command - SLC0) / 3;
+        float old_lightSpecularColor0 = context.lightSpecularColor[lnum][0];
+        float old_lightSpecularColor1 = context.lightSpecularColor[lnum][1];
+        float old_lightSpecularColor2 = context.lightSpecularColor[lnum][2];
+        context.lightSpecularColor[lnum][0] = ((normalArgument) & 255) / 255.f;
+        context.lightSpecularColor[lnum][1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.lightSpecularColor[lnum][3] = 1.f;
+
+        if (old_lightSpecularColor0 != context.lightSpecularColor[lnum][0] || old_lightSpecularColor1 != context.lightSpecularColor[lnum][1] || old_lightSpecularColor2 != context.lightSpecularColor[lnum][2]) {
+            lightingChanged = true;
+        }
+        re.setLightSpecularColor(lnum, context.lightDiffuseColor[lnum]);
+        log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
+    }
+
+    private void executeCommandFFACE() {
+    	context.frontFaceCw = normalArgument != 0;
+        re.setFrontFace(context.frontFaceCw);
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
+        }
+    }
+
+    private void executeCommandFBP() {
+        // FBP can be called before or after FBW
+    	context.fbp = (context.fbp & 0xff000000) | normalArgument;
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(context.fbp) + ", fbw=" + context.fbw);
+        }
+        geBufChanged = true;
+    }
+
+    private void executeCommandFBW() {
+    	context.fbp = (context.fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+    	context.fbw = normalArgument & 0xffff;
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(context.fbp) + ", fbw=" + context.fbw);
+        }
+        geBufChanged = true;
+    }
+
+    private void executeCommandZBP() {
+    	context.zbp = (context.zbp & 0xff000000) | normalArgument;
+        if (isLogDebugEnabled) {
+            log("zbp=" + Integer.toHexString(context.zbp) + ", zbw=" +context. zbw);
+        }
+    }
+
+    private void executeCommandZBW() {
+    	context.zbp = (context.zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+        context.zbw = normalArgument & 0xffff;
+        if (isLogDebugEnabled) {
+            log("zbp=" + Integer.toHexString(context.zbp) + ", zbw=" + context.zbw);
+        }
+    }
+
+    private void executeCommandTBPn() {
+        int level = command - TBP0;
+        int old_texture_base_pointer = context.texture_base_pointer[level];
+        context.texture_base_pointer[level] = (context.texture_base_pointer[level] & 0xff000000) | normalArgument;
+
+        if (old_texture_base_pointer != context.texture_base_pointer[level]) {
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
+        }
+    }
+
+    private void executeCommandTBWn() {
+        int level = command - TBW0;
+        int old_texture_base_pointer = context.texture_base_pointer[level];
+        int old_texture_buffer_width = context.texture_buffer_width[level];
+        context.texture_base_pointer[level] = (context.texture_base_pointer[level] & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+        context.texture_buffer_width[level] = normalArgument & 0xffff;
+
+        if (old_texture_base_pointer != context.texture_base_pointer[level] || old_texture_buffer_width != context.texture_buffer_width[level]) {
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + context.texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(context.texture_base_pointer[level]) + "))");
+        }
+    }
+
+    private void executeCommandCBP() {
+        int old_tex_clut_addr = context.tex_clut_addr;
+        context.tex_clut_addr = (context.tex_clut_addr & 0xff000000) | normalArgument;
+
+        clutIsDirty = true;
+        if (old_tex_clut_addr != context.tex_clut_addr) {
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(context.tex_clut_addr) + "))");
+        }
+    }
+
+    private void executeCommandCBPH() {
+        int old_tex_clut_addr = context.tex_clut_addr;
+        context.tex_clut_addr = (context.tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
+
+        clutIsDirty = true;
+        if (old_tex_clut_addr != context.tex_clut_addr) {
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(context.tex_clut_addr) + "))");
+        }
+    }
+
+    private void executeCommandTRXSBP() {
+        context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0xFF000000) | normalArgument;
+    }
+
+    private void executeCommandTRXSBW() {
+        context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
+        context.textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
+
+        // TODO Check when sx and sy are reset to 0. Here or after TRXKICK?
+        context.textureTx_sx = 0;
+        context.textureTx_sy = 0;
+    }
+
+    private void executeCommandTRXDBP() {
+        context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0xFF000000) | normalArgument;
+    }
+
+    private void executeCommandTRXDBW() {
+        context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
+        context.textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
+
+        // TODO Check when dx and dy are reset to 0. Here or after TRXKICK?
+        context.textureTx_dx = 0;
+        context.textureTx_dy = 0;
+    }
+
+    private void executeCommandTSIZEn() {
+        int level = command - TSIZE0;
+        int old_texture_height = context.texture_height[level];
+        int old_texture_width = context.texture_width[level];
+        // Astonishia Story is using normalArgument = 0x1804
+        // -> use texture_height = 1 << 0x08 (and not 1 << 0x18)
+        //        texture_width  = 1 << 0x04
+        // The maximum texture size is 512x512: the exponent value must be [0..9]
+        int height_exp2 = Math.min((normalArgument >> 8) & 0x0F, 9);
+        int width_exp2 = Math.min((normalArgument) & 0x0F, 9);
+        context.texture_height[level] = 1 << height_exp2;
+        context.texture_width[level] = 1 << width_exp2;
+
+        if (old_texture_height != context.texture_height[level] || old_texture_width != context.texture_width[level]) {
+            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD && level == 0) {
+                textureMatrixUpload.setChanged(true);
+            }
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexImage(level=" + level + ", width=" + context.texture_width[level] + ", height=" + context.texture_height[level] + ", X, X)");
+        }
+    }
+
+    private void executeCommandTMAP() {
+        int old_tex_map_mode = context.tex_map_mode;
+        context.tex_map_mode = normalArgument & 3;
+        context.tex_proj_map_mode = (normalArgument >> 8) & 3;
+
+        if (old_tex_map_mode != context.tex_map_mode) {
+            textureMatrixUpload.setChanged(true);
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexMapMode(mode=" + context.tex_map_mode + ", X, X)");
+            log("sceGuTexProjMapMode(mode=" + context.tex_proj_map_mode + ")");
+        }
+    }
+
+    private void executeCommandTEXTURE_ENV_MAP_MATRIX() {
+    	context.tex_shade_u = (normalArgument >> 0) & 0x3;
+    	context.tex_shade_v = (normalArgument >> 8) & 0x3;
+
+        for (int i = 0; i < 3; i++) {
+        	context.tex_envmap_matrix[i + 0] = context.light_pos[context.tex_shade_u][i];
+        	context.tex_envmap_matrix[i + 4] = context.light_pos[context.tex_shade_v][i];
+        }
+
+        textureMatrixUpload.setChanged(true);
+        if (isLogDebugEnabled) {
+            log("sceGuTexMapMode(X, " + context.tex_shade_u + ", " + context.tex_shade_v + ")");
+        }
+    }
+
+    private void executeCommandTMODE() {
+        int old_texture_num_mip_maps = context.texture_num_mip_maps;
+        boolean old_mipmapShareClut = context.mipmapShareClut;
+        boolean old_texture_swizzle = context.texture_swizzle;
+        context.texture_num_mip_maps = (normalArgument >> 16) & 0x7;
+        // This parameter has only a meaning when
+        //  texture_storage == GU_PSM_T4 and texture_num_mip_maps > 0
+        // when parameter==0: all the mipmaps share the same clut entries (normal behavior)
+        // when parameter==1: each mipmap has its own clut table, 16 entries each, stored sequentially
+        context.mipmapShareClut = ((normalArgument >> 8) & 0x1) == 0;
+        context.texture_swizzle = ((normalArgument) & 0x1) != 0;
+
+        if (old_texture_num_mip_maps != context.texture_num_mip_maps || old_mipmapShareClut != context.mipmapShareClut || old_texture_swizzle != context.texture_swizzle) {
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexMode(X, mipmaps=" + context.texture_num_mip_maps + ", mipmapShareClut=" + context.mipmapShareClut + ", swizzle=" + context.texture_swizzle + ")");
+        }
+    }
+
+    private void executeCommandTPSM() {
+        int old_texture_storage = context.texture_storage;
+        context.texture_storage = normalArgument & 0xF; // Lower four bits.
+
+        if (old_texture_storage != context.texture_storage) {
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexMode(tpsm=" + context.texture_storage + "(" + getPsmName(context.texture_storage) + "), X, X, X)");
+        }
+    }
+
+    private void executeCommandCLOAD() {
+        int old_tex_clut_num_blocks = context.tex_clut_num_blocks;
+        context.tex_clut_num_blocks = normalArgument & 0x3F;
+
+        clutIsDirty = true;
+        if (old_tex_clut_num_blocks != context.tex_clut_num_blocks) {
+            textureChanged = true;
+        }
+
+        // Some games use the following sequence:
+        // - sceGuClutLoad(num_blocks=32, X)
+        // - sceGuClutLoad(num_blocks=1, X)
+        // - tflush
+        // - prim ... (texture data is referencing the clut entries from 32 blocks)
+        //
+        readClut();
+
+        if (isLogDebugEnabled) {
+            log("sceGuClutLoad(num_blocks=" + context.tex_clut_num_blocks + ", X)");
+        }
+    }
+
+    private void executeCommandCMODE() {
+        int old_tex_clut_mode = context.tex_clut_mode;
+        int old_tex_clut_shift = context.tex_clut_shift;
+        int old_tex_clut_mask = context.tex_clut_mask;
+        int old_tex_clut_start = context.tex_clut_start;
+        context.tex_clut_mode = normalArgument & 0x03;
+        context.tex_clut_shift = (normalArgument >> 2) & 0x1F;
+        context.tex_clut_mask = (normalArgument >> 8) & 0xFF;
+        context.tex_clut_start = (normalArgument >> 16) & 0x1F;
+
+        clutIsDirty = true;
+        if (old_tex_clut_mode != context.tex_clut_mode || old_tex_clut_shift != context.tex_clut_shift || old_tex_clut_mask != context.tex_clut_mask || old_tex_clut_start != context.tex_clut_start) {
+            textureChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuClutMode(cpsm=" + context.tex_clut_mode + "(" + getPsmName(context.tex_clut_mode) + "), shift=" + context.tex_clut_shift + ", mask=0x" + Integer.toHexString(context.tex_clut_mask) + ", start=" + context.tex_clut_start + ")");
+        }
+    }
+
+    private void executeCommandTFLT() {
+        int old_tex_mag_filter = context.tex_mag_filter;
+        int old_tex_min_filter = context.tex_min_filter;
+
+        context.tex_min_filter = normalArgument & 0x7;
+        context.tex_mag_filter = (normalArgument >> 8) & 0x1;
+
+        if (isLogDebugEnabled) {
+            log("sceGuTexFilter(min=" + context.tex_min_filter + ", mag=" + context.tex_mag_filter + ") (mm#" + context.texture_num_mip_maps + ")");
+        }
+
+        if (context.tex_min_filter == TFLT_UNKNOW1 || context.tex_min_filter == TFLT_UNKNOW2) {
+            log.warn("Unknown minimizing filter " + (normalArgument & 0xFF));
+            context.tex_min_filter = TFLT_NEAREST;
+        }
+
+        if (old_tex_mag_filter != context.tex_mag_filter || old_tex_min_filter != context.tex_min_filter) {
+            textureChanged = true;
+        }
+    }
+
+    private void executeCommandTWRAP() {
+    	context.tex_wrap_s = normalArgument & 0xFF;
+    	context.tex_wrap_t = (normalArgument >> 8) & 0xFF;
+
+        if (context.tex_wrap_s > TWRAP_WRAP_MODE_CLAMP) {
+            log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_s);
+            context.tex_wrap_s = TWRAP_WRAP_MODE_REPEAT;
+        }
+        if (context.tex_wrap_t > TWRAP_WRAP_MODE_CLAMP) {
+            log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + context.tex_wrap_t);
+            context.tex_wrap_t = TWRAP_WRAP_MODE_REPEAT;
+        }
+    }
+
+    private void executeCommandTBIAS() {
+    	context.tex_mipmap_mode = normalArgument & 0x3;
+    	context.tex_mipmap_bias_int = (int) (byte) (normalArgument >> 16); // Signed 8-bit integer
+    	context.tex_mipmap_bias = context.tex_mipmap_bias_int / 16.0f;
+        if (isLogDebugEnabled) {
+            log.debug("sceGuTexLevelMode(mode=" + context.tex_mipmap_mode + ", bias=" + context.tex_mipmap_bias + ")");
+        }
+    }
+
+    private void executeCommandTEC() {
+    	context.tex_env_color[0] = ((normalArgument) & 255) / 255.f;
+    	context.tex_env_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+    	context.tex_env_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+    	context.tex_env_color[3] = 1.f;
+        re.setTextureEnvColor(context.tex_env_color);
+
+        if (isLogDebugEnabled) {
+            log(String.format("sceGuTexEnvColor %08X (no alpha)", normalArgument));
+        }
+    }
+
+    private void executeCommandTFLUSH() {
+        // Do not load the texture right now, clut parameters can still be
+        // defined after the TFLUSH and before the PRIM command.
+        // Delay the texture loading until the PRIM command.
+        if (isLogDebugEnabled) {
+            log("tflush (deferring to prim)");
+        }
+    }
+
+    private void executeCommandTSYNC() {
+        // Probably synchronizing the GE when a drawing result
+    	// is used as a texture. Currently ignored.
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(TSYNC) + " waiting for drawing.");
+        }
+    }
+
+    private void executeCommandFFAR() {
+    	context.fog_far = floatArgument(normalArgument);
+    }
+
+    private void executeCommandFDIST() {
+    	context.fog_dist = floatArgument(normalArgument);
+        if ((context.fog_far != 0.0f) && (context.fog_dist != 0.0f)) {
+            float end = context.fog_far;
+            float start = end - (1 / context.fog_dist);
+            re.setFogDist(start, end);
+        }
+    }
+
+    private void executeCommandFCOL() {
+    	context.fog_color[0] = ((normalArgument) & 255) / 255.f;
+        context.fog_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.fog_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.fog_color[3] = 1.f;
+        re.setFogColor(context.fog_color);
+
+        if (isLogDebugEnabled) {
+            log(String.format("sceGuFog(X, X, color=%08X) (no alpha)", normalArgument));
+        }
+    }
+
+    private void executeCommandTSLOPE() {
+    	context.tslope_level = floatArgument(normalArgument);
+        if (isLogDebugEnabled) {
+            log(helper.getCommandString(TSLOPE) + " tslope_level=" + context.tslope_level);
+        }
+    }
+
+    private void executeCommandPSM() {
+    	context.psm = normalArgument;
+        if (isLogDebugEnabled) {
+            log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
+        }
+        geBufChanged = true;
+    }
+
+    private void executeCommandSCISSOR1() {
+    	context.scissor_x1 = normalArgument & 0x3ff;
+    	context.scissor_y1 = (normalArgument >> 10) & 0x3ff;
+    	scissorChanged = true;
+    }
+
+    private void executeCommandSCISSOR2() {
+    	context.scissor_x2 = normalArgument & 0x3ff;
+    	context.scissor_y2 = (normalArgument >> 10) & 0x3ff;
+    	context.scissor_width = 1 + context.scissor_x2 - context.scissor_x1;
+    	context.scissor_height = 1 + context.scissor_y2 - context.scissor_y1;
+        if (isLogDebugEnabled) {
+            log("sceGuScissor(" + context.scissor_x1 + "," + context.scissor_y1 + "," + context.scissor_width + "," + context.scissor_height + ")");
+        }
+    	scissorChanged = true;
+    }
+
+    private void executeCommandNEARZ() {
+        float old_nearZ = context.nearZ;
+        context.nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+        if (old_nearZ != context.nearZ) {
+            depthChanged = true;
+        }
+    }
+
+    private void executeCommandFARZ() {
+        float old_farZ = context.farZ;
+        context.farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+        if (old_farZ != context.farZ) {
+            // OpenGL requires the Depth parameters to be reloaded
+            depthChanged = true;
+        }
+
+        if (depthChanged) {
+            re.setDepthRange(context.zpos, context.zscale, context.nearZ, context.farZ);
+        }
+
+        if (isLogDebugEnabled) {
+            log.debug("sceGuDepthRange(" + context.nearZ + ", " + context.farZ + ")");
+        }
+    }
+
+    private void executeCommandCTST() {
+    	context.colorTestFunc = normalArgument & 3;
+        re.setColorTestFunc(context.colorTestFunc);
+    }
+
+    private void executeCommandCREF() {
+    	context.colorTestRef[0] = (normalArgument) & 0xFF;
+    	context.colorTestRef[1] = (normalArgument >> 8) & 0xFF;
+    	context.colorTestRef[2] = (normalArgument >> 16) & 0xFF;
+        re.setColorTestReference(context.colorTestRef);
+    }
+
+    private void executeCommandCMSK() {
+    	context.colorTestMsk[0] = (normalArgument) & 0xFF;
+        context.colorTestMsk[1] = (normalArgument >> 8) & 0xFF;
+        context.colorTestMsk[2] = (normalArgument >> 16) & 0xFF;
+        re.setColorTestMask(context.colorTestMsk);
+    }
+
+    private void executeCommandATST() {
+        context.alphaFunc = normalArgument & 0xFF;
+        if (context.alphaFunc > ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL) {
+            log.warn("sceGuAlphaFunc unhandled func " + context.alphaFunc);
+            context.alphaFunc = ATST_ALWAYS_PASS_PIXEL;
+        }
+        context.alphaRef = (normalArgument >> 8) & 0xFF;
+        re.setAlphaFunc(context.alphaFunc, context.alphaRef);
+
+        if (isLogDebugEnabled) {
+        	log("sceGuAlphaFunc(" + context.alphaFunc + "," + context.alphaRef + ")");
+        }
+    }
+
+    private void executeCommandSTST() {
+    	context.stencilFunc = normalArgument & 0xFF;
+    	if (context.stencilFunc > STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL) {
+    		log.warn("Unknown stencil function " + context.stencilFunc);
+    		context.stencilFunc = STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST;
+    	}
+        context.stencilRef = (normalArgument >> 8) & 0xff;
+        context.stencilMask = (normalArgument >> 16) & 0xff;
+        re.setStencilFunc(context.stencilFunc, context.stencilRef, context.stencilMask);
+
+        if (isLogDebugEnabled) {
+        	log("sceGuStencilFunc(func=" + (normalArgument & 0xFF) + ", ref=" + context.stencilRef + ", mask=" + context.stencilMask + ")");
+        }
+    }
+
+    private void executeCommandSOP() {
+        context.stencilOpFail = getStencilOp(normalArgument & 0xFF);
+        context.stencilOpZFail = getStencilOp((normalArgument >> 8) & 0xFF);
+        context.stencilOpZPass = getStencilOp((normalArgument >> 16) & 0xFF);
+        re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
+
+        if (isLogDebugEnabled) {
+        	log("sceGuStencilOp(fail=" + (normalArgument & 0xFF) + ", zfail=" + ((normalArgument >> 8) & 0xFF) + ", zpass=" + ((normalArgument >> 16) & 0xFF) + ")");
+        }
+    }
+
+    private void executeCommandZTST() {
+        int oldDepthFunc = context.depthFunc;
+
+        context.depthFunc = normalArgument & 0xFF;
+        if (context.depthFunc > ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL) {
+        	error(String.format("%s unknown depth function %d", commandToString(ZTST), context.depthFunc));
+        	context.depthFunc = ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS;
+        }
+
+        if (oldDepthFunc != context.depthFunc) {
+            depthChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuDepthFunc(" + normalArgument + ")");
+        }
+    }
+
+    private void executeCommandALPHA() {
+        int old_blend_src = context.blend_src;
+        int old_blend_dst = context.blend_dst;
+        context.blend_src = normalArgument & 0xF;
+        context.blend_dst = (normalArgument >> 4) & 0xF;
+        context.blendEquation = (normalArgument >> 8) & 0xF;
+        if (context.blendEquation > ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE) {
+            log.warn("Unhandled blend operation " + context.blendEquation);
+            context.blendEquation = ALPHA_SOURCE_BLEND_OPERATION_ADD;
+        }
+
+        re.setBlendEquation(context.blendEquation);
+
+        if (old_blend_src != context.blend_src || old_blend_dst != context.blend_dst) {
+            blendChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log("sceGuBlendFunc(op=" + context.blendEquation + ", src=" + context.blend_src + ", dst=" + context.blend_dst + ")");
+        }
+    }
+
+    private void executeCommandSFIX() {
+        float old_sfix_color0 = context.sfix_color[0];
+        float old_sfix_color1 = context.sfix_color[1];
+        float old_sfix_color2 = context.sfix_color[2];
+        context.sfix_color[0] = ((normalArgument) & 255) / 255.f;
+        context.sfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.sfix_color[3] = 1.f;
+
+        if (old_sfix_color0 != context.sfix_color[0] || old_sfix_color1 != context.sfix_color[1] || old_sfix_color2 != context.sfix_color[2]) {
+            blendChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log(String.format("%s : 0x%08X", helper.getCommandString(SFIX), normalArgument));
+        }
+    }
+
+    private void executeCommandDFIX() {
+        float old_dfix_color0 = context.dfix_color[0];
+        float old_dfix_color1 = context.dfix_color[1];
+        float old_dfix_color2 = context.dfix_color[2];
+        context.dfix_color[0] = ((normalArgument) & 255) / 255.f;
+        context.dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
+        context.dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+        context.dfix_color[3] = 1.f;
+
+        if (old_dfix_color0 != context.dfix_color[0] || old_dfix_color1 != context.dfix_color[1] || old_dfix_color2 != context.dfix_color[2]) {
+            blendChanged = true;
+        }
+
+        if (isLogDebugEnabled) {
+            log(String.format("%s : 0x%08X", helper.getCommandString(DFIX), normalArgument));
+        }
+    }
+
+    private void executeCommandDTH0() {
+    	context.dither_matrix[0] = (normalArgument) & 0xF;
+        context.dither_matrix[1] = (normalArgument >> 4) & 0xF;
+        context.dither_matrix[2] = (normalArgument >> 8) & 0xF;
+        context.dither_matrix[3] = (normalArgument >> 12) & 0xF;
+    }
+
+    private void executeCommandDTH1() {
+    	context.dither_matrix[4] = (normalArgument) & 0xF;
+        context.dither_matrix[5] = (normalArgument >> 4) & 0xF;
+        context.dither_matrix[6] = (normalArgument >> 8) & 0xF;
+        context.dither_matrix[7] = (normalArgument >> 12) & 0xF;
+    }
+
+    private void executeCommandDTH2() {
+    	context.dither_matrix[8] = (normalArgument) & 0xF;
+        context.dither_matrix[9] = (normalArgument >> 4) & 0xF;
+        context.dither_matrix[10] = (normalArgument >> 8) & 0xF;
+        context.dither_matrix[11] = (normalArgument >> 12) & 0xF;
+    }
+
+    private void executeCommandDTH3() {
+    	context.dither_matrix[12] = (normalArgument) & 0xF;
+        context.dither_matrix[13] = (normalArgument >> 4) & 0xF;
+        context.dither_matrix[14] = (normalArgument >> 8) & 0xF;
+        context.dither_matrix[15] = (normalArgument >> 12) & 0xF;
+
+        // The dither matrix's values can vary between -8 and 7.
+        // The most significant bit acts as sign bit.
+        // Translate and log only at the last command.
+
+        for (int i = 0; i < 16; i++) {
+            if (context.dither_matrix[i] > 7) {
+            	context.dither_matrix[i] |= 0xFFFFFFF0;
+            }
+        }
+
+        if (isLogDebugEnabled) {
+            log.debug("DTH0:" + "  " + context.dither_matrix[0] + "  " + context.dither_matrix[1] + "  " + context.dither_matrix[2] + "  " + context.dither_matrix[3]);
+            log.debug("DTH1:" + "  " + context.dither_matrix[4] + "  " + context.dither_matrix[5] + "  " + context.dither_matrix[6] + "  " + context.dither_matrix[7]);
+            log.debug("DTH2:" + "  " + context.dither_matrix[8] + "  " + context.dither_matrix[9] + "  " + context.dither_matrix[10] + "  " + context.dither_matrix[11]);
+            log.debug("DTH3:" + "  " + context.dither_matrix[12] + "  " + context.dither_matrix[13] + "  " + context.dither_matrix[14] + "  " + context.dither_matrix[15]);
+        }
+    }
+
+    private void executeCommandLOP() {
+    	context.logicOp = normalArgument & 0xF;
+    	re.setLogicOp(context.logicOp);
+    	if (isLogDebugEnabled) {
+    		log.debug("sceGuLogicalOp(LogicOp=" + context.logicOp + "(" + getLOpName(context.logicOp) + "))");
+    	}
+    }
+
+    private void executeCommandZMSK() {
+        // NOTE: PSP depth mask as 1 is meant to avoid depth writes,
+        //       with OpenGL it's the opposite
+    	context.depthMask = (normalArgument == 0);
+    	re.setDepthMask(context.depthMask);
+    	if (context.depthMask) {
+            // OpenGL requires the Depth parameters to be reloaded
+            depthChanged = true;
+    	}
+
+        if (isLogDebugEnabled) {
+            log("sceGuDepthMask(" + (normalArgument != 0 ? "disableWrites" : "enableWrites") + ")");
+        }
+    }
+
+    private void executeCommandPMSKC() {
+        context.colorMask[0] = normalArgument & 0xFF;
+        context.colorMask[1] = (normalArgument >> 8) & 0xFF;
+        context.colorMask[2] = (normalArgument >> 16) & 0xFF;
+    	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
+
+    	if (isLogDebugEnabled) {
+            log(String.format("%s color mask=0x%06X", helper.getCommandString(PMSKC), normalArgument));
+        }
+    }
+
+    private void executeCommandPMSKA() {
+        context.colorMask[3] = normalArgument & 0xFF;
+    	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
+
+        if (isLogDebugEnabled) {
+            log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
+        }
+    }
+
+    private void executeCommandTRXPOS() {
+        context.textureTx_sx = normalArgument & 0x1FF;
+        context.textureTx_sy = (normalArgument >> 10) & 0x1FF;
+    }
+
+    private void executeCommandTRXDPOS() {
+        context.textureTx_dx = normalArgument & 0x1FF;
+        context.textureTx_dy = (normalArgument >> 10) & 0x1FF;
+    }
+
+    private void executeCommandTRXSIZE() {
+        context.textureTx_width = (normalArgument & 0x3FF) + 1;
+        context.textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
+    }
+
+    private void executeCommandVSCX() {
+        int coordX = normalArgument & 0xFFFF;
+        log.warn("Unimplemented VSCX: coordX=" + coordX);
+    }
+
+    private void executeCommandVSCY() {
+        int coordY = normalArgument & 0xFFFF;
+        log.warn("Unimplemented VSCY: coordY=" + coordY);
+    }
+
+    private void executeCommandVSCZ() {
+        int coordZ = normalArgument & 0xFFFF;
+        log.warn("Unimplemented VSCZ: coordZ=" + coordZ);
+    }
+
+    private void executeCommandVTCS() {
+        float coordS = floatArgument(normalArgument);
+        log.warn("Unimplemented VTCS: coordS=" + coordS);
+    }
+
+    private void executeCommandVTCT() {
+        float coordT = floatArgument(normalArgument);
+        log.warn("Unimplemented VTCT: coordT=" + coordT);
+    }
+
+    private void executeCommandVTCQ() {
+        float coordQ = floatArgument(normalArgument);
+        log.warn("Unimplemented VTCQ: coordQ=" + coordQ);
+    }
+
+    private void executeCommandVCV() {
+        int colorR = normalArgument & 0xFF;
+        int colorG = (normalArgument >> 8) & 0xFF;
+        int colorB = (normalArgument >> 16) & 0xFF;
+        log.warn("Unimplemented VCV: colorR=" + colorR + ", colorG=" + colorG + ", colorB=" + colorB);
+    }
+
+    private void executeCommandVAP() {
+        int alpha = normalArgument & 0xFF;
+        int prim_type = (normalArgument >> 8) & 0x7;
+        log.warn("Unimplemented VAP: alpha=" + alpha + ", prim_type=" + prim_type);
+    }
+
+    private void executeCommandVFC() {
+        int fog = normalArgument & 0xFF;
+        log.warn("Unimplemented VFC: fog=" + fog);
+    }
+
+    private void executeCommandVSCV() {
+        int colorR2 = normalArgument & 0xFF;
+        int colorG2 = (normalArgument >> 8) & 0xFF;
+        int colorB2 = (normalArgument >> 16) & 0xFF;
+        log.warn("Unimplemented VSCV: colorR2=" + colorR2 + ", colorG2=" + colorG2 + ", colorB2=" + colorB2);
+    }
+
+    private void executeCommandDUMMY() {
+        // This command always appears before a BOFS command and seems to have
+        // no special meaning.
+        // The command also appears sometimes after a PRIM command.
+
+        // Confirmed on PSP to be a dummy command and can be safely ignored.
+        // This commands' normalArgument may not be always 0, as it's totally
+        // discarded on the PSP.
+        if (isLogDebugEnabled) {
+            log.debug("Ignored DUMMY video command.");
         }
     }
 

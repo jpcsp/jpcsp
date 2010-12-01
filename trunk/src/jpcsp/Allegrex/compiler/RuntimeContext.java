@@ -116,7 +116,7 @@ public class RuntimeContext {
 		int returnValue = executable.exec(returnAddress, returnAddress, isJump);
 
         if (log.isDebugEnabled()) {
-        	log.debug("RuntimeContext.jumpCall returning 0x" + Integer.toHexString(returnValue));
+        	log.debug(String.format("RuntimeContext.jumpCall returning 0x%08X", returnValue));
         }
 
         return returnValue;
@@ -190,18 +190,18 @@ public class RuntimeContext {
 
     public static void call(int address, int returnAddress) throws Exception {
 		if (log.isDebugEnabled()) {
-			log.debug("RuntimeContext.call address=0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress));
+			log.debug(String.format("RuntimeContext.call address=0x%08X, returnAddress=0x%08X", address, returnAddress));
 		}
         int returnValue = jumpCall(address, returnAddress, false);
 
         if (returnValue != returnAddress) {
-            log.error("RuntimeContext.call incorrect returnAddress 0x" + Integer.toHexString(returnValue) + " - 0x" + Integer.toHexString(returnAddress));
+            log.error(String.format("RuntimeContext.call incorrect returnAddress 0x%08X - 0x%08X", returnValue, returnAddress));
         }
     }
 
 	public static int executeInterpreter(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception {
 		if (log.isDebugEnabled()) {
-			log.debug("RuntimeContext.executeInterpreter address=0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
+			log.debug(String.format("RuntimeContext.executeInterpreter address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X, isJump=%b", address, returnAddress, alternativeReturnAddress, isJump));
 		}
 
 		boolean interpret = true;
@@ -241,13 +241,13 @@ public class RuntimeContext {
         			comment = syscallDisasm.substring(19);
         		}
     		}
-    		log.debug(String.format("Starting CodeBlock 0x%X%s, returnAddress=0x%X, alternativeReturnAddress=0x%X, isJump=%b", address, comment, returnAddress, alternativeReturnAddress, isJump));
+    		log.debug(String.format("Starting CodeBlock 0x%08X%s, returnAddress=0x%08X, alternativeReturnAddress=0x%08X, isJump=%b", address, comment, returnAddress, alternativeReturnAddress, isJump));
     	}
     }
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
     	if (log.isDebugEnabled()) {
-    		log.debug(String.format("Returning from CodeBlock 0x%X to 0x%X", address, returnAddress));
+    		log.debug(String.format("Returning from CodeBlock 0x%08X to 0x%08X", address, returnAddress));
     	}
     }
 
@@ -255,9 +255,9 @@ public class RuntimeContext {
     	if (log.isTraceEnabled()) {
     		Instruction insn = Decoder.instruction(opcode);
     		char compileFlag = insn.hasFlags(Instruction.FLAG_INTERPRETED) ? 'I' : 'C';
-    		log.trace(String.format("Executing 0x%X %c - %s", address, compileFlag, insn.disasm(address, opcode)));
+    		log.trace(String.format("Executing 0x%08X %c - %s", address, compileFlag, insn.disasm(address, opcode)));
     	}
-}
+    }
 
     private static boolean initialise() {
         if (!isActive) {
@@ -364,7 +364,7 @@ public class RuntimeContext {
     	int pc = cpu.pc;
 
 		if (log.isDebugEnabled()) {
-			log.debug("Start of Callback 0x" + Integer.toHexString(pc));
+			log.debug(String.format("Start of Callback 0x%08X", pc));
 		}
 
     	IExecutable executable = getExecutable(pc);
@@ -381,7 +381,7 @@ public class RuntimeContext {
     	cpu.npc = newPc; // npc is used when context switching
 
 		if (log.isDebugEnabled()) {
-			log.debug("End of Callback 0x" + Integer.toHexString(pc));
+			log.debug(String.format("End of Callback 0x%08X", pc));
 		}
     }
 
