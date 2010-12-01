@@ -1339,7 +1339,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public void bindBuffer(int target, int buffer) {
-		GL15.glBindBuffer(bufferTargetToGL[target], buffer);
+		ARBBufferObject.glBindBufferARB(bufferTargetToGL[target], buffer);
 	}
 
 	@Override
