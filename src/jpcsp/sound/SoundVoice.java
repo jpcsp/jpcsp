@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.sound;
 
 import jpcsp.hardware.Audio;
+import jpcsp.Memory;
 
 public class SoundVoice extends SoundChannel {
     private static final int NORMAL_PITCH = 0x1000;
@@ -24,6 +25,7 @@ public class SoundVoice extends SoundChannel {
     private int loopMode;
     private int pitch;
     private int noise;
+    private boolean playing;
     private boolean paused;
     private boolean on;
     private boolean off;
@@ -47,7 +49,7 @@ public class SoundVoice extends SoundChannel {
             SustainRate = 0;
             ReleaseRate = 0;
             SustainLevel = 0;
-            height = 0x10000000;
+            height = 0;
         }
     }
 
@@ -57,6 +59,7 @@ public class SoundVoice extends SoundChannel {
         loopMode = 0;
         pitch = NORMAL_PITCH;
         noise = 0;
+        playing = false;
         paused = false;
         on = false;
         off = true;
@@ -80,18 +83,48 @@ public class SoundVoice extends SoundChannel {
         return samplesBuffer;
     }
 
+    public void synthesize(int addr, int length) {
+        Memory mem = Memory.getInstance();
+        if(samples != null) {
+            if(isOn() && isPlaying() && !isPaused()) {
+                play(encodeSamples());
+                setPlaying(false);
+            } else if(isOff()) {
+                release();
+                mem.memset(addr, (byte)0, length);
+            } else {
+                mem.memset(addr, (byte)0, length);
+            }
+        }
+    }
+
+    public void synthesizeWithMix(int addr, int length, int[] mix) {
+        Memory mem = Memory.getInstance();
+        if(samples != null) {
+            if(isOn() && isPlaying() && !isPaused()) {
+                play(encodeSamples());
+                setPlaying(false);
+            } else if(isOff()) {
+                release();
+                mem.memset(addr, (byte)0, length);
+            } else {
+                mem.memset(addr, (byte)0, length);
+            }
+        }
+    }
+
     public void on() {
         on = true;
         off = false;
-		if (samples != null) {
-			play(encodeSamples());
-		}
+        envelope.height = 0x10000000;
+        setPlaying(true);
 	}
 
     public void off() {
         on = false;
         off = true;
-    	release();
+        envelope.height = 0;
+        setPlaying(false);
     }
 
     public VoiceADSREnvelope getEnvelope() {
@@ -104,6 +137,14 @@ public class SoundVoice extends SoundChannel {
 
     public boolean isOff() {
 		return off;
+	}
+
+    public boolean isPlaying() {
+		return playing;
+	}
+
+	public void setPlaying(boolean playing) {
+		this.playing = playing;
 	}
 
 	public boolean isPaused() {

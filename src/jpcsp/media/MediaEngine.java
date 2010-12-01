@@ -674,4 +674,75 @@ public class MediaEngine {
             }
         }
     }
+
+    public void writeVideoImageWithRange(int dest_addr, int frameWidth, int videoPixelMode, int x, int y, int w, int h) {
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
+        // Get the current generated image, convert it to pixels and write it
+        // to memory.
+        if (getCurrentImg() != null) {
+            // Override the base dimensions with the image's real dimensions.
+            int width = getCurrentImg().getWidth();
+            int height = getCurrentImg().getHeight();
+            int imageSize = height * width;
+            BufferedImage image = getCurrentImg();
+            if (image.getColorModel() instanceof ComponentColorModel && image.getRaster().getDataBuffer() instanceof DataBufferByte) {
+            	// Optimized version for most common case: 1 pixel stored in 3 bytes in BGR format
+            	byte[] imageData = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+            	if (videoPixelMode == sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888) {
+            		// Fastest version for pixel format 8888
+	                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest_addr, bytesPerPixel);
+	            	for (int i = y, ii = 0; i < height; i++) {
+		                for (int j = x; j < width; j++) {
+		                    int b = imageData[ii++] & 0xFF;
+		                    int g = imageData[ii++] & 0xFF;
+		                    int r = imageData[ii++] & 0xFF;
+		                    int colorABGR = 0xFF000000 | b << 16 | g << 8 | r;
+		                    memoryWriter.writeNext(colorABGR);
+		                }
+    	                memoryWriter.skip(frameWidth - width);
+	            	}
+	                memoryWriter.flush();
+            	} else {
+            		// Slower version for pixel format other than 8888
+	                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest_addr, bytesPerPixel);
+	            	for (int i = y, ii = 0; i < height; i++) {
+		                for (int j = x; j < width; j++) {
+		                    int b = imageData[ii++] & 0xFF;
+		                    int g = imageData[ii++] & 0xFF;
+		                    int r = imageData[ii++] & 0xFF;
+		                    int colorABGR = 0xFF000000 | b << 16 | g << 8 | r;
+		                    int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
+		                    memoryWriter.writeNext(pixelColor);
+		                }
+    	                memoryWriter.skip(frameWidth - width);
+	            	}
+	                memoryWriter.flush();
+            	}
+            } else {
+            	// Non-optimized version supporting any image format,
+            	// but very slow (due to BufferImage.getRGB() call)
+	            if (videoImagePixels == null || videoImagePixels.length < imageSize) {
+	            	videoImagePixels = new int[imageSize];
+	            }
+	            // getRGB is very slow...
+				videoImagePixels = image.getRGB(0, 0, width, height, videoImagePixels, 0, width);
+                IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(dest_addr, bytesPerPixel);
+	            for (int i = y; i < height; i++) {
+	                for (int j = x; x < width; j++) {
+	                    int colorARGB = videoImagePixels[i * width + j];
+	                    // Convert from ARGB to ABGR.
+	                    int a = (colorARGB >>> 24) & 0xFF;
+	                    int r = (colorARGB >>> 16) & 0xFF;
+	                    int g = (colorARGB >>> 8) & 0xFF;
+	                    int b = colorARGB & 0xFF;
+	                    int colorABGR = a << 24 | b << 16 | g << 8 | r;
+	                    int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
+	                    memoryWriter.writeNext(pixelColor);
+	                }
+	                memoryWriter.skip(frameWidth - width);
+	            }
+                memoryWriter.flush();
+            }
+        }
+    }
 }

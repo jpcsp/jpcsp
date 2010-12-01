@@ -102,15 +102,17 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	}
 
     public void Kernel_Library_37431849(Processor processor) {
-		CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int unk1 = cpu.gpr[4];  // Address to a mutex lock count.
-        int unk2 = cpu.gpr[5];  // Integer value 1.
+        if(log.isDebugEnabled()) {
+            log.debug("Kernel_Library_37431849 redirecting to sceKernelTryLockLwMutex");
+        }
 
-        log.warn("IGNORING: Kernel_Library_37431849 unk1=0x" + Integer.toHexString(unk1) +
-                ", unk2=" + unk2);
-
-        cpu.gpr[2] = 0x800201cb;  // Unknown meaning.
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+		Managers.lwmutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
 	}
 
     public void sceKernelMemcpy(Processor processor) {

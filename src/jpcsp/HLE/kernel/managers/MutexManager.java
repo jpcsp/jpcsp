@@ -22,6 +22,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MUTEX_RECURSIVE_NOT_A
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MUTEX_UNLOCKED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MUTEX_UNLOCK_UNDERFLOW;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
@@ -86,6 +87,18 @@ public class MutexManager {
             thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
         } else {
             log.warn("Mutex deleted while we were waiting for it! (timeout expired)");
+            // Return WAIT_DELETE
+            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+        }
+    }
+
+    public void onThreadWaitReleased(SceKernelThreadInfo thread) {
+        // Untrack
+        if (removeWaitingThread(thread)) {
+            // Return ERROR_WAIT_STATUS_RELEASED
+            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+        } else {
+            log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
             thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
         }
@@ -404,4 +417,5 @@ public class MutexManager {
 
     private MutexManager() {
     }
+
 }

@@ -113,7 +113,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final static int THREAD_CALLBACK_UMD         = 0;
     public final static int THREAD_CALLBACK_IO          = 1;
     public final static int THREAD_CALLBACK_MEMORYSTICK = 2;
-    public final static int THREAD_CALLBACK_SIZE        = 3;
+    public final static int THREAD_CALLBACK_POWER       = 3;
+    public final static int THREAD_CALLBACK_EXIT        = 4;
+    public final static int THREAD_CALLBACK_SIZE        = 5;
     public boolean[] callbackRegistered;
     public boolean[] callbackReady;
     public SceKernelCallbackInfo[] callbackInfo;

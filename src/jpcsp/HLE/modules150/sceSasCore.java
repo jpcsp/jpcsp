@@ -176,17 +176,15 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     protected short[] decodeSamples(Processor processor, int vagAddr, int size) {
         Memory mem = Processor.memory;
 
-        // Based on vgmstream
+        // Based on vgmstream.
         short[] samples = new short[size / 16 * 28];
         int numSamples = 0;
-
         // VAG address can be null. In this case, just return empty samples.
         if (vagAddr != 0) {
             int headerCheck = mem.read32(vagAddr);
-            if ((headerCheck & 0x00FFFFFF) == 0x00474156) { // VAGx
-                vagAddr += 0x30;	// Skip the VAG header
+            if ((headerCheck & 0x00FFFFFF) == 0x00474156) { // VAGx.
+                vagAddr += 0x30;	// Skip the VAG header.
             }
-
             int[] unpackedSamples = new int[28];
             int hist1 = 0;
             int hist2 = 0;
@@ -205,7 +203,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                     if (predict_nr == 7) {
                         break; // A predict_nr of 7 indicates the end of audio data.
                     }
-                    log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
+                    log.warn("decodeSamples: Unknown value for predict_nr: " + predict_nr);
                     predict_nr = 0;
                 }
                 int shift_factor = n & 0x0F;
@@ -220,12 +218,10 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                     s = (short) ((d & 0xF0) << 8);
                     unpackedSamples[j + 1] = s >> shift_factor;
                 }
-
                 for (int j = 0; j < 28; j++) {
                     int sample = (int) (unpackedSamples[j] + hist1 * VAG_f[predict_nr][0] + hist2 * VAG_f[predict_nr][1]);
                     hist2 = hist1;
                     hist1 = sample;
-
                     if (sample < -32768) {
                         samples[numSamples] = -32768;
                     } else if (sample > 0x7FFF) {
@@ -236,14 +232,12 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                     numSamples++;
                 }
             }
-
             if (samples.length != numSamples) {
                 short[] resizedSamples = new short[numSamples];
                 System.arraycopy(samples, 0, resizedSamples, 0, numSamples);
                 samples = resizedSamples;
             }
         }
-
         return samples;
     }
 
@@ -435,20 +429,21 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
-            // TODO: __sceSasCoreWithMix differs from __sceSasCore as it uses previous PCM data
-            // from sasInOut to mix with the waveform to be outputted.
-            // Create a mixer that is capable of doing so.
-            // Note: sasInOut is 64-byte aligned.
             IMemoryReader memoryReader = MemoryReader.getMemoryReader(sasInOut, 1);
             int[] pcmMix = new int[grainSamples * 2]; // 2 bytes per sample.
             for(int i = 0; i < grainSamples * 2; i++) {
                 pcmMix[i] = memoryReader.readNext();
             }
+            for(int i = 0; i < voices.length; i++) {
+                voices[i].synthesizeWithMix(sasInOut, grainSamples * 2, pcmMix);  // 256 (grain) * 2 (channels).
+            }
+            // Tested on PSP:
+            // This the delay seems to be the result of the slow PSP's DAC when
+            // processing SAS audio synthesis and writing the results to memory.
+            // 100000 micros seems to be the most tolerable and widely
+            // acceptable time limit on the PSP.
+            Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
             cpu.gpr[2] = 0;
-
-            // Delaying the current thread is required to allow fluid video/audio playback
-            // TODO: how much delay is matching the PSP?
-            Modules.ThreadManForUserModule.hleKernelDelayThread(3000, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
@@ -491,7 +486,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
             int endFlag = 0;
             for (int i = 0; i < voices.length; i++) {
-                if (voices[i].isEnded()) {
+                if (!voices[i].isPlaying()) {
                     endFlag |= (1 << i);
                 }
             }
@@ -688,16 +683,16 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-            // TODO: __sceSasCore gathers all voices' information and outputs a waveform
-            // (PCM), accordingly to the granularity defined (256), into sasOut.
-            // Create a synthesizer that can take all these variables into account
-            // and process the sound accordingly.
-            // Note: sasOut is 64-byte aligned.
+            for(int i = 0; i < voices.length; i++) {
+                voices[i].synthesize(sasOut, grainSamples * 2);  // 256 (grain) * 2 (channels).
+            }
+            // Tested on PSP:
+            // This the delay seems to be the result of the slow PSP's DAC when
+            // processing SAS audio synthesis and writing the results to memory.
+            // 100000 micros seems to be the most tolerable and widely
+            // acceptable time limit on the PSP.
+            Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
             cpu.gpr[2] = 0;
-
-            // Delaying the current thread is required to allow fluid video/audio playback
-            // TODO: how much delay is matching the PSP?
-            Modules.ThreadManForUserModule.hleKernelDelayThread(3000, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }

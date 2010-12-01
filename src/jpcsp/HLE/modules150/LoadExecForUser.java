@@ -27,9 +27,11 @@ import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -69,6 +71,17 @@ public class LoadExecForUser implements HLEModule {
             mm.removeFunction(sceKernelExitGameFunction);
             mm.removeFunction(sceKernelRegisterExitCallbackFunction);
 
+        }
+    }
+
+    private SceKernelThreadInfo exitCbThread;
+
+    public void triggerExitCallback() {
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        if (exitCbThread != null) {
+            threadMan.executeCallback(exitCbThread, exitCbThread.callbackInfo[SceKernelThreadInfo.THREAD_CALLBACK_EXIT].callback_addr, null, 0);
+        } else {
+            log.warn("No EXIT callback has been registered!");
         }
     }
 
@@ -136,7 +149,9 @@ public class LoadExecForUser implements HLEModule {
             return;
         }
         log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
-        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
+        Emulator.PauseEmuWithStatus(status);
+        RuntimeContext.reset();
+        Modules.ThreadManForUserModule.stop();
     }
 
     public void sceKernelExitGame(Processor processor) {
@@ -147,7 +162,9 @@ public class LoadExecForUser implements HLEModule {
             return;
         }
         log.info("Program exit detected (sceKernelExitGame)");
-        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
+        Emulator.PauseEmu();
+        RuntimeContext.reset();
+        Modules.ThreadManForUserModule.stop();
     }
 
     public void sceKernelRegisterExitCallback(Processor processor) {
@@ -159,7 +176,13 @@ public class LoadExecForUser implements HLEModule {
             cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        log.debug("IGNORING:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
+
+        log.info("sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
+
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_EXIT, uid);
+        exitCbThread = threadMan.getCurrentThread();
+
         cpu.gpr[2] = 0;
     }
     public final HLEModuleFunction sceKernelLoadExecFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelLoadExec") {

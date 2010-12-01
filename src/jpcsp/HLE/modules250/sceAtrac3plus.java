@@ -143,12 +143,46 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
     public void sceAtracSetMOutHalfwayBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented function sceAtracSetMOutHalfwayBuffer "
-    			+ String.format("%08x %08x %08x %08x %08x %08x",
-    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        int atID = cpu.gpr[4] & atracIDMask;
+        int MOutHalfBuffer = cpu.gpr[5];
+        int readSize = cpu.gpr[6];
+        int MOutHalfBufferSize = cpu.gpr[7];
 
-        cpu.gpr[2] = 0;
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracSetMOutHalfwayBuffer: atID = %d, buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", atID, MOutHalfBuffer, readSize, MOutHalfBufferSize));
+        }
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (getIDCodecType(atID) < 0) {
+            log.warn("sceAtracSetMOutHalfwayBuffer: bad atracID= " + atID);
+            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
+        } else {
+            int codecType = 0;
+            int at3magic = 0;
+            if (Memory.isAddressGood(MOutHalfBuffer)) {
+                at3magic = mem.read32(MOutHalfBuffer + 20);
+                at3magic &= 0x0000FFFF;
+
+                if (at3magic == AT3_MAGIC) {
+                    codecType = PSP_MODE_AT_3;
+                } else if (at3magic == AT3_PLUS_MAGIC) {
+                    codecType = PSP_MODE_AT_3_PLUS;
+                }
+
+                if (codecType == PSP_MODE_AT_3) {
+                    maxSamples = 1024;
+                } else if (codecType == PSP_MODE_AT_3_PLUS) {
+                    maxSamples = 2048;
+                }
+            }
+            hleAtracSetData(atID, MOutHalfBuffer, readSize, MOutHalfBufferSize);
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceAtracSetMOutData(Processor processor) {
