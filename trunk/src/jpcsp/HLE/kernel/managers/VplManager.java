@@ -22,9 +22,10 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMSIZE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_VPOOL;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CAN_NOT_WAIT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
@@ -90,6 +91,18 @@ public class VplManager {
             thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
         } else {
             log.warn("VPL deleted while we were waiting for it! (timeout expired)");
+            // Return WAIT_DELETE
+            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+        }
+    }
+
+    public void onThreadWaitReleased(SceKernelThreadInfo thread) {
+        // Untrack
+        if (removeWaitingThread(thread)) {
+            // Return ERROR_WAIT_STATUS_RELEASED
+            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+        } else {
+            log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
             thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
         }
@@ -404,5 +417,5 @@ public class VplManager {
 
     private VplManager() {
     }
-    
+
 }

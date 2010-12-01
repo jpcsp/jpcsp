@@ -238,7 +238,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Japanese = new javax.swing.JMenuItem();
         Russian = new javax.swing.JMenuItem();
         Polish = new javax.swing.JMenuItem();
-        Chinese = new javax.swing.JMenuItem();
+        ChinesePRC = new javax.swing.JMenuItem();
+        ChineseTW = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -247,8 +248,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-			public void windowClosing(java.awt.event.WindowEvent evt) {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
@@ -684,14 +684,18 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Polish);
 
-        Chinese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/cn_CN_Icon.png"))); // NOI18N
-        Chinese.setText(Resource.get("chinese"));
-        Chinese.addActionListener(new java.awt.event.ActionListener() {
+        ChinesePRC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/cn_CN_Icon.png"))); // NOI18N
+        ChinesePRC.setText(Resource.get("chinesePRC"));
+        ChinesePRC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ChineseActionPerformed(evt);
+                ChinesePRCActionPerformed(evt);
             }
         });
-        LanguageMenu.add(Chinese);
+        LanguageMenu.add(ChinesePRC);
+
+        ChineseTW.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/tw_TW_Icon.png"))); // NOI18N
+        ChineseTW.setText(Resource.get("chineseTW"));
+        LanguageMenu.add(ChineseTW);
 
         MenuBar.add(LanguageMenu);
 
@@ -1475,9 +1479,9 @@ private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     setSize(new Dimension(480, 352));
 }//GEN-LAST:event_OneItemActionPerformed
 
-private void ChineseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChineseActionPerformed
+private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChinesePRCActionPerformed
     changeLanguage("cn_CN");
-}//GEN-LAST:event_ChineseActionPerformed
+}//GEN-LAST:event_ChinesePRCActionPerformed
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1623,7 +1627,8 @@ private void ChineseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     private javax.swing.JMenu AudioOpt;
     private javax.swing.JMenuItem Catalan;
     private javax.swing.JMenu CheatsMenu;
-    private javax.swing.JMenuItem Chinese;
+    private javax.swing.JMenuItem ChinesePRC;
+    private javax.swing.JMenuItem ChineseTW;
     private javax.swing.JMenuItem ControlsConf;
     private javax.swing.JMenuItem CustomLogger;
     private javax.swing.JMenu DebugMenu;

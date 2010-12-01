@@ -20,6 +20,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -179,6 +180,12 @@ public class scePower implements HLEModule {
     public static final int PSP_POWER_CB_BATTERY_EXIST = 0x00000080;
     // unknown
     public static final int PSP_POWER_CB_BATTPOWER = 0x0000007F;
+
+    /**
+     * Power callback slots
+     */
+    public static final int PSP_POWER_CB_SLOT_AUTO = -1;
+    private int[] powerCBSlots = new int[16];
 
     // PLL clock:
     // Operates at fixed rates of 148MHz, 190MHz, 222MHz, 266MHz, 333MHz.
@@ -527,7 +534,27 @@ public class scePower implements HLEModule {
 
         log.info("scePowerRegisterCallback slot=" + slot + " SceUID=" + Integer.toHexString(uid));
 
-        cpu.gpr[2] = 0;
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, uid)) {
+            // Start by notifying the POWER callback that we're using AC power.
+            threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, uid, PSP_POWER_CB_AC_POWER);
+        }
+
+        // Multiple power callbacks (up to 16) can be assigned for multiple threads.
+        if((slot & PSP_POWER_CB_SLOT_AUTO) == PSP_POWER_CB_SLOT_AUTO){
+            for(int i = 0; i < powerCBSlots.length; i++) {
+                if(powerCBSlots[i] == 0) {
+                    powerCBSlots[i] = uid;
+                    cpu.gpr[2] = i;
+                    break;
+                }
+            }
+        } else if ((slot >= 0) && (slot <= 15)) {
+            powerCBSlots[slot] = uid;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void scePowerUnregisterCallback(Processor processor) {
@@ -537,6 +564,10 @@ public class scePower implements HLEModule {
 
         log.info("scePowerUnregisterCallback slot=" + slot);
 
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, powerCBSlots[slot]);
+
+        powerCBSlots[slot] = 0;
         cpu.gpr[2] = 0;
     }
 

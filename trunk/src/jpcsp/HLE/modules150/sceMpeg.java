@@ -1773,9 +1773,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             int rangeWidthStart = mem.read32(range_addr);
             int rangeHeightStart = mem.read32(range_addr + 4);
             int rangeWidthEnd = mem.read32(range_addr + 8);
-            int rangeHeigtEnd = mem.read32(range_addr + 12);
+            int rangeHeightEnd = mem.read32(range_addr + 12);
             if (log.isDebugEnabled()) {
-                log.debug("sceMpegAvcCsc range -" + " x:" + rangeWidthStart + " y:" + rangeHeightStart + " xLen:" + rangeWidthEnd + " yLen:" + rangeHeigtEnd);
+                log.debug("sceMpegAvcCsc range -" + " x:" + rangeWidthStart + " y:" + rangeHeightStart + " xLen:" + rangeWidthEnd + " yLen:" + rangeHeightEnd);
             }
 
             // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
@@ -1788,7 +1788,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // both steps together: this is done in here.
             if (checkMediaEngineState()) {
                 if (me.getContainer() != null) {
-                    me.writeVideoImage(dest_addr, frameWidth, videoPixelMode);
+                    me.writeVideoImageWithRange(dest_addr, frameWidth, videoPixelMode, rangeWidthStart, rangeHeightStart, rangeWidthEnd, rangeHeightEnd);
                 }
             } else {
             	long startTime = Emulator.getClock().microTime();
@@ -1817,7 +1817,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
                 if (isEnableConnector() && encodedVideoFramesYCbCr.containsKey(source_addr)) {
                 	byte[] encodedVideoFrame = encodedVideoFramesYCbCr.get(source_addr);
-                    mpegCodec.decodeVideoFrame(encodedVideoFrame, dest_addr, frameWidth, rangeWidthEnd, rangeHeigtEnd, videoPixelMode, videoFrameCount);
+                    mpegCodec.decodeVideoFrame(encodedVideoFrame, dest_addr, frameWidth, rangeWidthEnd, rangeHeightEnd, videoPixelMode, videoFrameCount);
                     packetsConsumed = mpegCodec.getPacketsConsumed();
                 } else {
                     // Generate static.

@@ -38,9 +38,11 @@ import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLDOWN;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
 
 import jpcsp.hardware.Audio;
+import jpcsp.HLE.Modules;
 
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
+import javax.swing.JOptionPane;
 
 public class Controller {
     private byte Lx = (byte)128;
@@ -169,6 +171,12 @@ public class Controller {
             Audio.setVolumeDown();
         } else if (isSpecialKeyPressed(keyCode.VOLPLUS)) {
         	Audio.setVolumeUp();
+        } else if (isSpecialKeyPressed(keyCode.HOME)) {
+            Buttons &= ~PSP_CTRL_HOME;    // Release the HOME button to avoid dialog spamming.
+            int opt = JOptionPane.showOptionDialog(null, "Exit the current application?", "HOME", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+            if (opt == JOptionPane.YES_OPTION) {
+                Modules.LoadExecForUserModule.triggerExitCallback();
+            }
         }
     }
 

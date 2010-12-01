@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.util.Utilities.readStringZ;
@@ -168,6 +169,15 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         removeWaitingThread(thread);
         // Return WAIT_TIMEOUT
         thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+    }
+
+    public void onThreadWaitReleased(SceKernelThreadInfo thread) {
+        log.info("UMD stat released");
+        // Untrack
+        thread.wait.waitingOnUmd = false;
+        removeWaitingThread(thread);
+        // Return ERROR_WAIT_STATUS_RELEASED
+        thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {

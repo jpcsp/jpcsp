@@ -28,6 +28,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_ALREADY_DORMAN
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_NOT_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_IS_TERMINATED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_KERNEL;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_USER;
@@ -445,6 +446,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public void stop() {
         alarms = null;
         vtimers = null;
+        for(SceKernelThreadInfo thread : threadMap.values()) {
+            terminateThread(thread);
+        }
     }
 
     public Iterator<SceKernelThreadInfo> iterator() {
@@ -899,6 +903,52 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
     // IO has no timeout, it's always forever
+    }
+
+    public void hleThreadWaitRelease(SceKernelThreadInfo thread) {
+        if (thread.waitType != PSP_WAIT_NONE) {
+            onWaitReleased(thread);
+            hleChangeThreadState(thread, PSP_THREAD_READY);
+        }
+    }
+
+    /** Call this when a thread's wait has been released. */
+    private void onWaitReleased(SceKernelThreadInfo thread) {
+        // ThreadEnd
+        if (thread.wait.waitingOnThreadEnd) {
+            // Untrack
+            thread.wait.waitingOnThreadEnd = false;
+            // Return ERROR_WAIT_STATUS_RELEASED
+            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+        } // EventFlag
+        else if (thread.wait.waitingOnEventFlag) {
+            Managers.eventFlags.onThreadWaitReleased(thread);
+        } // Sema
+        else if (thread.wait.waitingOnSemaphore) {
+            Managers.semas.onThreadWaitReleased(thread);
+        } // UMD stat
+        else if (thread.wait.waitingOnUmd) {
+            Modules.sceUmdUserModule.onThreadWaitReleased(thread);
+        } // Mutex
+        else if (thread.wait.waitingOnMutex) {
+            Managers.mutex.onThreadWaitReleased(thread);
+        } // LwMutex
+        else if (thread.wait.waitingOnLwMutex) {
+            Managers.lwmutex.onThreadWaitReleased(thread);
+        } // MsgPipe
+        else if (thread.wait.waitingOnMsgPipeSend || thread.wait.waitingOnMsgPipeReceive) {
+            Managers.msgPipes.onThreadWaitReleased(thread);
+        } //Mbx
+        else if (thread.wait.waitingOnMbxReceive) {
+            Managers.mbx.onThreadWaitReleased(thread);
+        } //Fpl
+        else if (thread.wait.waitingOnFpl) {
+            Managers.fpl.onThreadWaitReleased(thread);
+        } //Vpl
+        else if (thread.wait.waitingOnVpl) {
+            Managers.vpl.onThreadWaitReleased(thread);
+        }
+        // IO has no timeout, it's always forever.
     }
 
     private void deleteThreads(Iterable<SceKernelThreadInfo> iterable) {
@@ -2000,7 +2050,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (hleKernelDeleteCallback(uid)) {
             cpu.gpr[2] = 0;
         } else {
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = SceKernelErrors.ERROR_NOT_FOUND_CALLBACK;
         }
     }
 
@@ -2018,14 +2068,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.debug("sceKernelNotifyCallback uid=0x" + Integer.toHexString(uid) + ", arg=0x" + Integer.toHexString(arg));
         }
         SceKernelCallbackInfo callback = callbackMap.get(uid);
-        int callbackType = 0;  // Only seen in UMD callbacks (E.g.: "Exit_Game").
         if (callback != null) {
-            if (!getCurrentThread().callbackRegistered[callbackType]) {
-                hleKernelRegisterCallback(callbackType, uid);
+            for(int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE; i++) {
+                if(getCurrentThread().callbackInfo[i].uid == callback.uid) {
+                    hleKernelNotifyCallback(i, uid, arg);
+                    break;
+                }
             }
-            hleKernelNotifyCallback(callbackType, uid, arg);
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = SceKernelErrors.ERROR_NOT_FOUND_CALLBACK;
         }
-        cpu.gpr[2] = 0;
     }
 
     public void sceKernelCancelCallback(Processor processor) {
@@ -2040,8 +2093,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         if (callback != null) {
             callback.notifyArg = 0;
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = SceKernelErrors.ERROR_NOT_FOUND_CALLBACK;
         }
-        cpu.gpr[2] = 0;
+
     }
 
     /** Return the current notifyCount for a specific callback */
@@ -2056,12 +2112,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int count = 0;
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         if (callback != null) {
-            count = callback.notifyCount;
+            if(count > 0) {
+                count = callback.notifyCount;
+            }
+            cpu.gpr[2] = count;
+        } else {
+            cpu.gpr[2] = SceKernelErrors.ERROR_NOT_FOUND_CALLBACK;
         }
-        cpu.gpr[2] = count;
     }
 
-    /** Check callbacks, including those on the current thread */
+    /** Check callbacks, only on the current thread. */
     public void sceKernelCheckCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -2073,10 +2133,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        cpu.gpr[2] = 0;
-        currentThread.doCallbacks = true;
-        checkCallbacks();
-        currentThread.doCallbacks = false;
+        // 0 - The calling thread has no reported callbacks.
+        // 1 - The calling thread has reported callbacks which were executed sucessfully.
+        cpu.gpr[2] = checkThreadCallbacks(currentThread) ? 1 : 0;
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {
@@ -2093,10 +2152,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelCallbackInfo info = callbackMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferCallbackStatus unknown uid 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = SceKernelErrors.ERROR_NOT_FOUND_CALLBACK;
         } else if (!Memory.isAddressGood(info_addr)) {
             log.warn("sceKernelReferCallbackStatus bad info address 0x" + Integer.toHexString(info_addr));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_ADDR;
         } else {
             int size = mem.read32(info_addr);
             if (size == SceKernelCallbackInfo.size) {
@@ -3779,14 +3838,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
-        if (uid == 0) {
-            uid = currentThread.uid;
-        }
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
+        if (uid == 0) {
+            log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") can't release itself!");
+            cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_THREAD;
+        } else if (thread == null) {
             log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") unknown thread");
-            cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+            cpu.gpr[2] = SceKernelErrors.ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PSP_THREAD_WAITING) {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") Thread not waiting: status=" + thread.status);
@@ -3796,12 +3855,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") releasing waiting thread: " + thread.toString());
             }
-
             cpu.gpr[2] = 0;
-            thread.cpuContext.gpr[2] = SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-            hleChangeThreadState(thread, PSP_THREAD_READY);
-
-            // Switch to the released thread if it has a higher priority
+            hleThreadWaitRelease(thread);
+            // Switch to the released thread if it has a higher priority.
             if (thread.currentPriority < currentThread.currentPriority) {
                 hleRescheduleCurrentThread();
             }
