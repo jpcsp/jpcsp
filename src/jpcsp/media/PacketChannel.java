@@ -28,6 +28,7 @@ import jpcsp.util.FIFOByteBuffer;
  *
  */
 public class PacketChannel extends FIFOByteBuffer implements ReadableByteChannel {
+	private int readLength;
 
     public PacketChannel() {
 		super();
@@ -39,7 +40,13 @@ public class PacketChannel extends FIFOByteBuffer implements ReadableByteChannel
 
 	@Override
 	public int read(ByteBuffer dst) throws IOException {
-		return readByteBuffer(dst);
+		int length = readByteBuffer(dst);
+
+		if (length > 0) {
+			readLength += length;
+		}
+
+		return length;
 	}
 
     @Override
@@ -52,4 +59,17 @@ public class PacketChannel extends FIFOByteBuffer implements ReadableByteChannel
 		return true;
 	}
 
+	public int getReadLength() {
+		return readLength;
+	}
+
+	public void setReadLength(int readLength) {
+		this.readLength = readLength;
+	}
+
+	@Override
+	public void clear() {
+		super.clear();
+		setReadLength(0);
+	}
 }

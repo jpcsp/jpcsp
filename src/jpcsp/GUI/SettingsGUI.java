@@ -97,6 +97,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.useConnector");
         useConnector.setSelected(enabled);
 
+        enabled = Settings.getInstance().readBool("emu.useExternalDecoder");
+        useExternalDecoder.setSelected(enabled);
+
         enabled = Settings.getInstance().readBool("emu.useMediaEngine");
         useMediaEngine.setSelected(enabled);
 
@@ -211,6 +214,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jPanel4 = new javax.swing.JPanel();
         useMediaEngine = new javax.swing.JCheckBox();
         useConnector = new javax.swing.JCheckBox();
+        useExternalDecoder = new javax.swing.JCheckBox();
 
         setTitle("Configuration");
         setResizable(false);
@@ -587,6 +591,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         useConnector.setText(Resource.get("useConnector"));
 
+        useExternalDecoder.setText(Resource.get("useExternalDecoder"));
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
@@ -594,7 +600,8 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                     .addComponent(useMediaEngine, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(useConnector, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(useConnector, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(useExternalDecoder, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
@@ -603,6 +610,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(useMediaEngine)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(useConnector)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useExternalDecoder)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -714,6 +723,9 @@ public void RefreshWindow() {
 	enabled = Settings.getInstance().readBool("emu.useConnector");
 	useConnector.setSelected(enabled);
 
+	enabled = Settings.getInstance().readBool("emu.useExternalDecoder");
+	useExternalDecoder.setSelected(enabled);
+
     enabled = Settings.getInstance().readBool("emu.useMediaEngine");
     useMediaEngine.setSelected(enabled);
 	
@@ -765,6 +777,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.disableubo", disableUBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
+   Settings.getInstance().writeBool("emu.useExternalDecoder",useExternalDecoder.isSelected());
    Settings.getInstance().writeBool("emu.useMediaEngine",useMediaEngine.isSelected());
    Settings.getInstance().writeBool("emu.useVertexCache",useVertexCache.isSelected());
    Settings.getInstance().writeBool("emu.ignoreInvalidMemoryAccess", invalidMemoryCheck.isSelected());
@@ -850,6 +863,7 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JTextField umdpath;
     private javax.swing.JCheckBox useConnector;
+    private javax.swing.JCheckBox useExternalDecoder;
     private javax.swing.JCheckBox useMediaEngine;
     private javax.swing.JCheckBox useVertexCache;
     private javax.swing.JComboBox wlanPowerBox;

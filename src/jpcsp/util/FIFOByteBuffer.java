@@ -107,6 +107,10 @@ public class FIFOByteBuffer {
     	write(ByteBuffer.wrap(src), src.length);
     }
 
+    public void write(byte[] src, int offset, int length) {
+    	write(ByteBuffer.wrap(src, offset, length), length);
+    }
+
     public int readByteBuffer(ByteBuffer dst) {
     	int length = dst.remaining();
     	if (length > bufferLength) {

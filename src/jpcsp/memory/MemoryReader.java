@@ -175,7 +175,7 @@ public class MemoryReader {
 			this.buffer = buffer;
 			offset = addr / 4;
 			index = addr & 3;
-			value = buffer[offset] >> (8 * index);
+			value = buffer[offset] >> (index << 3);
 		}
 
 		@Override
@@ -197,9 +197,9 @@ public class MemoryReader {
 		@Override
 		public final void skip(int n) {
 			index += n;
-			offset += index / 4;
+			offset += index >> 2;
 			index &= 3;
-			value = buffer[offset] >> (8 * index);
+			value = buffer[offset] >> (index << 3);
 		}
 	}
 
@@ -211,8 +211,8 @@ public class MemoryReader {
 
 		public MemoryReaderIntArray16(int[] buffer, int addr) {
 			this.buffer = buffer;
-			offset = addr / 4;
-			index = (addr / 2) & 1;
+			offset = addr >> 2;
+			index = (addr >> 1) & 1;
 			if (index != 0) {
 				value = buffer[offset++];
 			}
@@ -237,7 +237,7 @@ public class MemoryReader {
 		@Override
 		public final void skip(int n) {
 			index += n;
-			offset += index / 2;
+			offset += index >> 1;
 			index &= 1;
 			if (index != 0) {
 				value = buffer[offset++];
@@ -274,7 +274,7 @@ public class MemoryReader {
 			this.buffer = buffer;
 			this.index = index;
 			if (buffer.capacity() > 0) {
-				value = buffer.get() >> (8 * index);
+				value = buffer.get() >> (index << 3);
 			}
 		}
 
@@ -296,7 +296,7 @@ public class MemoryReader {
 		@Override
 		public final void skip(int n) {
 			index += n;
-			buffer.position(buffer.position() + (index / 4));
+			buffer.position(buffer.position() + (index >> 2));
 			index &= 3;
 			value = buffer.get() >> (8 * index);
 		}
@@ -334,7 +334,7 @@ public class MemoryReader {
 		@Override
 		public final void skip(int n) {
 			index += n;
-			buffer.position(buffer.position() + (index / 2));
+			buffer.position(buffer.position() + (index >> 1));
 			index &= 1;
 			if (index != 0) {
 				value = buffer.get();
@@ -392,7 +392,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + n * 2);
+			buffer.position(buffer.position() + (n << 1));
 		}
 	}
 
@@ -410,7 +410,7 @@ public class MemoryReader {
 
 		@Override
 		public final void skip(int n) {
-			buffer.position(buffer.position() + n * 4);
+			buffer.position(buffer.position() + (n << 2));
 		}
 	}
 }

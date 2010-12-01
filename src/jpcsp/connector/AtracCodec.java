@@ -24,12 +24,14 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.HashSet;
 
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.sceAtrac3plus;
+import jpcsp.media.ExternalDecoder;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryReader;
@@ -67,6 +69,7 @@ public class AtracCodec {
     protected int currentLoopCount;
     protected static boolean useMediaEngine = false;
     protected byte[] samplesBuffer;
+    protected ExternalDecoder externalDecoder;
 
     public boolean checkMediaEngineState() {
         return useMediaEngine && me != null;
@@ -91,6 +94,7 @@ public class AtracCodec {
 
         atracDecodeBuffer = new byte[sceAtrac3plus.maxSamples * 4];
         samplesBuffer = new byte[sceAtrac3plus.maxSamples * 4];
+        externalDecoder = new ExternalDecoder();
         generateCommandFile();
     }
 
@@ -99,12 +103,12 @@ public class AtracCodec {
         return String.format("Atrac-%08X-%08X", fileSize, hashCode);
     }
 
-    protected static String getBaseDirectory(String id) {
+    public static String getBaseDirectory() {
         return String.format("%s%s/Atrac/", Connector.baseDirectory, State.discId);
     }
 
     protected String getCompleteFileName(String suffix) {
-        String completeFileName = String.format("%s%s%s", getBaseDirectory(id), id, suffix);
+        String completeFileName = String.format("%s%s%s", getBaseDirectory(), id, suffix);
         return completeFileName;
     }
 
@@ -113,7 +117,7 @@ public class AtracCodec {
             return;
         }
         // Generate decode commands for all the non-decoded Atrac files
-        String baseDirectory = getBaseDirectory(id);
+        String baseDirectory = getBaseDirectory();
         File directory = new File(baseDirectory);
         String[] files = directory.list();
         HashSet<String> atracFiles = new HashSet<String>();
@@ -172,7 +176,20 @@ public class AtracCodec {
                 return;
             }
         } else if (codecType == 0x00001000) {
-            Modules.log.info("Undecodable AT3+ data detected.");
+        	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
+        		ReadableByteChannel channel = externalDecoder.decodeAtrac(address, atracFileSize);
+        		if (channel != null) {
+        			Modules.log.info("AT3+ data decoded by the external decoder.");
+        			me.finish();
+        			me.init(channel, false, true);
+                    memBufOffset = 0;
+                    atracEndSample = -1;
+        			return;
+        		}
+    			Modules.log.info("AT3+ data could not be decoded by the external decode.");
+        	} else {
+        		Modules.log.info("Undecodable AT3+ data detected.");
+        	}
         }
         me = null;
 
@@ -210,7 +227,7 @@ public class AtracCodec {
                 scanAddress += chunkSize + 8;
             }
 
-            File alternateDecodedFile = new File(String.format("%sAtrac-%08X-%08X-%08X%s", getBaseDirectory(id), atracFileSize, numberOfSamples, data, decodedAtracSuffix));
+            File alternateDecodedFile = new File(String.format("%sAtrac-%08X-%08X-%08X%s", getBaseDirectory(), atracFileSize, numberOfSamples, data, decodedAtracSuffix));
             if (alternateDecodedFile.canRead()) {
                 decodedFile = alternateDecodedFile;
             }
@@ -230,7 +247,7 @@ public class AtracCodec {
         } else if (extract) {
             commandFileDirty = true;
             displayInstructions();
-            new File(getBaseDirectory(id)).mkdirs();
+            new File(getBaseDirectory()).mkdirs();
 
             try {
                 atracStream = new FileOutputStream(getCompleteFileName(atracSuffix));
@@ -268,13 +285,12 @@ public class AtracCodec {
     }
 
     public int atracDecodeData(int atracID, int address) {
-        if (checkMediaEngineState()) {
-            me.stepAudio();
-            return copySamplesToMem(address);
-        }
-
         int samples = 0;
-        if (decodedStream != null) {
+
+        if (checkMediaEngineState()) {
+            me.stepAudio(sceAtrac3plus.maxSamples * 4);
+            samples = copySamplesToMem(address);
+        } else if (decodedStream != null) {
             try {
                 int length = decodedStream.read(atracDecodeBuffer);
                 if (length > 0) {
@@ -288,8 +304,13 @@ public class AtracCodec {
             samples = -1;
         }
 
-        atracEnd = samples <= 0 ? 1 : 0;
-        atracRemainFrames = -1;
+        if (samples <= 0) {
+        	atracEnd = 1;
+        	atracRemainFrames = -1;
+        } else {
+        	atracEnd = 0;
+        	atracRemainFrames = 1;
+        }
 
         return samples;
     }
@@ -360,7 +381,7 @@ public class AtracCodec {
         // Display decoding instructions into the log file, where else?
         Logger log = Modules.log;
         log.info("The ATRAC3 audio is currently being saved under");
-        log.info("    " + getBaseDirectory(id));
+        log.info("    " + getBaseDirectory());
         log.info("To decode the audio, copy the following file");
         log.info("    *" + atracSuffix);
         log.info("    " + Connector.commandFileName);
@@ -370,7 +391,7 @@ public class AtracCodec {
         log.info("After decoding on the PSP, move the following files");
         log.info("    " + Connector.basePSPDirectory + decodedAtracSuffix);
         log.info("back to Jpcsp under");
-        log.info("    " + getBaseDirectory(id));
+        log.info("    " + getBaseDirectory());
         log.info("Afterwards, you can delete the files on the PSP.");
 
         instructionsDisplayed = true;

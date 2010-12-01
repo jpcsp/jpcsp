@@ -469,4 +469,27 @@ public class Utilities {
     public static int getSizeKb(long sizeByte) {
     	return (int) ((sizeByte + 1023) / 1024);
     }
+
+    public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
+    	StringBuilder dump = new StringBuilder();
+
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, step);
+    	String format = String.format(" %%0%dX", step * 2);
+    	boolean startOfLine = true;
+    	for (int i = 0; i < length; i += step) {
+    		if ((i % bytesPerLine) < step) {
+    			dump.append("\n");
+    			startOfLine = true;
+    		}
+    		if (startOfLine) {
+    			dump.append(String.format("0x%08X", address + i));
+    			startOfLine = false;
+    		}
+
+    		int value = memoryReader.readNext();
+    		dump.append(String.format(format, value));
+    	}
+
+    	return dump.toString();
+    }
 }

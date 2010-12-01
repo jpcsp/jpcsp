@@ -57,6 +57,15 @@ public class Scheduler {
 		}
 	}
 
+	public long getNextActionDelay(long noActionDelay) {
+		if (nextAction == null) {
+			return noActionDelay;
+		}
+
+		long now = getNow();
+		return nextAction.getSchedule() - now;
+	}
+
 	private void addSchedulerAction(SchedulerAction schedulerAction) {
 		actions.add(schedulerAction);
 		updateNextAction(schedulerAction);

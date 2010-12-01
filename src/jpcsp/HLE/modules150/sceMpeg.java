@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
 import static jpcsp.HLE.modules150.sceDisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
+import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -183,6 +184,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
 
         encodedVideoFramesYCbCr = new HashMap<Integer, byte[]>();
+        audioDecodeBuffer = new byte[MPEG_ATRAC_ES_OUTPUT_SIZE];
     }
 
     @Override
@@ -205,9 +207,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected static final int atracDecodeDelay = 3000;         // Microseconds
     protected static final int avcDecodeDelay = 5400;           // Microseconds
     protected static final int maxAheadTimestamp = 40000;
-    public static final int mpegTimestampPerSecond = 90000;  // How many MPEG Timestamp units in a second.
-    public static final int videoTimestampStep = 3003;       // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
-    public static final int audioTimestampStep = 4180;       // Value based on pmfplayer.
+    public static final int mpegTimestampPerSecond = 90000; // How many MPEG Timestamp units in a second.
+    public static final int videoTimestampStep = 3003;      // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
+    public static final int audioTimestampStep = 4180;      // Value based on pmfplayer.
+    //public static final int audioFirstTimestamp = 89249;    // The first MPEG audio AU has always this timestamp
+    public static final int audioFirstTimestamp = 90000;    // The first MPEG audio AU has always this timestamp
+    public static final long UNKNOWN_TIMESTAMP = -1;
 
     // MPEG processing vars.
     protected int mpegHandle;
@@ -238,7 +243,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected boolean isAvcEsBufInUse = false;
     // MPEG ATRAC elementary stream.
     protected static final int MPEG_ATRAC_ES_SIZE = 2112;
-    protected static final int MPEG_ATRAC_ES_OUTPUT_SIZE = 8192;
+    public    static final int MPEG_ATRAC_ES_OUTPUT_SIZE = 8192;
     // MPEG PCM elementary stream.
     protected static final int MPEG_PCM_ES_SIZE = 320;
     protected static final int MPEG_PCM_ES_OUTPUT_SIZE = 320;
@@ -277,6 +282,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected MediaEngine me;
     protected PacketChannel meChannel;
     protected HashMap<Integer, byte[]> encodedVideoFramesYCbCr;
+    protected byte[] audioDecodeBuffer;
 
     public static boolean isEnableConnector() {
         return useMpegCodec;
@@ -391,7 +397,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mpegRingbuffer.reset();
             mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
-        mpegAtracAu.dts = -1;
+        mpegAtracAu.dts = UNKNOWN_TIMESTAMP;
         mpegAtracAu.pts = 0;
         mpegAvcAu.dts = 0;
         mpegAvcAu.pts = 0;
@@ -399,7 +405,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         audioFrameCount = 0;
         if ((mpegStreamSize > 0) && !isCurrentMpegAnalyzed()) {
             if (checkMediaEngineState()) {
-            	me.init();
+            	me.init(buffer_addr, mpegStreamSize, mpegOffset);
             	meChannel = new PacketChannel();
                 meChannel.write(buffer_addr, mpegOffset);
             } else if (isEnableConnector()) {
@@ -460,6 +466,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     	int threadDelayMicros = delayMicros - (int) (now - startMicros);
     	if (threadDelayMicros > 0) {
     		Modules.ThreadManForUserModule.hleKernelDelayThread(threadDelayMicros, false);
+    	} else {
+    		Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     	}
     }
 
@@ -1026,7 +1034,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 if (!ignoreAvc) {
                 	// Read Au of next Avc frame
                     if (checkMediaEngineState()) {
-                    	me.getVideoTimestamp(mpegAvcAu);
+                    	Emulator.getClock().pause();
+                        if (me.getContainer() == null) {
+                            me.init(meChannel, true, true);
+                        }
+                    	me.readVideoAu(mpegAvcAu);
+                    	Emulator.getClock().resume();
                     } else if (isEnableConnector()) {
                     	if (!mpegCodec.readVideoAu(mpegAvcAu, videoFrameCount)) {
                     		// Avc Au was not updated by the MpegCodec
@@ -1087,7 +1100,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             if (!ignorePcm) {
             	// Read Au of next Atrac frame
                 if (checkMediaEngineState()) {
-                	me.getAudioTimestamp(mpegAtracAu);
+                	if (me.getContainer() == null) {
+                		me.init(meChannel, true, true);
+                	}
+                	me.readAudioAu(mpegAtracAu);
                 } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
             		// Atrac Au updated by the MpegCodec
             	}
@@ -1154,7 +1170,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 if (!ignoreAtrac) {
                 	// Read Au of next Atrac frame
                     if (checkMediaEngineState()) {
-                    	me.getAudioTimestamp(mpegAtracAu);
+                    	Emulator.getClock().pause();
+                    	if (me.getContainer() == null) {
+                    		me.init(meChannel, true, true);
+                    	}
+                    	me.readAudioAu(mpegAtracAu);
+                    	Emulator.getClock().resume();
                     } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
                 		// Atrac Au updated by the MpegCodec
                 	}
@@ -1302,22 +1323,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             final int height = 272;
 
             if (checkMediaEngineState()) {
-                if (me.getContainer() != null) {
-                	int previousChannelLength = meChannel.length();
-                    if (me.stepVideo()) {
-                    	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
-                    	int channelLength = meChannel.length();
-                    	packetsConsumed = (previousChannelLength - channelLength) / mpegRingbuffer.packetSize;
-                    } else {
-                    	// Consume all the remaining packets
-                    	packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-                    }
-                    me.getVideoTimestamp(mpegAvcAu);
-                    avcFrameStatus = 1;
+            	// Suspend the emulator clock to perform time consuming HLE operation,
+            	// in order to improve the timing compatibility with the PSP.
+            	Emulator.getClock().pause();
+                if (me.stepVideo()) {
+                	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
+                	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.packetSize;
+                	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.packetSize);
                 } else {
-                    me.init(meChannel, true, true);
-                    avcFrameStatus = 0;
+                	// Consume all the remaining packets
+                	packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
                 }
+            	Emulator.getClock().resume();
+                avcFrameStatus = 1;
             } else if (isEnableConnector() && mpegCodec.readVideoFrame(buffer, frameWidth, width, height, videoPixelMode, videoFrameCount)) {
                 packetsConsumed = mpegCodec.getPacketsConsumed();
                 avcFrameStatus = 1;
@@ -1432,7 +1450,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn(String.format("sceMpegAvcDecodeMode bad mpeg handle 0x%08X", mpeg));
             cpu.gpr[2] = -1;
         } else if (Memory.isAddressGood(mode_addr)) {
-            // -1 is a defualt value.
+            // -1 is a default value.
             int mode = mem.read32(mode_addr);
             int pixelMode = mem.read32(mode_addr + 4);
             if (pixelMode >= PSP_DISPLAY_PIXEL_FORMAT_565 && pixelMode <= PSP_DISPLAY_PIXEL_FORMAT_8888) {
@@ -1629,21 +1647,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             // Both the MediaEngine and the JpcspConnector are supporting
             // this 2 steps approach.
             if (checkMediaEngineState()) {
-                if (me.getContainer() != null) {
-                	int previousChannelLength = meChannel.length();
-                    if (me.stepVideo()) {
-                    	int channelLength = meChannel.length();
-                    	packetsConsumed = (previousChannelLength - channelLength) / mpegRingbuffer.packetSize;
-                    } else {
-                    	// Consume all the remaining packets
-                    	packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-                    }
-                    me.getVideoTimestamp(mpegAvcAu);
-                    avcFrameStatus = 1;
+                if (me.stepVideo()) {
+                	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.packetSize;
+                	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.packetSize);
                 } else {
-                    me.init(meChannel, true, true);
-                    avcFrameStatus = 0;
+                	// Consume all the remaining packets
+                	packetsConsumed = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
                 }
+                avcFrameStatus = 1;
             } else if (isEnableConnector()) {
             	// Store the encoded video frame for real decoding in sceMpegAvcCsc()
             	byte[] encodedVideoFrame = mpegCodec.readEncodedVideoFrame(videoFrameCount);
@@ -1884,12 +1895,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
             // External audio setup.
             if (checkMediaEngineState()) {
-                mem.memset(buffer_addr, (byte) 0, 8192);
-            	me.stepExtAudio(mpegStreamSize);
+            	Emulator.getClock().pause();
+            	int bytes = 0;
+            	if (me.stepAudio(MPEG_ATRAC_ES_OUTPUT_SIZE)) {
+	                bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
+                    mem.copyToMemory(buffer_addr, ByteBuffer.wrap(audioDecodeBuffer, 0, bytes), bytes);
+            	}
+            	// Fill the rest of the buffer with 0's
+            	mem.memset(buffer_addr + bytes, (byte) 0, MPEG_ATRAC_ES_OUTPUT_SIZE - bytes);
+            	Emulator.getClock().resume();
             } else if (isEnableConnector() && mpegCodec.readAudioFrame(buffer_addr, audioFrameCount)) {
                 mpegAtracAu.pts = mpegCodec.getMpegAtracCurrentTimestamp();
             } else {
-                mem.memset(buffer_addr, (byte) 0, 8192);
+                mem.memset(buffer_addr, (byte) 0, MPEG_ATRAC_ES_OUTPUT_SIZE);
             }
             audioFrameCount++;
             if (log.isDebugEnabled()) {

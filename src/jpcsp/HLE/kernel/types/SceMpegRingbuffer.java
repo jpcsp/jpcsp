@@ -100,4 +100,9 @@ public class SceMpegRingbuffer {
         mem.write32(address + 36, semaID);
         mem.write32(address + 40, mpeg);
     }
+
+	@Override
+	public String toString() {
+		return String.format("SceMpegRingbuffer(packets=%d, packetsRead=%d, packetsWritten=%d, packetsFree=%d, packetSize=%d)", packets, packetsRead, packetsWritten, packetsFree, packetSize);
+	}
 }

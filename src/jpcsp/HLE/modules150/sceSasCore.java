@@ -445,6 +445,10 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                 pcmMix[i] = memoryReader.readNext();
             }
             cpu.gpr[2] = 0;
+
+            // Delaying the current thread is required to allow fluid video/audio playback
+            // TODO: how much delay is matching the PSP?
+            Modules.ThreadManForUserModule.hleKernelDelayThread(3000, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
@@ -690,6 +694,10 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             // and process the sound accordingly.
             // Note: sasOut is 64-byte aligned.
             cpu.gpr[2] = 0;
+
+            // Delaying the current thread is required to allow fluid video/audio playback
+            // TODO: how much delay is matching the PSP?
+            Modules.ThreadManForUserModule.hleKernelDelayThread(3000, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
