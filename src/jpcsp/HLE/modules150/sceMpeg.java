@@ -356,7 +356,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         return isCurrentMpegAnalyzed;
     }
 
-    protected void setCurrentMpegAnalyzed(boolean status) {
+    public void setCurrentMpegAnalyzed(boolean status) {
         isCurrentMpegAnalyzed = status;
     }
 
@@ -1489,8 +1489,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegAvcDecodeStop bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(status_addr)) {
-            // Return the last frame status.
-            mem.write32(status_addr, avcFrameStatus);
+            // No last frame generated
+            mem.write32(status_addr, 0);
             cpu.gpr[2] = 0;
         } else {
             log.warn("sceMpegAvcDecodeStop bad address " + String.format("0x%08X 0x%08X", buffer_addr, status_addr));
@@ -1718,8 +1718,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegAvcDecodeStopYCbCr bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (Memory.isAddressGood(buffer_addr) && Memory.isAddressGood(status_addr)) {
-            // Return the last frame status.
-            mem.write32(status_addr, avcFrameStatus);
+            // No last frame generated
+            mem.write32(status_addr, 0);
             cpu.gpr[2] = 0;
         } else {
             log.warn("sceMpegAvcDecodeStopYCbCr bad address " + String.format("0x%08X 0x%08X", buffer_addr, status_addr));

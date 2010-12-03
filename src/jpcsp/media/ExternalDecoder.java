@@ -41,6 +41,8 @@ public class ExternalDecoder {
     private static File extAudioDecoder;
     private static IoListener ioListener;
     private static boolean enabled = true;
+    private static boolean dumpEncodedFile = false;
+    private static boolean dumpPmfFile = false;
 
     public ExternalDecoder() {
     	init();
@@ -134,26 +136,38 @@ public class ExternalDecoder {
     		return;
     	}
 
+    	if (dumpPmfFile) {
+			try {
+				FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, "pmf"));
+				pmfOut.write(mpegData);
+				pmfOut.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+
     	MpegDemux mpegDemux = new MpegDemux(mpegData, mpegOffset);
 		mpegDemux.demux(false, true);
 
 		ByteBuffer audioStream = mpegDemux.getAudioStream();
 		if (audioStream != null) {
 			ByteBuffer omaBuffer = OMAFormat.convertStreamToOMA(audioStream); 
-			try {
-				new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
-				String encodedFile = MediaEngine.getExtAudioPath(mpegFileSize, "oma");
-				FileOutputStream os = new FileOutputStream(encodedFile);
-				os.getChannel().write(omaBuffer);
-				os.close();
-
-				String decodedFile = MediaEngine.getExtAudioPath(mpegFileSize, "wav");
-				if (!executeExternalDecoder(encodedFile, decodedFile)) {
-					new File(encodedFile).delete();
+			if (omaBuffer != null) {
+				try {
+					new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
+					String encodedFile = MediaEngine.getExtAudioPath(mpegFileSize, "oma");
+					FileOutputStream os = new FileOutputStream(encodedFile);
+					os.getChannel().write(omaBuffer);
+					os.close();
+	
+					String decodedFile = MediaEngine.getExtAudioPath(mpegFileSize, "wav");
+					if (!executeExternalDecoder(encodedFile, decodedFile)) {
+						new File(encodedFile).delete();
+					}
+				} catch (IOException e) {
+					// Ignore Exception
+					log.error(e);
 				}
-			} catch (IOException e) {
-				// Ignore Exception
-				log.error(e);
 			}
 		}
     }
@@ -192,6 +206,13 @@ public class ExternalDecoder {
 
     	try {
 	    	ByteBuffer riffBuffer = ByteBuffer.wrap(atracData);
+	    	if (dumpEncodedFile) {
+	    		// For debugging purpose, optionally dump the original atrac file in RIFF format
+	    		FileOutputStream encodedOut = new FileOutputStream(getAtracAudioPath(address, atracFileSize, "encoded"));
+	    		encodedOut.getChannel().write(riffBuffer);
+	    		encodedOut.close();
+	    		riffBuffer.rewind();
+	    	}
 	    	ByteBuffer omaBuffer = OMAFormat.convertRIFFtoOMA(riffBuffer);
 	    	if (omaBuffer == null) {
 	    		return null;
@@ -255,8 +276,11 @@ public class ExternalDecoder {
     	@Override
 		public void sceIoRead(int result, int uid, int data_addr, int size,	int bytesRead, long position, SeekableDataInput dataInput) {
 			if (result >= 0) {
-				ReadInfo readInfo = new ReadInfo(data_addr, dataInput, position);
-				readInfos.put(data_addr, readInfo);
+				ReadInfo readInfo = readInfos.get(data_addr);
+				if (readInfo == null || readInfo.dataInput != dataInput || readInfo.position > position) {
+					readInfo = new ReadInfo(data_addr, dataInput, position);
+					readInfos.put(data_addr, readInfo);
+				}
 			}
 		}
 

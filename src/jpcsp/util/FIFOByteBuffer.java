@@ -73,6 +73,10 @@ public class FIFOByteBuffer {
     }
 
     public void write(Buffer src, int length) {
+    	if (buffer == null) {
+    		return; // FIFOByteBuffer has been deleted
+    	}
+
     	checkBufferForWrite(length);
 
     	// Copy the src content to the buffer at offset bufferWriteOffset
