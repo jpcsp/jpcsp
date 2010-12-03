@@ -450,6 +450,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+        Modules.sceMpegModule.setCurrentMpegAnalyzed(false);
         PSMFHeader header = new PSMFHeader(buffer_addr);
         psmfMap.put(psmf, header);
 

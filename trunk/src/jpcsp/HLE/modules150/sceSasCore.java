@@ -463,8 +463,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             }
             mixer.updateVoices(voices);
             mixer.synthesizeWithMix(sasInOut, grainSamples * 2, pcmMix);  // 256 (grain) * 2 (channels).
-            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
             cpu.gpr[2] = 0;
+            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
@@ -705,8 +705,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
             mixer.updateVoices(voices);
             mixer.synthesize(sasOut, grainSamples * 2);  // 256 (grain) * 2 (channels).
-            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
             cpu.gpr[2] = 0;
+            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
