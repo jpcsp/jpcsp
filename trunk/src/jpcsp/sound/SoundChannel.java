@@ -171,7 +171,7 @@ public class SoundChannel {
 		}
     }
 
-    private void checkFreeBuffers() {
+    public void checkFreeBuffers() {
     	soundBufferManager.checkFreeBuffers(alSource);
     }
 

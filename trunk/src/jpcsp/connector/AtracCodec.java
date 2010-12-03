@@ -65,7 +65,7 @@ public class AtracCodec {
     protected static final int STREAM_SEEK_FLAG_FRAME = 8;
     protected MediaEngine me;
     protected PacketChannel atracChannel;
-    protected int memBufOffset;
+    protected int nextDecodePos;
     protected int currentLoopCount;
     protected static boolean useMediaEngine = false;
     protected byte[] samplesBuffer;
@@ -88,7 +88,7 @@ public class AtracCodec {
             me = new MediaEngine();
             me.setAudioSamplesSize(sceAtrac3plus.maxSamples);
             atracChannel = new PacketChannel();
-            memBufOffset = 0;
+            nextDecodePos = 0;
             currentLoopCount = 0;
         }
 
@@ -146,7 +146,8 @@ public class AtracCodec {
             command.println("Exit");
             commandFileDirty = false;
         } catch (FileNotFoundException e) {
-            Modules.log.warn(e);
+            // This exception can be safely ignored, since this file
+            // is only used when using decoded data.
         } finally {
             Utilities.close(command);
         }
@@ -171,7 +172,7 @@ public class AtracCodec {
                 me.finish();
                 atracChannel.write(address, length);
                 me.init(atracChannel, false, true);
-                memBufOffset = 0;
+                nextDecodePos = 0;
                 atracEndSample = 0;
                 return;
             }
@@ -182,7 +183,7 @@ public class AtracCodec {
         			Modules.log.info("AT3+ data decoded by the external decoder.");
         			me.finish();
         			me.init(channel, false, true);
-                    memBufOffset = 0;
+                    nextDecodePos = 0;
                     atracEndSample = -1;
         			return;
         		}
@@ -343,7 +344,7 @@ public class AtracCodec {
 
     public int getAtracNextDecodePosition() {
         if (checkMediaEngineState()) {
-            return memBufOffset;
+            return nextDecodePos;
         }
 
         try {
@@ -363,6 +364,7 @@ public class AtracCodec {
         int bytes = me.getCurrentAudioSamples(samplesBuffer);
         if (bytes > 0) {
             atracEndSample += bytes;
+            nextDecodePos += bytes;
             mem.copyToMemory(address, ByteBuffer.wrap(samplesBuffer, 0, bytes), bytes);
         }
 

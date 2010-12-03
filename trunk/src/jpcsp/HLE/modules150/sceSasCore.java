@@ -30,6 +30,7 @@ import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.sound.SoundVoice;
+import jpcsp.sound.SoundMixer;
 
 import org.apache.log4j.Logger;
 
@@ -119,18 +120,53 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         for (int i = 0; i < voices.length; i++) {
             voices[i] = new SoundVoice(i);
         }
-
-        grainSamples = 0x100;   // Normal base value for sound processing.
-        outputMode = 0;         // Checked. 0 is default (STEREO).
+        mixer = new SoundMixer();
+        grainSamples = PSP_SAS_GRAIN_SAMPLES;
+        outputMode = PSP_SAS_OUTPUTMODE_STEREO;
     }
 
     @Override
     public void stop() {
     }
 
+    public static final int PSP_SAS_VOICES_MAX = 32;
+    public static final int PSP_SAS_GRAIN_SAMPLES = 256;
+    public static final int PSP_SAS_VOL_MAX = 0x1000;
+    public static final int PSP_SAS_LOOP_MODE_OFF = 0;
+    public static final int PSP_SAS_LOOP_MODE_ON = 1;
+    public static final int PSP_SAS_PITCH_MIN = 0x1;
+    public static final int PSP_SAS_PITCH_BASE = 0x1000;
+    public static final int PSP_SAS_PITCH_MAX = 0x4000;
+    public static final int PSP_SAS_NOISE_FREQ_MAX = 0x3F;
+    public static final int PSP_SAS_ENVELOPE_HEIGHT_MAX = 0x40000000;
+    public static final int PSP_SAS_ENVELOPE_FREQ_MAX = 0x7FFFFFFF;
+    public static final int PSP_SAS_ADSR_CURVE_MODE_LINEAR_INCREASE = 0;
+    public static final int PSP_SAS_ADSR_CURVE_MODE_LINEAR_DECREASE = 1;
+    public static final int PSP_SAS_ADSR_CURVE_MODE_LINEAR_BENT = 2;
+    public static final int PSP_SAS_ADSR_CURVE_MODE_EXPONENT_REV = 3;
+    public static final int PSP_SAS_ADSR_CURVE_MODE_EXPONENT = 4;
+    public static final int PSP_SAS_ADSR_CURVE_MODE_DIRECT = 5;
+    public static final int PSP_SAS_ADSR_ATTACK = 1;
+    public static final int PSP_SAS_ADSR_DECAY = 2;
+    public static final int PSP_SAS_ADSR_SUSTAIN = 4;
+    public static final int PSP_SAS_ADSR_RELEASE = 8;
+    public static final int PSP_SAS_OUTPUTMODE_STEREO = 0;
+    public static final int PSP_SAS_OUTPUTMODE_MULTICHANNEL = 1;
+    public static final int PSP_SAS_EFFECT_TYPE_OFF = -1;
+    public static final int PSP_SAS_EFFECT_TYPE_ROOM = 0;
+    public static final int PSP_SAS_EFFECT_TYPE_UNK1 = 1;
+    public static final int PSP_SAS_EFFECT_TYPE_UNK2 = 2;
+    public static final int PSP_SAS_EFFECT_TYPE_UNK3 = 3;
+    public static final int PSP_SAS_EFFECT_TYPE_HALL = 4;
+    public static final int PSP_SAS_EFFECT_TYPE_SPACE = 5;
+    public static final int PSP_SAS_EFFECT_TYPE_ECHO = 6;
+    public static final int PSP_SAS_EFFECT_TYPE_DELAY = 7;
+    public static final int PSP_SAS_EFFECT_TYPE_PIPE = 8;
+
     protected int sasCoreUid;
     protected boolean isSasInit;
     protected SoundVoice[] voices;
+    protected SoundMixer mixer;
     protected int grainSamples;
     protected int outputMode;
     protected static final int waveformBufMaxSize = 1024;  // 256 sound samples.
@@ -141,6 +177,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
     protected int waveformEffectFeedback;
     protected boolean waveformEffectIsDryOn;
     protected boolean waveformEffectIsWetOn;
+    protected static final int sasCoreDelay = 5000; // Average microseconds, based on PSP tests.
 
     protected String makeLogParams(CpuState cpu) {
         return String.format("%08x %08x %08x %08x",
@@ -338,16 +375,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         int type = cpu.gpr[5];
 
         // Set waveform effect's type.
-        // -1 -> No effect.
-        // 0 -> "Room" effect.
-        // 1 -> Unknown.
-        // 2 -> Unknown.
-        // 3 -> Unknown.
-        // 4 -> Unknown.
-        // 5 -> Unknown.
-        // 6 -> Echo (uses feedback).
-        // 7 -> Delay (uses delay).
-        // 8 -> "Pipe" effect.
         if (log.isDebugEnabled()) {
             log.debug("__sceSasRevType(sasCore=0x" + Integer.toHexString(sasCore) + ", type=" + type + ")");
         }
@@ -434,15 +461,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             for(int i = 0; i < grainSamples * 2; i++) {
                 pcmMix[i] = memoryReader.readNext();
             }
-            for(int i = 0; i < voices.length; i++) {
-                voices[i].synthesizeWithMix(sasInOut, grainSamples * 2, pcmMix);  // 256 (grain) * 2 (channels).
-            }
-            // Tested on PSP:
-            // This the delay seems to be the result of the slow PSP's DAC when
-            // processing SAS audio synthesis and writing the results to memory.
-            // 100000 micros seems to be the most tolerable and widely
-            // acceptable time limit on the PSP.
-            Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+            mixer.updateVoices(voices);
+            mixer.synthesizeWithMix(sasInOut, grainSamples * 2, pcmMix);  // 256 (grain) * 2 (channels).
+            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
@@ -587,7 +608,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
             voices[voice].setSamples(decodeSamples(processor, vagAddr, size));
             voices[voice].setLoopMode(loopmode);
-
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
@@ -683,15 +703,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-            for(int i = 0; i < voices.length; i++) {
-                voices[i].synthesize(sasOut, grainSamples * 2);  // 256 (grain) * 2 (channels).
-            }
-            // Tested on PSP:
-            // This the delay seems to be the result of the slow PSP's DAC when
-            // processing SAS audio synthesis and writing the results to memory.
-            // 100000 micros seems to be the most tolerable and widely
-            // acceptable time limit on the PSP.
-            Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+            mixer.updateVoices(voices);
+            mixer.synthesize(sasOut, grainSamples * 2);  // 256 (grain) * 2 (channels).
+            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
@@ -947,7 +961,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
             int res = 0;
             for (int i = 0; i < voices.length; i++) {
-                if (!voices[i].isEnded()) {
+                if (voices[i].isPlaying()) {
                     res += voices[i].getEnvelope().height;
                 }
             }

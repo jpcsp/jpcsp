@@ -16,11 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import jpcsp.HLE.modules150.sceSasCore;
 import jpcsp.hardware.Audio;
-import jpcsp.Memory;
 
 public class SoundVoice extends SoundChannel {
-    private static final int NORMAL_PITCH = 0x1000;
     private short[] samples;
     private int loopMode;
     private int pitch;
@@ -49,7 +48,7 @@ public class SoundVoice extends SoundChannel {
             SustainRate = 0;
             ReleaseRate = 0;
             SustainLevel = 0;
-            height = 0;
+            height = sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
         }
     }
 
@@ -57,7 +56,7 @@ public class SoundVoice extends SoundChannel {
 		super(index);
         samples = null;
         loopMode = 0;
-        pitch = NORMAL_PITCH;
+        pitch = sceSasCore.PSP_SAS_PITCH_BASE;
         noise = 0;
         playing = false;
         paused = false;
@@ -66,7 +65,7 @@ public class SoundVoice extends SoundChannel {
         envelope = new VoiceADSREnvelope();
 	}
 
-    private byte[] encodeSamples() {
+    public byte[] encodeSamples() {
     	int nsamples = samples.length;
         byte[] samplesBuffer = new byte[nsamples * 4];
         int leftVol = Audio.getVolume(getLeftVolume());
@@ -83,47 +82,15 @@ public class SoundVoice extends SoundChannel {
         return samplesBuffer;
     }
 
-    public void synthesize(int addr, int length) {
-        Memory mem = Memory.getInstance();
-        if(samples != null) {
-            if(isOn() && isPlaying() && !isPaused()) {
-                play(encodeSamples());
-                setPlaying(false);
-            } else if(isOff()) {
-                release();
-                mem.memset(addr, (byte)0, length);
-            } else {
-                mem.memset(addr, (byte)0, length);
-            }
-        }
-    }
-
-    public void synthesizeWithMix(int addr, int length, int[] mix) {
-        Memory mem = Memory.getInstance();
-        if(samples != null) {
-            if(isOn() && isPlaying() && !isPaused()) {
-                play(encodeSamples());
-                setPlaying(false);
-            } else if(isOff()) {
-                release();
-                mem.memset(addr, (byte)0, length);
-            } else {
-                mem.memset(addr, (byte)0, length);
-            }
-        }
-    }
-
     public void on() {
         on = true;
         off = false;
-        envelope.height = 0x10000000;
         setPlaying(true);
 	}
 
     public void off() {
         on = false;
         off = true;
-        envelope.height = 0;
         setPlaying(false);
     }
 
@@ -189,6 +156,6 @@ public class SoundVoice extends SoundChannel {
 
 	@Override
 	public int getSampleRate() {
-		return super.getSampleRate() * getPitch() / NORMAL_PITCH;
+		return super.getSampleRate() * getPitch() / sceSasCore.PSP_SAS_PITCH_BASE;
 	}
 }
