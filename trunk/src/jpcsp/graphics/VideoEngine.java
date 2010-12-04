@@ -587,11 +587,16 @@ public class VideoEngine {
             log.debug(String.format("Stall address 0x%08X reached, waiting for Sync", currentList.pc));
         }
         currentList.status = PSP_GE_LIST_STALL_REACHED;
+		long startWaitClockMillis = Emulator.getClock().milliTime();
         if (!currentList.waitForSync(10)) {
+			long endWaitClockMillis = Emulator.getClock().milliTime();
             if (isLogDebugEnabled) {
                 log.debug("Wait for sync while stall reached");
             }
-            waitForSyncCount++;
+		    // Count only when the clock is not paused
+		    if (startWaitClockMillis != endWaitClockMillis) {
+		    	waitForSyncCount++;
+		    }
 
             // Waiting maximum 100 * 10ms (= 1 second) on a stall address.
             // After this timeout, abort the list.
@@ -622,11 +627,16 @@ public class VideoEngine {
 		    log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync"));
 		}
 		currentList.status = PSP_GE_LIST_END_REACHED;
+		long startWaitClockMillis = Emulator.getClock().milliTime();
 		if (!currentList.waitForSync(10)) {
+			long endWaitClockMillis = Emulator.getClock().milliTime();
 		    if (isLogDebugEnabled) {
 		        log.debug("Wait for sync while END reached");
 		    }
-		    waitForSyncCount++;
+		    // Count only when the clock is not paused
+		    if (startWaitClockMillis != endWaitClockMillis) {
+		    	waitForSyncCount++;
+		    }
 
 		    // Waiting maximum 100 * 10ms (= 1 second) on an END command.
 		    // After this timeout, abort the list.
@@ -2141,7 +2151,7 @@ public class VideoEngine {
         int signal = normalArgument & 0xFFFF;
         if (behavior < 1 || behavior > 3) {
             if (isLogWarnEnabled) {
-                log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ") unknown behavior");
+                log.warn(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ") unknown behavior");
             }
         } else if (isLogDebugEnabled) {
             log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");

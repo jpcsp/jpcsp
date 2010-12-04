@@ -41,11 +41,13 @@ import jpcsp.util.Utilities;
 
 public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public final static String savedataPath     = "ms0:/PSP/SAVEDATA/";
+	public final static String savedataFilePath = "ms0/PSP/SAVEDATA/";
 	public final static String icon0FileName    = "ICON0.PNG";
 	public final static String icon1FileName    = "ICON1.PNG";
 	public final static String pic1FileName     = "PIC1.PNG";
 	public final static String snd0FileName     = "SND0.AT3";
 	public final static String paramSfoFileName = "PARAM.SFO";
+	public final static String anyFileName      = "<>";
 
 	public int baseAddress;
 
@@ -315,7 +317,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
     public String getBasePath(String saveName) {
         String path = savedataPath + gameName;
-        if (!saveName.equals("<>")) {
+        if (!anyFileName.equals(saveName)) {
             path += saveName;
         }
         path += "/";
@@ -508,14 +510,15 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         // NULL can also be sent in saveName (seen in MODE_SIZES).
         // It means any save from the current game, since all saves share a common
         // save data file.
-        if(saveName == null || saveName.length() <= 0) {
-            File f = new File("ms0/PSP/SAVEDATA/");
-            if(f.list() == null) {
+        if (saveName == null || saveName.length() <= 0 || anyFileName.equals(saveName)) {
+            File f = new File(savedataFilePath);
+            String[] entries = f.list();
+            if(entries == null) {
                 return false;
             }
             for(int i = 0; i < f.list().length; i++) {
-                if(!f.list()[i].equals(gameName) && f.list()[i].contains(gameName)) {
-                    saveName = f.list()[i].replace(gameName, "");
+                if(entries[i].startsWith(gameName)) {
+                    saveName = entries[i].replace(gameName, "");
                     break;
                 }
             }
@@ -523,7 +526,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
         // When NULL is sent in fileName, it means any file inside the savedata folder.
         if (fileName == null || fileName.length() <= 0) {
-            File f = new File("ms0/PSP/SAVEDATA/" + gameName + saveName);
+            File f = new File(savedataFilePath + gameName + saveName);
             if(f.list() == null) {
                 return false;
             }
