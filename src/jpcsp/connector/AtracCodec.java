@@ -187,7 +187,7 @@ public class AtracCodec {
                     atracEndSample = -1;
         			return;
         		}
-    			Modules.log.info("AT3+ data could not be decoded by the external decode.");
+    			Modules.log.info("AT3+ data could not be decoded by the external decoder.");
         	} else {
         		Modules.log.info("Undecodable AT3+ data detected.");
         	}

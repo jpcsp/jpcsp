@@ -80,6 +80,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     public final static int PSP_GE_BEHAVIOR_SUSPEND  = 1;
     public final static int PSP_GE_BEHAVIOR_CONTINUE = 2;
     public final static int PSP_GE_BEHAVIOR_BREAK    = 3;
+    public final static int PSP_GE_BEHAVIOR_UNKNOWN8 = 8;
 
     public final static int PSP_GE_MATRIX_BONE0  = 0;
     public final static int PSP_GE_MATRIX_BONE1  = 1;
@@ -281,7 +282,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 		//    PSP_GE_BEHAVIOR_CONTINUE and PSP_GE_BEHAVIOR_SUSPEND
 		// Both wait for the completion of the callback before continuing
 		// the list processing...
-		if (behavior == PSP_GE_BEHAVIOR_CONTINUE || behavior == PSP_GE_BEHAVIOR_SUSPEND) {
+		if (behavior == PSP_GE_BEHAVIOR_CONTINUE || behavior == PSP_GE_BEHAVIOR_SUSPEND || behavior == PSP_GE_BEHAVIOR_UNKNOWN8) {
 			if (listId >= 0 && listId < NUMBER_GE_LISTS) {
 				PspGeList list = allGeLists[listId];
 				if (log.isDebugEnabled()) {
