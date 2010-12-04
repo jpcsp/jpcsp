@@ -50,30 +50,10 @@ import jpcsp.util.Utilities;
 
 /*
  * TODO list:
- * 1. Check LoadELFSections sh .bss: Use only ph .bss?
- *
- * 2. Implement R_MIPS_GPREL16 in relocateFromBuffer:
- *   -> Test code from fiveofhearts:
- * -----------------------------------------------------------------------------------------------------------
- *        case 7: //R_MIPS_GPREL16
- *          Memory.log.warn("Untested relocation type " + R_TYPE + " at " + String.format("%08x", data_addr));
- *
- *          A = rel16;
- *          result = (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) + S + GP;
- *          if ((result & ~0x0000FFFF) != 0) {
- *              Memory.log.warn("Relocation overflow (R_MIPS_GPREL16)");
- *          }
- *
- *          data &= ~0x0000FFFF;
- *          data |= (int)(result & 0x0000FFFF);
- *
- *          break;
- * -----------------------------------------------------------------------------------------------------------
- *
- * 3. Implement relocation type 0x700000A1 in relocateFromHeaders:
+ * 1. Implement relocation type 0x700000A1 in relocateFromHeaders:
  *      -> Info: http://forums.ps2dev.org/viewtopic.php?p=80416#80416
  *
- * 4. Save debugger info for all loaded modules in LoadELFDebuggerInfo.
+ * 2. Save debugger info for all loaded modules in LoadELFDebuggerInfo.
  */
 
 public class Loader {
@@ -665,38 +645,36 @@ public class Loader {
             int targ26 = data & 0x03FFFFFF;
             int hi16 = data & 0x0000FFFF;
             int lo16 = data & 0x0000FFFF;
+            int rel16 = data & 0x0000FFFF;
 
             int A = 0; // addend
-
             int S = (int) baseAddress + phBaseOffset;
-            //int GP = (int) baseAddress + (int) module.gp_value; // Note: Only used in R_MIPS_GPREL16 which is untested (fiveofhearts).
+            int GP = (int) baseAddress + (int) module.gp_value;
 
             switch (R_TYPE) {
                 case 0: //R_MIPS_NONE
-
-                	// Starting at the last relocation address
-                	// (or at the beginning of the section for the first relocation),
-                	// perform a relocation analog to R_MIPS_32 on the first non NULL address.
-                	int value;
-                	while (true) {
-                		value = mem.read32(nextAddr);
-                		if (value != 0) {
-                			break;
-                		}
-                		nextAddr += 4;
-                	}
-                	data_addr = nextAddr;
-                	data = value + S;
-
-                	if (!displayedUntestedR_MIPS_NONE) {
-                		// I'm not sure about the implementation of the relocation R_MIPS_NONE (gid15).
-                		// This seems to work for the game "Little Britain".
-                		// Display a message to identify which programs are using this relocation type.
-                		Memory.log.info(String.format("Untested relocation of type R_MIPS_NONE addr=%08X", data_addr));
-                		displayedUntestedR_MIPS_NONE = true;
-                	} else if (Memory.log.isTraceEnabled()) {
+                    // Tested on PSP:
+                    // R_MIPS_NONE just returns 0.
+                    if (Memory.log.isTraceEnabled()) {
                 		Memory.log.trace(String.format("R_MIPS_NONE addr=%08X", data_addr));
                 	}
+                    break;
+
+                case 2: //R_MIPS_32
+                    data += S;
+                	if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_32 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                    }
+                    break;
+
+                case 4: //R_MIPS_26
+                    A = targ26;
+                    result = ((A << 2) + S) >> 2;
+                    data &= ~0x03FFFFFF;
+                    data |= (int) (result & 0x03FFFFFF); // truncate
+                	if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_26 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                    }
                     break;
 
                 case 5: //R_MIPS_HI16
@@ -712,16 +690,13 @@ public class Loader {
                     A = lo16;
                     AHL &= ~0x0000FFFF; // delete lower bits, since many R_MIPS_LO16 can follow one R_MIPS_HI16
                     AHL |= A & 0x0000FFFF;
-
                     result = AHL + S;
                     data &= ~0x0000FFFF;
                     data |= result & 0x0000FFFF; // truncate
-
                     // Process deferred R_MIPS_HI16
                     for (Iterator<Integer> it = deferredHi16.iterator(); it.hasNext();) {
                         int data_addr2 = it.next();
                         int data2 = mem.read32(data_addr2);
-
                         result = ((data2 & 0x0000FFFF) << 16) + A + S;
                         // The low order 16 bits are always treated as a signed
                         // value. Therefore, a negative value in the low order bits
@@ -737,39 +712,26 @@ public class Loader {
                         }
                         data2 &= ~0x0000FFFF;
                         data2 |= (result >> 16) & 0x0000FFFF; // truncate
-
-
                     	if (Memory.log.isTraceEnabled()) {
                     		Memory.log.trace(String.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, mem.read32(data_addr2), data2));
                         }
                         mem.write32(data_addr2, data2);
                         it.remove();
                     }
-
                 	if (Memory.log.isTraceEnabled()) {
                 		Memory.log.trace(String.format("R_MIPS_LO16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                 	}
                     break;
 
-                case 4: //R_MIPS_26
-                    A = targ26;
-
-                    result = ((A << 2) + S) >> 2;
-
-                    data &= ~0x03FFFFFF;
-                    data |= (int) (result & 0x03FFFFFF); // truncate
-
-                	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_26 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                case 7: //R_MIPS_GPREL16
+                    // Tested and confirmed to be working on PSP.
+                    A = rel16;
+                    result = (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) + S + GP;
+                    if ((result & ~0x0000FFFF) != 0) {
+                        Memory.log.warn("Relocation overflow (R_MIPS_GPREL16)");
                     }
-                    break;
-
-                case 2: //R_MIPS_32
-                    data += S;
-
-                	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_32 addr=%08X before=%08X after=%08X", data_addr, word32, data));
-                    }
+                    data &= ~0x0000FFFF;
+                    data |= (int)(result & 0x0000FFFF);
                     break;
 
                 default:
