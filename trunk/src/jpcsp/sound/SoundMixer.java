@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
-import jpcsp.HLE.modules150.sceSasCore;
 import jpcsp.Memory;
 
 public class SoundMixer {
@@ -26,20 +25,19 @@ public class SoundMixer {
     public SoundMixer() {
     }
 
-    private void addSamples(short[] samples, int smplAddr, int smplLength) {
+    private void mixSamples(short[] samples, int smplAddr, int smplLength) {
         Memory mem = Memory.getInstance();
         for (int i = 0; i < smplLength; i++) {
-            short s1 = (short) mem.read16(smplAddr);
+            int sAddr = (smplAddr + i * 2);
+            short s1 = (short) mem.read16(sAddr);
             short s2 = samples[i];
-            float sum = ((s1 / 32768.0f) + (s2 / 32768.0f)) * 0.8f;
-            if (sum > 1.0f) {
-                sum = 1.0f;
-            }
-            if (sum < -1.0f) {
-                sum = -1.0f;
-            }
-            short sOut = (short) (sum * 32768.0f);
-            mem.write16(smplAddr + i * 2, sOut);
+            // Use floats for a better value approximation.
+            float fSum = (float)(s1 / 32768.0f) + (float)(s2 / 32768.0f);
+            // Clamp the sound values as required by PCM standards.
+            if(fSum > 1.0f) fSum = 1.0f;
+            if(fSum < -1.0f) fSum = -1.0f;
+            short sOut = (short) (fSum * 32768.0f);
+            mem.write16(sAddr, sOut);
         }
     }
 
@@ -73,12 +71,10 @@ public class SoundMixer {
                     }
                     // Use OpenAL to playback this voice's samples.
                     // TODO: Replace this with an improved and working version
-                    // of addSamples solely based on memory writing.
+                    // of mixSamples solely based on memory writing.
                     sasVoices[i].play(sasVoices[i].encodeSamples());
-                    // If loop mode is disabled, set playing to false.
-                    if (sasVoices[i].getLoopMode() == sceSasCore.PSP_SAS_LOOP_MODE_OFF) {
-                        sasVoices[i].setPlaying(false);
-                    }
+                    // Always perform one-shot playback.
+                    sasVoices[i].setPlaying(false);
                 } else {
                     // Flush OpenAL's buffers.
                     sasVoices[i].checkFreeBuffers();
@@ -115,10 +111,8 @@ public class SoundMixer {
                     // TODO: Replace this with an improved and working version
                     // of addSamples solely based on memory writing.
                     sasVoices[i].play(sasVoices[i].encodeSamples());
-                    // If loop mode is disabled, set playing to false.
-                    if (sasVoices[i].getLoopMode() == sceSasCore.PSP_SAS_LOOP_MODE_OFF) {
-                        sasVoices[i].setPlaying(false);
-                    }
+                    // Always perform one-shot playback.
+                    sasVoices[i].setPlaying(false);
                 } else {
                     // Flush OpenAL's buffers.
                     sasVoices[i].checkFreeBuffers();
