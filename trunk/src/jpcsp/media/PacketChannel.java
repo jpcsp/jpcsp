@@ -17,9 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.media;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+
+import com.xuggle.xuggler.io.IURLProtocolHandler;
 
 import jpcsp.util.FIFOByteBuffer;
 
@@ -27,7 +27,7 @@ import jpcsp.util.FIFOByteBuffer;
  * Common interface for PSMF/MPEG -> Media Engine communication.
  *
  */
-public class PacketChannel extends FIFOByteBuffer implements ReadableByteChannel {
+public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler {
 	private int readLength;
 
     public PacketChannel() {
@@ -38,25 +38,10 @@ public class PacketChannel extends FIFOByteBuffer implements ReadableByteChannel
 		super(buffer);
 	}
 
-	@Override
-	public int read(ByteBuffer dst) throws IOException {
-		int length = readByteBuffer(dst);
-
-		if (length > 0) {
-			readLength += length;
-		}
-
-		return length;
-	}
-
     @Override
-	public void close() throws IOException {
+	public int close() {
     	delete();
-	}
-
-    @Override
-	public boolean isOpen() {
-		return true;
+    	return 0;
 	}
 
 	public int getReadLength() {
@@ -71,5 +56,41 @@ public class PacketChannel extends FIFOByteBuffer implements ReadableByteChannel
 	public void clear() {
 		super.clear();
 		setReadLength(0);
+	}
+
+	@Override
+	public boolean isStreamed(String url, int flags) {
+		// We support seeking
+		return false;
+	}
+
+	@Override
+	public int open(String url, int flags) {
+		// Nothing to do
+		return 0;
+	}
+
+	@Override
+	public int read(byte[] buf, int size) {
+		if (size > 0) {
+			size = readByteBuffer(ByteBuffer.wrap(buf, 0, size));
+			if (size > 0) {
+				readLength += size;
+			}
+		}
+
+		return size;
+	}
+
+	@Override
+	public long seek(long offset, int whence) {
+		// Seek not supported
+		return -1;
+	}
+
+	@Override
+	public int write(byte[] buf, int size) {
+		// Write not supported
+		return -1;
 	}
 }
