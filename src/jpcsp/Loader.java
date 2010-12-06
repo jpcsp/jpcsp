@@ -607,19 +607,11 @@ public class Loader {
      * @param RelCount The number of Elf32Rel structs to read and process.
      */
     private void relocateFromBuffer(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int RelCount, Elf32SectionHeader relocatedSection) throws IOException {
-
-    	// Display a message about untested R_MIPS_NONE only once per section
-    	boolean displayedUntestedR_MIPS_NONE = false;
+        Elf32 elf, int RelCount) throws IOException {
 
     	Elf32Relocate rel = new Elf32Relocate();
         int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
         List<Integer> deferredHi16 = new LinkedList<Integer>(); // We'll use this to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
-
-        int nextAddr = 0;
-        if (relocatedSection != null) {
-        	nextAddr = (int) (relocatedSection.getSh_addr() + baseAddress);
-        }
 
         Memory mem = Memory.getInstance();
         for (int i = 0; i < RelCount; i++) {
@@ -659,6 +651,13 @@ public class Loader {
                 		Memory.log.trace(String.format("R_MIPS_NONE addr=%08X", data_addr));
                 	}
                     break;
+
+                case 1: // R_MIPS_16
+                	data = (data & 0xFFFF0000) | ((data + S) & 0x0000FFFF);
+                	if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                    }
+                	break;
 
                 case 2: //R_MIPS_32
                     data += S;
@@ -740,7 +739,6 @@ public class Loader {
             }
 
             mem.write32(data_addr, data);
-            nextAddr = data_addr + 4;
         }
     }
 
@@ -757,7 +755,7 @@ public class Loader {
                 Memory.log.debug("PH#" + i + ": relocating " + RelCount + " entries");
 
                 f.position((int)(elfOffset + phdr.getP_offset()));
-                relocateFromBuffer(f, module, baseAddress, elf, RelCount, null);
+                relocateFromBuffer(f, module, baseAddress, elf, RelCount);
                 return;
             } else if (phdr.getP_type() == 0x700000A1L) {
                 Memory.log.warn("Unimplemented:PH#" + i + ": relocate type 0x700000A1");
@@ -775,9 +773,8 @@ public class Loader {
                 int RelCount = (int)shdr.getSh_size() / Elf32Relocate.sizeof();
                 Memory.log.debug(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
 
-                Elf32SectionHeader relocatedSection = elf.getSectionHeader(shdr.getSh_info());
                 f.position((int)(elfOffset + shdr.getSh_offset()));
-                relocateFromBuffer(f, module, baseAddress, elf, RelCount, relocatedSection);
+                relocateFromBuffer(f, module, baseAddress, elf, RelCount);
             }
         }
     }

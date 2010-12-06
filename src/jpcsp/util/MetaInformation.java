@@ -33,16 +33,17 @@ public class MetaInformation {
     private MetaInformation() {
         try {
             InputStream is = getClass().getResourceAsStream("/jpcsp/title.txt");
-            String customName = Utilities.toString(is, true).trim();
-            if (customName.isEmpty()) {
-                System.err.println("first line of title.txt is blank or file is empty");
-            } else {
-                FULL_NAME = NAME + " " + VERSION + " " + customName;
+            if (is != null) {
+	            String customName = Utilities.toString(is, true).trim();
+	            if (customName.isEmpty()) {
+	                System.err.println("first line of title.txt is blank or file is empty");
+	            } else {
+	                FULL_NAME = NAME + " " + VERSION + " " + customName;
+	            }
             }
         } catch (IOException e) {
             System.err.println("something went wrong: " + e.getMessage());
             e.printStackTrace();
-        } catch (NullPointerException ex) {
         }
     }
 
