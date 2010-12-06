@@ -450,7 +450,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 
 	@Override
 	public void drawBoundingBox(float[][] values) {
-		boolean needQuery = true;
+		boolean needQuery = queryAvailable;
 
 		if (usePartialSoftwareTestForBoundingBox) {
 			// The Bounding Box is visible if at least one vertex is visible.
