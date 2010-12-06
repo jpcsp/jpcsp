@@ -308,9 +308,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         inputFileOffset += length;
         inputBufferOffset -= length;
 
-        if (isEnableConnector()) {
-            getAtracCodec(atracID).atracAddStreamData(inputBufferAddr, length);
-        }
+        getAtracCodec(atracID).atracAddStreamData(inputBufferAddr, length);
     }
 
     protected int hleCreateAtracID(int codecType) {
