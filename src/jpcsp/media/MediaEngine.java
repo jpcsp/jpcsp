@@ -21,7 +21,6 @@ import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -46,11 +45,16 @@ import com.xuggle.xuggler.IStream;
 import com.xuggle.xuggler.IStreamCoder;
 import com.xuggle.xuggler.IVideoPicture;
 import com.xuggle.xuggler.IVideoResampler;
+import com.xuggle.xuggler.io.IURLProtocolHandler;
 import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
 
 public class MediaEngine {
 	private static org.apache.log4j.Logger log = Modules.log;
+    protected static final int AVSEEK_FLAG_BACKWARD = 1; // seek backward
+    protected static final int AVSEEK_FLAG_BYTE     = 2; // seeking based on position in bytes
+    protected static final int AVSEEK_FLAG_ANY      = 4; // seek to any frame, even non-keyframes
+    protected static final int AVSEEK_FLAG_FRAME    = 8; // seeking based on frame number
 	private static boolean initialized = false;
     private IContainer container;
     private int numStreams;
@@ -123,6 +127,10 @@ public class MediaEngine {
     }
 
     public int getCurrentAudioSamples(byte[] buffer) {
+    	if (decodedAudioSamples == null) {
+    		return 0;
+    	}
+
     	int length = Math.min(buffer.length, decodedAudioSamples.length());
     	if (length > 0) {
     		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, length);
@@ -217,7 +225,7 @@ public class MediaEngine {
      * The sceMpeg functions must call init() first for each MPEG stream and then
      * keep calling step() until the video is finished and finish() is called.
      */
-    public void init(ReadableByteChannel channel, boolean decodeVideo, boolean decodeAudio) {
+    public void init(IURLProtocolHandler channel, boolean decodeVideo, boolean decodeAudio) {
     	init();
 
     	container = IContainer.make();
@@ -225,7 +233,7 @@ public class MediaEngine {
         // Keep trying to read
         container.setReadRetryCount(-1);
 
-        if (container.open(channel, null) < 0) {
+        if (container.open(channel, IContainer.Type.READ, null) < 0) {
             log.error("MediaEngine: Invalid container format!");
         }
 
@@ -705,5 +713,13 @@ public class MediaEngine {
                 }
             }
         }
+    }
+
+    public void audioResetPlayPosition(int sample) {
+    	if (container != null && audioStreamID != -1) {
+    		if (container.seekKeyFrame(audioStreamID, sample, AVSEEK_FLAG_ANY | AVSEEK_FLAG_FRAME) < 0) {
+    			log.warn(String.format("Could not reset audio play position to %d", sample));
+    		}
+    	}
     }
 }

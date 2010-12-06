@@ -17,12 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.media;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -176,26 +173,16 @@ public class ExternalDecoder {
     	return String.format("%sAtrac-%08X-%08X.%s", AtracCodec.getBaseDirectory(), atracFileSize, address, suffix);
     }
 
-    private ReadableByteChannel getChannel(String fileName) {
-    	try {
-			FileInputStream fis = new FileInputStream(fileName);
-			return fis.getChannel();
-		} catch (FileNotFoundException e) {
-			log.error(e);
-		}
-
-		return null;
-    }
-
-    public ReadableByteChannel decodeAtrac(int address, int atracFileSize) {
+    public String decodeAtrac(int address, int atracFileSize) {
     	if (!isEnabled()) {
     		return null;
     	}
 
-		String decodedFile = getAtracAudioPath(address, atracFileSize, "wav");
-		if (new File(decodedFile).canRead()) {
+		String decodedFileName = getAtracAudioPath(address, atracFileSize, "wav");
+		File decodedFile = new File(decodedFileName);
+		if (decodedFile.canRead() && decodedFile.length() > 0) {
 			// Already decoded
-			return getChannel(decodedFile);
+			return decodedFileName;
 		}
 
 		byte[] atracData = ioListener.readFileData(address, atracFileSize);
@@ -219,21 +206,29 @@ public class ExternalDecoder {
 	    	}
 
 			new File(AtracCodec.getBaseDirectory()).mkdirs();
-			String encodedFile = getAtracAudioPath(address, atracFileSize, "oma");
-			FileOutputStream os = new FileOutputStream(encodedFile);
+			String encodedFileName = getAtracAudioPath(address, atracFileSize, "oma");
+			File encodedFile = new File(encodedFileName);
+			FileOutputStream os = new FileOutputStream(encodedFileName);
 			os.getChannel().write(omaBuffer);
 			os.close();
 
-			if (!executeExternalDecoder(encodedFile, decodedFile)) {
-				new File(encodedFile).delete();
+			if (!executeExternalDecoder(encodedFileName, decodedFileName)) {
+				encodedFile.delete();
 				return null;
 			}
-		} catch (IOException e) {
+
+			if (decodedFile.canRead() && decodedFile.length() == 0) {
+				// Only an empty file has been generated, the file could not be converted
+				decodedFile.delete();
+				encodedFile.delete();
+				return null;
+			}
+    	} catch (IOException e) {
 			// Ignore Exception
 			log.error(e);
 		}
 
-		return getChannel(decodedFile);
+		return decodedFileName;
     }
 
     private static class IoListener implements IIoListener {
