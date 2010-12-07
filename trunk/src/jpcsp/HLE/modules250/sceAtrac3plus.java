@@ -79,10 +79,15 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (Memory.isAddressGood(outputChannelAddr)) {
-        	mem.write32(outputChannelAddr, 2);
+        if (!atracIDs.containsKey(atID)) {
+            log.warn("sceAtracGetOutputChannel: bad atracID= " + atID);
+            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
+        } else {
+            if (Memory.isAddressGood(outputChannelAddr)) {
+                mem.write32(outputChannelAddr, 2);
+            }
+            cpu.gpr[2] = 0;
         }
-        cpu.gpr[2] = 0;
     }
 
     public void sceAtracIsSecondBufferNeeded(Processor processor) {
@@ -98,10 +103,15 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        // -1 -> Error.
-        // 0 -> Second buffer isn't needed.
-        // 1 -> Second buffer is needed.
-        cpu.gpr[2] = isSecondBufferNeeded() ? 1 : 0;
+        if (!atracIDs.containsKey(atID)) {
+            log.warn("sceAtracGetOutputChannel: bad atracID= " + atID);
+            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
+        } else {
+            // -1 -> Error.
+            // 0 -> Second buffer isn't needed.
+            // 1 -> Second buffer is needed.
+            cpu.gpr[2] = atracIDs.get(atID).isSecondBufferNeeded() ? 1 : 0;
+        }
     }
 
     public void sceAtracReinit(Processor processor) {
@@ -118,7 +128,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(at3IDNum + at3plusIDNum * 2 > 6) {
+        if (at3IDNum + at3plusIDNum * 2 > 6) {
             // The total ammount of AT3 IDs and AT3+ IDs (x2) can't be superior to 6.
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_NO_ID;
         } else {
@@ -137,8 +147,13 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceAtracGetBufferInfoForResetting atracID=%d, sample=%d, bufferInfoAddr=0x%08x", atID, sample, bufferInfoAddr));
         }
-        hleAtracGetBufferInfoForReseting(atID, sample, bufferInfoAddr);
-        cpu.gpr[2] = 0;
+        if (!atracIDs.containsKey(atID)) {
+            log.warn("sceAtracGetOutputChannel: bad atracID= " + atID);
+            cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
+        } else {
+            atracIDs.get(atID).getBufferInfoForReseting(sample, bufferInfoAddr);
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceAtracSetMOutHalfwayBuffer(Processor processor) {
@@ -158,7 +173,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (getIDCodecType(atID) < 0) {
+        if (!atracIDs.containsKey(atID)) {
             log.warn("sceAtracSetMOutHalfwayBuffer: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
@@ -167,20 +182,18 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             if (Memory.isAddressGood(MOutHalfBuffer)) {
                 at3magic = mem.read32(MOutHalfBuffer + 20);
                 at3magic &= 0x0000FFFF;
-
                 if (at3magic == AT3_MAGIC) {
                     codecType = PSP_MODE_AT_3;
                 } else if (at3magic == AT3_PLUS_MAGIC) {
                     codecType = PSP_MODE_AT_3_PLUS;
                 }
-
                 if (codecType == PSP_MODE_AT_3) {
                     maxSamples = 1024;
                 } else if (codecType == PSP_MODE_AT_3_PLUS) {
                     maxSamples = 2048;
                 }
             }
-            hleAtracSetData(atID, MOutHalfBuffer, readSize, MOutHalfBufferSize);
+            atracIDs.get(atID).setData(MOutHalfBuffer, readSize, MOutHalfBufferSize, false);
             cpu.gpr[2] = 0;
         }
     }
@@ -239,23 +252,21 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         if (Memory.isAddressGood(buffer)) {
             at3magic = mem.read32(buffer + 20);
             at3magic &= 0x0000FFFF;
-
             if (at3magic == AT3_MAGIC) {
                 codecType = PSP_MODE_AT_3;
             } else if (at3magic == AT3_PLUS_MAGIC) {
                 codecType = PSP_MODE_AT_3_PLUS;
             }
-
-            if (codecType == PSP_MODE_AT_3 && atrac3Codecs.size() < atrac3MaxIDsCount) {
+            if (codecType == PSP_MODE_AT_3 && atracIDs.size() < atrac3MaxIDsCount) {
                 maxSamples = 1024;
                 atID = hleCreateAtracID(codecType);
-            } else if (codecType == PSP_MODE_AT_3_PLUS && atrac3plusCodecs.size() < atrac3plusMaxIDsCount) {
+            } else if (codecType == PSP_MODE_AT_3_PLUS && atracIDs.size() < atrac3plusMaxIDsCount) {
                 maxSamples = 2048;
                 atID = hleCreateAtracID(codecType);
             } else {
                 atID = SceKernelErrors.ERROR_ATRAC_NO_ID;
             }
-            hleAtracSetData(atID, buffer, bufferSize, bufferSize);
+            atracIDs.get(atID).setData(buffer, bufferSize, bufferSize, false);
             mem.write32(metadataSizeAddr, 0x400); // Dummy common value found in most .AA3 files.
         }
         cpu.gpr[2] = atID;

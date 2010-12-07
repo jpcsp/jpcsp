@@ -115,23 +115,23 @@ public class EventFlagManager {
 
     private void onEventFlagDeletedCancelled(int evid, int result) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_EVENTFLAG &&
                     thread.wait.waitingOnEventFlag &&
                     thread.wait.EventFlag_id == evid) {
-                // EventFlag was deleted
-                log.warn("EventFlag deleted while we were waiting for it! thread:" + Integer.toHexString(thread.uid) + "/'" + thread.name + "'");
-                // Untrack
                 thread.wait.waitingOnEventFlag = false;
-                // Return ERROR_WAIT_DELETE / ERROR_WAIT_CANCELLED
                 thread.cpuContext.gpr[2] = result;
-                // Wakeup
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
             }
         }
-        threadMan.hleRescheduleCurrentThread();
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
+        }
     }
 
     private void onEventFlagDeleted(int evid) {
@@ -144,33 +144,33 @@ public class EventFlagManager {
 
     private void onEventFlagModified(SceKernelEventFlagInfo event) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_EVENTFLAG &&
                     thread.wait.waitingOnEventFlag &&
                     thread.wait.EventFlag_id == event.uid) {
-                // Check EventFlag
                 if (checkEventFlag(event, thread.wait.EventFlag_bits, thread.wait.EventFlag_wait, thread.wait.EventFlag_outBits_addr)) {
-                    // Success
                     if (log.isDebugEnabled()) {
                         log.debug("onEventFlagModified waking thread 0x" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
                     }
-                    // Update numWaitThreads
                     event.numWaitThreads--;
-                    // Untrack
                     thread.wait.waitingOnEventFlag = false;
-                    // Return success
                     thread.cpuContext.gpr[2] = 0;
-                    // Wakeup
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    reschedule = true;
+
+                    if (event.currentPattern == 0) {
+                        break;
+                    }
                 }
             }
-            if (event.currentPattern == 0) {
-                break;
-            }
         }
-        threadMan.hleRescheduleCurrentThread();
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
+        }
     }
 
     private boolean checkEventFlag(SceKernelEventFlagInfo event, int bits, int wait, int outBits_addr) {
@@ -298,7 +298,9 @@ public class EventFlagManager {
             }
             if (!checkEventFlag(event, bits, wait, outBits_addr)) {
                 // Failed, but it's ok, just wait a little
-                log.debug("hleKernelWaitEventFlag fast check failed");
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelWaitEventFlag - '" + event.name + "' fast check failed");
+                }
                 event.numWaitThreads++;
                 // Go to wait state
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
@@ -312,12 +314,16 @@ public class EventFlagManager {
                 currentThread.wait.EventFlag_wait = wait;
                 currentThread.wait.EventFlag_outBits_addr = outBits_addr;
                 currentThread.wait.waitStateChecker = eventFlagWaitStateChecker;
+
                 threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
+                threadMan.hleRescheduleCurrentThread(doCallbacks);
             } else {
-                log.debug("hleKernelWaitEventFlag fast check succeeded");
+                // Success, do not reschedule the current thread.
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelWaitEventFlag - '" + event.name + "' fast check succeeded");
+                }
                 cpu.gpr[2] = 0;
             }
-            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 

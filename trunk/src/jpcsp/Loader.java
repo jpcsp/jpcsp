@@ -722,10 +722,14 @@ public class Loader {
                 	}
                     break;
 
-                case 7: //R_MIPS_GPREL16
+                case 7: // R_MIPS_GPREL16
                     // Tested and confirmed to be working on PSP.
                     A = rel16;
-                    result = (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) + S + GP;
+                    if ((A & ~0x0000FFFF) == 0) {
+                        result = S - GP;
+                    } else {
+                        result = (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) + S + GP;
+                    }
                     if ((result & ~0x0000FFFF) != 0) {
                         Memory.log.warn("Relocation overflow (R_MIPS_GPREL16)");
                     }

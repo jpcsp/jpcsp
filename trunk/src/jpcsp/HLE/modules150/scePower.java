@@ -31,7 +31,7 @@ import org.apache.log4j.Logger;
 
 public class scePower implements HLEModule {
 
-    private static Logger log = Modules.getLogger("scePower");
+    protected static Logger log = Modules.getLogger("scePower");
 
     @Override
     public String getName() {
@@ -185,24 +185,24 @@ public class scePower implements HLEModule {
      * Power callback slots
      */
     public static final int PSP_POWER_CB_SLOT_AUTO = -1;
-    private int[] powerCBSlots = new int[16];
+    protected int[] powerCBSlots = new int[16];
 
     // PLL clock:
     // Operates at fixed rates of 148MHz, 190MHz, 222MHz, 266MHz, 333MHz.
     // Starts at 222MHz.
-    private int pllClock = 222;
+    protected int pllClock = 222;
     // CPU clock:
     // Operates at variable rates from 1MHz to 333MHz.
     // Starts at 222MHz.
     // Note: Cannot have a higher frequency than the PLL clock's frequency.
-    private int cpuClock = 222;
+    protected int cpuClock = 222;
     // BUS clock:
     // Operates at variable rates from 37MHz to 166MHz.
     // Starts at 111MHz.
     // Note: Cannot have a higher frequency than 1/2 of the PLL clock's frequency
     // or lower than 1/4 of the PLL clock's frequency.
-    private int busClock = 111;
-    private static final int backlightMaximum = 4;
+    protected int busClock = 111;
+    protected static final int backlightMaximum = 4;
 
     public void scePower_2B51FE2F(Processor processor) {
         CpuState cpu = processor.cpu;
