@@ -116,23 +116,23 @@ public class VplManager {
 
     private void onVplDeletedCancelled(int vid, int result) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_VPL &&
                     thread.wait.waitingOnVpl &&
                     thread.wait.Vpl_id == vid) {
-                // VPL was deleted
-                log.warn("VPL deleted while we were waiting for it! thread:" + Integer.toHexString(thread.uid) + "/'" + thread.name + "'");
-                // Untrack
                 thread.wait.waitingOnVpl = false;
-                // Return ERROR_WAIT_DELETE / ERROR_WAIT_CANCELLED
                 thread.cpuContext.gpr[2] = result;
-                // Wakeup
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
             }
         }
-        threadMan.hleRescheduleCurrentThread();
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
+        }
     }
 
     private void onVplDeleted(int vid) {
@@ -145,6 +145,8 @@ public class VplManager {
 
     private void onVplFree(SceKernelVplInfo info) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
+
         if ((info.attr & PSP_VPL_ATTR_PRIORITY) == PSP_VPL_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
@@ -158,6 +160,7 @@ public class VplManager {
                     thread.wait.waitingOnVpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    reschedule = true;
                 }
             }
         } else if ((info.attr & PSP_VPL_ATTR_PRIORITY) == PSP_VPL_ATTR_PRIORITY) {
@@ -173,8 +176,13 @@ public class VplManager {
                     thread.wait.waitingOnVpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    reschedule = true;
                 }
             }
+        }
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
         }
     }
 
@@ -280,7 +288,9 @@ public class VplManager {
                 micros = mem.read32(timeout_addr);
             }
             if (addr == 0) {
-                log.debug("hleKernelAllocateVpl fast check failed");
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelAllocateFpl - '" + vpl.name + "' fast check failed");
+                }
                 if (wait) {
                     vpl.numWaitThreads++;
                     // Go to wait state
@@ -297,16 +307,18 @@ public class VplManager {
                     currentThread.wait.waitStateChecker = vplWaitStateChecker;
 
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                    cpu.gpr[2] = ERROR_WAIT_CAN_NOT_WAIT;
+                    threadMan.hleRescheduleCurrentThread(doCallbacks);
                 } else {
-                    cpu.gpr[2] = 0;
+                    cpu.gpr[2] = ERROR_WAIT_CAN_NOT_WAIT;
                 }
             } else {
-                log.debug("hleKernelAllocateVpl fast check succeeded");
+                // Success, do not reschedule the current thread.
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelAllocateVpl - '" + vpl.name + "' fast check succeeded");
+                }
                 mem.write32(data_addr, addr);
                 cpu.gpr[2] = 0;
             }
-            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 

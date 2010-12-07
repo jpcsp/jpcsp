@@ -115,23 +115,23 @@ public class FplManager {
 
     private void onFplDeletedCancelled(int fid, int result) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
 
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_FPL &&
                     thread.wait.waitingOnFpl &&
                     thread.wait.Fpl_id == fid) {
-                // FPL was deleted
-                log.warn("FPL deleted while we were waiting for it! thread:" + Integer.toHexString(thread.uid) + "/'" + thread.name + "'");
-                // Untrack
                 thread.wait.waitingOnFpl = false;
-                // Return ERROR_WAIT_DELETE / ERROR_WAIT_CANCELLED
                 thread.cpuContext.gpr[2] = result;
-                // Wakeup
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
             }
         }
-        threadMan.hleRescheduleCurrentThread();
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
+        }
     }
 
     private void onFplDeleted(int fid) {
@@ -144,6 +144,8 @@ public class FplManager {
 
     private void onFplFree(SceKernelFplInfo info) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
+
         if ((info.attr & PSP_FPL_ATTR_PRIORITY) == PSP_FPL_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
@@ -157,6 +159,7 @@ public class FplManager {
                     thread.wait.waitingOnFpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    reschedule = true;
                 }
             }
         } else if ((info.attr & PSP_FPL_ATTR_PRIORITY) == PSP_FPL_ATTR_PRIORITY) {
@@ -172,8 +175,13 @@ public class FplManager {
                     thread.wait.waitingOnFpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    reschedule = true;
                 }
             }
+        }
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
         }
     }
 
@@ -286,7 +294,7 @@ public class FplManager {
             }
             if (addr == 0) {
                 if (log.isDebugEnabled()) {
-                    log.debug("hleKernelAllocateFpl fast check failed");
+                    log.debug("hleKernelAllocateFpl - '" + fpl.name + "' fast check failed");
                 }
                 if (wait) {
                     fpl.numWaitThreads++;
@@ -303,18 +311,18 @@ public class FplManager {
                     currentThread.wait.waitStateChecker = fplWaitStateChecker;
 
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                    cpu.gpr[2] = ERROR_WAIT_CAN_NOT_WAIT;
+                    threadMan.hleRescheduleCurrentThread(doCallbacks);
                 } else {
-                    cpu.gpr[2] = 0;
+                    cpu.gpr[2] = ERROR_WAIT_CAN_NOT_WAIT;
                 }
             } else {
+                // Success, do not reschedule the current thread.
                 if (log.isDebugEnabled()) {
-                    log.debug("hleKernelAllocateFpl fast check succeeded");
+                    log.debug("hleKernelAllocateFpl - '" + fpl.name + "' fast check succeeded");
                 }
                 mem.write32(data_addr, addr);
                 cpu.gpr[2] = 0;
             }
-            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 

@@ -507,7 +507,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
             int endFlag = 0;
             for (int i = 0; i < voices.length; i++) {
-                if (!voices[i].isPlaying()) {
+                if (voices[i].isEnded()) {
                     endFlag |= (1 << i);
                 }
             }
@@ -961,9 +961,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
             int res = 0;
             for (int i = 0; i < voices.length; i++) {
-                if (voices[i].isPlaying()) {
-                    res += voices[i].getEnvelope().height;
-                }
+                res += voices[i].getEnvelope().height;
             }
             cpu.gpr[2] = res;
         } else {

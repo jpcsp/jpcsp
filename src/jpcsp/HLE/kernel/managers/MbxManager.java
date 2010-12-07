@@ -100,8 +100,39 @@ public class MbxManager {
         removeWaitingThread(thread);
     }
 
-    private void updateWaitingMbxReceive(SceKernelMbxInfo info) {
+    private void onMbxDeletedCancelled(int mbxid, int result) {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
+
+        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
+            SceKernelThreadInfo thread = it.next();
+            if (thread.waitType == PSP_WAIT_MBX &&
+                    thread.wait.waitingOnMbxReceive &&
+                    thread.wait.Mbx_id == mbxid) {
+                thread.wait.waitingOnMbxReceive = false;
+                thread.cpuContext.gpr[2] = result;
+                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                reschedule = true;
+            }
+        }
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
+        }
+    }
+
+    private void onMbxDeleted(int mbxid) {
+        onMbxDeletedCancelled(mbxid, ERROR_WAIT_DELETE);
+    }
+
+    private void onMbxCancelled(int mbxid) {
+        onMbxDeletedCancelled(mbxid, ERROR_WAIT_CANCELLED);
+    }
+
+    private void onMbxModified(SceKernelMbxInfo info) {
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        boolean reschedule = false;
+
         if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_FIFO) {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
@@ -110,7 +141,7 @@ public class MbxManager {
                         thread.wait.Mbx_id == info.uid &&
                         info.hasMessage()) {
                     if (log.isDebugEnabled()) {
-                        log.debug(String.format("updateWaitingMbxReceive waking thread %s", thread.toString()));
+                        log.debug(String.format("onMbxModified waking thread %s", thread.toString()));
                     }
                     Memory mem = Memory.getInstance();
                     int msgAddr = info.removeMsg(mem);
@@ -119,6 +150,7 @@ public class MbxManager {
                     thread.wait.waitingOnMbxReceive = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    reschedule = true;
                 }
             }
         } else if ((info.attr & PSP_MBX_ATTR_PRIORITY) == PSP_MBX_ATTR_PRIORITY) {
@@ -129,7 +161,7 @@ public class MbxManager {
                         thread.wait.Mbx_id == info.uid &&
                         info.hasMessage()) {
                     if (log.isDebugEnabled()) {
-                        log.debug(String.format("updateWaitingMbxReceive waking thread %s", thread.toString()));
+                        log.debug(String.format("onMbxModified waking thread %s", thread.toString()));
                     }
                     Memory mem = Memory.getInstance();
                     int msgAddr = info.removeMsg(mem);
@@ -138,39 +170,14 @@ public class MbxManager {
                     thread.wait.waitingOnMbxReceive = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
+                    reschedule = true;
                 }
             }
         }
-    }
-
-    private void cancelWaitingMbxReceive(SceKernelMbxInfo info) {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-            SceKernelThreadInfo thread = it.next();
-            if ((thread.waitType == PSP_WAIT_MBX &&
-                    thread.wait.waitingOnMbxReceive &&
-                    thread.wait.Mbx_id == info.uid)) {
-                thread.wait.waitingOnMbxReceive = false;
-                thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
-                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-            }
+        // Reschedule only if threads waked up.
+        if (reschedule) {
+            threadMan.hleRescheduleCurrentThread();
         }
-        info.numWaitThreads = 0;
-    }
-
-    private void deleteWaitingMbxReceive(SceKernelMbxInfo info) {
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
-            SceKernelThreadInfo thread = it.next();
-            if ((thread.waitType == PSP_WAIT_MBX &&
-                    thread.wait.waitingOnMbxReceive &&
-                    thread.wait.Mbx_id == info.uid)) {
-                thread.wait.waitingOnMbxReceive = false;
-                thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
-                threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
-            }
-        }
-        info.numWaitThreads = 0;
     }
 
     public void sceKernelCreateMbx(int name_addr, int attr, int opt_addr) {
@@ -211,8 +218,8 @@ public class MbxManager {
             log.warn("sceKernelDeleteMbx unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
         } else {
-            deleteWaitingMbxReceive(info);
             cpu.gpr[2] = 0;
+            onMbxDeleted(uid);
         }
     }
 
@@ -234,8 +241,8 @@ public class MbxManager {
             } else if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_PRIORITY) {
                 info.addMsgByPriority(mem, msg_addr);
             }
-            updateWaitingMbxReceive(info);
             cpu.gpr[2] = 0;
+            onMbxModified(info);
         }
     }
 
@@ -285,6 +292,7 @@ public class MbxManager {
                     currentThread.wait.Mbx_resultAddr = addr_msg_addr;
                     currentThread.wait.waitStateChecker = mbxWaitStateChecker;
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
+                    threadMan.hleRescheduleCurrentThread(doCallbacks);
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("hleKernelReceiveMbx has no messages.");
@@ -292,11 +300,14 @@ public class MbxManager {
                     cpu.gpr[2] = ERROR_MESSAGEBOX_NO_MESSAGE;
                 }
             } else {
+                // Success, do not reschedule the current thread.
+                if (log.isDebugEnabled()) {
+                    log.debug("hleKernelReceiveMbx - '" + info.name + "' fast check succeeded");
+                }
                 int msgAddr = info.removeMsg(mem);
                 mem.write32(addr_msg_addr, msgAddr);
                 cpu.gpr[2] = 0;
             }
-            threadMan.hleRescheduleCurrentThread(doCallbacks);
         }
     }
 
@@ -328,8 +339,8 @@ public class MbxManager {
             if (Memory.isAddressGood(pnum_addr)) {
                 mem.write32(pnum_addr, info.numWaitThreads);
             }
-            cancelWaitingMbxReceive(info);
             cpu.gpr[2] = 0;
+            onMbxCancelled(uid);
         }
     }
 
