@@ -18,6 +18,14 @@
 #define	DAEMON	0
 #define USE_USB	0
 #define DEBUG_TIMING	0
+#define DEBUG_ATRAC		0
+
+#if DEBUG_ATRAC
+extern "C" {
+	int sceAtracGetStreamDataInfo(int atracID, u8** writePointer, u32* availableBytes, u32* readOffset);
+	int sceAtracGetNextDecodePosition(int atracID, int *position);
+}
+#endif
 
 JpcspConnector::JpcspConnector(void)
 {
@@ -893,6 +901,9 @@ int JpcspConnector::commandDecodeAtrac3(char *parameters)
 	int start;
 	char s[100];
 #endif
+#if DEBUG_ATRAC
+	char s[100];
+#endif
 
 	int result = sceIoGetstat(fileName, &stat);
 	if (result < 0)
@@ -957,6 +968,10 @@ int JpcspConnector::commandDecodeAtrac3(char *parameters)
 		sprintf(s, "Duration sceAtracDecodeData %d, return %X", sceKernelGetSystemTimeLow() - start, result);
 		debug(s);
 #endif
+#if DEBUG_ATRAC
+		sprintf(s, "sceAtracDecodeData returning 0x%08X, samples=%d, end=%d, remainFrame=%d", result, samples, end, remainFrame);
+		debug(s);
+#endif
 		if (result == 0 && samples > 0)
 		{
 			if (!muted)
@@ -979,6 +994,21 @@ int JpcspConnector::commandDecodeAtrac3(char *parameters)
 				break;
 			}
 		}
+#if DEBUG_ATRAC
+		result = sceAtracGetRemainFrame(atracID, &remainFrame);
+		sprintf(s, "sceAtracGetRemainFrame returning 0x%08X, remainFrame=%d", result, remainFrame);
+		debug(s);
+		u8 *inputBuffer = 0;
+		u32 writableBytes = 0;
+		u32 readOffset = 0;
+		result = sceAtracGetStreamDataInfo(atracID, &inputBuffer, &writableBytes, &readOffset);
+		sprintf(s, "sceAtracGetStreamDataInfo returning 0x%08X, inputBuffer=0x%08X, writableBytes=0x%X, readOffset=0x%X", result, (int) inputBuffer, writableBytes, readOffset);
+		debug(s);
+		int position;
+		result = sceAtracGetNextDecodePosition(atracID, &position);
+		sprintf(s, "sceAtracGetNextDecodePosition returning 0x%08X, position=%d", result, position);
+		debug(s);
+#endif
 
 		ctrlPeekBuffer();
 	}
