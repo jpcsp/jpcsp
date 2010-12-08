@@ -31,6 +31,7 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.sound.SoundVoice;
 import jpcsp.sound.SoundMixer;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -212,15 +213,24 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
     protected short[] decodeSamples(Processor processor, int vagAddr, int size) {
         Memory mem = Processor.memory;
-
         // Based on vgmstream.
         short[] samples = new short[size / 16 * 28];
         int numSamples = 0;
         // VAG address can be null. In this case, just return empty samples.
         if (vagAddr != 0) {
-            int headerCheck = mem.read32(vagAddr);
-            if ((headerCheck & 0x00FFFFFF) == 0x00474156) { // VAGx.
-                vagAddr += 0x30;	// Skip the VAG header.
+            int vagHeader = mem.read32(vagAddr);
+            if ((vagHeader & 0x00FFFFFF) == 0x00474156) { // VAGx.
+                int vagVersion = Integer.reverseBytes(mem.read32(vagAddr + 4));
+                int vagDataSize = Integer.reverseBytes(mem.read32(vagAddr + 12));
+                int vagSampleRate = Integer.reverseBytes(mem.read32(vagAddr + 16));
+                String vagDataName = new StringBuffer(Utilities.readStringNZ(vagAddr + 32, 16)).reverse().toString();
+                if(log.isDebugEnabled()) {
+                    log.debug("decodeSamples found VAG/ADPCM data: version=" + vagVersion
+                            + ", size=" + vagDataSize
+                            + ", sampleRate=" + vagSampleRate
+                            + ", dataName=" + vagDataName);
+                }
+                vagAddr += 0x30;
             }
             int[] unpackedSamples = new int[28];
             int hist1 = 0;
@@ -237,16 +247,24 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                 int n = memoryReader.readNext();
                 int predict_nr = n >> 4;
                 if (predict_nr >= VAG_f.length) {
-                    if (predict_nr == 7) {
-                        break; // A predict_nr of 7 indicates the end of audio data.
-                    }
-                    log.warn("decodeSamples: Unknown value for predict_nr: " + predict_nr);
                     predict_nr = 0;
                 }
                 int shift_factor = n & 0x0F;
                 int flag = memoryReader.readNext();
-                if (flag == 0x07) {
-                    break;	// End of stream flag
+                if (flag == 0x03) {
+                    // If loop mode is enabled, this flag indicates
+                    // the final block of the loop.
+                    // TODO: Implement loop processing by decoding
+                    // the same samples within the loop flags
+                    // when loop mode is on.
+                } else if (flag == 0x06) {
+                    // If loop mode is enabled, this flag indicates
+                    // the first block of the loop.
+                    // TODO: Implement loop processing by decoding
+                    // the same samples within the loop flags
+                    // when loop mode is on.
+                } else if (flag == 0x07) {
+                    break;	// End of stream flag.
                 }
                 for (int j = 0; j < 28; j += 2) {
                     int d = memoryReader.readNext();
