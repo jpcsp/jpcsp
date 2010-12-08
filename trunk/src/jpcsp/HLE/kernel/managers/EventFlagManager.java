@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_NO_MULTI_PERM;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_POLL_FAILED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_EVENT_FLAG;
@@ -285,6 +286,8 @@ public class EventFlagManager {
         if (event == null) {
             log.warn("hleKernelWaitEventFlag unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+        } else if (bits == 0) {
+        	cpu.gpr[2] = ERROR_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
         } else if (event.numWaitThreads >= 1 &&
                 (event.attr & PSP_EVENT_WAITMULTIPLE) != PSP_EVENT_WAITMULTIPLE) {
             log.warn("hleKernelWaitEventFlag already another thread waiting on it");
