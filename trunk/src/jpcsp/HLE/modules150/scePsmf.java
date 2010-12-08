@@ -128,7 +128,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         private static final int PSMF_AVC_STREAM = 0;
         private static final int PSMF_ATRAC_STREAM = 1;
         private static final int PSMF_PCM_STREAM = 2;
-        private static final int PSMF_UNKNOWN_STREAM = 3;
+        private static final int PSMF_DATA_STREAM = 3;
         private static final int PSMF_AUDIO_STREAM = 15;
 
         // Header vars.
@@ -393,12 +393,18 @@ public class scePsmf implements HLEModule, HLEStartModule {
         			break;
         		case PSMF_ATRAC_STREAM:
         		case PSMF_PCM_STREAM:
-        		case PSMF_UNKNOWN_STREAM:
         		case PSMF_AUDIO_STREAM:
         			if (currentAudioStreamNumber != -1) {
         				return 1;
         			}
         			break;
+                case PSMF_DATA_STREAM:
+                    if (currentVideoStreamNumber != -1) {
+        				return 1;
+        			} else if (currentAudioStreamNumber != -1) {
+        				return 1;
+        			}
+                    break;
     			default:
     				log.warn(String.format("scePsmfGetNumberOfSpecificStreams unknown stream type %d", type));
         	}
@@ -419,12 +425,18 @@ public class scePsmf implements HLEModule, HLEStartModule {
 	    			break;
 	    		case PSMF_ATRAC_STREAM:
 	    		case PSMF_PCM_STREAM:
-        		case PSMF_UNKNOWN_STREAM:
 	    		case PSMF_AUDIO_STREAM:
 	    			if (currentAudioStreamNumber != -1) {
 	                    currentStreamNumber = currentAudioStreamNumber;
 	    			}
 	    			break;
+                case PSMF_DATA_STREAM:
+                    if (currentVideoStreamNumber != -1) {
+	                    currentStreamNumber = currentVideoStreamNumber;
+	    			} else if (currentAudioStreamNumber != -1) {
+	                    currentStreamNumber = currentAudioStreamNumber;
+	    			}
+                    break;
 				default:
 					log.warn(String.format("scePsmfSpecifyStreamWithStreamType unknown stream type %d", type));
         	}

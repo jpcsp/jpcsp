@@ -261,6 +261,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected static final int MPEG_AVC_STREAM = 0;
     protected static final int MPEG_ATRAC_STREAM = 1;
     protected static final int MPEG_PCM_STREAM = 2;
+    protected static final int MPEG_DATA_STREAM = 3;      // Arbitrary user defined type. Can represent audio or video.
     protected static final int MPEG_AUDIO_STREAM = 15;
     protected static final int MPEG_AU_MODE_DECODE = 0;
     protected static final int MPEG_AU_MODE_SKIP = 1;

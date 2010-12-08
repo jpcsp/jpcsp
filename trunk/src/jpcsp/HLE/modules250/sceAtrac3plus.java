@@ -237,10 +237,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         int fileSize = cpu.gpr[6];
         int metadataSizeAddr = cpu.gpr[7];
 
-        int codecType = 0;
-        int at3magic = 0;
-        int atID = 0;
-
         if (log.isDebugEnabled()) {
             log.debug(String.format("sceAtracSetAA3DataAndGetID buffer = 0x%08X, bufferSize = 0x%08X, fileSize = 0x%08X, metadataSizeAddr = 0x%08X", buffer, bufferSize, fileSize, metadataSizeAddr));
         }
@@ -249,24 +245,20 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+        int codecType = 0;
+        int at3magic = 0;
+        int atID = 0;
         if (Memory.isAddressGood(buffer)) {
-            at3magic = mem.read32(buffer + 20);
-            at3magic &= 0x0000FFFF;
+            at3magic = mem.read16(buffer + 20);
             if (at3magic == AT3_MAGIC) {
                 codecType = PSP_MODE_AT_3;
             } else if (at3magic == AT3_PLUS_MAGIC) {
                 codecType = PSP_MODE_AT_3_PLUS;
             }
-            if (codecType == PSP_MODE_AT_3 && atracIDs.size() < atrac3MaxIDsCount) {
-                maxSamples = 1024;
-                atID = hleCreateAtracID(codecType);
-            } else if (codecType == PSP_MODE_AT_3_PLUS && atracIDs.size() < atrac3plusMaxIDsCount) {
-                maxSamples = 2048;
-                atID = hleCreateAtracID(codecType);
-            } else {
-                atID = SceKernelErrors.ERROR_ATRAC_NO_ID;
+            atID = hleCreateAtracID(codecType);
+            if(atracIDs.containsKey(atID)) {
+                atracIDs.get(atID).setData(buffer, bufferSize, bufferSize, false);
             }
-            atracIDs.get(atID).setData(buffer, bufferSize, bufferSize, false);
             mem.write32(metadataSizeAddr, 0x400); // Dummy common value found in most .AA3 files.
         }
         cpu.gpr[2] = atID;
