@@ -388,7 +388,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         	switch (type) {
         		case PSMF_AVC_STREAM:
         			if (currentVideoStreamNumber != -1) {
-        				return videoStreamNum;
+        				return 1;
         			}
         			break;
         		case PSMF_ATRAC_STREAM:
@@ -396,14 +396,14 @@ public class scePsmf implements HLEModule, HLEStartModule {
         		case PSMF_UNKNOWN_STREAM:
         		case PSMF_AUDIO_STREAM:
         			if (currentAudioStreamNumber != -1) {
-        				return audioStreamNum;
+        				return 1;
         			}
         			break;
     			default:
     				log.warn(String.format("scePsmfGetNumberOfSpecificStreams unknown stream type %d", type));
         	}
 
-        	return -1;
+        	return 0;
         }
 
         public void setStreamNum(int id) {
