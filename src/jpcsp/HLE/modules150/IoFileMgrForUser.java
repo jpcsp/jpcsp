@@ -1263,6 +1263,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         int result;
         long position = 0;
         SeekableDataInput dataInput = null;
+        int requestedSize = size;
 
         if (uid == 3) { // stdin
             log.warn("UNIMPLEMENTED:hleIoRead uid = stdin");
@@ -1317,7 +1318,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
         updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read);
     	for (IIoListener ioListener : ioListeners) {
-    		ioListener.sceIoRead(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6], size, position, dataInput);
+    		ioListener.sceIoRead(result, uid, data_addr, requestedSize, size, position, dataInput);
     	}
     }
 

@@ -28,6 +28,9 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.connector.AtracCodec;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 /**
  * @author gid15
@@ -127,7 +130,8 @@ public class ExternalDecoder {
     		return;
     	}
 
-		byte[] mpegData = ioListener.readFileData(address, mpegFileSize);
+    	// At least 2048 bytes of MPEG data is provided
+		byte[] mpegData = ioListener.readFileData(address, 2048, mpegFileSize);
     	if (mpegData == null) {
     		// MPEG data cannot be retrieved...
     		return;
@@ -173,7 +177,7 @@ public class ExternalDecoder {
     	return String.format("%sAtrac-%08X-%08X.%s", AtracCodec.getBaseDirectory(), atracFileSize, address, suffix);
     }
 
-    public String decodeAtrac(int address, int atracFileSize) {
+    public String decodeAtrac(int address, int length, int atracFileSize) {
     	if (!isEnabled()) {
     		return null;
     	}
@@ -185,7 +189,7 @@ public class ExternalDecoder {
 			return decodedFileName;
 		}
 
-		byte[] atracData = ioListener.readFileData(address, atracFileSize);
+		byte[] atracData = ioListener.readFileData(address, length, atracFileSize);
     	if (atracData == null) {
     		// Atrac data cannot be retrieved...
     		return null;
@@ -234,28 +238,71 @@ public class ExternalDecoder {
     private static class IoListener implements IIoListener {
     	private static class ReadInfo {
     		public int address;
+    		public int size;
     		public SeekableDataInput dataInput;
     		public long position;
 
-    		public ReadInfo(int address, SeekableDataInput dataInput, long position) {
+    		public ReadInfo(int address, int size, SeekableDataInput dataInput, long position) {
     			this.address = address;
+    			this.size = size;
     			this.dataInput = dataInput;
     			this.position = position;
     		}
+
+			@Override
+			public String toString() {
+				return String.format("ReadInfo(0x%08X-0x%08X(size=0x%X), position=%d, %s)", address, address + size, size, position, dataInput.toString());
+			}
     	}
+
     	private HashMap<Integer, ReadInfo> readInfos;
 
     	public IoListener() {
     		readInfos = new HashMap<Integer, ReadInfo>();
     	}
 
-    	public byte[] readFileData(int address, int size) {
-    		ReadInfo readInfo = readInfos.get(address);
-    		if (readInfo == null) {
-    			return null;
+    	private static boolean memcmp(byte[] data, int address, int length) {
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
+    		for (int i = 0; i < length; i++) {
+    			if (memoryReader.readNext() != (data[i] & 0xFF)) {
+    				return false;
+    			}
     		}
 
-    		byte[] fileData = new byte[size];
+    		return true;
+    	}
+
+    	public byte[] readFileData(int address, int length, int fileSize) {
+    		ReadInfo readInfo = readInfos.get(address);
+    		if (readInfo == null) {
+    			// The file data has not been read at this address.
+    			// Search for files having the same size and content
+    			for (ReadInfo ri : readInfos.values()) {
+    				try {
+						if (ri.dataInput.length() == fileSize) {
+							// Both file have the same length, check the content
+							byte[] fileData = new byte[length];
+							long currentPosition = ri.dataInput.getFilePointer();
+							ri.dataInput.seek(ri.position);
+							ri.dataInput.readFully(fileData);
+							ri.dataInput.seek(currentPosition);
+							if (memcmp(fileData, address, length)) {
+								// Both files have the same content, we have found it!
+								readInfo = ri;
+								break;
+							}
+						}
+					} catch (IOException e) {
+						// Ignore the exception
+					}
+    			}
+
+    			if (readInfo == null) {
+    				return null;
+    			}
+    		}
+
+    		byte[] fileData = new byte[fileSize];
     		try {
 				long currentPosition = readInfo.dataInput.getFilePointer();
 				readInfo.dataInput.seek(readInfo.position);
@@ -268,12 +315,23 @@ public class ExternalDecoder {
 			return fileData;
     	}
 
+    	private boolean isCompleteUmd(SeekableDataInput dataInput) {
+    		if (dataInput instanceof UmdIsoFile) {
+    			UmdIsoFile isoFile = (UmdIsoFile) dataInput;
+    			if (isoFile.getStartSector() == 0) {
+    				return true;
+    			}
+    		}
+
+    		return false;
+    	}
+
     	@Override
 		public void sceIoRead(int result, int uid, int data_addr, int size,	int bytesRead, long position, SeekableDataInput dataInput) {
-			if (result >= 0) {
+			if (result >= 0 && dataInput != null) {
 				ReadInfo readInfo = readInfos.get(data_addr);
-				if (readInfo == null || readInfo.dataInput != dataInput || readInfo.position > position) {
-					readInfo = new ReadInfo(data_addr, dataInput, position);
+				if (readInfo == null || readInfo.dataInput != dataInput || readInfo.position > position || isCompleteUmd(dataInput)) {
+					readInfo = new ReadInfo(data_addr, bytesRead, dataInput, position);
 					readInfos.put(data_addr, readInfo);
 				}
 			}
