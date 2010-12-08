@@ -87,7 +87,7 @@ public class OMAFormat {
 	}
 
 	private static int getChunkOffset(ByteBuffer riff, int chunkMagic, int offset) {
-		for (int i = offset; i < riff.limit();) {
+		for (int i = offset; i <= riff.limit() - 4;) {
 			if (riff.getInt(i) == chunkMagic) {
 				return i;
 			}
