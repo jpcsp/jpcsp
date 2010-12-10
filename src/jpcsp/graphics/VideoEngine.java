@@ -2156,8 +2156,22 @@ public class VideoEngine {
         } else if (isLogDebugEnabled) {
             log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
         }
-        currentList.clearRestart();
-        currentList.pushSignalCallback(currentList.id, behavior, signal);
+        if (behavior == 8) {
+        	// Skip END / FINISH / END
+        	Memory mem = Memory.getInstance();
+        	if (command(mem.read32(currentList.pc)) == END) {
+        		currentList.pc += 4;
+        		if (command(mem.read32(currentList.pc)) == FINISH) {
+            		currentList.pc += 4;
+                	if (command(mem.read32(currentList.pc)) == END) {
+                		currentList.pc += 4;
+                	}
+        		}
+        	}
+        } else {
+        	currentList.clearRestart();
+        	currentList.pushSignalCallback(currentList.id, behavior, signal);
+        }
     }
 
     private void executeCommandFINISH() {
