@@ -158,7 +158,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
 
     public void sceAtracSetMOutHalfwayBuffer(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int atID = cpu.gpr[4] & atracIDMask;
         int MOutHalfBuffer = cpu.gpr[5];
@@ -177,22 +176,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             log.warn("sceAtracSetMOutHalfwayBuffer: bad atracID= " + atID);
             cpu.gpr[2] = SceKernelErrors.ERROR_ATRAC_BAD_ID;
         } else {
-            int codecType = 0;
-            int at3magic = 0;
-            if (Memory.isAddressGood(MOutHalfBuffer)) {
-                at3magic = mem.read32(MOutHalfBuffer + 20);
-                at3magic &= 0x0000FFFF;
-                if (at3magic == AT3_MAGIC) {
-                    codecType = PSP_MODE_AT_3;
-                } else if (at3magic == AT3_PLUS_MAGIC) {
-                    codecType = PSP_MODE_AT_3_PLUS;
-                }
-                if (codecType == PSP_MODE_AT_3) {
-                    maxSamples = 1024;
-                } else if (codecType == PSP_MODE_AT_3_PLUS) {
-                    maxSamples = 2048;
-                }
-            }
             atracIDs.get(atID).setData(MOutHalfBuffer, readSize, MOutHalfBufferSize, false);
             cpu.gpr[2] = 0;
         }
@@ -245,18 +228,11 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        int codecType = 0;
-        int at3magic = 0;
         int atID = 0;
         if (Memory.isAddressGood(buffer)) {
-            at3magic = mem.read16(buffer + 20);
-            if (at3magic == AT3_MAGIC) {
-                codecType = PSP_MODE_AT_3;
-            } else if (at3magic == AT3_PLUS_MAGIC) {
-                codecType = PSP_MODE_AT_3_PLUS;
-            }
+        	int codecType = getCodecType(buffer);
             atID = hleCreateAtracID(codecType);
-            if(atracIDs.containsKey(atID)) {
+            if (atracIDs.containsKey(atID)) {
                 atracIDs.get(atID).setData(buffer, bufferSize, bufferSize, false);
             }
             mem.write32(metadataSizeAddr, 0x400); // Dummy common value found in most .AA3 files.

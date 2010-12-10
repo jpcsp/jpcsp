@@ -57,6 +57,7 @@ public class AtracCodec {
     protected int atracEnd;
     protected int atracRemainFrames;
     protected int atracEndSample;
+    protected int atracMaxSamples;
     protected int bytesPerFrame;
     protected byte[] atracDecodeBuffer;
     protected static boolean instructionsDisplayed = false;
@@ -86,15 +87,21 @@ public class AtracCodec {
     public AtracCodec() {
         if (useMediaEngine()) {
             me = new MediaEngine();
-            me.setAudioSamplesSize(sceAtrac3plus.maxSamples);
             atracChannel = new PacketChannel();
             currentLoopCount = 0;
         }
 
-        atracDecodeBuffer = new byte[sceAtrac3plus.maxSamples * 4];
-        samplesBuffer = new byte[sceAtrac3plus.maxSamples * 4];
         externalDecoder = new ExternalDecoder();
         generateCommandFile();
+    }
+
+    public void setAtracMaxSamples(int atracMaxSamples) {
+    	this.atracMaxSamples = atracMaxSamples;
+    	if (useMediaEngine()) {
+    		me.setAudioSamplesSize(atracMaxSamples);
+    	}
+        atracDecodeBuffer = new byte[atracMaxSamples * 4];
+        samplesBuffer = new byte[atracMaxSamples * 4];
     }
 
     protected String generateID(int address, int length, int fileSize) {
@@ -287,11 +294,11 @@ public class AtracCodec {
         boolean isEnded = false;
 
         if (checkMediaEngineState() && me.getContainer() != null) {
-            me.stepAudio(sceAtrac3plus.maxSamples * 4);
+            me.stepAudio(atracMaxSamples * 4);
         	samples = copySamplesToMem(address);
         	if (samples == 0) {
         		isEnded = true;
-        	} else if (samples < sceAtrac3plus.maxSamples) {
+        	} else if (samples < atracMaxSamples) {
         		atracRemainFrames = 0;
         	} else {
         		atracRemainFrames = atracChannel.length() / Modules.sceAtrac3plusModule.getBytesPerFrame(atracID);
