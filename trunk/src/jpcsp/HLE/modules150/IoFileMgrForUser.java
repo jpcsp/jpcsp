@@ -131,7 +131,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public final static int PSP_DEV_TYPE_MOUNT = 0x40;
 
     protected static enum IoOperation {
-    	open(5), close, read(5), write(5), seek, ioctl, remove, rename, mkdir;
+    	open(5), close, read(5), write(5), seek, ioctl(2), remove, rename, mkdir;
 
     	int delayMillis;
     	int asyncDelayMillis;

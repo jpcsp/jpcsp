@@ -173,7 +173,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
 
         if (channel.isReserved()) {
         	if (log.isDebugEnabled()) {
-        		log.debug(String.format("doAudioOuput(%s, 0x%08X)", channel.toString(), pvoid_buf));
+        		log.debug(String.format("doAudioOutput(%s, 0x%08X)", channel.toString(), pvoid_buf));
         	}
             int bytesPerSample = channel.isFormatStereo() ? 4 : 2;
             int nbytes = bytesPerSample * channel.getSampleLength();
@@ -425,9 +425,12 @@ public class sceAudio implements HLEModule, HLEStartModule {
             // It means that we must stall processing until all the previous unplayed samples' data
             // is output. The safest way to mimic this, is to delay the current thread (which will be
             // an audio processing one) if there are still samples to play.
-            if (hleAudioGetChannelRestLen(pspPCMChannels[channel]) != 0) {
+        	int restSamples = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
+            if (restSamples > 0) {
                 log.warn("sceAudioOutputPannedBlocking (pvoid_buf==0): delaying current thread");
-                Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+                float restSeconds = restSamples / (float) pspPCMChannels[channel].getSampleRate();
+                int restMicros = (int) (restSeconds * 1000000);
+                Modules.ThreadManForUserModule.hleKernelDelayThread(restMicros, false);
             } else {
                 log.warn("sceAudioOutputPannedBlocking (pvoid_buf==0): not delaying current thread");
                 cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
