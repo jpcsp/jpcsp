@@ -35,15 +35,17 @@ public class SoundChannel {
     // a real PSP which can lead to buffer underflows,
     // causing discontinuities in the audio that are perceived as "clicks".
     //
-    // So, we allocate several buffers of sampleSize: 10 buffers is an
-    // empirical value.
+    // So, we allocate several buffers of sampleSize, just enough to store
+    // a given amount of audio time.
     // This has the disadvantage to introduce a small delay when playing
     // a new sound: a PSP application is typically sending continuously
     // sound data, even when nothing can be heard ("0" values are sent).
     // And we have first to play these buffered blanks before hearing
     // the real sound itself.
-	private static final int NUMBER_BLOCKING_BUFFERS = 10;
-	private static final int DEFAULT_VOLUME = 0x8000;
+	// E.g. BUFFER_SIZE_IN_MILLIS = 100 gives a 0.1 second delay.
+	private static final int BUFFER_SIZE_IN_MILLIS = 100;
+	public  static final int MAX_VOLUME = 0x8000;
+	private static final int DEFAULT_VOLUME = MAX_VOLUME;
 	private static final int DEFAULT_SAMPLE_RATE = 48000;
 	private SoundBufferManager soundBufferManager;
 	private int index;
@@ -54,6 +56,7 @@ public class SoundChannel {
     private int sampleRate;
     private int sampleLength;
     private int format;
+    private int numberBlockingBuffers;
 
     public static void init() {
 		if (!AL.isCreated()) {
@@ -81,11 +84,24 @@ public class SoundChannel {
 		rightVolume = DEFAULT_VOLUME;
 		alSource = AL10.alGenSources();
 		sampleRate = DEFAULT_SAMPLE_RATE;
+		updateNumberBlockingBuffers();
 
 		AL10.alSourcei(alSource, AL10.AL_LOOPING, AL10.AL_FALSE);
 	}
 
-	public int getIndex() {
+    private void updateNumberBlockingBuffers() {
+    	if (getSampleLength() > 0) {
+	    	// Compute the number of buffers required to store the required
+	    	// amount of audio time
+	    	float bufferSizeInSamples = getSampleRate() * BUFFER_SIZE_IN_MILLIS / 1000.f;
+	    	numberBlockingBuffers = Math.round(bufferSizeInSamples / getSampleLength());
+
+	    	// At least 1 blocking buffer
+	    	numberBlockingBuffers = Math.max(numberBlockingBuffers, 1);
+    	}
+    }
+
+    public int getIndex() {
 		return index;
 	}
 
@@ -118,7 +134,10 @@ public class SoundChannel {
 	}
 
 	public void setSampleLength(int sampleLength) {
-		this.sampleLength = sampleLength;
+		if (this.sampleLength != sampleLength) {
+			this.sampleLength = sampleLength;
+			updateNumberBlockingBuffers();
+		}
 	}
 
 	public int getFormat() {
@@ -142,7 +161,10 @@ public class SoundChannel {
 	}
 
 	public void setSampleRate(int sampleRate) {
-		this.sampleRate = sampleRate;
+		if (this.sampleRate != sampleRate) {
+			this.sampleRate = sampleRate;
+			updateNumberBlockingBuffers();
+		}
 	}
 
 	private void alSourcePlay() {
@@ -204,7 +226,7 @@ public class SoundChannel {
     		return true;
     	}
 
-    	return getWaitingBuffers() >= NUMBER_BLOCKING_BUFFERS;
+    	return getWaitingBuffers() >= numberBlockingBuffers;
     }
 
     public int getUnblockOutputDelayMicros() {
@@ -219,7 +241,13 @@ public class SoundChannel {
     }
 
     public int getRestLength() {
-    	int restLength = getWaitingBuffers() * getSampleLength();
+    	int waitingBuffers = getWaitingBuffers();
+    	if (waitingBuffers > 0) {
+    		// getWaitingBuffers also returns the currently playing buffer,
+    		// do not count i
+    		waitingBuffers--;
+    	}
+    	int restLength = waitingBuffers * getSampleLength();
     	if (!isEnded()) {
     		restLength += getSampleLength() - getSourceSampleOffset();
     	}
@@ -257,7 +285,7 @@ public class SoundChannel {
 	}
 
     public static short adjustSample(short sample, int volume) {
-        return (short) ((((int) sample) * volume) >> 16);
+        return (short) ((((int) sample) * volume) >> 15);
     }
 
     public static void storeSample(short sample, byte[] data, int index) {
