@@ -73,6 +73,7 @@ public class MediaEngine {
     private int bufferAddress;
     private int bufferSize;
     private int bufferMpegOffset;
+    private byte[] bufferData;
     private StreamState videoStreamState;
     private StreamState audioStreamState;
     private List<IPacket> freePackets = new LinkedList<IPacket>();
@@ -204,10 +205,28 @@ public class MediaEngine {
     	au.dts = sceMpeg.UNKNOWN_TIMESTAMP;
     }
 
+    private int read32(byte[] data, int offset) {
+    	int n1 = data[offset] & 0xFF;
+    	int n2 = data[offset + 1] & 0xFF;
+    	int n3 = data[offset + 2] & 0xFF;
+    	int n4 = data[offset + 3] & 0xFF;
+
+    	return (n4 << 24) | (n3 << 16) | (n2 << 8) | n1;
+    }
+
+    public void init(byte[] bufferData) {
+    	this.bufferData = bufferData;
+    	this.bufferAddress = 0;
+    	this.bufferSize = sceMpeg.endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_SIZE_OFFSET));
+    	this.bufferMpegOffset = sceMpeg.endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
+    	init();
+    }
+
     public void init(int bufferAddress, int bufferSize, int bufferMpegOffset) {
     	this.bufferAddress = bufferAddress;
     	this.bufferSize = bufferSize;
     	this.bufferMpegOffset = bufferMpegOffset;
+    	this.bufferData = null;
     	init();
     }
 
@@ -475,7 +494,11 @@ public class MediaEngine {
     	File extAudioFile = getExtAudioFile();
     	if (extAudioFile == null && ExternalDecoder.isEnabled()) {
     		// Try to decode the audio using the external decoder
-			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset);
+    		if (bufferData != null) {
+    			externalDecoder.decodeExtAudio(bufferData, bufferSize, bufferMpegOffset);
+    		} else {
+    			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset);
+    		}
 			extAudioFile = getExtAudioFile();
     	}
 

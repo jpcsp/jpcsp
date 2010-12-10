@@ -204,12 +204,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 86;
     public static final int PSMF_LAST_TIMESTAMP_OFFSET = 92;
     protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
-    protected static final int atracDecodeDelay = 3000;         // Microseconds
-    protected static final int avcDecodeDelay = 5400;           // Microseconds
-    protected static final int maxAheadTimestamp = 40000;
+    public static final int atracDecodeDelay = 3000;         // Microseconds
+    public static final int avcDecodeDelay = 5400;           // Microseconds
+    public static final int maxAheadTimestamp = 40000;
     public static final int mpegTimestampPerSecond = 90000; // How many MPEG Timestamp units in a second.
     public static final int videoTimestampStep = 3003;      // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
-    public static final int audioTimestampStep = 4180;      // Value based on pmfplayer.
+    public static final int audioTimestampStep = 4180;      // For audio play at 44100 Hz (2048 samples / 44100 * mpegTimestampPerSecond == 4180)
     //public static final int audioFirstTimestamp = 89249;    // The first MPEG audio AU has always this timestamp
     public static final int audioFirstTimestamp = 90000;    // The first MPEG audio AU has always this timestamp
     public static final long UNKNOWN_TIMESTAMP = -1;
@@ -332,7 +332,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         return -1;
     }
 
-    protected int endianSwap32(int x) {
+    public static int endianSwap32(int x) {
     	return Integer.reverseBytes(x);
     }
 
@@ -462,7 +462,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
-    private void delayThread(long startMicros, int delayMicros) {
+    public static void delayThread(long startMicros, int delayMicros) {
     	long now = Emulator.getClock().microTime();
     	int threadDelayMicros = delayMicros - (int) (now - startMicros);
     	if (threadDelayMicros > 0) {
