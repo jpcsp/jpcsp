@@ -19,7 +19,6 @@ package jpcsp.media;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceAtrac3plus;
 
 public class OMAFormat {
@@ -52,8 +51,33 @@ public class OMAFormat {
 		return header;
 	}
 
+	private static boolean isHeader(ByteBuffer audioStream, int offset) {
+		final byte header1 = (byte) 0x0F;
+		final byte header2 = (byte) 0xD0;
+
+		return audioStream.get(offset) == header1 && audioStream.get(offset + 1) == header2;
+	}
+
+	private static int getNextHeaderPosition(ByteBuffer audioStream, int frameSize) {
+		int endScan = audioStream.limit() - 1;
+
+		// Most common case: the header can be found at each frameSize
+		int offset = audioStream.position() + frameSize - 8;
+		if (offset < endScan && isHeader(audioStream, offset)) {
+			return offset;
+		}
+
+		for (int scan = audioStream.position(); scan < endScan; scan++) {
+			if (isHeader(audioStream, scan)) {
+				return scan;
+			}
+		}
+
+		return -1;
+	}
+
 	public static ByteBuffer convertStreamToOMA(ByteBuffer audioStream) {
-		if (audioStream.get(0) != (byte) 0x0F || audioStream.get(1) != (byte) 0xD0) {
+		if (!isHeader(audioStream, 0)) {
 			return null;
 		}
 
@@ -71,16 +95,18 @@ public class OMAFormat {
 		oma.put(header);
 		while (audioStream.remaining() > 8) {
 			// Skip 8 bytes frame header
-			int offset = audioStream.position();
-			if (audioStream.get(offset) != (byte) 0x0F || audioStream.get(offset + 1) != (byte) 0xD0) {
-				Modules.log.warn(String.format("Problem while converting to OMA format: header signature missing at offset %d/%d", offset, audioStream.limit()));
-			}
 			audioStream.position(audioStream.position() + 8);
+			int nextHeader = getNextHeaderPosition(audioStream, frameSize);
 			ByteBuffer frame = audioStream.slice();
-			frame.limit(Math.min(frameSize - 8, frame.remaining()));
-			audioStream.position(audioStream.position() + frame.remaining());
+			if (nextHeader >= 0) {
+				frame.limit(nextHeader - audioStream.position());
+				audioStream.position(nextHeader);
+			} else {
+				audioStream.position(audioStream.limit());
+			}
 			oma.put(frame);
 		}
+		oma.limit(oma.position());
 		oma.rewind();
 
 		return oma;
