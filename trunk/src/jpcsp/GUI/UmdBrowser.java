@@ -157,7 +157,7 @@ public class UmdBrowser extends JDialog {
 				}
 			});
 
-			// The UMD informations are loaded asynchronously 
+			// The UMD informations are loaded asynchronously
 			// to provide a faster loading time for the UmdBrowser.
 			// Prepare the containers for the information and
 			// start the async loader thread as a daemon running at low priority.
@@ -419,8 +419,29 @@ public class UmdBrowser extends JDialog {
                 icons[rowIndex] = new ImageIcon(icon0);
             }
 		} catch (FileNotFoundException e) {
-            // default icon
-            icons[rowIndex] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
+            // Check if we're dealing with a UMD_VIDEO.
+            try {
+                UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
+
+                UmdIsoFile paramSfo = iso.getFile("UMD_VIDEO/param.sfo");
+                byte[] sfo = new byte[(int)paramSfo.length()];
+                paramSfo.read(sfo);
+                paramSfo.close();
+                ByteBuffer buf = ByteBuffer.wrap(sfo);
+                psfs[rowIndex] = new PSF();
+                psfs[rowIndex].read(buf);
+
+                UmdIsoFile icon0umd = iso.getFile("UMD_VIDEO/ICON0.PNG");
+                byte[] icon0 = new byte[(int) icon0umd.length()];
+                icon0umd.read(icon0);
+                icon0umd.close();
+                icons[rowIndex] = new ImageIcon(icon0);
+            } catch (FileNotFoundException ve) {
+                // default icon
+                icons[rowIndex] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
+            } catch (IOException ve) {
+                Emulator.log.error(ve);
+            }
 		} catch (IOException e) {
 			Emulator.log.error(e);
 		}
@@ -451,21 +472,32 @@ public class UmdBrowser extends JDialog {
 				Emulator.log.error(e);
 			}
 
-			// Read PIC1.PNG
-			try {
+            // Read PIC1.PNG
+            try {
                 UmdIsoFile pic1umd = iso.getFile("PSP_GAME/PIC1.PNG");
                 byte[] pic1 = new byte[(int) pic1umd.length()];
                 pic1umd.read(pic1);
                 pic1umd.close();
                 pic1Icon = new ImageIcon(pic1);
-			} catch (FileNotFoundException e) {
-				// Generate an empty image
-				pic1Icon = new ImageIcon();
-				BufferedImage image = new BufferedImage(480, 272, BufferedImage.TYPE_INT_ARGB);
-				pic1Icon.setImage(image);
-			} catch (IOException e) {
-				Emulator.log.error(e);
-			}
+            } catch (FileNotFoundException e) {
+                // Check if we're dealing with a UMD_VIDEO.
+                try {
+                    UmdIsoFile pic1umd = iso.getFile("UMD_VIDEO/PIC1.PNG");
+                    byte[] pic1 = new byte[(int) pic1umd.length()];
+                    pic1umd.read(pic1);
+                    pic1umd.close();
+                    pic1Icon = new ImageIcon(pic1);
+                } catch (FileNotFoundException ve) {
+                    // Generate an empty image
+                    pic1Icon = new ImageIcon();
+                    BufferedImage image = new BufferedImage(480, 272, BufferedImage.TYPE_INT_ARGB);
+                    pic1Icon.setImage(image);
+                } catch (IOException ve) {
+                    Emulator.log.error(ve);
+                }
+            } catch (IOException e) {
+                Emulator.log.error(e);
+            }
 
 			icon0Icon = icons[rowIndex];
 
@@ -534,7 +566,7 @@ public class UmdBrowser extends JDialog {
 		Settings.getInstance().writeWindowSize(windowNameForSettings, getSize());
 
 		File selectedFile = programs[table.getSelectedRow()];
-		gui.loadUMD(selectedFile);
+        gui.loadUMD(selectedFile);
 
 		setVisible(false);
 		dispose();
@@ -568,7 +600,7 @@ public class UmdBrowser extends JDialog {
 				loadUmdInfo(i);
 			}
 		}
-		
+
 	}
 
 	private class PmfBorder extends AbstractBorder {

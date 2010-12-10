@@ -19,10 +19,11 @@ package jpcsp.hardware;
 import jpcsp.util.Utilities;
 
 public class MemoryStick {
-    public final static int PSP_MEMORYSTICK_STATE_INSERTED  = 1;
-    public final static int PSP_MEMORYSTICK_STATE_EJECTED   = 2;
-    public final static int PSP_MEMORYSTICK_STATE_INSERTING = 4; // mscmhc0 0x02015804 only
-    private static int state = PSP_MEMORYSTICK_STATE_INSERTED;
+    public final static int PSP_MEMORYSTICK_STATE_DRIVER_READY     = 1;
+    public final static int PSP_MEMORYSTICK_STATE_DRIVER_BUSY      = 2;
+    public final static int PSP_MEMORYSTICK_STATE_DEVICE_INSERTED  = 4;
+    public final static int PSP_MEMORYSTICK_STATE_DEVICE_REMOVED   = 8;
+    private static int state = PSP_MEMORYSTICK_STATE_DRIVER_READY;
 
     // available size on memory stick, in bytes.
     private static long freeSize = 1 * 1024 * 1024 * 1024;	// 1GB

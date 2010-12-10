@@ -421,7 +421,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
         filelist = new HashMap<Integer, IoInfo>();
         dirlist = new HashMap<Integer, IoDirInfo>();
-        MemoryStick.setState(MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED);
+        MemoryStick.setState(MemoryStick.PSP_MEMORYSTICK_STATE_DEVICE_INSERTED);
         defaultAsyncPriority = -1;
         if (ioListeners == null) {
         	ioListeners = new IIoListener[0];
@@ -2509,6 +2509,19 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 break;
             }
+            // Get UMD current LBA.
+            case 0x01F20002: {
+            	if (log.isDebugEnabled()) {
+            		log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " get current LBA");
+            	}
+                if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
+                    mem.write32(outdata_addr, 0); // Assume first sector.
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
             // Seek UMD disc (raw).
             case 0x01F100A4: {
             	if (log.isDebugEnabled()) {
@@ -2543,7 +2556,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
                 break;
             }
-            // Register memorystick insert/eject callback (mscmhc0).
+            // Check the MemoryStick's driver status (mscmhc0).
+            case 0x02025801: {
+                log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " check ms driver status");
+                if (!device.equals("mscmhc0:")) {
+                    cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
+                } else if (Memory.isAddressGood(outdata_addr)) {
+                    // 0 = Driver busy.
+                    // 1 = Driver ready.
+                    mem.write32(outdata_addr, 1);
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
+            // Register MemoryStick's insert/eject callback (mscmhc0).
             case 0x02015804: {
         		log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -2552,18 +2580,18 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
-                        // Trigger callback immediately
+                        // Trigger callback immediately.
                         threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
-                        cpu.gpr[2] = 0; // Success
+                        cpu.gpr[2] = 0; // Success.
                     } else {
-                        cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS; // No such callback
+                        cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS; // No such callback.
                     }
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters
+                    cpu.gpr[2] = -1; // Invalid parameters.
                 }
                 break;
             }
-            // Unregister memorystick insert/eject callback (mscmhc0).
+            // Unregister MemoryStick's insert/eject callback (mscmhc0).
             case 0x02015805: {
         		log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
                 ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -2572,39 +2600,24 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     if (threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
-                        cpu.gpr[2] = 0; // Success
+                        cpu.gpr[2] = 0; // Success.
                     } else {
-                        cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS; // No such callback
+                        cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS; // No such callback.
                     }
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters
+                    cpu.gpr[2] = -1; // Invalid parameters.
                 }
                 break;
             }
-            // Unknown (mscmhc0).
-            case 0x02025801: {
-                log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown ms command (check fs type?)");
-                if (!device.equals("mscmhc0:")) {
-                    cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
-                } else if (Memory.isAddressGood(outdata_addr)) {
-                    // 1 = not inserted
-                    // 4 = inserted
-                    mem.write32(outdata_addr, 4);
-                    cpu.gpr[2] = 0;
-                } else {
-                    cpu.gpr[2] = -1;
-                }
-                break;
-            }
-            // Check if the device is assigned/inserted (mscmhc0).
+            // Check if the device is inserted (mscmhc0).
             case 0x02025806: {
                 log.debug("sceIoDevctl check ms inserted (mscmhc0)");
                 if (!device.equals("mscmhc0:")) {
                     cpu.gpr[2] = ERROR_UNSUPPORTED_OPERATION;
                 } else if (Memory.isAddressGood(outdata_addr)) {
-                    // 1 = inserted
-                    // 2 = not inserted
-                    mem.write32(outdata_addr, MemoryStick.getState());
+                    // 0 = Not inserted.
+                    // 1 = Inserted.
+                    mem.write32(outdata_addr, 1);
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;
@@ -2622,9 +2635,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     // Trigger callback immediately
                     threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
-                    cpu.gpr[2] = 0;  // Success
+                    cpu.gpr[2] = 0;  // Success.
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters
+                    cpu.gpr[2] = -1; // Invalid parameters.
                 }
                 break;
             }
@@ -2637,9 +2650,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (Memory.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
-                    cpu.gpr[2] = 0;  // Success
+                    cpu.gpr[2] = 0;  // Success.
                 } else {
-                    cpu.gpr[2] = -1; // Invalid parameters
+                    cpu.gpr[2] = -1; // Invalid parameters.
                 }
                 break;
             }
