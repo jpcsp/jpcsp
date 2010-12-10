@@ -861,7 +861,8 @@ public class Loader {
         int stubHeadersAddress = module.stub_top;
         int stubHeadersCount = module.stub_size / Elf32StubHeader.sizeof();
 
-        // n modules to import, 1 stub header per module to import
+        // n modules to import, 1 stub header per module to import.
+        String moduleName;
         for (int i = 0; i < stubHeadersCount; i++) {
             Elf32StubHeader stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
 
@@ -870,7 +871,13 @@ public class Loader {
                 Emulator.log.warn("Skipping dummy entry with size " + stubHeader.getSize());
                 stubHeadersAddress += Elf32StubHeader.sizeof() / 2;
             } else {
-                stubHeader.setModuleNamez(Utilities.readStringNZ((int) stubHeader.getOffsetModuleName(), 64));
+                if (Memory.isAddressGood((int)stubHeader.getOffsetModuleName())) {
+                    moduleName = Utilities.readStringNZ((int) stubHeader.getOffsetModuleName(), 64);
+                } else {
+                    // Generate a module name.
+                    moduleName = module.modname;
+                }
+                stubHeader.setModuleNamez(moduleName);
 
                 if (stubHeader.getSize() > 5) {
                     stubHeadersAddress += stubHeader.getSize() * 4;
@@ -906,7 +913,7 @@ public class Loader {
         int entHeadersCount = module.ent_size / Elf32EntHeader.sizeof();
         int entCount = 0;
 
-        // n modules to export, 1 ent header per module to import
+        // n modules to export, 1 ent header per module to export.
         String moduleName;
         for (int i = 0; i < entHeadersCount; i++) {
             Elf32EntHeader entHeader = new Elf32EntHeader(mem, entHeadersAddress);
@@ -916,10 +923,10 @@ public class Loader {
                 Emulator.log.warn("Skipping dummy entry with size " + entHeader.getSize());
                 entHeadersAddress += Elf32EntHeader.sizeof() / 2;
             } else {
-                if (entHeader.getOffsetModuleName() != 0) {
+                if (Memory.isAddressGood((int)entHeader.getOffsetModuleName())) {
                     moduleName = Utilities.readStringNZ((int) entHeader.getOffsetModuleName(), 64);
                 } else {
-                    // Generate a module name
+                    // Generate a module name.
                     moduleName = module.modname;
                 }
                 entHeader.setModuleNamez(moduleName);

@@ -66,6 +66,7 @@ import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.ControlsGUI;
 import jpcsp.GUI.LogGUI;
 import jpcsp.GUI.UmdBrowser;
+import jpcsp.GUI.UmdVideoPlayer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -1060,6 +1061,38 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
     public void loadUMD(File file) {
         try {
+            // Raising an exception here means the ISO/CSO is not a PSP_GAME.
+            // Try checking if it's a UMD_VIDEO or a UMD_AUDIO.
+            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            iso.getFile("PSP_GAME/param.sfo");
+            loadUMDGame(file);
+        } catch (FileNotFoundException e) {
+            try {
+                // Try loading it as a UMD_VIDEO.
+                UmdIsoReader iso = new UmdIsoReader(file.getPath());
+                iso.getFile("UMD_VIDEO/param.sfo");
+                loadUMDVideo(file);
+            } catch (FileNotFoundException ve) {
+                try {
+                    // Try loading it as a UMD_AUDIO.
+                    UmdIsoReader iso = new UmdIsoReader(file.getPath());
+                    iso.getFile("UMD_AUDIO/param.sfo");
+                    loadUMDAudio(file);
+                } catch (FileNotFoundException ae) {
+                    // No more formats to check.
+                } catch (IOException aioe) {
+                    // Ignore.
+                }
+            } catch (IOException vioe) {
+                // Ignore.
+            }
+        } catch (IOException ioe) {
+            // Ignore.
+        }
+    }
+
+    public void loadUMDGame(File file) {
+        try {
             if (consolewin != null) {
                 consolewin.clearScreenMessages();
             }
@@ -1122,6 +1155,105 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         } catch (IOException e) {
             e.printStackTrace();
             JpcspDialogManager.showError(this, Resource.get("ioError") + " : " + e.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            if (ex.getMessage() != null) {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : " + ex.getMessage());
+            } else {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : Check console for details.");
+            }
+        }
+    }
+
+    public void loadUMDVideo(File file) {
+        try {
+            if (consolewin != null) {
+                consolewin.clearScreenMessages();
+            }
+            Modules.SysMemUserForUserModule.reset();
+            Emulator.log.info(MetaInformation.FULL_NAME);
+
+            umdLoaded = true;
+            loadedFile = file;
+
+            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoFile psfFile = iso.getFile("UMD_VIDEO/param.sfo");
+
+            PSF psf = new PSF();
+            byte[] data = new byte[(int) psfFile.length()];
+            psfFile.read(data);
+            psf.read(ByteBuffer.wrap(data));
+
+            Emulator.log.info("UMD param.sfo :\n" + psf);
+            String title = psf.getPrintableString("TITLE");
+            String discId = psf.getString("DISC_ID");
+            if (discId == null) {
+                discId = State.DISCID_UNKNOWN_UMD;
+            }
+
+            setTitle(MetaInformation.FULL_NAME + " - " + title);
+            addRecentUMD(file, title);
+
+            emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
+            RuntimeContext.setIsHomebrew(false);
+            Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
+
+            installCompatibilitySettings();
+
+            State.discId = discId;
+            State.title = title;
+
+            UmdVideoPlayer vp = new UmdVideoPlayer(iso);
+            vp.initVideo();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            if (ex.getMessage() != null) {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : " + ex.getMessage());
+            } else {
+                JpcspDialogManager.showError(this, Resource.get("criticalError") + " : Check console for details.");
+            }
+        }
+    }
+
+    public void loadUMDAudio(File file) {
+        try {
+            if (consolewin != null) {
+                consolewin.clearScreenMessages();
+            }
+            Modules.SysMemUserForUserModule.reset();
+            Emulator.log.info(MetaInformation.FULL_NAME);
+
+            umdLoaded = true;
+            loadedFile = file;
+
+            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoFile psfFile = iso.getFile("UMD_AUDIO/param.sfo");
+
+            PSF psf = new PSF();
+            byte[] data = new byte[(int) psfFile.length()];
+            psfFile.read(data);
+            psf.read(ByteBuffer.wrap(data));
+
+            Emulator.log.info("UMD param.sfo :\n" + psf);
+            String title = psf.getPrintableString("TITLE");
+            String discId = psf.getString("DISC_ID");
+            if (discId == null) {
+                discId = State.DISCID_UNKNOWN_UMD;
+            }
+
+            setTitle(MetaInformation.FULL_NAME + " - " + title);
+            addRecentUMD(file, title);
+
+            emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
+            RuntimeContext.setIsHomebrew(false);
+            Modules.SysMemUserForUserModule.setMemory64MB(psf.getNumeric("MEMSIZE") == 1);
+
+            installCompatibilitySettings();
+
+            State.discId = discId;
+            State.title = title;
+        } catch (IllegalArgumentException iae) {
+            // Ignore...
         } catch (Exception ex) {
             ex.printStackTrace();
             if (ex.getMessage() != null) {
