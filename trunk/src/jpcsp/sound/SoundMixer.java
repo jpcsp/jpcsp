@@ -16,41 +16,90 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
-import jpcsp.Memory;
+import static jpcsp.sound.SoundChannel.MAX_VOLUME;
+import jpcsp.hardware.Audio;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.MemoryWriter;
 
 public class SoundMixer {
+    private SoundVoice[] voices;
+    private SoftwareSynthesizer[] synthesizers;
 
-    private SoundVoice[] sasVoices;
+    public SoundMixer(SoundVoice[] voices) {
+    	this.voices = voices;
 
-    public SoundMixer() {
+    	synthesizers = new SoftwareSynthesizer[voices.length];
+    	for (int i = 0; i < voices.length; i++) {
+    		synthesizers[i] = new SoftwareSynthesizer(voices[i]);
+    	}
     }
 
-    private void mixSamples(short[] samples, int smplAddr, int smplLength) {
-        Memory mem = Memory.getInstance();
-        for (int i = 0; i < smplLength; i++) {
-            int sAddr = (smplAddr + i * 2);
-            short s1 = (short) mem.read16(sAddr);
-            short s2 = samples[i];
-            // Use floats for a better value approximation.
-            float fSum = (float)(s1 / 32768.0f) + (float)(s2 / 32768.0f);
-            // Clamp the sound values as required by PCM standards.
-            if(fSum > 1.0f) fSum = 1.0f;
-            if(fSum < -1.0f) fSum = -1.0f;
-            short sOut = (short) (fSum * 32768.0f);
-            mem.write16(sAddr, sOut);
+    private static short clampSample(int sample) {
+    	if (sample < Short.MIN_VALUE) {
+    		return Short.MIN_VALUE;
+    	} else if (sample > Short.MAX_VALUE) {
+    		return Short.MAX_VALUE;
+    	}
+
+    	return (short) sample;
+    }
+
+    private void mix(int[] stereoSamples, short[] monoSamples, int startIndex, int length, int leftVol, int rightVol) {
+    	int endIndex = startIndex + length;
+    	for (int i = startIndex, j = 0; i < endIndex; i++, j += 2) {
+    		short monoSample = monoSamples[i];
+    		stereoSamples[j] += SoundChannel.adjustSample(monoSample, leftVol);
+    		stereoSamples[j + 1] += SoundChannel.adjustSample(monoSample, rightVol);
+    	}
+    }
+
+    private void copySamplesToMem(int[] mixedSamples, int addr, int samples, int leftVol, int rightVol, boolean writeSamples) {
+    	// Adjust the volume according to the global volume settings
+    	leftVol = Audio.getVolume(leftVol);
+    	rightVol = Audio.getVolume(rightVol);
+
+    	if (!writeSamples) {
+    		// If the samples have not been changed and the volume settings
+    		// would also not adjust the samples, no need to copy them back to memory.
+    		if (leftVol == MAX_VOLUME && rightVol == MAX_VOLUME) {
+    			return;
+    		}
+    	}
+
+    	int lengthInBytes = mixedSamples.length * 2;
+    	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(addr, lengthInBytes, 2);
+    	for (int i = 0, j = 0; i < samples; i++, j += 2) {
+    		short sampleLeft  = clampSample(mixedSamples[j]);
+    		short sampleRight = clampSample(mixedSamples[j + 1]);
+    		memoryWriter.writeNext(SoundChannel.adjustSample(sampleLeft , leftVol ) & 0xFFFF);
+    		memoryWriter.writeNext(SoundChannel.adjustSample(sampleRight, rightVol) & 0xFFFF);
+    	}
+    	memoryWriter.flush();
+    }
+
+    private void mix(int[] mixedSamples, int addr, int samples, int leftVol, int rightVol, boolean writeSamples) {
+    	for (int i = 0; i < voices.length; i++) {
+    		SoundVoice voice = voices[i];
+
+            if (voice.isPlaying()) {
+            	int playSample = voice.getPlaySample();
+            	short[] synthSamples = synthesizers[i].getSynthSamples();
+            	int restPlay = synthSamples.length - playSample;
+            	if (restPlay <= 0) {
+            		// End of voice sample reached
+            		voice.setPlaying(false);
+            	} else {
+            		int numSamples = Math.min(samples, restPlay);
+            		mix(mixedSamples, synthSamples, playSample, numSamples, voice.getLeftVolume(), voice.getRightVolume());
+            		voice.setPlaySample(playSample + numSamples);
+            		writeSamples = true;
+            	}
+            }
         }
-    }
 
-    private short[] drainSamples(short[] samples, int smplLength) {
-        short[] res = new short[samples.length - smplLength];
-        for (int i = 0; i < res.length; i++) {
-            res[i] = samples[smplLength + i];
-        }
-        return res;
-    }
-
-    public void updateVoices(SoundVoice[] voices) {
-        sasVoices = voices;
+		copySamplesToMem(mixedSamples, addr, samples, leftVol, rightVol, writeSamples);
     }
 
     /**
@@ -58,37 +107,13 @@ public class SoundMixer {
      * @param addr Output address for the PCM data (must be 64-byte aligned).
      * @param length Size of the PCM buffer in use (matches the sound granularity).
      */
-    public void synthesize(int addr, int length) {
-        Memory mem = Memory.getInstance();
-        for (int i = 0; i < sasVoices.length; i++) {
-            // The voice is ON.
-            if (sasVoices[i].isOn()) {
-                if (sasVoices[i].isPlaying()) {
-                    // If the sample length is superior to our granularity, then
-                    // drain this voice's samples.
-                    if (sasVoices[i].getSamples().length > length) {
-                        sasVoices[i].setSamples(drainSamples(sasVoices[i].getSamples(), length));
-                    }
-                    // Use OpenAL to playback this voice's samples.
-                    // TODO: Replace this with an improved and working version
-                    // of mixSamples solely based on memory writing.
-                    sasVoices[i].play(sasVoices[i].encodeSamples());
-                    // Always perform one-shot playback.
-                    sasVoices[i].setPlaying(false);
-                } else {
-                    // Flush OpenAL's buffers.
-                    sasVoices[i].checkFreeBuffers();
-                }
-            // The voice is OFF.
-            } else {
-                if (!sasVoices[i].isPlaying()) {
-                    // Erase the memory area supposedly used for
-                    // audio synthesis and release OpenAL's buffers.
-                    sasVoices[i].release();
-                    mem.memset(addr, (byte) 0, length);
-                }
-            }
-        }
+    public void synthesize(int addr, int samples) {
+    	int[] mixedSamples = new int[samples * 2];
+    	for (int i = 0; i < mixedSamples.length; i++) {
+    		mixedSamples[i] = 0;
+    	}
+
+    	mix(mixedSamples, addr, samples, MAX_VOLUME, MAX_VOLUME, true);
     }
 
     /**
@@ -97,34 +122,14 @@ public class SoundMixer {
      * @param length Size of the PCM buffer in use (matches the sound granularity).
      * @param mix Array containing the PCM mix data.
      */
-    public void synthesizeWithMix(int addr, int length, int[] mix) {
-        for (int i = 0; i < sasVoices.length; i++) {
-            // The voice is ON.
-            if (sasVoices[i].isOn()) {
-                if (sasVoices[i].isPlaying()) {
-                    // If the sample length is superior to our granularity, then
-                    // drain this voice's samples.
-                    if (sasVoices[i].getSamples().length > length) {
-                        sasVoices[i].setSamples(drainSamples(sasVoices[i].getSamples(), length));
-                    }
-                    // Use OpenAL to playback this voice's samples.
-                    // TODO: Replace this with an improved and working version
-                    // of addSamples solely based on memory writing.
-                    sasVoices[i].play(sasVoices[i].encodeSamples());
-                    // Always perform one-shot playback.
-                    sasVoices[i].setPlaying(false);
-                } else {
-                    // Flush OpenAL's buffers.
-                    sasVoices[i].checkFreeBuffers();
-                }
-            // The voice is OFF.
-            } else {
-                if (!sasVoices[i].isPlaying()) {
-                    // Release OpenAL's buffers and don't change the PCM mix
-                    // data area.
-                    sasVoices[i].release();
-                }
-            }
-        }
+    public void synthesizeWithMix(int addr, int samples, int leftVol, int rightVol) {
+    	int[] mixedSamples = new int[samples * 2];
+    	int lengthInBytes = mixedSamples.length * 2;
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, lengthInBytes, 2);
+    	for (int i = 0; i < mixedSamples.length; i++) {
+    		mixedSamples[i] = (short) memoryReader.readNext();
+    	}
+
+    	mix(mixedSamples, addr, samples, leftVol, rightVol, false);
     }
 }

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -121,7 +122,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         for (int i = 0; i < voices.length; i++) {
             voices[i] = new SoundVoice(i);
         }
-        mixer = new SoundMixer();
+        mixer = new SoundMixer(voices);
         grainSamples = PSP_SAS_GRAIN_SAMPLES;
         outputMode = PSP_SAS_OUTPUTMODE_STEREO;
     }
@@ -296,6 +297,22 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         return samples;
     }
 
+    private void delayThread(long startMicros, int delayMicros) {
+    	long now = Emulator.getClock().microTime();
+    	int threadDelayMicros = delayMicros - (int) (now - startMicros);
+    	if (threadDelayMicros > 0) {
+    		Modules.ThreadManForUserModule.hleKernelDelayThread(threadDelayMicros, false);
+    	} else {
+    		Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+    	}
+    }
+
+    private void delayThreadSasCore(long startMicros) {
+    	// Rough estimation of the required delay, based on the grainSamples
+    	int delayMicros = grainSamples * 4;
+    	delayThread(startMicros, delayMicros);
+    }
+
     public void __sceSasSetADSR(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -414,8 +431,12 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
+        int grain = cpu.gpr[5];
+        int unknown1 = cpu.gpr[6]; // Valid values: 1..32
+        int unknown2 = cpu.gpr[7]; // Valid values: 0..1
+        int sampleRate = cpu.gpr[8];
 
-        log.info("__sceSasInit");
+        log.info(String.format("__sceSasInit(0x%08X, grain=%d, %d, %d, sampleRate=%d)", sasCore, grain, unknown1, unknown2, sampleRate));
 
         // Tested on PSP:
         // Only one instance at a time is supported.
@@ -424,8 +445,9 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                 sasCoreUid = SceUidManager.getNewUid("sceSasCore-SasCore");
                 mem.write32(sasCore, sasCoreUid);
             }
+            grainSamples = grain;
             for (int i = 0; i < voices.length; i++) {
-                voices[i].setSampleRate(44100); // Default.
+                voices[i].setSampleRate(sampleRate); // Default.
             }
             isSasInit = true;
         }
@@ -474,15 +496,10 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(sasInOut, 1);
-            int[] pcmMix = new int[grainSamples * 2]; // 2 bytes per sample.
-            for(int i = 0; i < grainSamples * 2; i++) {
-                pcmMix[i] = memoryReader.readNext();
-            }
-            mixer.updateVoices(voices);
-            mixer.synthesizeWithMix(sasInOut, grainSamples * 2, pcmMix);  // 256 (grain) * 2 (channels).
+        	long startTime = Emulator.getClock().microTime();
+            mixer.synthesizeWithMix(sasInOut, grainSamples, leftVol << 3, rightVol << 3);
             cpu.gpr[2] = 0;
-            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
+            delayThreadSasCore(startTime);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
@@ -721,10 +738,10 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-            mixer.updateVoices(voices);
-            mixer.synthesize(sasOut, grainSamples * 2);  // 256 (grain) * 2 (channels).
+        	long startTime = Emulator.getClock().microTime();
+            mixer.synthesize(sasOut, grainSamples);
             cpu.gpr[2] = 0;
-            Modules.ThreadManForUserModule.hleKernelDelayThread(sasCoreDelay, false);
+            delayThreadSasCore(startTime);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }

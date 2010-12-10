@@ -16,10 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
-import jpcsp.HLE.modules150.sceSasCore;
-import jpcsp.hardware.Audio;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_PITCH_BASE;
+import static jpcsp.HLE.modules.sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
 
-public class SoundVoice extends SoundChannel {
+public class SoundVoice {
+	private boolean changed;
+	private int leftVolume;
+	private int rightVolume;
+	private int sampleRate;
     private short[] samples;
     private int loopMode;
     private int pitch;
@@ -27,8 +31,8 @@ public class SoundVoice extends SoundChannel {
     private boolean playing;
     private boolean paused;
     private boolean on;
-    private boolean off;
     private VoiceADSREnvelope envelope;
+    private int playSample;
 
     public class VoiceADSREnvelope {
         public int AttackRate;
@@ -48,49 +52,50 @@ public class SoundVoice extends SoundChannel {
             SustainRate = 0;
             ReleaseRate = 0;
             SustainLevel = 0;
-            height = sceSasCore.PSP_SAS_ENVELOPE_HEIGHT_MAX;
+            height = PSP_SAS_ENVELOPE_HEIGHT_MAX;
         }
     }
 
 	public SoundVoice(int index) {
-		super(index);
+		changed = true;
         samples = null;
         loopMode = 0;
-        pitch = sceSasCore.PSP_SAS_PITCH_BASE;
+        pitch = PSP_SAS_PITCH_BASE;
         noise = 0;
         playing = false;
         paused = false;
         on = false;
-        off = true;
         envelope = new VoiceADSREnvelope();
+        playSample = 0;
 	}
 
-    public byte[] encodeSamples() {
-    	int nsamples = samples.length;
-        byte[] samplesBuffer = new byte[nsamples * 4];
-        int leftVol = Audio.getVolume(getLeftVolume());
-        int rightVol = Audio.getVolume(getRightVolume());
-
-        for (int i = 0; i < nsamples; i++) {
-            short sample = samples[i];
-            short lval = adjustSample(sample, leftVol);
-            short rval = adjustSample(sample, rightVol);
-            storeSample(lval, samplesBuffer, i * 4);
-            storeSample(rval, samplesBuffer, i * 4 + 2);
-        }
-
-        return samplesBuffer;
+    private void onVoiceChanged() {
+    	changed = true;
     }
+
+	public int getLeftVolume() {
+		return leftVolume;
+	}
+
+	public void setLeftVolume(int leftVolume) {
+		this.leftVolume = leftVolume;
+	}
+
+	public int getRightVolume() {
+		return rightVolume;
+	}
+
+	public void setRightVolume(int rightVolume) {
+		this.rightVolume = rightVolume;
+	}
 
     public void on() {
         on = true;
-        off = false;
         setPlaying(true);
 	}
 
     public void off() {
         on = false;
-        off = true;
         setPlaying(false);
     }
 
@@ -102,15 +107,12 @@ public class SoundVoice extends SoundChannel {
 		return on;
 	}
 
-    public boolean isOff() {
-		return off;
-	}
-
     public boolean isPlaying() {
 		return playing;
 	}
 
 	public void setPlaying(boolean playing) {
+		playSample = 0;
 		this.playing = playing;
 	}
 
@@ -124,6 +126,7 @@ public class SoundVoice extends SoundChannel {
 
 	public void setSamples(short[] samples) {
 		this.samples = samples;
+		onVoiceChanged();
 	}
 
     public short[] getSamples() {
@@ -135,7 +138,10 @@ public class SoundVoice extends SoundChannel {
 	}
 
 	public void setLoopMode(int loopMode) {
-		this.loopMode = loopMode;
+		if (this.loopMode != loopMode) {
+			this.loopMode = loopMode;
+			onVoiceChanged();
+		}
 	}
 
 	public int getPitch() {
@@ -143,7 +149,10 @@ public class SoundVoice extends SoundChannel {
 	}
 
 	public void setPitch(int pitch) {
-		this.pitch = pitch;
+		if (this.pitch != pitch) {
+			this.pitch = pitch;
+			onVoiceChanged();
+		}
 	}
 
 	public int getNoise() {
@@ -151,11 +160,41 @@ public class SoundVoice extends SoundChannel {
 	}
 
 	public void setNoise(int noise) {
-		this.noise = noise;
+		if (this.noise != noise) {
+			this.noise = noise;
+			onVoiceChanged();
+		}
 	}
 
-	@Override
+	public int getPlaySample() {
+		return playSample;
+	}
+
+	public void setPlaySample(int playSample) {
+		this.playSample = playSample;
+	}
+
 	public int getSampleRate() {
-		return super.getSampleRate() * getPitch() / sceSasCore.PSP_SAS_PITCH_BASE;
+		return sampleRate;
+	}
+
+	public void setSampleRate(int sampleRate) {
+		this.sampleRate = sampleRate;
+	}
+
+	public boolean isEnded() {
+		return !isPlaying();
+	}
+
+	public boolean isChanged() {
+		return changed;
+	}
+
+	public void setChanged(boolean changed) {
+		this.changed = changed;
+	}
+
+	public short getSample(int index) {
+		return samples[index];
 	}
 }
