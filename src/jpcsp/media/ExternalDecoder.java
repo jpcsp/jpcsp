@@ -24,11 +24,13 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Memory;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceAtrac3plus;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.connector.AtracCodec;
 import jpcsp.filesystems.SeekableDataInput;
-import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
@@ -43,6 +45,7 @@ public class ExternalDecoder {
     private static boolean enabled = true;
     private static boolean dumpEncodedFile = false;
     private static boolean dumpPmfFile = false;
+    private static boolean dumpAudioStreamFile = false;
 
     public ExternalDecoder() {
     	init();
@@ -125,20 +128,10 @@ public class ExternalDecoder {
 		return true;
     }
 
-    public void decodeExtAudio(int address, int mpegFileSize, int mpegOffset) {
-    	if (!isEnabled()) {
-    		return;
-    	}
-
-    	// At least 2048 bytes of MPEG data is provided
-		byte[] mpegData = ioListener.readFileData(address, 2048, mpegFileSize);
-    	if (mpegData == null) {
-    		// MPEG data cannot be retrieved...
-    		return;
-    	}
-
+    public void decodeExtAudio(byte[] mpegData, int mpegFileSize, int mpegOffset) {
     	if (dumpPmfFile) {
 			try {
+				new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
 				FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, "pmf"));
 				pmfOut.write(mpegData);
 				pmfOut.close();
@@ -152,6 +145,18 @@ public class ExternalDecoder {
 
 		ByteBuffer audioStream = mpegDemux.getAudioStream();
 		if (audioStream != null) {
+			if (dumpAudioStreamFile) {
+				try {
+					new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
+					FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, "audio"));
+					pmfOut.getChannel().write(audioStream);
+					audioStream.rewind();
+					pmfOut.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
 			ByteBuffer omaBuffer = OMAFormat.convertStreamToOMA(audioStream); 
 			if (omaBuffer != null) {
 				try {
@@ -171,6 +176,21 @@ public class ExternalDecoder {
 				}
 			}
 		}
+    }
+
+    public void decodeExtAudio(int address, int mpegFileSize, int mpegOffset) {
+    	if (!isEnabled()) {
+    		return;
+    	}
+
+    	// At least 2048 bytes of MPEG data is provided
+		byte[] mpegData = ioListener.readFileData(address, 2048, mpegFileSize);
+    	if (mpegData == null) {
+    		// MPEG data cannot be retrieved...
+    		return;
+    	}
+
+    	decodeExtAudio(mpegData, mpegFileSize, mpegOffset);
     }
 
     private static String getAtracAudioPath(int address, int atracFileSize, String suffix) {
@@ -256,6 +276,10 @@ public class ExternalDecoder {
     	}
 
     	private HashMap<Integer, ReadInfo> readInfos;
+    	private static final int[] fileMagics = {
+    		sceAtrac3plus.RIFF_MAGIC,
+    		sceMpeg.PSMF_MAGIC
+    	};
 
     	public IoListener() {
     		readInfos = new HashMap<Integer, ReadInfo>();
@@ -315,10 +339,14 @@ public class ExternalDecoder {
 			return fileData;
     	}
 
-    	private boolean isCompleteUmd(SeekableDataInput dataInput) {
-    		if (dataInput instanceof UmdIsoFile) {
-    			UmdIsoFile isoFile = (UmdIsoFile) dataInput;
-    			if (isoFile.getStartSector() == 0) {
+    	private boolean isFileMagic(int address) {
+    		if (!Memory.isAddressGood(address)) {
+    			return false;
+    		}
+
+    		int magicValue = Memory.getInstance().read32(address);
+    		for (int i = 0; i < fileMagics.length; i++) {
+    			if (magicValue == fileMagics[i]) {
     				return true;
     			}
     		}
@@ -330,7 +358,7 @@ public class ExternalDecoder {
 		public void sceIoRead(int result, int uid, int data_addr, int size,	int bytesRead, long position, SeekableDataInput dataInput) {
 			if (result >= 0 && dataInput != null) {
 				ReadInfo readInfo = readInfos.get(data_addr);
-				if (readInfo == null || readInfo.dataInput != dataInput || readInfo.position > position || isCompleteUmd(dataInput)) {
+				if (readInfo == null || isFileMagic(data_addr)) {
 					readInfo = new ReadInfo(data_addr, bytesRead, dataInput, position);
 					readInfos.put(data_addr, readInfo);
 				}
