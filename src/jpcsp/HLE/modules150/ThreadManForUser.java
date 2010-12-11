@@ -2069,13 +2069,21 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         if (callback != null) {
+        	boolean foundCallback = false;
             for(int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE; i++) {
                 if(getCurrentThread().callbackInfo[i] != null) {
                     if(getCurrentThread().callbackInfo[i].uid == callback.uid) {
                         hleKernelNotifyCallback(i, uid, arg);
+                        foundCallback = true;
                         break;
                     }
                 }
+            }
+            if (!foundCallback) {
+            	// Register the callback as a temporary THREAD_CALLBACK_USER_DEFINED
+            	if (hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_USER_DEFINED, uid)) {
+            		hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_USER_DEFINED, uid, arg);
+            	}
             }
             cpu.gpr[2] = 0;
         } else {

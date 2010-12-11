@@ -110,12 +110,13 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int displayLastWaitVcount;
 
     // Callbacks, only 1 of each type can be registered per thread.
-    public final static int THREAD_CALLBACK_UMD         = 0;
-    public final static int THREAD_CALLBACK_IO          = 1;
-    public final static int THREAD_CALLBACK_MEMORYSTICK = 2;
-    public final static int THREAD_CALLBACK_POWER       = 3;
-    public final static int THREAD_CALLBACK_EXIT        = 4;
-    public final static int THREAD_CALLBACK_SIZE        = 5;
+    public final static int THREAD_CALLBACK_UMD          = 0;
+    public final static int THREAD_CALLBACK_IO           = 1;
+    public final static int THREAD_CALLBACK_MEMORYSTICK  = 2;
+    public final static int THREAD_CALLBACK_POWER        = 3;
+    public final static int THREAD_CALLBACK_EXIT         = 4;
+    public final static int THREAD_CALLBACK_USER_DEFINED = 5;
+    public final static int THREAD_CALLBACK_SIZE         = 6;
     public boolean[] callbackRegistered;
     public boolean[] callbackReady;
     public SceKernelCallbackInfo[] callbackInfo;
