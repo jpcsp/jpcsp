@@ -1375,7 +1375,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 }
 
                 // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
-                if (MemoryStick.getState() != MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED) {
+                if (MemoryStick.getState() != MemoryStick.PSP_MEMORYSTICK_STATE_DEVICE_INSERTED) {
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
                 } else if (!savedataParams.isPresent()) {
                     savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
