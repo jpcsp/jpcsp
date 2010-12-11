@@ -393,7 +393,7 @@ public class SemaManager {
             log.debug("sceKernelCancelSema semaid=0x" + Integer.toHexString(semaid) + " newcount=" + newcount + " numWaitThreadAddr=0x" + Integer.toHexString(numWaitThreadAddr));
         }
 
-        if (newcount <= 0) {
+        if (newcount <= 0 && newcount != -1) {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
             return;
         }
