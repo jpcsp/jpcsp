@@ -103,6 +103,7 @@ public class HLEModuleManager {
         sceNet(Modules.sceNetModule),
         sceNetAdhoc(Modules.sceNetAdhocModule),
         sceNetAdhocctl(Modules.sceNetAdhocctlModule),
+        sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule),
         sceNetIfhandle(Modules.sceNetIfhandleModule),
         sceOpenPSID(Modules.sceOpenPSIDModule),
         sceNp(Modules.sceNpModule),

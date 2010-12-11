@@ -270,42 +270,42 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    public void sceNetAdhocGameModeCreateReplicaFunction(Processor processor) {
+    public void sceNetAdhocGameModeCreateReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeCreateReplicaFunction");
+        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeCreateReplica");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    public void sceNetAdhocGameModeUpdateMasterFunction(Processor processor) {
+    public void sceNetAdhocGameModeUpdateMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeUpdateMasterFunction");
+        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeUpdateMaster");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    public void sceNetAdhocGameModeUpdateReplicaFunction(Processor processor) {
+    public void sceNetAdhocGameModeUpdateReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeUpdateReplicaFunction");
+        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeUpdateReplica");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    public void sceNetAdhocGameModeDeleteMasterFunction(Processor processor) {
+    public void sceNetAdhocGameModeDeleteMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeDeleteMasterFunction");
+        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeDeleteMaster");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
-    public void sceNetAdhocGameModeDeleteReplicaFunction(Processor processor) {
+    public void sceNetAdhocGameModeDeleteReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeDeleteReplicaFunction");
+        log.warn("UNIMPLEMENTED: sceNetAdhocGameModeDeleteReplica");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
@@ -570,68 +570,68 @@ public class sceNetAdhoc implements HLEModule {
         }
     };
 
-    public final HLEModuleFunction sceNetAdhocGameModeCreateReplicaFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeCreateReplicaFunction") {
+    public final HLEModuleFunction sceNetAdhocGameModeCreateReplicaFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeCreateReplica") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNetAdhocGameModeCreateReplicaFunction(processor);
+            sceNetAdhocGameModeCreateReplica(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeCreateReplicaFunction(processor);";
+            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeCreateReplica(processor);";
         }
     };
 
-    public final HLEModuleFunction sceNetAdhocGameModeUpdateMasterFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeUpdateMasterFunction") {
+    public final HLEModuleFunction sceNetAdhocGameModeUpdateMasterFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeUpdateMaster") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNetAdhocGameModeUpdateMasterFunction(processor);
+            sceNetAdhocGameModeUpdateMaster(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeUpdateMasterFunction(processor);";
+            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeUpdateMaster(processor);";
         }
     };
 
-    public final HLEModuleFunction sceNetAdhocGameModeUpdateReplicaFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeUpdateReplicaFunction") {
+    public final HLEModuleFunction sceNetAdhocGameModeUpdateReplicaFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeUpdateReplica") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNetAdhocGameModeUpdateReplicaFunction(processor);
+            sceNetAdhocGameModeUpdateReplica(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeUpdateReplicaFunction(processor);";
+            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeUpdateReplica(processor);";
         }
     };
 
-    public final HLEModuleFunction sceNetAdhocGameModeDeleteMasterFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeDeleteMasterFunction") {
+    public final HLEModuleFunction sceNetAdhocGameModeDeleteMasterFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeDeleteMaster") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNetAdhocGameModeDeleteMasterFunction(processor);
+            sceNetAdhocGameModeDeleteMaster(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeDeleteMasterFunction(processor);";
+            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeDeleteMaster(processor);";
         }
     };
 
-    public final HLEModuleFunction sceNetAdhocGameModeDeleteReplicaFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeDeleteReplicaFunction") {
+    public final HLEModuleFunction sceNetAdhocGameModeDeleteReplicaFunction = new HLEModuleFunction("sceNetAdhoc", "sceNetAdhocGameModeDeleteReplica") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNetAdhocGameModeDeleteReplicaFunction(processor);
+            sceNetAdhocGameModeDeleteReplica(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeDeleteReplicaFunction(processor);";
+            return "jpcsp.HLE.Modules.sceNetAdhocModule.sceNetAdhocGameModeDeleteReplica(processor);";
         }
     };
 }

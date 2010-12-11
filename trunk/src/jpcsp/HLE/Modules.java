@@ -45,6 +45,7 @@ import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
 import jpcsp.HLE.modules.sceNetAdhocctl;
+import jpcsp.HLE.modules.sceNetAdhocDiscover;
 import jpcsp.HLE.modules.sceNetIfhandle;
 import jpcsp.HLE.modules.sceNp;
 import jpcsp.HLE.modules.sceNpAuth;
@@ -102,6 +103,7 @@ public class Modules {
     public static sceNet sceNetModule = new sceNet();
     public static sceNetAdhoc sceNetAdhocModule = new sceNetAdhoc();
     public static sceNetAdhocctl sceNetAdhocctlModule = new sceNetAdhocctl();
+    public static sceNetAdhocDiscover sceNetAdhocDiscoverModule = new sceNetAdhocDiscover();
     public static sceNetIfhandle sceNetIfhandleModule = new sceNetIfhandle();
     public static sceOpenPSID sceOpenPSIDModule = new sceOpenPSID();
     public static sceNp sceNpModule = new sceNp();

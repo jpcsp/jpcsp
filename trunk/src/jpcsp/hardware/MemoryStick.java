@@ -19,22 +19,36 @@ package jpcsp.hardware;
 import jpcsp.util.Utilities;
 
 public class MemoryStick {
+    // States for mscmhc0 (used in callbacks).
     public final static int PSP_MEMORYSTICK_STATE_DRIVER_READY     = 1;
     public final static int PSP_MEMORYSTICK_STATE_DRIVER_BUSY      = 2;
     public final static int PSP_MEMORYSTICK_STATE_DEVICE_INSERTED  = 4;
     public final static int PSP_MEMORYSTICK_STATE_DEVICE_REMOVED   = 8;
-    private static int state = PSP_MEMORYSTICK_STATE_DRIVER_READY;
+    // States for fatms0 (used in callbacks).
+    public final static int PSP_FAT_MEMORYSTICK_STATE_UNASSIGNED   = 0;
+    public final static int PSP_FAT_MEMORYSTICK_STATE_ASSIGNED     = 1;
+    // MS and FatMS states.
+    private static int msState = PSP_MEMORYSTICK_STATE_DRIVER_READY;
+    private static int fatMsState = PSP_FAT_MEMORYSTICK_STATE_ASSIGNED;
 
     // available size on memory stick, in bytes.
     private static long freeSize = 1 * 1024 * 1024 * 1024;	// 1GB
     private static int sectorSize = 32 * 1024; // 32KB
 
-	public static int getState() {
-		return state;
+	public static int getStateMs() {
+		return msState;
 	}
 
-	public static void setState(int state) {
-		MemoryStick.state = state;
+	public static void setStateMs(int state) {
+		MemoryStick.msState = state;
+	}
+
+    public static int getStateFatMs() {
+		return fatMsState;
+	}
+
+	public static void setStateFatMs(int state) {
+		MemoryStick.fatMsState = state;
 	}
 
 	public static long getFreeSize() {

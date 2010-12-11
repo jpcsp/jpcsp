@@ -421,7 +421,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
         filelist = new HashMap<Integer, IoInfo>();
         dirlist = new HashMap<Integer, IoDirInfo>();
-        MemoryStick.setState(MemoryStick.PSP_MEMORYSTICK_STATE_DEVICE_INSERTED);
+        MemoryStick.setStateMs(MemoryStick.PSP_MEMORYSTICK_STATE_DRIVER_READY);
         defaultAsyncPriority = -1;
         if (ioListeners == null) {
         	ioListeners = new IIoListener[0];
@@ -2581,7 +2581,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     int cbid = mem.read32(indata_addr);
                     if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
                         // Trigger callback immediately.
-                        threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
+                        threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getStateMs());
                         cpu.gpr[2] = 0; // Success.
                     } else {
                         cpu.gpr[2] = ERROR_DEVCTL_BAD_PARAMS; // No such callback.
@@ -2634,7 +2634,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     int cbid = mem.read32(indata_addr);
                     threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     // Trigger callback immediately
-                    threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
+                    threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getStateFatMs());
                     cpu.gpr[2] = 0;  // Success.
                 } else {
                     cpu.gpr[2] = -1; // Invalid parameters.
@@ -2664,8 +2664,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
-                	// TODO Check mapping to memory stick state as defined by MemoryStick.PSP_MEMORYSTICK_STATE_*
-                    MemoryStick.setState(mem.read32(indata_addr));
+                    MemoryStick.setStateFatMs(mem.read32(indata_addr));
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;
@@ -2723,7 +2722,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                     // 0 - Device is not assigned (callback not registered).
                     // 1 - Device is assigned (callback registered).
-                    mem.write32(outdata_addr, MemoryStick.getState() == MemoryStick.PSP_MEMORYSTICK_STATE_DEVICE_INSERTED ? 1 : 0);
+                    mem.write32(outdata_addr, MemoryStick.getStateFatMs());
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;
