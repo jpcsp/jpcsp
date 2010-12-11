@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.sound;
 
 import static jpcsp.HLE.modules150.sceSasCore.PSP_SAS_PITCH_BASE;
+import jpcsp.HLE.Modules;
 
 public class SoftwareSynthesizer {
 	private SoundVoice voice;
@@ -35,10 +36,23 @@ public class SoftwareSynthesizer {
 	private void generateSamples() {
 		// Stretch the samples according to the pitch
 		int pitch = voice.getPitch();
-		int synthSamplesLength = voice.getSamples().length * PSP_SAS_PITCH_BASE / pitch;
-		synthSamples = new short[synthSamplesLength];
+		// Transform to "long" to avoid "int" overflow
+		int synthSamplesLength = (int) (voice.getSamples().length * (long) PSP_SAS_PITCH_BASE / pitch);
+		if (synthSamplesLength < 0) {
+			// Probably bad pitch parameter
+			synthSamplesLength = 0;
+		}
+
+		try {
+			synthSamples = new short[synthSamplesLength];
+		} catch (OutOfMemoryError e) {
+			Modules.log.error(e);
+			// Fall back
+			synthSamples = new short[0];
+		}
+
 		for (int i = 0; i < synthSamples.length; i++) {
-			synthSamples[i] = getSynthSample(i, i * pitch / PSP_SAS_PITCH_BASE);
+			synthSamples[i] = getSynthSample(i, (int) (i * (long) pitch / PSP_SAS_PITCH_BASE));
 		}
 	}
 
