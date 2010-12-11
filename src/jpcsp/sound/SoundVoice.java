@@ -71,6 +71,11 @@ public class SoundVoice {
 
     private void onVoiceChanged() {
     	changed = true;
+    	if (isOn() && !isPlaying()) {
+    		// A parameter was changed while the voice was ON but no longer playing.
+    		// Restart playing.
+    		setPlaying(true);
+    	}
     }
 
 	public int getLeftVolume() {
