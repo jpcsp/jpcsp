@@ -22,6 +22,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.awt.Insets;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,10 +35,10 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.swing.ImageIcon;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 
 import jpcsp.Emulator;
+import jpcsp.MainGUI;
 import jpcsp.Settings;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
@@ -56,7 +57,7 @@ import com.xuggle.xuggler.IVideoResampler;
 import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
 
-public class UmdVideoPlayer extends JFrame implements KeyListener {
+public class UmdVideoPlayer implements KeyListener {
 	private UmdIsoReader iso;
 	private UmdIsoFile isoFile;
     private HashMap<Integer, MpsStreamInfo> mpsStreamMap;
@@ -107,25 +108,25 @@ public class UmdVideoPlayer extends JFrame implements KeyListener {
         }
     }
 
-    public UmdVideoPlayer(UmdIsoReader iso) {
-        super("UMD Video Player");
+    public UmdVideoPlayer(MainGUI gui, UmdIsoReader iso) {
+        this.iso = iso;
         screenWidth = 480;
         screenHeigth = 272;
-        this.iso = iso;
-        super.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        super.addKeyListener(this);
-        super.setResizable(false);
-        super.setPreferredSize(new Dimension(screenWidth, screenHeigth));
         display = new JLabel();
-        super.getContentPane().add(display, BorderLayout.CENTER);
-        super.pack();
-        super.setVisible(true);
+        gui.remove(Modules.sceDisplayModule);
+        gui.getContentPane().add(display, BorderLayout.CENTER);
+        gui.addKeyListener(this);
+        Insets insets = gui.getInsets();
+        Dimension minSize = new Dimension(
+                screenWidth + insets.left + insets.right,
+                screenHeigth + insets.top + insets.bottom);
+        gui.setMinimumSize(minSize);
         init();
 	}
 
     @Override
     public void keyPressed(KeyEvent keyCode) {
-        if(keyCode.getKeyCode() == KeyEvent.VK_RIGHT) {
+        if (keyCode.getKeyCode() == KeyEvent.VK_RIGHT) {
             goToNextMpsStream();
         } else if ((keyCode.getKeyCode() == KeyEvent.VK_LEFT) && (currentStreamIndex > 0)) {
             goToPreviousMpsStream();
@@ -190,8 +191,8 @@ public class UmdVideoPlayer extends JFrame implements KeyListener {
     }
 
     private void goToNextMpsStream() {
-        closeVideo();
-        closeAudio();
+        /*closeVideo();
+        closeAudio();*/
         addStreamFromPlaylistFile(++currentStreamIndex);
         if (mpsStreamMap.containsKey(currentStreamIndex)) {
             MpsStreamInfo info = mpsStreamMap.get(currentStreamIndex);
@@ -374,7 +375,7 @@ public class UmdVideoPlayer extends JFrame implements KeyListener {
 		        while (offset < packet.getSize()) {
 		            int bytesDecoded = videoCoder.decodeVideo(picture, packet, offset);
 		            if (bytesDecoded < 0) {
-		        	    throw new RuntimeException("got error decoding video in: " + fileName);
+                        return;
 		            }
 		            offset += bytesDecoded;
 		            if (picture.isComplete()) {
@@ -411,7 +412,7 @@ public class UmdVideoPlayer extends JFrame implements KeyListener {
 		        while(offset < packet.getSize()) {
 		            int bytesDecoded = audioCoder.decodeAudio(samples, packet, offset);
 		            if (bytesDecoded < 0) {
-		                throw new RuntimeException("got error decoding audio in: " + fileName);
+		                return;
 		            }
 		            offset += bytesDecoded;
 		            if (samples.isComplete())

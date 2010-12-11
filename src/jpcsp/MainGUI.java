@@ -1203,7 +1203,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             State.discId = discId;
             State.title = title;
 
-            UmdVideoPlayer vp = new UmdVideoPlayer(iso);
+            UmdVideoPlayer vp = new UmdVideoPlayer(this, iso);
             vp.initVideo();
         } catch (Exception ex) {
             ex.printStackTrace();
