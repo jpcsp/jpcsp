@@ -31,6 +31,7 @@ import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules150.IoFileMgrForUser.IIoListener;
 import jpcsp.connector.AtracCodec;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 
@@ -219,6 +220,7 @@ public class ExternalDecoder {
 	    	ByteBuffer riffBuffer = ByteBuffer.wrap(atracData);
 	    	if (dumpEncodedFile) {
 	    		// For debugging purpose, optionally dump the original atrac file in RIFF format
+				new File(AtracCodec.getBaseDirectory()).mkdirs();
 	    		FileOutputStream encodedOut = new FileOutputStream(getAtracAudioPath(address, atracFileSize, "encoded"));
 	    		encodedOut.getChannel().write(riffBuffer);
 	    		encodedOut.close();
@@ -297,6 +299,7 @@ public class ExternalDecoder {
     	}
 
     	public byte[] readFileData(int address, int length, int fileSize) {
+    		int positionOffset = 0;
     		ReadInfo readInfo = readInfos.get(address);
     		if (readInfo == null) {
     			// The file data has not been read at this address.
@@ -315,6 +318,10 @@ public class ExternalDecoder {
 								readInfo = ri;
 								break;
 							}
+						} else if (ri.address < address && ri.address + ri.size >= address + length) {
+							positionOffset = address - ri.address;
+							readInfo = ri;
+							break;
 						}
 					} catch (IOException e) {
 						// Ignore the exception
@@ -329,7 +336,7 @@ public class ExternalDecoder {
     		byte[] fileData = new byte[fileSize];
     		try {
 				long currentPosition = readInfo.dataInput.getFilePointer();
-				readInfo.dataInput.seek(readInfo.position);
+				readInfo.dataInput.seek(readInfo.position + positionOffset);
 	    		readInfo.dataInput.readFully(fileData);
 				readInfo.dataInput.seek(currentPosition);
 			} catch (IOException e) {
@@ -354,11 +361,25 @@ public class ExternalDecoder {
     		return false;
     	}
 
+    	private int getFileMagicOffset(int address, int size) {
+    		for (int i = 0; i < size; i += UmdIsoFile.sectorLength) {
+    			if (isFileMagic(address + i)) {
+    				return i;
+    			}
+    		}
+
+    		return -1;
+    	}
+
     	@Override
 		public void sceIoRead(int result, int uid, int data_addr, int size,	int bytesRead, long position, SeekableDataInput dataInput) {
 			if (result >= 0 && dataInput != null) {
 				ReadInfo readInfo = readInfos.get(data_addr);
-				if (readInfo == null || isFileMagic(data_addr)) {
+				int magicOffset = getFileMagicOffset(data_addr, bytesRead);
+				if (magicOffset >= 0) {
+					readInfo = new ReadInfo(data_addr + magicOffset, bytesRead - magicOffset, dataInput, position + magicOffset);
+					readInfos.put(data_addr + magicOffset, readInfo);
+				} else if (readInfo == null) {
 					readInfo = new ReadInfo(data_addr, bytesRead, dataInput, position);
 					readInfos.put(data_addr, readInfo);
 				}

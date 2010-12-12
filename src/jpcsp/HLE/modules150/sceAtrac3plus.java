@@ -787,7 +787,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             }
 
             if (log.isDebugEnabled()) {
-                log.debug(String.format("sceAtracDecodeData returning 0x%08X, samples=%d, end=%d, remainFrames=%d", result, samples, end, remainFrames));
+                log.debug(String.format("sceAtracDecodeData returning 0x%08X, samples=%d, end=%d, remainFrames=%d, currentSample=%d/%d", result, samples, end, remainFrames, id.getAtracCurrentSample(), id.getAtracEndSample()));
             }
 
             cpu.gpr[2] = result;
