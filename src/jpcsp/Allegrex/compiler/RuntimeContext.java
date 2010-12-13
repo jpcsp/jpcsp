@@ -612,14 +612,26 @@ public class RuntimeContext {
 
     public static void sync() throws StopThreadException {
     	if (!IntrManager.getInstance().isInsideInterrupt()) {
-    		if (wantSync && log.isDebugEnabled()) {
+    		boolean forcedSync = false;
+    		SceKernelThreadInfo forcedSyncThread = currentThread;
+    		if (wantSync) {
     			if (currentRuntimeThread != null && !currentRuntimeThread.isInSyscall()) {
+        			forcedSync = true;
     				log.debug("Forced sync()");
     			}
     		}
 	    	syncPause();
 			Scheduler.getInstance().step();
-	        syncThread();
+
+			if (forcedSync && currentThread != forcedSyncThread) {
+	    		// In case of a forced sync, the PSP allows a switch to a thread
+	    		// having a higher priority, but it does not rotate the queue of the
+	    		// current thread (i.e. the current thread stays in front of the ready
+	    		// threads having the same priority).
+	    		Modules.ThreadManForUserModule.hleMoveToFrontReadyQueue(forcedSyncThread);
+	    	}
+
+			syncThread();
 	    	syncEmulator(false);
 	        syncDebugger();
 	    	syncPause();

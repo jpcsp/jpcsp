@@ -351,7 +351,20 @@ public class MemoryWriter {
 
 		@Override
 		public void skip(int n) {
-			throw new UnsupportedOperationException();
+			if (n > 0) {
+				int bufferSkip = 0;
+				if (index != 0) {
+					flush();
+					bufferSkip++;
+					n--;
+				}
+				bufferSkip += n / 2;
+				buffer.position(buffer.position() + bufferSkip);
+				index = n & 1;
+				if (index != 0) {
+					value = buffer.get(buffer.position()) & 0x0000FFFF;
+				}
+			}
 		}
 	}
 

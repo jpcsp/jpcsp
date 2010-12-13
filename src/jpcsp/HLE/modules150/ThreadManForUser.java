@@ -1030,6 +1030,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    /**
+     * Move the thread in front of the Ready queue.
+     * @param thread the thread to be moved in front of the ready queue (has to have PSP_THREAD_READY state)
+     */
+    public void hleMoveToFrontReadyQueue(SceKernelThreadInfo thread) {
+    	if (thread != null && thread.status == PSP_THREAD_READY) {
+    		synchronized (readyThreads) {
+    			if (readyThreads.remove(thread)) {
+    				readyThreads.addFirst(thread);
+    			}
+    		}
+    	}
+    }
+
     /** Use this to change a thread's state (ready, running, etc)
      * This function manages some lists such as waiting list and
      * deferred deletion list. */
