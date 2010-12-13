@@ -775,6 +775,10 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             }
             if (samples > 0) {
                 id.setAtracCurrentSample(id.getAtracCurrentSample() + samples);
+                if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
+                	// The PSP is already setting the end flag when returning the last samples.
+                	end = 1;
+                }
             }
             if (Memory.isAddressGood(samplesNbrAddr)) {
                 mem.write32(samplesNbrAddr, samples);
@@ -793,7 +797,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             cpu.gpr[2] = result;
             // Delay the thread decoding the Atrac data,
             // the thread is also blocking using semaphores/event flags on a real PSP.
-            Modules.ThreadManForUserModule.hleKernelDelayThread(atracDecodeDelay, false);
+            if (result == 0) {
+            	Modules.ThreadManForUserModule.hleKernelDelayThread(atracDecodeDelay, false);
+            }
         }
     }
 
