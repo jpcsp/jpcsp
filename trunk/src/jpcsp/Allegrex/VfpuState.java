@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import jpcsp.Memory;
@@ -2144,7 +2145,20 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VWBN
     public void doVWBN(int vsize, int vd, int vs, int imm8) {
-        doUNK("Unimplemented VWBN");
+        // Wrap BigNum.
+        if (vsize != 1) {
+            doUNK("Only supported VWBN.S");
+            return;
+    	}
+        loadVs(vsize, vs);
+        BigInteger exp = BigInteger.valueOf(imm8);
+        for (int i = 0; i < vsize; ++i) {
+            // Calculate modulus with exponent.
+            BigInteger bn = BigInteger.valueOf((long)v1[i]);
+            bn.modPow(exp, bn);
+            v1[i] = bn.floatValue();
+        }
+        saveVd(vsize, vd, v1);
     }
     // group VFPU5
     // VFPU5:VPFXS

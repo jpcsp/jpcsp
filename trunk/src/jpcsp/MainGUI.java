@@ -108,6 +108,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     MemStickBrowser memstick;
     Emulator emulator;
     UmdBrowser umdbrowser;
+    UmdVideoPlayer umdvideoplayer;
     InstructionCounter instructioncounter;
     File loadedFile;
     boolean umdLoaded;
@@ -768,6 +769,9 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
 private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
+    if (umdvideoplayer != null) {
+        umdvideoplayer.initVideo();
+    }
     RunEmu();
 }//GEN-LAST:event_RunButtonActionPerformed
     private JFileChooser makeJFileChooser() {
@@ -932,6 +936,9 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
+    if (umdvideoplayer != null) {
+        umdvideoplayer.pauseVideo();
+    }
     TogglePauseEmu();
 }//GEN-LAST:event_PauseButtonActionPerformed
 
@@ -1204,7 +1211,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             State.title = title;
 
             UmdVideoPlayer vp = new UmdVideoPlayer(this, iso);
-            vp.initVideo();
+            umdvideoplayer = vp;
         } catch (Exception ex) {
             ex.printStackTrace();
             if (ex.getMessage() != null) {

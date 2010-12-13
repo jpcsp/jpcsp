@@ -2007,7 +2007,7 @@ public class VideoEngine {
 
         if (takeConditionalJump) {
             int oldPc = currentList.pc;
-            currentList.jump(normalArgument);
+            currentList.jumpRelativeOffset(normalArgument);
             int newPc = currentList.pc;
             if (isLogDebugEnabled) {
                 log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
@@ -2062,14 +2062,14 @@ public class VideoEngine {
     }
 
     private void executeCommandVADDR() {
-        vinfo.ptr_vertex = currentList.getAddress(normalArgument);
+        vinfo.ptr_vertex = currentList.getAddressRelOffset(normalArgument);
         if (isLogDebugEnabled) {
             log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
         }
     }
 
     private void executeCommandIADDR() {
-        vinfo.ptr_index = currentList.getAddress(normalArgument);
+        vinfo.ptr_index = currentList.getAddressRelOffset(normalArgument);
         if (isLogDebugEnabled) {
             log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
         }
@@ -2109,7 +2109,7 @@ public class VideoEngine {
 
     private void executeCommandJUMP() {
         int oldPc = currentList.pc;
-        currentList.jump(normalArgument);
+        currentList.jumpRelativeOffset(normalArgument);
         int newPc = currentList.pc;
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
@@ -2118,7 +2118,7 @@ public class VideoEngine {
 
     private void executeCommandCALL() {
         int oldPc = currentList.pc;
-        currentList.call(normalArgument);
+        currentList.callRelativeOffset(normalArgument);
         int newPc = currentList.pc;
         if (isLogDebugEnabled) {
             log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
@@ -2156,7 +2156,7 @@ public class VideoEngine {
         } else if (isLogDebugEnabled) {
             log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
         }
-        if (behavior == 8) {
+        if (behavior == Modules.sceGe_userModule.PSP_GE_SIGNAL_SYNC) {
         	// Skip END / FINISH / END
         	Memory mem = Memory.getInstance();
         	if (command(mem.read32(currentList.pc)) == END) {
@@ -2168,6 +2168,23 @@ public class VideoEngine {
                 	}
         		}
         	}
+        } else if (behavior == Modules.sceGe_userModule.PSP_GE_SIGNAL_CALL) {
+            // Call list using absolute address from SIGNAL + END.
+            Memory mem = Memory.getInstance();
+        	if (command(mem.read32(currentList.pc)) == END) {
+                int hi16 = signal & 0x0FFF;
+        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
+                int addr = (hi16 << 16) | lo16;
+                currentList.pc += 4;
+                currentList.callAbsolute(addr);
+            }
+            currentList.restartList();
+        } else if (behavior == Modules.sceGe_userModule.PSP_GE_SIGNAL_RETURN) {
+            // Return from PSP_GE_SIGNAL_CALL.
+            Memory mem = Memory.getInstance();
+        	if (command(mem.read32(currentList.pc)) == END) {
+                currentList.ret();
+            }
         } else {
         	currentList.clearRestart();
         	currentList.pushSignalCallback(currentList.id, behavior, signal);

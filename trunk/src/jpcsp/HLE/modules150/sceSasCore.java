@@ -432,11 +432,11 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
         int sasCore = cpu.gpr[4];
         int grain = cpu.gpr[5];
-        int unknown1 = cpu.gpr[6]; // Valid values: 1..32
-        int unknown2 = cpu.gpr[7]; // Valid values: 0..1
+        int maxVoices = cpu.gpr[6];
+        int outMode = cpu.gpr[7];
         int sampleRate = cpu.gpr[8];
 
-        log.info(String.format("__sceSasInit(0x%08X, grain=%d, %d, %d, sampleRate=%d)", sasCore, grain, unknown1, unknown2, sampleRate));
+        log.info(String.format("__sceSasInit(0x%08X, grain=%d, maxVoices=%d, outMode=%d, sampleRate=%d)", sasCore, grain, maxVoices, outMode, sampleRate));
 
         // Tested on PSP:
         // Only one instance at a time is supported.
@@ -446,6 +446,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
                 mem.write32(sasCore, sasCoreUid);
             }
             grainSamples = grain;
+            outputMode = outMode;
             for (int i = 0; i < voices.length; i++) {
                 voices[i].setSampleRate(sampleRate); // Default.
             }

@@ -1109,11 +1109,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         }
                         Emulator.getProcessor().cpu.gpr[2] = ERROR_FILE_ALREADY_EXISTS;
                     } else {
-                        if (file.exists() && (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                            log.warn("hleIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
-                        }
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
-                        info = new IoInfo(filename, raf, mode, flags, permissions);
+                        if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY &&
+                                (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                            // When writing, PSP_O_TRUNC resets the file to be written (truncate to 0 length).
+                            info = new IoInfo(filename, null, mode, flags, permissions);
+                        } else {
+                            info = new IoInfo(filename, raf, mode, flags, permissions);
+                        }
                         info.result = ERROR_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
                         if (log.isDebugEnabled()) {

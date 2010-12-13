@@ -22,7 +22,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UNKNOWN_MODULE;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -143,9 +142,8 @@ public class ModuleMgrForUser implements HLEModule {
         try {
             byte[] buffer = Modules.IoFileMgrForUserModule.getIsoReader().readSector(PRXStartSector);
             String libName = new String(buffer);
-            if (libName.contains("sce")) {
+            if (libName.contains("sce") && (libName.indexOf("sce") >= 0) && (libName.indexOf(" ") >= 0)) {
                 String module = libName.substring(libName.indexOf("sce"), libName.indexOf(" "));
-
                 // Compare with known names and assign the real name for this module.
                 if (module.contains("sceFont")) {
                     result = "libfont";
@@ -533,6 +531,7 @@ public class ModuleMgrForUser implements HLEModule {
 
     public void sceKernelSelfStopUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
         int argsize = cpu.gpr[4];
         int argp_addr = cpu.gpr[5];
@@ -540,21 +539,38 @@ public class ModuleMgrForUser implements HLEModule {
         int options_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelSelfStopUnloadModule(argsize=" + argsize + ",argp_addr=0x" + Integer.toHexString(argp_addr) + ",status_addr=0x" + Integer.toHexString(status_addr) + ",options_addr=0x" + Integer.toHexString(options_addr) +
-                    ") current thread:'" + Modules.ThreadManForUserModule.getCurrentThread().name + "'");
+            log.debug("sceKernelSelfStopUnloadModule(argsize=" + argsize
+                    + ",argp_addr=0x" + Integer.toHexString(argp_addr)
+                    + ",status_addr=0x" + Integer.toHexString(status_addr)
+                    + ",options_addr=0x" + Integer.toHexString(options_addr) + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        log.info("Program exit detected (sceKernelSelfStopUnloadModule)");
-        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
-        cpu.gpr[2] = 0;
+        SceModule sceModule = Managers.modules.getCurrentModule();  // Get the last loaded module.
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        // Start the module stop thread function.
+        if (Memory.isAddressGood(sceModule.module_stop_func)) {
+            if (Memory.isAddressGood(status_addr)) {
+                mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+            }
+            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+                    sceModule.module_stop_func, sceModule.module_stop_thread_priority,
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
+            thread.moduleid = sceModule.modid;
+            cpu.gpr[2] = 0;
+            threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
+            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+        } else {
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceKernelStopUnloadSelfModuleWithStatus(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
         int exitcode = cpu.gpr[4];
         int argsize = cpu.gpr[5];
@@ -563,26 +579,74 @@ public class ModuleMgrForUser implements HLEModule {
         int options_addr = cpu.gpr[8];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelSelfStopUnloadModule(exitcode=" + exitcode + ",argsize=" + argsize + ",argp_addr=0x" + Integer.toHexString(argp_addr) + ",status_addr=0x" + Integer.toHexString(status_addr) + ",options_addr=0x" + Integer.toHexString(options_addr) +
-                    ") current thread:'" + Modules.ThreadManForUserModule.getCurrentThread().name + "'");
+            log.debug("sceKernelSelfStopUnloadModule(exitcode=" + exitcode
+                    + ",argsize=" + argsize
+                    + ",argp_addr=0x" + Integer.toHexString(argp_addr)
+                    + ",status_addr=0x" + Integer.toHexString(status_addr)
+                    + ",options_addr=0x" + Integer.toHexString(options_addr) + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        log.info("Program exit detected (sceKernelStopUnloadSelfModuleWithStatus)");
-        // Pause the emulator with the given status.
-        Emulator.PauseEmuWithStatus(exitcode);
-        cpu.gpr[2] = 0;
+        SceModule sceModule = Managers.modules.getCurrentModule();  // Get the last loaded module.
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        // Start the module stop thread function.
+        if (Memory.isAddressGood(sceModule.module_stop_func)) {
+            if (Memory.isAddressGood(status_addr)) {
+                mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+            }
+            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+                    sceModule.module_stop_func, sceModule.module_stop_thread_priority,
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
+            thread.moduleid = sceModule.modid;
+            cpu.gpr[2] = 0;
+            threadMan.getCurrentThread().exitStatus = exitcode; // Set the current thread's exit status.
+            threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
+            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+        } else {
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceKernelStopUnloadSelfModule(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        log.warn("Unimplemented NID function sceKernelStopUnloadSelfModule [0xCC1D3699]");
+        int argsize = cpu.gpr[4];
+        int argp_addr = cpu.gpr[5];
+        int status_addr = cpu.gpr[6];
+        int options_addr = cpu.gpr[7];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (log.isDebugEnabled()) {
+            log.debug("sceKernelStopUnloadSelfModule(argsize=" + argsize
+                    + ",argp_addr=0x" + Integer.toHexString(argp_addr)
+                    + ",status_addr=0x" + Integer.toHexString(status_addr)
+                    + ",option_addr=0x" + Integer.toHexString(options_addr) + ")");
+        }
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        SceModule sceModule = Managers.modules.getCurrentModule();   // Get the last loaded module.
+        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+        // Start the module stop thread function.
+        if (Memory.isAddressGood(sceModule.module_stop_func)) {
+            if (Memory.isAddressGood(status_addr)) {
+                mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+            }
+            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+                    sceModule.module_stop_func, sceModule.module_stop_thread_priority,
+                    sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
+            thread.moduleid = sceModule.modid;
+            cpu.gpr[2] = 0;
+            threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
+            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+        } else {
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceKernelGetModuleIdList(Processor processor) {

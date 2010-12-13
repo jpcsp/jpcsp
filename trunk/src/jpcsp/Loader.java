@@ -641,7 +641,8 @@ public class Loader {
 
             int A = 0; // addend
             int S = (int) baseAddress + phBaseOffset;
-            int GP = (int) baseAddress + (int) module.gp_value;
+            int GP_ADDR = (int) baseAddress + (int) rel.getR_offset();
+            int GP_OFFSET = GP_ADDR - ((int) baseAddress & 0xFFFF0000);
 
             switch (R_TYPE) {
                 case 0: //R_MIPS_NONE
@@ -723,18 +724,20 @@ public class Loader {
                     break;
 
                 case 7: // R_MIPS_GPREL16
-                    // Tested and confirmed to be working on PSP.
                     A = rel16;
-                    if ((A & ~0x0000FFFF) == 0) {
-                        result = S - GP;
+                    if (A == 0) {
+                        result = S - GP_ADDR;
                     } else {
-                        result = (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) + S + GP;
+                        result = S + GP_OFFSET + (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) - GP_ADDR;
                     }
-                    if ((result & ~0x0000FFFF) != 0) {
+                    if ((result > 32768) || (result < -32768)) {
                         Memory.log.warn("Relocation overflow (R_MIPS_GPREL16)");
                     }
                     data &= ~0x0000FFFF;
-                    data |= (int)(result & 0x0000FFFF);
+                    data |= (int) (result & 0x0000FFFF);
+                    if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                    }
                     break;
 
                 default:

@@ -22,38 +22,48 @@ import java.util.HashMap;
 import jpcsp.HLE.kernel.types.SceModule;
 
 public class ModuleManager {
-
+    private int moduleCount;
+    private HashMap<Integer, SceModule> moduleNumToModule;
     private HashMap<Integer, SceModule> moduleUidToModule;
     private HashMap<String, SceModule> moduleNameToModule;
 
     public void reset() {
+        moduleCount = 0;
+        moduleNumToModule = new HashMap<Integer, SceModule>();
         moduleUidToModule = new HashMap<Integer, SceModule>();
         moduleNameToModule = new HashMap<String, SceModule>();
     }
 
-    // -------------------------- helpers --------------------------
-
     public void addModule(SceModule module) {
+        moduleCount++;
+        moduleNumToModule.put(moduleCount, module);
         moduleUidToModule.put(module.modid, module);
         moduleNameToModule.put(module.modname, module);
     }
 
     public void removeModule(int uid) {
+        if(moduleCount > 0) {
+            moduleCount--;
+        }
         SceModule sceModule = moduleUidToModule.remove(uid);
-        if (sceModule != null)
+        if (sceModule != null) {
             moduleNameToModule.remove(sceModule.modname);
+        }
     }
 
-    // used by the loader to fixup deferred imports
     public Collection<SceModule> values() {
         return moduleUidToModule.values();
+    }
+
+    public SceModule getCurrentModule() {
+        return moduleNumToModule.get(moduleCount);
     }
 
     public SceModule getModuleByUID(int uid) {
         return moduleUidToModule.get(uid);
     }
 
-    // used by sceKernelFindModuleByName
+    // Used by sceKernelFindModuleByName.
     public SceModule getModuleByName(String name) {
         return moduleNameToModule.get(name);
     }
@@ -65,8 +75,6 @@ public class ModuleManager {
         }
         return null;
     }
-
-    // -------------------------- singleton --------------------------
 
     public static final ModuleManager singleton;
 
