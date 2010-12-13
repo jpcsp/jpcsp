@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import jpcsp.HLE.Modules;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.Memory;
 
 public class PspGeList
 {
@@ -37,7 +38,7 @@ public class PspGeList
     private int stall_addr;
     public int cbid;
     public int arg_addr;
-    public int context_addr; // pointer to 2k buffer for storing GE context, used as a paramater for the callbacks?
+    public pspGeListOptParam optParams;
 
     public int pc;
 
@@ -74,6 +75,7 @@ public class PspGeList
     }
 
     public void init(int list_addr, int stall_addr, int cbid, int arg_addr) {
+        Memory mem = Memory.getInstance();
         init();
 
         this.list_addr = list_addr;
@@ -81,7 +83,10 @@ public class PspGeList
         this.cbid = cbid;
         this.arg_addr = arg_addr;
 
-        context_addr = (arg_addr != 0) ? arg_addr + 4 : 0;
+        if(Memory.isAddressGood(arg_addr)) {
+            optParams = new pspGeListOptParam();
+            optParams.read(mem, arg_addr);
+        }
         pc = list_addr;
         status = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
     	finished = false;
@@ -112,7 +117,11 @@ public class PspGeList
     	return stack[--stackIndex];
     }
 
-    public int getAddress(int argument) {
+    public int getAddressRel(int argument) {
+    	return (videoEngine.getBase() | argument);
+    }
+
+    public int getAddressRelOffset(int argument) {
     	return (videoEngine.getBase() | argument) + videoEngine.getBaseOffset();
     }
 
@@ -120,14 +129,34 @@ public class PspGeList
     	return stackIndex <= 0;
     }
 
-    public void jump(int argument) {
-    	pc = getAddress(argument) & 0xFFFFFFFC;
+    public void jumpAbsolute(int argument) {
+    	pc = argument & 0xFFFFFFFC;
     }
 
-    public void call(int argument) {
+    public void jumpRelative(int argument) {
+    	pc = getAddressRel(argument) & 0xFFFFFFFC;
+    }
+
+    public void jumpRelativeOffset(int argument) {
+    	pc = getAddressRelOffset(argument) & 0xFFFFFFFC;
+    }
+
+    public void callAbsolute(int argument) {
     	pushStack(pc);
     	pushStack(videoEngine.getBaseOffset());
-    	jump(argument);
+    	jumpAbsolute(argument);
+    }
+
+    public void callRelative(int argument) {
+    	pushStack(pc);
+    	pushStack(videoEngine.getBaseOffset());
+    	jumpRelative(argument);
+    }
+
+    public void callRelativeOffset(int argument) {
+    	pushStack(pc);
+    	pushStack(videoEngine.getBaseOffset());
+    	jumpRelativeOffset(argument);
     }
 
     public void ret() {

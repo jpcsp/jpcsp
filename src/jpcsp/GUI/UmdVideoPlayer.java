@@ -64,6 +64,7 @@ public class UmdVideoPlayer implements KeyListener {
     private int currentStreamIndex;
     private int screenWidth;
     private int screenHeigth;
+    private boolean videoPaused;
 	private String fileName;
 	private IContainer container;
 	private IVideoResampler resampler;
@@ -161,6 +162,9 @@ public class UmdVideoPlayer implements KeyListener {
                 Emulator.log.error(e);
             }
         }
+        if (isoFile != null) {
+            startVideo();
+        }
 	}
 
     public void addStreamFromPlaylistFile(int index) {
@@ -191,8 +195,6 @@ public class UmdVideoPlayer implements KeyListener {
     }
 
     private void goToNextMpsStream() {
-        /*closeVideo();
-        closeAudio();*/
         addStreamFromPlaylistFile(++currentStreamIndex);
         if (mpsStreamMap.containsKey(currentStreamIndex)) {
             MpsStreamInfo info = mpsStreamMap.get(currentStreamIndex);
@@ -234,22 +236,23 @@ public class UmdVideoPlayer implements KeyListener {
 		return image;
 	}
 
-	public boolean initVideo() {
-		if (isoFile == null) {
-			return false;
-		}
-		if (!startVideo()) {
-			return false;
-		}
-		displayThread = new MpsDisplayThread();
-		displayThread.setDaemon(true);
-		displayThread.setName("UMD Video Player Thread");
-	    displayThread.start();
-	    return true;
+	public void initVideo() {
+        if (displayThread == null) {
+            displayThread = new MpsDisplayThread();
+            displayThread.setDaemon(true);
+            displayThread.setName("UMD Video Player Thread");
+            displayThread.start();
+        }
+        videoPaused = false;
+	}
+
+    public void pauseVideo() {
+	    videoPaused = true;
 	}
 
 	private boolean startVideo() {
 		endOfVideo = false;
+        videoPaused = false;
 
 		try {
 			container = IContainer.make();
@@ -384,11 +387,11 @@ public class UmdVideoPlayer implements KeyListener {
 		            	    newPic = IVideoPicture.make(resampler.getOutputPixelFormat(),
 		            			    screenWidth, screenHeigth);
 		            	    if (resampler.resample(newPic, picture) < 0) {
-		            		    throw new RuntimeException("could not resample video from: " + fileName);
+		            		    return;
 		            	    }
 		                }
 		                if (newPic.getPixelType() != IPixelFormat.Type.BGR24) {
-		            	    throw new RuntimeException("could not decode video BGR 24 bit data in: " + fileName);
+		            	    return;
 		                }
 		                if (firstTimestampInStream == Global.NO_PTS) {
 		            	    firstTimestampInStream = picture.getTimeStamp();
@@ -442,7 +445,7 @@ public class UmdVideoPlayer implements KeyListener {
             // Ignore the audio handling in these cases, for now.
             audioCoder = null;
 	    } catch (LineUnavailableException e) {
-	        throw new RuntimeException("could not open audio line");
+	        return;
 	    }
 	}
 
@@ -474,10 +477,12 @@ public class UmdVideoPlayer implements KeyListener {
 		public void run() {
 			while (!done) {
 				while (!endOfVideo && !done) {
-					stepVideo();
-					if (display != null && image != null) {
-						display.setIcon(new ImageIcon(getImage()));
-					}
+                    if (!videoPaused) {
+                        stepVideo();
+                        if (display != null && image != null) {
+                            display.setIcon(new ImageIcon(getImage()));
+                        }
+                    }
 				}
                 goToNextMpsStream();
 			}

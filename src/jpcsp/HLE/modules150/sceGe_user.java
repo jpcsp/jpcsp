@@ -77,10 +77,14 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     	"PSP_GE_LIST_CANCEL_DONE"
     };
 
-    public final static int PSP_GE_BEHAVIOR_SUSPEND  = 1;
-    public final static int PSP_GE_BEHAVIOR_CONTINUE = 2;
-    public final static int PSP_GE_BEHAVIOR_BREAK    = 3;
-    public final static int PSP_GE_BEHAVIOR_UNKNOWN8 = 8;
+    public final static int PSP_GE_SIGNAL_HANDLER_SUSPEND  = 0x01;
+    public final static int PSP_GE_SIGNAL_HANDLER_CONTINUE = 0x02;
+    public final static int PSP_GE_SIGNAL_HANDLER_PAUSE    = 0x03;
+    public final int PSP_GE_SIGNAL_SYNC             = 0x08;
+    public final int PSP_GE_SIGNAL_JUMP             = 0x10;
+    public final int PSP_GE_SIGNAL_CALL             = 0x11;
+    public final int PSP_GE_SIGNAL_RETURN           = 0x12;
+    public final int PSP_GE_SIGNAL_BREAK            = 0xFF;
 
     public final static int PSP_GE_MATRIX_BONE0  = 0;
     public final static int PSP_GE_MATRIX_BONE1  = 1;
@@ -171,7 +175,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 
         eDRAMMemoryWidth = 1024;
     }
-    
+
     @Override
     public void stop() {
     }
@@ -282,7 +286,8 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 		//    PSP_GE_BEHAVIOR_CONTINUE and PSP_GE_BEHAVIOR_SUSPEND
 		// Both wait for the completion of the callback before continuing
 		// the list processing...
-		if (behavior == PSP_GE_BEHAVIOR_CONTINUE || behavior == PSP_GE_BEHAVIOR_SUSPEND || behavior == PSP_GE_BEHAVIOR_UNKNOWN8) {
+		if (behavior == PSP_GE_SIGNAL_HANDLER_CONTINUE
+                || behavior == PSP_GE_SIGNAL_HANDLER_SUSPEND) {
 			if (listId >= 0 && listId < NUMBER_GE_LISTS) {
 				PspGeList list = allGeLists[listId];
 				if (log.isDebugEnabled()) {
@@ -318,7 +323,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 
     /** safe to call from the Async display thread */
     public void triggerFinishCallback(int cbid, int listId, int callbackNotifyArg1) {
-		triggerAsyncCallback(cbid, listId, PSP_GE_BEHAVIOR_SUSPEND, callbackNotifyArg1, finishCallbacks);
+		triggerAsyncCallback(cbid, listId, PSP_GE_SIGNAL_HANDLER_SUSPEND, callbackNotifyArg1, finishCallbacks);
     }
 
     /** safe to call from the Async display thread */
@@ -337,7 +342,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
             this.cbid = cbid;
             this.callbackIndex = callbackIndex;
             this.listId = -1;
-            this.behavior = PSP_GE_BEHAVIOR_SUSPEND;
+            this.behavior = PSP_GE_SIGNAL_HANDLER_SUSPEND;
             this.callbackNotifyArg1 = callbackNotifyArg1;
         }
 
