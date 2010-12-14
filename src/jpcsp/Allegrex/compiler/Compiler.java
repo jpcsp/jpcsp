@@ -241,6 +241,14 @@ public class Compiler implements ICompiler {
             }
             boolean isBranchTarget = true;
             int endPc = MemoryMap.END_RAM;
+
+            // Handle branching to a delayed instruction.
+            // The delayed instruction has already been analysed, but the next
+            // address maybe not.
+            if (context.analysedAddresses.contains(pc) && !context.analysedAddresses.contains(pc + 4)) {
+            	pc += 4;
+            }
+
             if (context.analysedAddresses.contains(pc) && isBranchTarget) {
                 codeBlock.setIsBranchTarget(pc);
             } else {
