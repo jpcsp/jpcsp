@@ -34,6 +34,7 @@ import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.util.Hash;
 
 /**
  * @author gid15
@@ -278,6 +279,8 @@ public class ExternalDecoder {
     	}
 
     	private HashMap<Integer, ReadInfo> readInfos;
+    	private HashMap<Integer, ReadInfo> readMagics;
+    	private static final int MAGIC_HASH_LENGTH = 16;
     	private static final int[] fileMagics = {
     		sceAtrac3plus.RIFF_MAGIC,
     		sceMpeg.PSMF_MAGIC
@@ -285,6 +288,7 @@ public class ExternalDecoder {
 
     	public IoListener() {
     		readInfos = new HashMap<Integer, ReadInfo>();
+    		readMagics = new HashMap<Integer, ReadInfo>();
     	}
 
     	private static boolean memcmp(byte[] data, int address, int length) {
@@ -296,6 +300,10 @@ public class ExternalDecoder {
     		}
 
     		return true;
+    	}
+
+    	private static int getMagicHash(int address) {
+    		return Hash.getHashCodeFloatingMemory(0, address, MAGIC_HASH_LENGTH);
     	}
 
     	public byte[] readFileData(int address, int length, int fileSize) {
@@ -329,7 +337,31 @@ public class ExternalDecoder {
     			}
 
     			if (readInfo == null) {
-    				return null;
+    				// Search for a file having the same magic hash value
+    				ReadInfo ri = readMagics.get(getMagicHash(address));
+    				if (ri != null) {
+    					try {
+    						// Check if the file length is large enough
+    						if (ri.dataInput.length() >= fileSize) {
+    							// Check if the file contents are matching our buffer
+    							byte[] fileData = new byte[length];
+    							long currentPosition = ri.dataInput.getFilePointer();
+    							ri.dataInput.seek(ri.position);
+    							ri.dataInput.readFully(fileData);
+    							ri.dataInput.seek(currentPosition);
+    							if (memcmp(fileData, address, length)) {
+    								// Both files have the same content, we have found it!
+    								readInfo = ri;
+    							}
+    						}
+    					} catch (IOException e) {
+    						// Ignore exception
+    					}
+    				}
+
+    				if (readInfo == null) {
+    					return null;
+    				}
     			}
     		}
 
@@ -379,6 +411,7 @@ public class ExternalDecoder {
 				if (magicOffset >= 0) {
 					readInfo = new ReadInfo(data_addr + magicOffset, bytesRead - magicOffset, dataInput, position + magicOffset);
 					readInfos.put(data_addr + magicOffset, readInfo);
+					readMagics.put(getMagicHash(data_addr), readInfo);
 				} else if (readInfo == null) {
 					readInfo = new ReadInfo(data_addr, bytesRead, dataInput, position);
 					readInfos.put(data_addr, readInfo);
