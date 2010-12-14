@@ -1616,7 +1616,17 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
 
                 default: {
-                    log.warn("hleIoIoctl " + String.format("0x%08X", cmd) + " unknown command");
+                    log.warn(String.format("hleIoIoctl 0x%08X unknown command", cmd));
+                    if (Memory.isAddressGood(indata_addr)) {
+                        for (int i = 0; i < inlen; i += 4) {
+                            log.warn(String.format("hleIoIoctl indata[%d]=0x%08X", i / 4, mem.read32(indata_addr + i)));
+                        }
+                    }
+                    if (Memory.isAddressGood(outdata_addr)) {
+                        for (int i = 0; i < outlen; i += 4) {
+                            log.warn(String.format("hleIoIoctl outdata[%d]=0x%08X", i / 4, mem.read32(outdata_addr + i)));
+                        }
+                    }
                     break;
                 }
             }

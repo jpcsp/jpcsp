@@ -356,8 +356,14 @@ public class EventFlagManager {
         if (event == null) {
             log.warn("sceKernelPollEventFlag unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+        } else if (bits == 0) {
+        	cpu.gpr[2] = ERROR_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
         } else {
             if (!checkEventFlag(event, bits, wait, outBits_addr)) {
+            	// Write the outBits, even if the poll failed
+            	if (Memory.isAddressGood(outBits_addr)) {
+                    Memory.getInstance().write32(outBits_addr, event.currentPattern);
+            	}
                 cpu.gpr[2] = ERROR_EVENT_FLAG_POLL_FAILED;
             } else {
                 cpu.gpr[2] = 0;
