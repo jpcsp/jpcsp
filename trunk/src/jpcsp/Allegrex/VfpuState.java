@@ -2151,13 +2151,15 @@ public class VfpuState extends FpuState {
             return;
     	}
         loadVs(vsize, vs);
-        BigInteger exp = BigInteger.valueOf(imm8);
-        for (int i = 0; i < vsize; ++i) {
-            // Calculate modulus with exponent.
-            BigInteger bn = BigInteger.valueOf((long)v1[i]);
+
+        // Calculate modulus with exponent.
+        BigInteger exp = BigInteger.valueOf((int) Math.pow(2, 127-imm8));
+        BigInteger bn = BigInteger.valueOf((int) v1[0]);
+        if(bn.intValue() > 0) {
             bn.modPow(exp, bn);
-            v1[i] = bn.floatValue();
         }
+        v1[0] = (bn.floatValue() + (v1[0] < 0.0f ? exp.negate().intValue() : exp.intValue()));
+
         saveVd(vsize, vd, v1);
     }
     // group VFPU5

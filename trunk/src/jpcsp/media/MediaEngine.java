@@ -723,7 +723,7 @@ public class MediaEngine {
             for (int i = y; i < height; i++) {
                 int address = dest_addr + i * frameWidth * bytesPerPixel;
                 IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
-                for (int j = 0; j < width; j++) {
+                for (int j = x; j < width; j++) {
                     int colorARGB = videoImagePixels[i * width + j];
                     // Convert from ARGB to ABGR.
                     int a = (colorARGB >>> 24) & 0xFF;

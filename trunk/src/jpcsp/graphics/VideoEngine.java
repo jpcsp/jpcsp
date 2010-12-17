@@ -2185,6 +2185,34 @@ public class VideoEngine {
         	if (command(mem.read32(currentList.pc)) == END) {
                 currentList.ret();
             }
+        } else if (behavior >= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL
+                && behavior <= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP7_REL) {
+            // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address only).
+            Memory mem = Memory.getInstance();
+        	if (command(mem.read32(currentList.pc)) == END) {
+                int hi16 = signal & 0xFFFF;
+        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
+                int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
+                int addr = currentList.getAddressRel((hi16 << 16) | lo16);
+                currentList.pc += 4;
+                context.texture_base_pointer[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL] = addr;
+                context.texture_buffer_width[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL] = width;
+            }
+            currentList.restartList();
+        } else if (behavior >= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL_OFFSET
+                && behavior <= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP7_REL_OFFSET) {
+            // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address with offset).
+            Memory mem = Memory.getInstance();
+        	if (command(mem.read32(currentList.pc)) == END) {
+                int hi16 = signal & 0xFFFF;
+        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
+                int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
+                int addr = currentList.getAddressRelOffset((hi16 << 16) | lo16);
+                currentList.pc += 4;
+                context.texture_base_pointer[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL_OFFSET] = addr;
+                context.texture_buffer_width[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP7_REL_OFFSET] = width;
+            }
+            currentList.restartList();
         } else {
         	currentList.clearRestart();
         	currentList.pushSignalCallback(currentList.id, behavior, signal);

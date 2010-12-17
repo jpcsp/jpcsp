@@ -84,6 +84,22 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     public final int PSP_GE_SIGNAL_JUMP             = 0x10;
     public final int PSP_GE_SIGNAL_CALL             = 0x11;
     public final int PSP_GE_SIGNAL_RETURN           = 0x12;
+    public final int PSP_GE_SIGNAL_TBP0_REL         = 0x20;
+    public final int PSP_GE_SIGNAL_TBP1_REL         = 0x21;
+    public final int PSP_GE_SIGNAL_TBP2_REL         = 0x22;
+    public final int PSP_GE_SIGNAL_TBP3_REL         = 0x23;
+    public final int PSP_GE_SIGNAL_TBP4_REL         = 0x24;
+    public final int PSP_GE_SIGNAL_TBP5_REL         = 0x25;
+    public final int PSP_GE_SIGNAL_TBP6_REL         = 0x26;
+    public final int PSP_GE_SIGNAL_TBP7_REL         = 0x27;
+    public final int PSP_GE_SIGNAL_TBP0_REL_OFFSET  = 0x28;
+    public final int PSP_GE_SIGNAL_TBP1_REL_OFFSET  = 0x29;
+    public final int PSP_GE_SIGNAL_TBP2_REL_OFFSET  = 0x2A;
+    public final int PSP_GE_SIGNAL_TBP3_REL_OFFSET  = 0x2B;
+    public final int PSP_GE_SIGNAL_TBP4_REL_OFFSET  = 0x2C;
+    public final int PSP_GE_SIGNAL_TBP5_REL_OFFSET  = 0x2D;
+    public final int PSP_GE_SIGNAL_TBP6_REL_OFFSET  = 0x2E;
+    public final int PSP_GE_SIGNAL_TBP7_REL_OFFSET  = 0x2F;
     public final int PSP_GE_SIGNAL_BREAK            = 0xFF;
 
     public final static int PSP_GE_MATRIX_BONE0  = 0;
