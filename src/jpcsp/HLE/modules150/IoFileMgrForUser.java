@@ -50,11 +50,13 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
+import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -159,6 +161,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     private HashMap<Integer, IoDirInfo> dirlist;
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
+    private IoWaitStateChecker ioWaitStateChecker;
 
     private int defaultAsyncPriority;
     private final static int asyncThreadRegisterArgument = 16; // $s0 is preserved across calls
@@ -311,6 +314,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     	void sceIoRename(int result, int path_addr, String path, int new_path_addr, String newpath);
     }
 
+    private class IoWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+			IoInfo info = filelist.get(wait.Io_id);
+			if (info == null) {
+				return false;
+			}
+			if (!info.asyncPending) {
+				// Async IO is already completed
+				return false;
+			}
+
+			return true;
+		}
+    }
+
     @Override
     public String getName() {
         return "IoFileMgrForUser";
@@ -426,6 +445,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         if (ioListeners == null) {
         	ioListeners = new IIoListener[0];
         }
+        ioWaitStateChecker = new IoWaitStateChecker();
     }
 
     @Override
@@ -853,8 +873,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, info.cbid, info.notifyArg);
                 }
                 // Find threads waiting on this uid and wake them up
-                // TODO If the call was sceIoWaitAsyncCB we might need to make sure
-                // the callback is fully processed before waking the thread!
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.wait.waitingOnIo && thread.wait.Io_id == info.uid) {
@@ -985,6 +1003,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             // Wait on a specific file uid
             currentThread.wait.waitingOnIo = true;
             currentThread.wait.Io_id = info.uid;
+            currentThread.wait.waitStateChecker = ioWaitStateChecker;
             threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
             threadMan.hleRescheduleCurrentThread(callbacks);
         }
