@@ -54,6 +54,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
@@ -2149,73 +2150,117 @@ public class VideoEngine {
     private void executeCommandSIGNAL() {
         int behavior = (normalArgument >> 16) & 0xFF;
         int signal = normalArgument & 0xFFFF;
-        if (behavior < 1 || behavior > 3) {
-            if (isLogWarnEnabled) {
-                log.warn(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ") unknown behavior");
-            }
-        } else if (isLogDebugEnabled) {
-            log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
+        if (isLogDebugEnabled) {
+        	log(String.format("%s (behavior=%d, signal=0x%X)", helper.getCommandString(SIGNAL), behavior, signal));
         }
-        if (behavior == Modules.sceGe_userModule.PSP_GE_SIGNAL_SYNC) {
-        	// Skip END / FINISH / END
-        	Memory mem = Memory.getInstance();
-        	if (command(mem.read32(currentList.pc)) == END) {
-        		currentList.pc += 4;
-        		if (command(mem.read32(currentList.pc)) == FINISH) {
-            		currentList.pc += 4;
-                	if (command(mem.read32(currentList.pc)) == END) {
-                		currentList.pc += 4;
-                	}
-        		}
+
+        switch (behavior) {
+        	case sceGe_user.PSP_GE_SIGNAL_SYNC: {
+	        	// Skip END / FINISH / END
+	        	Memory mem = Memory.getInstance();
+	        	if (command(mem.read32(currentList.pc)) == END) {
+	        		currentList.pc += 4;
+	        		if (command(mem.read32(currentList.pc)) == FINISH) {
+	            		currentList.pc += 4;
+	                	if (command(mem.read32(currentList.pc)) == END) {
+	                		currentList.pc += 4;
+	                	}
+	        		}
+	        	}
+                if (isLogDebugEnabled) {
+                    log(String.format("PSP_GE_SIGNAL_SYNC ignored PC: 0x%08X", currentList.pc));
+                }
+	        	break;
         	}
-        } else if (behavior == Modules.sceGe_userModule.PSP_GE_SIGNAL_CALL) {
-            // Call list using absolute address from SIGNAL + END.
-            Memory mem = Memory.getInstance();
-        	if (command(mem.read32(currentList.pc)) == END) {
-                int hi16 = signal & 0x0FFF;
-        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
-                int addr = (hi16 << 16) | lo16;
-                currentList.pc += 4;
-                currentList.callAbsolute(addr);
-            }
-            currentList.restartList();
-        } else if (behavior == Modules.sceGe_userModule.PSP_GE_SIGNAL_RETURN) {
-            // Return from PSP_GE_SIGNAL_CALL.
-            Memory mem = Memory.getInstance();
-        	if (command(mem.read32(currentList.pc)) == END) {
-                currentList.ret();
-            }
-        } else if (behavior >= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL
-                && behavior <= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP7_REL) {
-            // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address only).
-            Memory mem = Memory.getInstance();
-        	if (command(mem.read32(currentList.pc)) == END) {
-                int hi16 = signal & 0xFFFF;
-        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
-                int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
-                int addr = currentList.getAddressRel((hi16 << 16) | lo16);
-                currentList.pc += 4;
-                context.texture_base_pointer[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL] = addr;
-                context.texture_buffer_width[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL] = width;
-            }
-            currentList.restartList();
-        } else if (behavior >= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL_OFFSET
-                && behavior <= Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP7_REL_OFFSET) {
-            // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address with offset).
-            Memory mem = Memory.getInstance();
-        	if (command(mem.read32(currentList.pc)) == END) {
-                int hi16 = signal & 0xFFFF;
-        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
-                int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
-                int addr = currentList.getAddressRelOffset((hi16 << 16) | lo16);
-                currentList.pc += 4;
-                context.texture_base_pointer[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP0_REL_OFFSET] = addr;
-                context.texture_buffer_width[behavior - Modules.sceGe_userModule.PSP_GE_SIGNAL_TBP7_REL_OFFSET] = width;
-            }
-            currentList.restartList();
-        } else {
-        	currentList.clearRestart();
-        	currentList.pushSignalCallback(currentList.id, behavior, signal);
+        	case sceGe_user.PSP_GE_SIGNAL_CALL: {
+	            // Call list using absolute address from SIGNAL + END.
+	            Memory mem = Memory.getInstance();
+	        	if (command(mem.read32(currentList.pc)) == END) {
+	                int hi16 = signal & 0x0FFF;
+	        		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
+	                int addr = (hi16 << 16) | lo16;
+	                // Skip END
+	                currentList.pc += 4;
+	                int oldPc = currentList.pc;
+	                currentList.callAbsolute(addr);
+	                int newPc = currentList.pc;
+	                if (isLogDebugEnabled) {
+	                    log(String.format("PSP_GE_SIGNAL_CALL old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
+	                }
+	            }
+	            break;
+        	}
+        	case sceGe_user.PSP_GE_SIGNAL_RETURN: {
+	            // Return from PSP_GE_SIGNAL_CALL.
+	            Memory mem = Memory.getInstance();
+	        	if (command(mem.read32(currentList.pc)) == END) {
+	        		// Skip END
+	                currentList.pc += 4;
+	                int oldPc = currentList.pc;
+	                currentList.ret();
+	                int newPc = currentList.pc;
+	                if (isLogDebugEnabled) {
+	                    log(String.format("PSP_GE_SIGNAL_RETURN old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
+	                }
+	            }
+	        	break;
+        	}
+        	case sceGe_user.PSP_GE_SIGNAL_TBP0_REL:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP1_REL:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP2_REL:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP3_REL:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP4_REL:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP5_REL:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP6_REL:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP7_REL: {
+                // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address only).
+                Memory mem = Memory.getInstance();
+            	if (command(mem.read32(currentList.pc)) == END) {
+                    int hi16 = signal & 0xFFFF;
+            		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
+                    int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
+                    int addr = currentList.getAddressRel((hi16 << 16) | lo16);
+                    // Skip END
+                    currentList.pc += 4;
+                    context.texture_base_pointer[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL] = addr;
+                    context.texture_buffer_width[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL] = width;
+                }
+        		break;
+        	}
+        	case sceGe_user.PSP_GE_SIGNAL_TBP0_REL_OFFSET:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP1_REL_OFFSET:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP2_REL_OFFSET:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP3_REL_OFFSET:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP4_REL_OFFSET:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP5_REL_OFFSET:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP6_REL_OFFSET:
+        	case sceGe_user.PSP_GE_SIGNAL_TBP7_REL_OFFSET: {
+                // Overwrite TBPn and TBPw with SIGNAL + END (uses relative address with offset).
+                Memory mem = Memory.getInstance();
+            	if (command(mem.read32(currentList.pc)) == END) {
+                    int hi16 = signal & 0xFFFF;
+            		int lo16 = (mem.read32(currentList.pc) & 0xFFFF);
+                    int width = ((mem.read32(currentList.pc) >> 16) & 0xFF);
+                    int addr = currentList.getAddressRelOffset((hi16 << 16) | lo16);
+                    // Skip END
+                    currentList.pc += 4;
+                    context.texture_base_pointer[behavior - sceGe_user.PSP_GE_SIGNAL_TBP0_REL_OFFSET] = addr;
+                    context.texture_buffer_width[behavior - sceGe_user.PSP_GE_SIGNAL_TBP7_REL_OFFSET] = width;
+                }
+        		break;
+        	}
+        	case sceGe_user.PSP_GE_SIGNAL_HANDLER_SUSPEND:
+        	case sceGe_user.PSP_GE_SIGNAL_HANDLER_CONTINUE:
+        	case sceGe_user.PSP_GE_SIGNAL_HANDLER_PAUSE: {
+            	currentList.clearRestart();
+            	currentList.pushSignalCallback(currentList.id, behavior, signal);
+            	break;
+        	}
+        	default: {
+                if (isLogWarnEnabled) {
+                    log.warn(String.format("%s (behavior=%d, signal=0x%X) unknown behavior at 0x%08X", helper.getCommandString(SIGNAL), behavior, signal, currentList.pc - 4));
+                }
+        	}
         }
     }
 
@@ -5273,6 +5318,7 @@ public class VideoEngine {
     }
 
     public void addVideoTexture(int address) {
+    	address &= Memory.addressMask;
     	videoTextures.add(address);
     }
 
