@@ -205,6 +205,30 @@ public class MediaEngine {
     	au.dts = sceMpeg.UNKNOWN_TIMESTAMP;
     }
 
+    public void getCurrentAudioAu(SceMpegAu au) {
+    	if (audioStreamState != null) {
+    		audioStreamState.getTimestamps(au);
+    	} else {
+    		au.pts += sceMpeg.audioTimestampStep;
+    	}
+
+    	// On PSP, audio DTS is always set to -1
+    	au.dts = sceMpeg.UNKNOWN_TIMESTAMP;
+    }
+
+    public void getCurrentVideoAu(SceMpegAu au) {
+    	if (videoStreamState != null) {
+    		videoStreamState.getTimestamps(au);
+    	} else {
+    		au.pts += sceMpeg.videoTimestampStep;
+    	}
+
+    	// On PSP, video DTS is always 1 frame behind PTS
+    	if (au.pts >= sceMpeg.videoTimestampStep) {
+    		au.dts = au.pts - sceMpeg.videoTimestampStep;
+    	}
+    }
+
     private int read32(byte[] data, int offset) {
     	int n1 = data[offset] & 0xFF;
     	int n2 = data[offset + 1] & 0xFF;
