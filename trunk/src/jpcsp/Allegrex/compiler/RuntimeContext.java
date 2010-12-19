@@ -115,7 +115,7 @@ public class RuntimeContext {
 
 		int returnValue = executable.exec(returnAddress, returnAddress, isJump);
 
-        if (log.isDebugEnabled()) {
+        if (debugCodeBlockCalls && log.isDebugEnabled()) {
         	log.debug(String.format("RuntimeContext.jumpCall returning 0x%08X", returnValue));
         }
 
@@ -125,7 +125,7 @@ public class RuntimeContext {
 	public static int jump(int address, int returnAddress, int alternativeReturnAddress) throws Exception {
 		int returnValue;
 
-		if (log.isDebugEnabled()) {
+		if (debugCodeBlockCalls && log.isDebugEnabled()) {
 			log.debug(String.format("RuntimeContext.jump address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X", address, returnAddress, alternativeReturnAddress));
 		}
 
@@ -181,7 +181,7 @@ public class RuntimeContext {
 	    	currentRuntimeThread.popStackState();
 		}
 
-    	if (log.isDebugEnabled()) {
+    	if (debugCodeBlockCalls && log.isDebugEnabled()) {
 			log.debug(String.format("RuntimeContext.jump returning 0x%08X, address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X", returnValue, address, returnAddress, alternativeReturnAddress));
     	}
 
@@ -189,7 +189,7 @@ public class RuntimeContext {
 	}
 
     public static void call(int address, int returnAddress) throws Exception {
-		if (log.isDebugEnabled()) {
+		if (debugCodeBlockCalls && log.isDebugEnabled()) {
 			log.debug(String.format("RuntimeContext.call address=0x%08X, returnAddress=0x%08X", address, returnAddress));
 		}
         int returnValue = jumpCall(address, returnAddress, false);
@@ -200,7 +200,7 @@ public class RuntimeContext {
     }
 
 	public static int executeInterpreter(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception {
-		if (log.isDebugEnabled()) {
+		if (debugCodeBlockCalls && log.isDebugEnabled()) {
 			log.debug(String.format("RuntimeContext.executeInterpreter address=0x%08X, returnAddress=0x%08X, alternativeReturnAddress=0x%08X, isJump=%b", address, returnAddress, alternativeReturnAddress, isJump));
 		}
 
@@ -459,6 +459,14 @@ public class RuntimeContext {
         }
     }
 
+    private static void sleep(int millis, int micros) {
+        try {
+            Thread.sleep(millis, micros * 1000);
+        } catch (InterruptedException e) {
+        	// Ignore exception
+        }
+    }
+
     private static void syncIdle() throws StopThreadException {
         if (isIdle) {
         	ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -484,6 +492,9 @@ public class RuntimeContext {
                 	long delay = scheduler.getNextActionDelay(idleSleepMicros);
                 	if (delay >= idleSleepMicros) {
                 		sleep(idleSleepMicros / 1000);
+                	} else if (delay > 0) {
+                		int intDelay = (int) delay;
+                		sleep(intDelay / 1000, intDelay % 1000);
                 	}
                 }
             }
