@@ -18,14 +18,16 @@ package jpcsp.sound;
 
 import java.nio.ByteBuffer;
 
-import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceAudio;
 
+import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.openal.AL;
 import org.lwjgl.openal.AL10;
 import org.lwjgl.openal.AL11;
 
 public class SoundChannel {
+	private static Logger log = sceAudio.log;
 	private static volatile boolean isExit = false;
 	public static final int FORMAT_MONO = 0x10;
 	public static final int FORMAT_STEREO = 0x00;
@@ -64,7 +66,7 @@ public class SoundChannel {
 				AL.create();
 				isExit = false;
 			} catch (LWJGLException e) {
-				Modules.log.error(e);
+				log.error(e);
 			}
 		}
     }
@@ -188,8 +190,8 @@ public class SoundChannel {
 		alSourcePlay();
 		checkFreeBuffers();
 
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("alSourceQueueBuffer buffer=%d, %s", alBuffer, toString()));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("alSourceQueueBuffer buffer=%d, %s", alBuffer, toString()));
 		}
     }
 

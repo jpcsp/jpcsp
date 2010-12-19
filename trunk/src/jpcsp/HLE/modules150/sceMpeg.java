@@ -206,6 +206,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
     public static final int atracDecodeDelay = 3000;         // Microseconds
     public static final int avcDecodeDelay = 5400;           // Microseconds
+    public static final int mpegDecodeErrorDelay = 100;      // Delay in Microseconds in case of decode error
     public static final int maxAheadTimestamp = 40000;
     public static final int mpegTimestampPerSecond = 90000; // How many MPEG Timestamp units in a second.
     public static final int videoTimestampStep = 3003;      // Value based on pmfplayer (mpegTimestampPerSecond / 29.970 (fps)).
@@ -258,11 +259,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected int mpegOffset;
     protected int mpegStreamAddr;
     // MPEG streams.
-    protected static final int MPEG_AVC_STREAM = 0;
-    protected static final int MPEG_ATRAC_STREAM = 1;
-    protected static final int MPEG_PCM_STREAM = 2;
-    protected static final int MPEG_DATA_STREAM = 3;      // Arbitrary user defined type. Can represent audio or video.
-    protected static final int MPEG_AUDIO_STREAM = 15;
+    public static final int MPEG_AVC_STREAM = 0;
+    public static final int MPEG_ATRAC_STREAM = 1;
+    public static final int MPEG_PCM_STREAM = 2;
+    public static final int MPEG_DATA_STREAM = 3;      // Arbitrary user defined type. Can represent audio or video.
+    public static final int MPEG_AUDIO_STREAM = 15;
     protected static final int MPEG_AU_MODE_DECODE = 0;
     protected static final int MPEG_AU_MODE_SKIP = 1;
     protected HashMap<Integer, Integer> atracStreamsMap;
@@ -465,8 +466,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static void delayThread(long startMicros, int delayMicros) {
     	long now = Emulator.getClock().microTime();
     	int threadDelayMicros = delayMicros - (int) (now - startMicros);
-    	if (threadDelayMicros > 0) {
-    		Modules.ThreadManForUserModule.hleKernelDelayThread(threadDelayMicros, false);
+    	delayThread(threadDelayMicros);
+    }
+
+    public static void delayThread(int delayMicros) {
+    	if (delayMicros > 0) {
+    		Modules.ThreadManForUserModule.hleKernelDelayThread(delayMicros, false);
     	} else {
     		Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     	}
@@ -1019,6 +1024,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+            delayThread(mpegDecodeErrorDelay);
         } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAvcAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
@@ -1029,7 +1035,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     log.debug("sceMpegGetAvcAu video ahead of audio: " + mpegAvcAu.pts + " - " + mpegAtracAu.pts);
                 }
                 cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+                delayThread(mpegDecodeErrorDelay);
             } else {
                 // Update the video timestamp (AVC).
                 if (!ignoreAvc) {
@@ -1093,6 +1099,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = -1;
         }else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+            delayThread(mpegDecodeErrorDelay);
         } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetPcmAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
@@ -1155,6 +1162,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (mpegRingbuffer.packetsRead == 0 || (mpegRingbuffer.isEmpty())) {
             log.debug("sceMpegGetAtracAu ringbuffer empty");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+            delayThread(mpegDecodeErrorDelay);
         } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAtracAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
@@ -1165,7 +1173,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracAu.pts + " - " + mpegAvcAu.pts);
                 }
                 cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+                delayThread(mpegDecodeErrorDelay);
             } else {
                 // Update the audio timestamp (Atrac).
                 if (!ignoreAtrac) {

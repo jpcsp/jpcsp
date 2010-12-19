@@ -21,11 +21,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 
-import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceAudio;
 
+import org.apache.log4j.Logger;
 import org.lwjgl.openal.AL10;
 
 public class SoundBufferManager {
+	private static Logger log = sceAudio.log;
 	private static SoundBufferManager instance;
 	private Stack<Integer> freeBuffers;
 	private List<ByteBuffer> freeDirectBuffers;
@@ -59,8 +61,8 @@ public class SoundBufferManager {
         		break;
         	}
     		int alBuffer = AL10.alSourceUnqueueBuffers(alSource);
-    		if (Modules.log.isDebugEnabled()) {
-    			Modules.log.debug(String.format("free buffer %d", alBuffer));
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("free buffer %d", alBuffer));
     		}
     		freeBuffers.push(alBuffer);
         }

@@ -38,7 +38,7 @@ import jpcsp.sound.SoundChannel;
 import org.apache.log4j.Logger;
 
 public class sceAudio implements HLEModule, HLEStartModule {
-    private static Logger log = Modules.getLogger("sceAudio");
+    public static Logger log = Modules.getLogger("sceAudio");
 
     @Override
     public String getName() {
