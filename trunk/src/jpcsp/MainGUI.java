@@ -250,9 +250,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-			public void windowClosing(java.awt.event.WindowEvent evt) {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
+            }
+        });
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentMoved(java.awt.event.ComponentEvent evt) {
+                formComponentMoved(evt);
+            }
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                formComponentResized(evt);
             }
         });
 
@@ -1444,6 +1451,9 @@ private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ResetProfilerActionPerformed
 
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
+    if (umdvideoplayer != null) {
+        umdvideoplayer.takeScreenshot();
+    }
     Modules.sceDisplayModule.getscreen = true;
 }//GEN-LAST:event_ShotItemActionPerformed
 
@@ -1622,6 +1632,14 @@ private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChinesePRCActionPerformed
     changeLanguage("cn_CN");
 }//GEN-LAST:event_ChinesePRCActionPerformed
+
+private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentMoved
+    Modules.sceDisplayModule.componentMoved(evt);
+}//GEN-LAST:event_formComponentMoved
+
+private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
+    Modules.sceDisplayModule.componentResized(evt);
+}//GEN-LAST:event_formComponentResized
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());

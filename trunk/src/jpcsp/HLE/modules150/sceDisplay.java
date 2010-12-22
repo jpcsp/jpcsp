@@ -20,6 +20,10 @@ import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
+import java.awt.event.ComponentEvent;
+import java.awt.image.BufferedImage;
+import java.awt.Rectangle;
+import java.awt.Robot;
 import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -31,6 +35,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import javax.imageio.ImageIO;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -133,6 +138,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private float texS;
     private float texT;
 
+    private int captureX;
+    private int captureY;
+    private int captureWidth;
+    private int captureHeight;
     public boolean getscreen = false;
 
     //Rotation vars
@@ -693,32 +702,26 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
-    //Testing screenshot taking function (using disc id)
-    public void savescreen()
-    {
+    public void savescreen() {
         int tag = 0;
-
         File screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
         File directory = new File(System.getProperty("user.dir"));
 
-        for(File file : directory.listFiles())
-        {
-            if(file.getName().equals(screenshot.getName()))
-            {
+        for(File file : directory.listFiles()) {
+            if(file.getName().equals(screenshot.getName())) {
                tag++;
                screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
             }
         }
 
-        // TODO Implement Screenshot using LWJGL
-//        BufferedImage img = Screenshot.readToBufferedImage(width, height);
-//        try{
-//            ImageIO.write(img, "png", screenshot);
-//        }catch(IOException e){
-//            return;
-//        }finally{
-//            img.flush();
-//        }
+        Rectangle rect = new Rectangle(captureX, captureY, captureWidth, captureHeight);
+        try {
+            BufferedImage img = new Robot().createScreenCapture(rect);
+            ImageIO.write(img, "png", screenshot);
+            img.flush();
+        } catch (Exception e) {
+            return;
+        }
 
         getscreen = false;
     }
@@ -1219,6 +1222,22 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		canvasWidth  = width;
         canvasHeight = height;
         super.setBounds(x, y, width, height);
+	}
+
+    @Override
+	public void componentMoved(ComponentEvent e) {
+        captureX = e.getComponent().getX() + 4;
+        captureY = e.getComponent().getY() + 76;
+        captureWidth = e.getComponent().getWidth() - 8;
+        captureHeight = e.getComponent().getHeight() - 80;
+	}
+
+    @Override
+	public void componentResized(ComponentEvent e) {
+        captureX = e.getComponent().getX() + 4;
+        captureY = e.getComponent().getY() + 76;
+        captureWidth = e.getComponent().getWidth() - 8;
+        captureHeight = e.getComponent().getHeight() - 80;
 	}
 
     public void sceDisplaySetMode(Processor processor) {
