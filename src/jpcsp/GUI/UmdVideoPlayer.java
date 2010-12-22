@@ -23,12 +23,14 @@ import java.awt.event.KeyListener;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.Insets;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 
+import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
@@ -40,6 +42,7 @@ import javax.swing.JLabel;
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Settings;
+import jpcsp.State;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.HLE.Modules;
@@ -189,7 +192,7 @@ public class UmdVideoPlayer implements KeyListener {
         mpsStreamMap = new HashMap<Integer, MpsStreamInfo>();
         currentStreamIndex = 0;
         parsePlaylistFile();
-        Modules.log.info("Setting aspect ratio to 16:9.");
+        Modules.log.info("Setting aspect ratio to 16:9");
         if (mpsStreamMap.containsKey(currentStreamIndex)) {
             MpsStreamInfo info = mpsStreamMap.get(currentStreamIndex);
             fileName = "UMD_VIDEO/STREAM/" + info.getName() + ".MPS";
@@ -206,15 +209,15 @@ public class UmdVideoPlayer implements KeyListener {
         }
     }
 
-    public int endianSwap32(int x) {
+    private int endianSwap32(int x) {
         return Integer.reverseBytes(x);
     }
 
-    public short endianSwap16(short x) {
+    private short endianSwap16(short x) {
         return Short.reverseBytes(x);
     }
 
-    public void parsePlaylistFile() {
+    private void parsePlaylistFile() {
         try {
             UmdIsoFile file = iso.getFile("UMD_VIDEO/PLAYLIST.UMD");
             int umdvMagic = file.readInt();
@@ -321,6 +324,25 @@ public class UmdVideoPlayer implements KeyListener {
 
     private Image getImage() {
         return image;
+    }
+
+    public void takeScreenshot() {
+        int tag = 0;
+        File screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
+        File directory = new File(System.getProperty("user.dir"));
+        for (File file : directory.listFiles()) {
+            if (file.getName().equals(screenshot.getName())) {
+               tag++;
+               screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
+            }
+        }
+        try {
+            BufferedImage img = (BufferedImage)getImage();
+            ImageIO.write(img, "png", screenshot);
+            img.flush();
+        } catch (Exception e) {
+            return;
+        }
     }
 
     public void initVideo() {
