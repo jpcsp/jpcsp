@@ -601,7 +601,7 @@ public class scePsmfPlayer implements HLEModule {
 	        }
 
             // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-            VideoEngine.getInstance().addVideoTexture(displayBuffer);
+            VideoEngine.getInstance().addVideoTexture(displayBuffer, displayBuffer + 272 * videoDataFrameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
             long startTime = Emulator.getClock().microTime();
 

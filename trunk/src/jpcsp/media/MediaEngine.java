@@ -30,7 +30,9 @@ import jpcsp.HLE.kernel.types.SceMpegAu;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.connector.Connector;
+import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Debug;
 import jpcsp.util.FIFOByteBuffer;
@@ -250,7 +252,15 @@ public class MediaEngine {
     	this.bufferAddress = bufferAddress;
     	this.bufferSize = bufferSize;
     	this.bufferMpegOffset = bufferMpegOffset;
-    	this.bufferData = null;
+
+    	// Save the content of the MPEG header as it might be already overwritten
+    	// when we need it (at sceMpegGetAtracAu or sceMpegGetAvcAu)
+    	bufferData = new byte[sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE];
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(bufferAddress, bufferData.length, 1);
+    	for (int i = 0; i < bufferData.length; i++) {
+    		bufferData[i] = (byte) memoryReader.readNext();
+    	}
+
     	init();
     }
 
@@ -518,10 +528,10 @@ public class MediaEngine {
     	File extAudioFile = getExtAudioFile();
     	if (extAudioFile == null && ExternalDecoder.isEnabled()) {
     		// Try to decode the audio using the external decoder
-    		if (bufferData != null) {
+    		if (bufferAddress == 0) {
     			externalDecoder.decodeExtAudio(bufferData, bufferSize, bufferMpegOffset);
     		} else {
-    			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset);
+    			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset, bufferData);
     		}
 			extAudioFile = getExtAudioFile();
     	}
@@ -735,20 +745,17 @@ public class MediaEngine {
         // Get the current generated image, convert it to pixels and write it
         // to memory.
         if (getCurrentImg() != null) {
-            // Override the base dimensions with the image's real dimensions.
-            int width = getCurrentImg().getWidth();
-            int height = getCurrentImg().getHeight();
-            int imageSize = height * width;
+            int imageSize = h * w;
             if (videoImagePixels == null || videoImagePixels.length < imageSize) {
                 videoImagePixels = new int[imageSize];
-
             }
-            videoImagePixels = getCurrentImg().getRGB(0, 0, width, height, videoImagePixels, 0, width);
-            for (int i = y; i < height; i++) {
+            videoImagePixels = getCurrentImg().getRGB(x, y, w, h, videoImagePixels, 0, w);
+            int pixelIndex = 0;
+            for (int i = 0; i < h; i++) {
                 int address = dest_addr + i * frameWidth * bytesPerPixel;
                 IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
-                for (int j = x; j < width; j++) {
-                    int colorARGB = videoImagePixels[i * width + j];
+                for (int j = 0; j < w; j++, pixelIndex++) {
+                    int colorARGB = videoImagePixels[pixelIndex];
                     // Convert from ARGB to ABGR.
                     int a = (colorARGB >>> 24) & 0xFF;
                     int r = (colorARGB >>> 16) & 0xFF;
@@ -758,6 +765,7 @@ public class MediaEngine {
                     int pixelColor = Debug.getPixelColor(colorABGR, videoPixelMode);
                     memoryWriter.writeNext(pixelColor);
                 }
+                memoryWriter.flush();
             }
         }
     }

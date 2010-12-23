@@ -215,6 +215,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final int audioFirstTimestamp = 90000;    // The first MPEG audio AU has always this timestamp
     public static final long UNKNOWN_TIMESTAMP = -1;
 
+    // At least 2048 bytes of MPEG data is provided when analysing the MPEG header
+    public static final int MPEG_HEADER_BUFFER_MINIMUM_SIZE = 2048; 
+
     // MPEG processing vars.
     protected int mpegHandle;
     protected SceMpegRingbuffer mpegRingbuffer;
@@ -425,7 +428,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 	    	log.debug(String.format("Stream offset: %d, Stream size: 0x%X", mpegOffset, mpegStreamSize));
 	    	log.debug(String.format("First timestamp: %d, Last timestamp: %d", mpegFirstTimestamp, mpegLastTimestamp));
 	        if (log.isTraceEnabled()) {
-	        	for (int i = 0; i < 2048; i+= 16) {
+	        	for (int i = 0; i < MPEG_HEADER_BUFFER_MINIMUM_SIZE; i+= 16) {
 	        		log.trace(MemoryViewer.getMemoryView(buffer_addr + i));
 	        	}
 	        }
@@ -1301,8 +1304,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 log.debug(String.format("sceMpegAvcDecode *au=0x%08X, *buffer=0x%08X, init=%d", au, buffer, init));
             }
 
+            final int width = Math.min(480, frameWidth);
+            final int height = 272;
+
             // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-            VideoEngine.getInstance().addVideoTexture(buffer);
+            VideoEngine.getInstance().addVideoTexture(buffer, buffer + height * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
             long startTime = Emulator.getClock().microTime();
 
@@ -1327,9 +1333,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     log.debug(String.format("sceMpegAvcDecode consumed %d %d/%d %d", processedSizeBasedOnTimestamp, processedSize, mpegStreamSize, packetsConsumed));
                 }
             }
-
-            final int width = Math.min(480, frameWidth);
-            final int height = 272;
 
             if (checkMediaEngineState()) {
             	// Suspend the emulator clock to perform time consuming HLE operation,
@@ -1788,7 +1791,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             }
 
             // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
-            VideoEngine.getInstance().addVideoTexture(dest_addr);
+            VideoEngine.getInstance().addVideoTexture(dest_addr, dest_addr + (rangeHeightStart + rangeHeightEnd) * frameWidth * sceDisplay.getPixelFormatBytes(videoPixelMode));
 
             // sceMpegAvcDecodeYCbCr() is performing the video decoding and
             // sceMpegAvcCsc() is transforming the YCbCr image into ABGR.
