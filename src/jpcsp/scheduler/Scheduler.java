@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.ListIterator;
 
 import jpcsp.Emulator;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.kernel.types.IAction;
 
 public class Scheduler {
@@ -42,7 +43,7 @@ public class Scheduler {
 		nextAction = null;
 	}
 
-	public void step() {
+	public synchronized void step() {
 		if (nextAction == null) {
 			return;
 		}
@@ -57,7 +58,7 @@ public class Scheduler {
 		}
 	}
 
-	public long getNextActionDelay(long noActionDelay) {
+	public synchronized long getNextActionDelay(long noActionDelay) {
 		if (nextAction == null) {
 			return noActionDelay;
 		}
@@ -68,7 +69,9 @@ public class Scheduler {
 
 	private void addSchedulerAction(SchedulerAction schedulerAction) {
 		actions.add(schedulerAction);
-		updateNextAction(schedulerAction);
+		if (updateNextAction(schedulerAction)) {
+			RuntimeContext.onNextScheduleModified();
+		}
 	}
 
 	/**
@@ -94,10 +97,13 @@ public class Scheduler {
 		}
 	}
 
-	private void updateNextAction(SchedulerAction schedulerAction) {
+	private boolean updateNextAction(SchedulerAction schedulerAction) {
 		if (nextAction == null || schedulerAction.getSchedule() < nextAction.getSchedule()) {
 			nextAction = schedulerAction;
+			return true;
 		}
+
+		return false;
 	}
 
 	private void updateNextAction() {
@@ -107,6 +113,8 @@ public class Scheduler {
 			SchedulerAction schedulerAction = it.next();
 			updateNextAction(schedulerAction);
 		}
+
+		RuntimeContext.onNextScheduleModified();
 	}
 
 	public synchronized IAction getAction(long now) {
