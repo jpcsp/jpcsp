@@ -30,7 +30,7 @@ public class AlarmInterruptAction implements IAction {
 
 	@Override
 	public void execute() {
-		long now = Scheduler.getInstance().getNow();
+		long now = Scheduler.getNow();
 
 		// Trigger interrupt
 		if (Modules.log.isDebugEnabled()) {

@@ -234,7 +234,6 @@ public class Emulator implements Runnable {
                 Modules.ThreadManForUserModule.step();
                 scheduler.step();
                 Modules.sceDisplayModule.step();
-                HLEModuleManager.getInstance().step();
                 State.controller.checkControllerState();
 
                 if (State.debugger != null)

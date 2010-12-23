@@ -17,9 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -50,8 +48,6 @@ public class HLEModuleManager {
 
     private HashMap<Integer, HLEModuleFunction> syscallCodeToFunction;
     private int syscallCodeAllocator;
-
-    private List<HLEThread> hleThreadList;
 
     private HashMap<String, List<HLEModule>> flash0prxMap;
 
@@ -176,8 +172,6 @@ public class HLEModuleManager {
         // Official syscalls start at 0x2000,
         // so we'll put the HLE syscalls far away at 0x4000.
         syscallCodeAllocator = 0x4000;
-
-        hleThreadList = new ArrayList<HLEThread>();
 
         this.firmwareVersion = firmwareVersion;
         installDefaultModules();
@@ -320,21 +314,6 @@ public class HLEModuleManager {
         */
         int syscallCode = func.getSyscallCode();
         syscallCodeToFunction.remove(syscallCode);
-    }
-
-    public void addThread(HLEThread thread) {
-        hleThreadList.add(thread);
-    }
-
-    public void removeThread(HLEThread thread) {
-        hleThreadList.remove(thread);
-    }
-
-    public void step() {
-        for (Iterator<HLEThread> it = hleThreadList.iterator(); it.hasNext();) {
-            HLEThread thread = it.next();
-            thread.step();
-        }
     }
 
     /**

@@ -153,7 +153,7 @@ public class IntrManager {
 		Scheduler scheduler = Emulator.getScheduler();
 
 		// install VBLANK interrupt every 1/60 second
-		scheduler.addAction(scheduler.getNow() + VBLANK_SCHEDULE_MICROS, vblankInterruptHandler);
+		scheduler.addAction(Scheduler.getNow() + VBLANK_SCHEDULE_MICROS, vblankInterruptHandler);
 	}
 
 	public void addDeferredInterrupt(AbstractInterruptHandler interruptHandler) {

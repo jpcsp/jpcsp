@@ -130,7 +130,7 @@ public class Scheduler {
 		return action;
 	}
 
-	public long getNow() {
+	public static long getNow() {
 		return Emulator.getClock().microTime();
 	}
 }
