@@ -41,8 +41,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
@@ -180,7 +179,7 @@ public class VideoEngine {
     private IAction hleAction;
     private int[] currentCMDValues;
     private boolean bboxWarningDisplayed = false;
-    private Set<Integer> videoTextures;
+    private LinkedList<AddressRange> videoTextures;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -270,7 +269,7 @@ public class VideoEngine {
         }
 
         currentCMDValues = new int[256];
-        videoTextures = new HashSet<Integer>();
+        videoTextures = new LinkedList<AddressRange>();
     }
 
     /** Called from pspge module */
@@ -3900,8 +3899,12 @@ public class VideoEngine {
         	return false;
         }
 
-    	if (!videoTextures.isEmpty() && videoTextures.contains(tex_addr)) {
-    		return false;
+    	if (!videoTextures.isEmpty()) {
+    		for (AddressRange addressRange : videoTextures) {
+    			if (addressRange.contains(tex_addr)) {
+    				return false;
+    			}
+    		}
     	}
 
     	return true;
@@ -5317,9 +5320,15 @@ public class VideoEngine {
     	context.baseOffset = baseOffset;
     }
 
-    public void addVideoTexture(int address) {
-    	address &= Memory.addressMask;
-    	videoTextures.add(address);
+    public void addVideoTexture(int startAddress, int endAddress) {
+    	for (AddressRange addressRange : videoTextures) {
+    		if (addressRange.equals(startAddress, endAddress)) {
+    			return;
+    		}
+    	}
+
+    	AddressRange addressRange = new AddressRange(startAddress, endAddress);
+    	videoTextures.add(addressRange);
     }
 
     public void resetVideoTextures() {
@@ -5391,5 +5400,28 @@ public class VideoEngine {
             context.update();
             sync.release();
         }
+    }
+
+    private static class AddressRange {
+    	private int start;
+    	private int end;
+
+    	public AddressRange(int start, int end) {
+    		this.start = start & Memory.addressMask;
+    		this.end = end & Memory.addressMask;
+    	}
+
+    	public boolean contains(int address) {
+    		address &= Memory.addressMask;
+
+    		return address >= start && address < end;
+    	}
+
+    	public boolean equals(int start, int end) {
+    		start &= Memory.addressMask;
+    		end &= Memory.addressMask;
+
+    		return start == this.start && end == this.end;
+    	}
     }
 }

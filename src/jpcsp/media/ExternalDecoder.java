@@ -180,13 +180,12 @@ public class ExternalDecoder {
 		}
     }
 
-    public void decodeExtAudio(int address, int mpegFileSize, int mpegOffset) {
+    public void decodeExtAudio(int address, int mpegFileSize, int mpegOffset, byte[] bufferHeaderData) {
     	if (!isEnabled()) {
     		return;
     	}
 
-    	// At least 2048 bytes of MPEG data is provided
-		byte[] mpegData = ioListener.readFileData(address, 2048, mpegFileSize);
+		byte[] mpegData = ioListener.readFileData(address, sceMpeg.MPEG_HEADER_BUFFER_MINIMUM_SIZE, mpegFileSize, bufferHeaderData);
     	if (mpegData == null) {
     		// MPEG data cannot be retrieved...
     		return;
@@ -211,7 +210,7 @@ public class ExternalDecoder {
 			return decodedFileName;
 		}
 
-		byte[] atracData = ioListener.readFileData(address, length, atracFileSize);
+		byte[] atracData = ioListener.readFileData(address, length, atracFileSize, null);
     	if (atracData == null) {
     		// Atrac data cannot be retrieved...
     		return null;
@@ -302,11 +301,22 @@ public class ExternalDecoder {
     		return true;
     	}
 
+    	private static boolean cmp(byte[] data, byte[] checkData, int length) {
+    		length = Math.min(length, checkData.length);
+    		for (int i = 0; i < length; i++) {
+    			if (data[i] != checkData[i]) {
+    				return false;
+    			}
+    		}
+
+    		return true;
+    	}
+
     	private static int getMagicHash(int address) {
     		return Hash.getHashCodeFloatingMemory(0, address, MAGIC_HASH_LENGTH);
     	}
 
-    	public byte[] readFileData(int address, int length, int fileSize) {
+    	public byte[] readFileData(int address, int length, int fileSize, byte[] checkData) {
     		int positionOffset = 0;
     		ReadInfo readInfo = readInfos.get(address);
     		if (readInfo == null) {
@@ -349,9 +359,19 @@ public class ExternalDecoder {
     							ri.dataInput.seek(ri.position);
     							ri.dataInput.readFully(fileData);
     							ri.dataInput.seek(currentPosition);
-    							if (memcmp(fileData, address, length)) {
-    								// Both files have the same content, we have found it!
-    								readInfo = ri;
+
+    							boolean match;
+    							if (checkData != null) {
+    								// Check against checkData
+    								match = cmp(fileData, checkData, length);
+    							} else {
+    								// Check against memory data located at "address"
+    								match = memcmp(fileData, address, length);
+    							}
+
+    							if (match) {
+									// Both files have the same content, we have found it!
+									readInfo = ri;
     							}
     						}
     					} catch (IOException e) {
