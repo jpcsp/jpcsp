@@ -1864,8 +1864,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     protected void hleKernelSetAlarm(Processor processor, long delayUsec, int handlerAddress, int handlerArgument) {
         CpuState cpu = processor.cpu;
 
-        Scheduler scheduler = Scheduler.getInstance();
-        long now = scheduler.getNow();
+        long now = Scheduler.getNow();
         long schedule = now + delayUsec;
         SceKernelAlarmInfo sceKernelAlarmInfo = new SceKernelAlarmInfo(schedule, handlerAddress, handlerArgument);
         alarms.put(sceKernelAlarmInfo.uid, sceKernelAlarmInfo);
