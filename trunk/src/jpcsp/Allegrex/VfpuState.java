@@ -19,6 +19,7 @@ package jpcsp.Allegrex;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 
 /**
@@ -27,7 +28,27 @@ import jpcsp.Memory;
  * @author hli
  */
 public class VfpuState extends FpuState {
+    // We have a potential problem using Float.intBitsToFloat():
+    // extract from the JDK 1.6 documentation:
+    //    "...Consequently, for some int values,
+    //     floatToRawIntBits(intBitsToFloat(start)) may not equal start.
+    //     Moreover, which particular bit patterns represent signaling NaNs
+    //     is platform dependent..."
+	// Furthermore, it seems that the Java interpreter and the Java JIT compiler
+	// produce different results.
     //
+    // Some applications are using sequences of lv.q/vwb.q to implement a memcpy(),
+    // but this implementation can alter some bits in Java, while it probably does
+    // not alter data on a PSP.
+    // Example: "Warhammer 40,000: Squad Command": see the code sequence in Compiler.xml
+    //
+    // Workaround (for memcpy):
+    //     detect these code sequences and include them in Compiler.xml
+    //     so that they are replaced by a safe memcpy() implementation.
+    //
+	public static final boolean CHECK_intBitsToFloat = true;
+
+	//
     // Use a linear version of the vpr, storing the 8 x 2D-matrix
     // in a 1D-array. This is giving a better performance for the compiler.
     // For the interpreter, the methods
@@ -965,7 +986,16 @@ public class VfpuState extends FpuState {
         int m = (imm7 >> 2) & 7;
         int c = (imm7 >> 0) & 3;
 
-        setVpr(m, c, r, Float.intBitsToFloat(gpr[rt]));
+        int intValue = gpr[rt];
+        float floatValue = Float.intBitsToFloat(intValue);
+
+        if (CHECK_intBitsToFloat) {
+        	if (Float.floatToRawIntBits(floatValue) != intValue) {
+        		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+        	}
+        }
+
+        setVpr(m, c, r, floatValue);
     }
 
     // VFPU2:MTVC
@@ -2437,7 +2467,16 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        setVpr(m, i, s, Float.intBitsToFloat(memory.read32(gpr[rs] + simm14_a16)));
+        int intValue = memory.read32(gpr[rs] + simm14_a16);
+        float floatValue = Float.intBitsToFloat(intValue);
+
+        if (CHECK_intBitsToFloat) {
+        	if (Float.floatToRawIntBits(floatValue) != intValue) {
+        		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+        	}
+        }
+
+        setVpr(m, i, s, floatValue);
     }
 
     // LSU:SVS
@@ -2471,11 +2510,29 @@ public class VfpuState extends FpuState {
 
         if ((vt & 32) != 0) {
             for (int j = 0; j < 4; ++j) {
-                setVpr(m, j, i, Float.intBitsToFloat(memory.read32(address + j * 4)));
+                int intValue = memory.read32(address + j * 4);
+                float floatValue = Float.intBitsToFloat(intValue);
+
+                if (CHECK_intBitsToFloat) {
+                	if (Float.floatToRawIntBits(floatValue) != intValue) {
+                		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+                	}
+                }
+
+                setVpr(m, j, i, floatValue);
             }
         } else {
             for (int j = 0; j < 4; ++j) {
-                setVpr(m, i, j, Float.intBitsToFloat(memory.read32(address + j * 4)));
+                int intValue = memory.read32(address + j * 4);
+                float floatValue = Float.intBitsToFloat(intValue);
+
+                if (CHECK_intBitsToFloat) {
+                	if (Float.floatToRawIntBits(floatValue) != intValue) {
+                		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+                	}
+                }
+
+                setVpr(m, i, j, floatValue);
             }
         }
     }
@@ -2497,12 +2554,30 @@ public class VfpuState extends FpuState {
         address &= ~0xF;
         if ((vt & 32) != 0) {
             for (int j = k; j < 4; ++j) {
-                setVpr(m, j, i, Float.intBitsToFloat(memory.read32(address)));
+                int intValue = memory.read32(address);
+                float floatValue = Float.intBitsToFloat(intValue);
+
+                if (CHECK_intBitsToFloat) {
+                	if (Float.floatToRawIntBits(floatValue) != intValue) {
+                		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+                	}
+                }
+
+                setVpr(m, j, i, floatValue);
                 address += 4;
             }
         } else {
             for (int j = k; j < 4; ++j) {
-                setVpr(m, i, j, Float.intBitsToFloat(memory.read32(address)));
+                int intValue = memory.read32(address);
+                float floatValue = Float.intBitsToFloat(intValue);
+
+                if (CHECK_intBitsToFloat) {
+                	if (Float.floatToRawIntBits(floatValue) != intValue) {
+                		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+                	}
+                }
+
+                setVpr(m, i, j, floatValue);
                 address += 4;
             }
         }
@@ -2524,12 +2599,30 @@ public class VfpuState extends FpuState {
         int k = 4 - ((address >> 2) & 3);
         if ((vt & 32) != 0) {
             for (int j = 0; j < k; ++j) {
-                setVpr(m, j, i, Float.intBitsToFloat(memory.read32(address)));
+                int intValue = memory.read32(address);
+                float floatValue = Float.intBitsToFloat(intValue);
+
+                if (CHECK_intBitsToFloat) {
+                	if (Float.floatToRawIntBits(floatValue) != intValue) {
+                		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+                	}
+                }
+
+                setVpr(m, j, i, floatValue);
                 address += 4;
             }
         } else {
             for (int j = 0; j < k; ++j) {
-                setVpr(m, i, j, Float.intBitsToFloat(memory.read32(address)));
+                int intValue = memory.read32(address);
+                float floatValue = Float.intBitsToFloat(intValue);
+
+                if (CHECK_intBitsToFloat) {
+                	if (Float.floatToRawIntBits(floatValue) != intValue) {
+                		Emulator.log.error(String.format("Problem using intBitsToFloat: 0x%08X != 0x%08X", intValue, Float.floatToRawIntBits(floatValue)));
+                	}
+                }
+
+                setVpr(m, i, j, floatValue);
                 address += 4;
             }
         }

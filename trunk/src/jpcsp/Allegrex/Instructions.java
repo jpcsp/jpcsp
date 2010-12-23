@@ -3975,6 +3975,11 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
+	if (VfpuState.CHECK_intBitsToFloat) {
+		super.compile(context, insn);
+		return;
+	}
+
 	int vt2 = (insn>>0)&3;
 	int vt5 = (insn>>16)&31;
 	int vt = vt5 | (vt2<<5);
@@ -4017,6 +4022,11 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
+	if (VfpuState.CHECK_intBitsToFloat) {
+		super.compile(context, insn);
+		return;
+	}
+
 	super.compile(context, insn);
 }
 @Override
@@ -4050,6 +4060,11 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
+	if (VfpuState.CHECK_intBitsToFloat) {
+		super.compile(context, insn);
+		return;
+	}
+
 	super.compile(context, insn);
 }
 @Override
@@ -4083,6 +4098,11 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
+	if (VfpuState.CHECK_intBitsToFloat) {
+		super.compile(context, insn);
+		return;
+	}
+
 	int vt1 = (insn>>0)&1;
 	int vt5 = (insn>>16)&31;
 	int vt = vt5 | (vt1<<5);
@@ -5628,6 +5648,11 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
+	if (VfpuState.CHECK_intBitsToFloat) {
+		super.compile(context, insn);
+		return;
+	}
+
 	context.prepareVdForStore(1, 0);
 	context.loadRt();
 	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
