@@ -1528,6 +1528,19 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void compileDelaySlotAsBranchTarget(CodeInstruction codeInstruction) {
+    	if (codeInstruction.getInsn() == Instructions.NOP) {
+    		// NOP nothing to do
+    		return;
+    	}
+
+    	CodeInstruction previousInstruction = getCodeBlock().getCodeInstruction(codeInstruction.getAddress() - 4);
+    	if (previousInstruction != null) {
+    		if (previousInstruction.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
+    			// Previous instruction was a J or JR instruction, nothing to do
+    			return;
+    		}
+    	}
+
     	Label afterDelaySlot = new Label();
     	mv.visitJumpInsn(Opcodes.GOTO, afterDelaySlot);
     	codeInstruction.compile(this, mv);

@@ -95,9 +95,7 @@ public class RuntimeContext {
 	private static CpuState pendingCallbackCpuState = null;
 	public  static boolean enableDaemonThreadSync = true;
 	public  static final String syncName = "sync";
-	private static final long syncIntervalMillis = 1000 / 60;	// Sync at least every 1/60 Second
 	public  static volatile boolean wantSync = false;
-	private static long lastSyncTime;
 	private static RuntimeSyncThread runtimeSyncThread = null;
 	private static sceDisplay sceDisplayModule;
 
@@ -265,7 +263,7 @@ public class RuntimeContext {
         }
 
         if (enableDaemonThreadSync && runtimeSyncThread == null) {
-        	runtimeSyncThread = new RuntimeSyncThread(syncIntervalMillis);
+        	runtimeSyncThread = new RuntimeSyncThread();
         	runtimeSyncThread.setName("Sync Daemon");
         	runtimeSyncThread.setDaemon(true);
         	runtimeSyncThread.start();
@@ -451,17 +449,17 @@ public class RuntimeContext {
     	}
     }
 
-    private static void sleep(int millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-        	// Ignore exception
-        }
+    private static void sleep(int micros) {
+    	sleep(micros / 1000, micros % 1000);
     }
 
     private static void sleep(int millis, int micros) {
         try {
-            Thread.sleep(millis, micros * 1000);
+        	if (micros <= 0) {
+        		Thread.sleep(millis);
+        	} else {
+        		Thread.sleep(millis, micros * 1000);
+        	}
         } catch (InterruptedException e) {
         	// Ignore exception
         }
@@ -490,10 +488,13 @@ public class RuntimeContext {
 
                 if (isIdle) {
                 	long delay = scheduler.getNextActionDelay(idleSleepMicros);
-                	if (delay >= idleSleepMicros) {
-                		sleep(idleSleepMicros / 1000);
-                	} else if (delay > 0) {
-                		int intDelay = (int) delay;
+                	if (delay > 0) {
+                		int intDelay;
+	                	if (delay >= idleSleepMicros) {
+	                		intDelay = idleSleepMicros;
+	                	} else {
+	                		intDelay = (int) delay;
+	                	}
                 		sleep(intDelay / 1000, intDelay % 1000);
                 	}
                 }
@@ -621,44 +622,32 @@ public class RuntimeContext {
         State.controller.checkControllerState();
     }
 
+    private static void syncFast() {
+        // Always sync the display to trigger the GE list processing
+        Modules.sceDisplayModule.step();
+    }
+
     public static void sync() throws StopThreadException {
-    	if (!IntrManager.getInstance().isInsideInterrupt()) {
-    		boolean forcedSync = false;
-    		SceKernelThreadInfo forcedSyncThread = currentThread;
-    		if (wantSync) {
-    			if (currentRuntimeThread != null && !currentRuntimeThread.isInSyscall()) {
-        			forcedSync = true;
-    				log.debug("Forced sync()");
-    			}
-    		}
+    	if (IntrManager.getInstance().isInsideInterrupt()) {
+    		syncFast();
+    	} else {
 	    	syncPause();
-			Scheduler.getInstance().step();
-
-			if (forcedSync && currentThread != forcedSyncThread) {
-	    		// In case of a forced sync, the PSP allows a switch to a thread
-	    		// having a higher priority, but it does not rotate the queue of the
-	    		// current thread (i.e. the current thread stays in front of the ready
-	    		// threads having the same priority).
-	    		Modules.ThreadManForUserModule.hleMoveToFrontReadyQueue(forcedSyncThread);
-	    	}
-
+			Emulator.getScheduler().step();
+			Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
 			syncThread();
-	    	syncEmulator(false);
+			syncEmulator(false);
 	        syncDebugger();
 	    	syncPause();
 	    	checkStoppedThread();
-    	 } else {
-            // Always sync the display to trigger the GE list processing
-            Modules.sceDisplayModule.step();
          }
 
-    	lastSyncTime = System.currentTimeMillis();
     	wantSync = false;
     }
 
     public static void syscallFast(int code) {
 		// Fast syscall: no context switching
     	SyscallHandler.syscall(code);
+    	syncFast();
     }
 
     public static void syscall(int code) throws StopThreadException {
@@ -793,7 +782,7 @@ public class RuntimeContext {
 
         while (!toBeStoppedThreads.isEmpty()) {
         	wakeupToBeStoppedThreads();
-        	sleep(1);
+        	sleep(idleSleepMicros);
         }
 
         reset = false;
@@ -909,7 +898,7 @@ public class RuntimeContext {
 			}
 
 			if (waitForThreads) {
-				sleep(1);
+				sleep(idleSleepMicros);
 			}
 		}
     }
@@ -1125,10 +1114,21 @@ public class RuntimeContext {
     	}
     }
 
-    public static boolean syncDaemon() {
-    	long now = System.currentTimeMillis();
-    	if (now - lastSyncTime >= syncIntervalMillis) {
-			wantSync = true;
+    public static void onNextScheduleModified() {
+    	if (runtimeSyncThread != null) {
+    		runtimeSyncThread.interrupt();
+    	}
+    }
+
+    public static boolean syncDaemonStep() {
+    	long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
+    	if (delay > 0) {
+    		int intDelay = (int) delay;
+    		sleep(intDelay / 1000, intDelay % 1000);
+    	} else if (wantSync) {
+    		sleep(idleSleepMicros);
+    	} else {
+    		wantSync = true;
     	}
 
     	return enableDaemonThreadSync;

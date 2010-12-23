@@ -21,10 +21,7 @@ package jpcsp.Allegrex.compiler;
  *
  */
 public class RuntimeSyncThread extends Thread {
-	long sleepMillis;
-
-	public RuntimeSyncThread(long sleepMillis) {
-		this.sleepMillis = sleepMillis;
+	public RuntimeSyncThread() {
 	}
 
 	@Override
@@ -32,13 +29,7 @@ public class RuntimeSyncThread extends Thread {
 		boolean enabled = true;
 
 		while (enabled) {
-			try {
-				sleep(sleepMillis);
-			} catch (InterruptedException e) {
-				// Ignore exception
-			}
-
-			enabled = RuntimeContext.syncDaemon();
+			enabled = RuntimeContext.syncDaemonStep();
 		}
 
 		RuntimeContext.exitSyncDaemon();

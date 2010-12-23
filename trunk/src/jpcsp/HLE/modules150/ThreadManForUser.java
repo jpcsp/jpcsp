@@ -89,6 +89,38 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+/*
+ * Thread scheduling on PSP:
+ * - when a thread having a higher priority than the current thread, switches to the
+ *   READY state, the current thread is interrupted immediately and is loosing the
+ *   RUNNING state. The new thread then moves to the RUNNING state.
+ * - when a thread having the same or a lower priority than the current thread,
+ *   switches to the READY state, the current thread is not interrupted and is keeping
+ *   the RUNNING state.
+ * - a RUNNING thread can only yield to a thread having the same priority by calling
+ *   sceKernelRotateThreadReadyQueue(0).
+ * - the clock precision when interrupting a RUNNING thread is about 200 microseconds.
+ *   i.e., it can take up to 200us when a high priority thread moves to the READY
+ *   state before it changes to the RUNNING state.
+ *
+ * Thread scheduling on Jpcsp:
+ * - the rules for moving between states are implemented in hleChangeThreadState()
+ * - the rules for choosing the thread in the RUNNING state are implemented in
+ *   hleRescheduleCurrentThread()
+ * - the clock precision for interrupting a RUNNING thread is about 1000 microseconds.
+ *   This is due to a restriction of the Java timers used by the Thread.sleep() methods.
+ *   Even the Thread.sleep(millis, nanos) seems to have the same restriction
+ *   (at least on windows).
+ * - preemptive scheduling is implemented in RuntimeContext by a separate
+ *   Java thread (RuntimeSyncThread). This thread sets the flag RuntimeContext.wantSync
+ *   when a scheduler action has to be executed. This flag is checked by the compiled
+ *   code at each back branch (i.e. a branch to a lower address, usually a loop).
+ *
+ * Test application:
+ * - taskScheduler.prx: testing the scheduler rules between threads having higher,
+ *                      lower or the same priority.
+ *                      The clock precision of 200us on the PSP can be observed here.
+ */
 public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     protected static Logger log = Modules.getLogger("ThreadManForUser");
@@ -416,6 +448,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     protected static final int INTR_NUMBER = IntrManager.PSP_SYSTIMER0_INTR;
     protected Map<Integer, SceKernelAlarmInfo> alarms;
     protected Map<Integer, SceKernelVTimerInfo> vtimers;
+    protected boolean needThreadReschedule;
 
     public ThreadManForUser() {
     }
@@ -440,6 +473,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
 
         dispatchThreadEnabled = true;
+        needThreadReschedule = true;
     }
 
     @Override
@@ -676,23 +710,25 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     /** @param newThread The thread to switch in. */
-    private void contextSwitch(SceKernelThreadInfo newThread) {
+    private boolean contextSwitch(SceKernelThreadInfo newThread) {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             // No context switching inside an interrupt
             if (log.isDebugEnabled()) {
                 log.debug("Inside an interrupt, not context switching to " + newThread);
             }
-            return;
+            return false;
         }
 
         if (!dispatchThreadEnabled) {
             log.info("DispatchThread disabled, not context switching to " + newThread);
-            return;
+            return false;
         }
 
         internalContextSwitch(newThread);
 
         checkThreadCallbacks(currentThread);
+
+        return true;
     }
 
     /** This function must have the property of never returning currentThread,
@@ -718,19 +754,26 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * If the current thread is in status PSP_THREAD_READY and
      * still having the highest priority, nothing is changed.
      * If the current thread is having the same priority as the highest priority,
-     * switch to the next thread having the highest priority (yield).
+     * nothing is changed (no yielding to threads having the same priority).
      */
     public void hleRescheduleCurrentThread() {
-        SceKernelThreadInfo newThread = nextThread();
-        if (newThread != null &&
-                (currentThread == null ||
-                currentThread.status != PSP_THREAD_RUNNING ||
-                currentThread.currentPriority >= newThread.currentPriority)) {
-            if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
-                log.debug("Context switching to '" + newThread + "' after reschedule");
-            }
-            contextSwitch(newThread);
-        }
+    	if (needThreadReschedule) {
+	        SceKernelThreadInfo newThread = nextThread();
+	        if (newThread != null &&
+	                (currentThread == null ||
+	                currentThread.status != PSP_THREAD_RUNNING ||
+	                currentThread.currentPriority > newThread.currentPriority)) {
+	            if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
+	                log.debug("Context switching to '" + newThread + "' after reschedule");
+	            }
+
+	            if (contextSwitch(newThread)) {
+	            	needThreadReschedule = false;
+	            }
+	        } else {
+	        	needThreadReschedule = false;
+	        }
+    	}
     }
 
     /**
@@ -1005,12 +1048,18 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     private void removeFromReadyThreads(SceKernelThreadInfo thread) {
         synchronized (readyThreads) {
             readyThreads.remove(thread);
+        	needThreadReschedule = true;
         }
     }
 
-    private void addToReadyThreads(SceKernelThreadInfo thread) {
+    private void addToReadyThreads(SceKernelThreadInfo thread, boolean addFirst) {
         synchronized (readyThreads) {
-            readyThreads.add(thread);
+        	if (addFirst) {
+        		readyThreads.addFirst(thread);
+        	} else {
+        		readyThreads.addLast(thread);
+        	}
+        	needThreadReschedule = true;
         }
     }
 
@@ -1031,22 +1080,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     /**
-     * Move the thread in front of the Ready queue.
-     * @param thread the thread to be moved in front of the ready queue (has to have PSP_THREAD_READY state)
+     * Change to state of a thread.
+     * This function must be used when changing the state of a thread as
+     * it updates the ThreadMan internal data structures and implements
+     * the PSP behavior on status change.
+     * 
+     * @param thread    the thread to be updated
+     * @param newStatus the new thread status
      */
-    public void hleMoveToFrontReadyQueue(SceKernelThreadInfo thread) {
-    	if (thread != null && thread.status == PSP_THREAD_READY) {
-    		synchronized (readyThreads) {
-    			if (readyThreads.remove(thread)) {
-    				readyThreads.addFirst(thread);
-    			}
-    		}
-    	}
-    }
-
-    /** Use this to change a thread's state (ready, running, etc)
-     * This function manages some lists such as waiting list and
-     * deferred deletion list. */
     public void hleChangeThreadState(SceKernelThreadInfo thread, int newStatus) {
         if (thread == null) {
             return;
@@ -1061,6 +1102,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.info("DispatchThread disabled, not changing thread state of " + thread + " to " + newStatus);
             return;
         }
+
+        boolean addReadyThreadsFirst = false;
 
         // Moving out of the following states...
         if (thread.status == PSP_THREAD_WAITING) {
@@ -1081,6 +1124,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                 thread.onUnblockAction = null;
             }
             thread.doCallbacks = false;
+        } else if (thread.status == PSP_THREAD_RUNNING) {
+        	needThreadReschedule = true;
+        	// When a running thread has to yield to a thread having a higher
+        	// priority, the thread stays in front of the ready threads having
+        	// no same priority (no yielding to threads having the same priority).
+        	addReadyThreadsFirst = true;
         }
 
         thread.status = newStatus;
@@ -1112,7 +1161,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             }
             onThreadStopped(thread);
         } else if (thread.status == PSP_THREAD_READY) {
-            addToReadyThreads(thread);
+            addToReadyThreads(thread, addReadyThreadsFirst);
             thread.waitType = PSP_WAIT_NONE;
             thread.wait.waitTimeoutAction = null;
             thread.wait.waitStateChecker = null;
@@ -3841,15 +3890,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                 for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.currentPriority == priority) {
-                        if (currentThread.currentPriority == priority) {
-                            // We are rotating the ThreadReadyQueue of the currentThread,
-                            // we can just yield the current thread.
-                            hleRescheduleCurrentThread();
-                        } else {
-                            // Move the thread to the end of the list to avoid thread starvation on nextThread()
-                            it.remove();
-                            readyThreads.addLast(thread);
-                        }
+                        // Move the thread to the end of the list
+                    	removeFromReadyThreads(thread);
+                        addToReadyThreads(thread, false);
+                        hleRescheduleCurrentThread();
                         break;
                     }
                 }
