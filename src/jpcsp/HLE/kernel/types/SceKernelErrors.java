@@ -310,6 +310,7 @@ public class SceKernelErrors {
     public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
 
     public final static int ERROR_SAS_INVALID_VOICE                             = 0x80420010;
+    public final static int ERROR_SAS_INVALID_PARAMETER                         = 0x80420014;
     public final static int ERROR_SAS_BUSY                                      = 0x80420030;
     public final static int ERROR_SAS_NOT_INIT                                  = 0x80420100;
 
