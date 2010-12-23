@@ -641,12 +641,14 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
+
+        if (size <= 0 || (size & 0xF) != 0) {
+        	log.warn(String.format("__sceSasSetVoice invalid size 0x%08X", size));
+        	cpu.gpr[2] = SceKernelErrors.ERROR_SAS_INVALID_PARAMETER;
+        } else if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
             voices[voice].setSamples(decodeSamples(processor, vagAddr, size));
             voices[voice].setLoopMode(loopmode);
             cpu.gpr[2] = 0;
-        } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
     }
 
