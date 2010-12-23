@@ -50,7 +50,7 @@ public class Clock {
 		isPaused = true;
 	}
 
-	public synchronized long nanoTime() {
+	public long nanoTime() {
 		long now;
 
 		if (isPaused) {

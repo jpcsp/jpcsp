@@ -33,7 +33,7 @@ public class VBlankInterruptHandler extends AbstractInterruptHandler {
 		Scheduler scheduler = Emulator.getScheduler();
 
 		// Re-schedule next VBLANK interrupt in 1/60 second
-		scheduler.addAction(scheduler.getNow() + IntrManager.VBLANK_SCHEDULE_MICROS, this);
+		scheduler.addAction(Scheduler.getNow() + IntrManager.VBLANK_SCHEDULE_MICROS, this);
 
 		// Execute all the registered VBlank actions (each time)
 		for (IAction action : vblankActions) {

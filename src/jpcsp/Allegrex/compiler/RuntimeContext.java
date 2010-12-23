@@ -36,7 +36,6 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
-import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.memory.FastMemory;
@@ -618,7 +617,6 @@ public class RuntimeContext {
 
         Modules.sceGe_userModule.step();
 		Modules.sceDisplayModule.step(immediately);
-        HLEModuleManager.getInstance().step();
         State.controller.checkControllerState();
     }
 
