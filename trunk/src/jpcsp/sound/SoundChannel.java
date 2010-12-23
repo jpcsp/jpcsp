@@ -233,7 +233,7 @@ public class SoundChannel {
 
     public int getUnblockOutputDelayMicros() {
     	// Return the delay required for the processing of the playing buffer
-    	if (isEnded()) {
+    	if (isExit || isEnded()) {
     		return 0;
     	}
     	float delaySecs = (getSampleLength() - getSourceSampleOffset()) / (float) getSampleRate();
