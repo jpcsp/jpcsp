@@ -2207,7 +2207,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
         // 0 - The calling thread has no reported callbacks.
         // 1 - The calling thread has reported callbacks which were executed sucessfully.
+        currentThread.doCallbacks = true;  // Callbacks are always allowed here.
         cpu.gpr[2] = checkThreadCallbacks(currentThread) ? 1 : 0;
+        currentThread.doCallbacks = false; // Callbacks may not be allowed after this.
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {
