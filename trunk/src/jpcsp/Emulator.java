@@ -172,7 +172,7 @@ public class Emulator implements Runnable {
         cpu.gpr[27] = 0; //k1.
         cpu.gpr[28] = module.gp_value; //gp_reg.
 
-        HLEModuleManager.startModules();
+        HLEModuleManager.getInstance().startModules();
         Modules.ThreadManForUserModule.Initialise(module, cpu.pc, module.attribute, module.pspfilename, module.modid, fromSyscall);
 
         if (State.memoryViewer != null)
@@ -182,6 +182,7 @@ public class Emulator implements Runnable {
     private void initNewPsp() {
         moduleLoaded = false;
 
+        HLEModuleManager.getInstance().stopModules();
         RuntimeContext.reset();
         Profiler.reset();
         getClock().reset();

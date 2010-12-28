@@ -48,6 +48,7 @@ public class HLEModuleManager {
 
     private HashMap<Integer, HLEModuleFunction> syscallCodeToFunction;
     private int syscallCodeAllocator;
+    private boolean modulesStarted = false;
 
     private HashMap<String, List<HLEModule>> flash0prxMap;
 
@@ -64,10 +65,10 @@ public class HLEModuleManager {
      */
     private enum DefaultModule {
     	// Modules loaded by default in all firmware version...
-    	IoFileMgrForUser(Modules.IoFileMgrForUserModule),
-    	ThreadManForUser(Modules.ThreadManForUserModule),
     	SysMemUserForUser(Modules.SysMemUserForUserModule),
         SysMemForKernel(Modules.SysMemForKernelModule),
+    	IoFileMgrForUser(Modules.IoFileMgrForUserModule),
+    	ThreadManForUser(Modules.ThreadManForUserModule),
     	InterruptManager(Modules.InterruptManagerModule),
     	LoadExecForUser(Modules.LoadExecForUserModule),
         StdioForUser(Modules.StdioForUserModule),
@@ -337,19 +338,31 @@ public class HLEModuleManager {
 		return null;
     }
 
-	public static void startModules() {
+	public void startModules() {
+		if (modulesStarted) {
+			return;
+		}
+
 		for(DefaultModule defaultModule : DefaultModule.values()) {
 			if(defaultModule.module instanceof HLEStartModule) {
 				((HLEStartModule)defaultModule.module).start();
 			}
 		}
+
+		modulesStarted = true;
 	}
 
-	public static void stopModules() {
+	public void stopModules() {
+		if (!modulesStarted) {
+			return;
+		}
+
 		for(DefaultModule defaultModule : DefaultModule.values()) {
 			if(defaultModule.module instanceof HLEStartModule) {
 				((HLEStartModule)defaultModule.module).stop();
 			}
 		}
+
+		modulesStarted = false;
 	}
 }
