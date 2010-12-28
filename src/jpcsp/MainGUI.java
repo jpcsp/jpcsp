@@ -1404,8 +1404,7 @@ private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
         if (loadedFile != null) {
             PauseEmu();
             RuntimeContext.reset();
-            Modules.SysMemUserForUserModule.reset();
-            HLEModuleManager.stopModules();         
+            HLEModuleManager.getInstance().stopModules();         
             if (umdLoaded) {
                 loadUMD(loadedFile);
             } else {
