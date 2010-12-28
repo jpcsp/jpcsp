@@ -248,7 +248,7 @@ public class LwMutexManager {
             } else {
                 // Success, do not reschedule the current thread.
                 if (log.isDebugEnabled()) {
-                    log.debug("hleKernelAllocateFpl - '" + info.name + "' fast check succeeded");
+                    log.debug("hleKernelLockLwMutex - '" + info.name + "' fast check succeeded");
                 }
                 cpu.gpr[2] = 0;
             }

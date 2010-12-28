@@ -207,6 +207,10 @@ public class sceRtc implements HLEModule {
         int addr = cpu.gpr[4];
         mem.write64(addr, hleGetCurrentTick());
 
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceRtcGetCurrentTick 0x%08X, returning %d", addr, mem.read64(addr)));
+        }
+
         cpu.gpr[2] = 0;
     }
 

@@ -182,5 +182,10 @@ public class SceFontInfo {
             advance = 0;
             ptr = 0;
         }
+
+    	@Override
+    	public String toString() {
+    		return String.format("Glyph[x=%d, y=%d, w=%d, h=%d, left=%d, top=%d, flags=0x%X, shadowID=%d, advance=%d, ptr=%d]", x, y, w, h, left, top, flags, shadowID, advance, ptr);
+    	}
     }
 }

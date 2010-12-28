@@ -546,8 +546,8 @@ public class Common {
         return String.format("%1$-10s %2$s, %3$s", opname, gprNames[rs], gprNames[rt]);
     }
 
-    public static String disasmEXT(int rt, int rs, int rd, int sa) {
-        return String.format("%1$-10s %2$s, %3$s, %4$d, %5$d", "ext", gprNames[rt], gprNames[rs], sa, (rd + 1));
+    public static String disasmEXT(int rt, int rs, int lsb, int msb) {
+        return String.format("%1$-10s %2$s, %3$s, %4$d, %5$d", "ext", gprNames[rt], gprNames[rs], lsb, (msb + 1));
     }
 
     public static String disasmINS(int rt, int rs, int lsb, int msb) {
