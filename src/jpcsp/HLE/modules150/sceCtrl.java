@@ -26,6 +26,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -99,7 +100,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     public void setButtons(byte Lx, byte Ly, int Buttons) {
         int oldButtons = this.Buttons;
 
-        this.TimeStamp = (((int) Emulator.getClock().currentTimeMillis()) * 1000) & 0x7FFFFFFF;
+        this.TimeStamp = ((int) SystemTimeManager.getSystemTime()) & 0x7FFFFFFF;
         this.Lx = Lx;
         this.Ly = Ly;
         this.Buttons = Buttons;
