@@ -354,7 +354,8 @@ public class ExternalDecoder {
     						// Check if the file length is large enough
     						if (ri.dataInput.length() >= fileSize) {
     							// Check if the file contents are matching our buffer
-    							byte[] fileData = new byte[length];
+    							int checkLength = Math.min(length, fileSize);
+    							byte[] fileData = new byte[checkLength];
     							long currentPosition = ri.dataInput.getFilePointer();
     							ri.dataInput.seek(ri.position);
     							ri.dataInput.readFully(fileData);
@@ -363,10 +364,10 @@ public class ExternalDecoder {
     							boolean match;
     							if (checkData != null) {
     								// Check against checkData
-    								match = cmp(fileData, checkData, length);
+    								match = cmp(fileData, checkData, checkLength);
     							} else {
     								// Check against memory data located at "address"
-    								match = memcmp(fileData, address, length);
+    								match = memcmp(fileData, address, checkLength);
     							}
 
     							if (match) {
