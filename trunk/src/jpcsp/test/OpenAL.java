@@ -30,6 +30,7 @@ import org.lwjgl.openal.AL10;
 public class OpenAL {
 	private static Set<Integer> freeBuffers = new HashSet<Integer>();
 	private static boolean isRawFile = false;
+	private static int sampleRate = 48000; // 44100 or 48000
 
 	private static int read8(FileInputStream fis) throws IOException {
 		byte[] buffer = new byte[1];
@@ -53,7 +54,7 @@ public class OpenAL {
 			int length;
 			if (isRawFile) {
 				int fileSize = read32(fis);
-				read32(fis); // timestamp
+				read32(fis); // skip timestamp
 				length = fileSize - 8;
 				if (length > 0) {
 					buffer = new byte[length];
@@ -88,13 +89,30 @@ public class OpenAL {
 				}
 
 				if (alBuffer >= 0) {
-					AL10.alBufferData(alBuffer, AL10.AL_FORMAT_STEREO16, directBuffer, 48000);
+					AL10.alBufferData(alBuffer, AL10.AL_FORMAT_STEREO16, directBuffer, sampleRate);
 					AL10.alSourceQueueBuffers(alSource, alBuffer);
 					break;
 				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+	}
+
+	private static String getStateName(int state) {
+		switch (state) {
+			case AL10.AL_PLAYING: return "Playing";
+			case AL10.AL_PAUSED: return "Paused";
+			case AL10.AL_STOPPED: return "Stopped";
+		}
+
+		return String.format("%d", state);
+	}
+
+	private static void displayError(String text) {
+		int errorCode = AL10.alGetError();
+		if (errorCode != 0) {
+			System.out.println(String.format("Error %s %d", text, errorCode));
 		}
 	}
 
@@ -114,42 +132,42 @@ public class OpenAL {
 
 			for (int i = 0; i < 5; i++) {
 				freeBuffers.add(AL10.alGenBuffers());
-				System.out.println("Error alGenBuffers " + AL10.alGetError());
+				displayError("alGenBuffers");
 			}
 			int alSource = AL10.alGenSources();
-			System.out.println("Error alGenSources " + AL10.alGetError());
+			displayError("alGenSources");
 
 //			AL10.alSource3f(alSource, AL10.AL_POSITION, 0.0f, 0.0f, 0.0f);
-//			System.out.println("Error AL_POSITION " + AL10.alGetError());
-//
+//			displayError("AL_POSITION");
+
 //			AL10.alSource3f(alSource, AL10.AL_VELOCITY, 0.0f, 0.0f, 0.0f);
-//			System.out.println("Error AL_VELOCITY " + AL10.alGetError());
-//
+//			displayError("AL_VELOCITY");
+
 //			AL10.alSource3f(alSource, AL10.AL_DIRECTION, 0.0f, 0.0f, 0.0f);
-//			System.out.println("Error AL_DIRECTION " + AL10.alGetError());
-//
+//			displayError("AL_DIRECTION");
+
 //			AL10.alSourcei(alSource, AL10.AL_SOURCE_RELATIVE, AL10.AL_TRUE);
-//			System.out.println("Error AL_SOURCE_RELATIVE " + AL10.alGetError());
-//
+//			displayError("AL_SOURCE_RELATIVE");
+
 //			AL10.alSourcef(alSource, AL10.AL_PITCH, 1.0f);
-//			System.out.println("Error AL_PITCH " + AL10.alGetError());
-//
+//			displayError("AL_PITCH");
+
 //			AL10.alSourcef(alSource, AL10.AL_GAIN, 1.0f);
-//			System.out.println("Error AL_GAIN " + AL10.alGetError());
+//			displayError("AL_GAIN");
 
 			AL10.alSourcei(alSource, AL10.AL_LOOPING, AL10.AL_FALSE);
-			System.out.println("Error AL_LOOPING " + AL10.alGetError());
+			displayError("AL_LOOPING");
 
 			read(fis, alSource);
 
 			AL10.alSourcePlay(alSource);
-			System.out.println("Error alSourcePlay " + AL10.alGetError());
+			displayError("alSourcePlay");
 
 			int previousState = -1;
 			while (true) {
 				int state = AL10.alGetSourcei(alSource, AL10.AL_SOURCE_STATE);
 				if (state != previousState) {
-					System.out.println("State " + state);
+					System.out.println(String.format("State %s", getStateName(state)));
 					previousState = state;
 				}
 				if (state != AL10.AL_PLAYING && state != AL10.AL_INITIAL) {

@@ -653,18 +653,64 @@ public class MediaEngine {
     }
 
     /**
+     * Convert the audio samples to a stereo format with signed 16-bit samples.
+     * The converted audio samples are always stored in tempBuffer.
+     *
+     * @param samples the audio sample container
+     * @param buffer  the audio sample bytes
+     * @param length  the number of bytes in buffer
+     * @return        the new number of bytes in tempBuffer
+     */
+    private int convertSamples(IAudioSamples samples, byte[] buffer, int length) {
+    	if (samples.getFormat() != IAudioSamples.Format.FMT_S16) {
+    		log.error("Unsupported audio samples format: " + samples.getFormat());
+    		return length;
+    	}
+
+    	if (samples.getChannels() == 2) {
+    		// Samples already in the correct format
+    		return length;
+    	}
+
+    	if (samples.getChannels() != 1) {
+    		log.error("Unsupported number of audio channels: " + samples.getChannels());
+    		return length;
+    	}
+
+    	// Convert mono audio samples (1 channel) to stereo (2 channels)
+    	int samplesSize = length * 2;
+    	if (tempBuffer == null || samplesSize > tempBuffer.length) {
+    		tempBuffer = new byte[samplesSize];
+    	}
+
+    	// Copy backwards in case the source buffer is also the tempBuffer
+    	for (int i = samplesSize - 4, j = length - 2; i >= 0; i -= 4, j -= 2) {
+    		byte byte1 = buffer[j + 0];
+    		byte byte2 = buffer[j + 1];
+    		tempBuffer[i + 0] = byte1;
+    		tempBuffer[i + 1] = byte2;
+    		tempBuffer[i + 2] = byte1;
+    		tempBuffer[i + 3] = byte2;
+    	}
+
+    	return samplesSize;
+    }
+
+    /**
      * Add the audio samples to the decoded audio samples buffer.
      * 
      * @param samples          the samples to be added
      */
     private void updateSoundSamples(IAudioSamples samples) {
-    	int sampleSizes = samples.getSize();
-    	if (tempBuffer == null || sampleSizes > tempBuffer.length) {
-    		tempBuffer = new byte[sampleSizes];
+    	int samplesSize = samples.getSize();
+    	if (tempBuffer == null || samplesSize > tempBuffer.length) {
+    		tempBuffer = new byte[samplesSize];
     	}
-    	samples.get(0, tempBuffer, 0, sampleSizes);
+    	samples.get(0, tempBuffer, 0, samplesSize);
 
-        decodedAudioSamples.write(tempBuffer, 0, sampleSizes);
+    	samplesSize = convertSamples(samples, tempBuffer, samplesSize);
+
+        decodedAudioSamples.write(tempBuffer, 0, samplesSize);
     }
 
     // This function is time critical and has to execute under
