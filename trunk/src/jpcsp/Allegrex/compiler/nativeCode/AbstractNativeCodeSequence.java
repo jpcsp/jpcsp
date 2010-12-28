@@ -93,6 +93,10 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		getGpr()[3] = (int) (v0v1 >> 32);
 	}
 
+	static protected void setRegisterValue(int register, int value) {
+		getGpr()[register] = value;
+	}
+
 	static float[] getFpr() {
 		return getCpu().fpr;
 	}

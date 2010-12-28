@@ -319,6 +319,10 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	protected String getUniformName(int id) {
+		if (id < 0) {
+			return "Unused Uniform";
+		}
+
 		for (Uniforms uniform : Uniforms.values()) {
 			if (uniform.getId(useProgram) == id) {
 				return uniform.name();
