@@ -122,16 +122,14 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public SceKernelCallbackInfo[] callbackInfo;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
-        // Ignore 0 size from the idle threads.
-        if (stackSize != 0) {
-            if (stackSize < 512) {
-                // 512 byte min.
-                stackSize = 512;
-            } else {
-                // 256 byte size alignment.
-                stackSize = (stackSize + 0xFF) & ~0xFF;
-            }
+        if (stackSize < 512) {
+            // 512 byte min. (required for interrupts)
+            stackSize = 512;
+        } else {
+            // 256 byte size alignment.
+            stackSize = (stackSize + 0xFF) & ~0xFF;
         }
+
         this.name = name;
         this.entry_addr = entry_addr;
         this.initPriority = initPriority;
@@ -139,16 +137,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         this.attr = attr;
         uid = SceUidManager.getNewUid("ThreadMan-thread");
         // Setup the stack.
-        if (stackSize > 0) {
-        	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(2, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
-        	if (stackSysMemInfo == null) {
-        		stack_addr = 0;
-        	} else {
-        		stack_addr = stackSysMemInfo.addr;
-        	}
-        } else {
-            stack_addr = 0;
-        }
+    	stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(2, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
+    	if (stackSysMemInfo == null) {
+    		stack_addr = 0;
+    	} else {
+    		stack_addr = stackSysMemInfo.addr;
+    	}
 
         // Inherit gpReg.
         gpReg_addr = Emulator.getProcessor().cpu.gpr[28];
@@ -272,8 +266,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 36, releaseCount);
     }
 
-    public void deleteSysMemInfo() {
-        Modules.SysMemUserForUserModule.free(stackSysMemInfo);
+    public void freeStack() {
+    	if (stackSysMemInfo != null) {
+    		Modules.SysMemUserForUserModule.free(stackSysMemInfo);
+    		stackSysMemInfo = null;
+    		stack_addr = 0;
+    	}
     }
 
     public String getStatusName() {

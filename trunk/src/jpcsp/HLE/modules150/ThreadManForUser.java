@@ -567,6 +567,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         // idle thread, using its stack.
         // The stack is allocated into the reservedMem area.
         idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
+        idle0.freeStack();
         idle0.stackSize = 0x2000;
         idle0.stack_addr = reservedMem;
         idle0.reset();
@@ -575,6 +576,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         hleChangeThreadState(idle0, PSP_THREAD_READY);
 
         idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0, PSP_THREAD_ATTR_KERNEL);
+        idle1.freeStack();
         idle1.stackSize = 0x2000;
         idle1.stack_addr = reservedMem + 0x2000;
         idle1.reset();
@@ -632,19 +634,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         exitCalled = true;
 
         if (threadMap != null) {
-            log.info("----------------------------- ThreadMan exit -----------------------------");
-
             // Delete all the threads to collect statistics
-            deleteThreads(threadMap.values());
+            deleteAllThreads();
+
+            log.info("----------------------------- ThreadMan exit -----------------------------");
 
             statistics.endTimeMillis = System.currentTimeMillis();
             log.info(String.format("ThreadMan Statistics (%,d cycles in %.3fs):", statistics.allCycles, statistics.getDurationMillis() / 1000.0));
+            Collections.sort(statistics.threads);
             for (Statistics.ThreadStatistics threadStatistics : statistics.threads) {
                 double percentage = 0;
                 if (statistics.allCycles != 0) {
                     percentage = (threadStatistics.runClocks / (double) statistics.allCycles) * 100;
                 }
-                log.info("    Thread name:'" + threadStatistics.name + "' runClocks:" + threadStatistics.runClocks + " (" + String.format("%2.2f%%", percentage) + ")");
+                log.info(String.format("    Thread %-30s %,12d cycles (%5.2f%%)", threadStatistics.getQuotedName(), threadStatistics.runClocks, percentage));
             }
         }
     }
@@ -994,17 +997,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         // IO has no timeout, it's always forever.
     }
 
-    private void deleteThreads(Iterable<SceKernelThreadInfo> iterable) {
-        //by removing the value from the iterable BEFORE it is tried to remove
-        //from all collections this assures that concurrent modification exception will
-        //not occur on the same thread, on the jdk collections, since only that only
-        //happens when they alter the collection.
-        Iterator<SceKernelThreadInfo> it = iterable.iterator();
-        while (it.hasNext()) {
-            SceKernelThreadInfo thread = it.next();
-            it.remove();
-            hleDeleteThread(thread);
-        }
+    private void deleteAllThreads() {
+    	// Copy the list of threads into a new list to avoid ConcurrentListModificationException
+    	List<SceKernelThreadInfo> threadsToBeDeleted = new LinkedList<SceKernelThreadInfo>(threadMap.values());
+ 
+    	for (SceKernelThreadInfo thread : threadsToBeDeleted) {
+    		hleDeleteThread(thread);
+    	}
     }
 
     public void hleDeleteThread(SceKernelThreadInfo thread) {
@@ -1022,7 +1021,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr));
             }
-            thread.deleteSysMemInfo();
+            thread.freeStack();
         }
 
         cancelThreadWait(thread);
@@ -1199,8 +1198,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
-        for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext();) {
-            SceKernelThreadInfo thread = it.next();
+        for (SceKernelThreadInfo thread : threadMap.values()) {
             // Wakeup threads that are in sceKernelWaitThreadEnd
             // We're assuming if waitingOnThreadEnd is set then thread.status = waiting
             if (thread.wait.waitingOnThreadEnd &&
@@ -3888,8 +3886,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = ERROR_ILLEGAL_PRIORITY;
         } else {
             synchronized (readyThreads) {
-                for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext();) {
-                    SceKernelThreadInfo thread = it.next();
+                for (SceKernelThreadInfo thread : readyThreads) {
                     if (thread.currentPriority == priority) {
                         // Move the thread to the end of the list
                     	removeFromReadyThreads(thread);
@@ -4244,10 +4241,18 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             allCycles += thread.runClocks;
         }
 
-        private static class ThreadStatistics {
-
+        private static class ThreadStatistics implements Comparable<ThreadStatistics> {
             public String name;
             public long runClocks;
+
+            @Override
+			public int compareTo(ThreadStatistics o) {
+				return -(new Long(runClocks).compareTo(o.runClocks));
+			}
+
+            public String getQuotedName() {
+            	return "'" + name + "'";
+            }
         }
     }
 
