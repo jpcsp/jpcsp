@@ -386,13 +386,17 @@ public class ExternalDecoder {
     			}
     		}
 
-    		byte[] fileData = new byte[fileSize];
+    		byte[] fileData;
     		try {
+        		fileData = new byte[fileSize];
 				long currentPosition = readInfo.dataInput.getFilePointer();
 				readInfo.dataInput.seek(readInfo.position + positionOffset);
 	    		readInfo.dataInput.readFully(fileData);
 				readInfo.dataInput.seek(currentPosition);
 			} catch (IOException e) {
+				return null;
+			} catch (OutOfMemoryError e) {
+				log.error(String.format("Error '%s' while decoding external audio file (fileSize=%d, position=%d, dataInput=%s)", e.toString(), fileSize, readInfo.position + positionOffset, readInfo.dataInput.toString()));
 				return null;
 			}
 
