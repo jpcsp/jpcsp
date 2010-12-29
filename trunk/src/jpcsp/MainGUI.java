@@ -1113,6 +1113,8 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             if (consolewin != null) {
                 consolewin.clearScreenMessages();
             }
+            Emulator.log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
+
             Modules.SysMemUserForUserModule.reset();
             Emulator.log.info(MetaInformation.FULL_NAME);
 
