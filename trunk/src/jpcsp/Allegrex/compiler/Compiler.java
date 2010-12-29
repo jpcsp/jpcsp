@@ -360,21 +360,22 @@ public class Compiler implements ICompiler {
                 Compiler.log.debug("Retrying compilation again with maxInstruction=" + methodMaxInstructions + ", retries left=" + (retries - 1) + "...");
                 context = new CompilerContext(classLoader);
                 context.setMethodMaxInstructions(methodMaxInstructions);
+            } catch (NullPointerException e) {
+            	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
+            	break;
             }
         }
         compileDuration.end();
 
-        if (error != null) {
-            if (executable == null) {
-                Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
-                context = new CompilerContext(classLoader);
-                executable = interpret(context, address);
-                if (executable == null) {
-                	throw error;
-                }
-            } else {
-                Compiler.log.debug("Compilation was now correct with maxInstruction=" + context.getMethodMaxInstructions());
+        if (executable == null) {
+            Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
+            context = new CompilerContext(classLoader);
+            executable = interpret(context, address);
+            if (executable == null && error != null) {
+            	throw error;
             }
+        } else if (error != null) {
+            Compiler.log.debug("Compilation was now correct with maxInstruction=" + context.getMethodMaxInstructions());
         }
 
         // Resume the PSP clock after compilation
