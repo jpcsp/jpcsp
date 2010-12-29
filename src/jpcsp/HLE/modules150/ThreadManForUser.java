@@ -1205,8 +1205,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                     thread.wait.ThreadEnd_id == stoppedThread.uid) {
                 // Untrack
                 thread.wait.waitingOnThreadEnd = false;
-                // Return success
-                thread.cpuContext.gpr[2] = 0;
+                // Return exit status of stopped thread
+                thread.cpuContext.gpr[2] = stoppedThread.exitStatus;
                 // Wakeup
                 hleChangeThreadState(thread, PSP_THREAD_READY);
             }
