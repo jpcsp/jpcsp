@@ -16,14 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_NO_MULTI_PERM;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_EVENT_FLAG_POLL_FAILED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_EVENT_FLAG;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_NO_MULTI_PERM;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
@@ -87,11 +87,11 @@ public class EventFlagManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("EventFlag deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -99,11 +99,11 @@ public class EventFlagManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -136,11 +136,11 @@ public class EventFlagManager {
     }
 
     private void onEventFlagDeleted(int evid) {
-        onEventFlagDeletedCancelled(evid, ERROR_WAIT_DELETE);
+        onEventFlagDeletedCancelled(evid, ERROR_KERNEL_WAIT_DELETE);
     }
 
     private void onEventFlagCancelled(int evid) {
-        onEventFlagDeletedCancelled(evid, ERROR_WAIT_CANCELLED);
+        onEventFlagDeletedCancelled(evid, ERROR_KERNEL_WAIT_CANCELLED);
     }
 
     private void onEventFlagModified(SceKernelEventFlagInfo event) {
@@ -227,7 +227,7 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.remove(uid);
         if (event == null) {
             log.warn("sceKernelDeleteEventFlag unknown uid");
-            cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         } else {
             if (event.numWaitThreads > 0) {
                 log.warn("sceKernelDeleteEventFlag numWaitThreads " + event.numWaitThreads);
@@ -248,7 +248,7 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelSetEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         } else {
             event.currentPattern |= bitsToSet;
             cpu.gpr[2] = 0;
@@ -267,7 +267,7 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelClearEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         } else {
             event.currentPattern &= bitsToKeep;
             cpu.gpr[2] = 0;
@@ -285,13 +285,13 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("hleKernelWaitEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         } else if (bits == 0) {
-        	cpu.gpr[2] = ERROR_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
+        	cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
         } else if (event.numWaitThreads >= 1 &&
                 (event.attr & PSP_EVENT_WAITMULTIPLE) != PSP_EVENT_WAITMULTIPLE) {
             log.warn("hleKernelWaitEventFlag already another thread waiting on it");
-            cpu.gpr[2] = ERROR_EVENT_FLAG_NO_MULTI_PERM;
+            cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_NO_MULTI_PERM;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             Memory mem = Memory.getInstance();
@@ -355,16 +355,16 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelPollEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         } else if (bits == 0) {
-        	cpu.gpr[2] = ERROR_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
+        	cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
         } else {
             if (!checkEventFlag(event, bits, wait, outBits_addr)) {
             	// Write the outBits, even if the poll failed
             	if (Memory.isAddressGood(outBits_addr)) {
                     Memory.getInstance().write32(outBits_addr, event.currentPattern);
             	}
-                cpu.gpr[2] = ERROR_EVENT_FLAG_POLL_FAILED;
+                cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
             } else {
                 cpu.gpr[2] = 0;
             }
@@ -382,7 +382,7 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelCancelEventFlag unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         } else {
             Memory mem = Memory.getInstance();
             if (Memory.isAddressGood(numWaitThreadAddr)) {
@@ -406,7 +406,7 @@ public class EventFlagManager {
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("sceKernelReferEventFlagStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
         } else {
             event.write(Memory.getInstance(), addr);
             cpu.gpr[2] = 0;
@@ -421,7 +421,7 @@ public class EventFlagManager {
             // has been set during the callback execution.
             SceKernelEventFlagInfo event = eventMap.get(wait.EventFlag_id);
             if (event == null) {
-                thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
                 return false;
             }
 

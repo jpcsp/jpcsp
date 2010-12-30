@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -585,7 +585,7 @@ public class scePower implements HLEModule {
         int freq = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         log.debug("scePowerSetCpuClockFrequency : " + freq);
@@ -599,7 +599,7 @@ public class scePower implements HLEModule {
         int freq = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         log.debug("scePowerSetBusClockFrequency : " + freq);

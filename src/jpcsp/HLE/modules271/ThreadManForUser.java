@@ -64,7 +64,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
     public void sceKernelTryLockMutex(Processor processor) {
         int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mutex.sceKernelTryLockMutex(gpr[4], gpr[5]);
@@ -74,7 +74,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
         int[] gpr = processor.cpu.gpr;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mutex.sceKernelLockMutexCB(gpr[4], gpr[5], gpr[6]);
@@ -84,7 +84,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
         int[] gpr = processor.cpu.gpr;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mutex.sceKernelUnlockMutex(gpr[4], gpr[5]);
@@ -104,7 +104,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
         int[] gpr = processor.cpu.gpr;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mutex.sceKernelLockMutex(gpr[4], gpr[5], gpr[6]);
@@ -114,7 +114,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
         int[] gpr = processor.cpu.gpr;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mutex.sceKernelCreateMutex(gpr[4], gpr[5], gpr[6], gpr[7]);
@@ -124,7 +124,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
         int[] gpr = processor.cpu.gpr;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mutex.sceKernelDeleteMutex(gpr[4]);

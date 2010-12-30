@@ -1252,7 +1252,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (displayWidth <= 0 || displayHeight <= 0) {
@@ -1315,7 +1315,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         log.warn("IGNORING: sceDisplaySetHoldMode holdMode=" + holdMode);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -1329,7 +1329,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         log.warn("IGNORING: sceDisplaySetResumeMode resumeMode=" + resumeMode);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -1497,7 +1497,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -1514,7 +1514,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -1531,7 +1531,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -1546,7 +1546,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;

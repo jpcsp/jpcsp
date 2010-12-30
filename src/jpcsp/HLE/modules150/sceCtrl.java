@@ -393,7 +393,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = cycle;
@@ -407,7 +407,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         int cycleAddr = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         mem.write32(cycleAddr, cycle);
@@ -472,7 +472,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         hleCtrlReadBuffer(data_addr, numBuf, true);
@@ -489,7 +489,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         hleCtrlReadBuffer(data_addr, numBuf, false);

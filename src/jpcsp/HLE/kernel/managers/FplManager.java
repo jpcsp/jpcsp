@@ -16,16 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ATTR;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMSIZE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_FPOOL;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CAN_NOT_WAIT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ATTR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMSIZE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_FPOOL;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_FPL;
@@ -87,11 +87,11 @@ public class FplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("FPL deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -99,11 +99,11 @@ public class FplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -135,11 +135,11 @@ public class FplManager {
     }
 
     private void onFplDeleted(int fid) {
-        onFplDeletedCancelled(fid, ERROR_WAIT_DELETE);
+        onFplDeletedCancelled(fid, ERROR_KERNEL_WAIT_DELETE);
     }
 
     private void onFplCancelled(int fid) {
-        onFplDeletedCancelled(fid, ERROR_WAIT_CANCELLED);
+        onFplDeletedCancelled(fid, ERROR_KERNEL_WAIT_CANCELLED);
     }
 
     private void onFplFree(SceKernelFplInfo info) {
@@ -231,10 +231,10 @@ public class FplManager {
         }
         if ((attr & ~PSP_FPL_ATTR_MASK) != 0) {
             log.warn("sceKernelCreateFpl bad attr value 0x" + Integer.toHexString(attr));
-            cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
+            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ATTR;
         } else if (blocksize == 0) {
             log.warn("sceKernelCreateFpl bad blocksize, cannot be 0");
-            cpu.gpr[2] = ERROR_ILLEGAL_MEMSIZE;
+            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_MEMSIZE;
         } else {
             SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks, memType, memAlign);
             if (info != null) {
@@ -244,7 +244,7 @@ public class FplManager {
                 fplMap.put(info.uid, info);
                 cpu.gpr[2] = info.uid;
             } else {
-                cpu.gpr[2] = ERROR_NO_MEMORY;
+                cpu.gpr[2] = ERROR_KERNEL_NO_MEMORY;
             }
         }
     }
@@ -257,7 +257,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.remove(uid);
         if (info == null) {
             log.warn(msg + " unknown uid");
-            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_FPOOL;
         } else {
             msg += " '" + info.name + "'";
             if (log.isDebugEnabled()) {
@@ -284,7 +284,7 @@ public class FplManager {
         SceKernelFplInfo fpl = fplMap.get(uid);
         if (fpl == null) {
             log.warn("hleKernelAllocateFpl unknown uid=0x" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_FPOOL;
         } else {
             int addr = tryAllocateFpl(fpl);
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -313,7 +313,7 @@ public class FplManager {
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                     threadMan.hleRescheduleCurrentThread(doCallbacks);
                 } else {
-                    cpu.gpr[2] = ERROR_WAIT_CAN_NOT_WAIT;
+                    cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
                 }
             } else {
                 // Success, do not reschedule the current thread.
@@ -357,12 +357,12 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             log.warn("sceKernelFreeFpl unknown uid");
-            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_FPOOL;
         } else {
             int block = info.findBlockByAddress(data_addr);
             if (block == -1) {
                 log.warn("sceKernelFreeFpl unknown block address=0x" + Integer.toHexString(data_addr));
-                cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK;
+                cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_MEMBLOCK;
             } else {
                 info.freeBlock(block);
                 cpu.gpr[2] = 0;
@@ -381,7 +381,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             log.warn("sceKernelCancelFpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_FPOOL;
         } else {
             Memory mem = Memory.getInstance();
             if (Memory.isAddressGood(numWaitThreadAddr)) {
@@ -403,7 +403,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferFplStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_FPOOL;
         } else {
             info.write(mem, info_addr);
             cpu.gpr[2] = 0;
@@ -418,7 +418,7 @@ public class FplManager {
             // has been allocated during the callback execution.
             SceKernelFplInfo fpl = fplMap.get(wait.Fpl_id);
             if (fpl == null) {
-                thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_FPOOL;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_FPOOL;
                 return false;
             }
 

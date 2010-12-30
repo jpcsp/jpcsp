@@ -330,7 +330,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu) && isVoiceNumberGood(voice, "__sceSasSetADSR", cpu)) {
@@ -365,7 +365,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasRevParam", cpu)) {
@@ -387,7 +387,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasGetPauseFlag", cpu)) {
@@ -415,7 +415,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasRevType", cpu)) {
@@ -468,7 +468,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetVolume", cpu) && isVoiceNumberGood(voice, "__sceSasSetVolume", cpu)) {
@@ -493,7 +493,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
@@ -518,7 +518,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetSL", cpu) && isVoiceNumberGood(voice, "__sceSasSetSL", cpu)) {
@@ -564,7 +564,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasGetEnvelopeHeight", cpu) && isVoiceNumberGood(voice, "__sceSasGetEnvelopeHeight", cpu)) {
@@ -586,7 +586,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetKeyOn", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOn", cpu)) {
@@ -608,7 +608,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetPause", cpu)) {
@@ -638,7 +638,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 
@@ -669,7 +669,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu) && isVoiceNumberGood(voice, "__sceSasSetADSRmode", cpu)) {
@@ -703,7 +703,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetKeyOff", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOff", cpu)) {
@@ -720,7 +720,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         log.warn("Unimplemented NID function __sceSasSetTrianglarWave [0xA232CBE6] " + makeLogParams(cpu));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0xDEADC0DE;
@@ -737,7 +737,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
@@ -763,7 +763,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetPitch", cpu) && isVoiceNumberGood(voice, "__sceSasSetPitch", cpu)) {
@@ -787,7 +787,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetNoise", cpu) && isVoiceNumberGood(voice, "__sceSasSetNoise", cpu)) {
@@ -808,7 +808,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasGetGrain", cpu)) {
@@ -831,7 +831,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Only the low-order 16 bits are valid for both parameters.
@@ -868,7 +868,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasSetGrain", cpu)) {
@@ -892,7 +892,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasRevEVOL", cpu)) {
@@ -910,7 +910,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         log.warn("Unimplemented NID function __sceSasSetSteepWave [0xD5EBBBCD] " + makeLogParams(cpu));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0xDEADC0DE;
@@ -926,7 +926,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasGetOutputmode", cpu)) {
@@ -947,7 +947,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasGetOutputmode", cpu)) {
@@ -971,7 +971,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasRevVON", cpu)) {
@@ -993,7 +993,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {

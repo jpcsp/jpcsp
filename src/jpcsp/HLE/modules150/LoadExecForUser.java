@@ -19,9 +19,9 @@ package jpcsp.HLE.modules150;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_PROHIBIT_LOADEXEC_DEVICE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_LOADEXEC_FILENAME;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
@@ -95,7 +95,7 @@ public class LoadExecForUser implements HLEModule {
         String name = Utilities.readStringZ(filename_addr);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
@@ -126,7 +126,7 @@ public class LoadExecForUser implements HLEModule {
                     cpu.gpr[2] = 0;
                 } else {
                     log.warn("sceKernelLoadExec - failed, target is not an ELF");
-                    cpu.gpr[2] = ERROR_ILLEGAL_LOADEXEC_FILENAME;
+                    cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_LOADEXEC_FILENAME;
                 }
                 moduleInput.close();
             }
@@ -135,7 +135,7 @@ public class LoadExecForUser implements HLEModule {
             Emulator.PauseEmu();
         } catch (IOException e) {
             log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
-            cpu.gpr[2] = ERROR_PROHIBIT_LOADEXEC_DEVICE;
+            cpu.gpr[2] = ERROR_KERNEL_PROHIBIT_LOADEXEC_DEVICE;
         }
     }
 
@@ -145,7 +145,7 @@ public class LoadExecForUser implements HLEModule {
         int status = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         log.info("Program exit detected with status=" + status + " (sceKernelExitGameWithStatus)");
@@ -158,7 +158,7 @@ public class LoadExecForUser implements HLEModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         log.info("Program exit detected (sceKernelExitGame)");
@@ -173,7 +173,7 @@ public class LoadExecForUser implements HLEModule {
         int uid = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 

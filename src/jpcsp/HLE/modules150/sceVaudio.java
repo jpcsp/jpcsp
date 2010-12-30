@@ -171,7 +171,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         log.warn("PARTIAL: sceVaudioChRelease");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (pspVaudioChannel.isReserved()) {
@@ -193,7 +193,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         log.warn("PARTIAL: sceVaudioChReserve: samplecount=" + samplecount + ", freq=" + freq + ", format=" + format);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!pspVaudioChannel.isReserved()) {
@@ -217,7 +217,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
                     + ", buf=0x" + Integer.toHexString(buf));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!Memory.isAddressGood(buf)) {
@@ -255,7 +255,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
                     + ", vol=0x" + Integer.toHexString(vol));
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -269,7 +269,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         log.warn("UNIMPLEMENTED: sceVaudioSetAlcMode: alcMode=" + alcMode);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;

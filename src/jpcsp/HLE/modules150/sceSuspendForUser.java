@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ARGUMENT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_POWER_VMEM_IN_USE;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -87,7 +87,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         int type = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (log.isTraceEnabled()) {
@@ -102,7 +102,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         int type = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (log.isTraceEnabled()) {
@@ -117,7 +117,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         int flag = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         switch (flag) {
@@ -157,7 +157,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
         if (type != 0) {
             log.warn("hleKernelVolatileMemLock bad param: type != 0");
-            cpu.gpr[2] = ERROR_ARGUMENT;
+            cpu.gpr[2] = ERROR_INVALID_ARGUMENT;
         } else {
             if (!volatileMemLocked) {
                 volatileMemLocked = true;
@@ -183,7 +183,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         hleKernelVolatileMemLock(processor, false);
@@ -202,7 +202,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
 
         if (type != 0) {
             log.warn("sceKernelVolatileMemUnlock bad param: type != 0");
-            cpu.gpr[2] = ERROR_ARGUMENT;
+            cpu.gpr[2] = ERROR_INVALID_ARGUMENT;
         } else if (!volatileMemLocked) {
             log.warn("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
             cpu.gpr[2] = -1;

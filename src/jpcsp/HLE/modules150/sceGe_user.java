@@ -495,13 +495,13 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     	stall_addr &= Memory.addressMask;
 
     	if (VideoEngine.getInstance().hasDrawList(list_addr)) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_BUSY;
+    		cpu.gpr[2] = SceKernelErrors.ERROR_BUSY;
     		log.warn("sceGeListEnQueue can't enqueue duplicate list address");
     	} else {
     		synchronized (this) {
     	    	PspGeList list = listFreeQueue.poll();
     	    	if (list == null) {
-    	    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_OUT_OF_MEMORY;
+    	    		cpu.gpr[2] = SceKernelErrors.ERROR_OUT_OF_MEMORY;
     	    		log.warn("sceGeListEnQueue no more free list available!");
     	    	} else {
     	    		list.init(list_addr, stall_addr, cbid, arg_addr);
@@ -535,13 +535,13 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     	stall_addr &= Memory.addressMask;
 
     	if (VideoEngine.getInstance().hasDrawList(list_addr)) {
-    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_BUSY;
+    		cpu.gpr[2] = SceKernelErrors.ERROR_BUSY;
     		log.warn("sceGeListEnQueueHead can't enqueue duplicate list address");
     	} else {
     		synchronized (this) {
     	    	PspGeList list = listFreeQueue.poll();
     	    	if (list == null) {
-    	    		cpu.gpr[2] = SceKernelErrors.ERROR_LIST_OUT_OF_MEMORY;
+    	    		cpu.gpr[2] = SceKernelErrors.ERROR_OUT_OF_MEMORY;
     	    		log.warn("sceGeListEnQueueHead no more free list available!");
     	    	} else {
     	    		list.init(list_addr, stall_addr, cbid, arg_addr);
@@ -566,7 +566,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
 
         if (id < 0 || id >= NUMBER_GE_LISTS) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
+        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
         } else {
         	synchronized (this) {
             	PspGeList list = allGeLists[id];
@@ -592,7 +592,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         stall_addr &= Memory.addressMask;
 
         if (id < 0 || id >= NUMBER_GE_LISTS) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
+        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
         } else {
         	synchronized (this) {
             	PspGeList list = allGeLists[id];
@@ -616,12 +616,12 @@ public class sceGe_user implements HLEModule, HLEStartModule {
         }
 
         if (mode != 0 && mode != 1) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
+        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
         } else if (id < 0 || id >= NUMBER_GE_LISTS) {
-        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
+        	cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
         } else if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
     		log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
-    		cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+    		cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
         	PspGeList list = null;
         	boolean blockCurrentThread = false;
@@ -633,7 +633,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
             	}
 
             	if (list.isReset()) {
-            		cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_LIST_ID;
+            		cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_ID;
             	} else if (mode == 0 && !list.isDone()) {
             		cpu.gpr[2] = 0;
             		blockCurrentThread = true;
@@ -662,7 +662,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     	// local data, only list information from the VideoEngine.
         if (IntrManager.getInstance().isInsideInterrupt() && mode == 0) {
             log.debug("sceGeListSync (mode==0) cannot be called inside an interrupt handler!");
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
             if (mode == 0) {
                 cpu.gpr[2] = 0;
@@ -688,7 +688,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
                 }
             } else {
                 log.warn("sceGeDrawSync invalid mode=" + mode);
-                cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
+                cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
             }
         }
     }
@@ -723,7 +723,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
             }
         } else {
             log.warn("sceGeBreak invalid mode=" + mode);
-            cpu.gpr[2] = SceKernelErrors.ERROR_ARGUMENT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
         }
     }
 
@@ -771,7 +771,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 
          if (IntrManager.getInstance().isInsideInterrupt()) {
              log.warn("sceGeSetCallback called inside an Interrupt!");
-             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
          } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
@@ -794,7 +794,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
              log.warn("sceGeUnsetCallback called inside an Interrupt!");
-             cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);

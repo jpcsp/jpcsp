@@ -16,14 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_COUNT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_SEMAPHORE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_SEMA_ZERO;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
@@ -83,11 +83,11 @@ public class SemaManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("Sema deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -95,11 +95,11 @@ public class SemaManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -132,11 +132,11 @@ public class SemaManager {
     }
 
     private void onSemaphoreDeleted(int semaid) {
-        onSemaphoreDeletedCancelled(semaid, ERROR_WAIT_DELETE);
+        onSemaphoreDeletedCancelled(semaid, ERROR_KERNEL_WAIT_DELETE);
     }
 
     private void onSemaphoreCancelled(int semaid) {
-        onSemaphoreDeletedCancelled(semaid, ERROR_WAIT_CANCELLED);
+        onSemaphoreDeletedCancelled(semaid, ERROR_KERNEL_WAIT_CANCELLED);
     }
 
     private void onSemaphoreModified(SceKernelSemaInfo sema) {
@@ -220,7 +220,7 @@ public class SemaManager {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelCreateSema called insided an interrupt");
             }
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(option)) {
@@ -248,7 +248,7 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.remove(semaid);
         if (sema == null) {
             log.warn("sceKernelDeleteSema - unknown uid 0x" + Integer.toHexString(semaid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             if (sema.numWaitThreads > 0) {
                 log.warn("sceKernelDeleteSema numWaitThreads " + sema.numWaitThreads);
@@ -269,19 +269,19 @@ public class SemaManager {
             if (log.isDebugEnabled()) {
                 log.debug("hleKernelWaitSema called insided an interrupt");
             }
-            cpu.gpr[2] = ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (signal <= 0) {
             log.warn("hleKernelWaitSema - bad signal " + signal);
-            cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
+            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_COUNT;
             return;
         }
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn("hleKernelWaitSema - unknown uid 0x" + Integer.toHexString(semaid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             Memory mem = Memory.getInstance();
@@ -340,7 +340,7 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn("sceKernelSignalSema - unknown uid 0x" + Integer.toHexString(semaid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
@@ -362,7 +362,7 @@ public class SemaManager {
 
         if (signal <= 0) {
             log.warn(msg + " bad signal");
-            cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
+            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_COUNT;
             return;
         }
 
@@ -370,12 +370,12 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn(msg + " unknown uid");
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else if (sema.currentCount - signal < 0) {
             if (log.isDebugEnabled()) {
                 log.debug(msg + " '" + sema.name + "'");
             }
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_ZERO;
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_SEMA_ZERO;
         } else {
             if (log.isDebugEnabled()) {
                 log.debug(msg + " '" + sema.name + "'");
@@ -394,7 +394,7 @@ public class SemaManager {
         }
 
         if (newcount <= 0 && newcount != -1) {
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_COUNT;
             return;
         }
 
@@ -402,7 +402,7 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn("sceKernelCancelSema - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             // Write previous numWaitThreads count.
             if (Memory.isAddressGood(numWaitThreadAddr)) {
@@ -433,7 +433,7 @@ public class SemaManager {
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
             log.warn("sceKernelReferSemaStatus - unknown uid 0x" + Integer.toHexString(semaid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             sema.write(mem, addr);
             cpu.gpr[2] = 0;
@@ -448,7 +448,7 @@ public class SemaManager {
             // has been signaled during the callback execution.
             SceKernelSemaInfo sema = semaMap.get(wait.Semaphore_id);
             if (sema == null) {
-                thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
                 return false;
             }
 

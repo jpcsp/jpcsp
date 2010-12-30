@@ -65,7 +65,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	public void sceKernelCreateLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 		Managers.lwmutex.sceKernelCreateLwMutex(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
@@ -95,7 +95,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules271.ThreadManForUser {
 	public void sceKernelDeleteLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 		Managers.lwmutex.sceKernelDeleteLwMutex(gpr[4]);

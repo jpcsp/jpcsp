@@ -16,15 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_SIZE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MESSAGE_PIPE_EMPTY;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MESSAGE_PIPE_FULL;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_MESSAGE_PIPE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_SIZE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_MESSAGE_PIPE_EMPTY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_MESSAGE_PIPE_FULL;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MSGPIPE;
@@ -108,11 +108,11 @@ public class MsgPipeManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("MsgPipe deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -120,11 +120,11 @@ public class MsgPipeManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -161,11 +161,11 @@ public class MsgPipeManager {
     }
 
     private void onMsgPipeDeleted(int msgpid) {
-        onMsgPipeDeletedCancelled(msgpid, ERROR_WAIT_DELETE);
+        onMsgPipeDeletedCancelled(msgpid, ERROR_KERNEL_WAIT_DELETE);
     }
 
     private void onMsgPipeCancelled(int msgpid) {
-        onMsgPipeDeletedCancelled(msgpid, ERROR_WAIT_CANCELLED);
+        onMsgPipeDeletedCancelled(msgpid, ERROR_KERNEL_WAIT_CANCELLED);
     }
 
     private void onMsgPipeSendModified(SceKernelMppInfo info) {
@@ -338,7 +338,7 @@ public class MsgPipeManager {
             msgMap.put(info.uid, info);
             cpu.gpr[2] = info.uid;
         } else {
-            cpu.gpr[2] = ERROR_NO_MEMORY;
+            cpu.gpr[2] = ERROR_KERNEL_NO_MEMORY;
         }
     }
 
@@ -352,7 +352,7 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.remove(uid);
         if (info == null) {
             log.warn("sceKernelDeleteMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         } else {
             info.deleteSysMemInfo();
             cpu.gpr[2] = 0;
@@ -388,10 +388,10 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("hleKernelSendMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         } else if (size > info.bufSize) {
             log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.bufSize));
-            cpu.gpr[2] = ERROR_ILLEGAL_SIZE;
+            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_SIZE;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!trySendMsgPipe(mem, info, msg_addr, size, waitMode, resultSize_addr)) {
@@ -417,7 +417,7 @@ public class MsgPipeManager {
                     threadMan.hleRescheduleCurrentThread(doCallbacks);
                 } else {
                     log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.freeSize) + " (pipe needs consuming)");
-                    cpu.gpr[2] = ERROR_MESSAGE_PIPE_FULL;
+                    cpu.gpr[2] = ERROR_KERNEL_MESSAGE_PIPE_FULL;
                 }
             } else {
                 // Success, do not reschedule the current thread.
@@ -470,10 +470,10 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("hleKernelReceiveMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         } else if (size > info.bufSize) {
             log.warn("hleKernelReceiveMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.bufSize));
-            cpu.gpr[2] = ERROR_ILLEGAL_SIZE;
+            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_SIZE;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!tryReceiveMsgPipe(mem, info, msg_addr, size, waitMode, resultSize_addr)) {
@@ -502,7 +502,7 @@ public class MsgPipeManager {
                     if (log.isDebugEnabled()) {
                         log.debug("hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size) + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));
                     }
-                    cpu.gpr[2] = ERROR_MESSAGE_PIPE_EMPTY;
+                    cpu.gpr[2] = ERROR_KERNEL_MESSAGE_PIPE_EMPTY;
                 }
             } else {
                 // Success, do not reschedule the current thread.
@@ -538,7 +538,7 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("sceKernelCancelMsgPipe unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         } else {
             if (Memory.isAddressGood(send_addr)) {
                 mem.write32(send_addr, info.numSendWaitThreads);
@@ -564,7 +564,7 @@ public class MsgPipeManager {
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferMsgPipeStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
         } else {
             info.write(mem, info_addr);
             cpu.gpr[2] = 0;
@@ -579,7 +579,7 @@ public class MsgPipeManager {
             // has received a new message during the callback execution.
             SceKernelMppInfo info = msgMap.get(wait.MsgPipe_id);
             if (info == null) {
-                thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
                 return false;
             }
 
@@ -602,7 +602,7 @@ public class MsgPipeManager {
             // has been sent a new message during the callback execution.
             SceKernelMppInfo info = msgMap.get(wait.MsgPipe_id);
             if (info == null) {
-                thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_PIPE;
                 return false;
             }
 

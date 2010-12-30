@@ -73,6 +73,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.HLE.modules.sceFont;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.scePsmfPlayer;
@@ -1114,7 +1115,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 consolewin.clearScreenMessages();
             }
             Emulator.log.info(String.format("Java version: %s (%s)", System.getProperty("java.version"), System.getProperty("java.runtime.version")));
-
+            
             Modules.SysMemUserForUserModule.reset();
             Emulator.log.info(MetaInformation.FULL_NAME);
 
@@ -1299,6 +1300,9 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         AtracCodec.setEnableMediaEngine(useMediaEngine);
         sceMp3.setEnableMediaEngine(useMediaEngine);
 
+        boolean useFlashFonts = Settings.getInstance().readBool("emu.useFlashFonts");
+        sceFont.setAllowInternalFonts(useFlashFonts);
+
         boolean useExternalDecoder = Settings.getInstance().readBool("emu.useExternalDecoder");
         ExternalDecoder.setEnabled(useExternalDecoder);
 
@@ -1357,6 +1361,11 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 scePsmfPlayer.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
                 AtracCodec.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
                 sceMp3.setEnableMediaEngine(Integer.parseInt(useMediaEngine) != 0);
+            }
+
+            String useFlashFonts = patchSettings.getProperty("emu.useFlashFonts");
+            if (useFlashFonts != null) {
+                sceFont.setAllowInternalFonts(Integer.parseInt(useFlashFonts) != 0);
             }
 
             String useVertexCache = patchSettings.getProperty("emu.useVertexCache");

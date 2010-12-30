@@ -16,16 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_ATTR;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ILLEGAL_MEMSIZE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_VPOOL;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CAN_NOT_WAIT;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ATTR;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMSIZE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_VPOOL;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
@@ -88,11 +88,11 @@ public class VplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("VPL deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -100,11 +100,11 @@ public class VplManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -136,11 +136,11 @@ public class VplManager {
     }
 
     private void onVplDeleted(int vid) {
-        onVplDeletedCancelled(vid, ERROR_WAIT_DELETE);
+        onVplDeletedCancelled(vid, ERROR_KERNEL_WAIT_DELETE);
     }
 
     private void onVplCancelled(int vid) {
-        onVplDeletedCancelled(vid, ERROR_WAIT_CANCELLED);
+        onVplDeletedCancelled(vid, ERROR_KERNEL_WAIT_CANCELLED);
     }
 
     private void onVplFree(SceKernelVplInfo info) {
@@ -229,9 +229,9 @@ public class VplManager {
 
         if ((attr & ~PSP_VPL_ATTR_MASK) != 0) {
             log.warn("sceKernelCreateVpl bad attr value 0x" + Integer.toHexString(attr));
-            cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
+            cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_ATTR;
         } else if (size <= 0) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_MEMSIZE;
+        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_MEMSIZE;
         } else {
             SceKernelVplInfo info = SceKernelVplInfo.tryCreateVpl(name, partitionid, attr, size, memType);
             if (info != null) {
@@ -239,7 +239,7 @@ public class VplManager {
                 vplMap.put(info.uid, info);
                 cpu.gpr[2] = info.uid;
             } else {
-                cpu.gpr[2] = ERROR_NO_MEMORY;
+                cpu.gpr[2] = ERROR_KERNEL_NO_MEMORY;
             }
         }
     }
@@ -254,7 +254,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.remove(uid);
         if (info == null) {
             log.warn("sceKernelDeleteVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
         } else {
             if (info.freeSize < info.poolSize) {
                 log.warn("sceKernelDeleteVpl approx " + (info.poolSize - info.freeSize) + " unfreed bytes allocated");
@@ -277,9 +277,9 @@ public class VplManager {
         SceKernelVplInfo vpl = vplMap.get(uid);
         if (vpl == null) {
             log.warn("hleKernelAllocateVpl unknown uid=0x" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
         } else if (size <= 0 || size > vpl.poolSize) {
-        	cpu.gpr[2] = ERROR_ILLEGAL_MEMSIZE;
+        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_MEMSIZE;
         } else {
             int addr = tryAllocateVpl(vpl, size);
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -309,7 +309,7 @@ public class VplManager {
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                     threadMan.hleRescheduleCurrentThread(doCallbacks);
                 } else {
-                    cpu.gpr[2] = ERROR_WAIT_CAN_NOT_WAIT;
+                    cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
                 }
             } else {
                 // Success, do not reschedule the current thread.
@@ -353,13 +353,13 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             log.warn("sceKernelFreeVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
         } else {
             if (info.free(data_addr)) {
                 cpu.gpr[2] = 0;
                 onVplFree(info);
             } else {
-                cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK;
+                cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_MEMBLOCK;
             }
         }
     }
@@ -374,7 +374,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             log.warn("sceKernelCancelVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
         } else {
             Memory mem = Memory.getInstance();
             if (Memory.isAddressGood(numWaitThreadAddr)) {
@@ -396,7 +396,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferVplStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
         } else {
             info.write(mem, info_addr);
             cpu.gpr[2] = 0;
@@ -411,7 +411,7 @@ public class VplManager {
             // has been allocated during the callback execution.
             SceKernelVplInfo vpl = vplMap.get(wait.Vpl_id);
             if (vpl == null) {
-                thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_VPOOL;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_VPOOL;
                 return false;
             }
 
