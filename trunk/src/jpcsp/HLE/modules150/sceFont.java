@@ -28,6 +28,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -141,6 +142,16 @@ public class sceFont implements HLEModule, HLEStartModule {
     private float globalFontHRes = 0.0f;
     private float globalFontVRes = 0.0f;
     private static char alternateCharacter = '?';
+    private static boolean allowInternalFonts = false;
+    private SceFontInfo currentInternalFont = null;  // Font loaded from flash0 folder.
+
+    public static boolean getAllowInternalFonts() {
+        return allowInternalFonts;
+    }
+
+    public static void setAllowInternalFonts(boolean status) {
+        allowInternalFonts = status;
+    }
 
     public int makeFakeLibHandle() {
         return 0xF8F80000 | (fontLibCount++ & 0xFFFF);
@@ -200,6 +211,8 @@ public class sceFont implements HLEModule, HLEStartModule {
                         PGF pgfFile = new PGF(finalBuf);
                         pgfFile.setFileNamez(files[i]);
                         PGFFilesMap.put(getFakeFontHandle(index), pgfFile);
+
+                        currentInternalFont = new SceFontInfo(pgfFile);
 
                         log.info("Found font file '" + files[i] + "'. Font='" + pgfFile.getFontName() + "' Type='" + pgfFile.getFontType() + "'");
                     } catch (Exception e) {
@@ -299,7 +312,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         FontLib fl = null;
@@ -330,7 +343,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!fontLibMap.containsKey(libHandle)) {
@@ -364,7 +377,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!fontLibMap.containsKey(libHandle)) {
@@ -395,7 +408,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(fontInfoAddr)) {
@@ -487,7 +500,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(charInfoAddr)) {
@@ -565,7 +578,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(glyphImageAddr)) {
@@ -593,9 +606,14 @@ public class sceFont implements HLEModule, HLEStartModule {
                 yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
                 yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
             }
-            // Use our Debug font.
-            Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
+            // If there's an internal font loaded, use it to display the text.
+            // Otherwise, switch to our Debug font.
+            if (getAllowInternalFonts() && (currentInternalFont != null)) {
+                currentInternalFont.printFont(buffer, (char) charCode);
+            } else {
+                Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI, pixelFormat, (char) charCode);
+            }
         }
         cpu.gpr[2] = 0;
     }
@@ -613,7 +631,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Font style parameters.
@@ -663,7 +681,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontAddr = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (log.isDebugEnabled()) {
@@ -682,7 +700,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!fontLibMap.containsKey(libHandle)) {
@@ -710,7 +728,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         FontLib fLib = fontLibMap.get(libHandle);
@@ -745,7 +763,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Identical to sceFontGetCharGlyphImage, but uses a clipping
@@ -778,9 +796,14 @@ public class sceFont implements HLEModule, HLEStartModule {
                 	yPosI = 0;
                 }
             }
-            // Use our Debug font.
-            Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
+            // If there's an internal font loaded, use it to display the text.
+            // Otherwise, switch to our Debug font.
+            if (getAllowInternalFonts() && (currentInternalFont != null)) {
+                currentInternalFont.printFont(buffer, (char) charCode);
+            } else {
+                Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
                     xPosI, yPosI, pixelFormat, (char) charCode);
+            }
         }
         cpu.gpr[2] = 0;
     }
@@ -797,7 +820,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!fontLibMap.containsKey(libHandle)) {
@@ -826,7 +849,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!fontLibMap.containsKey(libHandle)) {
@@ -870,7 +893,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         setAlternateChar((char) charCode);
@@ -890,7 +913,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // This function retrieves the dimensions of a specific char.
@@ -912,7 +935,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Convert horizontal floating points to pixels (Points Per Inch to Pixels Per Inch).
@@ -937,7 +960,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!fontLibMap.containsKey(libHandle)) {
@@ -1034,7 +1057,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         globalFontHRes = (float) hRes;
@@ -1052,7 +1075,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -1071,7 +1094,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Font style parameters.
@@ -1127,7 +1150,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Convert vertical floating points to pixels (Points Per Inch to Pixels Per Inch).
@@ -1151,7 +1174,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Convert horizontal pixels to floating points (Pixels Per Inch to Points Per Inch).
@@ -1175,7 +1198,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         // Convert vertical pixels to floating points (Pixels Per Inch to Points Per Inch).

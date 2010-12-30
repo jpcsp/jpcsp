@@ -124,7 +124,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
         if (info != null) {
             cpu.gpr[2] = info.uid;
         } else {
-            cpu.gpr[2] = SceKernelErrors.ERROR_FAILED_ALLOC_MEMBLOCK;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
         }
 	}
     

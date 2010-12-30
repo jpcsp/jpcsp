@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_FILE_NOT_FOUND;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UNKNOWN_MODULE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_ERRNO_FILE_NOT_FOUND;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNKNOWN_MODULE;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -299,7 +299,7 @@ public class ModuleMgrForUser implements HLEModule {
                 moduleInput.close();
             } else {
                 log.warn("hleKernelLoadModule(path='" + name + "') can't find file");
-                cpu.gpr[2] = ERROR_FILE_NOT_FOUND;
+                cpu.gpr[2] = ERROR_ERRNO_FILE_NOT_FOUND;
             }
         } catch (IOException e) {
             log.error("hleKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
@@ -320,7 +320,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceKernelLMOption lmOption = null;
@@ -347,7 +347,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceKernelLMOption lmOption = null;
@@ -391,7 +391,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
@@ -403,7 +403,7 @@ public class ModuleMgrForUser implements HLEModule {
 
         if (sceModule == null) {
             log.warn("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_UNKNOWN_MODULE;
+            cpu.gpr[2] = ERROR_KERNEL_UNKNOWN_MODULE;
         } else if (sceModule.isFlashModule) {
             // Trying to start a module loaded from flash0:
             // Do nothing...
@@ -471,13 +471,13 @@ public class ModuleMgrForUser implements HLEModule {
         log.warn("sceKernelStopModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
         if (sceModule == null) {
             log.warn("sceKernelStopModule - unknown module UID 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_UNKNOWN_MODULE;
+            cpu.gpr[2] = ERROR_KERNEL_UNKNOWN_MODULE;
         } else if (sceModule.isFlashModule) {
             // Trying to stop a module loaded from flash0:
             // Shouldn't get here...
@@ -516,7 +516,7 @@ public class ModuleMgrForUser implements HLEModule {
         log.warn("PARTIAL: sceKernelUnloadModule(uid=" + Integer.toHexString(uid) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
@@ -546,7 +546,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule sceModule = Managers.modules.getCurrentModule();  // Get the last loaded module.
@@ -587,7 +587,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule sceModule = Managers.modules.getCurrentModule();  // Get the last loaded module.
@@ -627,7 +627,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule sceModule = Managers.modules.getCurrentModule();   // Get the last loaded module.
@@ -669,7 +669,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule sceModule = Managers.modules.getModuleByUID(uid);
@@ -697,7 +697,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = moduleid;
@@ -713,7 +713,7 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceModule module = Managers.modules.getModuleByAddress(addr);

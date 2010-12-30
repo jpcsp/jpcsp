@@ -678,13 +678,13 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         }
 
         if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
         } else {
             SysMemInfo info = malloc(partitionid, name, type, size, addr);
             if (info != null) {
                 cpu.gpr[2] = info.uid;
             } else {
-                cpu.gpr[2] = SceKernelErrors.ERROR_FAILED_ALLOC_MEMBLOCK;
+                cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_FAILED_ALLOC_MEMBLOCK;
             }
         }
 	}
@@ -698,7 +698,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_CHUNK_ID;
+            Emulator.getProcessor().cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
         } else {
         	if (log.isDebugEnabled()) {
         		log.debug("sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
@@ -717,7 +717,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         SysMemInfo info = blockList.get(uid);
         if (info == null) {
             log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
-            cpu.gpr[2] = SceKernelErrors.ERROR_ILLEGAL_CHUNK_ID;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_CHUNK_ID;
         } else {
         	if (log.isDebugEnabled()) {
         		log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));

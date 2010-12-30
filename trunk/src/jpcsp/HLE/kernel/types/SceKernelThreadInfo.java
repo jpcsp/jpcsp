@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_THREAD_ALREADY_DORMANT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY_DORMANT;
 
 import java.util.Comparator;
 
@@ -177,7 +177,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         waitType = PSP_WAIT_NONE;
         waitId = 0;
         wakeupCount = 0;
-        exitStatus = ERROR_THREAD_ALREADY_DORMANT;  // Threads start with DORMANT and not NOT_DORMANT (tested and checked).
+        exitStatus = ERROR_KERNEL_THREAD_ALREADY_DORMANT;  // Threads start with DORMANT and not NOT_DORMANT (tested and checked).
         runClocks = 0;
         intrPreemptCount = 0;
         threadPreemptCount = 0;

@@ -16,9 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.util.Utilities.readStringZ;
 
@@ -168,7 +168,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         thread.wait.waitingOnUmd = false;
         removeWaitingThread(thread);
         // Return WAIT_TIMEOUT
-        thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+        thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
     }
 
     public void onThreadWaitReleased(SceKernelThreadInfo thread) {
@@ -177,7 +177,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         thread.wait.waitingOnUmd = false;
         removeWaitingThread(thread);
         // Return ERROR_WAIT_STATUS_RELEASED
-        thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+        thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
@@ -226,7 +226,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         umdActivated = true;
@@ -245,7 +245,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         umdActivated = false;
@@ -285,7 +285,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         hleUmdWaitDriveStat(processor, wantedStat, false, false, 0);
@@ -303,7 +303,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         hleUmdWaitDriveStat(processor, wantedStat, false, true, timeout);
@@ -321,7 +321,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         hleUmdWaitDriveStat(processor, wantedStat, true, true, timeout);
@@ -343,7 +343,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
                 waitingThread.wait.waitingOnUmd = false;
                 lit.remove();
                 // Return WAIT_CANCELLED.
-                waitingThread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
+                waitingThread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_CANCELLED;
                 // Wakeup thread
                 threadMan.hleChangeThreadState(waitingThread, SceKernelThreadInfo.PSP_THREAD_READY);
             }
@@ -382,7 +382,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(pspUmdInfoAddr)) {
@@ -406,7 +406,7 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;

@@ -180,7 +180,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlInit (threadStack=0x" + Integer.toHexString(threadStack) + ", threadPri=0x" + Integer.toHexString(threadPri) + ", adhocIDAddr=0x" + Integer.toHexString(adhocIDAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(adhocIDAddr)) {
@@ -197,7 +197,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlTerm");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = 0;
@@ -212,7 +212,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlConnect (groupNameAddr=0x" + Integer.toHexString(groupNameAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(groupNameAddr)) {
@@ -233,7 +233,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlCreate (groupNameAddr=0x" + Integer.toHexString(groupNameAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(groupNameAddr)) {
@@ -254,7 +254,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlJoin (scanInfoAddr=0x" + Integer.toHexString(scanInfoAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(scanInfoAddr)) {
@@ -281,7 +281,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlScan");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_SCAN;
@@ -295,7 +295,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlDisconnect");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         adhocctlCurrentState = PSP_ADHOCCTL_STATE_DISCONNECTED;
@@ -312,7 +312,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlAddHandler (adhocctlHandlerAddr=0x" + Integer.toHexString(adhocctlHandlerAddr) + ", adhocctlHandlerArg=0x" + Integer.toHexString(adhocctlHandlerArg) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         AdhocctlHandler adhocctlHandler = new AdhocctlHandler(adhocctlHandlerCount++, adhocctlHandlerAddr, adhocctlHandlerArg);
@@ -329,7 +329,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlDelHandler (adhocctlHandler=0x" + Integer.toHexString(adhocctlHandler) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         adhocctlHandlerMap.remove(adhocctlHandler);
@@ -345,7 +345,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("PARTIAL: sceNetAdhocctlGetState (stateAddr=0x" + Integer.toHexString(stateAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (Memory.isAddressGood(stateAddr)) {

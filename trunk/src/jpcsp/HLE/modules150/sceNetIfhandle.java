@@ -71,7 +71,7 @@ public class sceNetIfhandle implements HLEModule {
                 + ", dropDurationAddr=0x" + Integer.toHexString(dropDurationAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if(Memory.isAddressGood(dropRateAddr) && Memory.isAddressGood(dropDurationAddr)) {
@@ -91,7 +91,7 @@ public class sceNetIfhandle implements HLEModule {
                 + "%, dropDuration=" + dropDuration + "s)");
         
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         netDropRate = dropRate;

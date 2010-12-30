@@ -176,7 +176,7 @@ public class sceDeflt implements HLEModule {
 				
 				if(inflater.getTotalOut() > outBufferLength) {
 					log.warn("sceZlibDecompress : zlib decompress buffer too small inBuffer=0x" + Integer.toHexString(inBufferAddr) + " outLength=" + outBufferLength);
-					cpu.gpr[2] = SceKernelErrors.ERROR_SIZE;
+					cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_SIZE;
 					return;
 				}
 				crc32.update(outBuffer, 0, count);
@@ -185,7 +185,7 @@ public class sceDeflt implements HLEModule {
 				}
 			} catch (DataFormatException e) {
 				log.warn("sceZlibDecompress : malformed zlib stream inBuffer=0x" + Integer.toHexString(inBufferAddr));
-				cpu.gpr[2] = SceKernelErrors.ERROR_FORMAT;
+				cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_FORMAT;
 				return;
 			}
 		}

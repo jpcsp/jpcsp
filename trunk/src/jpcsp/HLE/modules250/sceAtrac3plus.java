@@ -76,7 +76,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!atracIDs.containsKey(atID)) {
@@ -100,7 +100,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!atracIDs.containsKey(atID)) {
@@ -125,7 +125,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (at3IDNum + at3plusIDNum * 2 > 6) {
@@ -169,7 +169,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!atracIDs.containsKey(atID)) {
@@ -225,7 +225,7 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         int atID = 0;

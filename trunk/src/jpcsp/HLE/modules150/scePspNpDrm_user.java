@@ -81,7 +81,7 @@ public class scePspNpDrm_user implements HLEModule {
         log.warn("PARTIAL: sceNpDrmSetLicenseeKey (npDrmKeyAddr=0x" + Integer.toHexString(npDrmKeyAddr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if(Memory.isAddressGood(npDrmKeyAddr)) {
@@ -101,7 +101,7 @@ public class scePspNpDrm_user implements HLEModule {
         log.warn("PARTIAL: sceNpDrmClearLicenseeKey");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         for(int i = 0; i < PSP_NPDRM_KEY_LENGHT; i++) {

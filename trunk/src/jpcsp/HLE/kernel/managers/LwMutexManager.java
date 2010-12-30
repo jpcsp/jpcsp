@@ -16,14 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_NOT_FOUND;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_LOCKED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_RECURSIVE_NOT_ALLOWED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_UNLOCKED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_LWMUTEX_UNLOCK_UNDERFLOW;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_LWMUTEX_NOT_FOUND;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_LWMUTEX_LOCKED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_LWMUTEX_RECURSIVE_NOT_ALLOWED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_LWMUTEX_UNLOCKED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_LWMUTEX_UNLOCK_UNDERFLOW;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_LWMUTEX;
@@ -81,11 +81,11 @@ public class LwMutexManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("LwMutex deleted while we were waiting for it! (timeout expired)");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -93,11 +93,11 @@ public class LwMutexManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -118,7 +118,7 @@ public class LwMutexManager {
                     thread.wait.waitingOnLwMutex &&
                     thread.wait.LwMutex_id == lwmid) {
                 thread.wait.waitingOnLwMutex = false;
-                thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
             }
@@ -206,7 +206,7 @@ public class LwMutexManager {
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
             log.warn(message + " - unknown UID");
-            cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
+            cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
@@ -240,9 +240,9 @@ public class LwMutexManager {
                     threadMan.hleRescheduleCurrentThread(doCallbacks);
                 } else {
                     if ((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) != PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
-                        cpu.gpr[2] = ERROR_LWMUTEX_RECURSIVE_NOT_ALLOWED;
+                        cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_RECURSIVE_NOT_ALLOWED;
                     } else {
-                        cpu.gpr[2] = ERROR_LWMUTEX_LOCKED;
+                        cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_LOCKED;
                     }
                 }
             } else {
@@ -290,7 +290,7 @@ public class LwMutexManager {
         SceKernelLwMutexInfo info = lwMutexMap.remove(uid);
         if (info == null) {
             log.warn("sceKernelDeleteLwMutex unknown UID " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
+            cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         } else {
             mem.write32(workAreaAddr, 0);  // Clear uid.
             cpu.gpr[2] = 0;
@@ -344,13 +344,13 @@ public class LwMutexManager {
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
             log.warn("sceKernelUnlockLwMutex unknown uid");
-            cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
+            cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         } else if (info.lockedCount == 0) {
             log.warn("sceKernelUnlockLwMutex not locked");
-            cpu.gpr[2] = ERROR_LWMUTEX_UNLOCKED;
+            cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_UNLOCKED;
         } else if (info.lockedCount < 0) {
             log.warn("sceKernelUnlockLwMutex underflow");
-            cpu.gpr[2] = ERROR_LWMUTEX_UNLOCK_UNDERFLOW;
+            cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_UNLOCK_UNDERFLOW;
         } else {
             info.lockedCount -= count;
             cpu.gpr[2] = 0;
@@ -373,7 +373,7 @@ public class LwMutexManager {
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
+            cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         } else {
             if (Memory.isAddressGood(addr)) {
                 info.write(mem, addr);
@@ -396,7 +396,7 @@ public class LwMutexManager {
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
+            cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         } else {
             if (Memory.isAddressGood(addr)) {
                 info.write(mem, addr);
@@ -416,7 +416,7 @@ public class LwMutexManager {
             // has been unlocked during the callback execution.
             SceKernelLwMutexInfo info = lwMutexMap.get(wait.LwMutex_id);
             if (info == null) {
-                thread.cpuContext.gpr[2] = ERROR_LWMUTEX_NOT_FOUND;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
                 return false;
             }
 

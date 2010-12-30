@@ -63,7 +63,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	public void sceKernelUnlockLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 		Managers.lwmutex.sceKernelUnlockLwMutex(gpr[4], gpr[5]);
@@ -72,7 +72,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	public void sceKernelLockLwMutexCB(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 		Managers.lwmutex.sceKernelLockLwMutexCB(gpr[4], gpr[5], gpr[6]);
@@ -81,7 +81,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	public void sceKernelLockLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 		Managers.lwmutex.sceKernelLockLwMutex(gpr[4], gpr[5], gpr[6]);
@@ -95,7 +95,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 	public void sceKernelTryLockLwMutex(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 		Managers.lwmutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
@@ -109,7 +109,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            gpr[2] = SceKernelErrors.ERROR_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 		Managers.lwmutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);

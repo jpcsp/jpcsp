@@ -16,13 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MESSAGEBOX_NO_MESSAGE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NOT_FOUND_MESSAGE_BOX;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_NO_MEMORY;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_CANCELLED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_DELETE;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_STATUS_RELEASED;
-import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_MESSAGEBOX_NO_MESSAGE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_MEMORY;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
@@ -77,10 +77,10 @@ public class MbxManager {
 
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
         if (removeWaitingThread(thread)) {
-            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
         } else {
             log.warn("Mbx deleted while we were waiting for it! (timeout expired)");
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -88,11 +88,11 @@ public class MbxManager {
         // Untrack
         if (removeWaitingThread(thread)) {
             // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_WAIT_STATUS_RELEASED;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         } else {
             log.warn("EventFlag deleted while we were waiting for it!");
             // Return WAIT_DELETE
-            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_DELETE;
         }
     }
 
@@ -122,11 +122,11 @@ public class MbxManager {
     }
 
     private void onMbxDeleted(int mbxid) {
-        onMbxDeletedCancelled(mbxid, ERROR_WAIT_DELETE);
+        onMbxDeletedCancelled(mbxid, ERROR_KERNEL_WAIT_DELETE);
     }
 
     private void onMbxCancelled(int mbxid) {
-        onMbxDeletedCancelled(mbxid, ERROR_WAIT_CANCELLED);
+        onMbxDeletedCancelled(mbxid, ERROR_KERNEL_WAIT_CANCELLED);
     }
 
     private void onMbxModified(SceKernelMbxInfo info) {
@@ -202,7 +202,7 @@ public class MbxManager {
             mbxMap.put(info.uid, info);
             cpu.gpr[2] = info.uid;
         } else {
-            cpu.gpr[2] = ERROR_NO_MEMORY;
+            cpu.gpr[2] = ERROR_KERNEL_NO_MEMORY;
         }
     }
 
@@ -216,7 +216,7 @@ public class MbxManager {
         SceKernelMbxInfo info = mbxMap.remove(uid);
         if (info == null) {
             log.warn("sceKernelDeleteMbx unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
         } else {
             cpu.gpr[2] = 0;
             onMbxDeleted(uid);
@@ -234,7 +234,7 @@ public class MbxManager {
         SceKernelMbxInfo info = mbxMap.get(uid);
         if (info == null) {
             log.warn("sceKernelSendMbx unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
         } else {
             if ((info.attr & PSP_MBX_ATTR_MSG_PRIORITY) == PSP_MBX_ATTR_MSG_FIFO) {
                 info.addMsg(mem, msg_addr);
@@ -274,7 +274,7 @@ public class MbxManager {
         SceKernelMbxInfo info = mbxMap.get(uid);
         if (info == null) {
             log.warn("hleKernelReceiveMbx unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (!info.hasMessage()) {
@@ -297,7 +297,7 @@ public class MbxManager {
                     if (log.isDebugEnabled()) {
                         log.debug("hleKernelReceiveMbx has no messages.");
                     }
-                    cpu.gpr[2] = ERROR_MESSAGEBOX_NO_MESSAGE;
+                    cpu.gpr[2] = ERROR_KERNEL_MESSAGEBOX_NO_MESSAGE;
                 }
             } else {
                 // Success, do not reschedule the current thread.
@@ -334,7 +334,7 @@ public class MbxManager {
         SceKernelMbxInfo info = mbxMap.get(uid);
         if (info == null) {
             log.warn("sceKernelCancelReceiveMbx unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
         } else {
             if (Memory.isAddressGood(pnum_addr)) {
                 mem.write32(pnum_addr, info.numWaitThreads);
@@ -355,7 +355,7 @@ public class MbxManager {
         SceKernelMbxInfo info = mbxMap.get(uid);
         if (info == null) {
             log.warn("sceKernelReferMbxStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
+            cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
         } else {
             int maxSize = mem.read32(info_addr);
             info.size = maxSize;
@@ -372,7 +372,7 @@ public class MbxManager {
             // has received a new message during the callback execution.
             SceKernelMbxInfo info = mbxMap.get(wait.Mbx_id);
             if (info == null) {
-                thread.cpuContext.gpr[2] = ERROR_NOT_FOUND_MESSAGE_BOX;
+                thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_MESSAGE_BOX;
                 return false;
             }
 
