@@ -2186,7 +2186,7 @@ public class VfpuState extends FpuState {
         BigInteger exp = BigInteger.valueOf((int) Math.pow(2, 127-imm8));
         BigInteger bn = BigInteger.valueOf((int) v1[0]);
         if(bn.intValue() > 0) {
-            bn.modPow(exp, bn);
+            bn = bn.modPow(exp, bn);
         }
         v1[0] = (bn.floatValue() + (v1[0] < 0.0f ? exp.negate().intValue() : exp.intValue()));
 
