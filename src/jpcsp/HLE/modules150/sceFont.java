@@ -113,6 +113,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     @Override
     public void start() {
+        loadDefaultSystemFont();
         fontLibMap = new HashMap<Integer, FontLib>();
         PGFFilesMap = new HashMap<Integer, PGF>();
         fontLibCount = 0;
@@ -124,19 +125,16 @@ public class sceFont implements HLEModule, HLEStartModule {
     }
     public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
     public static final String fontDirPath = "flash0/font";
-
+    public static final String customFontFile = "debug.jpft";
     public static final int PSP_FONT_PIXELFORMAT_4 = 0; // 2 pixels packed in 1 byte (natural order)
     public static final int PSP_FONT_PIXELFORMAT_4_REV = 1; // 2 pixels packed in 1 byte (reversed order)
     public static final int PSP_FONT_PIXELFORMAT_8 = 2; // 1 pixel in 1 byte
     public static final int PSP_FONT_PIXELFORMAT_24 = 3; // 1 pixel in 3 bytes (RGB)
     public static final int PSP_FONT_PIXELFORMAT_32 = 4; // 1 pixel in 4 bytes (RGBA)
-
     public static final int PSP_FONT_MODE_FILE = 0;
     public static final int PSP_FONT_MODE_MEMORY = 1;
-
     private HashMap<Integer, FontLib> fontLibMap;
     private HashMap<Integer, PGF> PGFFilesMap;
-
     private int fontLibCount;
     private int currentFontHandle;
     private float globalFontHRes = 0.0f;
@@ -153,6 +151,23 @@ public class sceFont implements HLEModule, HLEStartModule {
         allowInternalFonts = status;
     }
 
+    public static void loadDefaultSystemFont() {
+        try {
+            RandomAccessFile raf = new RandomAccessFile(fontDirPath + "/" + customFontFile, "r");
+            raf.skipBytes(32);  // Skip custom header.
+            char[] c = new char[(int) raf.length() - 32];
+            for (int i = 0; i < c.length; i++) {
+                c[i] = (char) (raf.readByte() & 0xFF);
+            }
+            Debug.Font.setDebugFont(c); // Set the internal debug font.
+            Debug.Font.setDebugCharSize(8);
+            Debug.Font.setDebugCharHeight(8);
+            Debug.Font.setDebugCharWidth(8);
+        } catch (Exception e) {
+            // The file was removed from flash0.
+        }
+    }
+
     public int makeFakeLibHandle() {
         return 0xF8F80000 | (fontLibCount++ & 0xFFFF);
     }
@@ -167,8 +182,8 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     protected class FontLib {
 
-    	protected int userDataAddr;
-    	protected int numFonts;
+        protected int userDataAddr;
+        protected int numFonts;
         protected int cacheDataAddr;
         protected int allocFuncAddr;
         protected int freeFuncAddr;
@@ -248,7 +263,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         private void triggerFreeCallback() {
-            if(Memory.isAddressGood(memFontAddr)) {
+            if (Memory.isAddressGood(memFontAddr)) {
                 Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, userDataAddr, memFontAddr);
             }
         }
@@ -258,7 +273,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         private void triggerCloseCallback() {
-            if(fileFontHandle != 0) {
+            if (fileFontHandle != 0) {
                 Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, userDataAddr, fileFontHandle);
             }
         }
@@ -612,7 +627,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                 currentInternalFont.printFont(buffer, (char) charCode);
             } else {
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
-                    xPosI, yPosI, pixelFormat, (char) charCode);
+                        xPosI, yPosI, pixelFormat, (char) charCode);
             }
         }
         cpu.gpr[2] = 0;
@@ -652,14 +667,14 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontExpire = mem.read32(fontStyleAddr + 164);
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceFontFindOptimumFont:"));
-        	log.debug(String.format("  fontH %d, fontV %d", fontH, fontV));
-        	log.debug(String.format("  fontHRes %d, fontVRes %d", fontHRes, fontVRes));
-        	log.debug(String.format("  fontWeight %d, fontFamily %d", fontWeight, fontFamily));
-        	log.debug(String.format("  fontStyle %d, fontStyleSub %d", fontStyle, fontStyleSub));
-        	log.debug(String.format("  fontLanguage %d, fontRegion %d, fontCountry %d", fontLanguage, fontRegion, fontCountry));
-        	log.debug(String.format("  fontName '%s', fontFileName '%s'", fontName, fontFileName));
-        	log.debug(String.format("  fontAttributes %d, fontExpire %d", fontAttributes, fontExpire));
+            log.debug(String.format("sceFontFindOptimumFont:"));
+            log.debug(String.format("  fontH %d, fontV %d", fontH, fontV));
+            log.debug(String.format("  fontHRes %d, fontVRes %d", fontHRes, fontVRes));
+            log.debug(String.format("  fontWeight %d, fontFamily %d", fontWeight, fontFamily));
+            log.debug(String.format("  fontStyle %d, fontStyleSub %d", fontStyle, fontStyleSub));
+            log.debug(String.format("  fontLanguage %d, fontRegion %d, fontCountry %d", fontLanguage, fontRegion, fontCountry));
+            log.debug(String.format("  fontName '%s', fontFileName '%s'", fontName, fontFileName));
+            log.debug(String.format("  fontAttributes %d, fontExpire %d", fontAttributes, fontExpire));
         }
 
         if (!fontLibMap.containsKey(libHandle)) {
@@ -793,7 +808,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                 yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
                 yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
                 if (yPosI < 0) {
-                	yPosI = 0;
+                    yPosI = 0;
                 }
             }
             // If there's an internal font loaded, use it to display the text.
@@ -802,7 +817,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                 currentInternalFont.printFont(buffer, (char) charCode);
             } else {
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
-                    xPosI, yPosI, pixelFormat, (char) charCode);
+                        xPosI, yPosI, pixelFormat, (char) charCode);
             }
         }
         cpu.gpr[2] = 0;
@@ -1115,14 +1130,14 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fontExpire = mem.read32(fontStyleAddr + 164);
 
         if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceFontFindOptimumFont:"));
-        	log.debug(String.format("  fontH %d, fontV %d", fontH, fontV));
-        	log.debug(String.format("  fontHRes %d, fontVRes %d", fontHRes, fontVRes));
-        	log.debug(String.format("  fontWeight %d, fontFamily %d", fontWeight, fontFamily));
-        	log.debug(String.format("  fontStyle %d, fontStyleSub %d", fontStyle, fontStyleSub));
-        	log.debug(String.format("  fontLanguage %d, fontRegion %d, fontCountry %d", fontLanguage, fontRegion, fontCountry));
-        	log.debug(String.format("  fontName '%s', fontFileName '%s'", fontName, fontFileName));
-        	log.debug(String.format("  fontAttributes %d, fontExpire %d", fontAttributes, fontExpire));
+            log.debug(String.format("sceFontFindOptimumFont:"));
+            log.debug(String.format("  fontH %d, fontV %d", fontH, fontV));
+            log.debug(String.format("  fontHRes %d, fontVRes %d", fontHRes, fontVRes));
+            log.debug(String.format("  fontWeight %d, fontFamily %d", fontWeight, fontFamily));
+            log.debug(String.format("  fontStyle %d, fontStyleSub %d", fontStyle, fontStyleSub));
+            log.debug(String.format("  fontLanguage %d, fontRegion %d, fontCountry %d", fontLanguage, fontRegion, fontCountry));
+            log.debug(String.format("  fontName '%s', fontFileName '%s'", fontName, fontFileName));
+            log.debug(String.format("  fontAttributes %d, fontExpire %d", fontAttributes, fontExpire));
         }
 
         if (!fontLibMap.containsKey(libHandle)) {
