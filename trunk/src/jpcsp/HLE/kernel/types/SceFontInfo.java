@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.format.PGF;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules150.sceFont;
 import jpcsp.Memory;
 
@@ -120,11 +119,11 @@ public class SceFontInfo {
         charmap_compr = new int[charmap_compr_len * 4];
         texYSize = 0;
         advancex = fontFile.getMaxAdvance()[0]/16;
-        advancey = fontFile.getMaxAdvance()[1]/16;  
+        advancey = fontFile.getMaxAdvance()[1]/16;
         shadowscale = fontFile.getShadowScale()[0];
         glyphs = new Glyph[n_chars];
         shadowGlyphs = new Glyph[n_chars];
-        
+
         // Texture's variables.
         texWidth = 512;
         texHeight = 512;
@@ -140,7 +139,7 @@ public class SceFontInfo {
 
         // Get shadow char map.
         shadowCharMap = fontFile.getShadowCharMap();
-        
+
         // Get char map.
         int[] id_charmap = fontFile.getCharMap();
         for (int i = 0; i < fontFile.getCharMapLength(); i++) {
@@ -157,7 +156,7 @@ public class SceFontInfo {
         for (int i = 0; i < n_chars; i++) {
             glyphs[i] = getGlyph(fontdata, (charPointerTable[i] * 4 * 8), FONT_PGF_CHARGLYPH, advanceTable[0]);
         }
-        
+
         // Generate shadow glyphs for all chars.
         for (int i = 0; i < n_chars; i++) {
             shadowGlyphs[i] = getGlyph(fontdata, (charPointerTable[i] * 4 * 8), FONT_PGF_SHADOWGLYPH, null);
@@ -226,7 +225,8 @@ public class SceFontInfo {
         }
         long ptr = tmp.ptr * 8;
         if (tmp.w > 0 && tmp.h > 0) {
-            if (((tmp.flags & FONT_PGF_BMP_H_ROWS) != FONT_PGF_BMP_V_ROWS)) {
+            if (((tmp.flags & FONT_PGF_BMP_H_ROWS) != FONT_PGF_BMP_H_ROWS)
+                    || ((tmp.flags & FONT_PGF_BMP_V_ROWS) != FONT_PGF_BMP_V_ROWS)) {
                 if ((texX + tmp.w + 1) > texWidth) {
                     texY += texYSize + 1;
                     texX = 1;
