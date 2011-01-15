@@ -2281,6 +2281,18 @@
 08934220:[A0650000]: sb         $a1, 0($v1)
 08934224:[03E00008]: jr         $ra
 08934228:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+08B73D98:[24C6FFFC]: addiu      $a2, $a2, -4
+08B73D9C:[0A2DCF5C]: j          0x08B73D70
+08B73DA0:[24E70004]: addiu      $a3, $a3, 4
+08B73DA4:[00051200]: sll        $v0, $a1, 0x0008
+08B73DA8:[00A21025]: or         $v0, $a1, $v0
+08B73DAC:[00021C00]: sll        $v1, $v0, 0x0010
+08B73DB0:[000640C2]: srl        $t0, $a2, 0x0003
+08B73DB4:[00431825]: or         $v1, $v0, $v1
+08B73DB8:[1100FFEA]: beq        $t0, $zr, 0x08B73D64
+08B73DBC:[30C60007]: andi       $a2, $a2, 7
+08B73DC0:[0A2DCF54]: j          0x08B73D50
+08B73DC4:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memset">
