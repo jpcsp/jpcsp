@@ -42,6 +42,11 @@ public class SequenceCodeInstruction extends CodeInstruction {
         context.visitCall(context.getCodeBlock().getStartAddress(), getMethodName(context));
     }
 
+	@Override
+	public boolean hasFlags(int flags) {
+		return false;
+	}
+
     public String getMethodName(CompilerContext context) {
         return context.getStaticExecMethodName() + Integer.toHexString(codeSequence.getStartAddress());
     }

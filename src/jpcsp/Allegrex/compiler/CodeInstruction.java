@@ -29,7 +29,7 @@ import org.objectweb.asm.Opcodes;
  *
  */
 public class CodeInstruction {
-	private int address;
+	protected int address;
 	private int opcode;
 	private Instruction insn;
 	private boolean isBranchTarget;
@@ -143,16 +143,12 @@ public class CodeInstruction {
     public void compile(CompilerContext context, MethodVisitor mv) {
         startCompile(context, mv);
 
-        if (context.isNativeCodeSequence()) {
-        	context.compileNativeCodeSequence();
-        } else if (isBranching()) {
+        if (isBranching()) {
 	        compileBranch(context, mv);
 	    } else if (insn == Instructions.JR) {
 	        compileJr(context, mv);
         } else if (insn == Instructions.JALR) {
             compileJalr(context, mv);
-//	    } else if (" ADD ADDU ADDI ADDIU AND ANDI NOR OR ORI XOR XORI SLL SLLV SRA SRAV SRL SRLV ROTR ROTRV SLT SLTI SLTU SLTIU SUB SUBU LUI SEB BITREV WSBH WSBW MOVZ MOVN MAX MIN LW SB SW ".indexOf(" " + insn.name() + " ") >= 0) {
-//    		context.compileInterpreterInstruction();
 	    } else {
 		    insn.compile(context, getOpcode());
 	    }
