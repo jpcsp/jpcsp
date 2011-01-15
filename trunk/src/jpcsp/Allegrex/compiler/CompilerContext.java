@@ -82,7 +82,6 @@ public class CompilerContext implements ICompilerContext {
     private boolean hiloPrepared = false;
     private int methodMaxInstructions = 3000;
     private NativeCodeManager nativeCodeManager;
-    private NativeCodeSequence nativeCodeSequence = null;
     private final VfpuPfxSrcState vfpuPfxsState = new VfpuPfxSrcState();
     private final VfpuPfxSrcState vfpuPfxtState = new VfpuPfxSrcState();
     private final VfpuPfxDstState vfpuPfxdState = new VfpuPfxDstState();
@@ -117,6 +116,7 @@ public class CompilerContext implements ICompilerContext {
 	        addFastSyscall(0x82BC5777); // sceKernelGetSystemTimeWide
 	        addFastSyscall(0x369ED59D); // sceKernelGetSystemTimeLow
 	        addFastSyscall(0xB5F6DC87); // sceMpegRingbufferAvailableSize
+	        addFastSyscall(0xE0D68148); // sceGeListUpdateStallAddr
         }
     }
 
@@ -138,6 +138,10 @@ public class CompilerContext implements ICompilerContext {
 
     public void setCodeBlock(CodeBlock codeBlock) {
         this.codeBlock = codeBlock;
+    }
+
+    public NativeCodeManager getNativeCodeManager() {
+    	return nativeCodeManager;
     }
 
     private void loadGpr() {
@@ -744,6 +748,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void endSequenceMethod() {
+    	flushInstructionCount(false, true);
         mv.visitInsn(Opcodes.RETURN);
     }
 
@@ -874,8 +879,6 @@ public class CompilerContext implements ICompilerContext {
 	    	loadImm(codeInstruction.getAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debuggerName, "(I)V");
 	    }
-
-	    nativeCodeSequence = nativeCodeManager.getNativeCodeSequence(getCodeInstruction(), getCodeBlock());
 
 	    if (!isNonBranchingCodeSequence(codeInstruction)) {
 	    	startNonBranchingCodeSequence();
@@ -1557,10 +1560,6 @@ public class CompilerContext implements ICompilerContext {
         mv.visitInsn(Opcodes.IRETURN);
     }
 
-	public boolean isNativeCodeSequence() {
-		return nativeCodeSequence != null;
-	}
-
 	private void visitNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
     	StringBuilder methodSignature = new StringBuilder("(");
     	int numberParameters = nativeCodeSequence.getNumberParameters();
@@ -1587,14 +1586,7 @@ public class CompilerContext implements ICompilerContext {
 	    }
 	}
 
-	public void compileNativeCodeSequence() {
-	    if (nativeCodeSequence == null) {
-	    	return;
-	    }
-
-    	int numOpcodes = nativeCodeSequence.getNumOpcodes();
-	    skipInstructions(numOpcodes - 1, true);
-
+	public void compileNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
 	    visitNativeCodeSequence(nativeCodeSequence);
 
 	    if (nativeCodeSequence.isReturning()) {
@@ -1604,7 +1596,7 @@ public class CompilerContext implements ICompilerContext {
 	    }
 
 	    // Replacing the whole CodeBlock?
-	    if (numOpcodes == getCodeBlock().getLength()) {
+	    if (getCodeBlock().getLength() == 1) {
         	nativeCodeManager.setCompiledNativeCodeBlock(getCodeBlock().getStartAddress(), nativeCodeSequence);
 
         	// Be more verbose when Debug enabled
@@ -1615,14 +1607,13 @@ public class CompilerContext implements ICompilerContext {
 	        }
 	    } else {
         	// Be more verbose when Debug enabled
+	    	int endAddress = getCodeInstruction().getAddress() + (nativeCodeSequence.getNumOpcodes() - 1) * 4;
 	    	if (Compiler.log.isDebugEnabled()) {
-		    	Compiler.log.debug(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code %s", getCodeInstruction().getAddress(), getCodeInstruction().getAddress() + (numOpcodes - 1) * 4, nativeCodeSequence));
+		    	Compiler.log.debug(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code %s", getCodeInstruction().getAddress(), endAddress, nativeCodeSequence));
 	        } else if (Compiler.log.isInfoEnabled()) {
-		    	Compiler.log.info(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code '%s'", getCodeInstruction().getAddress(), getCodeInstruction().getAddress() + (numOpcodes - 1) * 4, nativeCodeSequence.getName()));
+		    	Compiler.log.info(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code '%s'", getCodeInstruction().getAddress(), endAddress, nativeCodeSequence.getName()));
 	    	}
 	    }
-
-	    nativeCodeSequence = null;
 	}
 
 	public int getNumberInstructionsToBeSkipped() {

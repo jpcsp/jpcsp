@@ -1263,7 +1263,7 @@ public class VideoEngine {
 
     private void executeCommandUNKNOWN() {
         if (isLogWarnEnabled) {
-            log.warn(String.format("Unknown/unimplemented video command [%s]%s", helper.getCommandString(command), getArgumentLog(normalArgument)));
+            log.warn(String.format("Unknown/unimplemented video command [%s]%s at 0x%08X", helper.getCommandString(command), getArgumentLog(normalArgument), currentList.pc - 4));
         }
     }
 

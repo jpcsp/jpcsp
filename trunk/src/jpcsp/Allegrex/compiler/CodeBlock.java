@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.ListIterator;
 
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -187,6 +190,7 @@ public class CodeBlock {
         CodeSequence currentCodeSequence = null;
 
         int nextAddress = 0;
+        final int sequenceMaxInstructionsWithDelay = sequenceMaxInstructions - 1;
         for (CodeInstruction codeInstruction : codeInstructions) {
             int address = codeInstruction.getAddress();
             if (address < nextAddress) {
@@ -208,9 +212,17 @@ public class CodeBlock {
                 } else {
                     if (currentCodeSequence == null) {
                         currentCodeSequence = new CodeSequence(address);
-                    } else if (currentCodeSequence.getLength() >= sequenceMaxInstructions) {
-                        codeSequences.add(currentCodeSequence);
-                        currentCodeSequence = new CodeSequence(address);
+                    } else if (currentCodeSequence.getLength() >= sequenceMaxInstructionsWithDelay) {
+                    	boolean doSplit = false;
+                		if (currentCodeSequence.getLength() >= sequenceMaxInstructions) {
+                			doSplit = true;
+                		} else if (codeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+                			doSplit = true;
+                		}
+                    	if (doSplit) {
+                            codeSequences.add(currentCodeSequence);
+                            currentCodeSequence = new CodeSequence(address);
+                    	}
                     }
                     currentCodeSequence.setEndAddress(address);
                 }
@@ -278,8 +290,32 @@ public class CodeBlock {
         }
     }
 
+    private void scanNativeCodeSequences(CompilerContext context) {
+    	NativeCodeManager nativeCodeManager = context.getNativeCodeManager();
+    	for (ListIterator<CodeInstruction> lit = codeInstructions.listIterator(); lit.hasNext(); ) {
+    		CodeInstruction codeInstruction = lit.next();
+    		NativeCodeSequence nativeCodeSequence = nativeCodeManager.getNativeCodeSequence(codeInstruction, this);
+    		if (nativeCodeSequence != null) {
+    			NativeCodeInstruction nativeCodeInstruction = new NativeCodeInstruction(codeInstruction.getAddress(), nativeCodeSequence);
+    			if (nativeCodeSequence.isWholeCodeBlock()) {
+    				codeInstructions.clear();
+    				codeInstructions.add(nativeCodeInstruction);
+    			} else {
+	    			lit.remove();
+	    			lit.add(nativeCodeInstruction);
+	    			for (int i = nativeCodeSequence.getNumOpcodes() - 1; i > 0 && lit.hasNext(); i--) {
+	    				lit.next();
+	    				lit.remove();
+	    			}
+    			}
+    		}
+    	}
+    }
+
     private void prepare(CompilerContext context, int methodMaxInstructions) {
-        if (codeInstructions.size() > methodMaxInstructions) {
+    	scanNativeCodeSequences(context);
+
+    	if (codeInstructions.size() > methodMaxInstructions) {
             if (Compiler.log.isInfoEnabled()) {
                 Compiler.log.info("Splitting " + getClassName() + " (" + codeInstructions.size() + "/" + methodMaxInstructions + ")");
             }
