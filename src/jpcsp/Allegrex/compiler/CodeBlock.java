@@ -186,6 +186,14 @@ public class CodeBlock {
         mv.visitEnd();
     }
 
+    private void addCodeSequence(List<CodeSequence> codeSequences, CodeSequence codeSequence) {
+    	if (codeSequence != null) {
+    		if (codeSequence.getLength() > 1) {
+    			codeSequences.add(codeSequence);
+    		}
+    	}
+    }
+
     private void generateCodeSequences(List<CodeSequence> codeSequences, int sequenceMaxInstructions) {
         CodeSequence currentCodeSequence = null;
 
@@ -197,17 +205,13 @@ public class CodeBlock {
                 // Skip it
             } else {
                 if (codeInstruction.hasFlags(Instruction.FLAG_CANNOT_BE_SPLIT)) {
-                    if (currentCodeSequence != null) {
-                        codeSequences.add(currentCodeSequence);
-                    }
+                	addCodeSequence(codeSequences, currentCodeSequence);
                     currentCodeSequence = null;
                     if (codeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
                         nextAddress = address + 8;
                     }
                 } else if (codeInstruction.isBranchTarget()) {
-                    if (currentCodeSequence != null) {
-                        codeSequences.add(currentCodeSequence);
-                    }
+                	addCodeSequence(codeSequences, currentCodeSequence);
                     currentCodeSequence = new CodeSequence(address);
                 } else {
                     if (currentCodeSequence == null) {
@@ -220,7 +224,7 @@ public class CodeBlock {
                 			doSplit = true;
                 		}
                     	if (doSplit) {
-                            codeSequences.add(currentCodeSequence);
+                        	addCodeSequence(codeSequences, currentCodeSequence);
                             currentCodeSequence = new CodeSequence(address);
                     	}
                     }
@@ -229,9 +233,7 @@ public class CodeBlock {
             }
         }
 
-        if (currentCodeSequence != null) {
-            codeSequences.add(currentCodeSequence);
-        }
+        addCodeSequence(codeSequences, currentCodeSequence);
     }
 
     private CodeSequence findCodeSequence(CodeInstruction codeInstruction, List<CodeSequence> codeSequences, CodeSequence currentCodeSequence) {
