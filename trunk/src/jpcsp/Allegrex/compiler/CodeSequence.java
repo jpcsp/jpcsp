@@ -26,6 +26,7 @@ public class CodeSequence implements Comparable<CodeSequence> {
 
     public CodeSequence(int startAddress) {
         this.startAddress = startAddress;
+        this.endAddress = startAddress;
     }
 
     public int getStartAddress() {
@@ -41,7 +42,7 @@ public class CodeSequence implements Comparable<CodeSequence> {
     }
 
     public int getLength() {
-        return (endAddress - startAddress + 1) / 4;
+        return ((endAddress - startAddress) >> 2) + 1;
     }
 
     public boolean isInside(int address) {
