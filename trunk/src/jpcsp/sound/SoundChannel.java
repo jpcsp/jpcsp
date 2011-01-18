@@ -48,7 +48,7 @@ public class SoundChannel {
 	private static final int BUFFER_SIZE_IN_MILLIS = 100;
 	public  static final int MAX_VOLUME = 0x8000;
 	private static final int DEFAULT_VOLUME = MAX_VOLUME;
-	private static final int DEFAULT_SAMPLE_RATE = 48000;
+	private static final int DEFAULT_SAMPLE_RATE = 44100;
 	private SoundBufferManager soundBufferManager;
 	private int index;
 	private boolean reserved;
