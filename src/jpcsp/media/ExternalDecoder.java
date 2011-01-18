@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Vector;
 
 import org.apache.log4j.Logger;
 
@@ -48,6 +49,8 @@ public class ExternalDecoder {
     private static boolean dumpEncodedFile = false;
     private static boolean dumpPmfFile = false;
     private static boolean dumpAudioStreamFile = false;
+    private static boolean keepOmaFile = true;
+    private static boolean scanAllFileMagicOffsets = true;
 
     public ExternalDecoder() {
     	init();
@@ -92,20 +95,38 @@ public class ExternalDecoder {
     	return enabled;
     }
 
-    private boolean executeExternalDecoder(String inputFile, String outputFile) {
+    private boolean executeExternalDecoder(String inputFileName, String outputFileName, boolean keepInputFile) {
+    	boolean decoded = executeExternalDecoder(inputFileName, outputFileName);
+
+    	if (!keepInputFile) {
+    		File inputFile = new File(inputFileName);
+    		inputFile.delete();
+    	}
+
+    	File outputFile = new File(outputFileName);
+    	if (outputFile.canRead() && outputFile.length() == 0) {
+			// Only an empty file has been generated, the file could not be converted
+    		outputFile.delete();
+    		decoded = false;
+    	}
+
+    	return decoded;
+    }
+
+    private boolean executeExternalDecoder(String inputFileName, String outputFileName) {
 		String[] cmd;
 		if (extAudioDecoder.toString().endsWith(".bat")) {
 			cmd = new String[] {
 					"cmd",
 					"/C",
 					extAudioDecoder.toString(),
-					inputFile,
-					outputFile };
+					inputFileName,
+					outputFileName };
 		} else {
 			cmd = new String[] {
 					extAudioDecoder.toString(),
-					inputFile,
-					outputFile };
+					inputFileName,
+					outputFileName };
 		}
 		try {
 			Process extAudioDecodeProcess = Runtime.getRuntime().exec(cmd);
@@ -130,7 +151,7 @@ public class ExternalDecoder {
 		return true;
     }
 
-    public void decodeExtAudio(byte[] mpegData, int mpegFileSize, int mpegOffset) {
+    public boolean decodeExtAudio(byte[] mpegData, int mpegFileSize, int mpegOffset) {
     	if (dumpPmfFile) {
 			try {
 				new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
@@ -138,7 +159,7 @@ public class ExternalDecoder {
 				pmfOut.write(mpegData);
 				pmfOut.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				log.error(e);
 			}
     	}
 
@@ -146,38 +167,45 @@ public class ExternalDecoder {
 		mpegDemux.demux(false, true);
 
 		ByteBuffer audioStream = mpegDemux.getAudioStream();
-		if (audioStream != null) {
-			if (dumpAudioStreamFile) {
-				try {
-					new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
-					FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, "audio"));
-					pmfOut.getChannel().write(audioStream);
-					audioStream.rewind();
-					pmfOut.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+		if (audioStream == null) {
+			return false;
+		}
 
-			ByteBuffer omaBuffer = OMAFormat.convertStreamToOMA(audioStream); 
-			if (omaBuffer != null) {
-				try {
-					new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
-					String encodedFile = MediaEngine.getExtAudioPath(mpegFileSize, "oma");
-					FileOutputStream os = new FileOutputStream(encodedFile);
-					os.getChannel().write(omaBuffer);
-					os.close();
-	
-					String decodedFile = MediaEngine.getExtAudioPath(mpegFileSize, "wav");
-					if (!executeExternalDecoder(encodedFile, decodedFile)) {
-						new File(encodedFile).delete();
-					}
-				} catch (IOException e) {
-					// Ignore Exception
-					log.error(e);
-				}
+		if (dumpAudioStreamFile) {
+			try {
+				new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
+				FileOutputStream pmfOut = new FileOutputStream(MediaEngine.getExtAudioPath(mpegFileSize, "audio"));
+				pmfOut.getChannel().write(audioStream);
+				audioStream.rewind();
+				pmfOut.close();
+			} catch (IOException e) {
+				log.error(e);
 			}
 		}
+
+		ByteBuffer omaBuffer = OMAFormat.convertStreamToOMA(audioStream); 
+		if (omaBuffer == null) {
+			return false;
+		}
+
+		try {
+			new File(MediaEngine.getExtAudioBasePath(mpegFileSize)).mkdirs();
+			String encodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, "oma");
+			FileOutputStream os = new FileOutputStream(encodedFileName);
+			os.getChannel().write(omaBuffer);
+			os.close();
+
+			String decodedFileName = MediaEngine.getExtAudioPath(mpegFileSize, "wav");
+
+			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
+				return false;
+			}
+		} catch (IOException e) {
+			log.error(e);
+			return false;
+		}
+
+		return true;
     }
 
     public void decodeExtAudio(int address, int mpegFileSize, int mpegOffset, byte[] bufferHeaderData) {
@@ -233,20 +261,11 @@ public class ExternalDecoder {
 
 			new File(AtracCodec.getBaseDirectory()).mkdirs();
 			String encodedFileName = getAtracAudioPath(address, atracFileSize, "oma");
-			File encodedFile = new File(encodedFileName);
 			FileOutputStream os = new FileOutputStream(encodedFileName);
 			os.getChannel().write(omaBuffer);
 			os.close();
 
-			if (!executeExternalDecoder(encodedFileName, decodedFileName)) {
-				encodedFile.delete();
-				return null;
-			}
-
-			if (decodedFile.canRead() && decodedFile.length() == 0) {
-				// Only an empty file has been generated, the file could not be converted
-				decodedFile.delete();
-				encodedFile.delete();
+			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
 				return null;
 			}
     	} catch (IOException e) {
@@ -413,12 +432,7 @@ public class ExternalDecoder {
 			return fileData;
     	}
 
-    	private boolean isFileMagic(int address) {
-    		if (!Memory.isAddressGood(address)) {
-    			return false;
-    		}
-
-    		int magicValue = Memory.getInstance().read32(address);
+    	private static boolean isFileMagicValue(int magicValue) {
     		for (int i = 0; i < fileMagics.length; i++) {
     			if (magicValue == fileMagics[i]) {
     				return true;
@@ -428,28 +442,110 @@ public class ExternalDecoder {
     		return false;
     	}
 
-    	private int getFileMagicOffset(int address, int size) {
-    		for (int i = 0; i < size; i += UmdIsoFile.sectorLength) {
-    			if (isFileMagic(address + i)) {
-    				return i;
-    			}
+    	/**
+    	 * Search for the first File Magic into a specified memory buffer.
+    	 * For performance reason, file magic are checked only at the beginning
+    	 * of UMD sectors (i.e. every 2048 bytes).
+    	 * 
+    	 * @param address the base address where to start searching
+    	 * @param size    the length of the memory buffer where to search
+    	 * @return        the offset of the first file magic value, relative to
+    	 *                the start address, or -1 if no file magic was found.
+    	 */
+    	private static int getFirstFileMagicOffset(int address, int size) {
+    		if (Memory.isAddressGood(address)) {
+	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, size, 4);
+	    		final int stepSize = UmdIsoFile.sectorLength;
+	    		final int skip = (stepSize / 4) - 1;
+	    		for (int i = 0; i < size; i += stepSize) {
+	    			int magicValue = memoryReader.readNext();
+	    			if (isFileMagicValue(magicValue)) {
+	    				return i;
+	    			}
+	    			memoryReader.skip(skip);
+	    		}
     		}
 
     		return -1;
+    	}
+
+    	/**
+    	 * Search for all the File Magic into a specified memory buffer.
+    	 * For performance reason, file magics are checked only every 16 bytes.
+    	 * 
+    	 * @param address the base address where to start searching
+    	 * @param size    the length of the memory buffer where to search
+    	 * @return        the list of offsets of the file magic values found,
+    	 *                relative to the start address.
+    	 *                Returns null if no file magic was found.
+    	 */
+    	private static int[] getAllFileMagicOffsets(int address, int size) {
+    		if (!Memory.isAddressGood(address)) {
+    			return null;
+    		}
+
+    		Vector<Integer> magicOffsets = new Vector<Integer>();
+
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, size, 4);
+    		final int stepSize = 16;
+    		final int skip = (stepSize / 4) - 1;
+    		for (int i = 0; i < size; i += stepSize) {
+    			int magicValue = memoryReader.readNext();
+    			if (isFileMagicValue(magicValue)) {
+    				magicOffsets.add(i);
+    			}
+    			memoryReader.skip(skip);
+    		}
+
+    		if (magicOffsets.size() <= 0) {
+    			return null;
+    		}
+
+    		int[] fileMagicOffsets = new int[magicOffsets.size()];
+    		for (int i = 0; i < fileMagicOffsets.length; i++) {
+    			fileMagicOffsets[i] = magicOffsets.get(i);
+    		}
+
+    		return fileMagicOffsets;
     	}
 
     	@Override
 		public void sceIoRead(int result, int uid, int data_addr, int size,	int bytesRead, long position, SeekableDataInput dataInput) {
 			if (result >= 0 && dataInput != null) {
 				ReadInfo readInfo = readInfos.get(data_addr);
-				int magicOffset = getFileMagicOffset(data_addr, bytesRead);
-				if (magicOffset >= 0) {
-					readInfo = new ReadInfo(data_addr + magicOffset, bytesRead - magicOffset, dataInput, position + magicOffset);
-					readInfos.put(data_addr + magicOffset, readInfo);
-					readMagics.put(getMagicHash(data_addr), readInfo);
-				} else if (readInfo == null) {
-					readInfo = new ReadInfo(data_addr, bytesRead, dataInput, position);
-					readInfos.put(data_addr, readInfo);
+				boolean processed = false;
+
+				if (scanAllFileMagicOffsets) {
+					// Accurate but also time intensive search method
+					int[] magicOffsets = getAllFileMagicOffsets(data_addr, bytesRead);
+					if (magicOffsets != null && magicOffsets.length > 0) {
+						for (int i = 0; i < magicOffsets.length; i++) {
+							int magicOffset = magicOffsets[i];
+							int nextMagicOffset = i + 1 < magicOffsets.length ? magicOffsets[i + 1] : bytesRead;
+							int magicAddress = data_addr + magicOffset;
+							readInfo = new ReadInfo(magicAddress, nextMagicOffset - magicOffset, dataInput, position + magicOffset);
+							readInfos.put(magicAddress, readInfo);
+							readMagics.put(getMagicHash(magicAddress), readInfo);
+						}
+						processed = true;
+					}
+				} else {
+					// Simple but fast search method
+					int magicOffset = getFirstFileMagicOffset(data_addr, bytesRead);
+					if (magicOffset >= 0) {
+						int magicAddress = data_addr + magicOffset;
+						readInfo = new ReadInfo(magicAddress, bytesRead - magicOffset, dataInput, position + magicOffset);
+						readInfos.put(magicAddress, readInfo);
+						readMagics.put(getMagicHash(magicAddress), readInfo);
+						processed = true;
+					}
+				}
+
+				if (!processed) {
+					if (readInfo == null) {
+						readInfo = new ReadInfo(data_addr, bytesRead, dataInput, position);
+						readInfos.put(data_addr, readInfo);
+					}
 				}
 			}
 		}

@@ -514,7 +514,7 @@ public class MediaEngine {
         String supportedFormats[] = {"wav", "mp3", "at3", "raw", "wma", "flac", "m4a"};
         for (int i = 0; i < supportedFormats.length; i++) {
             File f = new File(getExtAudioPath(bufferSize, supportedFormats[i]));
-            if (f.exists()) {
+            if (f.canRead() && f.length() > 0) {
             	return f;
             }
         }
