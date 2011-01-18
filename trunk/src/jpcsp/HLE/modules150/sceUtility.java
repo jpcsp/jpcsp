@@ -45,6 +45,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Resource;
@@ -727,7 +728,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     protected void showSavedataList(final String[] saveNames) {
-        final JDialog mainDisplay = new JDialog();
+    	// Pause the PSP clock when displaying the dialog window
+    	Emulator.getClock().pause();
+
+    	final JDialog mainDisplay = new JDialog();
         mainDisplay.setTitle("Savedata List");
         mainDisplay.setSize(Settings.getInstance().readWindowSize(windowNameForSettings, 400, 401));
         mainDisplay.setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
@@ -794,6 +798,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
         Settings.getInstance().writeWindowPos(windowNameForSettings, mainDisplay.getLocation());
         Settings.getInstance().writeWindowSize(windowNameForSettings, mainDisplay.getSize());
+
+        Emulator.getClock().resume();
     }
 
     public void sceUtilityGameSharingInitStart(Processor processor) {
