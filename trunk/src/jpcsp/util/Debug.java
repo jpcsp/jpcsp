@@ -46,7 +46,7 @@ public class Debug {
         	Modules.log.info(String.format("printFontbuffer '%c' (%d, %d)", c, x, y));
         }
 
-        if (sceFont.getAlternateChar() * 8 >= Font.font.length) {
+        if (sceFont.getAlternateChar() * Font.charSize >= Font.font.length) {
             sceFont.setAlternateChar('?');
         }
         int fontBaseIndex = c * Font.charSize;
@@ -69,14 +69,12 @@ public class Debug {
     }
 
     private static boolean isFontCharNull(int index) {
-        boolean res = true;
-        for(int i = 0; i < Font.charWidth; i++) {
-            if(Font.font[index] != 0x00) {
-                res = false;
-                break;
+        for (int i = 0; i < Font.charHeight; i++) {
+            if (Font.font[index + i] != 0x00) {
+            	return false;
             }
         }
-        return res;
+        return true;
     }
 
     private static void setFontPixel(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelColor, int pixelformat) {
