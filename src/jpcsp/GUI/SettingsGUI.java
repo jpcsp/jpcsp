@@ -124,7 +124,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
         ignoreUnmappedImports.setSelected(enabled);
 
-        int methodMaxInstructions = Settings.getInstance().readInt("emu.compiler.methodMaxInstructions");
+        int methodMaxInstructions = Settings.getInstance().readInt("emu.compiler.methodMaxInstructions", 3000);
         methodMaxInstructionsBox.setSelectedItem(Integer.toString(methodMaxInstructions));
 
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
