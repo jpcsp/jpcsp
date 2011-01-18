@@ -65,26 +65,6 @@ public class NativeCodeManager {
 		}
 	}
 
-	private int getParameterValue(String valueString) {
-		if (valueString == null || valueString.length() <= 0) {
-			return 0;
-		}
-
-		for (int i = 0; i < Common.gprNames.length; i++) {
-			if (Common.gprNames[i].equals(valueString)) {
-				return i;
-			}
-		}
-
-		try {
-			return Integer.parseInt(valueString);
-		} catch (NumberFormatException e) {
-			Compiler.log.error(e);
-		}
-
-		return 0;
-	}
-
 	private String getContent(Node node) {
 		if (node.hasChildNodes()) {
 			return getContent(node.getChildNodes());
@@ -128,7 +108,11 @@ public class NativeCodeManager {
 			return;
 		}
 
-		Pattern codeInstructionPattern = Pattern.compile(".*\\[(\\p{XDigit}+)\\].*");
+		Pattern codeInstructionPattern = Pattern.compile("\\s*((\\w+)\\s*:?\\s*)?\\[(\\p{XDigit}+)(/(\\p{XDigit}+))?\\].*");
+		final int labelGroup = 2;
+		final int opcodeGroup = 3;
+		final int opcodeMaskGroup = 5;
+
 		try {
 			while (true) {
 				String line = reader.readLine();
@@ -141,19 +125,68 @@ public class NativeCodeManager {
 					try {
 						Matcher codeInstructionMatcher = codeInstructionPattern.matcher(line);
 						int opcode = 0;
+						int mask = 0xFFFFFFFF;
+						String label = null;
 						if (codeInstructionMatcher.matches()) {
-							opcode = Utilities.parseAddress(codeInstructionMatcher.group(1));
+							opcode = Utilities.parseAddress(codeInstructionMatcher.group(opcodeGroup));
+							String opcodeMaskString = codeInstructionMatcher.group(opcodeMaskGroup);
+							if (opcodeMaskString != null) {
+								mask = Utilities.parseAddress(opcodeMaskString);
+							}
+							label = codeInstructionMatcher.group(labelGroup);
 						} else {
 							opcode = Utilities.parseAddress(line.trim());
 						}
 
-						nativeCodeSequence.addOpcode(opcode);
+						nativeCodeSequence.addOpcode(opcode, mask, label);
 					} catch (NumberFormatException e) {
 						Compiler.log.error(e);
 					}
 				}
 			}
 		} catch (IOException e) {
+			Compiler.log.error(e);
+		}
+	}
+
+	private void setParameter(NativeCodeSequence nativeCodeSequence, int parameter, String valueString) {
+		if (valueString == null || valueString.length() <= 0) {
+			nativeCodeSequence.setParameter(parameter, 0, false);
+			return;
+		}
+
+		for (int i = 0; i < Common.gprNames.length; i++) {
+			if (Common.gprNames[i].equals(valueString)) {
+				nativeCodeSequence.setParameter(parameter, i, false);
+				return;
+			}
+		}
+
+		for (int i = 0; i < Common.fprNames.length; i++) {
+			if (Common.fprNames[i].equals(valueString)) {
+				nativeCodeSequence.setParameter(parameter, i, false);
+				return;
+			}
+		}
+
+		if (valueString.startsWith("@")) {
+			String label = valueString.substring(1);
+			int labelIndex = nativeCodeSequence.getLabelIndex(label);
+			if (labelIndex >= 0) {
+				nativeCodeSequence.setParameter(parameter, labelIndex, true);
+				return;
+			}
+		}
+
+		try {
+			int value;
+			if (valueString.startsWith("0x")) {
+				value = Integer.parseInt(valueString.substring(2), 16);
+			} else {
+				value = Integer.parseInt(valueString);
+			}
+			nativeCodeSequence.setParameter(parameter, value, false);
+		} catch (NumberFormatException e) {
 			Compiler.log.error(e);
 		}
 	}
@@ -185,15 +218,6 @@ public class NativeCodeManager {
 			nativeCodeSequence.setWholeCodeBlock(Boolean.parseBoolean(wholeCodeBlockString));
 		}
 
-		String parametersList = getContent(element.getElementsByTagName("Parameters"));
-		if (parametersList != null) {
-			String[] parameters = parametersList.split(" *, *");
-			for (int parameter = 0; parameters != null && parameter < parameters.length; parameter++) {
-				int value = getParameterValue(parameters[parameter]);
-				nativeCodeSequence.setParameter(parameter, value);
-			}
-		}
-
 		String methodName = getContent(element.getElementsByTagName("Method"));
 		if (methodName != null) {
 			nativeCodeSequence.setMethodName(methodName);
@@ -201,6 +225,15 @@ public class NativeCodeManager {
 
 		String codeInstructions = getContent(element.getElementsByTagName("CodeInstructions"));
 		loadNativeCodeOpcodes(nativeCodeSequence, codeInstructions);
+
+		// The "Parameters" has to be parsed after "CodeInstructions" because they might use them
+		String parametersList = getContent(element.getElementsByTagName("Parameters"));
+		if (parametersList != null) {
+			String[] parameters = parametersList.split(" *, *");
+			for (int parameter = 0; parameters != null && parameter < parameters.length; parameter++) {
+				setParameter(nativeCodeSequence, parameter, parameters[parameter].trim());
+			}
+		}
 
 		addNativeCodeSequence(nativeCodeSequence);
 	}
@@ -220,7 +253,7 @@ public class NativeCodeManager {
 
 	private void addNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
 		if (nativeCodeSequence.getNumOpcodes() > 0) {
-			int firstOpcode = nativeCodeSequence.getOpcodes()[0];
+			int firstOpcode = nativeCodeSequence.getFirstOpcode();
 
 			if (!nativeCodeSequencesByFirstOpcode.containsKey(firstOpcode)) {
 				nativeCodeSequencesByFirstOpcode.put(firstOpcode, new LinkedList<NativeCodeSequence>());
@@ -239,6 +272,7 @@ public class NativeCodeManager {
 
 	private boolean isNativeCodeSequence(NativeCodeSequence nativeCodeSequence, CodeInstruction codeInstruction, CodeBlock codeBlock) {
 		int address = codeInstruction.getAddress();
+		int numOpcodes = nativeCodeSequence.getNumOpcodes();
 
 		// Does this NativeCodeSequence only matching a whole CodeBlock?
 		if (nativeCodeSequence.isWholeCodeBlock()) {
@@ -247,16 +281,14 @@ public class NativeCodeManager {
 				return false;
 			}
 
-			if (codeBlock.getLength() != nativeCodeSequence.getNumOpcodes()) {
+			if (codeBlock.getLength() != numOpcodes) {
 				return false;
 			}
 		}
 
-		int[] opcodes = nativeCodeSequence.getOpcodes();
-		// First Opcode is already matching, start at index 1 (second opcode)
-		for (int i = 1; i < opcodes.length; i++) {
-			CodeInstruction codeInstruction2 = codeBlock.getCodeInstruction(address + i * 4);
-			if (codeInstruction2 == null || codeInstruction2.getOpcode() != opcodes[i]) {
+		for (int i = 0; i < numOpcodes; i++) {
+			CodeInstruction codeInstruction2 = codeBlock.getCodeInstruction(address + (i << 2));
+			if (!nativeCodeSequence.isMatching(i, codeInstruction2)) {
 				return false;
 			}
 		}

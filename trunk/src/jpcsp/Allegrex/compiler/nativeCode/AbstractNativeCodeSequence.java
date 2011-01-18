@@ -84,6 +84,38 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		return getGpr()[7];
 	}
 
+	static protected int getGprT0() {
+		return getGpr()[8];
+	}
+
+	static protected int getGprT1() {
+		return getGpr()[9];
+	}
+
+	static protected int getGprT2() {
+		return getGpr()[10];
+	}
+
+	static protected int getGprT3() {
+		return getGpr()[11];
+	}
+
+	static protected int getStackParam0() {
+		return getMemory().read32(getGprSp());
+	}
+
+	static protected int getStackParam1() {
+		return getMemory().read32(getGprSp() + 4);
+	}
+
+	static protected int getStackParam2() {
+		return getMemory().read32(getGprSp() + 8);
+	}
+
+	static protected int getGprSp() {
+		return getGpr()[29];
+	}
+
 	static protected void setGprV0(int v0) {
 		getGpr()[2] = v0;
 	}
@@ -109,6 +141,10 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		getFpr()[0] = f0;
 	}
 
+	static protected float getFRegisterValue(int register) {
+		return getFpr()[register];
+	}
+
 	static protected int getStrlen(int srcAddr) {
 		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr, 1);
 
@@ -124,5 +160,9 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 		jpcsp.Allegrex.compiler.Compiler.log.warn("getStrlen: null MemoryReader");
 
 		return 0;
+	}
+
+	static protected int getRelocatedAddress(int address1, int address2) {
+		return (address1 << 16) + (short) address2;
 	}
 }

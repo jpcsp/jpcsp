@@ -109,6 +109,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
     public int displayLastWaitVcount;
 
+    public long javaThreadId = -1;
+    public long javaThreadCpuTimeNanos = -1;
+
     // Callbacks, only 1 of each type can be registered per thread.
     public final static int THREAD_CALLBACK_UMD          = 0;
     public final static int THREAD_CALLBACK_IO           = 1;

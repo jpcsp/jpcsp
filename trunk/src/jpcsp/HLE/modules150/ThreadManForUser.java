@@ -45,6 +45,8 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_THREAD_END;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.writeStringZ;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -474,6 +476,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         dispatchThreadEnabled = true;
         needThreadReschedule = true;
+
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+		if (threadMXBean.isThreadCpuTimeSupported()) {
+			threadMXBean.setThreadCpuTimeEnabled(true);
+		}
     }
 
     @Override
@@ -1127,7 +1134,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         	needThreadReschedule = true;
         	// When a running thread has to yield to a thread having a higher
         	// priority, the thread stays in front of the ready threads having
-        	// no same priority (no yielding to threads having the same priority).
+        	// the same priority (no yielding to threads having the same priority).
         	addReadyThreadsFirst = true;
         }
 
@@ -4219,6 +4226,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         public long allCycles = 0;
         public long startTimeMillis;
         public long endTimeMillis;
+        public long allCpuMillis = 0;
 
         public Statistics() {
             startTimeMillis = System.currentTimeMillis();
@@ -4239,6 +4247,19 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             threads.add(threadStatistics);
 
             allCycles += thread.runClocks;
+
+            if (thread.javaThreadId > 0) {
+	            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+	            if (threadMXBean.isThreadCpuTimeEnabled()) {
+	            	long threadCpuTimeNanos = thread.javaThreadCpuTimeNanos;
+	            	if (threadCpuTimeNanos < 0) {
+	            		threadCpuTimeNanos = threadMXBean.getThreadCpuTime(thread.javaThreadId);
+	            	}
+	            	if (threadCpuTimeNanos > 0) {
+	            		allCpuMillis += threadCpuTimeNanos / 1000000L;
+	            	}
+	            }
+            }
         }
 
         private static class ThreadStatistics implements Comparable<ThreadStatistics> {

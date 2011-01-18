@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.Stack;
 import java.util.concurrent.Semaphore;
 
@@ -33,6 +35,7 @@ public class RuntimeThread extends Thread {
 
 	public RuntimeThread(SceKernelThreadInfo threadInfo) {
 		this.threadInfo = threadInfo;
+		threadInfo.javaThreadId = getId();
 		isInSyscall = false;
 		if (RuntimeContext.log.isDebugEnabled()) {
 			setName(threadInfo.name + "_" + Integer.toHexString(threadInfo.uid));
@@ -46,6 +49,11 @@ public class RuntimeThread extends Thread {
 	public void run() {
 		RuntimeContext.runThread(this);
 		setInSyscall(true);
+
+		ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+		if (threadMXBean.isThreadCpuTimeEnabled()) {
+			threadInfo.javaThreadCpuTimeNanos = threadMXBean.getCurrentThreadCpuTime();
+		}
 	}
 
 	public void suspendRuntimeExecution() {

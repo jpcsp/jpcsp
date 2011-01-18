@@ -3777,6 +3777,636 @@
 088DD9D0:[F8400000]: sv.q       C000.q, 0($v0)
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="SoundMix">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.SoundMix</Class>
+		<Parameters>$t0,$a3,$t2,$t1,$f12,$f12</Parameters>
+		<Method>mixStereoInMemory</Method>
+		<CodeInstructions><![CDATA[
+0898E020:[460D6032]: c.eq.s     $f12, $f13
+0898E024:[00000000]: nop
+0898E028:[45010008]: bc1t       0x0898E04C
+0898E02C:[85020000]: lh         $v0, 0($t0)
+0898E030:[44827000]: mtc1       $v0, $f14
+0898E034:[468073A0]: cvt.s.w    $f14, $f14
+0898E038:[460C7382]: mul.s      $f14, $f14, $f12
+0898E03C:[4600738D]: trunc.w.s  $f14, $f14
+0898E040:[440B7000]: mfc1       $t3, $f14
+0898E044:[000B1400]: sll        $v0, $t3, 0x0010
+0898E048:[00021403]: sra        $v0, $v0, 0x0010
+0898E04C:[84E30000]: lh         $v1, 0($a3)
+0898E050:[00621021]: addu       $v0, $v1, $v0
+0898E054:[00C2182A]: slt        $v1, $a2, $v0
+0898E058:[14600005]: bne        $v1, $zr, 0x0898E070
+0898E05C:[00C05825]: or         $t3, $a2, $zr <=> move $t3, $a2
+0898E060:[00405825]: or         $t3, $v0, $zr <=> move $t3, $v0
+0898E064:[29628000]: slti       $v0, $t3, -32768
+0898E068:[54400001]: bnel       $v0, $zr, 0x0898E070
+0898E06C:[240B8000]: addiu      $t3, $zr, -32768 <=> li $t3, -32768
+0898E070:[A4EB0000]: sh         $t3, 0($a3)
+0898E074:[460D6032]: c.eq.s     $f12, $f13
+0898E078:[00000000]: nop
+0898E07C:[45010008]: bc1t       0x0898E0A0
+0898E080:[84AB0000]: lh         $t3, 0($a1)
+0898E084:[448B7000]: mtc1       $t3, $f14
+0898E088:[468073A0]: cvt.s.w    $f14, $f14
+0898E08C:[460C7382]: mul.s      $f14, $f14, $f12
+0898E090:[4600738D]: trunc.w.s  $f14, $f14
+0898E094:[440B7000]: mfc1       $t3, $f14
+0898E098:[000B5C00]: sll        $t3, $t3, 0x0010
+0898E09C:[000B5C03]: sra        $t3, $t3, 0x0010
+0898E0A0:[84820000]: lh         $v0, 0($a0)
+0898E0A4:[004B1021]: addu       $v0, $v0, $t3
+0898E0A8:[00C2182A]: slt        $v1, $a2, $v0
+0898E0AC:[14600005]: bne        $v1, $zr, 0x0898E0C4
+0898E0B0:[00C05825]: or         $t3, $a2, $zr <=> move $t3, $a2
+0898E0B4:[00405825]: or         $t3, $v0, $zr <=> move $t3, $v0
+0898E0B8:[29628000]: slti       $v0, $t3, -32768
+0898E0BC:[54400001]: bnel       $v0, $zr, 0x0898E0C4
+0898E0C0:[240B8000]: addiu      $t3, $zr, -32768 <=> li $t3, -32768
+0898E0C4:[A48B0000]: sh         $t3, 0($a0)
+0898E0C8:[8D2B0000]: lw         $t3, 0($t1)
+0898E0CC:[254A0001]: addiu      $t2, $t2, 1
+0898E0D0:[25080004]: addiu      $t0, $t0, 4
+0898E0D4:[24E70004]: addiu      $a3, $a3, 4
+0898E0D8:[24A50004]: addiu      $a1, $a1, 4
+0898E0DC:[014B582A]: slt        $t3, $t2, $t3
+0898E0E0:[1560FFCF]: bne        $t3, $zr, 0x0898E020
+0898E0E4:[24840004]: addiu      $a0, $a0, 4
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="SoundMix">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.SoundMix</Class>
+		<Parameters>$a1,$a0,$a2,$f12,$f13</Parameters>
+		<Method>mixStereoInMemory</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08BCD618:[44086000]: mfc1       $t0, $f12
+08BCD61C:[44096800]: mfc1       $t1, $f13
+08BCD620:[48E80003]: MTV.s      $t0, S030.s
+08BCD624:[48E90023]: MTV.s      $t1, S031.s
+08BCD628:[48E80043]: MTV.s      $t0, S032.s
+08BCD62C:[48E90063]: MTV.s      $t1, S033.s
+08BCD630:[D8A00000]: lv.q       C000.q, 0($a1)
+08BCD634:[D8810000]: lv.q       C010.q, 0($a0)
+08BCD638:[D03B0084]: vs2i.p     C100.p, C000.p
+08BCD63C:[D03B4085]: vs2i.p     C110.p, C002.p
+08BCD640:[D03B0186]: vs2i.p     C120.p, C010.p
+08BCD644:[D03B4187]: vs2i.p     C130.p, C012.p
+08BCD648:[D2808488]: vi2f.q     C200.q, C100.q, 0
+08BCD64C:[D2808589]: vi2f.q     C210.q, C110.q, 0
+08BCD650:[D280868A]: vi2f.q     C220.q, C120.q, 0
+08BCD654:[D280878B]: vi2f.q     C230.q, C130.q, 0
+08BCD658:[64038884]: vmul.q     C100.q, C200.q, C030.q
+08BCD65C:[64038985]: vmul.q     C110.q, C210.q, C030.q
+08BCD660:[600A8486]: vadd.q     C120.q, C100.q, C220.q
+08BCD664:[600B8587]: vadd.q     C130.q, C110.q, C230.q
+08BCD668:[D2008684]: vf2in.q    C100.q, C120.q, 0
+08BCD66C:[D2008785]: vf2in.q    C110.q, C130.q, 0
+08BCD670:[D03F8482]: vi2s.q     C020.q, C100.q
+08BCD674:[D03F85C2]: vi2s.q     , C110.q
+08BCD678:[F8820000]: sv.q       C020.q, 0($a0)
+08BCD67C:[20C6FFFC]: addi       $a2, $a2, -4
+08BCD680:[24A50010]: addiu      $a1, $a1, 16
+08BCD684:[14C0FFEA]: bne        $a2, $zr, 0x08BCD630
+08BCD688:[24840010]: addiu      $a0, $a0, 16
+08BCD68C:[03E00008]: jr         $ra
+08BCD690:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="sceGuDrawArray">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
+		<Parameters>@08BFFFB4,@08BFFFD0,8</Parameters>
+		<Method>sceGuDrawArray</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08BFFF98:[308C0007]: andi       $t4, $a0, 7
+08BFFF9C:[7CEA1E00]: ext        $t2, $a3, 24, 4
+08BFFFA0:[7D0B1E00]: ext        $t3, $t0, 24, 4
+08BFFFA4:[000C1C00]: sll        $v1, $t4, 0x0010
+08BFFFA8:[3C0D1000]: lui        $t5, 0x1000 <=> li $t5, 0x10000000
+08BFFFAC:[00661025]: or         $v0, $v1, $a2
+08BFFFB0:[27BDFFF0]: addiu      $sp, $sp, -16
+08BFFFB4:[3C1808CA/FFFF0000]: lui        $t8, 0x08CA <=> li $t8, 0x08CA0000
+08BFFFB8:[000A7C00]: sll        $t7, $t2, 0x0010
+08BFFFBC:[000B7400]: sll        $t6, $t3, 0x0010
+08BFFFC0:[3C030400]: lui        $v1, 0x0400 <=> li $v1, 0x04000000
+08BFFFC4:[AFBF0000]: sw         $ra, 0($sp)
+08BFFFC8:[01ED5025]: or         $t2, $t7, $t5
+08BFFFCC:[01CD5825]: or         $t3, $t6, $t5
+08BFFFD0:[8F0931D8/FFFF0000]: lw         $t1, 12760($t8)
+08BFFFD4:[10A00008]: beq        $a1, $zr, 0x08BFFFF8
+08BFFFD8:[00433025]: or         $a2, $v0, $v1
+08BFFFDC:[8D390008]: lw         $t9, 8($t1)
+08BFFFE0:[7C05FE04]: ins        $a1, $zr, 24, 8
+08BFFFE4:[3C0C1200]: lui        $t4, 0x1200 <=> li $t4, 0x12000000
+08BFFFE8:[00AC1825]: or         $v1, $a1, $t4
+08BFFFEC:[27240004]: addiu      $a0, $t9, 4
+08BFFFF0:[AF230000]: sw         $v1, 0($t9)
+08BFFFF4:[AD240008]: sw         $a0, 8($t1)
+08BFFFF8:[10E00009]: beq        $a3, $zr, 0x08C00020
+08BFFFFC:[7C07FE04]: ins        $a3, $zr, 24, 8
+08C00000:[8D2E0008]: lw         $t6, 8($t1)
+08C00004:[3C020200]: lui        $v0, 0x0200 <=> li $v0, 0x02000000
+08C00008:[25C50004]: addiu      $a1, $t6, 4
+08C0000C:[00E26825]: or         $t5, $a3, $v0
+08C00010:[24A70004]: addiu      $a3, $a1, 4
+08C00014:[ADCA0000]: sw         $t2, 0($t6)
+08C00018:[AD270008]: sw         $a3, 8($t1)
+08C0001C:[ACAD0000]: sw         $t5, 0($a1)
+08C00020:[11000009]: beq        $t0, $zr, 0x08C00048
+08C00024:[7C08FE04]: ins        $t0, $zr, 24, 8
+08C00028:[8D2A0008]: lw         $t2, 8($t1)
+08C0002C:[3C180100]: lui        $t8, 0x0100 <=> li $t8, 0x01000000
+08C00030:[01187825]: or         $t7, $t0, $t8
+08C00034:[25480004]: addiu      $t0, $t2, 4
+08C00038:[AD4B0000]: sw         $t3, 0($t2)
+08C0003C:[250B0004]: addiu      $t3, $t0, 4
+08C00040:[AD2B0008]: sw         $t3, 8($t1)
+08C00044:[AD0F0000]: sw         $t7, 0($t0)
+08C00048:[8D240008]: lw         $a0, 8($t1)
+08C0004C:[AC860000]: sw         $a2, 0($a0)
+08C00050:[24860004]: addiu      $a2, $a0, 4
+08C00054:[0E3007A7/FC000000]: jal        0x08C01E9C
+08C00058:[AD260008]: sw         $a2, 8($t1)
+08C0005C:[8FBF0000]: lw         $ra, 0($sp)
+08C00060:[03E00008]: jr         $ra
+08C00064:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="sceGuDrawArray">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
+		<Parameters>@08962204,@08962208,4</Parameters>
+		<Method>sceGuDrawArray</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08962194:[3C0B00FF]: lui        $t3, 0x00FF <=> li $t3, 0x00FF0000
+08962198:[356BFFFF]: ori        $t3, $t3, -1
+0896219C:[00AB1824]: and        $v1, $a1, $t3
+089621A0:[3C021200]: lui        $v0, 0x1200 <=> li $v0, 0x12000000
+089621A4:[00627825]: or         $t7, $v1, $v0
+089621A8:[00071202]: srl        $v0, $a3, 0x0008
+089621AC:[3C03000F]: lui        $v1, 0x000F <=> li $v1, 0x000F0000
+089621B0:[00E06021]: addu       $t4, $a3, $zr <=> move $t4, $a3
+089621B4:[00431024]: and        $v0, $v0, $v1
+089621B8:[3C071000]: lui        $a3, 0x1000 <=> li $a3, 0x10000000
+089621BC:[00476825]: or         $t5, $v0, $a3
+089621C0:[018B4824]: and        $t1, $t4, $t3
+089621C4:[3C020200]: lui        $v0, 0x0200 <=> li $v0, 0x02000000
+089621C8:[01224825]: or         $t1, $t1, $v0
+089621CC:[00081202]: srl        $v0, $t0, 0x0008
+089621D0:[00431024]: and        $v0, $v0, $v1
+089621D4:[00042400]: sll        $a0, $a0, 0x0010
+089621D8:[00477025]: or         $t6, $v0, $a3
+089621DC:[010B5024]: and        $t2, $t0, $t3
+089621E0:[3C020100]: lui        $v0, 0x0100 <=> li $v0, 0x01000000
+089621E4:[00862025]: or         $a0, $a0, $a2
+089621E8:[27BDFFF0]: addiu      $sp, $sp, -16
+089621EC:[01425025]: or         $t2, $t2, $v0
+089621F0:[008B2024]: and        $a0, $a0, $t3
+089621F4:[3C020400]: lui        $v0, 0x0400 <=> li $v0, 0x04000000
+089621F8:[AFBF0000]: sw         $ra, 0($sp)
+089621FC:[00825825]: or         $t3, $a0, $v0
+08962200:[10A00006]: beq        $a1, $zr, 0x0896221C
+08962204:[3C070946/FFFF0000]: lui        $a3, 0x0946 <=> li $a3, 0x09460000
+08962208:[8CE3ABEC/FFFF0000]: lw         $v1, -21524($a3)
+0896220C:[8C620004]: lw         $v0, 4($v1)
+08962210:[AC4F0000]: sw         $t7, 0($v0)
+08962214:[24420004]: addiu      $v0, $v0, 4
+08962218:[AC620004]: sw         $v0, 4($v1)
+0896221C:[11800007]: beq        $t4, $zr, 0x0896223C
+08962220:[8CE6ABEC]: lw         $a2, -21524($a3)
+08962224:[8CC30004]: lw         $v1, 4($a2)
+08962228:[AC6D0000]: sw         $t5, 0($v1)
+0896222C:[24630004]: addiu      $v1, $v1, 4
+08962230:[24640004]: addiu      $a0, $v1, 4
+08962234:[ACC40004]: sw         $a0, 4($a2)
+08962238:[AC690000]: sw         $t1, 0($v1)
+0896223C:[11000007]: beq        $t0, $zr, 0x0896225C
+08962240:[8CE2ABEC]: lw         $v0, -21524($a3)
+08962244:[8C430004]: lw         $v1, 4($v0)
+08962248:[AC6E0000]: sw         $t6, 0($v1)
+0896224C:[24630004]: addiu      $v1, $v1, 4
+08962250:[24640004]: addiu      $a0, $v1, 4
+08962254:[AC440004]: sw         $a0, 4($v0)
+08962258:[AC6A0000]: sw         $t2, 0($v1)
+0896225C:[8CC50004]: lw         $a1, 4($a2)
+08962260:[3C020946]: lui        $v0, 0x0946 <=> li $v0, 0x09460000
+08962264:[ACAB0000]: sw         $t3, 0($a1)
+08962268:[24A50004]: addiu      $a1, $a1, 4
+0896226C:[8C43ACA4]: lw         $v1, -21340($v0)
+08962270:[14600005]: bne        $v1, $zr, 0x08962288
+08962274:[ACC50004]: sw         $a1, 4($a2)
+08962278:[3C020946]: lui        $v0, 0x0946 <=> li $v0, 0x09460000
+0896227C:[8C43ABF0]: lw         $v1, -21520($v0)
+08962280:[10600004]: beq        $v1, $zr, 0x08962294
+08962284:[3C020946]: lui        $v0, 0x0946 <=> li $v0, 0x09460000
+08962288:[8FBF0000]: lw         $ra, 0($sp)
+0896228C:[03E00008]: jr         $ra
+08962290:[27BD0010]: addiu      $sp, $sp, 16
+08962294:[0E25E3A2/FC000000]: jal        0x08978E88 [sceGeListUpdateStallAddr]
+08962298:[8C44AB9C]: lw         $a0, -21604($v0)
+0896229C:[0A2588A3]: j          0x0896228C
+089622A0:[8FBF0000]: lw         $ra, 0($sp)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="sceGuDrawArrayN">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
+		<Parameters>@08C0006C,@08C0007C,8</Parameters>
+		<Method>sceGuDrawArrayN</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08C00068:[27BDFFF0]: addiu      $sp, $sp, -16
+08C0006C:[3C0308CA/FFFF0000]: lui        $v1, 0x08CA <=> li $v1, 0x08CA0000
+08C00070:[AFBF0000]: sw         $ra, 0($sp)
+08C00074:[00805821]: addu       $t3, $a0, $zr <=> move $t3, $a0
+08C00078:[10A00008]: beq        $a1, $zr, 0x08C0009C
+08C0007C:[8C6A31D8/FFFF0000]: lw         $t2, 12760($v1)
+08C00080:[8D440008]: lw         $a0, 8($t2)
+08C00084:[7C05FE04]: ins        $a1, $zr, 24, 8
+08C00088:[3C0C1200]: lui        $t4, 0x1200 <=> li $t4, 0x12000000
+08C0008C:[00AC1825]: or         $v1, $a1, $t4
+08C00090:[24820004]: addiu      $v0, $a0, 4
+08C00094:[AC830000]: sw         $v1, 0($a0)
+08C00098:[AD420008]: sw         $v0, 8($t2)
+08C0009C:[1100000D]: beq        $t0, $zr, 0x08C000D4
+08C000A0:[7D031E00]: ext        $v1, $t0, 24, 4
+08C000A4:[8D580008]: lw         $t8, 8($t2)
+08C000A8:[00032400]: sll        $a0, $v1, 0x0010
+08C000AC:[270D0004]: addiu      $t5, $t8, 4
+08C000B0:[3C0C1000]: lui        $t4, 0x1000 <=> li $t4, 0x10000000
+08C000B4:[7C08FE04]: ins        $t0, $zr, 24, 8
+08C000B8:[3C0F0200]: lui        $t7, 0x0200 <=> li $t7, 0x02000000
+08C000BC:[008CC825]: or         $t9, $a0, $t4
+08C000C0:[010F7025]: or         $t6, $t0, $t7
+08C000C4:[25A50004]: addiu      $a1, $t5, 4
+08C000C8:[AF190000]: sw         $t9, 0($t8)
+08C000CC:[AD450008]: sw         $a1, 8($t2)
+08C000D0:[ADAE0000]: sw         $t6, 0($t5)
+08C000D4:[1120000D]: beq        $t1, $zr, 0x08C0010C
+08C000D8:[7D2C1E00]: ext        $t4, $t1, 24, 4
+08C000DC:[8D4F0008]: lw         $t7, 8($t2)
+08C000E0:[000CCC00]: sll        $t9, $t4, 0x0010
+08C000E4:[25E50004]: addiu      $a1, $t7, 4
+08C000E8:[3C041000]: lui        $a0, 0x1000 <=> li $a0, 0x10000000
+08C000EC:[7C09FE04]: ins        $t1, $zr, 24, 8
+08C000F0:[3C0E0100]: lui        $t6, 0x0100 <=> li $t6, 0x01000000
+08C000F4:[0324C025]: or         $t8, $t9, $a0
+08C000F8:[012E6825]: or         $t5, $t1, $t6
+08C000FC:[24A80004]: addiu      $t0, $a1, 4
+08C00100:[ADF80000]: sw         $t8, 0($t7)
+08C00104:[AD480008]: sw         $t0, 8($t2)
+08C00108:[ACAD0000]: sw         $t5, 0($a1)
+08C0010C:[18E0000B]: blez       $a3, 0x08C0013C
+08C00110:[31630007]: andi       $v1, $t3, 7
+08C00114:[00035C00]: sll        $t3, $v1, 0x0010
+08C00118:[8D450008]: lw         $a1, 8($t2)
+08C0011C:[01664825]: or         $t1, $t3, $a2
+08C00120:[3C060400]: lui        $a2, 0x0400 <=> li $a2, 0x04000000
+08C00124:[01261025]: or         $v0, $t1, $a2
+08C00128:[24E7FFFF]: addiu      $a3, $a3, -1
+08C0012C:[ACA20000]: sw         $v0, 0($a1)
+08C00130:[14E0FFFD]: bne        $a3, $zr, 0x08C00128
+08C00134:[24A50004]: addiu      $a1, $a1, 4
+08C00138:[AD450008]: sw         $a1, 8($t2)
+08C0013C:[0E3007A7/FC000000]: jal        0x08C01E9C
+08C00140:[00000000]: nop
+08C00144:[8FBF0000]: lw         $ra, 0($sp)
+08C00148:[03E00008]: jr         $ra
+08C0014C:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="sceGuDrawSpline">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
+		<Parameters>@08C00168,@08C00174,8</Parameters>
+		<Method>sceGuDrawSpline</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08C00150:[27BDFFF0]: addiu      $sp, $sp, -16
+08C00154:[AFB00000]: sw         $s0, 0($sp)
+08C00158:[00808021]: addu       $s0, $a0, $zr <=> move $s0, $a0
+08C0015C:[3C190403]: lui        $t9, 0x0403 <=> li $t9, 0x04030000
+08C00160:[7C10FE04]: ins        $s0, $zr, 24, 8
+08C00164:[3C0D1200]: lui        $t5, 0x1200 <=> li $t5, 0x12000000
+08C00168:[3C0C08CA/FFFF0000]: lui        $t4, 0x08CA <=> li $t4, 0x08CA0000
+08C0016C:[37380001]: ori        $t8, $t9, 1
+08C00170:[020DC825]: or         $t9, $s0, $t5
+08C00174:[8D8D31D8/FFFF0000]: lw         $t5, 12760($t4)
+08C00178:[01206021]: addu       $t4, $t1, $zr <=> move $t4, $t1
+08C0017C:[7D2E1E00]: ext        $t6, $t1, 24, 4
+08C00180:[AFB10004]: sw         $s1, 4($sp)
+08C00184:[01808821]: addu       $s1, $t4, $zr <=> move $s1, $t4
+08C00188:[000E4C00]: sll        $t1, $t6, 0x0010
+08C0018C:[3C0B1000]: lui        $t3, 0x1000 <=> li $t3, 0x10000000
+08C00190:[7C11FE04]: ins        $s1, $zr, 24, 8
+08C00194:[3C020200]: lui        $v0, 0x0200 <=> li $v0, 0x02000000
+08C00198:[7D4F1E00]: ext        $t7, $t2, 24, 4
+08C0019C:[012B7025]: or         $t6, $t1, $t3
+08C001A0:[000F1C00]: sll        $v1, $t7, 0x0010
+08C001A4:[02225825]: or         $t3, $s1, $v0
+08C001A8:[3C091000]: lui        $t1, 0x1000 <=> li $t1, 0x10000000
+08C001AC:[00081480]: sll        $v0, $t0, 0x0012
+08C001B0:[00073C00]: sll        $a3, $a3, 0x0010
+08C001B4:[00697825]: or         $t7, $v1, $t1
+08C001B8:[00471825]: or         $v1, $v0, $a3
+08C001BC:[00064A00]: sll        $t1, $a2, 0x0008
+08C001C0:[00691025]: or         $v0, $v1, $t1
+08C001C4:[00451825]: or         $v1, $v0, $a1
+08C001C8:[3C050600]: lui        $a1, 0x0600 <=> li $a1, 0x06000000
+08C001CC:[AFBF0008]: sw         $ra, 8($sp)
+08C001D0:[30901800]: andi       $s0, $a0, 6144
+08C001D4:[01C08821]: addu       $s1, $t6, $zr <=> move $s1, $t6
+08C001D8:[10800005]: beq        $a0, $zr, 0x08C001F0
+08C001DC:[00654025]: or         $t0, $v1, $a1
+08C001E0:[8DA60008]: lw         $a2, 8($t5)
+08C001E4:[24C40004]: addiu      $a0, $a2, 4
+08C001E8:[ACD90000]: sw         $t9, 0($a2)
+08C001EC:[ADA40008]: sw         $a0, 8($t5)
+08C001F0:[11800007]: beq        $t4, $zr, 0x08C00210
+08C001F4:[00000000]: nop
+08C001F8:[8DA30008]: lw         $v1, 8($t5)
+08C001FC:[24670004]: addiu      $a3, $v1, 4
+08C00200:[24E50004]: addiu      $a1, $a3, 4
+08C00204:[AC6E0000]: sw         $t6, 0($v1)
+08C00208:[ADA50008]: sw         $a1, 8($t5)
+08C0020C:[ACEB0000]: sw         $t3, 0($a3)
+08C00210:[1140000A]: beq        $t2, $zr, 0x08C0023C
+08C00214:[7C0CFE04]: ins        $t4, $zr, 24, 8
+08C00218:[8DA90008]: lw         $t1, 8($t5)
+08C0021C:[7C0AFE04]: ins        $t2, $zr, 24, 8
+08C00220:[3C020100]: lui        $v0, 0x0100 <=> li $v0, 0x01000000
+08C00224:[01425825]: or         $t3, $t2, $v0
+08C00228:[252A0004]: addiu      $t2, $t1, 4
+08C0022C:[AD2F0000]: sw         $t7, 0($t1)
+08C00230:[254F0004]: addiu      $t7, $t2, 4
+08C00234:[ADAF0008]: sw         $t7, 8($t5)
+08C00238:[AD4B0000]: sw         $t3, 0($t2)
+08C0023C:[3C0E0200]: lui        $t6, 0x0200 <=> li $t6, 0x02000000
+08C00240:[12000008]: beq        $s0, $zr, 0x08C00264
+08C00244:[018E4825]: or         $t1, $t4, $t6
+08C00248:[8DB00008]: lw         $s0, 8($t5)
+08C0024C:[AE180000]: sw         $t8, 0($s0)
+08C00250:[26180004]: addiu      $t8, $s0, 4
+08C00254:[270C0008]: addiu      $t4, $t8, 8
+08C00258:[ADAC0008]: sw         $t4, 8($t5)
+08C0025C:[AF110000]: sw         $s1, 0($t8)
+08C00260:[AF090004]: sw         $t1, 4($t8)
+08C00264:[8DB10008]: lw         $s1, 8($t5)
+08C00268:[AE280000]: sw         $t0, 0($s1)
+08C0026C:[26280004]: addiu      $t0, $s1, 4
+08C00270:[0E3007A7/FC000000]: jal        0x08C01E9C
+08C00274:[ADA80008]: sw         $t0, 8($t5)
+08C00278:[8FBF0008]: lw         $ra, 8($sp)
+08C0027C:[8FB10004]: lw         $s1, 4($sp)
+08C00280:[8FB00000]: lw         $s0, 0($sp)
+08C00284:[03E00008]: jr         $ra
+08C00288:[27BD0010]: addiu      $sp, $sp, 16
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="sceGuCopyImage">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.sceGu</Class>
+		<Parameters>@08C0032C,@08C00340,8</Parameters>
+		<Method>sceGuCopyImage</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08C00304:[7D421E00]: ext        $v0, $t2, 24, 4
+08C00308:[00A77821]: addu       $t7, $a1, $a3
+08C0030C:[01676021]: addu       $t4, $t3, $a3
+08C00310:[00021C00]: sll        $v1, $v0, 0x0010
+08C00314:[3C18B300]: lui        $t8, 0xB300 <=> li $t8, 0xB3000000
+08C00318:[24EDFFFF]: addiu      $t5, $a3, -1
+08C0031C:[01ECC825]: or         $t9, $t7, $t4
+08C00320:[00783825]: or         $a3, $v1, $t8
+08C00324:[3C0EB200]: lui        $t6, 0xB200 <=> li $t6, 0xB2000000
+08C00328:[38980003]: xori       $t8, $a0, 3
+08C0032C:[3C0F08CA/FFFF0000]: lui        $t7, 0x08CA <=> li $t7, 0x08CA0000
+08C00330:[7C0AFE04]: ins        $t2, $zr, 24, 8
+08C00334:[2F020001]: sltiu      $v0, $t8, 1
+08C00338:[3C03EA00]: lui        $v1, 0xEA00 <=> li $v1, 0xEA000000
+08C0033C:[014E5025]: or         $t2, $t2, $t6
+08C00340:[8DEE31D8/FFFF0000]: lw         $t6, 12760($t7)
+08C00344:[00067A80]: sll        $t7, $a2, 0x000A
+08C00348:[01E52025]: or         $a0, $t7, $a1
+08C0034C:[0043C025]: or         $t8, $v0, $v1
+08C00350:[2502FFFF]: addiu      $v0, $t0, -1
+08C00354:[3C03EB00]: lui        $v1, 0xEB00 <=> li $v1, 0xEB000000
+08C00358:[00837825]: or         $t7, $a0, $v1
+08C0035C:[00022280]: sll        $a0, $v0, 0x000A
+08C00360:[008D2825]: or         $a1, $a0, $t5
+08C00364:[3C06EE00]: lui        $a2, 0xEE00 <=> li $a2, 0xEE000000
+08C00368:[00A64025]: or         $t0, $a1, $a2
+08C0036C:[8FA60008]: lw         $a2, 8($sp)
+08C00370:[8FAD0000]: lw         $t5, 0($sp)
+08C00374:[3C04B500]: lui        $a0, 0xB500 <=> li $a0, 0xB5000000
+08C00378:[7CC21E00]: ext        $v0, $a2, 24, 4
+08C0037C:[000D1A80]: sll        $v1, $t5, 0x000A
+08C00380:[00E93825]: or         $a3, $a3, $t1
+08C00384:[00024C00]: sll        $t1, $v0, 0x0010
+08C00388:[006B6825]: or         $t5, $v1, $t3
+08C0038C:[01245825]: or         $t3, $t1, $a0
+08C00390:[8FA40004]: lw         $a0, 4($sp)
+08C00394:[7C06FE04]: ins        $a2, $zr, 24, 8
+08C00398:[3C02B400]: lui        $v0, 0xB400 <=> li $v0, 0xB4000000
+08C0039C:[3C03EC00]: lui        $v1, 0xEC00 <=> li $v1, 0xEC000000
+08C003A0:[7C194804]: ins        $t9, $zr, 0, 10
+08C003A4:[01644825]: or         $t1, $t3, $a0
+08C003A8:[00C23025]: or         $a2, $a2, $v0
+08C003AC:[1720000D]: bne        $t9, $zr, 0x08C003E4
+08C003B0:[01A32825]: or         $a1, $t5, $v1
+08C003B4:[8DCB0008]: lw         $t3, 8($t6)
+08C003B8:[AD670000]: sw         $a3, 0($t3)
+08C003BC:[25670004]: addiu      $a3, $t3, 4
+08C003C0:[24F9001C]: addiu      $t9, $a3, 28
+08C003C4:[ADD90008]: sw         $t9, 8($t6)
+08C003C8:[ACEA0000]: sw         $t2, 0($a3)
+08C003CC:[ACEF0004]: sw         $t7, 4($a3)
+08C003D0:[ACE90008]: sw         $t1, 8($a3)
+08C003D4:[ACE6000C]: sw         $a2, 12($a3)
+08C003D8:[ACE50010]: sw         $a1, 16($a3)
+08C003DC:[ACE80014]: sw         $t0, 20($a3)
+08C003E0:[ACF80018]: sw         $t8, 24($a3)
+08C003E4:[03E00008]: jr         $ra
+08C003E8:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="BoneSequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.graphics.BoneSequence</Class>
+		<Parameters>$a0,@08B52520,@08B52320,@08B52334,$t0</Parameters>
+		<CodeInstructions><![CDATA[
+08B52318:[8C8503E8]: lw         $a1, 1000($a0)
+08B5231C:[34070000]: ori        $a3, $zr, 0 <=> li $a3, 0
+08B52320:[84A50006/FFFF0000]: lh         $a1, 6($a1)
+08B52324:[00E5282A]: slt        $a1, $a3, $a1
+08B52328:[10A00082]: beq        $a1, $zr, 0x08B52534
+08B5232C:[34060000]: ori        $a2, $zr, 0 <=> li $a2, 0
+08B52330:[3C052B00]: lui        $a1, 0x2B00 <=> li $a1, 0x2B000000
+08B52334:[8C8903C4/FFFF0000]: lw         $t1, 964($a0)
+08B52338:[01264821]: addu       $t1, $t1, $a2
+08B5233C:[252A0040]: addiu      $t2, $t1, 64
+08B52340:[D9440000]: lv.q       C100.q, 0($t2)
+08B52344:[D9450010]: lv.q       C110.q, 16($t2)
+08B52348:[D9460020]: lv.q       C120.q, 32($t2)
+08B5234C:[D9470030]: lv.q       C130.q, 48($t2)
+08B52350:[252A0080]: addiu      $t2, $t1, 128
+08B52354:[D9480000]: lv.q       C200.q, 0($t2)
+08B52358:[D9490010]: lv.q       C210.q, 16($t2)
+08B5235C:[D94A0020]: lv.q       C220.q, 32($t2)
+08B52360:[D94B0030]: lv.q       C230.q, 48($t2)
+08B52364:[F02488A0]: VMMUL.q    E000.q, E200.q, E100.q
+08B52368:[F9000000]: sv.q       C000.q, 0($t0)
+08B5236C:[F9010010]: sv.q       C010.q, 16($t0)
+08B52370:[F9020020]: sv.q       C020.q, 32($t0)
+08B52374:[F9030030]: sv.q       C030.q, 48($t0)
+08B52378:[8D0A0000]: lw         $t2, 0($t0)
+08B5237C:[8D0B0004]: lw         $t3, 4($t0)
+08B52380:[8D020008]: lw         $v0, 8($t0)
+08B52384:[AFAA0000]: sw         $t2, 0($sp)
+08B52388:[AFAB0004]: sw         $t3, 4($sp)
+08B5238C:[AFA20008]: sw         $v0, 8($sp)
+08B52390:[8D0A000C]: lw         $t2, 12($t0)
+08B52394:[8D0B0010]: lw         $t3, 16($t0)
+08B52398:[8D020014]: lw         $v0, 20($t0)
+08B5239C:[AFAA000C]: sw         $t2, 12($sp)
+08B523A0:[AFAB0010]: sw         $t3, 16($sp)
+08B523A4:[AFA20014]: sw         $v0, 20($sp)
+08B523A8:[8D0A0018]: lw         $t2, 24($t0)
+08B523AC:[8D0B001C]: lw         $t3, 28($t0)
+08B523B0:[8D020020]: lw         $v0, 32($t0)
+08B523B4:[AFAA0018]: sw         $t2, 24($sp)
+08B523B8:[AFAB001C]: sw         $t3, 28($sp)
+08B523BC:[AFA20020]: sw         $v0, 32($sp)
+08B523C0:[8D0A0024]: lw         $t2, 36($t0)
+08B523C4:[8D0B0028]: lw         $t3, 40($t0)
+08B523C8:[8D02002C]: lw         $v0, 44($t0)
+08B523CC:[AFAA0024]: sw         $t2, 36($sp)
+08B523D0:[AFAB0028]: sw         $t3, 40($sp)
+08B523D4:[AFA2002C]: sw         $v0, 44($sp)
+08B523D8:[8D0A0030]: lw         $t2, 48($t0)
+08B523DC:[8D0B0034]: lw         $t3, 52($t0)
+08B523E0:[8D020038]: lw         $v0, 56($t0)
+08B523E4:[AFAA0030]: sw         $t2, 48($sp)
+08B523E8:[AFAB0034]: sw         $t3, 52($sp)
+08B523EC:[AFA20038]: sw         $v0, 56($sp)
+08B523F0:[8D0A003C]: lw         $t2, 60($t0)
+08B523F4:[AFAA003C]: sw         $t2, 60($sp)
+08B523F8:[252900C0]: addiu      $t1, $t1, 192
+08B523FC:[C50C0000]: lwc1       $f12, 0($t0)
+08B52400:[E7AC0040]: swc1       $f12, 64($sp)
+08B52404:[8FAA0040]: lw         $t2, 64($sp)
+08B52408:[000A5202]: srl        $t2, $t2, 0x0008
+08B5240C:[01455025]: or         $t2, $t2, $a1
+08B52410:[AD2A0000]: sw         $t2, 0($t1)
+08B52414:[C50C0004]: lwc1       $f12, 4($t0)
+08B52418:[E7AC0044]: swc1       $f12, 68($sp)
+08B5241C:[8FAA0044]: lw         $t2, 68($sp)
+08B52420:[000A5202]: srl        $t2, $t2, 0x0008
+08B52424:[01455025]: or         $t2, $t2, $a1
+08B52428:[AD2A0004]: sw         $t2, 4($t1)
+08B5242C:[C50C0008]: lwc1       $f12, 8($t0)
+08B52430:[E7AC0048]: swc1       $f12, 72($sp)
+08B52434:[8FAA0048]: lw         $t2, 72($sp)
+08B52438:[000A5202]: srl        $t2, $t2, 0x0008
+08B5243C:[01455025]: or         $t2, $t2, $a1
+08B52440:[AD2A0008]: sw         $t2, 8($t1)
+08B52444:[C50C0010]: lwc1       $f12, 16($t0)
+08B52448:[E7AC004C]: swc1       $f12, 76($sp)
+08B5244C:[8FAA004C]: lw         $t2, 76($sp)
+08B52450:[000A5202]: srl        $t2, $t2, 0x0008
+08B52454:[01455025]: or         $t2, $t2, $a1
+08B52458:[AD2A000C]: sw         $t2, 12($t1)
+08B5245C:[C50C0014]: lwc1       $f12, 20($t0)
+08B52460:[E7AC0050]: swc1       $f12, 80($sp)
+08B52464:[8FAA0050]: lw         $t2, 80($sp)
+08B52468:[000A5202]: srl        $t2, $t2, 0x0008
+08B5246C:[01455025]: or         $t2, $t2, $a1
+08B52470:[AD2A0010]: sw         $t2, 16($t1)
+08B52474:[C50C0018]: lwc1       $f12, 24($t0)
+08B52478:[E7AC0054]: swc1       $f12, 84($sp)
+08B5247C:[8FAA0054]: lw         $t2, 84($sp)
+08B52480:[000A5202]: srl        $t2, $t2, 0x0008
+08B52484:[01455025]: or         $t2, $t2, $a1
+08B52488:[AD2A0014]: sw         $t2, 20($t1)
+08B5248C:[C50C0020]: lwc1       $f12, 32($t0)
+08B52490:[E7AC0058]: swc1       $f12, 88($sp)
+08B52494:[8FAA0058]: lw         $t2, 88($sp)
+08B52498:[000A5202]: srl        $t2, $t2, 0x0008
+08B5249C:[01455025]: or         $t2, $t2, $a1
+08B524A0:[AD2A0018]: sw         $t2, 24($t1)
+08B524A4:[C50C0024]: lwc1       $f12, 36($t0)
+08B524A8:[E7AC005C]: swc1       $f12, 92($sp)
+08B524AC:[8FAA005C]: lw         $t2, 92($sp)
+08B524B0:[000A5202]: srl        $t2, $t2, 0x0008
+08B524B4:[01455025]: or         $t2, $t2, $a1
+08B524B8:[AD2A001C]: sw         $t2, 28($t1)
+08B524BC:[C50C0028]: lwc1       $f12, 40($t0)
+08B524C0:[E7AC0060]: swc1       $f12, 96($sp)
+08B524C4:[8FAA0060]: lw         $t2, 96($sp)
+08B524C8:[000A5202]: srl        $t2, $t2, 0x0008
+08B524CC:[01455025]: or         $t2, $t2, $a1
+08B524D0:[AD2A0020]: sw         $t2, 32($t1)
+08B524D4:[C50C0030]: lwc1       $f12, 48($t0)
+08B524D8:[E7AC0064]: swc1       $f12, 100($sp)
+08B524DC:[8FAA0064]: lw         $t2, 100($sp)
+08B524E0:[000A5202]: srl        $t2, $t2, 0x0008
+08B524E4:[01455025]: or         $t2, $t2, $a1
+08B524E8:[AD2A0024]: sw         $t2, 36($t1)
+08B524EC:[C50C0034]: lwc1       $f12, 52($t0)
+08B524F0:[E7AC0068]: swc1       $f12, 104($sp)
+08B524F4:[8FAA0068]: lw         $t2, 104($sp)
+08B524F8:[000A5202]: srl        $t2, $t2, 0x0008
+08B524FC:[01455025]: or         $t2, $t2, $a1
+08B52500:[AD2A0028]: sw         $t2, 40($t1)
+08B52504:[C50C0038]: lwc1       $f12, 56($t0)
+08B52508:[E7AC006C]: swc1       $f12, 108($sp)
+08B5250C:[8FAA006C]: lw         $t2, 108($sp)
+08B52510:[000A5202]: srl        $t2, $t2, 0x0008
+08B52514:[01455025]: or         $t2, $t2, $a1
+08B52518:[AD2A002C]: sw         $t2, 44($t1)
+08B5251C:[24E70001]: addiu      $a3, $a3, 1
+08B52520:[8C8903E8/FFFF0000]: lw         $t1, 1000($a0)
+08B52524:[85290006]: lh         $t1, 6($t1)
+08B52528:[00E9482A]: slt        $t1, $a3, $t1
+08B5252C:[1520FF81]: bne        $t1, $zr, 0x08B52334
+08B52530:[24C60130]: addiu      $a2, $a2, 304
+08B52534:[8C8503E8]: lw         $a1, 1000($a0)
+08B52538:[34080000]: ori        $t0, $zr, 0 <=> li $t0, 0
+08B5253C:[84A50006]: lh         $a1, 6($a1)
+08B52540:[0105282A]: slt        $a1, $t0, $a1
+08B52544:[50A00022]: beql       $a1, $zr, 0x08B525D0
+08B52548:[8085033E]: lb         $a1, 830($a0)
+08B5254C:[44806000]: mtc1       $zr, $f12
+08B52550:[34070000]: ori        $a3, $zr, 0 <=> li $a3, 0
+08B52554:[3C052B00]: lui        $a1, 0x2B00 <=> li $a1, 0x2B000000
+08B52558:[8C8603C4]: lw         $a2, 964($a0)
+08B5255C:[00C73021]: addu       $a2, $a2, $a3
+08B52560:[8CC90128]: lw         $t1, 296($a2)
+08B52564:[31290001]: andi       $t1, $t1, 1
+08B52568:[51200013]: beql       $t1, $zr, 0x08B525B8
+08B5256C:[8C8603E8]: lw         $a2, 1000($a0)
+08B52570:[E7AC0070]: swc1       $f12, 112($sp)
+08B52574:[8FA90070]: lw         $t1, 112($sp)
+08B52578:[24C600C0]: addiu      $a2, $a2, 192
+08B5257C:[00094A02]: srl        $t1, $t1, 0x0008
+08B52580:[01254825]: or         $t1, $t1, $a1
+08B52584:[ACC9002C]: sw         $t1, 44($a2)
+08B52588:[ACC90028]: sw         $t1, 40($a2)
+08B5258C:[ACC90024]: sw         $t1, 36($a2)
+08B52590:[ACC90020]: sw         $t1, 32($a2)
+08B52594:[ACC9001C]: sw         $t1, 28($a2)
+08B52598:[ACC90018]: sw         $t1, 24($a2)
+08B5259C:[ACC90014]: sw         $t1, 20($a2)
+08B525A0:[ACC90010]: sw         $t1, 16($a2)
+08B525A4:[ACC9000C]: sw         $t1, 12($a2)
+08B525A8:[ACC90008]: sw         $t1, 8($a2)
+08B525AC:[ACC90004]: sw         $t1, 4($a2)
+08B525B0:[ACC90000]: sw         $t1, 0($a2)
+08B525B4:[8C8603E8]: lw         $a2, 1000($a0)
+08B525B8:[25080001]: addiu      $t0, $t0, 1
+08B525BC:[84C60006]: lh         $a2, 6($a2)
+08B525C0:[0106302A]: slt        $a2, $t0, $a2
+08B525C4:[14C0FFE4]: bne        $a2, $zr, 0x08B52558
+08B525C8:[24E70130]: addiu      $a3, $a3, 304
+]]></CodeInstructions>
+	</NativeCodeSequence>
 </NativeCodeSequences>
 <!--
 TODO:

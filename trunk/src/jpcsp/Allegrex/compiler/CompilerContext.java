@@ -80,7 +80,7 @@ public class CompilerContext implements ICompilerContext {
     private int preparedRegisterForStore = -1;
     private boolean memWritePrepared = false;
     private boolean hiloPrepared = false;
-    private int methodMaxInstructions = 3000;
+    private int methodMaxInstructions;
     private NativeCodeManager nativeCodeManager;
     private final VfpuPfxSrcState vfpuPfxsState = new VfpuPfxSrcState();
     private final VfpuPfxSrcState vfpuPfxtState = new VfpuPfxSrcState();
@@ -103,8 +103,10 @@ public class CompilerContext implements ICompilerContext {
 	private static Set<Integer> fastSyscalls;
 
     public CompilerContext(CompilerClassLoader classLoader) {
+    	Compiler compiler = Compiler.getInstance();
         this.classLoader = classLoader;
-        nativeCodeManager = Compiler.getInstance().getNativeCodeManager();
+        nativeCodeManager = compiler.getNativeCodeManager();
+        methodMaxInstructions = compiler.getDefaultMethodMaxInstructions();
 
         if (fastSyscalls == null) {
 	        fastSyscalls = new TreeSet<Integer>();
@@ -1564,7 +1566,7 @@ public class CompilerContext implements ICompilerContext {
     	StringBuilder methodSignature = new StringBuilder("(");
     	int numberParameters = nativeCodeSequence.getNumberParameters();
     	for (int i = 0; i < numberParameters; i++) {
-    		loadImm(nativeCodeSequence.getParameter(i));
+    		loadImm(nativeCodeSequence.getParameterValue(i, codeInstruction));
     		methodSignature.append("I");
     	}
     	methodSignature.append(")V");

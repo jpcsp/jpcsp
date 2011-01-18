@@ -27,13 +27,14 @@ import javax.xml.parsers.ParserConfigurationException;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Settings;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
-import jpcsp.util.DurationStatistics;
+import jpcsp.util.CpuDurationStatistics;
 
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
@@ -127,10 +128,11 @@ public class Compiler implements ICompiler {
 	private static Compiler instance;
 	private static int resetCount = 0;
 	private CompilerClassLoader classLoader;
-	private DurationStatistics compileDuration = new DurationStatistics("Compilation Time");
+	public static CpuDurationStatistics compileDuration = new CpuDurationStatistics("Compilation Time");
 	private Document configuration;
 	private NativeCodeManager nativeCodeManager;
     public static boolean ignoreInvalidMemory = false;
+    public int defaultMethodMaxInstructions = 3000;
 
     public static boolean isIgnoreInvalidMemory() {
         return ignoreInvalidMemory;
@@ -154,7 +156,7 @@ public class Compiler implements ICompiler {
 
 	public static void exit() {
 	    if (instance != null) {
-	        log.info(instance.compileDuration.toString());
+	        log.info(compileDuration.toString());
 	    }
 	}
 
@@ -193,6 +195,8 @@ public class Compiler implements ICompiler {
 		} else {
 			nativeCodeManager = new NativeCodeManager(null);
 		}
+
+		setDefaultMethodMaxInstructions(Settings.getInstance().readInt("emu.compiler.methodMaxInstructions", 3000));
 
 		reset();
 	}
@@ -402,5 +406,15 @@ public class Compiler implements ICompiler {
 
 	public NativeCodeManager getNativeCodeManager() {
 		return nativeCodeManager;
+	}
+
+	public int getDefaultMethodMaxInstructions() {
+		return defaultMethodMaxInstructions;
+	}
+
+	public void setDefaultMethodMaxInstructions(int defaultMethodMaxInstructions) {
+		this.defaultMethodMaxInstructions = defaultMethodMaxInstructions;
+
+		log.info(String.format("Compiler MethodMaxInstructions: %d", defaultMethodMaxInstructions));
 	}
 }

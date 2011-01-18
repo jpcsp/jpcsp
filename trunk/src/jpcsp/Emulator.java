@@ -83,16 +83,18 @@ public class Emulator implements Runnable {
         Compiler.exit();
         RuntimeContext.exit();
         Profiler.exit();
+        SyscallHandler.exit();
         if (Modules.ThreadManForUserModule.statistics != null && Modules.sceDisplayModule.statistics != null) {
             long totalMillis = getClock().milliTime();
             long displayMillis = Modules.sceDisplayModule.statistics.cumulatedTimeMillis;
-            long syscallMillis = SyscallHandler.durationStatistics.cumulatedTimeMillis;
-            long idleMillis = RuntimeContext.idleDuration.cumulatedTimeMillis;
-            long cpuMillis = totalMillis - displayMillis - syscallMillis - idleMillis;
+            long syscallCpuMillis = SyscallHandler.durationStatistics.getCpuDurationMillis();
+            long idleCpuMillis = RuntimeContext.idleDuration.getCpuDurationMillis();
+            long compilationCpuMillis = Compiler.compileDuration.getCpuDurationMillis();
+            long cpuMillis = Modules.ThreadManForUserModule.statistics.allCpuMillis - syscallCpuMillis - compilationCpuMillis - idleCpuMillis;
             long cpuCycles = Modules.ThreadManForUserModule.statistics.allCycles;
             double totalSecs = totalMillis / 1000.0;
             double displaySecs = displayMillis / 1000.0;
-            double syscallSecs = syscallMillis / 1000.0;
+            double syscallSecs = syscallCpuMillis / 1000.0;
             double cpuSecs = cpuMillis / 1000.0;
             if (totalSecs != 0) {
                 log.info("Total execution time: " + String.format("%.3f", totalSecs) + "s");
@@ -100,7 +102,6 @@ public class Emulator implements Runnable {
                 log.info("     Display time: " + String.format("%.3f", displaySecs) + "s (" + String.format("%.1f", displaySecs / totalSecs * 100) + "%)");
                 log.info("     Syscall time: " + String.format("%.3f", syscallSecs) + "s (" + String.format("%.1f", syscallSecs / totalSecs * 100) + "%)");
             }
-            log.info(SyscallHandler.durationStatistics.toString());
             if (VideoEngine.getStatistics() != null) {
                 long videoCalls = VideoEngine.getStatistics().numberCalls;
                 if (videoCalls != 0) {
