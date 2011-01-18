@@ -551,6 +551,8 @@ public class VideoEngine {
         } else {
             // Finish this list
             currentList.finishList();
+            // Trigger a FINISH callback to avoid hanging the application...
+            currentList.pushFinishCallback(currentList.id, 0);
             listHasEnded = true;
             abort = true;
         }

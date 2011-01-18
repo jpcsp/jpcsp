@@ -153,8 +153,6 @@ public class sceAudio implements HLEModule, HLEStartModule {
     protected SoundChannel[] pspPCMChannels;
     protected SoundChannel pspSRCChannel;
 
-    protected boolean isAudioOutput2 = false;
-
     protected boolean disableChReserve;
     protected boolean disableBlockingAudio;
 
@@ -265,6 +263,28 @@ public class sceAudio implements HLEModule, HLEStartModule {
         }
 
         return len;
+    }
+
+    protected void hleAudioSRCChReserve(Processor processor, int samplecount, int freq, int format) {
+        CpuState cpu = processor.cpu;
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+
+        if (disableChReserve) {
+            log.warn("IGNORED hleAudioSRCChReserve samplecount= " + samplecount + " freq= " + freq + " format=" + format);
+            cpu.gpr[2] = -1;
+        } else {
+            if (!pspSRCChannel.isReserved()) {
+            	pspSRCChannel.setSampleRate(freq);
+                pspSRCChannel.setReserved(true);
+                pspSRCChannel.setSampleLength(samplecount);
+                pspSRCChannel.setFormat(format);
+            }
+        }
+        cpu.gpr[2] = 0;
     }
 
     public void sceAudioInit(Processor processor) {
@@ -584,8 +604,15 @@ public class sceAudio implements HLEModule, HLEStartModule {
     }
 
     public void sceAudioOutput2Reserve(Processor processor) {
-        isAudioOutput2 = true;
-        sceAudioSRCChReserve(processor);
+        CpuState cpu = processor.cpu;
+
+        int samplecount = cpu.gpr[4];
+
+        if (log.isDebugEnabled()) {
+    		log.debug(String.format("sceAudioOutput2Reserve sampleCount=%d", samplecount));
+        }
+
+        hleAudioSRCChReserve(processor, samplecount, 44100, SoundChannel.FORMAT_STEREO);
     }
 
     public void sceAudioOutput2Release(Processor processor) {
@@ -631,34 +658,10 @@ public class sceAudio implements HLEModule, HLEStartModule {
         int format = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-        	if (isAudioOutput2) {
-        		log.debug(String.format("sceAudioOutput2Reserve sampleCount=%d", samplecount));
-        	} else {
-        		log.debug(String.format("sceAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", samplecount, freq, format));
-        	}
+    		log.debug(String.format("sceAudioSRCChReserve sampleCount=%d, freq=%d, format=%d", samplecount, freq, format));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        if (isAudioOutput2) {
-            freq = 44100;
-            format = 0;
-            isAudioOutput2 = false;
-        }
-        if (disableChReserve) {
-            log.warn("IGNORED sceAudioSRCChReserve samplecount= " + samplecount + " freq= " + freq + " format=" + format);
-            cpu.gpr[2] = -1;
-        } else {
-            if (!pspSRCChannel.isReserved()) {
-            	pspSRCChannel.setSampleRate(freq);
-                pspSRCChannel.setReserved(true);
-                pspSRCChannel.setSampleLength(samplecount);
-                pspSRCChannel.setFormat(format);
-            }
-        }
-        cpu.gpr[2] = 0;
+        hleAudioSRCChReserve(processor, samplecount, freq, format);
     }
 
     public void sceAudioSRCChRelease(Processor processor) {
