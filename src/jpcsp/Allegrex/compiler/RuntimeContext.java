@@ -40,7 +40,7 @@ import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
-import jpcsp.util.DurationStatistics;
+import jpcsp.util.CpuDurationStatistics;
 
 import org.apache.log4j.Logger;
 
@@ -87,7 +87,7 @@ public class RuntimeContext {
 	private static volatile Emulator emulator;
 	private static volatile boolean isIdle = false;
 	private static volatile boolean reset = false;
-	public  static DurationStatistics idleDuration = new DurationStatistics("Idle Time");
+	public  static CpuDurationStatistics idleDuration = new CpuDurationStatistics("Idle Time");
 	private static Map<Instruction, Integer> instructionTypeCounts = Collections.synchronizedMap(new HashMap<Instruction, Integer>());
 	private static SceKernelThreadInfo pendingCallbackThread = null;
     private static SceKernelThreadInfo pendingCallbackReturnThread = null;

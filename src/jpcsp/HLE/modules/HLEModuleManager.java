@@ -46,7 +46,9 @@ import jpcsp.HLE.kernel.types.SceModule;
 public class HLEModuleManager {
     private static HLEModuleManager instance;
 
-    private HashMap<Integer, HLEModuleFunction> syscallCodeToFunction;
+    // Store the syscallCodeToFunction map into an array to improve the performance
+    // of handleSyscall().
+    private HLEModuleFunction[] syscallCodeToFunction;
     private int syscallCodeAllocator;
     private boolean modulesStarted = false;
 
@@ -169,11 +171,11 @@ public class HLEModuleManager {
     }
 
     public void Initialise(int firmwareVersion) {
-        syscallCodeToFunction = new HashMap<Integer, HLEModuleFunction>();
-
         // Official syscalls start at 0x2000,
         // so we'll put the HLE syscalls far away at 0x4000.
         syscallCodeAllocator = 0x4000;
+
+        syscallCodeToFunction = new HLEModuleFunction[syscallCodeAllocator];
 
         this.firmwareVersion = firmwareVersion;
         installDefaultModules();
@@ -209,20 +211,6 @@ public class HLEModuleManager {
         	}
         }
     }
-
-    /** @return the UID assigned to the module or negative on error */
-    /* unused
-    public int LoadHLEModule(String modname, HLEModule module) {
-        int uid = -1;
-        module.installModule(this, firmwareVersion);
-        SceModule fakeModule = new SceModule(true);
-        fakeModule.modname = modname;
-        fakeModule.write(Memory.getInstance(), fakeModule.address);
-        Managers.modules.addModule(fakeModule);
-        uid = fakeModule.modid;
-        return uid;
-    }
-    */
 
     public boolean hasFlash0Module(String prxname) {
     	if (prxname == null) {
@@ -286,14 +274,24 @@ public class HLEModuleManager {
         return code;
     }
 
+    private void addSyscallCodeToFunction(int code, HLEModuleFunction func) {
+    	if (code >= syscallCodeToFunction.length) {
+    		// Extend the array
+    		HLEModuleFunction[] extendedArray = new HLEModuleFunction[code + 100];
+    		System.arraycopy(syscallCodeToFunction, 0, extendedArray, 0, syscallCodeToFunction.length);
+    		syscallCodeToFunction = extendedArray;
+    	}
+    	syscallCodeToFunction[code] = func;
+    }
+
     public void addFunction(int nid, HLEModuleFunction func) {
         int code = getSyscallFromNid(nid);
-    	if (syscallCodeToFunction.containsKey(code)) {
+    	if (code < syscallCodeToFunction.length && syscallCodeToFunction[code] != null) {
         	Modules.log.error(String.format("Tried to register a second handler for NID 0x%08X called %s", nid, func.getFunctionName()));
     	} else {
             func.setNid(nid);
     		func.setSyscallCode(code);
-    		syscallCodeToFunction.put(code, func);
+    		addSyscallCodeToFunction(code, func);
     	}
     }
 
@@ -304,18 +302,22 @@ public class HLEModuleManager {
         int code = syscallCodeAllocator++;
 
         func.setSyscallCode(code);
-        syscallCodeToFunction.put(code, func);
+		addSyscallCodeToFunction(code, func);
     }
 
     public void removeFunction(HLEModuleFunction func) {
-        /*
-        System.out.println("HLEModuleManager - unregistering "
-                + func.getModuleName() + "_"
-                + String.format("%08x", func.getNid()) + "_"
-                + func.getFunctionName());
-        */
         int syscallCode = func.getSyscallCode();
-        syscallCodeToFunction.remove(syscallCode);
+        if (syscallCode >= 0 && syscallCode < syscallCodeToFunction.length) {
+        	syscallCodeToFunction[syscallCode] = null;
+        }
+    }
+
+    private HLEModuleFunction getFunctionFromSyscallCode(int code) {
+    	if (code < 0 || code >= syscallCodeToFunction.length) {
+    		return null;
+    	}
+
+    	return syscallCodeToFunction[code];
     }
 
     /**
@@ -323,20 +325,23 @@ public class HLEModuleManager {
      * @return true if handled, false if not handled.
      */
     public boolean handleSyscall(int code) {
-        HLEModuleFunction func = syscallCodeToFunction.get(code);
-        if (func != null) {
-            func.execute(Emulator.getProcessor());
-            return true;
+    	HLEModuleFunction func = getFunctionFromSyscallCode(code);
+        if (func == null) {
+        	return false;
         }
-		return false;
+
+        func.execute(Emulator.getProcessor());
+
+        return true;
     }
 
     public String functionName(int code) {
-    	HLEModuleFunction func = syscallCodeToFunction.get(code);
-        if (func != null) {
-            return func.getFunctionName();
-        }
-		return null;
+    	HLEModuleFunction func = getFunctionFromSyscallCode(code);
+    	if (func == null) {
+    		return null;
+    	}
+
+        return func.getFunctionName();
     }
 
 	public void startModules() {
@@ -365,5 +370,9 @@ public class HLEModuleManager {
 		}
 
 		modulesStarted = false;
+	}
+
+	public int getMaxSyscallCode() {
+		return syscallCodeAllocator;
 	}
 }

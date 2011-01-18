@@ -16,19 +16,84 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.CodeBlock;
+import jpcsp.Allegrex.compiler.CodeInstruction;
+
 /**
  * @author gid15
  *
  */
 public class NativeCodeSequence {
 	protected String name;
-	protected int[] opcodes = null;
+	protected NativeOpcodeInfo[] opcodes = new NativeOpcodeInfo[0];
 	private Class<INativeCodeSequence> nativeCodeSequenceClass;
-	private int[] parameters = new int[0];
+	private ParameterInfo[] parameters = new ParameterInfo[0];
 	private int branchInstruction = -1;
 	private boolean isReturning = false;
 	private boolean wholeCodeBlock = false;
 	private String methodName = "call";
+
+	private static class NativeOpcodeInfo {
+		private int opcode;
+		private int mask;
+		private int notMask;
+		private String label;
+		private int maskedOpcode;
+
+		public NativeOpcodeInfo(int opcode, int mask, String label) {
+			this.opcode = opcode;
+			this.mask = mask;
+			this.label = label;
+			maskedOpcode = opcode & mask;
+			notMask = ~mask;
+		}
+
+		public boolean isMatching(CodeInstruction codeInstruction) {
+			return (codeInstruction.getOpcode() & mask) == maskedOpcode;
+		}
+
+		public int getOpcode() {
+			return opcode;
+		}
+
+		public String getLabel() {
+			return label;
+		}
+
+		public int getMask() {
+			return mask;
+		}
+
+		public int getNotMask() {
+			return notMask;
+		}
+	}
+
+	private static class ParameterInfo {
+		private int value;
+		private boolean isLabelIndex;
+
+		public ParameterInfo(int value, boolean isLabelIndex) {
+			this.value = value;
+			this.isLabelIndex = isLabelIndex;
+		}
+
+		public int getValue() {
+			return value;
+		}
+
+		public int getValue(CodeInstruction codeInstruction, NativeOpcodeInfo[] opcodes) {
+			if (isLabelIndex && value >= 0 && value < opcodes.length) {
+				int labelAddress = codeInstruction.getAddress() + (value << 2);
+				int targetOpcode = Memory.getInstance().read32(labelAddress);
+				NativeOpcodeInfo opcode = opcodes[value];
+				return targetOpcode & opcode.getNotMask();
+			}
+
+			return value;
+		}
+	}
 
 	public NativeCodeSequence(String name, Class<INativeCodeSequence> nativeCodeSequenceClass) {
 		this.name = name;
@@ -43,24 +108,20 @@ public class NativeCodeSequence {
 		this.name = name;
 	}
 
-	public void addOpcode(int opcode) {
-		if (opcodes == null) {
-			opcodes = new int[1];
-		} else {
-			int[] newOpcodes = new int[opcodes.length + 1];
-			System.arraycopy(opcodes, 0, newOpcodes, 0, opcodes.length);
-			opcodes = newOpcodes;
-		}
+	public void addOpcode(int opcode, int mask, String label) {
+		NativeOpcodeInfo[] newOpcodes = new NativeOpcodeInfo[opcodes.length + 1];
+		System.arraycopy(opcodes, 0, newOpcodes, 0, opcodes.length);
+		opcodes = newOpcodes;
 
-		opcodes[opcodes.length - 1] = opcode;
+		opcodes[opcodes.length - 1] = new NativeOpcodeInfo(opcode, mask, label);
 	}
 
-	public int[] getOpcodes() {
-		return opcodes;
+	public int getFirstOpcode() {
+		return opcodes[0].getOpcode();
 	}
 
 	public int getNumOpcodes() {
-		return (opcodes == null ? 0 : opcodes.length);
+		return opcodes.length;
 	}
 
 	public Class<INativeCodeSequence> getNativeCodeSequenceClass() {
@@ -71,25 +132,55 @@ public class NativeCodeSequence {
 		this.nativeCodeSequenceClass = nativeCodeSequenceClass;
 	}
 
-	public void setParameter(int parameter, int value) {
+	public int getLabelIndex(String label) {
+		int value = -1;
+
+		if (label == null) {
+			return value;
+		}
+
+		for (int i = 0; i < opcodes.length; i++) {
+			if (label.equalsIgnoreCase(opcodes[i].getLabel())) {
+				value = i;
+				break;
+			}
+		}
+
+		return value;
+	}
+
+	public boolean isMatching(int opcodeIndex, CodeInstruction codeInstruction) {
+		if (codeInstruction == null) {
+			return false;
+		}
+
+		return opcodes[opcodeIndex].isMatching(codeInstruction);
+	}
+
+	public void setParameter(int parameter, int value, boolean isLabelIndex) {
 		if (parameter >= parameters.length) {
-			int[] newParameters = new int[parameter + 1];
+			ParameterInfo[] newParameters = new ParameterInfo[parameter + 1];
 			System.arraycopy(parameters, 0, newParameters, 0, parameters.length);
 			for (int i = parameters.length; i < parameter; i++) {
-				newParameters[i] = 0;
+				newParameters[i] = null;
 			}
 			parameters = newParameters;
 		}
 
-		parameters[parameter] = value;
+		parameters[parameter] = new ParameterInfo(value, isLabelIndex);
 	}
 
-	public int getParameter(int parameter) {
+	public int getParameterValue(int parameter, CodeInstruction codeInstruction) {
 		if (parameter >= parameters.length) {
 			return 0;
 		}
 
-		return parameters[parameter];
+		ParameterInfo parameterInfo = parameters[parameter];
+		if (codeInstruction == null) {
+			return parameterInfo.getValue();
+		}
+
+		return parameterInfo.getValue(codeInstruction, opcodes);
 	}
 
 	public int getNumberParameters() {
@@ -132,7 +223,7 @@ public class NativeCodeSequence {
 			if (i > 0) {
 				result.append(",");
 			}
-			result.append(getParameter(i));
+			result.append(getParameterValue(i, null));
 		}
 		result.append(")");
 
