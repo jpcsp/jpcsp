@@ -171,6 +171,12 @@ public class AtracCodec {
         atracEndSample = -1;
         atracRemainFrames = 1;
 
+        int memoryCodecType = sceAtrac3plus.getCodecType(address);
+        if (memoryCodecType != codecType && memoryCodecType != 0) {
+        	Modules.log.info(String.format("Different CodecType received %d != %d, assuming %d", codecType, memoryCodecType, memoryCodecType));
+        	codecType = memoryCodecType;
+        }
+
         if (codecType == 0x00001001) {
             Modules.log.info("Decodable AT3 data detected.");
             if (checkMediaEngineState()) {
