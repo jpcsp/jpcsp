@@ -326,8 +326,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected int systemParam_buttonPreference;
 
     // Save list vars.
-    protected Object saveListSelection;
-    protected boolean saveListSelected;
+    volatile protected Object saveListSelection;
 
     protected static class UtilityDialogState {
 
@@ -775,8 +774,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
         mainDisplay.getRootPane().setLayout(layout);
         mainDisplay.setVisible(true);
 
-        saveListSelected = false;
-
         selectButton.addActionListener(new ActionListener() {
 
             @Override
@@ -784,16 +781,18 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 if (table.getSelectedRow() != -1) {
                     saveListSelection = saveNames[table.getSelectedRow()];
                     mainDisplay.dispose();
-                    saveListSelected = true;
                 }
             }
         });
 
         // Wait for user selection.
-        while (!saveListSelected) {
-            if (!mainDisplay.isVisible()) {
-                break;
-            }
+        while (mainDisplay.isVisible()) {
+        	try {
+        		// Sleep a while...
+				Thread.sleep(10);
+			} catch (InterruptedException e1) {
+				// Ignore Exception
+			}
         }
 
         Settings.getInstance().writeWindowPos(windowNameForSettings, mainDisplay.getLocation());
