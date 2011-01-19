@@ -530,7 +530,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     	id.release();
     }
 
-    protected int getCodecType(int address) {
+    public static int getCodecType(int address) {
         int at3magic = Memory.getInstance().read16(address + 20);
         if (at3magic == AT3_MAGIC) {
             return PSP_MODE_AT_3;
