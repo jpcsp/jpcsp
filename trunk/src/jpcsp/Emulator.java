@@ -348,6 +348,10 @@ public class Emulator implements Runnable {
         instructionCounter.setModule(module);
     }
 
+    public int getFirmwareVersion() {
+        return firmwareVersion;
+    }
+
     /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
     public void setFirmwareVersion(int firmwareVersion) {
         this.firmwareVersion = firmwareVersion;

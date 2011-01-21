@@ -270,8 +270,12 @@ public class Loader {
     private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress) throws IOException {
         PSP psp = new PSP(f);
         if (psp.isValid()) {
+            LoadELF(psp.decrypt(f), module, baseAddress);
             module.fileFormat |= FORMAT_PSP;
-            Emulator.log.warn("Encrypted file not supported! (~PSP)");
+            Emulator.log.warn("Encrypted file detected! (~PSP)");
+            if(Emulator.getInstance().getFirmwareVersion() >= 280) {
+                Emulator.log.info("Calling crypto engine for PRX version 2.");
+            }
             return true;
         }
 		// Not a valid PSP
