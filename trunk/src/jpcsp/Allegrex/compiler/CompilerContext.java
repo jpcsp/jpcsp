@@ -32,6 +32,7 @@ import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.Allegrex.VfpuState.Vcr;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxDst;
 import jpcsp.Allegrex.VfpuState.Vcr.PfxSrc;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.Allegrex.compiler.nativeCode.Nop;
@@ -119,6 +120,7 @@ public class CompilerContext implements ICompilerContext {
 	        addFastSyscall(0x369ED59D); // sceKernelGetSystemTimeLow
 	        addFastSyscall(0xB5F6DC87); // sceMpegRingbufferAvailableSize
 	        addFastSyscall(0xE0D68148); // sceGeListUpdateStallAddr
+	        addFastSyscall(0x34B9FA9E); // sceKernelDcacheWritebackInvalidateRangeFunction
         }
     }
 
@@ -573,6 +575,7 @@ public class CompilerContext implements ICompilerContext {
 
     public void visitJump() {
     	flushInstructionCount(true, false);
+    	checkSync();
 
     	//
         //      jr x
@@ -632,7 +635,7 @@ public class CompilerContext implements ICompilerContext {
     				Compiler.log.debug(String.format("Inlining call at 0x%08X to %s", getCodeInstruction().getAddress(), calledNativeCodeBlock));
     			}
 
-    			visitNativeCodeSequence(calledNativeCodeBlock);
+    			visitNativeCodeSequence(calledNativeCodeBlock, address, null);
     		}
     	} else {
 	    	if (useAltervativeReturnAddress) {
@@ -1562,34 +1565,28 @@ public class CompilerContext implements ICompilerContext {
         mv.visitInsn(Opcodes.IRETURN);
     }
 
-	private void visitNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
+	private void visitNativeCodeSequence(NativeCodeSequence nativeCodeSequence, int address, NativeCodeInstruction nativeCodeInstruction) {
     	StringBuilder methodSignature = new StringBuilder("(");
     	int numberParameters = nativeCodeSequence.getNumberParameters();
     	for (int i = 0; i < numberParameters; i++) {
-    		loadImm(nativeCodeSequence.getParameterValue(i, codeInstruction));
+    		loadImm(nativeCodeSequence.getParameterValue(i, address));
     		methodSignature.append("I");
     	}
     	methodSignature.append(")V");
 	    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(nativeCodeSequence.getNativeCodeSequenceClass()), nativeCodeSequence.getMethodName(), methodSignature.toString());
 
-	    if (nativeCodeSequence.hasBranchInstruction()) {
-	    	int branchInstructionAddress = getCodeInstruction().getAddress() + nativeCodeSequence.getBranchInstructionAddressOffset();
-
-	    	CodeInstruction branchInstruction = getCodeBlock().getCodeInstruction(branchInstructionAddress);
-	    	if (branchInstruction != null) {
-	    		int branchingTo = branchInstruction.getBranchingTo();
-	    		CodeInstruction targetInstruction = getCodeBlock().getCodeInstruction(branchingTo);
-	    		if (targetInstruction != null) {
-	    			visitJump(Opcodes.GOTO, targetInstruction);
-	    		} else {
-	    			visitJump(Opcodes.GOTO, branchingTo);
-	    		}
-	    	}
+	    if (nativeCodeInstruction != null && nativeCodeInstruction.isBranching()) {
+    		CodeInstruction targetInstruction = getCodeBlock().getCodeInstruction(nativeCodeInstruction.getBranchingTo());
+    		if (targetInstruction != null) {
+    			visitJump(Opcodes.GOTO, targetInstruction);
+    		} else {
+    			visitJump(Opcodes.GOTO, nativeCodeInstruction.getBranchingTo());
+    		}
 	    }
 	}
 
-	public void compileNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
-	    visitNativeCodeSequence(nativeCodeSequence);
+	public void compileNativeCodeSequence(NativeCodeSequence nativeCodeSequence, NativeCodeInstruction nativeCodeInstruction) {
+	    visitNativeCodeSequence(nativeCodeSequence, nativeCodeInstruction.getAddress(), nativeCodeInstruction);
 
 	    if (nativeCodeSequence.isReturning()) {
 	    	loadLocalVar(LOCAL_RETURN_ADDRESS);
@@ -1598,7 +1595,7 @@ public class CompilerContext implements ICompilerContext {
 	    }
 
 	    // Replacing the whole CodeBlock?
-	    if (getCodeBlock().getLength() == 1) {
+	    if (getCodeBlock().getLength() == nativeCodeSequence.getNumOpcodes() && !nativeCodeSequence.hasBranchInstruction()) {
         	nativeCodeManager.setCompiledNativeCodeBlock(getCodeBlock().getStartAddress(), nativeCodeSequence);
 
         	// Be more verbose when Debug enabled

@@ -30,20 +30,22 @@ import jpcsp.memory.MemoryWriter;
  *
  */
 public class sceGu extends AbstractNativeCodeSequence {
+	private static final boolean writeTFLUSH = false;
+
 	static private void sceGeListUpdateStallAddr(int addr) {
 		// Simplification: we can update the stall address only if the VideoEngine
 		// is processing one and only one GE list.
 		VideoEngine videoEngine = VideoEngine.getInstance();
 		if (videoEngine.numberDrawLists() == 0) {
 			PspGeList geList = videoEngine.getCurrentList();
-			if (geList != null) {
+			if (geList != null && geList.getStallAddr() != 0) {
 				addr &= Memory.addressMask;
 				geList.setStallAddr(addr);
 			}
 		}
 	}
 
-	static public void sceGuDrawArray(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+	static public void sceGuDrawArray(int contextAddr1, int contextAddr2, int listCurrentOffset, int updateStall) {
 		Memory mem = getMemory();
 		int prim = getGprA0();
 		int vtype = getGprA1();
@@ -86,10 +88,12 @@ public class sceGu extends AbstractNativeCodeSequence {
 
 		mem.write32(context + listCurrentOffset, listCurrent);
 
-		sceGeListUpdateStallAddr(listCurrent);
+		if (updateStall != 0) {
+			sceGeListUpdateStallAddr(listCurrent);
+		}
 	}
 
-	static public void sceGuDrawArrayN(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+	static public void sceGuDrawArrayN(int contextAddr1, int contextAddr2, int listCurrentOffset, int updateStall) {
 		Memory mem = getMemory();
 		int prim = getGprA0();
 		int vtype = getGprA1();
@@ -101,46 +105,50 @@ public class sceGu extends AbstractNativeCodeSequence {
 		int listCurrent = mem.read32(context + listCurrentOffset);
 		int cmd;
 
+		IMemoryWriter listWriter = MemoryWriter.getMemoryWriter(listCurrent, (5 + n) << 2, 4);
+
 		if (vtype != 0) {
 			cmd = (GeCommands.VTYPE << 24) | (vtype & 0x00FFFFFF);
-			mem.write32(listCurrent, cmd);
+			listWriter.writeNext(cmd);
 			listCurrent += 4;
 		}
 
 		if (indices != 0) {
 			cmd = (GeCommands.BASE << 24) | ((indices >> 8) & 0x000F0000);
-			mem.write32(listCurrent, cmd);
+			listWriter.writeNext(cmd);
 			listCurrent += 4;
 
 			cmd = (GeCommands.IADDR << 24) | (indices & 0x00FFFFFF);
-			mem.write32(listCurrent, cmd);
+			listWriter.writeNext(cmd);
 			listCurrent += 4;
 		}
 
 		if (vertices != 0) {
 			cmd = (GeCommands.BASE << 24) | ((vertices >> 8) & 0x000F0000);
-			mem.write32(listCurrent, cmd);
+			listWriter.writeNext(cmd);
 			listCurrent += 4;
 
 			cmd = (GeCommands.VADDR << 24) | (vertices & 0x00FFFFFF);
-			mem.write32(listCurrent, cmd);
+			listWriter.writeNext(cmd);
 			listCurrent += 4;
 		}
 
 		if (n > 0) {
 			cmd = (GeCommands.PRIM << 24) | ((prim & 0x7) << 16) | count;
 			for (int i = 0; i < n; i++) {
-				mem.write32(listCurrent, cmd);
-				listCurrent += 4;
+				listWriter.writeNext(cmd);
 			}
+			listCurrent += (n << 2);
 		}
 
 		mem.write32(context + listCurrentOffset, listCurrent);
 
-		sceGeListUpdateStallAddr(listCurrent);
+		if (updateStall != 0) {
+			sceGeListUpdateStallAddr(listCurrent);
+		}
 	}
 
-	static public void sceGuDrawSpline(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+	static public void sceGuDrawSpline(int contextAddr1, int contextAddr2, int listCurrentOffset, int updateStall) {
 		Memory mem = getMemory();
 		int vtype = getGprA0();
 		int ucount = getGprA1();
@@ -185,7 +193,9 @@ public class sceGu extends AbstractNativeCodeSequence {
 
 		mem.write32(context + listCurrentOffset, listCurrent);
 
-		sceGeListUpdateStallAddr(listCurrent);
+		if (updateStall != 0) {
+			sceGeListUpdateStallAddr(listCurrent);
+		}
 	}
 
 	static public void sceGuCopyImage(int contextAddr1, int contextAddr2, int listCurrentOffset) {
@@ -233,5 +243,40 @@ public class sceGu extends AbstractNativeCodeSequence {
 
 		listWriter.flush();
 		mem.write32(context + listCurrentOffset, listCurrent + 28);
+	}
+
+	static public void sceGuTexImage(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+		Memory mem = getMemory();
+		int mipmap = getGprA0();
+		int width = getGprA1();
+		int height = getGprA2();
+		int tbw = getGprA3();
+		int tbp = getGprT0();
+		int context = mem.read32(getRelocatedAddress(contextAddr1, contextAddr2));
+		int listCurrent = mem.read32(context + listCurrentOffset);
+		int cmd;
+
+		cmd = ((GeCommands.TBP0 + mipmap) << 24) | (tbp & 0x00FFFFFF);
+		mem.write32(listCurrent, cmd);
+		listCurrent += 4;
+
+		cmd = ((GeCommands.TBW0 + mipmap) << 24) | ((tbp >> 8) & 0x000F0000) | tbw;
+		mem.write32(listCurrent, cmd);
+		listCurrent += 4;
+
+		// widthExp = 31 - CLZ(width)
+		int widthExp = 31 - Integer.numberOfLeadingZeros(width);
+		int heightExp = 31 - Integer.numberOfLeadingZeros(height);
+		cmd = ((GeCommands.TSIZE0 + mipmap) << 24) | (heightExp << 8) | widthExp;
+		mem.write32(listCurrent, cmd);
+		listCurrent += 4;
+
+		if (writeTFLUSH) {
+			cmd = (GeCommands.TFLUSH << 24);
+			mem.write32(listCurrent, cmd);
+			listCurrent += 4;
+		}
+
+		mem.write32(context + listCurrentOffset, listCurrent);
 	}
 }

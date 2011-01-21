@@ -298,16 +298,20 @@ public class FastMemory extends Memory {
 		}
 
 		// copy 1 int at each loop
-		while (length >= 4 && source.remaining() >= 4) {
+		int countInt = Math.min(length, source.remaining()) >> 2;
+		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, countInt, 4);
+		for (int i = 0; i < countInt; i++) {
 			int data1 = source.get() & 0xFF;
 			int data2 = source.get() & 0xFF;
 			int data3 = source.get() & 0xFF;
 			int data4 = source.get() & 0xFF;
 			int data = (data4 << 24) | (data3 << 16) | (data2 << 8) | data1;
-			write32(address, data);
-			address += 4;
-			length -= 4;
+			memoryWriter.writeNext(data);
 		}
+		memoryWriter.flush();
+		int copyLength = countInt << 2;
+		length -= copyLength;
+		address += copyLength;
 
 		// copy rest length in 1 byte steps (rest length <= 3)
 		while (length > 0 && source.hasRemaining()) {
@@ -325,18 +329,18 @@ public class FastMemory extends Memory {
 	// Source, destination and length are "int"-aligned
 	private void memcpyAligned4(int destination, int source, int length, boolean checkOverlap) {
 		if (checkOverlap || !areOverlapping(destination, source, length)) {
-			IntBuffer sourceBuffer = getBuffer(source, length);
-			IntBuffer destinationBuffer = getBuffer(destination, length);
-			// Direct copy, IntBuffer is handling correctly overlapping buffers
-			destinationBuffer.put(sourceBuffer);
+			// Direct copy, System.arraycopy is handling correctly overlapping arrays
+			System.arraycopy(all, source >> 2, all, destination >> 2, length >> 2);
 		} else {
 			// Buffers are overlapping, but we have to copy as they would not overlap.
 			// Unfortunately, IntBuffer operation are always checking for overlapping buffers,
 			// so we have to copy manually...
 			IMemoryReader sourceReader = MemoryReader.getMemoryReader(source, length, 4);
+			IMemoryWriter destinationWriter = MemoryWriter.getMemoryWriter(destination, length, 4);
 			for (int i = 0; i < length; i += 4) {
-				write32(destination + i, sourceReader.readNext());
+				destinationWriter.writeNext(sourceReader.readNext());
 			}
+			destinationWriter.flush();
 		}
 	}
 

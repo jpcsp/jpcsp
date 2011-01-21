@@ -201,11 +201,11 @@ public class Compiler implements ICompiler {
 		reset();
 	}
 
-	private int jumpTarget(int pc, int opcode) {
+	public static int jumpTarget(int pc, int opcode) {
 		return (pc & 0xF0000000) | ((opcode & 0x03FFFFFF) << 2);
 	}
 
-	private int branchTarget(int pc, int opcode) {
+	public static int branchTarget(int pc, int opcode) {
 		return pc + (((short) (opcode & 0x0000FFFF)) << 2);
 	}
 

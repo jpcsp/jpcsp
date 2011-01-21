@@ -130,6 +130,8 @@ public class VideoEngine {
     private static final char SPACE = ' ';
     private DurationStatistics statistics;
     private DurationStatistics vertexStatistics = new DurationStatistics("Vertex");
+    private DurationStatistics vertexReadingStatistics = new DurationStatistics("Vertex Reading");
+    private DurationStatistics drawArraysStatistics = new DurationStatistics("glDrawArrays");
     private DurationStatistics waitSignalStatistics = new DurationStatistics("Wait for GE Signal completion");
     private DurationStatistics waitStallStatistics = new DurationStatistics("Wait on stall");
     private DurationStatistics textureCacheLookupStatistics = new DurationStatistics("Lookup in TextureCache");
@@ -385,6 +387,8 @@ public class VideoEngine {
                 VideoEngine.log.info("    " + instance.commandStatistics[i].toString());
             }
             log.info(instance.vertexStatistics);
+            log.info(instance.vertexReadingStatistics);
+            log.info(instance.drawArraysStatistics);
             log.info(instance.waitSignalStatistics);
             log.info(instance.waitStallStatistics);
             log.info(instance.textureCacheLookupStatistics);
@@ -1474,7 +1478,9 @@ public class VideoEngine {
             // The best case is no reading and no conversion at all when all the
             // vertex info are available in a format usable by OpenGL.
             //
+        	vertexReadingStatistics.start();
             Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex, re.canAllNativeVertexInfo());
+            vertexReadingStatistics.end();
 
             enableClientState(useVertexColor, useTexture);
 
@@ -1536,7 +1542,9 @@ public class VideoEngine {
             setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), true);
             setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), true);
 
+            drawArraysStatistics.start();
             re.drawArrays(type, 0, numberOfVertex);
+            drawArraysStatistics.end();
 
         } else {
             // Non-optimized VertexInfo reading
@@ -1563,6 +1571,7 @@ public class VideoEngine {
                 case PRIM_TRIANGLE_FANS:
                 	float[] normalizedNormal = new float[3];
                     if (cachedVertexInfo == null) {
+                    	vertexReadingStatistics.start();
                         for (int i = 0; i < numberOfVertex; i++) {
                             int addr = vinfo.getAddress(mem, i);
 
@@ -1605,6 +1614,7 @@ public class VideoEngine {
                                 }
                             }
                         }
+                        vertexReadingStatistics.end();
 
                         if (useVertexCache) {
                             cachedVertexInfo = new VertexInfo(vinfo);
@@ -1622,7 +1632,9 @@ public class VideoEngine {
                         cachedVertexInfo.bindVertex(re);
                     }
                     setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
+                    drawArraysStatistics.start();
                     re.drawArrays(type, 0, numberOfVertex);
+                    drawArraysStatistics.end();
                     maxSpriteHeight = Integer.MAX_VALUE;
                     maxSpriteWidth = Integer.MAX_VALUE;
                     break;
@@ -1639,6 +1651,7 @@ public class VideoEngine {
                 	}
 
                 	if (cachedVertexInfo == null) {
+                		vertexReadingStatistics.start();
                         for (int i = 0; i < numberOfVertex; i += 2) {
                             int addr1 = vinfo.getAddress(mem, i);
                             int addr2 = vinfo.getAddress(mem, i + 1);
@@ -1757,6 +1770,8 @@ public class VideoEngine {
                                 floatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
                             }
                         }
+                        vertexReadingStatistics.end();
+
                         if (useVertexCache) {
                             cachedVertexInfo = new VertexInfo(vinfo);
                             VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
@@ -1773,7 +1788,9 @@ public class VideoEngine {
                         cachedVertexInfo.bindVertex(re);
                     }
                     setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, 0, cachedVertexInfo == null);
+                    drawArraysStatistics.start();
                     re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
+                    drawArraysStatistics.end();
                     context.cullFaceFlag.updateEnabled();
                     break;
             }
@@ -5087,7 +5104,9 @@ public class VideoEngine {
         	}
 
         	bufferManager.setBufferData(bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
+        	drawArraysStatistics.start();
             re.drawArrays(patch_prim_types[context.patch_prim], 0, (context.patch_div_s + 1) * 2);
+            drawArraysStatistics.end();
         }
 
         endRendering(useVertexColor, useTexture, ucount * vcount);

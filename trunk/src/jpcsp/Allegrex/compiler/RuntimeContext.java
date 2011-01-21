@@ -38,6 +38,7 @@ import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.hardware.Interrupts;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.CpuDurationStatistics;
@@ -133,32 +134,32 @@ public class RuntimeContext {
 			int sp = cpu.gpr[29];
 
 			if (log.isTraceEnabled()) {
-				log.trace(String.format("RuntimeContext.jump sp=0x%08X, stack=%s", sp, currentRuntimeThread.getStack().toString()));
+				log.trace(String.format("RuntimeContext.jump sp=0x%08X, stack=%s", sp, currentRuntimeThread.getStackString()));
 			}
 
 			// Handle setjmp/longjmp C-like calls
 			if (currentRuntimeThread.hasStackState(address, sp)) {
 		    	StackPopException e = new StackPopException(address, sp);
 		    	if (log.isDebugEnabled()) {
-					log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStack().toString()));
+					log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStackString()));
 		    	}
 		    	throw e;
 			}
 
-			currentRuntimeThread.pushStackState(returnAddress, sp);
+			int previousSp = currentRuntimeThread.pushStackState(returnAddress, sp);
 			while (true) {
 				try {
 					returnValue = jumpCall(address, returnAddress, true);
 				} catch (StackPopException e) {
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("RuntimeContext.jump catched %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStack().toString()));
+						log.debug(String.format("RuntimeContext.jump catched %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStackString()));
 					}
 
 					if (e.getRa() == returnAddress || e.getRa() == alternativeReturnAddress) {
 						returnValue = e.getRa();
 						break;
 					}
-					currentRuntimeThread.popStackState();
+					currentRuntimeThread.popStackState(returnAddress, previousSp);
 					throw e;
 				}
 
@@ -167,15 +168,15 @@ public class RuntimeContext {
 			    } else if (currentRuntimeThread.hasStackState(returnValue, cpu.gpr[29])) {
 			    	StackPopException e = new StackPopException(returnValue, cpu.gpr[29]);
 			    	if (log.isDebugEnabled()) {
-						log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStack().toString()));
+						log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStackString()));
 			    	}
-			    	currentRuntimeThread.popStackState();
+			    	currentRuntimeThread.popStackState(returnAddress, previousSp);
 			    	throw e;
 			    } else {
 			    	address = returnValue;
 			    }
 			}
-	    	currentRuntimeThread.popStackState();
+	    	currentRuntimeThread.popStackState(returnAddress, previousSp);
 		}
 
     	if (debugCodeBlockCalls && log.isDebugEnabled()) {
@@ -626,20 +627,25 @@ public class RuntimeContext {
     }
 
     public static void sync() throws StopThreadException {
-    	if (IntrManager.getInstance().isInsideInterrupt()) {
-    		syncFast();
-    	} else {
-	    	syncPause();
-			Emulator.getScheduler().step();
-			Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
-			syncThread();
-			syncEmulator(false);
-	        syncDebugger();
-	    	syncPause();
-	    	checkStoppedThread();
-         }
+    	do {
+    		wantSync = false;
 
-    	wantSync = false;
+	    	if (IntrManager.getInstance().isInsideInterrupt()) {
+	    		syncFast();
+	    	} else {
+		    	syncPause();
+				Emulator.getScheduler().step();
+				if (Interrupts.isInterruptsEnabled()) {
+					Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+				}
+				syncThread();
+				syncEmulator(false);
+		        syncDebugger();
+		    	syncPause();
+		    	checkStoppedThread();
+	        }
+    	// Check if a new sync request has been received in the meantime
+    	} while (wantSync);
     }
 
     public static void syscallFast(int code) {
@@ -1113,21 +1119,27 @@ public class RuntimeContext {
     }
 
     public static void onNextScheduleModified() {
-    	if (runtimeSyncThread != null) {
-    		runtimeSyncThread.interrupt();
+    	checkSync(false);
+    }
+
+    private static void checkSync(boolean sleep) {
+    	long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
+    	if (delay > 0) {
+    		if (sleep) {
+	    		int intDelay = (int) delay;
+	    		sleep(intDelay / 1000, intDelay % 1000);
+    		}
+    	} else if (wantSync) {
+    		if (sleep) {
+    			sleep(idleSleepMicros);
+    		}
+    	} else {
+    		wantSync = true;
     	}
     }
 
     public static boolean syncDaemonStep() {
-    	long delay = Emulator.getScheduler().getNextActionDelay(idleSleepMicros);
-    	if (delay > 0) {
-    		int intDelay = (int) delay;
-    		sleep(intDelay / 1000, intDelay % 1000);
-    	} else if (wantSync) {
-    		sleep(idleSleepMicros);
-    	} else {
-    		wantSync = true;
-    	}
+    	checkSync(true);
 
     	return enableDaemonThreadSync;
     }

@@ -111,4 +111,55 @@ public class BoneSequence extends AbstractNativeCodeSequence {
 		}
 		dstWriter.flush();
 	}
+
+	static public void call(int matrix1Reg, int matrix2Reg, int destReg, int countReg) {
+		int matrix1Addr = getRegisterValue(matrix1Reg);
+		int matrix2Addr = getRegisterValue(matrix2Reg);
+		int dest = getRegisterValue(destReg);
+		int count = getRegisterValue(countReg);
+
+		if (count <= 0) {
+			return;
+		}
+
+		IMemoryReader matrix1Reader = MemoryReader.getMemoryReader(matrix1Addr, 48 * count, 4);
+		IMemoryReader matrix2Reader = MemoryReader.getMemoryReader(matrix2Addr, 48 * count, 4);
+		IMemoryWriter destWriter = MemoryWriter.getMemoryWriter(dest, 64 * count, 4);
+		final float[] matrix2 = new float[12];
+		int cmdBONE = GeCommands.BONE << 24;
+		int cmdRET = GeCommands.RET << 24;
+		float dot, m1a, m1b, m1c;
+		for (int i = 0; i < count; i++) {
+			for (int j = 0; j < 12; j++) {
+				matrix2[j] = Float.intBitsToFloat(matrix2Reader.readNext());
+			}
+
+			for (int n1 = 0; n1 < 3; n1++) {
+				m1a = Float.intBitsToFloat(matrix1Reader.readNext());
+				m1b = Float.intBitsToFloat(matrix1Reader.readNext());
+				m1c = Float.intBitsToFloat(matrix1Reader.readNext());
+				for (int n2 = 0; n2 < 3; n2++) {
+					dot = m1a * matrix2[n2];
+					dot += m1b * matrix2[n2 + 3];
+					dot += m1c * matrix2[n2 + 6];
+					destWriter.writeNext((Float.floatToRawIntBits(dot) >>> 8) | cmdBONE);
+				}
+			}
+
+			m1a = Float.intBitsToFloat(matrix1Reader.readNext());
+			m1b = Float.intBitsToFloat(matrix1Reader.readNext());
+			m1c = Float.intBitsToFloat(matrix1Reader.readNext());
+			for (int n2 = 0; n2 < 3; n2++) {
+				dot = m1a * matrix2[n2];
+				dot += m1b * matrix2[n2 + 3];
+				dot += m1c * matrix2[n2 + 6];
+				dot += matrix2[n2 + 9];
+				destWriter.writeNext((Float.floatToRawIntBits(dot) >>> 8) | cmdBONE);
+			}
+
+			destWriter.writeNext(cmdRET);
+			destWriter.skip(3);
+		}
+		destWriter.flush();
+	}
 }

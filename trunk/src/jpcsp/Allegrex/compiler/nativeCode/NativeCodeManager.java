@@ -30,6 +30,8 @@ import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.compiler.CodeBlock;
 import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
 
 import org.w3c.dom.Element;
@@ -41,12 +43,15 @@ import org.w3c.dom.NodeList;
  *
  */
 public class NativeCodeManager {
+	private static int defaultOpcodeMask = 0xFFFFFFFF;
 	private HashMap<Integer, List<NativeCodeSequence>> nativeCodeSequencesByFirstOpcode;
+	private List<NativeCodeSequence> nativeCodeSequenceWithMaskInFirstOpcode;
 	private HashMap<Integer, NativeCodeSequence> compiledNativeCodeBlocks;
 
 	public NativeCodeManager(Element configuration) {
 		compiledNativeCodeBlocks = new HashMap<Integer, NativeCodeSequence>();
 		nativeCodeSequencesByFirstOpcode = new HashMap<Integer, List<NativeCodeSequence>>();
+		nativeCodeSequenceWithMaskInFirstOpcode = new LinkedList<NativeCodeSequence>();
 
 		load(configuration);
 	}
@@ -88,20 +93,6 @@ public class NativeCodeManager {
 		return content.toString();
 	}
 
-	private int getInteger(String valueString, int defaultValue) {
-		if (valueString == null) {
-			return defaultValue;
-		}
-
-		try {
-			return Integer.parseInt(valueString);
-		} catch (NumberFormatException e) {
-			Compiler.log.error(e);
-		}
-
-		return defaultValue;
-	}
-
 	private void loadNativeCodeOpcodes(NativeCodeSequence nativeCodeSequence, String codeInstructions) {
 		BufferedReader reader = new BufferedReader(new StringReader(codeInstructions));
 		if (reader == null) {
@@ -125,7 +116,7 @@ public class NativeCodeManager {
 					try {
 						Matcher codeInstructionMatcher = codeInstructionPattern.matcher(line);
 						int opcode = 0;
-						int mask = 0xFFFFFFFF;
+						int mask = defaultOpcodeMask;
 						String label = null;
 						if (codeInstructionMatcher.matches()) {
 							opcode = Utilities.parseAddress(codeInstructionMatcher.group(opcodeGroup));
@@ -202,12 +193,6 @@ public class NativeCodeManager {
 
 		NativeCodeSequence nativeCodeSequence = new NativeCodeSequence(name, nativeCodeSequenceClass);
 
-		String branchInstructionString = getContent(element.getElementsByTagName("BranchInstruction"));
-		int branchInstruction = getInteger(branchInstructionString, -1);
-		if (branchInstruction >= 0) {
-			nativeCodeSequence.setBranchInstruction(branchInstruction);
-		}
-
 		String isReturningString = getContent(element.getElementsByTagName("IsReturning"));
 		if (isReturningString != null) {
 			nativeCodeSequence.setReturning(Boolean.parseBoolean(isReturningString));
@@ -226,12 +211,26 @@ public class NativeCodeManager {
 		String codeInstructions = getContent(element.getElementsByTagName("CodeInstructions"));
 		loadNativeCodeOpcodes(nativeCodeSequence, codeInstructions);
 
-		// The "Parameters" has to be parsed after "CodeInstructions" because they might use them
+		// The "Parameters" and "BranchInstruction" have to be parsed after "CodeInstructions"
+		// because they are using them (e.g. instruction labels)
 		String parametersList = getContent(element.getElementsByTagName("Parameters"));
 		if (parametersList != null) {
 			String[] parameters = parametersList.split(" *, *");
 			for (int parameter = 0; parameters != null && parameter < parameters.length; parameter++) {
 				setParameter(nativeCodeSequence, parameter, parameters[parameter].trim());
+			}
+		}
+
+		String branchInstructionLabel = getContent(element.getElementsByTagName("BranchInstruction"));
+		if (branchInstructionLabel != null) {
+			if (branchInstructionLabel.startsWith("@")) {
+				branchInstructionLabel = branchInstructionLabel.substring(1);
+			}
+			int branchInstructionOffset = nativeCodeSequence.getLabelIndex(branchInstructionLabel.trim());
+			if (branchInstructionOffset >= 0) {
+				nativeCodeSequence.setBranchInstruction(branchInstructionOffset);
+			} else {
+				Compiler.log.error(String.format("BranchInstruction: label '%s' not found", branchInstructionLabel));
 			}
 		}
 
@@ -253,12 +252,19 @@ public class NativeCodeManager {
 
 	private void addNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
 		if (nativeCodeSequence.getNumOpcodes() > 0) {
-			int firstOpcode = nativeCodeSequence.getFirstOpcode();
+			int firstOpcodeMask = nativeCodeSequence.getFirstOpcodeMask();
+			if (firstOpcodeMask == defaultOpcodeMask) {
+				// First opcode has not mask: fast lookup allowed
+				int firstOpcode = nativeCodeSequence.getFirstOpcode();
 
-			if (!nativeCodeSequencesByFirstOpcode.containsKey(firstOpcode)) {
-				nativeCodeSequencesByFirstOpcode.put(firstOpcode, new LinkedList<NativeCodeSequence>());
+				if (!nativeCodeSequencesByFirstOpcode.containsKey(firstOpcode)) {
+					nativeCodeSequencesByFirstOpcode.put(firstOpcode, new LinkedList<NativeCodeSequence>());
+				}
+				nativeCodeSequencesByFirstOpcode.get(firstOpcode).add(nativeCodeSequence);
+			} else {
+				// First opcode has not mask: only slow lookup possible
+				nativeCodeSequenceWithMaskInFirstOpcode.add(nativeCodeSequence);
 			}
-			nativeCodeSequencesByFirstOpcode.get(firstOpcode).add(nativeCodeSequence);
 		}
 	}
 
@@ -286,9 +292,10 @@ public class NativeCodeManager {
 			}
 		}
 
+		IMemoryReader codeBlockReader = MemoryReader.getMemoryReader(address, 4);
 		for (int i = 0; i < numOpcodes; i++) {
-			CodeInstruction codeInstruction2 = codeBlock.getCodeInstruction(address + (i << 2));
-			if (!nativeCodeSequence.isMatching(i, codeInstruction2)) {
+			int opcode = codeBlockReader.readNext();
+			if (!nativeCodeSequence.isMatching(i, opcode)) {
 				return false;
 			}
 		}
@@ -299,12 +306,18 @@ public class NativeCodeManager {
 	public NativeCodeSequence getNativeCodeSequence(CodeInstruction codeInstruction, CodeBlock codeBlock) {
 		int firstOpcode = codeInstruction.getOpcode();
 
-		if (!nativeCodeSequencesByFirstOpcode.containsKey(firstOpcode)) {
-			return null;
+		// Fast lookup using the first opcode
+		if (nativeCodeSequencesByFirstOpcode.containsKey(firstOpcode)) {
+			for (Iterator<NativeCodeSequence> it = nativeCodeSequencesByFirstOpcode.get(firstOpcode).iterator(); it.hasNext(); ) {
+				NativeCodeSequence nativeCodeSequence = it.next();
+				if (isNativeCodeSequence(nativeCodeSequence, codeInstruction, codeBlock)) {
+					return nativeCodeSequence;
+				}
+			}
 		}
 
-		for (Iterator<NativeCodeSequence> it = nativeCodeSequencesByFirstOpcode.get(firstOpcode).iterator(); it.hasNext(); ) {
-			NativeCodeSequence nativeCodeSequence = it.next();
+		// Slow lookup for sequences having an opcode mask in the first opcode
+		for (NativeCodeSequence nativeCodeSequence : nativeCodeSequenceWithMaskInFirstOpcode) {
 			if (isNativeCodeSequence(nativeCodeSequence, codeInstruction, codeBlock)) {
 				return nativeCodeSequence;
 			}

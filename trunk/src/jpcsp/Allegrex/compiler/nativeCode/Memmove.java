@@ -30,4 +30,12 @@ public class Memmove extends AbstractNativeCodeSequence {
 
 		setGprV0(dstAddr);
 	}
+
+	static public void alignMemory(int alignment, int addrOffset) {
+		int addr = getGprA0();
+		int n = getGprA1();
+
+		int dest = (addr + alignment) & ~alignment;
+		getMemory().memmove(dest, addr + addrOffset, n - addrOffset);
+	}
 }

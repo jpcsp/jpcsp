@@ -212,7 +212,7 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     	if (callback != null && callback.callback_addr != 0) {
     		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.callback_addr, callback.callback_arg_addr);
     		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);
-    		Emulator.getScheduler().addAction(0, geInterruptHandler);
+    		Emulator.getScheduler().addAction(geInterruptHandler);
     	} else {
     		hleGeOnAfterCallback(listId, behavior);
     	}

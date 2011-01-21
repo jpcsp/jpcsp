@@ -299,6 +299,11 @@ public class CodeBlock {
     		NativeCodeSequence nativeCodeSequence = nativeCodeManager.getNativeCodeSequence(codeInstruction, this);
     		if (nativeCodeSequence != null) {
     			NativeCodeInstruction nativeCodeInstruction = new NativeCodeInstruction(codeInstruction.getAddress(), nativeCodeSequence);
+
+    			if (nativeCodeInstruction.isBranching()) {
+    				setIsBranchTarget(nativeCodeInstruction.getBranchingTo());
+    			}
+
     			if (nativeCodeSequence.isWholeCodeBlock()) {
     				codeInstructions.clear();
     				codeInstructions.add(nativeCodeInstruction);
