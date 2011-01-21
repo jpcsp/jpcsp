@@ -18,7 +18,6 @@ package jpcsp.Allegrex.compiler;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
-import java.util.Stack;
 import java.util.concurrent.Semaphore;
 
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -31,7 +30,9 @@ public class RuntimeThread extends Thread {
 	private Semaphore semaphore = new Semaphore(1);
 	private SceKernelThreadInfo threadInfo;
 	private boolean isInSyscall;
-	public Stack<JumpState> stack = new Stack<JumpState>();
+	// Implement stack as an array for more efficiency (time critical)
+	private JumpState[] stack = new JumpState[0];
+	private int stackIndex = -1;
 
 	public RuntimeThread(SceKernelThreadInfo threadInfo) {
 		this.threadInfo = threadInfo;
@@ -84,12 +85,41 @@ public class RuntimeThread extends Thread {
 		this.isInSyscall = isInSyscall;
 	}
 
-	public void pushStackState(int ra, int sp) {
-		stack.add(new JumpState(ra, sp));
+	public int pushStackState(int ra, int sp) {
+		for (int i = stackIndex; i >= 0; i--) {
+			JumpState state = stack[i];
+			if (state.ra == ra) {
+				int previousSp = state.sp;
+				state.sp = sp;
+				return previousSp;
+			}
+		}
+
+		stackIndex++;
+		if (stackIndex == stack.length) {
+			// Extend the stack array
+			JumpState[] newStack = new JumpState[stack.length + 1];
+			System.arraycopy(stack, 0, newStack, 0, stack.length);
+			newStack[stack.length] = new JumpState();
+			stack = newStack;
+		}
+
+		stack[stackIndex].setState(ra, sp);
+
+		return 0;
 	}
 
-	public JumpState popStackState() {
-		return stack.pop();
+	public void popStackState(int ra, int previousSp) {
+		if (previousSp != 0) {
+			for (int i = stackIndex; i >= 0; i--) {
+				JumpState state = stack[i];
+				if (state.ra == ra) {
+					state.sp = previousSp;
+					return;
+				}
+			}
+		}
+		stackIndex--;
 	}
 
 	public boolean hasStackState(int ra, int sp) {
@@ -102,15 +132,24 @@ public class RuntimeThread extends Thread {
 		return false;
 	}
 
-	public Stack<JumpState> getStack() {
-		return stack;
+	public String getStackString() {
+		StringBuilder result = new StringBuilder();
+
+		for (int i = stackIndex; i >= 0; i--) {
+			if (result.length() > 0) {
+				result.append(",");
+			}
+			result.append(stack[i].toString());
+		}
+
+		return result.toString();
 	}
 
 	public static class JumpState {
 		public int ra;
 		public int sp;
 
-		public JumpState(int ra, int sp) {
+		public void setState(int ra, int sp) {
 			this.ra = ra;
 			this.sp = sp;
 		}

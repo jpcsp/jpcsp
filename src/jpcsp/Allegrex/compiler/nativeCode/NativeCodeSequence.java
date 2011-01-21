@@ -17,8 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler.nativeCode;
 
 import jpcsp.Memory;
-import jpcsp.Allegrex.compiler.CodeBlock;
-import jpcsp.Allegrex.compiler.CodeInstruction;
 
 /**
  * @author gid15
@@ -49,8 +47,8 @@ public class NativeCodeSequence {
 			notMask = ~mask;
 		}
 
-		public boolean isMatching(CodeInstruction codeInstruction) {
-			return (codeInstruction.getOpcode() & mask) == maskedOpcode;
+		public boolean isMatching(int opcode) {
+			return (opcode & mask) == maskedOpcode;
 		}
 
 		public int getOpcode() {
@@ -83,9 +81,9 @@ public class NativeCodeSequence {
 			return value;
 		}
 
-		public int getValue(CodeInstruction codeInstruction, NativeOpcodeInfo[] opcodes) {
+		public int getValue(int address, NativeOpcodeInfo[] opcodes) {
 			if (isLabelIndex && value >= 0 && value < opcodes.length) {
-				int labelAddress = codeInstruction.getAddress() + (value << 2);
+				int labelAddress = address + (value << 2);
 				int targetOpcode = Memory.getInstance().read32(labelAddress);
 				NativeOpcodeInfo opcode = opcodes[value];
 				return targetOpcode & opcode.getNotMask();
@@ -120,6 +118,10 @@ public class NativeCodeSequence {
 		return opcodes[0].getOpcode();
 	}
 
+	public int getFirstOpcodeMask() {
+		return opcodes[0].getMask();
+	}
+
 	public int getNumOpcodes() {
 		return opcodes.length;
 	}
@@ -149,12 +151,8 @@ public class NativeCodeSequence {
 		return value;
 	}
 
-	public boolean isMatching(int opcodeIndex, CodeInstruction codeInstruction) {
-		if (codeInstruction == null) {
-			return false;
-		}
-
-		return opcodes[opcodeIndex].isMatching(codeInstruction);
+	public boolean isMatching(int opcodeIndex, int opcode) {
+		return opcodes[opcodeIndex].isMatching(opcode);
 	}
 
 	public void setParameter(int parameter, int value, boolean isLabelIndex) {
@@ -170,17 +168,17 @@ public class NativeCodeSequence {
 		parameters[parameter] = new ParameterInfo(value, isLabelIndex);
 	}
 
-	public int getParameterValue(int parameter, CodeInstruction codeInstruction) {
+	public int getParameterValue(int parameter, int address) {
 		if (parameter >= parameters.length) {
 			return 0;
 		}
 
 		ParameterInfo parameterInfo = parameters[parameter];
-		if (codeInstruction == null) {
+		if (address == 0) {
 			return parameterInfo.getValue();
 		}
 
-		return parameterInfo.getValue(codeInstruction, opcodes);
+		return parameterInfo.getValue(address, opcodes);
 	}
 
 	public int getNumberParameters() {
@@ -196,11 +194,7 @@ public class NativeCodeSequence {
 	}
 
 	public boolean hasBranchInstruction() {
-		return branchInstruction > 0;
-	}
-
-	public int getBranchInstructionAddressOffset() {
-		return (getBranchInstruction() - 1) * 4;
+		return branchInstruction >= 0;
 	}
 
 	@Override
@@ -214,7 +208,7 @@ public class NativeCodeSequence {
 			if (i > 0) {
 				result.append(",");
 			}
-			result.append(String.format("%08X", opcodes[i]));
+			result.append(String.format("%08X", opcodes[i].getOpcode()));
 		}
 		result.append("]");
 
@@ -223,7 +217,7 @@ public class NativeCodeSequence {
 			if (i > 0) {
 				result.append(",");
 			}
-			result.append(getParameterValue(i, null));
+			result.append(getParameterValue(i, 0));
 		}
 		result.append(")");
 

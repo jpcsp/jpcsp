@@ -416,6 +416,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED = 0;
     private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED = 1;
 
+    // The PSP seems to have a resolution of 200us
+    protected static final int THREAD_DELAY_MINIMUM_MICROS = 200;
+
     protected static final int CALLBACKID_REGISTER = 16; // $s0
     protected CallbackManager callbackManager = new CallbackManager();
     protected static final int IDLE_THREAD_ADDRESS = MemoryMap.START_RAM;
@@ -425,7 +428,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
-    private static final boolean IGNORE_DELAY = false;
     private static final boolean LOG_INSTRUCTIONS = false;
     public boolean exitCalled = false;
 
@@ -1080,7 +1082,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // - child thread calls sceKernelExitDeleteThread
             if (thread.doDeleteAction == null) {
                 thread.doDeleteAction = new DeleteThreadAction(thread);
-                Scheduler.getInstance().addAction(0, thread.doDeleteAction);
+                Scheduler.getInstance().addAction(thread.doDeleteAction);
             }
         }
     }
@@ -1663,8 +1665,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         // wait type
         currentThread.waitType = PSP_WAIT_DELAY;
 
-        if (IGNORE_DELAY) {
-            micros = 0;
+        if (micros < THREAD_DELAY_MINIMUM_MICROS) {
+        	micros = THREAD_DELAY_MINIMUM_MICROS;
         }
 
         if (log.isDebugEnabled()) {

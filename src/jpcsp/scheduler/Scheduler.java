@@ -75,6 +75,17 @@ public class Scheduler {
 	}
 
 	/**
+	 * Add a new action to be executed as soon as possible to the Scheduler.
+	 * This method has to be thread-safe.
+	 *
+	 * @param action	action to be executed on the defined schedule.
+	 */
+	public synchronized void addAction(IAction action) {
+		SchedulerAction schedulerAction = new SchedulerAction(0, action);
+		addSchedulerAction(schedulerAction);
+	}
+
+	/**
 	 * Add a new action to the Scheduler.
 	 * This method has to be thread-safe.
 	 *

@@ -18,7 +18,11 @@ package jpcsp.Allegrex.compiler.nativeCode;
 
 import org.objectweb.asm.MethodVisitor;
 
+import jpcsp.Memory;
+import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.CodeInstruction;
+import jpcsp.Allegrex.compiler.Compiler;
 import jpcsp.Allegrex.compiler.CompilerContext;
 
 /**
@@ -27,10 +31,33 @@ import jpcsp.Allegrex.compiler.CompilerContext;
  */
 public class NativeCodeInstruction extends CodeInstruction {
 	private NativeCodeSequence nativeCodeSequence;
+	private int flags = 0;
 
 	public NativeCodeInstruction(int address, NativeCodeSequence nativeCodeSequence) {
 		this.nativeCodeSequence = nativeCodeSequence;
 		this.address = address;
+		init();
+	}
+
+	private void init() {
+		if (nativeCodeSequence.hasBranchInstruction()) {
+			// Handle like a branch/jump instruction
+			flags |= Instruction.FLAG_CANNOT_BE_SPLIT;
+			setBranching(true);
+
+			int branchInstructionAddress = getAddress() + (nativeCodeSequence.getBranchInstruction() << 2);
+
+	    	int branchOpcode = Memory.getInstance().read32(branchInstructionAddress);
+	    	Instruction branchInsn = Decoder.instruction(branchOpcode);
+	    	int npc = branchInstructionAddress + 4;
+	    	if (branchInsn.hasFlags(Instruction.FLAG_IS_BRANCHING)) {
+	    		setBranchingTo(Compiler.branchTarget(npc, branchOpcode));
+	    	} else if (branchInsn.hasFlags(Instruction.FLAG_IS_JUMPING)) {
+	    		setBranchingTo(Compiler.jumpTarget(npc, branchOpcode));
+	    	} else {
+	    		Compiler.log.error(String.format("Incorrect Branch Instruction at 0x%08X - %s", branchInstructionAddress, branchInsn.disasm(branchInstructionAddress, branchOpcode)));
+	    	}
+		}
 	}
 
 	public NativeCodeSequence getNativeCodeSequence() {
@@ -38,17 +65,17 @@ public class NativeCodeInstruction extends CodeInstruction {
 	}
 
 	@Override
-	public boolean hasFlags(int flags) {
-		return false;
-	}
+    public boolean hasFlags(int testFlags) {
+        return (flags & testFlags) == testFlags;
+    }
 
 	@Override
     public void compile(CompilerContext context, MethodVisitor mv) {
         startCompile(context, mv);
-        context.compileNativeCodeSequence(nativeCodeSequence);
+        context.compileNativeCodeSequence(nativeCodeSequence, this);
 	}
 
-    @Override
+	@Override
     public String toString() {
         return String.format("0x%X - %s", getAddress(), nativeCodeSequence.toString());
     }

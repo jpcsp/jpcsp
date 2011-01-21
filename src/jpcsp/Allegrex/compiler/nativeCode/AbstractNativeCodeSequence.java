@@ -163,6 +163,7 @@ public abstract class AbstractNativeCodeSequence implements INativeCodeSequence 
 	}
 
 	static protected int getRelocatedAddress(int address1, int address2) {
-		return (address1 << 16) + (short) address2;
+		int address = (address1 << 16) + (short) address2;
+		return address & Memory.addressMask;
 	}
 }
