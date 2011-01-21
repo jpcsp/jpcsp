@@ -25,6 +25,7 @@
 		<pathelement location="lib/logback-core.jar" />
 		<pathelement location="lib/slf4j-api.jar" />
 		<pathelement location="lib/xuggle-xuggler-test.jar" />
+		<pathelement location="lib/bcprov-jdk16-145.jar" />
 	</path>
 
 	<macrodef name="svnversion" description="Get last subversion commit version.">

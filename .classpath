@@ -18,5 +18,6 @@
         <classpathentry kind="lib" path="lib/jinput.jar"/>
         <classpathentry kind="lib" path="lib/lwjgl_util.jar"/>
 	<classpathentry kind="lib" path="lib/lwjgl.jar" sourcepath="lib/lwjgl-source-2.6.zip"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk16-145.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
