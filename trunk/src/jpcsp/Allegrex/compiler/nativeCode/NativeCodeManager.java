@@ -295,7 +295,7 @@ public class NativeCodeManager {
 		IMemoryReader codeBlockReader = MemoryReader.getMemoryReader(address, 4);
 		for (int i = 0; i < numOpcodes; i++) {
 			int opcode = codeBlockReader.readNext();
-			if (!nativeCodeSequence.isMatching(i, opcode)) {
+			if (opcode == 0 || !nativeCodeSequence.isMatching(i, opcode)) {
 				return false;
 			}
 		}

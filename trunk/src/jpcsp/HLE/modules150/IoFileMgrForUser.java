@@ -1569,6 +1569,17 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     }
                     break;
                 }
+                // UMD forced disc read operation.
+                case 0x01F30003: {
+                	if (Memory.isAddressGood(outdata_addr) && inlen >= 4) {
+                        mem.write8(outdata_addr, (byte) 1); // Number of sectors read (return atleast one).
+                    	result = 0;
+                	} else {
+                        log.warn(String.format("hleIoIoctl cmd=0x%08X in=0x%08X(%d) out=0x%08X(%d) unsupported parameters", cmd, indata_addr, inlen, outdata_addr, outlen));
+                        result = ERROR_INVALID_ARGUMENT;
+                	}
+                	break;
+                }
                 // UMD file seek whence.
                 case 0x01F100A6: {
                     if (Memory.isAddressGood(indata_addr) && inlen >= 16) {
@@ -1617,17 +1628,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         result = ERROR_INVALID_ARGUMENT;
                     }
                     break;
-                }
-                // Unknown command. Return value 1 always expected.
-                case 0x01F30003: {
-                	if (inlen != 4 || outlen != 1 || mem.read32(indata_addr) != outlen) {
-                        log.warn(String.format("hleIoIoctl cmd=0x%08X in=0x%08X(%d) out=0x%08X(%d) unsupported parameters", cmd, indata_addr, inlen, outdata_addr, outlen));
-                        result = ERROR_INVALID_ARGUMENT;
-                	} else {
-                		mem.write8(outdata_addr, (byte) 0); // Unknown value
-                    	result = 1;
-                	}
-                	break;
                 }
                 // Define decryption key (Kirk / AES-128?).
                 case 0x04100001: {
