@@ -468,6 +468,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
         // Reads several parameters from the PMF file header and stores them in
         // a 52 byte struct.
+        // Prince of Persia - Revelations - USA - ULUS10063: 
+        // TODO the PSMF structure can only be 40 bytes long, e.g.
+        // scePsmfSetPsmf (psmf=0x9fbefc8 buffer_addr=0x9fbeff0)
+        // scePsmfSetPsmf (psmf=0x9fbee48 buffer_addr=0x9fbee70)
         mem.write32(psmf, header.getVersion());                  // PSMF version.
         mem.write32(psmf + 4, header.getHeaderSize());           // The PSMF header size (0x800).
         mem.write32(psmf + 8, header.getStreamSize());           // The PSMF stream size.
@@ -478,9 +482,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
         mem.write32(psmf + 28, 0);                               // Pointer to current PSMF stream info (video/audio).
         mem.write32(psmf + 32, 0);                               // Pointer to mark data (used for chapters).
         mem.write32(psmf + 36, 0);                               // Pointer to current PSMF stream grouping period.
-        mem.write32(psmf + 40, 0);                               // Pointer to current PSMF stream group.
-        mem.write32(psmf + 44, header.getStreamOffset());        // Pointer to current PSMF stream.
-        mem.write32(psmf + 48, header.getEPMapOffset());         // Pointer to PSMF EPMap.
+//        mem.write32(psmf + 40, 0);                               // Pointer to current PSMF stream group.
+//        mem.write32(psmf + 44, header.getStreamOffset());        // Pointer to current PSMF stream.
+//        mem.write32(psmf + 48, header.getEPMapOffset());         // Pointer to PSMF EPMap.
 
         cpu.gpr[2] = 0;
     }
