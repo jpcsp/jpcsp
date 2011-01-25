@@ -120,4 +120,17 @@ public class Memset extends AbstractNativeCodeSequence {
 		gpr[dstAddrReg] += n * cLength;
 		gpr[nStartReg] = nEnd;
 	}
+
+	// Memset CodeSequence
+	static public void callWithStep(int dstAddrReg, int cReg, int nReg, int endValue, int step) {
+		int[] gpr = getGpr();
+		int dstAddr = gpr[dstAddrReg];
+		int c = gpr[cReg];
+		int n = (endValue - gpr[nReg]) * step;
+
+		getMemory().memset(dstAddr, (byte) c, n);
+
+		gpr[dstAddrReg] += n;
+		gpr[nReg] = endValue;
+	}
 }

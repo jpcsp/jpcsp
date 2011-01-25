@@ -210,7 +210,7 @@ public abstract class Memory {
 
     public boolean allocate() {
     	for (int i = 0; i < validMemoryPage.length; i++) {
-    		int address = (i << MEMORY_PAGE_SHIFT) & addressMask;
+    		int address = normalizeAddress(i << MEMORY_PAGE_SHIFT);
 
     		boolean isValid = false;
             if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {

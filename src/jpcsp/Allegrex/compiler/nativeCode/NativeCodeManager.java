@@ -280,7 +280,7 @@ public class NativeCodeManager {
 		int address = codeInstruction.getAddress();
 		int numOpcodes = nativeCodeSequence.getNumOpcodes();
 
-		// Does this NativeCodeSequence only matching a whole CodeBlock?
+		// Can this NativeCodeSequence only match a whole CodeBlock?
 		if (nativeCodeSequence.isWholeCodeBlock()) {
 			// Match only a whole CodeBlock: same StartAddress, same Length
 			if (codeBlock.getStartAddress() != address) {
@@ -295,7 +295,7 @@ public class NativeCodeManager {
 		IMemoryReader codeBlockReader = MemoryReader.getMemoryReader(address, 4);
 		for (int i = 0; i < numOpcodes; i++) {
 			int opcode = codeBlockReader.readNext();
-			if (opcode == 0 || !nativeCodeSequence.isMatching(i, opcode)) {
+			if (!nativeCodeSequence.isMatching(i, opcode)) {
 				return false;
 			}
 		}
