@@ -105,7 +105,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public boolean doCallbacks;
 
     public final ThreadWaitInfo wait;
-    public IAction onUnblockAction;
 
     public int displayLastWaitVcount;
 
@@ -341,6 +340,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         if (wait.waitingOnUmd) {
             s.append(String.format(" | Umd (0x%02X)", wait.wantedUmdStat));
+        }
+
+        if (wait.waitingBlocked) {
+        	s.append(String.format(" | Blocked"));
         }
 
         // Strip off leading " | "

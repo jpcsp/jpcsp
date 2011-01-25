@@ -831,8 +831,29 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         return thread.name;
     }
 
+    public boolean isThreadBlocked(SceKernelThreadInfo thread) {
+    	return (thread.status & PSP_THREAD_WAITING) != 0 && thread.wait.waitingBlocked;
+    }
+
     public void hleBlockCurrentThread() {
         hleBlockCurrentThread(null);
+    }
+
+    private void hleBlockThread(SceKernelThreadInfo thread, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
+    	// A blocked thread (e.g. a thread blocked due to audio output or
+    	// wait for vblank or sceCtrl sample reading) is implemented like
+    	// a "wait for Event Flag". This is the closest implementation to a real PSP,
+    	// as event flags are usually used by a PSP to implement these wait
+    	// functions.
+        if (thread.status != PSP_THREAD_WAITING) {
+	    	thread.doCallbacks = doCallbacks;
+	    	thread.wait.waitingBlocked = true;
+	    	thread.wait.onUnblockAction = onUnblockAction;
+	    	thread.waitType = SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
+	    	thread.waitId = 0;
+	    	thread.wait.waitStateChecker = waitStateChecker;
+	        hleChangeThreadState(thread, PSP_THREAD_WAITING);
+        }
     }
 
     public void hleBlockCurrentThread(IAction onUnblockAction) {
@@ -840,11 +861,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.debug("-------------------- block SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' caller:" + getCallingFunction());
         }
 
-        if (currentThread.status != PSP_THREAD_SUSPEND) {
-            currentThread.onUnblockAction = onUnblockAction;
-            hleChangeThreadState(currentThread, PSP_THREAD_SUSPEND);
-        }
-
+    	hleBlockThread(currentThread, false, onUnblockAction, null);
         hleRescheduleCurrentThread();
     }
 
@@ -853,13 +870,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.debug("-------------------- block SceUID=" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' caller:" + getCallingFunction());
         }
 
-        if (currentThread.status != PSP_THREAD_SUSPEND) {
-            currentThread.doCallbacks = true;
-            currentThread.onUnblockAction = onUnblockAction;
-            currentThread.wait.waitStateChecker = waitStateChecker;
-            hleChangeThreadState(currentThread, PSP_THREAD_SUSPEND);
-        }
-
+    	hleBlockThread(currentThread, true, onUnblockAction, waitStateChecker);
         hleRescheduleCurrentThread(true);
     }
 
@@ -1114,9 +1125,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         boolean addReadyThreadsFirst = false;
 
         // Moving out of the following states...
-        if (thread.status == PSP_THREAD_WAITING) {
+        if (thread.status == PSP_THREAD_WAITING && newStatus != PSP_THREAD_WAITING_SUSPEND) {
             if (thread.wait.waitTimeoutAction != null) {
                 Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
+            }
+            if (thread.wait.waitingBlocked) {
+            	if (thread.wait.onUnblockAction != null) {
+            		thread.wait.onUnblockAction.execute();
+            		thread.wait.onUnblockAction = null;
+            	}
+            	thread.wait.waitingBlocked = false;
             }
             thread.doCallbacks = false;
         } else if (thread.status == PSP_THREAD_STOPPED) {
@@ -1127,10 +1145,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } else if (thread.status == PSP_THREAD_READY) {
             removeFromReadyThreads(thread);
         } else if (thread.status == PSP_THREAD_SUSPEND) {
-            if (thread.onUnblockAction != null) {
-                thread.onUnblockAction.execute();
-                thread.onUnblockAction = null;
-            }
             thread.doCallbacks = false;
         } else if (thread.status == PSP_THREAD_RUNNING) {
         	needThreadReschedule = true;
@@ -1189,9 +1203,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         thread.wait.waitingOnMsgPipeReceive = false;
         thread.wait.waitingOnMsgPipeSend = false;
         thread.wait.waitingOnMutex = false;
+        thread.wait.waitingOnLwMutex = false;
         thread.wait.waitingOnSemaphore = false;
         thread.wait.waitingOnThreadEnd = false;
         thread.wait.waitingOnUmd = false;
+        thread.wait.waitingOnFpl = false;
+        thread.wait.waitingOnVpl = false;
+        thread.wait.waitingBlocked = false;
+        thread.wait.onUnblockAction = null;
         thread.wait.waitStateChecker = null;
         thread.waitType = PSP_WAIT_NONE;
         if (thread.wait.waitTimeoutAction != null) {
