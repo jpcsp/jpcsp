@@ -324,13 +324,20 @@ public class sceCtrl implements HLEModule, HLEStartModule {
             currentReadingIndex = incrementSampleIndex(currentReadingIndex);
         }
 
-        if (!threadsWaitingForSampling.isEmpty()) {
+        while (!threadsWaitingForSampling.isEmpty()) {
             ThreadWaitingForSampling wait = threadsWaitingForSampling.remove(0);
-            if (log.isDebugEnabled()) {
-                log.debug("hleExecuteSampling waiting up thread " + wait.thread);
+            if (Modules.ThreadManForUserModule.isThreadBlocked(wait.thread)) {
+	            if (log.isDebugEnabled()) {
+	                log.debug("hleExecuteSampling waiting up thread " + wait.thread);
+	            }
+	            hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive, false);
+	            Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
+	            break;
             }
-            hleCtrlReadBufferImmediately(wait.thread.cpuContext, wait.readAddr, wait.readCount, wait.readPositive, false);
-            Modules.ThreadManForUserModule.hleUnblockThread(wait.thread.uid);
+
+            if (log.isDebugEnabled()) {
+                log.debug("hleExecuteSampling thread " + wait.thread + " was no longer blocked");
+            }
         }
     }
 

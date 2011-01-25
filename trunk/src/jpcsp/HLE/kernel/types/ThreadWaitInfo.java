@@ -88,6 +88,10 @@ public class ThreadWaitInfo {
     public int Vpl_size;
     public int Vpl_dataAddr;
 
+    // Thread blocked (used internally)
+    public boolean waitingBlocked;
+    public IAction onUnblockAction;
+
     public void copy(ThreadWaitInfo that) {
     	forever = that.forever;
     	microTimeTimeout = that.microTimeTimeout;
@@ -142,5 +146,8 @@ public class ThreadWaitInfo {
         Vpl_id = that.Vpl_id;
         Vpl_size = that.Vpl_size;
         Vpl_dataAddr = that.Vpl_dataAddr;
+
+        waitingBlocked = that.waitingBlocked;
+        onUnblockAction = that.onUnblockAction;
     }
 }
