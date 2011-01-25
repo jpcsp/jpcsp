@@ -489,7 +489,8 @@ public class ExternalDecoder {
     		IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, size, 4);
     		final int stepSize = 16;
     		final int skip = (stepSize / 4) - 1;
-    		for (int i = 0; i < size; i += stepSize) {
+    		final int endSize = (size / stepSize) * stepSize;
+    		for (int i = 0; i < endSize; i += stepSize) {
     			int magicValue = memoryReader.readNext();
     			if (isFileMagicValue(magicValue)) {
     				magicOffsets.add(i);

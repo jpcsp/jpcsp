@@ -22,7 +22,9 @@ import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
 
 /**
@@ -31,6 +33,7 @@ import jpcsp.memory.MemoryWriter;
  */
 public class sceGu extends AbstractNativeCodeSequence {
 	private static final boolean writeTFLUSH = false;
+	private static final boolean writeTSYNC = false;
 
 	static private void sceGeListUpdateStallAddr(int addr) {
 		// Simplification: we can update the stall address only if the VideoEngine
@@ -215,7 +218,7 @@ public class sceGu extends AbstractNativeCodeSequence {
 		int listCurrent = mem.read32(context + listCurrentOffset);
 		int cmd;
 
-		IMemoryWriter listWriter = MemoryWriter.getMemoryWriter(listCurrent, 28, 4);
+		IMemoryWriter listWriter = MemoryWriter.getMemoryWriter(listCurrent, 32, 4);
 
 		cmd = (GeCommands.TRXSBP << 24) | (src & 0x00FFFFFF); 
 		listWriter.writeNext(cmd);
@@ -242,7 +245,7 @@ public class sceGu extends AbstractNativeCodeSequence {
 		listWriter.writeNext(cmd);
 
 		listWriter.flush();
-		mem.write32(context + listCurrentOffset, listCurrent + 28);
+		mem.write32(context + listCurrentOffset, listCurrent + 32);
 	}
 
 	static public void sceGuTexImage(int contextAddr1, int contextAddr2, int listCurrentOffset) {
@@ -276,6 +279,201 @@ public class sceGu extends AbstractNativeCodeSequence {
 			mem.write32(listCurrent, cmd);
 			listCurrent += 4;
 		}
+
+		mem.write32(context + listCurrentOffset, listCurrent);
+	}
+
+	static public void sceGuTexSync(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+		if (writeTSYNC) {
+			Memory mem = getMemory();
+			int context = mem.read32(getRelocatedAddress(contextAddr1, contextAddr2));
+			int listCurrent = mem.read32(context + listCurrentOffset);
+			int cmd;
+
+			cmd = (GeCommands.TSYNC << 24);
+			mem.write32(listCurrent, cmd);
+			listCurrent += 4;
+
+			mem.write32(context + listCurrentOffset, listCurrent);
+		}
+	}
+
+	static public void sceGuTexMapMode(int contextAddr1, int contextAddr2, int listCurrentOffset, int texProjMapOffset, int texMapModeOffset) {
+		Memory mem = getMemory();
+		int texMapMode = getGprA0() & 0x3;
+		int texShadeU = getGprA1();
+		int texShadeV = getGprA2();
+		int context = mem.read32(getRelocatedAddress(contextAddr1, contextAddr2));
+		int listCurrent = mem.read32(context + listCurrentOffset);
+		int cmd;
+
+		int texProjMap = mem.read32(context + texProjMapOffset);
+		mem.write32(context + texMapModeOffset, texMapMode);
+
+		cmd = (GeCommands.TMAP << 24) | (texProjMap << 8) | texMapMode;
+		mem.write32(listCurrent, cmd);
+		listCurrent += 4;
+
+		cmd = (GeCommands.TEXTURE_ENV_MAP_MATRIX << 24) | (texShadeV << 8) | texShadeU;
+		mem.write32(listCurrent, cmd);
+		listCurrent += 4;
+
+		mem.write32(context + listCurrentOffset, listCurrent);
+	}
+
+	static public void sceGuTexProjMapMode(int contextAddr1, int contextAddr2, int listCurrentOffset, int texProjMapOffset, int texMapModeOffset) {
+		Memory mem = getMemory();
+		int texProjMap = getGprA0() & 0x3;
+		int context = mem.read32(getRelocatedAddress(contextAddr1, contextAddr2));
+		int listCurrent = mem.read32(context + listCurrentOffset);
+		int cmd;
+
+		int texMapMode = mem.read32(context + texMapModeOffset);
+		mem.write32(context + texProjMapOffset, texProjMap);
+
+		cmd = (GeCommands.TMAP << 24) | (texProjMap << 8) | texMapMode;
+		mem.write32(listCurrent, cmd);
+		listCurrent += 4;
+
+		mem.write32(context + listCurrentOffset, listCurrent);
+	}
+
+	static public void sceGuTexLevelMode(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+		Memory mem = getMemory();
+		int mode = getGprA0();
+		float bias = getFprF12();
+		int context = mem.read32(getRelocatedAddress(contextAddr1, contextAddr2));
+		int listCurrent = mem.read32(context + listCurrentOffset);
+		int cmd;
+
+		int offset = (int) (bias * 16.f);
+		if (offset > 127) {
+			offset = 127;
+		} else if (offset < -128) {
+			offset = -128;
+		}
+
+		cmd = (GeCommands.TBIAS << 24) | (offset << 16) | mode;
+		mem.write32(listCurrent, cmd);
+		listCurrent += 4;
+
+		mem.write32(context + listCurrentOffset, listCurrent);
+	}
+
+	static public void sceGuMaterial(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+		int mode = getGprA0();
+		int color = getGprA1();
+		int context = getMemory().read32(getRelocatedAddress(contextAddr1, contextAddr2));
+		sceGuMaterial(context, listCurrentOffset, mode, color);
+	}
+
+	static public void sceGuMaterial(int listCurrentOffset) {
+		int context = getGprA0();
+		int mode = getGprA1();
+		int color = getGprA2();
+		sceGuMaterial(context, listCurrentOffset, mode, color);
+	}
+
+	static private void sceGuMaterial(int context, int listCurrentOffset, int mode, int color) {
+		Memory mem = getMemory();
+		int listCurrent = mem.read32(context + listCurrentOffset);
+		int cmd;
+		int rgb = color & 0x00FFFFFF;
+
+		if ((mode & 0x01) != 0) {
+			cmd = (GeCommands.AMC << 24) | rgb;
+			mem.write32(listCurrent, cmd);
+			listCurrent += 4;
+
+			cmd = (GeCommands.AMA << 24) | (color >>> 24);
+			mem.write32(listCurrent, cmd);
+			listCurrent += 4;
+		}
+
+		if ((mode & 0x02) != 0) {
+			cmd = (GeCommands.DMC << 24) | rgb;
+			mem.write32(listCurrent, cmd);
+			listCurrent += 4;
+		}
+
+		if ((mode & 0x04) != 0) {
+			cmd = (GeCommands.SMC << 24) | rgb;
+			mem.write32(listCurrent, cmd);
+			listCurrent += 4;
+		}
+
+		mem.write32(context + listCurrentOffset, listCurrent);
+	}
+
+	static public void sceGuSetMatrix(int contextAddr1, int contextAddr2, int listCurrentOffset) {
+		int type = getGprA0();
+		int matrix = getGprA1();
+		int context = getMemory().read32(getRelocatedAddress(contextAddr1, contextAddr2));
+		sceGuSetMatrix(context, listCurrentOffset, type, matrix);
+	}
+
+	static public void sceGuSetMatrix(int listCurrentOffset) {
+		int context = getGprA0();
+		int type = getGprA1();
+		int matrix = getGprA2();
+		sceGuSetMatrix(context, listCurrentOffset, type, matrix);
+	}
+
+	static private void sceGuSetMatrix(int context, int listCurrentOffset, int type, int matrix) {
+		Memory mem = getMemory();
+		int listCurrent = mem.read32(context + listCurrentOffset);
+		int cmd;
+
+		IMemoryWriter listWriter = MemoryWriter.getMemoryWriter(listCurrent, 68, 4);
+		IMemoryReader matrixReader = MemoryReader.getMemoryReader(matrix, 64, 4);
+		switch (type) {
+			case 0: {
+				listWriter.writeNext(GeCommands.PMS << 24);
+				cmd = GeCommands.PROJ << 24;
+				for (int i = 0; i < 16; i++) {
+					listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
+				}
+				listCurrent += 68;
+				break;
+			}
+			case 1: {
+				listWriter.writeNext(GeCommands.VMS << 24);
+				cmd = GeCommands.VIEW << 24;
+				for (int i = 0; i < 4; i++) {
+					for (int j = 0; j < 3; j++) {
+						listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
+					}
+					matrixReader.skip(1);
+				}
+				listCurrent += 52;
+				break;
+			}
+			case 2: {
+				listWriter.writeNext(GeCommands.MMS << 24);
+				cmd = GeCommands.MODEL << 24;
+				for (int i = 0; i < 4; i++) {
+					for (int j = 0; j < 3; j++) {
+						listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
+					}
+					matrixReader.skip(1);
+				}
+				listCurrent += 52;
+				break;
+			}
+			case 3: {
+				listWriter.writeNext(GeCommands.TMS << 24);
+				cmd = GeCommands.TMATRIX << 24;
+				for (int i = 0; i < 4; i++) {
+					for (int j = 0; j < 3; j++) {
+						listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
+					}
+					matrixReader.skip(1);
+				}
+				listCurrent += 52;
+				break;
+			}
+		}
+		listWriter.flush();
 
 		mem.write32(context + listCurrentOffset, listCurrent);
 	}
