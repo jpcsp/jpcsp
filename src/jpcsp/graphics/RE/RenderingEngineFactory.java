@@ -21,7 +21,7 @@ package jpcsp.graphics.RE;
  *
  */
 public class RenderingEngineFactory {
-	private static final boolean enableDebugProxy = true;
+	private static final boolean enableDebugProxy = false;
 
 	public static IRenderingEngine createRenderingEngine() {
 		// Build the rendering pipeline, from the last entry to the first one.
