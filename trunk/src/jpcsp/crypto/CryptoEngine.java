@@ -573,7 +573,7 @@ public class CryptoEngine {
         decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
 
         // Check for a valid signature.
-        int sigCheck = 0 /*executeKIRKCmd10(sigIn, size)*/;
+        int sigCheck = executeKIRKCmd10(sigIn, size);
 
         // Get the newly decrypted AES key and proceed with the
         // full data decryption.
