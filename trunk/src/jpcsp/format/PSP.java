@@ -134,7 +134,7 @@ public class PSP {
         }
     }
 
-    public ByteBuffer decrypt(ByteBuffer f, int mode) {
+    public ByteBuffer decrypt(ByteBuffer f) {
         if (f.capacity() == 0) {
             return null;
         }
@@ -146,9 +146,8 @@ public class PSP {
         int fileTag = ((inBuf[0xD0] & 0xFF) << 24) | ((inBuf[0xD1] & 0xFF) << 16)
                 | ((inBuf[0xD2] & 0xFF) << 8) | (inBuf[0xD3] & 0xFF);
 
-        if(mode == 1) {
-            crypto.DecryptPRX1(inBuf, outBuf, inSize, fileTag);
-        } else if (mode == 2) {
+        int retsize = crypto.DecryptPRX1(inBuf, outBuf, inSize, fileTag);
+        if(retsize <= 0) {
             crypto.DecryptPRX2(inBuf, outBuf, inSize, fileTag);
         }
 

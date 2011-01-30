@@ -272,14 +272,8 @@ public class Loader {
         if (psp.isValid()) {
             module.fileFormat |= FORMAT_PSP;
             Emulator.log.warn("Encrypted file detected! (~PSP)");
-            int fwVersion = Emulator.getInstance().getFirmwareVersion();
-            if((fwVersion >= 100) && (fwVersion < 280)) {
-                Emulator.log.info("Calling crypto engine for PRX version 1.");
-                LoadELF(psp.decrypt(f, 1), module, baseAddress);
-            } else {
-                Emulator.log.info("Calling crypto engine for PRX version 2.");
-                LoadELF(psp.decrypt(f, 2), module, baseAddress);
-            }
+            Emulator.log.info("Calling crypto engine for PRX.");
+            LoadELF(psp.decrypt(f), module, baseAddress);
             return true;
         }
 		// Not a valid PSP
