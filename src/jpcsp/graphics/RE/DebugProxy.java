@@ -105,14 +105,6 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setMatrix(int type, float[] values) {
-		if (log.isDebugEnabled()) {
-			debugMatrix("setMatrix " + type, values);
-		}
-		super.setMatrix(type, values);
-	}
-
-	@Override
 	public void setModelMatrix(float[] values) {
 		if (log.isDebugEnabled()) {
 			debugMatrix("setModelMatrix", values);

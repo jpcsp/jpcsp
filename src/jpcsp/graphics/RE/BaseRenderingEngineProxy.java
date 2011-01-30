@@ -137,11 +137,6 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setLightColor(int type, int light, float[] color) {
-		proxy.setLightColor(type, light, color);
-	}
-
-	@Override
 	public void setLightConstantAttenuation(int light, float constant) {
 		proxy.setLightConstantAttenuation(light, constant);
 	}
@@ -212,11 +207,6 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setMaterialColor(int type, float[] color) {
-		proxy.setMaterialColor(type, color);
-	}
-
-	@Override
 	public void setMaterialDiffuseColor(float[] color) {
 		proxy.setMaterialDiffuseColor(color);
 	}
@@ -232,8 +222,18 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setMatrix(int type, float[] values) {
-		proxy.setMatrix(type, values);
+	public void setMatrix(float[] values) {
+		proxy.setMatrix(values);
+	}
+
+	@Override
+	public void setMatrixMode(int type) {
+		proxy.setMatrixMode(type);
+	}
+
+	@Override
+	public void multMatrix(float[] values) {
+		proxy.multMatrix(values);
 	}
 
 	@Override

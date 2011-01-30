@@ -4780,6 +4780,8 @@ public class VideoEngine {
             	boolean ambient = (context.mat_flags & 1) != 0;
             	boolean diffuse = (context.mat_flags & 2) != 0;
             	boolean specular = (context.mat_flags & 4) != 0;
+                re.setColorMaterial(ambient, diffuse, specular);
+                context.reColorMaterial.setEnabled(true);
                 if (!ambient) {
                 	re.setMaterialAmbientColor(context.mat_ambient);
                 }
@@ -4789,64 +4791,64 @@ public class VideoEngine {
                 if (!specular) {
                 	re.setMaterialSpecularColor(context.mat_specular);
                 }
-                re.setColorMaterial(ambient, diffuse, specular);
-                context.reColorMaterial.setEnabled(true);
                 materialChanged = false;
             }
         } else {
         	context.reColorMaterial.setEnabled(false);
             if (materialChanged) {
+            	re.setColorMaterial(false, false, false);
             	re.setMaterialAmbientColor(context.mat_ambient);
             	re.setMaterialDiffuseColor(context.mat_diffuse);
             	re.setMaterialSpecularColor(context.mat_specular);
-            	re.setColorMaterial(false, false, false);
                 materialChanged = false;
             }
         }
 
-        re.setTextureWrapMode(context.tex_wrap_s, context.tex_wrap_t);
+        if (context.textureFlag.isEnabled()) {
+        	re.setTextureWrapMode(context.tex_wrap_s, context.tex_wrap_t);
 
-        int mipmapBaseLevel = 0;
-        int mipmapMaxLevel = context.texture_num_mip_maps;
-        if (context.tex_mipmap_mode == TBIAS_MODE_CONST) {
-            // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
-            mipmapBaseLevel = context.tex_mipmap_bias_int;
-            mipmapMaxLevel = context.tex_mipmap_bias_int;
-            if (isLogDebugEnabled) {
-                log.debug("TBIAS_MODE_CONST " + context.tex_mipmap_bias_int);
-            }
-        } else if (context.tex_mipmap_mode == TBIAS_MODE_AUTO) {
-        	// TODO implement TBIAS_MODE_AUTO. The following is not correct
-            // TBIAS_MODE_AUTO performs a comparison between the texture's weight and height at level 0.
-            // int maxValue = Math.max(context.texture_width[0], context.texture_height[0]);
-        	//
-            // if(maxValue <= 1) {
-            //     mipmapBaseLevel = 0;
-            // } else {
-            //     mipmapBaseLevel = (int) ((Math.log((Math.abs(maxValue) / Math.abs(context.zpos))) / Math.log(2)) + context.tex_mipmap_bias);
-            // }
-            // mipmapMaxLevel = mipmapBaseLevel;
-            // if (isLogDebugEnabled) {
-            //     log.debug("TBIAS_MODE_AUTO " + context.tex_mipmap_bias + ", param=" + maxValue);
-            // }
-        } else if (context.tex_mipmap_mode == TBIAS_MODE_SLOPE) {
-            // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
-            mipmapBaseLevel = (int) ((Math.log(Math.abs(context.tslope_level) / Math.abs(context.zpos)) / Math.log(2)) + context.tex_mipmap_bias);
-            mipmapMaxLevel = mipmapBaseLevel;
-            if (isLogDebugEnabled) {
-                log.debug("TBIAS_MODE_SLOPE " + context.tex_mipmap_bias + ", slope=" + context.tslope_level);
-            }
-        }
+	        int mipmapBaseLevel = 0;
+	        int mipmapMaxLevel = context.texture_num_mip_maps;
+	        if (context.tex_mipmap_mode == TBIAS_MODE_CONST) {
+	            // TBIAS_MODE_CONST uses the tex_mipmap_bias_int level supplied by TBIAS.
+	            mipmapBaseLevel = context.tex_mipmap_bias_int;
+	            mipmapMaxLevel = context.tex_mipmap_bias_int;
+	            if (isLogDebugEnabled) {
+	                log.debug("TBIAS_MODE_CONST " + context.tex_mipmap_bias_int);
+	            }
+	        } else if (context.tex_mipmap_mode == TBIAS_MODE_AUTO) {
+	        	// TODO implement TBIAS_MODE_AUTO. The following is not correct
+	            // TBIAS_MODE_AUTO performs a comparison between the texture's weight and height at level 0.
+	            // int maxValue = Math.max(context.texture_width[0], context.texture_height[0]);
+	        	//
+	            // if(maxValue <= 1) {
+	            //     mipmapBaseLevel = 0;
+	            // } else {
+	            //     mipmapBaseLevel = (int) ((Math.log((Math.abs(maxValue) / Math.abs(context.zpos))) / Math.log(2)) + context.tex_mipmap_bias);
+	            // }
+	            // mipmapMaxLevel = mipmapBaseLevel;
+	            // if (isLogDebugEnabled) {
+	            //     log.debug("TBIAS_MODE_AUTO " + context.tex_mipmap_bias + ", param=" + maxValue);
+	            // }
+	        } else if (context.tex_mipmap_mode == TBIAS_MODE_SLOPE) {
+	            // TBIAS_MODE_SLOPE uses the tslope_level level supplied by TSLOPE.
+	            mipmapBaseLevel = (int) ((Math.log(Math.abs(context.tslope_level) / Math.abs(context.zpos)) / Math.log(2)) + context.tex_mipmap_bias);
+	            mipmapMaxLevel = mipmapBaseLevel;
+	            if (isLogDebugEnabled) {
+	                log.debug("TBIAS_MODE_SLOPE " + context.tex_mipmap_bias + ", slope=" + context.tslope_level);
+	            }
+	        }
 
-        // Clamp to [0..texture_num_mip_maps]
-        mipmapBaseLevel = Math.max(0, Math.min(mipmapBaseLevel, context.texture_num_mip_maps));
-        // Clamp to [mipmapBaseLevel..texture_num_mip_maps]
-        mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, context.texture_num_mip_maps));
-        if (isLogDebugEnabled) {
-            log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + context.texture_num_mip_maps);
+	        // Clamp to [0..texture_num_mip_maps]
+	        mipmapBaseLevel = Math.max(0, Math.min(mipmapBaseLevel, context.texture_num_mip_maps));
+	        // Clamp to [mipmapBaseLevel..texture_num_mip_maps]
+	        mipmapMaxLevel = Math.max(mipmapBaseLevel, Math.min(mipmapMaxLevel, context.texture_num_mip_maps));
+	        if (isLogDebugEnabled) {
+	            log.debug("Texture Mipmap base=" + mipmapBaseLevel + ", max=" + mipmapMaxLevel + ", textureNumMipmaps=" + context.texture_num_mip_maps);
+	        }
+	        re.setTextureMipmapMinLevel(mipmapBaseLevel);
+	        re.setTextureMipmapMaxLevel(mipmapMaxLevel);
         }
-        re.setTextureMipmapMinLevel(mipmapBaseLevel);
-        re.setTextureMipmapMaxLevel(mipmapMaxLevel);
 
         return useVertexColor;
     }

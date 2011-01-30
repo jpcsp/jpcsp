@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
 
+import jpcsp.graphics.GeCommands;
+
 /**
  * @author gid15
  * 
@@ -42,11 +44,6 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[][][] uniformFloatArray;
 	protected StateBoolean[] clientState;
 	protected boolean[] vertexAttribArray;
-	protected int textureMipmapMinFilter;
-	protected int textureMipmapMagFilter;
-	protected int textureMipmapMinLevel;
-	protected int textureWrapModeS;
-	protected int textureWrapModeT;
 	protected boolean colorMaskRed;
 	protected boolean colorMaskGreen;
 	protected boolean colorMaskBlue;
@@ -65,7 +62,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int stencilOpZPass;
 	protected int depthFunc;
 	protected int bindTexture;
-	protected int bindBuffer;
+	protected int[] bindBuffer;
 	protected int useProgram;
 	protected int textureMapMode;
 	protected int textureProjMapMode;
@@ -74,6 +71,40 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int viewportWidth;
 	protected int viewportHeight;
 	protected HashMap<Integer, int[]> bufferDataInt;
+	protected HashMap<Integer, TextureState> textureStates;
+	protected TextureState currentTextureState;
+	protected int matrixMode;
+	protected boolean fogHintSet;
+	protected boolean lineSmoothHintSet;
+	protected float[] texEnvf;
+	protected int[] texEnvi;
+	protected int pixelStoreRowLength;
+	protected int pixelStoreAlignment;
+	protected int scissorX;
+	protected int scissorY;
+	protected int scissorWidth;
+	protected int scissorHeight;
+	protected int blendEquation;
+	protected int shadeModel;
+	protected int alphaFunc;
+	protected int alphaFuncRef;
+	protected float depthRangeZpos;
+	protected float depthRangeZscale;
+	protected float depthRangeNear;
+	protected float depthRangeFar;
+	protected float[] vertexColor;
+	protected float[][] lightAmbientColor;
+	protected float[][] lightDiffuseColor;
+	protected float[][] lightSpecularColor;
+	protected float[] lightModelAmbientColor;
+	protected int lightMode;
+	protected float[] materialAmbientColor;
+	protected float[] materialDiffuseColor;
+	protected float[] materialSpecularColor;
+	protected float[] materialEmissiveColor;
+	protected boolean colorMaterialAmbient;
+	protected boolean colorMaterialDiffuse;
+	protected boolean colorMaterialSpecular;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -95,6 +126,23 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			this.value = value;
 			undefined = false;
 		}
+
+		@Override
+		public String toString() {
+			if (isUndefined()) {
+				return "Undefined";
+			}
+			return Boolean.toString(getValue());
+		}
+	}
+
+	protected static class TextureState {
+		public int textureWrapModeS = GeCommands.TWRAP_WRAP_MODE_REPEAT;
+		public int textureWrapModeT = GeCommands.TWRAP_WRAP_MODE_REPEAT;
+		public int textureMipmapMinFilter = GeCommands.TFLT_NEAREST_MIPMAP_LINEAR;
+		public int textureMipmapMagFilter = GeCommands.TFLT_LINEAR;
+		public int textureMipmapMinLevel = 0;
+		public int textureMipmapMaxLevel = 1000;
 	}
 
 	public StateProxy(IRenderingEngine proxy) {
@@ -124,6 +172,21 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		vertexAttribArray = new boolean[maxUniformId];
 		colorMask = new int[4];
 		bufferDataInt = new HashMap<Integer, int[]>();
+		textureStates = new HashMap<Integer, TextureState>();
+		currentTextureState = new TextureState();
+		textureStates.put(0, currentTextureState);
+		texEnvf = new float[17];
+		texEnvi = new int[17];
+		vertexColor = new float[4];
+		bindBuffer = new int[2];
+		lightAmbientColor = new float[4][4];
+		lightSpecularColor = new float[4][4];
+		lightDiffuseColor = new float[4][4];
+		lightModelAmbientColor = new float[4];
+		materialAmbientColor = new float[4];
+		materialSpecularColor = new float[4];
+		materialDiffuseColor = new float[4];
+		materialEmissiveColor = new float[4];
 	}
 
 	@Override
@@ -142,11 +205,6 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		System.arraycopy(identityMatrix, 0, matrix[GU_VIEW], 0, matrix4Size);
 		System.arraycopy(identityMatrix, 0, matrix[GU_MODEL], 0, matrix4Size);
 		System.arraycopy(identityMatrix, 0, matrix[GU_TEXTURE], 0, matrix4Size);
-		textureMipmapMinFilter = -1;
-		textureMipmapMagFilter = -1;
-		textureMipmapMinLevel = 0;
-		textureWrapModeS = -1;
-		textureWrapModeT = -1;
 		colorMaskRed = true;
 		colorMaskGreen = true;
 		colorMaskBlue = true;
@@ -164,7 +222,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		stencilOpZPass = -1;
 		depthFunc = -1;
 		bindTexture = -1;
-		bindBuffer = -1;
+		currentTextureState = null;
+		for (int i = 0; i < bindBuffer.length; i++) {
+			bindBuffer[i] = -1;
+		}
 		frontFace = false;
 		useProgram = 0;
 		textureMapMode = -1;
@@ -173,6 +234,47 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		viewportY = -1;
 		viewportWidth = -1;
 		viewportHeight = -1;
+		matrixMode = -1;
+		fogHintSet = false;
+		lineSmoothHintSet = false;
+		for (int i = 0; i < texEnvi.length; i++) {
+			texEnvi[i] = -1;
+		}
+		for (int i = 0; i < texEnvf.length; i++) {
+			texEnvf[i] = -1;
+		}
+		// Default OpenGL texEnv values
+		texEnvf[IRenderingEngine.RE_TEXENV_RGB_SCALE] = 1.f;
+		texEnvi[IRenderingEngine.RE_TEXENV_ENV_MODE] = IRenderingEngine.RE_TEXENV_MODULATE;
+		pixelStoreRowLength = -1;
+		pixelStoreAlignment = -1;
+		scissorX = -1;
+		scissorY = -1;
+		scissorWidth = -1;
+		scissorHeight = -1;
+		blendEquation = -1;
+		shadeModel = -1;
+		alphaFunc = -1;
+		alphaFuncRef = -1;
+		depthRangeZpos = 0.f;
+		depthRangeZscale = 0.f;
+		depthRangeNear = 0.f;
+		depthRangeFar = 0.f;
+		vertexColor[0] = -1.f;
+		for (int i = 0; i < lightAmbientColor.length; i++) {
+			lightAmbientColor[i][0] = -1.f;
+			lightDiffuseColor[i][0] = -1.f;
+			lightSpecularColor[i][0] = -1.f;
+		}
+		lightModelAmbientColor[0] = -1.f;
+		lightMode = -1;
+		materialAmbientColor[0] = -10000.f;
+		materialDiffuseColor[0] = -1.f;
+		materialSpecularColor[0] = -1.f;
+		materialEmissiveColor[0] = -1.f;
+		colorMaterialAmbient = false;
+		colorMaterialDiffuse = false;
+		colorMaterialSpecular = false;
 
 		super.startDisplay();
 	}
@@ -372,18 +474,6 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setMatrix(int type, float[] values) {
-		if (matrixFirstUpdated(type, values) < matrix4Size) {
-			if (isIdentityMatrix(values)) {
-				// Identity Matrix is identified by the special value "null"
-				super.setMatrix(type, null);
-			} else {
-				super.setMatrix(type, values);
-			}
-		}
-	}
-
-	@Override
 	public void disableClientState(int type) {
 		StateBoolean state = clientState[type];
 		if (state.getValue() || state.isUndefined()) {
@@ -477,34 +567,42 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureMipmapMinFilter(int filter) {
-		if (filter != textureMipmapMinFilter) {
+		if (filter != currentTextureState.textureMipmapMinFilter) {
 			super.setTextureMipmapMinFilter(filter);
-			textureMipmapMinFilter = filter;
+			currentTextureState.textureMipmapMinFilter = filter;
 		}
 	}
 
 	@Override
 	public void setTextureMipmapMagFilter(int filter) {
-		if (filter != textureMipmapMagFilter) {
+		if (filter != currentTextureState.textureMipmapMagFilter) {
 			super.setTextureMipmapMagFilter(filter);
-			textureMipmapMagFilter = filter;
+			currentTextureState.textureMipmapMagFilter = filter;
 		}
 	}
 
 	@Override
 	public void setTextureMipmapMinLevel(int level) {
-		if (level != textureMipmapMinLevel) {
+		if (level != currentTextureState.textureMipmapMinLevel) {
 			super.setTextureMipmapMinLevel(level);
-			textureMipmapMinLevel = level;
+			currentTextureState.textureMipmapMinLevel = level;
+		}
+	}
+
+	@Override
+	public void setTextureMipmapMaxLevel(int level) {
+		if (level != currentTextureState.textureMipmapMaxLevel) {
+			super.setTextureMipmapMaxLevel(level);
+			currentTextureState.textureMipmapMaxLevel = level;
 		}
 	}
 
 	@Override
 	public void setTextureWrapMode(int s, int t) {
-		if (s != textureWrapModeS || t != textureWrapModeT) {
+		if (s != currentTextureState.textureWrapModeS || t != currentTextureState.textureWrapModeT) {
 			super.setTextureWrapMode(s, t);
-			textureWrapModeS = s;
-			textureWrapModeT = t;
+			currentTextureState.textureWrapModeS = s;
+			currentTextureState.textureWrapModeT = t;
 		}
 	}
 
@@ -513,11 +611,12 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		if (texture != bindTexture) {
 			super.bindTexture(texture);
 			bindTexture = texture;
-			// Binding a new texture can change the OpenGL texture wrap mode and min/mag filters
-			textureWrapModeS = -1;
-			textureWrapModeT = -1;
-			textureMipmapMinFilter = -1;
-			textureMipmapMagFilter = -1;
+			// Binding a new texture change the OpenGL texture wrap mode and min/mag filters
+			currentTextureState = textureStates.get(texture);
+			if (currentTextureState == null) {
+				currentTextureState = new TextureState();
+				textureStates.put(texture, currentTextureState);
+			}
 		}
 	}
 
@@ -551,26 +650,30 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void deleteTexture(int texture) {
+		textureStates.remove(texture);
 		// When deleting the current texture, the current binding is reset to 0
 		if (texture == bindTexture) {
 			bindTexture = 0;
+			currentTextureState = textureStates.get(bindTexture);
 		}
 		super.deleteTexture(texture);
 	}
 
 	@Override
 	public void bindBuffer(int target, int buffer) {
-		if (bindBuffer != buffer) {
+		if (bindBuffer[target] != buffer) {
 			super.bindBuffer(target, buffer);
-			bindBuffer = buffer;
+			bindBuffer[target] = buffer;
 		}
 	}
 
 	@Override
 	public void deleteBuffer(int buffer) {
 		// When deleting the current buffer, the current binding is reset to 0
-		if (buffer == bindBuffer) {
-			bindBuffer = 0;
+		for (int target = 0; target < bindBuffer.length; target++) {
+			if (buffer == bindBuffer[target]) {
+				bindBuffer[target] = 0;
+			}
 		}
 		super.deleteBuffer(buffer);
 	}
@@ -606,7 +709,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	}
 
 	private void setBufferData(int target, int size, IntBuffer buffer, int usage) {
-		int[] oldData = bufferDataInt.get(bindBuffer);
+		int[] oldData = bufferDataInt.get(bindBuffer[target]);
 		int[] newData = new int[size / 4];
 		int position = buffer.position();
 		buffer.get(newData);
@@ -640,7 +743,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			super.setBufferData(target, size, buffer, usage);
 		}
 		if (differ) {
-			bufferDataInt.put(bindBuffer, newData);
+			bufferDataInt.put(bindBuffer[target], newData);
 		}
 	}
 
@@ -652,6 +755,270 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			setBufferData(target, size, ((ByteBuffer) buffer).asIntBuffer(), usage);
 		} else {
 			super.setBufferData(target, size, buffer, usage);
+		}
+	}
+
+	@Override
+	public void setMatrixMode(int type) {
+		if (type != matrixMode) {
+			super.setMatrixMode(type);
+			matrixMode = type;
+		}
+	}
+
+	@Override
+	public void setMatrix(float[] values) {
+		if (matrixFirstUpdated(matrixMode, values) < matrix4Size) {
+			if (isIdentityMatrix(values)) {
+				// Identity Matrix is identified by the special value "null"
+				super.setMatrix(null);
+			} else {
+				super.setMatrix(values);
+			}
+		}
+	}
+
+	@Override
+	public void multMatrix(float[] values) {
+		if (!isIdentityMatrix(values)) {
+			super.multMatrix(values);
+		}
+	}
+
+	@Override
+	public void setFogHint() {
+		if (!fogHintSet) {
+			super.setFogHint();
+			fogHintSet = true;
+		}
+	}
+
+	@Override
+	public void setLineSmoothHint() {
+		if (!lineSmoothHintSet) {
+			super.setLineSmoothHint();
+			lineSmoothHintSet = true;
+		}
+	}
+
+	@Override
+	public void setTexEnv(int name, float param) {
+		if (texEnvf[name] != param) {
+			super.setTexEnv(name, param);
+			texEnvf[name] = param;
+		}
+	}
+
+	@Override
+	public void setTexEnv(int name, int param) {
+		if (texEnvi[name] != param) {
+			super.setTexEnv(name, param);
+			texEnvi[name] = param;
+		}
+	}
+
+	@Override
+	public void setPixelStore(int rowLength, int alignment) {
+		if (pixelStoreRowLength != rowLength || pixelStoreAlignment != alignment) {
+			super.setPixelStore(rowLength, alignment);
+			pixelStoreRowLength = rowLength;
+			pixelStoreAlignment = alignment;
+		}
+	}
+
+	@Override
+	public void setScissor(int x, int y, int width, int height) {
+		if (x >= 0 && y >= 0 && width >= 0 && height >= 0) {
+			if (x != scissorX || y != scissorY || width != scissorWidth || height != scissorHeight) {
+				super.setScissor(x, y, width, height);
+				scissorX = x;
+				scissorY = y;
+				scissorWidth = width;
+				scissorHeight = height;
+			}
+		}
+	}
+
+	@Override
+	public void setBlendEquation(int mode) {
+		if (blendEquation != mode) {
+			super.setBlendEquation(mode);
+			blendEquation = mode;
+		}
+	}
+
+	@Override
+	public void setShadeModel(int model) {
+		if (shadeModel != model) {
+			super.setShadeModel(model);
+			shadeModel = model;
+		}
+	}
+
+	@Override
+	public void setAlphaFunc(int func, int ref) {
+		if (alphaFunc != func || alphaFuncRef != ref) {
+			super.setAlphaFunc(func, ref);
+			alphaFunc = func;
+			alphaFuncRef = ref;
+		}
+	}
+
+	@Override
+	public void setDepthRange(float zpos, float zscale, float near, float far) {
+		if (depthRangeZpos != zpos || depthRangeZscale != zscale || depthRangeNear != near || depthRangeFar != far) {
+			super.setDepthRange(zpos, zscale, near, far);
+			depthRangeZpos = zpos;
+			depthRangeZscale = zscale;
+			depthRangeNear = near;
+			depthRangeFar = far;
+		}
+	}
+
+	@Override
+	public void setVertexColor(float[] color) {
+		if (vertexColor[0] != color[0] || vertexColor[1] != color[1] || vertexColor[2] != color[2] || vertexColor[3] != color[3]) {
+			super.setVertexColor(color);
+			vertexColor[0] = color[0];
+			vertexColor[1] = color[1];
+			vertexColor[2] = color[2];
+			vertexColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setLightAmbientColor(int light, float[] color) {
+		float[] stateColor = lightAmbientColor[light];
+		if (stateColor[0] != color[0] || stateColor[1] != color[1] || stateColor[2] != color[2] || stateColor[3] != color[3]) {
+			super.setLightAmbientColor(light, color);
+			stateColor[0] = color[0];
+			stateColor[1] = color[1];
+			stateColor[2] = color[2];
+			stateColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setLightDiffuseColor(int light, float[] color) {
+		float[] stateColor = lightDiffuseColor[light];
+		if (stateColor[0] != color[0] || stateColor[1] != color[1] || stateColor[2] != color[2] || stateColor[3] != color[3]) {
+			super.setLightDiffuseColor(light, color);
+			stateColor[0] = color[0];
+			stateColor[1] = color[1];
+			stateColor[2] = color[2];
+			stateColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setLightSpecularColor(int light, float[] color) {
+		float[] stateColor = lightSpecularColor[light];
+		if (stateColor[0] != color[0] || stateColor[1] != color[1] || stateColor[2] != color[2] || stateColor[3] != color[3]) {
+			super.setLightSpecularColor(light, color);
+			stateColor[0] = color[0];
+			stateColor[1] = color[1];
+			stateColor[2] = color[2];
+			stateColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setMaterialAmbientColor(float[] color) {
+		if (materialAmbientColor[0] != color[0] || materialAmbientColor[1] != color[1] || materialAmbientColor[2] != color[2] || materialAmbientColor[3] != color[3]) {
+			super.setMaterialAmbientColor(color);
+			materialAmbientColor[0] = color[0];
+			materialAmbientColor[1] = color[1];
+			materialAmbientColor[2] = color[2];
+			materialAmbientColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setMaterialDiffuseColor(float[] color) {
+		if (materialDiffuseColor[0] != color[0] || materialDiffuseColor[1] != color[1] || materialDiffuseColor[2] != color[2] || materialDiffuseColor[3] != color[3]) {
+			super.setMaterialDiffuseColor(color);
+			materialDiffuseColor[0] = color[0];
+			materialDiffuseColor[1] = color[1];
+			materialDiffuseColor[2] = color[2];
+			materialDiffuseColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setMaterialEmissiveColor(float[] color) {
+		if (materialEmissiveColor[0] != color[0] || materialEmissiveColor[1] != color[1] || materialEmissiveColor[2] != color[2] || materialEmissiveColor[3] != color[3]) {
+			super.setMaterialEmissiveColor(color);
+			materialEmissiveColor[0] = color[0];
+			materialEmissiveColor[1] = color[1];
+			materialEmissiveColor[2] = color[2];
+			materialEmissiveColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setMaterialSpecularColor(float[] color) {
+		if (materialSpecularColor[0] != color[0] || materialSpecularColor[1] != color[1] || materialSpecularColor[2] != color[2] || materialSpecularColor[3] != color[3]) {
+			super.setMaterialSpecularColor(color);
+			materialSpecularColor[0] = color[0];
+			materialSpecularColor[1] = color[1];
+			materialSpecularColor[2] = color[2];
+			materialSpecularColor[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setColorMaterial(boolean ambient, boolean diffuse, boolean specular) {
+		if (colorMaterialAmbient != ambient || colorMaterialDiffuse != diffuse || colorMaterialSpecular != specular) {
+			super.setColorMaterial(ambient, diffuse, specular);
+			colorMaterialAmbient = ambient;
+			colorMaterialDiffuse = diffuse;
+			colorMaterialSpecular = specular;
+		}
+	}
+
+	private void invalidateMaterialColors() {
+		// Drawing with "color material" enabled overwrites the material colors
+		if (flags[IRenderingEngine.RE_COLOR_MATERIAL]) {
+			if (colorMaterialAmbient) {
+				materialAmbientColor[0] = -1.f;
+			}
+			if (colorMaterialDiffuse) {
+				materialDiffuseColor[0] = -1.f;
+			}
+			if (colorMaterialSpecular) {
+				materialSpecularColor[0] = -1.f;
+			}
+		}
+	}
+
+	@Override
+	public void beginDraw(int type) {
+		invalidateMaterialColors();
+		super.beginDraw(type);
+	}
+
+	@Override
+	public void drawArrays(int type, int first, int count) {
+		invalidateMaterialColors();
+		super.drawArrays(type, first, count);
+	}
+
+	@Override
+	public void setLightMode(int mode) {
+		if (lightMode != mode) {
+			super.setLightMode(mode);
+			lightMode = mode;
+		}
+	}
+
+	@Override
+	public void setLightModelAmbientColor(float[] color) {
+		if (lightModelAmbientColor[0] != color[0] || lightModelAmbientColor[1] != color[1] || lightModelAmbientColor[2] != color[2] || lightModelAmbientColor[3] != color[3]) {
+			super.setLightModelAmbientColor(color);
+			lightModelAmbientColor[0] = color[0];
+			lightModelAmbientColor[1] = color[1];
+			lightModelAmbientColor[2] = color[2];
+			lightModelAmbientColor[3] = color[3];
 		}
 	}
 }
