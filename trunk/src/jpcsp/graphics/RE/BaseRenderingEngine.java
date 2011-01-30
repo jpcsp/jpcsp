@@ -27,18 +27,8 @@ import org.apache.log4j.Logger;
  * Base class for a RenderingEngine.
  * This class offers convenience functions:
  * - the subclass is free to implement
- *      setMatrixElements()
- *   or setXXXMatrixElements()
- *   This class performs the mapping between the 2 equivalent sets of methods.
- * 
- * - the subclass is free to implement
- *      setMaterialColor()
- *   or setMaterialXXXColor()
- *   This class performs the mapping between the 2 equivalent sets of methods.
- *
- * - the subclass is free to implement
- *      setLightColor()
- *   or setLightXXXColor()
+ *      setMatrix()
+ *   or setXXXMatrix()
  *   This class performs the mapping between the 2 equivalent sets of methods.
  */
 public abstract class BaseRenderingEngine implements IRenderingEngine {
@@ -56,118 +46,35 @@ public abstract class BaseRenderingEngine implements IRenderingEngine {
 		this.context = context;
 	}
 
-	//
-	// Equivalence between setMatrixElements() and setXXXMatrixElements()
-	//
-	@Override
-	public void setMatrix(int type, float[] values) {
-		switch (type) {
-			case GU_PROJECTION:
-				setProjectionMatrix(values);
-				break;
-			case GU_MODEL:
-				setModelMatrix(values);
-				break;
-			case GU_VIEW:
-				setViewMatrix(values);
-				break;
-			case GU_TEXTURE:
-				setTextureMatrix(values);
-				break;
-		}
-	}
-
 	@Override
 	public void setProjectionMatrix(float[] values) {
-		setMatrix(GU_PROJECTION, values);
+		re.setMatrixMode(GU_PROJECTION);
+		re.setMatrix(values);
 	}
 
 	@Override
 	public void setViewMatrix(float[] values) {
-		setMatrix(GU_VIEW, values);
+		// The View matrix has always to be set BEFORE the Model matrix
+		re.setMatrixMode(RE_MODELVIEW);
+		setMatrix(values);
 	}
 
 	@Override
 	public void setModelMatrix(float[] values) {
-		setMatrix(GU_MODEL, values);
+		// The Model matrix has always to be set AFTER the View matrix
+		re.setMatrixMode(RE_MODELVIEW);
+		re.multMatrix(values);
 	}
 
 	@Override
 	public void setTextureMatrix(float[] values) {
-		setMatrix(GU_TEXTURE, values);
-	}
-
-	//
-	// Equivalence between setMaterialColor() and setMaterialXXXColor()
-	//
-	@Override
-	public void setMaterialColor(int type, float[] color) {
-		switch (type) {
-			case RE_AMBIENT:
-				setMaterialAmbientColor(color);
-				break;
-			case RE_EMISSIVE:
-				setMaterialEmissiveColor(color);
-				break;
-			case RE_DIFFUSE:
-				setMaterialDiffuseColor(color);
-				break;
-			case RE_SPECULAR:
-				setMaterialSpecularColor(color);
-				break;
-		}
+		re.setMatrixMode(GU_TEXTURE);
+		re.setMatrix(values);
 	}
 
 	@Override
-	public void setMaterialAmbientColor(float[] color) {
-		setMaterialColor(RE_AMBIENT, color);
-	}
-
-	@Override
-	public void setMaterialDiffuseColor(float[] color) {
-		setMaterialColor(RE_DIFFUSE, color);
-	}
-
-	@Override
-	public void setMaterialEmissiveColor(float[] color) {
-		setMaterialColor(RE_EMISSIVE, color);
-	}
-
-	@Override
-	public void setMaterialSpecularColor(float[] color) {
-		setMaterialColor(RE_SPECULAR, color);
-	}
-
-	//
-	// Equivalence between setLightColor() and setLightXXXColor()
-	//
-	@Override
-	public void setLightColor(int type, int light, float[] color) {
-		switch (type) {
-			case RE_AMBIENT:
-				setLightAmbientColor(light, color);
-				break;
-			case RE_DIFFUSE:
-				setLightDiffuseColor(light, color);
-				break;
-			case RE_SPECULAR:
-				setLightSpecularColor(light, color);
-				break;
-		}
-	}
-
-	@Override
-	public void setLightAmbientColor(int light, float[] color) {
-		setLightColor(RE_AMBIENT, light, color);
-	}
-
-	@Override
-	public void setLightDiffuseColor(int light, float[] color) {
-		setLightColor(RE_DIFFUSE, light, color);
-	}
-
-	@Override
-	public void setLightSpecularColor(int light, float[] color) {
-		setLightColor(RE_SPECULAR, light, color);
+	public void setModelViewMatrix(float[] values) {
+		re.setMatrixMode(RE_MODELVIEW);
+		setMatrix(values);
 	}
 }

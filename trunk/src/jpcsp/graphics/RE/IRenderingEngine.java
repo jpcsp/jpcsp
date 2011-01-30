@@ -81,6 +81,7 @@ public interface IRenderingEngine {
 	public static final int GU_VIEW                = 1;
 	public static final int GU_MODEL               = 2;
 	public static final int GU_TEXTURE             = 3;
+	public static final int RE_MODELVIEW           = 4;
 
 	// Shade models:
 	public static final int GU_FLAT                = 0;
@@ -199,7 +200,9 @@ public interface IRenderingEngine {
 	public void setMorphWeight(int index, float value);
 	public void setPatchDiv(int s, int t);
 	public void setPatchPrim(int prim);
-	public void setMatrix(int type, float[] values);
+	public void setMatrixMode(int type);
+	public void setMatrix(float[] values);
+	public void multMatrix(float[] values);
 	public void setProjectionMatrix(float[] values);
 	public void setViewMatrix(float[] values);
 	public void setModelMatrix(float[] values);
@@ -210,7 +213,6 @@ public interface IRenderingEngine {
 	public void setDepthRange(float zpos, float zscale, float near, float far);
 	public void setDepthFunc(int func);
 	public void setShadeModel(int model);
-	public void setMaterialColor(int type, float[] color);
 	public void setMaterialEmissiveColor(float[] color);
 	public void setMaterialAmbientColor(float[] color);
 	public void setMaterialDiffuseColor(float[] color);
@@ -228,7 +230,6 @@ public interface IRenderingEngine {
 	public void setLightAmbientColor(int light, float[] color);
 	public void setLightDiffuseColor(int light, float[] color);
 	public void setLightSpecularColor(int light, float[] color);
-	public void setLightColor(int type, int light, float[] color);
 	public void setLightType(int light, int type, int kind);
 	public void setBlendFunc(int src, int dst);
 	public void setBlendColor(float[] color);

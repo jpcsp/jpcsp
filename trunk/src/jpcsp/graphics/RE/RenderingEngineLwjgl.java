@@ -328,6 +328,13 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL15.GL_ARRAY_BUFFER,         // RE_ARRAY_BUFFER
 		ARBUniformBufferObject.GL_UNIFORM_BUFFER // RE_UNIFORM_BUFFER
 	};
+	protected static final int[] matrixModeToGL = {
+		GL11.GL_PROJECTION,          // GU_PROJECTION
+		GL11.GL_MODELVIEW,           // GU_VIEW
+		GL11.GL_MODELVIEW,           // GU_MODEL
+		GL11.GL_TEXTURE,             // GU_TEXTURE
+		GL11.GL_MODELVIEW            // RE_MODELVIEW
+	};
 
 	public static IRenderingEngine newInstance() {
 		if (GLContext.getCapabilities().OpenGL31) {
@@ -452,63 +459,28 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setMaterialColor(int type, float[] color) {
-        GL11.glMaterial(GL11.GL_FRONT, colorTypeToGL[type], getDirectBuffer(color));
+	public void setMaterialEmissiveColor(float[] color) {
+        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_EMISSION, getDirectBuffer(color));
 	}
 
 	@Override
-	public void setProjectionMatrix(float[] values) {
-        GL11.glMatrixMode(GL11.GL_PROJECTION);
-        if (values != null) {
-        	GL11.glLoadMatrix(getDirectBuffer(values));
-        } else {
-        	GL11.glLoadIdentity();
-        }
+	public void setMaterialAmbientColor(float[] color) {
+        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_AMBIENT, getDirectBuffer(color));
 	}
 
 	@Override
-	public void setViewMatrix(float[] values) {
-		// The View matrix has always to be set BEFORE the Model matrix
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        if (values != null) {
-        	GL11.glLoadMatrix(getDirectBuffer(values));
-        } else {
-        	GL11.glLoadIdentity();
-        }
+	public void setMaterialDiffuseColor(float[] color) {
+        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_DIFFUSE, getDirectBuffer(color));
 	}
 
 	@Override
-	public void setModelMatrix(float[] values) {
-		// The Model matrix has always to be set AFTER the View matrix
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        if (values != null) {
-        	GL11.glMultMatrix(getDirectBuffer(values));
-        }
+	public void setMaterialSpecularColor(float[] color) {
+        GL11.glMaterial(GL11.GL_FRONT, GL11.GL_SPECULAR, getDirectBuffer(color));
 	}
 
 	@Override
 	public void endModelViewMatrixUpdate() {
 		// Nothing to do
-	}
-
-	@Override
-	public void setModelViewMatrix(float[] values) {
-        GL11.glMatrixMode(GL11.GL_MODELVIEW);
-        if (values != null) {
-        	GL11.glLoadMatrix(getDirectBuffer(values));
-        } else {
-        	GL11.glLoadIdentity();
-        }
-	}
-
-	@Override
-	public void setTextureMatrix(float[] values) {
-        GL11.glMatrixMode(GL11.GL_TEXTURE);
-        if (values != null) {
-        	GL11.glLoadMatrix(getDirectBuffer(values));
-        } else {
-        	GL11.glLoadIdentity();
-        }
 	}
 
 	@Override
@@ -522,8 +494,18 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setLightColor(int type, int light, float[] color) {
-		GL11.glLight(GL11.GL_LIGHT0 + light, colorTypeToGL[type], getDirectBuffer(color));
+	public void setLightAmbientColor(int light, float[] color) {
+		GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_AMBIENT, getDirectBuffer(color));
+	}
+
+	@Override
+	public void setLightDiffuseColor(int light, float[] color) {
+		GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_DIFFUSE, getDirectBuffer(color));
+	}
+
+	@Override
+	public void setLightSpecularColor(int light, float[] color) {
+		GL11.glLight(GL11.GL_LIGHT0 + light, GL11.GL_SPECULAR, getDirectBuffer(color));
 	}
 
 	@Override
@@ -1355,5 +1337,26 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
 		ARBUniformBufferObject.glUniformBlockBinding(program, blockIndex, bindingPoint);
+	}
+
+	@Override
+	public void setMatrix(float[] values) {
+        if (values != null) {
+        	GL11.glLoadMatrix(getDirectBuffer(values));
+        } else {
+        	GL11.glLoadIdentity();
+        }
+	}
+
+	@Override
+	public void setMatrixMode(int type) {
+        GL11.glMatrixMode(matrixModeToGL[type]);
+	}
+
+	@Override
+	public void multMatrix(float[] values) {
+		if (values != null) {
+			GL11.glMultMatrix(getDirectBuffer(values));
+		}
 	}
 }
