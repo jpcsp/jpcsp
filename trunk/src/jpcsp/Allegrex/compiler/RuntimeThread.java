@@ -123,7 +123,8 @@ public class RuntimeThread extends Thread {
 	}
 
 	public boolean hasStackState(int ra, int sp) {
-		for (JumpState state : stack) {
+		for (int i = stackIndex; i >= 0; i--) {
+			JumpState state = stack[i];
 			if (state.ra == ra) {
 				return true;
 			}
