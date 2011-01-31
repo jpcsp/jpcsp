@@ -4758,6 +4758,39 @@
 088DD9D0:[F8400000]: sv.q       C000.q, 0($v0)
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="intBitsToFloatSequence3">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.IntBitsToFloatSequence</Class>
+		<Method>callSequence3</Method>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+08AF92A0:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+08AF92A4:[48E50001]: MTV.s      $a1, S010.s
+08AF92A8:[D0380100]: vuc2i.s    S000.s, S010.s
+08AF92AC:[D29F8080]: vi2f.q     C000.q, C000.q, 31
+08AF92B0:[F8800000]: sv.q       C000.q, 0($a0)
+08AF92B4:[03E00008]: jr         $ra
+08AF92B8:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="intBitsToFloatSequence4">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.IntBitsToFloatSequence</Class>
+		<Method>callSequence4</Method>
+		<Parameters>$t2,$t0</Parameters>
+		<CodeInstructions><![CDATA[
+088BE2CC:[C9400000]: lv.s       S000.s, 0($t2)
+088BE2D0:[C9400005]: lv.s       S001.s, 4($t2)
+088BE2D4:[D03B0081]: vs2i.p     C010.p, C000.p
+088BE2D8:[D2908180]: vi2f.q     C000.q, C010.q, 16
+088BE2DC:[E9000000]: sv.s       S000.s, 0($t0)
+088BE2E0:[E9000005]: sv.s       S001.s, 4($t0)
+088BE2E4:[E900000E]: sv.s       S002.s, 12($t0)
+088BE2E8:[E9000011]: sv.s       S001.s, 16($t0)
+088BE2EC:[E9000018]: sv.s       S000.s, 24($t0)
+088BE2F0:[E900001F]: sv.s       S003.s, 28($t0)
+088BE2F4:[E9000026]: sv.s       S002.s, 36($t0)
+088BE2F8:[E900002B]: sv.s       S003.s, 40($t0)
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="SoundMix">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.SoundMix</Class>
 		<Parameters>$t0,$a3,$t2,$t1,$f12,$f12</Parameters>
