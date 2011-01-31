@@ -222,7 +222,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		stencilOpZPass = -1;
 		depthFunc = -1;
 		bindTexture = -1;
-		currentTextureState = null;
+		currentTextureState = textureStates.get(0);
 		for (int i = 0; i < bindBuffer.length; i++) {
 			bindBuffer[i] = -1;
 		}
