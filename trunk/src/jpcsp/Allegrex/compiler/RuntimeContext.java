@@ -31,6 +31,7 @@ import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Instructions;
+import jpcsp.Allegrex.VfpuState;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
@@ -54,7 +55,7 @@ public class RuntimeContext {
 	public  static boolean isActive = true;
 	public  static int gpr[];
 	public  static float fpr[];
-	public  static float vpr[];
+	public  static VfpuState.VfpuValue vpr[];
 	public  static int memoryInt[];
 	public  static Processor processor;
 	public  static CpuState cpu;

@@ -3975,11 +3975,6 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (VfpuState.CHECK_intBitsToFloat) {
-		super.compile(context, insn);
-		return;
-	}
-
 	int vt2 = (insn>>0)&3;
 	int vt5 = (insn>>16)&31;
 	int vt = vt5 | (vt2<<5);
@@ -3988,8 +3983,7 @@ public void compile(ICompilerContext context, int insn) {
 
 	context.prepareVtForStore(1, vt, 0);
 	context.memRead32(rs, simm14);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
-	context.storeVt(1, vt, 0);
+	context.storeVtInt(1, vt, 0);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4022,11 +4016,6 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (VfpuState.CHECK_intBitsToFloat) {
-		super.compile(context, insn);
-		return;
-	}
-
 	super.compile(context, insn);
 }
 @Override
@@ -4060,11 +4049,6 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (VfpuState.CHECK_intBitsToFloat) {
-		super.compile(context, insn);
-		return;
-	}
-
 	super.compile(context, insn);
 }
 @Override
@@ -4098,11 +4082,6 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (VfpuState.CHECK_intBitsToFloat) {
-		super.compile(context, insn);
-		return;
-	}
-
 	int vt1 = (insn>>0)&1;
 	int vt5 = (insn>>16)&31;
 	int vt = vt5 | (vt1<<5);
@@ -4113,8 +4092,7 @@ public void compile(ICompilerContext context, int insn) {
     for (int n = 0; n < vsize; n++) {
     	context.prepareVtForStore(vsize, vt, n);
     	context.memRead32(rs, simm14 + n * 4);
-    	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
-    	context.storeVt(vsize, vt, n);
+    	context.storeVtInt(vsize, vt, n);
     }
 }
 @Override
@@ -4221,8 +4199,7 @@ public void compile(ICompilerContext context, int insn) {
 	int simm14 = context.getImm14(true);
 	int rs  = context.getRsRegisterIndex();
 	context.prepareMemWrite32(rs, simm14);
-	context.loadVt(1, vt, 0);
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
+	context.loadVtInt(1, vt, 0);
 	context.memWrite32(rs, simm14);
 }
 @Override
@@ -4331,8 +4308,7 @@ public void compile(ICompilerContext context, int insn) {
 
     for (int n = 0; n < vsize; n++) {
     	context.prepareMemWrite32(rs, simm14 + n * 4);
-    	context.loadVt(vsize, vt, n);
-    	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
+    	context.loadVtInt(vsize, vt, n);
     	context.memWrite32(rs, simm14 + n * 4);
     }
 }
@@ -5250,8 +5226,7 @@ public void compile(ICompilerContext context, int insn) {
 		for (int n = 0; n < vsize; n++) {
 			context.prepareVdForStore(n);
 			context.loadVs(n);
-			context.loadVt(n);
-			context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "floatToRawIntBits", "(F)I");
+			context.loadVtInt(n);
 			context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Math.class), "scalb", "(FI)F");
 			context.storeVd(n);
 		}
@@ -5648,15 +5623,9 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (VfpuState.CHECK_intBitsToFloat) {
-		super.compile(context, insn);
-		return;
-	}
-
 	context.prepareVdForStore(1, 0);
 	context.loadRt();
-	context.getMethodVisitor().visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(Float.class), "intBitsToFloat", "(I)F");
-	context.storeVd(1, 0);
+	context.storeVdInt(1, 0);
 }
 @Override
 public String disasm(int address, int insn) {
