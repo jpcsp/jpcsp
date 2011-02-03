@@ -313,6 +313,17 @@ public class scePsmfPlayer implements HLEModule {
     	return true;
     }
 
+    protected void startMediaEngine() {
+    	if (checkMediaEngineState()) {
+	        if (pmfFileChannel != null && me == null) {
+	            me = new MediaEngine();
+	            audioDecodeBuffer = new byte[audioSamplesBytes];
+	            me.init(pmfFileData);
+	            me.init(pmfFileChannel, true, true);
+	        }
+    	}
+    }
+
     public void scePsmfPlayerCreate(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -360,6 +371,7 @@ public class scePsmfPlayer implements HLEModule {
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
+                me = null;
             }
             if (pmfFileChannel != null) {
             	pmfFileChannel = null;
@@ -433,6 +445,7 @@ public class scePsmfPlayer implements HLEModule {
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
+                me = null;
             }
             if (pmfFileChannel != null) {
             	pmfFileChannel = null;
@@ -482,14 +495,7 @@ public class scePsmfPlayer implements HLEModule {
 
         analyzePSMFLastTimestamp();
 
-        if (checkMediaEngineState()) {
-            if (pmfFileChannel != null) {
-                me = new MediaEngine();
-                audioDecodeBuffer = new byte[audioSamplesBytes];
-                me.init(pmfFileData);
-                me.init(pmfFileChannel, true, true);
-            }
-        }
+        startMediaEngine();
 
         // Switch to PLAYING.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_PLAYING;
@@ -529,6 +535,7 @@ public class scePsmfPlayer implements HLEModule {
         if (checkMediaEngineState()) {
             if (me != null) {
                 me.finish();
+                me = null;
             }
             if (pmfFileChannel != null) {
             	pmfFileChannel = null;
@@ -608,6 +615,7 @@ public class scePsmfPlayer implements HLEModule {
 	    	// Write video data.
 	        if (checkMediaEngineState() && me != null && me.getContainer() != null) {
 	        	Emulator.getClock().pause();
+	        	startMediaEngine();
 	            if (me.stepVideo()) {
 	            	me.writeVideoImage(displayBuffer, videoDataFrameWidth, videoPixelMode);
 		            me.getCurrentVideoAu(psmfPlayerAvcAu);
@@ -665,6 +673,7 @@ public class scePsmfPlayer implements HLEModule {
 	        	int bytes = 0;
 	        	if (checkMediaEngineState()) {
 	            	Emulator.getClock().pause();
+	            	startMediaEngine();
 	            	if (me.stepAudio(audioSamplesBytes)) {
 		                bytes = me.getCurrentAudioSamples(audioDecodeBuffer);
 		                if (log.isDebugEnabled()) {
