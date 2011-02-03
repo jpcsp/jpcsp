@@ -156,7 +156,7 @@ public class VfpuFrame extends JFrame {
 		for (int i = 0; i < 8; ++i) {
             for (int j = 0; j < 4; ++j) {
                 for(int k = 0; k < 4; ++k) {
-                	registers[i][k][j].setText("" + cpu.getVpr(i, j, k));
+                	registers[i][k][j].setText("" + cpu.getVprFloat(i, j, k));
                 	registers[i][k][j].setCaretPosition(0);
                 }
             }
