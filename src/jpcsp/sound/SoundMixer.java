@@ -46,10 +46,11 @@ public class SoundMixer {
     	return (short) sample;
     }
 
-    private void mix(int[] stereoSamples, short[] monoSamples, int startIndex, int length, int leftVol, int rightVol) {
+    private void mix(int[] stereoSamples, ISampleSource sampleSource, int startIndex, int length, int leftVol, int rightVol) {
     	int endIndex = startIndex + length;
+    	sampleSource.setSampleIndex(startIndex);
     	for (int i = startIndex, j = 0; i < endIndex; i++, j += 2) {
-    		short monoSample = monoSamples[i];
+    		short monoSample = sampleSource.getNextSample();
     		stereoSamples[j] += SoundChannel.adjustSample(monoSample, leftVol);
     		stereoSamples[j + 1] += SoundChannel.adjustSample(monoSample, rightVol);
     	}
@@ -85,14 +86,14 @@ public class SoundMixer {
 
             if (voice.isPlaying()) {
             	int playSample = voice.getPlaySample();
-            	short[] synthSamples = synthesizers[i].getSynthSamples();
-            	int restPlay = synthSamples.length - playSample;
+            	ISampleSource sampleSource = synthesizers[i].getSampleSource();
+            	int restPlay = sampleSource.getNumberSamples() - playSample;
             	if (restPlay <= 0) {
             		// End of voice sample reached
             		voice.setPlaying(false);
             	} else {
             		int numSamples = Math.min(samples, restPlay);
-            		mix(mixedSamples, synthSamples, playSample, numSamples, voice.getLeftVolume(), voice.getRightVolume());
+            		mix(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume(), voice.getRightVolume());
             		voice.setPlaySample(playSample + numSamples);
             		writeSamples = true;
             	}

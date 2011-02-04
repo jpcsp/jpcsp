@@ -16,24 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
-public class SoftwareSynthesizer {
-	private SoundVoice voice;
-	private ISampleSource sampleSource;
-
-	public SoftwareSynthesizer(SoundVoice voice) {
-		this.voice = voice;
-	}
-
-	public ISampleSource getSampleSource() {
-		if (sampleSource == null || voice.isChanged()) {
-			voice.setChanged(false);
-
-			// Currently we build the samples only based on the pitch.
-			// ADSR has still to be added.
-			sampleSource = new SampleSourceVAG(voice.getVAGAddress(), voice.getVAGSize());
-			sampleSource = new SampleSourceWithPitch(sampleSource, voice.getPitch());
-		}
-
-		return sampleSource;
-	}
+/**
+ * @author gid15
+ *
+ */
+public interface ISampleSource {
+	public short getNextSample();
+	public void setSampleIndex(int index);
+	public int getNumberSamples();
 }
