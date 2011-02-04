@@ -28,11 +28,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.MemoryReader;
 import jpcsp.sound.SoundVoice;
 import jpcsp.sound.SoundMixer;
-import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -210,91 +207,6 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         log.warn(functionName + " bad voice number " + voice);
         cpu.gpr[2] = SceKernelErrors.ERROR_SAS_INVALID_VOICE;
         return false;
-    }
-
-    protected short[] decodeSamples(Processor processor, int vagAddr, int size) {
-        Memory mem = Processor.memory;
-        // Based on vgmstream.
-        short[] samples = new short[size / 16 * 28];
-        int numSamples = 0;
-        // VAG address can be null. In this case, just return empty samples.
-        if (vagAddr != 0) {
-            int vagHeader = mem.read32(vagAddr);
-            if ((vagHeader & 0x00FFFFFF) == 0x00474156) { // VAGx.
-                int vagVersion = Integer.reverseBytes(mem.read32(vagAddr + 4));
-                int vagDataSize = Integer.reverseBytes(mem.read32(vagAddr + 12));
-                int vagSampleRate = Integer.reverseBytes(mem.read32(vagAddr + 16));
-                String vagDataName = new StringBuffer(Utilities.readStringNZ(vagAddr + 32, 16)).reverse().toString();
-                if(log.isDebugEnabled()) {
-                    log.debug("decodeSamples found VAG/ADPCM data: version=" + vagVersion
-                            + ", size=" + vagDataSize
-                            + ", sampleRate=" + vagSampleRate
-                            + ", dataName=" + vagDataName);
-                }
-                vagAddr += 0x30;
-            }
-            int[] unpackedSamples = new int[28];
-            int hist1 = 0;
-            int hist2 = 0;
-            final double[][] VAG_f = {
-                {0.0, 0.0},
-                {60.0 / 64.0, 0.0},
-                {115.0 / 64.0, -52.0 / 64.0},
-                {98.0 / 64.0, -55.0 / 64.0},
-                {122.0 / 64.0, -60.0 / 64.0}
-            };
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(vagAddr, 1);
-            for (int i = 0; i <= (size - 16); i += 16) {
-                int n = memoryReader.readNext();
-                int predict_nr = n >> 4;
-                if (predict_nr >= VAG_f.length) {
-                    predict_nr = 0;
-                }
-                int shift_factor = n & 0x0F;
-                int flag = memoryReader.readNext();
-                if (flag == 0x03) {
-                    // If loop mode is enabled, this flag indicates
-                    // the final block of the loop.
-                    // TODO: Implement loop processing by decoding
-                    // the same samples within the loop flags
-                    // when loop mode is on.
-                } else if (flag == 0x06) {
-                    // If loop mode is enabled, this flag indicates
-                    // the first block of the loop.
-                    // TODO: Implement loop processing by decoding
-                    // the same samples within the loop flags
-                    // when loop mode is on.
-                } else if (flag == 0x07) {
-                    break;	// End of stream flag.
-                }
-                for (int j = 0; j < 28; j += 2) {
-                    int d = memoryReader.readNext();
-                    int s = (short) ((d & 0x0F) << 12);
-                    unpackedSamples[j] = s >> shift_factor;
-                    s = (short) ((d & 0xF0) << 8);
-                    unpackedSamples[j + 1] = s >> shift_factor;
-                }
-                for (int j = 0; j < 28; j++) {
-                    int sample = (int) (unpackedSamples[j] + hist1 * VAG_f[predict_nr][0] + hist2 * VAG_f[predict_nr][1]);
-                    hist2 = hist1;
-                    hist1 = sample;
-                    if (sample < -32768) {
-                        samples[numSamples] = -32768;
-                    } else if (sample > 0x7FFF) {
-                        samples[numSamples] = 0x7FFF;
-                    } else {
-                        samples[numSamples] = (short) sample;
-                    }
-                    numSamples++;
-                }
-            }
-            if (samples.length != numSamples) {
-                short[] resizedSamples = new short[numSamples];
-                System.arraycopy(samples, 0, resizedSamples, 0, numSamples);
-                samples = resizedSamples;
-            }
-        }
-        return samples;
     }
 
     private void delayThread(long startMicros, int delayMicros) {
@@ -646,7 +558,7 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         	log.warn(String.format("__sceSasSetVoice invalid size 0x%08X", size));
         	cpu.gpr[2] = SceKernelErrors.ERROR_SAS_INVALID_PARAMETER;
         } else if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
-            voices[voice].setSamples(decodeSamples(processor, vagAddr, size));
+        	voices[voice].setVAG(vagAddr, size);
             voices[voice].setLoopMode(loopmode);
             cpu.gpr[2] = 0;
         }

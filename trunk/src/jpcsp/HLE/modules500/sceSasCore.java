@@ -60,7 +60,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
         	log.warn(String.format("__sceSasSetVoicePCM invalid size 0x%08X", size));
         	cpu.gpr[2] = SceKernelErrors.ERROR_SAS_INVALID_PARAMETER;
         } else if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
-            voices[voice].setSamples(decodeSamples(processor, vagAddr, size));
+        	voices[voice].setVAG(vagAddr, size);
             voices[voice].setLoopMode(loopmode);
 
             cpu.gpr[2] = 0;

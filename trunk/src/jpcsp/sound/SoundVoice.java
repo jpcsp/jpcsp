@@ -24,7 +24,8 @@ public class SoundVoice {
 	private int leftVolume;
 	private int rightVolume;
 	private int sampleRate;
-    private short[] samples;
+	private int vagAddress;
+	private int vagSize;
     private int loopMode;
     private int pitch;
     private int noise;
@@ -58,7 +59,8 @@ public class SoundVoice {
 
 	public SoundVoice(int index) {
 		changed = true;
-        samples = null;
+		vagAddress = 0;
+		vagSize = 0;
         loopMode = 0;
         pitch = PSP_SAS_PITCH_BASE;
         noise = 0;
@@ -129,13 +131,18 @@ public class SoundVoice {
 		this.paused = paused;
 	}
 
-	public void setSamples(short[] samples) {
-		this.samples = samples;
+	public void setVAG(int address, int size) {
+		vagAddress = address;
+		vagSize = size;
 		onVoiceChanged();
 	}
 
-    public short[] getSamples() {
-		return samples;
+	public int getVAGAddress() {
+		return vagAddress;
+	}
+
+	public int getVAGSize() {
+		return vagSize;
 	}
 
 	public int getLoopMode() {
@@ -197,9 +204,5 @@ public class SoundVoice {
 
 	public void setChanged(boolean changed) {
 		this.changed = changed;
-	}
-
-	public short getSample(int index) {
-		return samples[index];
 	}
 }
