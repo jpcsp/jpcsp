@@ -54,16 +54,35 @@ public class IntrHandler extends AbstractInterruptHandler {
 			return false;
 		}
 
-		boolean removed = (subInterrupts.remove(id) != null);
+		boolean removed = (subInterrupts.get(id) != null);
+		subInterrupts.set(id, null);
 
-		if (maxIndex >= subInterrupts.size()) {
-			maxIndex = subInterrupts.size() - 1;
+		// Find the first non-null sub-interrupt
+		minIndex = Integer.MAX_VALUE;
+		for (int i = 0; i < subInterrupts.size(); i++) {
+			if (subInterrupts.get(i) != null) {
+				minIndex = i;
+				break;
+			}
+		}
+
+		// Find the last non-null sub-interrupt
+		maxIndex = Integer.MIN_VALUE;
+		for (int i = subInterrupts.size() - 1; i >= minIndex; i--) {
+			if (subInterrupts.get(i) != null) {
+				maxIndex = i;
+				break;
+			}
 		}
 
 		return removed;
 	}
 
 	public SubIntrHandler getSubIntrHandler(int id) {
+		if (id < 0 || id >= subInterrupts.size()) {
+			return null;
+		}
+
 		return subInterrupts.get(id);
 	}
 
