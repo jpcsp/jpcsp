@@ -613,7 +613,7 @@ public class scePsmfPlayer implements HLEModule {
             long startTime = Emulator.getClock().microTime();
 
 	    	// Write video data.
-	        if (checkMediaEngineState() && me != null && me.getContainer() != null) {
+	        if (checkMediaEngineState() && pmfFileChannel != null) {
 	        	Emulator.getClock().pause();
 	        	startMediaEngine();
 	            if (me.stepVideo()) {
@@ -671,7 +671,7 @@ public class scePsmfPlayer implements HLEModule {
 	    	// Write audio data
 	    	if (Memory.isAddressGood(audioDataAddr)) {
 	        	int bytes = 0;
-	        	if (checkMediaEngineState()) {
+		        if (checkMediaEngineState() && pmfFileChannel != null) {
 	            	Emulator.getClock().pause();
 	            	startMediaEngine();
 	            	if (me.stepAudio(audioSamplesBytes)) {
