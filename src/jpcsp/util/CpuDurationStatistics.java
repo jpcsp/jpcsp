@@ -39,12 +39,28 @@ public class CpuDurationStatistics extends DurationStatistics {
 	}
 
 	@Override
-	public long end() {
+	public void start() {
+		if (!collectStatistics) {
+			return;
+		}
+
+		if (threadMXBean.isThreadCpuTimeEnabled()) {
+			startCpuTimeNanos = threadMXBean.getCurrentThreadCpuTime();
+		}
+		super.start();
+	}
+
+	@Override
+	public void end() {
+		if (!collectStatistics) {
+			return;
+		}
+
 		if (threadMXBean.isThreadCpuTimeEnabled()) {
 			long duration = threadMXBean.getCurrentThreadCpuTime() - startCpuTimeNanos;
 			cumulatedCpuTimeNanos += duration;
 		}
-		return super.end();
+		super.end();
 	}
 
 	@Override
@@ -55,19 +71,11 @@ public class CpuDurationStatistics extends DurationStatistics {
 	}
 
 	@Override
-	public void start() {
-		if (threadMXBean.isThreadCpuTimeEnabled()) {
-			startCpuTimeNanos = threadMXBean.getCurrentThreadCpuTime();
-		}
-		super.start();
-	}
-
-	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
 
 		result.append(super.toString());
-		if (numberCalls > 0 && threadMXBean.isThreadCpuTimeEnabled()) {
+		if (collectStatistics && numberCalls > 0 && threadMXBean.isThreadCpuTimeEnabled()) {
 			result.append(String.format(" CPU %.3fs", cumulatedCpuTimeNanos / 1000000000.0));
 		}
 

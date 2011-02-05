@@ -406,7 +406,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     }
 
     public void exit() {
-        if (statistics != null) {
+        if (statistics != null && DurationStatistics.collectStatistics) {
             log.info("----------------------------- sceDisplay exit -----------------------------");
             log.info(statistics.toString());
             log.info(statisticsCopyGeToMemory.toString());
@@ -534,6 +534,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		        + "," + pixelformat + ")");
 		}
 
+    	if (re.isVertexArrayAvailable()) {
+    		re.bindVertexArray(0);
+    	}
+
 		boolean loadGEToScreen = true; // Always reload the GE memory to the screen
 		if (copyGEToMemory && topaddrGe != topaddr) {
 			if (VideoEngine.log.isDebugEnabled()) {
@@ -544,7 +548,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 				statisticsCopyGeToMemory.start();
 			}
 
-			// Set texFb as the current texture
+        	// Set texFb as the current texture
 		    re.bindTexture(texFb);
 
 		    // Copy screen to the current texture
@@ -588,6 +592,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 			if (statisticsCopyMemoryToGe != null) {
 				statisticsCopyMemoryToGe.start();
 			}
+
+        	if (re.isVertexArrayAvailable()) {
+        		re.bindVertexArray(0);
+        	}
 
 			// Set texFb as the current texture
 			re.bindTexture(texFb);
@@ -884,6 +892,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         drawFloatBuffer.put(width);
         drawFloatBuffer.put(0);
 
+        if (re.isVertexArrayAvailable()) {
+        	re.bindVertexArray(0);
+        }
         re.enableClientState(IRenderingEngine.RE_TEXTURE);
         re.disableClientState(IRenderingEngine.RE_COLOR);
         re.disableClientState(IRenderingEngine.RE_NORMAL);

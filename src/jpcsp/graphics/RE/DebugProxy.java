@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import java.nio.Buffer;
+import java.nio.IntBuffer;
 
 import jpcsp.graphics.Uniforms;
 
@@ -26,9 +27,11 @@ import jpcsp.graphics.Uniforms;
  */
 public class DebugProxy extends BaseRenderingEngineProxy {
 	protected int useProgram;
+	protected boolean isLogDebugEnabled;
 
 	public DebugProxy(IRenderingEngine proxy) {
 		super(proxy);
+		isLogDebugEnabled = log.isDebugEnabled();
 	}
 
 	protected String getEnabledDisabled(boolean enabled) {
@@ -37,7 +40,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void enableFlag(int flag) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			if (flag < context.flags.size()) {
 				log.debug(String.format("enableFlag %s", context.flags.get(flag).toString()));
 			} else {
@@ -49,7 +52,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void disableFlag(int flag) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			if (flag < context.flags.size()) {
 				log.debug(String.format("disableFlag %s", context.flags.get(flag).toString()));
 			} else {
@@ -61,7 +64,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setAlphaFunc(int func, int ref) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setAlphaFunc func=%d, ref=0x%02X", func, ref));
 		}
 		super.setAlphaFunc(func, ref);
@@ -69,7 +72,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureFunc(int func, boolean alphaUsed, boolean colorDoubled) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTextureFunc func=%d%s%s", func, alphaUsed ? " ALPHA" : "", colorDoubled ? " COLORx2" : ""));
 		}
 		super.setTextureFunc(func, alphaUsed, colorDoubled);
@@ -77,7 +80,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setBlendFunc(int src, int dst) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setBlendFunc src=%d, dst=%d", src, dst));
 		}
 		super.setBlendFunc(src, dst);
@@ -85,7 +88,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setBlendEquation(int mode) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setBlendEquation mode=%d", mode));
 		}
 		super.setBlendEquation(mode);
@@ -106,7 +109,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setModelMatrix(float[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			debugMatrix("setModelMatrix", values);
 		}
 		super.setModelMatrix(values);
@@ -114,7 +117,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setModelViewMatrix(float[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			debugMatrix("setModelViewMatrix", values);
 		}
 		super.setModelViewMatrix(values);
@@ -122,7 +125,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setProjectionMatrix(float[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			debugMatrix("setProjectionMatrix", values);
 		}
 		super.setProjectionMatrix(values);
@@ -130,7 +133,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureMatrix(float[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			debugMatrix("setTextureMatrix", values);
 		}
 		super.setTextureMatrix(values);
@@ -138,7 +141,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setViewMatrix(float[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			debugMatrix("setViewMatrix", values);
 		}
 		super.setViewMatrix(values);
@@ -146,7 +149,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureMipmapMinLevel(int level) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTextureMipmapMinLevel %d", level));
 		}
 		super.setTextureMipmapMinLevel(level);
@@ -154,7 +157,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureMipmapMaxLevel(int level) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTextureMipmapMaxLevel %d", level));
 		}
 		super.setTextureMipmapMaxLevel(level);
@@ -162,7 +165,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureMipmapMinFilter(int filter) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTextureMipmapMinFilter %d", filter));
 		}
 		super.setTextureMipmapMinFilter(filter);
@@ -170,7 +173,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureMipmapMagFilter(int filter) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTextureMipmapMagFilter %d", filter));
 		}
 		super.setTextureMipmapMagFilter(filter);
@@ -178,7 +181,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setPixelStore(int rowLength, int alignment) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setPixelStore rowLength=%d, alignment=%d", rowLength, alignment));
 		}
 		super.setPixelStore(rowLength, alignment);
@@ -186,7 +189,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setCompressedTexImage level=%d, internalFormat=%d, %dx%d, compressedSize=0x%X", level, internalFormat, width, height, compressedSize));
 		}
 		super.setCompressedTexImage(level, internalFormat, width, height, compressedSize, buffer);
@@ -194,7 +197,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTexImage level=%d, internalFormat=%d, %dx%d, format=%d, type=%d, textureSize=%d", level, internalFormat, width, height, format, type, textureSize));
 		}
 		super.setTexImage(level, internalFormat, width, height, format, type, textureSize, buffer);
@@ -202,7 +205,8 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void startClearMode(boolean color, boolean stencil, boolean depth) {
-		if (log.isDebugEnabled()) {
+		isLogDebugEnabled = log.isDebugEnabled();
+		if (isLogDebugEnabled) {
 			log.debug(String.format("startClearMode color=%b, stencil=%b, depth=%b", color, stencil, depth));
 		}
 		super.startClearMode(color, stencil, depth);
@@ -210,7 +214,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void endClearMode() {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug("endClearMode");
 		}
 		super.endClearMode();
@@ -218,7 +222,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("startDirectRendering texture=%b, depth=%b, color=%b, ortho=%b, inverted=%b, %dx%d", textureEnabled, depthWriteEnabled, colorWriteEnabled, setOrthoMatrix, orthoInverted, width, height));
 		}
 		super.startDirectRendering(textureEnabled, depthWriteEnabled, colorWriteEnabled, setOrthoMatrix, orthoInverted, width, height);
@@ -226,7 +230,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void endDirectRendering() {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug("endDirectRendering");
 		}
 		super.endDirectRendering();
@@ -234,7 +238,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void bindTexture(int texture) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("bindTexture %d", texture));
 		}
 		super.bindTexture(texture);
@@ -242,7 +246,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void drawArrays(int type, int first, int count) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("drawArrays type=%d, first=%d, count=%d", type, first, count));
 		}
 		super.drawArrays(type, first, count);
@@ -250,7 +254,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setDepthFunc(int func) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setDepthFunc %d", func));
 		}
 		super.setDepthFunc(func);
@@ -258,7 +262,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setDepthMask(boolean depthWriteEnabled) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setDepthMask %s", getEnabledDisabled(depthWriteEnabled)));
 		}
 		super.setDepthMask(depthWriteEnabled);
@@ -266,7 +270,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setDepthRange(float zpos, float zscale, float near, float far) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setDepthRange zpos=%f, zscale=%f, near=%f, far=%f", zpos, zscale, near, far));
 		}
 		super.setDepthRange(zpos, zscale, near, far);
@@ -274,7 +278,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setStencilFunc(int func, int ref, int mask) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setStencilFunc func=%d, ref=0x%02X, mask=0x%02X", func, ref, mask));
 		}
 		super.setStencilFunc(func, ref, mask);
@@ -282,7 +286,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setStencilOp(int fail, int zfail, int zpass) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setStencilOp fail=%d, zfail=%d, zpass=%d", fail, zfail, zpass));
 		}
 		super.setStencilOp(fail, zfail, zpass);
@@ -290,7 +294,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public int setBones(int count, float[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setBones count=%d", count));
 			for (int i = 0; i < count; i++) {
 				debugMatrix("setBones[" + i + "]", values, i * 16);
@@ -301,7 +305,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setUniformMatrix4(int id, int count, float[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniformMatrix4 id=%d, count=%d", id, count));
 			for (int i = 0; i < count; i++) {
 				debugMatrix("setUniformMatrix4[" + i + "]", values, i * 16);
@@ -326,7 +330,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void enableVertexAttribArray(int id) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("enableVertexAttribArray %d", id));
 		}
 		super.enableVertexAttribArray(id);
@@ -334,7 +338,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void disableVertexAttribArray(int id) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("disableVertexAttribArray %d", id));
 		}
 		super.disableVertexAttribArray(id);
@@ -342,7 +346,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setUniform(int id, float value) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniform %s=%f", getUniformName(id), value));
 		}
 		super.setUniform(id, value);
@@ -350,7 +354,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setUniform(int id, int value1, int value2) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniform %s=%d, %d", getUniformName(id), value1, value2));
 		}
 		super.setUniform(id, value1, value2);
@@ -358,7 +362,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setUniform2(int id, int[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniform2 %s=%d, %d", getUniformName(id), values[0], values[1]));
 		}
 		super.setUniform2(id, values);
@@ -366,7 +370,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setUniform3(int id, int[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniform3 %s=%d, %d, %d", getUniformName(id), values[0], values[1], values[2]));
 		}
 		super.setUniform3(id, values);
@@ -374,7 +378,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setUniform4(int id, int[] values) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniform4 %s=%d, %d, %d, %d", getUniformName(id), values[0], values[1], values[2], values[3]));
 		}
 		super.setUniform4(id, values);
@@ -382,7 +386,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setUniform(int id, int value) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setUniform %s=%d", getUniformName(id), value));
 		}
 		super.setUniform(id, value);
@@ -390,7 +394,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, int bufferSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setVertexAttribPointer id=%d, size=%d, type=%d, normalized=%b, stride=%d, bufferSize=%d", id, size, type, normalized, stride, bufferSize));
 		}
 		super.setVertexAttribPointer(id, size, type, normalized, stride, bufferSize, buffer);
@@ -398,7 +402,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setVertexAttribPointer(int id, int size, int type, boolean normalized, int stride, long offset) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setVertexAttribPointer id=%d, size=%d, type=%d, normalized=%b, stride=%d, offset=%d", id, size, type, normalized, stride, offset));
 		}
 		super.setVertexAttribPointer(id, size, type, normalized, stride, offset);
@@ -406,7 +410,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void enableClientState(int type) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("enableClientState %d", type));
 		}
 		super.enableClientState(type);
@@ -414,7 +418,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void disableClientState(int type) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("disableClientState %d", type));
 		}
 		super.disableClientState(type);
@@ -422,7 +426,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setColorMask red %s, green %s, blue %s, alpha %s", getEnabledDisabled(redWriteEnabled), getEnabledDisabled(greenWriteEnabled), getEnabledDisabled(blueWriteEnabled), getEnabledDisabled(alphaWriteEnabled)));
 		}
 		super.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
@@ -430,7 +434,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setColorMask red 0x%02X, green 0x%02X, blue 0x%02X, alpha 0x%02X", redMask, greenMask, blueMask, alphaMask));
 		}
 		super.setColorMask(redMask, greenMask, blueMask, alphaMask);
@@ -438,7 +442,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureWrapMode(int s, int t) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTextureWrapMode %d, %d", s, t));
 		}
 		super.setTextureWrapMode(s, t);
@@ -446,7 +450,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void deleteTexture(int texture) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("deleteTexture %d", texture));
 		}
 		super.deleteTexture(texture);
@@ -454,7 +458,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void endDisplay() {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("endDisplay"));
 		}
 		super.endDisplay();
@@ -462,7 +466,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public int genTexture() {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("genTexture"));
 		}
 		return super.genTexture();
@@ -470,7 +474,8 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void startDisplay() {
-		if (log.isDebugEnabled()) {
+		isLogDebugEnabled = log.isDebugEnabled();
+		if (isLogDebugEnabled) {
 			log.debug(String.format("startDisplay"));
 		}
 		super.startDisplay();
@@ -478,7 +483,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTextureMapMode(int mode, int proj) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTextureMapMode mode=%d, proj=%d", mode, proj));
 		}
 		super.setTextureMapMode(mode, proj);
@@ -486,7 +491,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setFrontFace(boolean cw) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setFrontFace %s", cw ? "clockwise" : "counter-clockwise"));
 		}
 		super.setFrontFace(cw);
@@ -494,7 +499,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
 		super.setColorPointer(size, type, stride, bufferSize, buffer);
@@ -502,7 +507,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setColorPointer(int size, int type, int stride, long offset) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setColorPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
 		}
 		super.setColorPointer(size, type, stride, offset);
@@ -510,7 +515,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setNormalPointer type=%d, stride=%d, bufferSize=%d, buffer offset=%d", type, stride, bufferSize, buffer.position()));
 		}
 		super.setNormalPointer(type, stride, bufferSize, buffer);
@@ -518,7 +523,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setNormalPointer(int type, int stride, long offset) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setNormalPointer type=%d, stride=%d, offset=%d", type, stride, offset));
 		}
 		super.setNormalPointer(type, stride, offset);
@@ -526,7 +531,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
 		super.setTexCoordPointer(size, type, stride, bufferSize, buffer);
@@ -534,7 +539,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTexCoordPointer(int size, int type, int stride, long offset) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTexCoordPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
 		}
 		super.setTexCoordPointer(size, type, stride, offset);
@@ -542,7 +547,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
 		super.setVertexPointer(size, type, stride, bufferSize, buffer);
@@ -550,7 +555,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setVertexPointer(int size, int type, int stride, long offset) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setVertexPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
 		}
 		super.setVertexPointer(size, type, stride, offset);
@@ -558,7 +563,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, bufferSize=%d, buffer offset=%d", size, type, stride, bufferSize, buffer.position()));
 		}
 		super.setWeightPointer(size, type, stride, bufferSize, buffer);
@@ -566,7 +571,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setWeightPointer(int size, int type, int stride, long offset) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setWeightPointer size=%d, type=%d, stride=%d, offset=%d", size, type, stride, offset));
 		}
 		super.setWeightPointer(size, type, stride, offset);
@@ -574,15 +579,23 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setBufferData(int target, int size, Buffer buffer, int usage) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setBufferData target=%d, size=%d, buffer size=%d, usage=%d", target, size, buffer == null ? 0 : buffer.capacity(), usage));
 		}
 		super.setBufferData(target, size, buffer, usage);
 	}
 
 	@Override
+	public void setBufferSubData(int target, int offset, int size, Buffer buffer) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setBufferSubData target=%d, offset=%d, size=%d, buffer size=%d", target, offset, size, buffer == null ? 0 : buffer.capacity()));
+		}
+		super.setBufferSubData(target, offset, size, buffer);
+	}
+
+	@Override
 	public void bindBuffer(int target, int buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("bindBuffer %d, %d", target, buffer));
 		}
 		super.bindBuffer(target, buffer);
@@ -591,7 +604,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void useProgram(int program) {
 		useProgram = program;
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("useProgram %d", program));
 		}
 		super.useProgram(program);
@@ -599,7 +612,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setViewport(int x, int y, int width, int height) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setViewport x=%d, y=%d, width=%d, height=%d", x, y, width, height));
 		}
 		super.setViewport(x, y, width, height);
@@ -607,7 +620,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setScissor(int x, int y, int width, int height) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setScissor x=%d, y=%d, width=%d, height=%d", x, y, width, height));
 		}
 		super.setScissor(x, y, width, height);
@@ -615,7 +628,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("setTexSubImage level=%d, xOffset=%d, yOffset=%d, width=%d, height=%d, format=%d, type=%d, textureSize=%d", level, xOffset, yOffset, width, height, format, type, textureSize));
 		}
 		super.setTexSubImage(level, xOffset, yOffset, width, height, format, type, textureSize, buffer);
@@ -623,7 +636,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void copyTexSubImage(int level, int xOffset, int yOffset, int x, int y, int width, int height) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("copyTexSubImage level=%d, xOffset=%d, yOffset=%d, x=%d, y=%d, width=%d, height=%d", level, xOffset, yOffset, x, y, width, height));
 		}
 		super.copyTexSubImage(level, xOffset, yOffset, x, y, width, height);
@@ -631,7 +644,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void getTexImage(int level, int format, int type, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("getTexImage level=%d, format=%d, type=%d, buffer remaining=%d, buffer class=%s", level, format, type, buffer.remaining(), buffer.getClass().getName()));
 		}
 		super.getTexImage(level, format, type, buffer);
@@ -639,9 +652,31 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void readPixels(int x, int y, int width, int height, int format, int type, Buffer buffer) {
-		if (log.isDebugEnabled()) {
+		if (isLogDebugEnabled) {
 			log.debug(String.format("readPixels x=%d, y=%d, width=%d, height=%d, format=%d, type=%d", x, y, width, height, format, type));
 		}
 		super.readPixels(x, y, width, height, format, type, buffer);
+	}
+
+	@Override
+	public void bindVertexArray(int id) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("bindVertexArray %d", id));
+		}
+		super.bindVertexArray(id);
+	}
+
+	@Override
+	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
+		if (isLogDebugEnabled) {
+			StringBuilder s = new StringBuilder();
+			int n = first.remaining();
+			int p = first.position();
+			for (int i = 0; i < n; i++) {
+				s.append(String.format(" (%d,%d)", first.get(p + i), count.get(p + i)));
+			}
+			log.debug(String.format("multiDrawArrays primitive=%d, count=%d,%s", primitive, n, s.toString()));
+		}
+		super.multiDrawArrays(primitive, first, count);
 	}
 }

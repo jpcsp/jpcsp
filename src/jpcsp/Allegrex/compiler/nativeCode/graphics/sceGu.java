@@ -20,6 +20,7 @@ import jpcsp.Memory;
 import jpcsp.Allegrex.compiler.nativeCode.AbstractNativeCodeSequence;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.modules.sceDisplay;
+import jpcsp.graphics.AsyncVertexCache;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.memory.IMemoryReader;
@@ -93,6 +94,10 @@ public class sceGu extends AbstractNativeCodeSequence {
 
 		if (updateStall != 0) {
 			sceGeListUpdateStallAddr(listCurrent);
+		}
+
+		if (VideoEngine.getInstance().useAsyncVertexCache()) {
+			AsyncVertexCache.getInstance().addAsyncCheck(prim, vtype, count, indices, vertices);
 		}
 	}
 

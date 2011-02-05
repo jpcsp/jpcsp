@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.util;
 
 public class DurationStatistics implements Comparable<DurationStatistics> {
+	public static final boolean collectStatistics = false;
     public String name;
     public long cumulatedTimeMillis;
     public long numberCalls;
@@ -32,15 +33,21 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
     }
 
     public void start() {
-        startTimeMillis = System.currentTimeMillis();
+    	if (!collectStatistics) {
+    		return;
+    	}
+
+    	startTimeMillis = System.currentTimeMillis();
     }
 
-    public long end() {
-        long duration = System.currentTimeMillis() - startTimeMillis;
+    public void end() {
+    	if (!collectStatistics) {
+    		return;
+    	}
+
+    	long duration = System.currentTimeMillis() - startTimeMillis;
         cumulatedTimeMillis += duration;
         numberCalls++;
-
-        return duration;
     }
 
     public void reset() {
@@ -51,27 +58,32 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
 
     @Override
 	public String toString() {
-        StringBuilder result = new StringBuilder();
+    	StringBuilder result = new StringBuilder();
 
         if (name != null) {
             result.append(name);
             result.append(": ");
         }
-        result.append(numberCalls);
-        result.append(" calls");
-        if (numberCalls > 0) {
-            result.append(" in ");
-            result.append(String.format("%.3fs", cumulatedTimeMillis / 1000.0));
-            result.append(" (avg=");
-            double average = cumulatedTimeMillis / (1000.0 * numberCalls);
-            if (average < 0.000001) {
-            	result.append(String.format("%.3fus", average * 1000000));
-            } else if (average < 0.001) {
-            	result.append(String.format("%.3fms", average * 1000));
-            } else {
-            	result.append(String.format("%.3fs", average));
-            }
-            result.append(")");
+
+        if (!collectStatistics) {
+        	result.append("Statistics disabled");
+        } else {
+	        result.append(numberCalls);
+	        result.append(" calls");
+	        if (numberCalls > 0) {
+	            result.append(" in ");
+	            result.append(String.format("%.3fs", cumulatedTimeMillis / 1000.0));
+	            result.append(" (avg=");
+	            double average = cumulatedTimeMillis / (1000.0 * numberCalls);
+	            if (average < 0.000001) {
+	            	result.append(String.format("%.3fus", average * 1000000));
+	            } else if (average < 0.001) {
+	            	result.append(String.format("%.3fms", average * 1000));
+	            } else {
+	            	result.append(String.format("%.3fs", average));
+	            }
+	            result.append(")");
+	        }
         }
 
         return result.toString();

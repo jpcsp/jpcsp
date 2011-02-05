@@ -35,6 +35,7 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.CpuDurationStatistics;
+import jpcsp.util.DurationStatistics;
 
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
@@ -156,7 +157,9 @@ public class Compiler implements ICompiler {
 
 	public static void exit() {
 	    if (instance != null) {
-	        log.info(compileDuration.toString());
+	    	if (DurationStatistics.collectStatistics) {
+	    		log.info(compileDuration);
+	    	}
 	    }
 	}
 

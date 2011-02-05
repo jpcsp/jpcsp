@@ -30,8 +30,11 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import org.lwjgl.opengl.ARBBufferObject;
+import org.lwjgl.opengl.ARBFramebufferObject;
 import org.lwjgl.opengl.ARBUniformBufferObject;
+import org.lwjgl.opengl.ARBVertexArrayObject;
 import org.lwjgl.opengl.EXTGeometryShader4;
+import org.lwjgl.opengl.EXTMultiDrawArrays;
 import org.lwjgl.opengl.EXTTextureCompressionS3TC;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -335,6 +338,24 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_TEXTURE,             // GU_TEXTURE
 		GL11.GL_MODELVIEW            // RE_MODELVIEW
 	};
+	protected static final int[] framebufferTargetToGL = {
+		ARBFramebufferObject.GL_FRAMEBUFFER,      // RE_FRAMEBUFFER
+		ARBFramebufferObject.GL_READ_FRAMEBUFFER, // RE_READ_FRAMEBUFFER
+		ARBFramebufferObject.GL_DRAW_FRAMEBUFFER  // RE_DRAW_FRAMEBUFFER
+	};
+	protected static final int[] attachmentToGL = {
+		ARBFramebufferObject.GL_DEPTH_ATTACHMENT,  // RE_DEPTH_ATTACHMENT
+		ARBFramebufferObject.GL_STENCIL_ATTACHMENT,// RE_STENCIL_ATTACHMENT
+		ARBFramebufferObject.GL_DEPTH_STENCIL_ATTACHMENT, // RE_DEPTH_STENCIL_ATTACHMENT
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT0, // RE_COLOR_ATTACHMENT0
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT1, // RE_COLOR_ATTACHMENT1
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT2, // RE_COLOR_ATTACHMENT2
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT3, // RE_COLOR_ATTACHMENT3
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT4, // RE_COLOR_ATTACHMENT4
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT5, // RE_COLOR_ATTACHMENT5
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT6, // RE_COLOR_ATTACHMENT6
+		ARBFramebufferObject.GL_COLOR_ATTACHMENT7  // RE_COLOR_ATTACHMENT7
+	};
 
 	public static IRenderingEngine newInstance() {
 		if (GLContext.getCapabilities().OpenGL31) {
@@ -385,6 +406,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         	}
         	log.info(s);
         }
+	}
+
+	@Override
+	public void exit() {
+		// Nothing to do
 	}
 
 	@Override
@@ -1358,5 +1384,82 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		if (values != null) {
 			GL11.glMultMatrix(getDirectBuffer(values));
 		}
+	}
+
+	@Override
+	public int genFramebuffer() {
+		return ARBFramebufferObject.glGenFramebuffers();
+	}
+
+	@Override
+	public void bindFramebuffer(int target, int framebuffer) {
+		ARBFramebufferObject.glBindFramebuffer(framebufferTargetToGL[target], framebuffer);
+	}
+
+	@Override
+	public void bindRenderbuffer(int renderbuffer) {
+		ARBFramebufferObject.glBindRenderbuffer(ARBFramebufferObject.GL_RENDERBUFFER, renderbuffer);
+	}
+
+	@Override
+	public void deleteFramebuffer(int framebuffer) {
+		ARBFramebufferObject.glDeleteFramebuffers(framebuffer);
+	}
+
+	@Override
+	public void deleteRenderbuffer(int renderbuffer) {
+		ARBFramebufferObject.glDeleteRenderbuffers(renderbuffer);
+	}
+
+	@Override
+	public int genRenderbuffer() {
+		return ARBFramebufferObject.glGenRenderbuffers();
+	}
+
+	@Override
+	public void setFramebufferRenderbuffer(int target, int attachment, int renderbuffer) {
+		ARBFramebufferObject.glFramebufferRenderbuffer(framebufferTargetToGL[target], attachmentToGL[attachment], ARBFramebufferObject.GL_RENDERBUFFER, renderbuffer);
+	}
+
+	@Override
+	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height) {
+		ARBFramebufferObject.glRenderbufferStorage(ARBFramebufferObject.GL_RENDERBUFFER, textureFormatToGL[internalFormat], width, height);
+	}
+
+	@Override
+	public void setFramebufferTexture(int target, int attachment, int texture, int level) {
+		ARBFramebufferObject.glFramebufferTexture2D(framebufferTargetToGL[target], attachmentToGL[attachment], GL11.GL_TEXTURE_2D, texture, level);
+	}
+
+	@Override
+	public boolean isFramebufferObjectAvailable() {
+		return GLContext.getCapabilities().GL_ARB_framebuffer_object;
+	}
+
+	@Override
+	public void bindVertexArray(int id) {
+		ARBVertexArrayObject.glBindVertexArray(id);
+	}
+
+	@Override
+	public void deleteVertexArray(int id) {
+		ARBVertexArrayObject.glDeleteVertexArrays(id);
+	}
+
+	@Override
+	public int genVertexArray() {
+		return ARBVertexArrayObject.glGenVertexArrays();
+	}
+
+	@Override
+	public boolean isVertexArrayAvailable() {
+		return GLContext.getCapabilities().GL_ARB_vertex_array_object;
+	}
+
+	@Override
+	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
+		// "first" and "count" have to be direct buffers
+		//GL14.glMultiDrawArrays(primitive, first, count);
+		EXTMultiDrawArrays.glMultiDrawArraysEXT(primitive, first, count);
 	}
 }

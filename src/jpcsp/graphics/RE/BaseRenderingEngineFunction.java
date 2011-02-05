@@ -24,9 +24,11 @@ import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 import org.apache.log4j.Level;
 
+import jpcsp.Settings;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
@@ -45,6 +47,7 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
  * - implementation of the bounding box processing
  *   (using OpenGL Query with a partial software implementation)
  * - mapping of setColorMask(int, int, int, int) to setColorMask(bool, bool, bool, bool)
+ * - bug fix for glMultiDrawArrays
  *
  * The partial software implementation for Bounding Boxes tries to find out
  * if a bounding box is visible or not without using an OpenGL Query.
@@ -67,6 +70,8 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
 public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	protected static final boolean usePartialSoftwareTestForBoundingBox = true;
 	protected static final boolean useQueryForBoundingBox = true;
+	protected static final boolean useWorkaroundForMultiDrawArrays = true;
+	protected boolean useVertexArray;
 	protected IREBufferManager bufferManager;
 	protected boolean clearMode;
 	ClearModeContext clearModeContext = new ClearModeContext();
@@ -150,6 +155,11 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         	// We need 24 * vertex (having 3 floats each) for one BBOX.
         	// We reserve space for 10 bboxes.
         	bboxBuffer = bufferManager.genBuffer(RE_FLOAT, 10 * 24 * 3, RE_DYNAMIC_DRAW);
+        }
+
+        useVertexArray = Settings.getInstance().readBool("emu.enablevao") && super.isVertexArrayAvailable();
+        if (useVertexArray) {
+        	log.info("Using VAO (Vertex Array Object)");
         }
 	}
 
@@ -592,6 +602,9 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	@Override
 	public void endBoundingBox() {
 		if (bboxQueryInitialized) {
+			if (re.isVertexArrayAvailable()) {
+				re.bindVertexArray(0);
+			}
 			re.bindBuffer(RE_ARRAY_BUFFER, 0);
 	        re.disableClientState(IRenderingEngine.RE_TEXTURE);
 	        re.disableClientState(IRenderingEngine.RE_COLOR);
@@ -726,5 +739,47 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 			context.lightFlags[light].update();
 		}
 		super.startDisplay();
+	}
+
+	@Override
+	public boolean isVertexArrayAvailable() {
+		return useVertexArray;
+	}
+
+	@Override
+	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
+		// (gid15) I don't know why, but glMultiDrawArrays doesn't seem to work
+		// as expected... is it a bug in LWJGL or did I misunderstood the effect
+		// of the function?
+		// Workaround using glDrawArrays provided.
+		if (useWorkaroundForMultiDrawArrays) {
+			int primitiveCount = first.remaining();
+			int positionFirst = first.position();
+			int positionCount = count.position();
+			if (primitive == GeCommands.PRIM_POINT || primitive == GeCommands.PRIM_LINE || primitive == GeCommands.PRIM_TRIANGLE || primitive == IRenderingEngine.RE_QUADS) {
+				// Independant elements can be rendered in one drawArrays call
+				// if all the elements are sequentially defined
+				boolean sequential = true;
+				int firstIndex = first.get(positionFirst);
+				int currentIndex = firstIndex;
+				for (int i = 1; i < primitiveCount; i++) {
+					currentIndex += count.get(positionCount + i - 1);
+					if (currentIndex != first.get(positionFirst + i)) {
+						sequential = false;
+						break;
+					}
+				}
+
+				if (sequential) {
+					re.drawArrays(primitive, firstIndex, currentIndex - firstIndex + count.get(positionCount + primitiveCount - 1));
+					return;
+				}
+			}
+			for (int i = 0; i < primitiveCount; i++) {
+				re.drawArrays(primitive, first.get(positionFirst + i), count.get(positionCount + i));
+			}
+		} else {
+			super.multiDrawArrays(primitive, first, count);
+		}
 	}
 }

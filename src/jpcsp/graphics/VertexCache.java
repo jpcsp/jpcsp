@@ -24,16 +24,17 @@ import java.util.Set;
 
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.util.CacheStatistics;
+import jpcsp.util.DurationStatistics;
 
 public class VertexCache {
 	public static final int cacheMaxSize = 30000;
 	public static final float cacheLoadFactor = 0.75f;
-	private static VertexCache instance = null;
+	protected static VertexCache instance = null;
 	private LinkedHashMap<Integer, VertexInfo> cache;
-	public CacheStatistics statistics = new CacheStatistics("Vertex", cacheMaxSize);
-	// Remember which vertex have already been hashed during one display
+	protected CacheStatistics statistics = new CacheStatistics("Vertex", cacheMaxSize);
+	// Remember which vertex have already been checked during one display
 	// (for applications reusing the same vertex multiple times in one display)
-	private Set<Integer> vertexAlreadyHashed;
+	private Set<Integer> vertexAlreadyChecked;
 
 	public static VertexCache getInstance() {
 		if (instance == null) {
@@ -43,17 +44,23 @@ public class VertexCache {
 		return instance;
 	}
 
-	private VertexCache() {
+	protected VertexCache() {
 		//
 		// Create a cache having
 		// - initial size large enough so that no rehash will occur
 		// - the LinkedList is based on access-order for LRU
 		//
 		cache = new LinkedHashMap<Integer, VertexInfo>((int) (cacheMaxSize / cacheLoadFactor) + 1, cacheLoadFactor, true);
-		vertexAlreadyHashed = new HashSet<Integer>();
+		vertexAlreadyChecked = new HashSet<Integer>();
 	}
 
-	private Integer getKey(VertexInfo vertexInfo) {
+	public void exit() {
+		if (DurationStatistics.collectStatistics) {
+			VideoEngine.log.info(statistics);
+		}
+	}
+
+	private static Integer getKey(VertexInfo vertexInfo) {
 		return new Integer(vertexInfo.ptr_vertex);
 	}
 
@@ -61,7 +68,7 @@ public class VertexCache {
 		return cache.containsKey(getKey(vertexInfo));
 	}
 
-	private VertexInfo getVertex(VertexInfo vertexInfo) {
+	protected VertexInfo getVertex(VertexInfo vertexInfo) {
 		return cache.get(getKey(vertexInfo));
 	}
 
@@ -111,15 +118,15 @@ public class VertexCache {
 		return null;
 	}
 
-	public void resetVertexAlreadyHashed() {
-		vertexAlreadyHashed.clear();
+	public void resetVertexAlreadyChecked() {
+		vertexAlreadyChecked.clear();
 	}
 
-	public boolean vertexAlreadyHashed(VertexInfo vertexInfo) {
-		return vertexAlreadyHashed.contains(getKey(vertexInfo));
+	public boolean vertexAlreadyChecked(VertexInfo vertexInfo) {
+		return vertexAlreadyChecked.contains(getKey(vertexInfo));
 	}
 
-	public void setVertexAlreadyHashed(VertexInfo vertexInfo) {
-		vertexAlreadyHashed.add(getKey(vertexInfo));
+	public void setVertexAlreadyChecked(VertexInfo vertexInfo) {
+		vertexAlreadyChecked.add(getKey(vertexInfo));
 	}
 }

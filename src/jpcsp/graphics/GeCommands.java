@@ -20,6 +20,7 @@ public class GeCommands {
 
     private final String[] commands;
     private static GeCommands instance;
+    public static boolean[] pureStateCommands;
 
     public final static int NOP = 0x00; //	No Operation
     public final static int VADDR = 0x01; // 	Vertex List (BASE)
@@ -718,6 +719,142 @@ public class GeCommands {
         commands[SPLINE] = "spline";
         commands[BBOX] = "bbox";
         commands[JUMP] = "jump";
+
+        // List of pure state commands, i.e. commands only changing the GE context
+        // state and not triggering any action.
+        // Such a command can be ignored if it is repeated with the same parameters.
+        pureStateCommands = new boolean[256];
+        for (int i = 0; i < pureStateCommands.length; i++) {
+        	pureStateCommands[i] = false;
+        }
+        pureStateCommands[NOP] = true;
+        pureStateCommands[BASE] = true;
+        pureStateCommands[VTYPE] = true;
+        pureStateCommands[OFFSET_ADDR] = true;
+        pureStateCommands[REGION1] = true;
+        pureStateCommands[REGION2] = true;
+        pureStateCommands[LTE] = true;
+        pureStateCommands[LTE0] = true;
+        pureStateCommands[LTE1] = true;
+        pureStateCommands[LTE2] = true;
+        pureStateCommands[LTE3] = true;
+        pureStateCommands[CPE] = true;
+        pureStateCommands[BCE] = true;
+        pureStateCommands[TME] = true;
+        pureStateCommands[FGE] = true;
+        pureStateCommands[DTE] = true;
+        pureStateCommands[ABE] = true;
+        pureStateCommands[ATE] = true;
+        pureStateCommands[ZTE] = true;
+        pureStateCommands[STE] = true;
+        pureStateCommands[AAE] = true;
+        pureStateCommands[PCE] = true;
+        pureStateCommands[CTE] = true;
+        pureStateCommands[LOE] = true;
+        for (int i = 0; i < 8; i++) {
+        	pureStateCommands[MW0 + i] = true;
+        }
+        pureStateCommands[PSUB] = true;
+        pureStateCommands[PPRIM] = true;
+        pureStateCommands[PFACE] = true;
+        pureStateCommands[XSCALE] = true;
+        pureStateCommands[YSCALE] = true;
+        pureStateCommands[ZSCALE] = true;
+        pureStateCommands[XPOS] = true;
+        pureStateCommands[YPOS] = true;
+        pureStateCommands[ZPOS] = true;
+        pureStateCommands[USCALE] = true;
+        pureStateCommands[VSCALE] = true;
+        pureStateCommands[UOFFSET] = true;
+        pureStateCommands[VOFFSET] = true;
+        pureStateCommands[OFFSETX] = true;
+        pureStateCommands[OFFSETY] = true;
+        pureStateCommands[SHADE] = true;
+        pureStateCommands[RNORM] = true;
+        pureStateCommands[CMAT] = true;
+        pureStateCommands[EMC] = true;
+        pureStateCommands[AMC] = true;
+        pureStateCommands[DMC] = true;
+        pureStateCommands[SMC] = true;
+        pureStateCommands[AMA] = true;
+        pureStateCommands[SPOW] = true;
+        pureStateCommands[ALC] = true;
+        pureStateCommands[ALA] = true;
+        pureStateCommands[LMODE] = true;
+        for (int light = 0; light < 4; light++) {
+            pureStateCommands[LT0 + light] = true;
+            pureStateCommands[LXP0 + 3 * light] = true;
+            pureStateCommands[LYP0 + 3 * light] = true;
+            pureStateCommands[LZP0 + 3 * light] = true;
+            pureStateCommands[LXD0 + 3 * light] = true;
+            pureStateCommands[LYD0 + 3 * light] = true;
+            pureStateCommands[LZD0 + 3 * light] = true;
+            pureStateCommands[LCA0 + 3 * light] = true;
+            pureStateCommands[LLA0 + 3 * light] = true;
+            pureStateCommands[LQA0 + 3 * light] = true;
+            pureStateCommands[SLE0 + light] = true;
+            pureStateCommands[SLF0 + light] = true;
+            pureStateCommands[ALC0 + 3 * light] = true;
+            pureStateCommands[DLC0 + 3 * light] = true;
+            pureStateCommands[SLC0 + 3 * light] = true;
+        }
+        pureStateCommands[FFACE] = true;
+        pureStateCommands[FBP] = true;
+        pureStateCommands[FBW] = true;
+        pureStateCommands[ZBP] = true;
+        pureStateCommands[ZBW] = true;
+        for (int i = 0; i < 8; i++) {
+        	pureStateCommands[TBP0 + i] = true;
+        	pureStateCommands[TBW0 + i] = true;
+        	pureStateCommands[TSIZE0 + i] = true;
+        }
+        pureStateCommands[CBP] = true;
+        pureStateCommands[CBPH] = true;
+        pureStateCommands[TRXSBP] = true;
+        pureStateCommands[TRXSBW] = true;
+        pureStateCommands[TRXDBP] = true;
+        pureStateCommands[TRXDBW] = true;
+        pureStateCommands[TMAP] = true;
+        pureStateCommands[TMODE] = true;
+        pureStateCommands[TPSM] = true;
+        pureStateCommands[CLOAD] = true;
+        pureStateCommands[CMODE] = true;
+        pureStateCommands[TFLT] = true;
+        pureStateCommands[TWRAP] = true;
+        pureStateCommands[TBIAS] = true;
+        pureStateCommands[TFUNC] = true;
+        pureStateCommands[TEC] = true;
+        pureStateCommands[FFAR] = true;
+        pureStateCommands[FDIST] = true;
+        pureStateCommands[FCOL] = true;
+        pureStateCommands[TSLOPE] = true;
+        pureStateCommands[PSM] = true;
+        pureStateCommands[SCISSOR1] = true;
+        pureStateCommands[SCISSOR2] = true;
+        pureStateCommands[NEARZ] = true;
+        pureStateCommands[FARZ] = true;
+        pureStateCommands[CTST] = true;
+        pureStateCommands[CREF] = true;
+        pureStateCommands[CMSK] = true;
+        pureStateCommands[ATST] = true;
+        pureStateCommands[STST] = true;
+        pureStateCommands[SOP] = true;
+        pureStateCommands[ZTST] = true;
+        pureStateCommands[ALPHA] = true;
+        pureStateCommands[SFIX] = true;
+        pureStateCommands[DFIX] = true;
+        pureStateCommands[DTH0] = true;
+        pureStateCommands[DTH1] = true;
+        pureStateCommands[DTH2] = true;
+        pureStateCommands[DTH3] = true;
+        pureStateCommands[LOP] = true;
+        pureStateCommands[ZMSK] = true;
+        pureStateCommands[PMSKC] = true;
+        pureStateCommands[PMSKA] = true;
+        pureStateCommands[TRXPOS] = true;
+        pureStateCommands[TRXDPOS] = true;
+        pureStateCommands[TRXSIZE] = true;
+        pureStateCommands[DUMMY] = true;
 
         instance = this;
 

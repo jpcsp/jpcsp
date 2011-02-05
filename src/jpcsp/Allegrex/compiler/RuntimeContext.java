@@ -43,6 +43,7 @@ import jpcsp.hardware.Interrupts;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.CpuDurationStatistics;
+import jpcsp.util.DurationStatistics;
 
 import org.apache.log4j.Logger;
 
@@ -912,29 +913,31 @@ public class RuntimeContext {
         if (isActive) {
     		log.debug("RuntimeContext.exit");
         	stopAllThreads();
-            log.info(idleDuration.toString());
+        	if (DurationStatistics.collectStatistics) {
+        		log.info(idleDuration);
 
-            if (enableInstructionTypeCounting) {
-            	long totalCount = 0;
-            	for (Instruction insn : instructionTypeCounts.keySet()) {
-            		int count = instructionTypeCounts.get(insn);
-            		totalCount += count;
-            	}
+	            if (enableInstructionTypeCounting) {
+	            	long totalCount = 0;
+	            	for (Instruction insn : instructionTypeCounts.keySet()) {
+	            		int count = instructionTypeCounts.get(insn);
+	            		totalCount += count;
+	            	}
 
-            	while (!instructionTypeCounts.isEmpty()) {
-            		Instruction highestCountInsn = null;
-            		int highestCount = -1;
-                	for (Instruction insn : instructionTypeCounts.keySet()) {
-                		int count = instructionTypeCounts.get(insn);
-                		if (count > highestCount) {
-                			highestCount = count;
-                			highestCountInsn = insn;
-                		}
-                	}
-                	instructionTypeCounts.remove(highestCountInsn);
-            		log.info(String.format("  %10s %s %d (%2.2f%%)", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount, highestCount * 100.0 / totalCount));
-            	}
-            }
+	            	while (!instructionTypeCounts.isEmpty()) {
+	            		Instruction highestCountInsn = null;
+	            		int highestCount = -1;
+	                	for (Instruction insn : instructionTypeCounts.keySet()) {
+	                		int count = instructionTypeCounts.get(insn);
+	                		if (count > highestCount) {
+	                			highestCount = count;
+	                			highestCountInsn = insn;
+	                		}
+	                	}
+	                	instructionTypeCounts.remove(highestCountInsn);
+	            		log.info(String.format("  %10s %s %d (%2.2f%%)", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount, highestCount * 100.0 / totalCount));
+	            	}
+	            }
+        	}
         }
     }
 
