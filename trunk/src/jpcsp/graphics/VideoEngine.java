@@ -37,6 +37,7 @@ import static jpcsp.graphics.GeCommands.*;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -62,6 +63,7 @@ import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
+import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
@@ -121,6 +123,8 @@ public class VideoEngine {
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
     private boolean useVertexCache = false;
+    private boolean useAsyncVertexCache = true;
+    public boolean useOptimisticVertexCache = false;
     private static GeCommands helper;
     private int command;
     private int normalArgument;
@@ -128,14 +132,14 @@ public class VideoEngine {
     private VertexInfo vinfo = new VertexInfo();
     private VertexInfoReader vertexInfoReader = new VertexInfoReader();
     private static final char SPACE = ' ';
-    private DurationStatistics statistics;
-    private DurationStatistics vertexStatistics = new DurationStatistics("Vertex");
-    private DurationStatistics vertexReadingStatistics = new DurationStatistics("Vertex Reading");
-    private DurationStatistics drawArraysStatistics = new DurationStatistics("glDrawArrays");
+    private DurationStatistics statistics = new CpuDurationStatistics("VideoEngine Statistics");
+    private DurationStatistics vertexStatistics = new CpuDurationStatistics("Vertex");
+    private DurationStatistics vertexReadingStatistics = new CpuDurationStatistics("Vertex Reading");
+    private DurationStatistics drawArraysStatistics = new CpuDurationStatistics("glDrawArrays");
     private DurationStatistics waitSignalStatistics = new DurationStatistics("Wait for GE Signal completion");
     private DurationStatistics waitStallStatistics = new DurationStatistics("Wait on stall");
-    private DurationStatistics textureCacheLookupStatistics = new DurationStatistics("Lookup in TextureCache");
-    private DurationStatistics vertexCacheLookupStatistics = new DurationStatistics("Lookup in VertexCache");
+    private DurationStatistics textureCacheLookupStatistics = new CpuDurationStatistics("Lookup in TextureCache");
+    private DurationStatistics vertexCacheLookupStatistics = new CpuDurationStatistics("Lookup in VertexCache");
     private DurationStatistics[] commandStatistics;
     private int errorCount;
     private static final int maxErrorCount = 5; // Abort list processing when detecting more errors
@@ -180,8 +184,12 @@ public class VideoEngine {
     private boolean geBufChanged;
     private IAction hleAction;
     private int[] currentCMDValues;
+    private int[] currentListCMDValues;
     private boolean bboxWarningDisplayed = false;
     private LinkedList<AddressRange> videoTextures;
+    private IntBuffer multiDrawFirst;
+    private IntBuffer multiDrawCount;
+    private static final int maxMultiDrawElements = 1000;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -257,7 +265,6 @@ public class VideoEngine {
         projectionMatrixUpload = new MatrixUpload(context.proj_uploaded_matrix, 4, 4);
         boneMatrixLinearUpdatedMatrix = 8;
 
-        statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
         for (int i = 0; i < commandStatistics.length; i++) {
             commandStatistics[i] = new DurationStatistics(String.format("%-11s", helper.getCommandString(i)));
@@ -271,7 +278,12 @@ public class VideoEngine {
         }
 
         currentCMDValues = new int[256];
+        currentListCMDValues = new int[256];
         videoTextures = new LinkedList<AddressRange>();
+
+        multiDrawFirst = ByteBuffer.allocateDirect(maxMultiDrawElements * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
+        multiDrawCount = ByteBuffer.allocateDirect(maxMultiDrawElements * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
+
     }
 
     /** Called from pspge module */
@@ -367,6 +379,10 @@ public class VideoEngine {
 
         bufferId = bufferManager.genBuffer(IRenderingEngine.RE_FLOAT, drawBufferSize / SIZEOF_FLOAT, IRenderingEngine.RE_STREAM_DRAW);
         nativeBufferId = bufferManager.genBuffer(IRenderingEngine.RE_BYTE, drawBufferSize, IRenderingEngine.RE_STREAM_DRAW);
+
+        if (useAsyncVertexCache) {
+        	AsyncVertexCache.getInstance().setUseVertexArray(re.isVertexArrayAvailable());
+        }
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -379,20 +395,27 @@ public class VideoEngine {
 
     public static void exit() {
         if (instance != null) {
-            log.info(instance.statistics.toString());
-            Arrays.sort(instance.commandStatistics);
-            int numberCommands = 20;
-            log.info(numberCommands + " most time intensive Video commands:");
-            for (int i = 0; i < numberCommands; i++) {
-                VideoEngine.log.info("    " + instance.commandStatistics[i].toString());
-            }
-            log.info(instance.vertexStatistics);
-            log.info(instance.vertexReadingStatistics);
-            log.info(instance.drawArraysStatistics);
-            log.info(instance.waitSignalStatistics);
-            log.info(instance.waitStallStatistics);
-            log.info(instance.textureCacheLookupStatistics);
-            log.info(instance.vertexCacheLookupStatistics);
+        	if (instance.re != null) {
+        		instance.re.exit();
+        	}
+        	if (DurationStatistics.collectStatistics) {
+	            log.info(instance.statistics);
+	            Arrays.sort(instance.commandStatistics);
+	            final int numberCommands = 20;
+	            log.info(String.format("%d most time intensive Video commands:", numberCommands));
+	            for (int i = 0; i < numberCommands; i++) {
+	                log.info(String.format("    %s", instance.commandStatistics[i]));
+	            }
+	            log.info(instance.vertexStatistics);
+	            log.info(instance.vertexReadingStatistics);
+	            log.info(instance.drawArraysStatistics);
+	            log.info(instance.waitSignalStatistics);
+	            log.info(instance.waitStallStatistics);
+	            log.info(instance.textureCacheLookupStatistics);
+	            log.info(instance.vertexCacheLookupStatistics);
+	            VertexBufferManager.exit();
+	            VertexArrayManager.exit();
+        	}
         }
     }
 
@@ -481,8 +504,9 @@ public class VideoEngine {
             TextureCache.getInstance().resetTextureAlreadyHashed();
         }
         if (useVertexCache) {
-            VertexCache.getInstance().resetVertexAlreadyHashed();
+            VertexCache.getInstance().resetVertexAlreadyChecked();
         }
+        VertexBufferManager.getInstance().resetAddressAlreadyChecked();
     }
 
     public void hleSetFrameBuf(int topAddr, int bufferWidth, int pixelFormat) {
@@ -495,7 +519,7 @@ public class VideoEngine {
     }
 
     private void startUpdate() {
-        statistics.start();
+		statistics.start();
 
         logLevelUpdated();
         memoryForGEUpdated();
@@ -518,17 +542,26 @@ public class VideoEngine {
         maxSpriteWidth = 0;
         primCount = 0;
 
+        // Reset all the values
+        for (int i = 0; i < currentListCMDValues.length; i++) {
+        	currentListCMDValues[i] = -1;
+        }
+
         context.update();
     }
 
     private void endUpdate() {
+    	if (re.isVertexArrayAvailable()) {
+    		re.bindVertexArray(0);
+    	}
+
     	if (useVertexCache) {
             if (primCount > VertexCache.cacheMaxSize) {
                 log.warn(String.format("VertexCache size (%d) too small to execute %d PRIM commands", VertexCache.cacheMaxSize, primCount));
             }
         }
 
-        statistics.end();
+		statistics.end();
     }
 
     public void error(String message) {
@@ -588,7 +621,7 @@ public class VideoEngine {
     }
 
     private void executeListStalled() {
-        waitStallStatistics.start();
+		waitStallStatistics.start();
         if (isLogDebugEnabled) {
             log.debug(String.format("Stall address 0x%08X reached, waiting for Sync", currentList.pc));
         }
@@ -624,7 +657,7 @@ public class VideoEngine {
         if (!currentList.isStallReached()) {
             currentList.status = PSP_GE_LIST_DRAWING;
         }
-        waitStallStatistics.end();
+    	waitStallStatistics.end();
     }
 
     private boolean executeListPaused() {
@@ -716,7 +749,9 @@ public class VideoEngine {
         }
 
         if (Emulator.pause && !listHasEnded) {
-            VideoEngine.log.info("Emulator paused - cancelling current list id=" + currentList.id);
+        	if (isLogInfoEnabled) {
+        		VideoEngine.log.info("Emulator paused - cancelling current list id=" + currentList.id);
+        	}
             currentList.status = PSP_GE_LIST_CANCEL_DONE;
         }
 
@@ -1016,13 +1051,26 @@ public class VideoEngine {
     }
 
     public void executeCommand(int instruction) {
+        command = command(instruction);
+
+        // Quick check: pure state commands can be ignored when they are
+        // repeated with the same parameters. These are redundant commands.
+        if (GeCommands.pureStateCommands[command]) {
+        	if (currentListCMDValues[command] == instruction) {
+        		if (isLogDebugEnabled) {
+    	        	log.debug(String.format("%s 0x%06X redundant pure state cmd ignored", helper.getCommandString(command), intArgument(instruction)));
+        		}
+        		return;
+        	}
+        	currentListCMDValues[command] = instruction;
+        }
+
         normalArgument = intArgument(instruction);
         // Compute floatArgument only on demand, most commands do not use it.
         //float floatArgument = floatArgument(instruction);
 
-        command = command(instruction);
         currentCMDValues[command] = normalArgument;
-        if (isLogInfoEnabled) {
+        if (DurationStatistics.collectStatistics) {
             commandStatistics[command].start();
         }
         switch (command) {
@@ -1262,7 +1310,7 @@ public class VideoEngine {
 	        case DUMMY: executeCommandDUMMY(); break;
 	        default: executeCommandUNKNOWN(); break;
         }
-        if (isLogInfoEnabled) {
+        if (DurationStatistics.collectStatistics) {
             commandStatistics[command].end();
         }
     }
@@ -1322,9 +1370,126 @@ public class VideoEngine {
         }
     }
 
+    private int fixNativeBufferOffset(Buffer vertexData, int size) {
+    	// Handle buffer address not aligned with memory Buffer object.
+    	// E.g. ptr_vertex = 0xNNNNNN2 and vertexData is an IntBuffer
+    	// starting at 0xNNNNNN0
+    	int nativeBufferOffset = 0;
+    	if (vertexData instanceof IntBuffer || vertexData instanceof FloatBuffer) {
+    		nativeBufferOffset = vinfo.ptr_vertex & 3;
+    	} else if (vertexData instanceof ShortBuffer) {
+    		nativeBufferOffset = vinfo.ptr_vertex & 1;
+    	}
+    	size += nativeBufferOffset;
+    	vertexInfoReader.addNativeOffset(nativeBufferOffset);
+
+    	return size;
+    }
+
+    private int checkMultiDraw(int currentFirst, int currentType, int currentNumberOfVertex, IntBuffer bufferFirst, IntBuffer bufferCount) {
+    	if (isLogDebugEnabled) {
+    		log(String.format("checkMultiDraw at 0x%08X", currentList.pc));
+    	}
+    	Memory mem = Memory.getInstance();
+    	int pc = currentList.pc;
+    	int afterMultiPc = pc;
+    	boolean hasMultiDraw = false;
+    	int initialFirst = currentFirst;
+    	int currentSkip = 0;
+    	bufferFirst.clear();
+    	bufferCount.clear();
+    	int currentPtrVertex = vinfo.ptr_vertex + vinfo.vertexSize * currentNumberOfVertex;
+
+    	while (bufferFirst.remaining() > 0) {
+    		int instruction = mem.read32(pc);
+    		pc += 4;
+    		int cmd = command(instruction);
+    		if (cmd == PRIM) {
+    	        int type = ((instruction >> 16) & 0x7);
+    	        if (type != currentType) {
+    	        	break;
+    	        }
+    	        int numberOfVertex = instruction & 0xFFFF;
+				bufferFirst.put(currentFirst);
+    	        bufferCount.put(currentNumberOfVertex);
+    	        currentFirst += currentNumberOfVertex + currentSkip;
+    	        currentNumberOfVertex = numberOfVertex;
+    	        currentPtrVertex += vinfo.vertexSize * (numberOfVertex + currentSkip);
+    	        currentSkip = 0;
+    	        hasMultiDraw = true;
+    	        afterMultiPc = pc;
+    	        if (isLogDebugEnabled) {
+    	        	log.debug(String.format("%s type=%d, numberOfVertex=%d integrated in MultiDrawArrays", helper.getCommandString(cmd), type, numberOfVertex));
+    	        }
+    		} else if (cmd == VADDR) {
+    			int arg = intArgument(instruction);
+    	        int ptr_vertex = currentList.getAddressRelOffset(arg);
+    			if (ptr_vertex == currentPtrVertex) {
+    				// VADDR in sequence, skip the command
+        	        if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%08X integrated in MultiDrawArrays", helper.getCommandString(cmd), ptr_vertex));
+        	        }
+    			} else if (ptr_vertex > currentPtrVertex && ((ptr_vertex - currentPtrVertex) % vinfo.vertexSize) == 0) {
+    				// VADDR almost in sequence with an aligned hole, skip the command
+    				currentSkip = (ptr_vertex - currentPtrVertex) / vinfo.vertexSize;
+        	        if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%08X (skip=%d) integrated in MultiDrawArrays", helper.getCommandString(cmd), ptr_vertex, currentSkip));
+        	        }
+    			} else {
+        	        if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%08X not integrated in MultiDrawArrays (needed 0x%08X)", helper.getCommandString(cmd), ptr_vertex, currentPtrVertex));
+        	        }
+    				break;
+    			}
+    		} else if (cmd == TBIAS) {
+    			int tex_mipmap_mode = instruction & 0x3;
+    			if (context.tex_mipmap_mode == tex_mipmap_mode && tex_mipmap_mode == TBIAS_MODE_AUTO) {
+    				// Skip TBIAS with TBIAS_MODE_AUTO, ignore tex_mipmap_bias parameter
+    				if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%06X integrated in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+    				}
+    			} else {
+    				break;
+    			}
+    		} else if (GeCommands.pureStateCommands[cmd]) {
+    			if (currentListCMDValues[cmd] == instruction) {
+    				// The command has been repeated with the same parameters,
+    				// it can be ignored.
+    				if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%06X pure state cmd integrated in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+    				}
+    			} else {
+    				break;
+    			}
+    		} else {
+    			break;
+    		}
+    	}
+
+    	if (!hasMultiDraw) {
+    		return -1;
+    	}
+
+		bufferFirst.put(currentFirst);
+		bufferCount.put(currentNumberOfVertex);
+
+		bufferFirst.limit(bufferFirst.position());
+		bufferFirst.rewind();
+		bufferCount.limit(bufferCount.position());
+		bufferCount.rewind();
+
+		currentList.pc = afterMultiPc;
+
+    	return currentFirst + currentNumberOfVertex - initialFirst;
+    }
+
     private void executeCommandPRIM() {
         int numberOfVertex = normalArgument & 0xFFFF;
         int type = ((normalArgument >> 16) & 0x7);
+
+        if (numberOfVertex == 0) {
+        	return;
+        }
 
         Memory mem = Memory.getInstance();
         if (!Memory.isAddressGood(vinfo.ptr_vertex)) {
@@ -1431,7 +1596,7 @@ public class VideoEngine {
                 break;
         }
 
-        vertexStatistics.start();
+    	vertexStatistics.start();
 
         vinfo.setMorphWeights(context.morph_weight);
         vinfo.setDirty();
@@ -1453,21 +1618,21 @@ public class VideoEngine {
     		maxSpriteHeight = context.scissor_y2;
     	}
 
+        boolean needSetDataPointers = true;
+
         // Do not use optimized VertexInfo reading when
-        // - using Vertex Cache
+        // - using Vertex Cache unless all the vertices are supported natively
         // - the Vertex are indexed
         // - the PRIM_SPRITE primitive is used where it is not supported natively
         // - the normals have to be normalized for the texture mapping
         // - the weights have to be computed and are not supported natively
         // - the vertex address is invalid
-        // - tracing is enabled because it doesn't produce any trace information
-        if (!useVertexCache &&
+        if ((!useVertexCache || re.canAllNativeVertexInfo()) &&
             vinfo.index == 0 &&
             (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
             !useTextureFromNormalizedNormal &&
             !mustComputeWeights &&
-            Memory.isAddressGood(vinfo.ptr_vertex) &&
-            !isLogTraceEnabled) {
+            Memory.isAddressGood(vinfo.ptr_vertex)) {
         	//
             // Optimized VertexInfo reading:
             // - do not copy the info already available in the OpenGL format
@@ -1478,81 +1643,114 @@ public class VideoEngine {
             // The best case is no reading and no conversion at all when all the
             // vertex info are available in a format usable by OpenGL.
             //
-        	vertexReadingStatistics.start();
+    		vertexReadingStatistics.start();
             Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex, re.canAllNativeVertexInfo());
-            vertexReadingStatistics.end();
+        	vertexReadingStatistics.end();
 
-            enableClientState(useVertexColor, useTexture);
+        	int stride;
+        	int size = vinfo.vertexSize * numberOfVertex;
+        	int firstVertex = 0;
+        	boolean useBufferManager;
+        	boolean multiDrawArrays = false;
+        	if (useVertexCache && buffer == null) {
+        		stride = vinfo.vertexSize;
+        		useBufferManager = false;
+        		final int vertexAddress = vinfo.ptr_vertex;
+        		VertexBuffer vertexBuffer = VertexBufferManager.getInstance().getVertexBuffer(re, vertexAddress, size, stride, re.isVertexArrayAvailable());
+        		Buffer vertexData = mem.getBuffer(vertexAddress, size);
+        		vertexBuffer.load(re, vertexData, vertexAddress, size);
+        		if (re.isVertexArrayAvailable()) {
+        			VertexArray vertexArray = VertexArrayManager.getInstance().getVertexArray(re, vinfo.vtype, vertexBuffer, vertexAddress, stride);
+    				needSetDataPointers = vertexArray.bind(re);
+    				firstVertex = vertexArray.getVertexOffset(vertexAddress);
+        		} else {
+            		vertexInfoReader.addNativeOffset(vertexBuffer.getBufferOffset(vertexAddress));
+        		}
 
-            int stride = vertexInfoReader.getStride();
-            if (buffer != null) {
-            	bufferManager.setBufferData(bufferId, stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
-            }
+        		// Check if multiple PRIM's are defined in sequence and
+        		// try to merge them into a single multiDrawArrays call.
+        		int multiDrawNumberOfVertex = checkMultiDraw(firstVertex, type, numberOfVertex, multiDrawFirst, multiDrawCount);
+				if (multiDrawNumberOfVertex > 0) {
+					multiDrawArrays = true;
+					numberOfVertex = multiDrawNumberOfVertex;
+					size = vinfo.vertexSize * multiDrawNumberOfVertex;
+	        		vertexData = mem.getBuffer(vertexAddress, size);
+					vertexBuffer.load(re, vertexData, vertexAddress, size);
+				}
 
-            if (vertexInfoReader.hasNative()) {
-                // Copy the VertexInfo from Memory to the nativeBuffer
-                // (a direct buffer is required by glXXXPointer())
-            	int size = vinfo.vertexSize * numberOfVertex;
-            	Buffer vertexData = mem.getBuffer(vinfo.ptr_vertex, size);
+				if (needSetDataPointers) {
+        			vertexBuffer.bind(re);
+        		}
+        	} else {
+        		if (re.isVertexArrayAvailable()) {
+    				re.bindVertexArray(0);
+        		}
+                stride = vertexInfoReader.getStride();
+                useBufferManager = true;
 
-            	// Handle buffer address not aligned with memory Buffer object.
-            	// E.g. ptr_vertex = 0xNNNNNN2 and vertexData is an IntBuffer
-            	// starting at 0xNNNNNN0
-            	int nativeBufferOffset = 0;
-            	if (vertexData instanceof IntBuffer || vertexData instanceof FloatBuffer) {
-            		nativeBufferOffset = vinfo.ptr_vertex & 3;
-            	} else if (vertexData instanceof ShortBuffer) {
-            		nativeBufferOffset = vinfo.ptr_vertex & 1;
-            	}
-            	size += nativeBufferOffset;
-            	vertexInfoReader.addNativeOffset(nativeBufferOffset);
+                if (buffer != null) {
+	            	bufferManager.setBufferData(bufferId, stride * numberOfVertex, buffer, IRenderingEngine.RE_STREAM_DRAW);
+	            }
 
-            	bufferManager.setBufferData(nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
-            }
-
-            if (vinfo.texture != 0 || useTexture) {
-                boolean textureNative;
-                int textureOffset;
-                int textureType;
-                if (useTextureFromNormal) {
-                    textureNative = vertexInfoReader.isNormalNative();
-                    textureOffset = vertexInfoReader.getNormalOffset();
-                    textureType = vertexInfoReader.getNormalType();
-                    nTexCoord = vertexInfoReader.getNormalNumberValues();
-                } else if (useTextureFromPosition) {
-                    textureNative = vertexInfoReader.isPositionNative();
-                    textureOffset = vertexInfoReader.getPositionOffset();
-                    textureType = vertexInfoReader.getPositionType();
-                    nTexCoord = vertexInfoReader.getPositionNumberValues();
-                } else {
-                    textureNative = vertexInfoReader.isTextureNative();
-                    textureOffset = vertexInfoReader.getTextureOffset();
-                    textureType = vertexInfoReader.getTextureType();
-                    nTexCoord = vertexInfoReader.getTextureNumberValues();
-                }
-                setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative, true);
-            }
-            nVertex = vertexInfoReader.getPositionNumberValues();
-            nColor = vertexInfoReader.getColorNumberValues();
-            int nWeight = vertexInfoReader.getWeightNumberValues();
+	            if (vertexInfoReader.hasNative()) {
+	                // Copy the VertexInfo from Memory to the nativeBuffer
+	                // (a direct buffer is required by glXXXPointer())
+	        		Buffer vertexData = mem.getBuffer(vinfo.ptr_vertex, size);
+	        		size = fixNativeBufferOffset(vertexData, size);
+	            	bufferManager.setBufferData(nativeBufferId, size, vertexData, IRenderingEngine.RE_STREAM_DRAW);
+	            }
+        	}
 
             re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor);
-            setColorPointer(useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), true);
-            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), true);
-            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), true);
-            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), true);
 
-            drawArraysStatistics.start();
-            re.drawArrays(type, 0, numberOfVertex);
-            drawArraysStatistics.end();
+            if (needSetDataPointers) {
+	            if (vinfo.texture != 0 || useTexture) {
+	                boolean textureNative;
+	                int textureOffset;
+	                int textureType;
+	                if (useTextureFromNormal) {
+	                    textureNative = vertexInfoReader.isNormalNative();
+	                    textureOffset = vertexInfoReader.getNormalOffset();
+	                    textureType = vertexInfoReader.getNormalType();
+	                    nTexCoord = vertexInfoReader.getNormalNumberValues();
+	                } else if (useTextureFromPosition) {
+	                    textureNative = vertexInfoReader.isPositionNative();
+	                    textureOffset = vertexInfoReader.getPositionOffset();
+	                    textureType = vertexInfoReader.getPositionType();
+	                    nTexCoord = vertexInfoReader.getPositionNumberValues();
+	                } else {
+	                    textureNative = vertexInfoReader.isTextureNative();
+	                    textureOffset = vertexInfoReader.getTextureOffset();
+	                    textureType = vertexInfoReader.getTextureType();
+	                    nTexCoord = vertexInfoReader.getTextureNumberValues();
+	                }
+	                setTexCoordPointer(useTexture, nTexCoord, textureType, stride, textureOffset, textureNative, useBufferManager);
+	            }
+	            nVertex = vertexInfoReader.getPositionNumberValues();
+	            nColor = vertexInfoReader.getColorNumberValues();
+	            int nWeight = vertexInfoReader.getWeightNumberValues();
 
+	            enableClientState(useVertexColor, useTexture);
+	            setColorPointer(useVertexColor, nColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), useBufferManager);
+	            setNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), useBufferManager);
+	            setWeightPointer(nWeight, vertexInfoReader.getWeightType(), stride, vertexInfoReader.getWeightOffset(), vertexInfoReader.isWeightNative(), useBufferManager);
+	            setVertexPointer(nVertex, vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), useBufferManager);
+        	}
+
+        	drawArraysStatistics.start();
+        	if (multiDrawArrays) {
+        		re.multiDrawArrays(type, multiDrawFirst, multiDrawCount);
+        	} else {
+        		re.drawArrays(type, firstVertex, numberOfVertex);
+        	}
+        	drawArraysStatistics.end();
         } else {
             // Non-optimized VertexInfo reading
             VertexInfo cachedVertexInfo = null;
             if (useVertexCache) {
-                vertexCacheLookupStatistics.start();
+        		vertexCacheLookupStatistics.start();
                 cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
-                vertexCacheLookupStatistics.end();
+            	vertexCacheLookupStatistics.end();
             }
 
             ByteBuffer byteBuffer = bufferManager.getBuffer(bufferId);
@@ -1560,6 +1758,9 @@ public class VideoEngine {
             FloatBuffer floatBuffer = byteBuffer.asFloatBuffer();
             floatBuffer.clear();
 
+    		if (!useVertexCache && re.isVertexArrayAvailable()) {
+				re.bindVertexArray(0);
+    		}
             re.setVertexInfo(vinfo, false, useVertexColor);
 
             switch (type) {
@@ -1571,7 +1772,7 @@ public class VideoEngine {
                 case PRIM_TRIANGLE_FANS:
                 	float[] normalizedNormal = new float[3];
                     if (cachedVertexInfo == null) {
-                    	vertexReadingStatistics.start();
+                		vertexReadingStatistics.start();
                         for (int i = 0; i < numberOfVertex; i++) {
                             int addr = vinfo.getAddress(mem, i);
 
@@ -1614,14 +1815,14 @@ public class VideoEngine {
                                 }
                             }
                         }
-                        vertexReadingStatistics.end();
+                    	vertexReadingStatistics.end();
 
                         if (useVertexCache) {
                             cachedVertexInfo = new VertexInfo(vinfo);
                             VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
                             int size = floatBuffer.position();
                             floatBuffer.rewind();
-                            cachedVertexInfo.loadVertex(re, floatBuffer, size);
+                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
                         } else {
                             bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
                         }
@@ -1629,12 +1830,14 @@ public class VideoEngine {
                         if (isLogDebugEnabled) {
                             log.debug("Reusing cached Vertex Data");
                         }
-                        cachedVertexInfo.bindVertex(re);
+                        needSetDataPointers = cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
-                    drawArraysStatistics.start();
+                    if (needSetDataPointers) {
+                    	setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, numberOfWeightsForBuffer, cachedVertexInfo == null);
+                    }
+                	drawArraysStatistics.start();
                     re.drawArrays(type, 0, numberOfVertex);
-                    drawArraysStatistics.end();
+                	drawArraysStatistics.end();
                     maxSpriteHeight = Integer.MAX_VALUE;
                     maxSpriteWidth = Integer.MAX_VALUE;
                     break;
@@ -1651,7 +1854,7 @@ public class VideoEngine {
                 	}
 
                 	if (cachedVertexInfo == null) {
-                		vertexReadingStatistics.start();
+            			vertexReadingStatistics.start();
                         for (int i = 0; i < numberOfVertex; i += 2) {
                             int addr1 = vinfo.getAddress(mem, i);
                             int addr2 = vinfo.getAddress(mem, i + 1);
@@ -1770,14 +1973,14 @@ public class VideoEngine {
                                 floatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
                             }
                         }
-                        vertexReadingStatistics.end();
+                    	vertexReadingStatistics.end();
 
                         if (useVertexCache) {
                             cachedVertexInfo = new VertexInfo(vinfo);
                             VertexCache.getInstance().addVertex(re, cachedVertexInfo, numberOfVertex, context.bone_uploaded_matrix, numberOfWeightsForBuffer);
                             int size = floatBuffer.position();
                             floatBuffer.rewind();
-                            cachedVertexInfo.loadVertex(re, floatBuffer, size);
+                            needSetDataPointers = cachedVertexInfo.loadVertex(re, floatBuffer, size);
                         } else {
                             bufferManager.setBufferData(bufferId, floatBuffer.position() * SIZEOF_FLOAT, byteBuffer, IRenderingEngine.RE_STREAM_DRAW);
                         }
@@ -1785,18 +1988,20 @@ public class VideoEngine {
                         if (isLogDebugEnabled) {
                             log.debug("Reusing cached Vertex Data");
                         }
-                        cachedVertexInfo.bindVertex(re);
+                        needSetDataPointers = cachedVertexInfo.bindVertex(re);
                     }
-                    setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, 0, cachedVertexInfo == null);
-                    drawArraysStatistics.start();
+                	if (needSetDataPointers) {
+                		setDataPointers(nVertex, useVertexColor, nColor, useTexture, nTexCoord, vinfo.normal != 0, 0, cachedVertexInfo == null);
+                	}
+            		drawArraysStatistics.start();
                     re.drawArrays(IRenderingEngine.RE_QUADS, 0, numberOfVertex * 2);
-                    drawArraysStatistics.end();
+                	drawArraysStatistics.end();
                     context.cullFaceFlag.updateEnabled();
                     break;
             }
         }
 
-        vertexStatistics.end();
+    	vertexStatistics.end();
 
         // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
         // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
@@ -1810,7 +2015,6 @@ public class VideoEngine {
         }
 
         endRendering(useVertexColor, useTexture, numberOfVertex);
-
     }
 
     private void executeCommandTRXKICK() {
@@ -3962,14 +4166,14 @@ public class VideoEngine {
             TextureCache textureCache = TextureCache.getInstance();
             boolean textureRequiresClut = context.texture_storage >= TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && context.texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED;
 
-            textureCacheLookupStatistics.start();
+        	textureCacheLookupStatistics.start();
             // Check if the texture is in the cache
             if (textureRequiresClut) {
             	texture = textureCache.getTexture(context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, context.tex_clut_addr, context.tex_clut_mode, context.tex_clut_start, context.tex_clut_shift, context.tex_clut_mask, context.tex_clut_num_blocks, context.texture_num_mip_maps, context.mipmapShareClut);
             } else {
             	texture = textureCache.getTexture(context.texture_base_pointer[0], context.texture_buffer_width[0], context.texture_width[0], context.texture_height[0], context.texture_storage, 0, 0, 0, 0, 0, 0, context.texture_num_mip_maps, false);
             }
-            textureCacheLookupStatistics.end();
+        	textureCacheLookupStatistics.end();
 
             // Create the texture if not yet in the cache
             if (texture == null) {
@@ -5079,6 +5283,9 @@ public class VideoEngine {
 
 	private void drawCurvedSurface(VertexState[][] patch, int ucount, int vcount,
 			boolean useVertexColor, boolean useTexture, boolean useNormal) {
+		if (re.isVertexArrayAvailable()) {
+			re.bindVertexArray(0);
+		}
 		// TODO: Compute the normals
 		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
 
@@ -5106,9 +5313,9 @@ public class VideoEngine {
         	}
 
         	bufferManager.setBufferData(bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
-        	drawArraysStatistics.start();
+    		drawArraysStatistics.start();
             re.drawArrays(patch_prim_types[context.patch_prim], 0, (context.patch_div_s + 1) * 2);
-            drawArraysStatistics.end();
+        	drawArraysStatistics.end();
         }
 
         endRendering(useVertexColor, useTexture, ucount * vcount);
@@ -5323,8 +5530,26 @@ public class VideoEngine {
 
         this.useVertexCache = useVertexCache;
         if (useVertexCache) {
-            VideoEngine.log.info("Using Vertex Cache");
+        	if (useAsyncVertexCache) {
+        		AsyncVertexCache.getInstance();
+        		if (useOptimisticVertexCache) {
+        			VideoEngine.log.info("Using Optimistic Async Vertex Cache");
+        		} else {
+        			VideoEngine.log.info("Using Async Vertex Cache");
+        		}
+        	} else {
+        		VertexCache.getInstance();
+        		if (useOptimisticVertexCache) {
+        			VideoEngine.log.info("Using Optimistic Vertex Cache");
+        		} else {
+        			VideoEngine.log.info("Using Vertex Cache");
+        		}
+        	}
         }
+    }
+
+    public boolean useAsyncVertexCache() {
+    	return useVertexCache && useAsyncVertexCache;
     }
 
     public int getBase() {

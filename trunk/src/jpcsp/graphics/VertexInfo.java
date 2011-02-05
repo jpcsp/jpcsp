@@ -24,11 +24,11 @@ import jpcsp.Memory;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
-import jpcsp.util.Hash;
 
 // Based on soywiz/pspemulator
 public class VertexInfo {
     // vtype
+	public static final int vtypeMask = 0x009DDFFF;
     public boolean transform2D;
     public int skinningWeightCount;
     public int morphingVertexCount;
@@ -38,7 +38,7 @@ public class VertexInfo {
     public int position;
     public int weight;
     public int index;
-    private int param;
+    public int vtype;
 
     // vaddr, iaddr
     public int ptr_vertex;
@@ -86,10 +86,10 @@ public class VertexInfo {
     };
 
     // cache data
-    private final static int hashStride = 0; // Currently no stride on vertex hashes. This is producing incorrect vertex matches.
 	private int bufferId = -1;	// id created by glGenBuffers
-	private boolean hashCodeComputed = false;
-	private int hashCode;
+	private int vertexArrayId = -1;
+	private int[] cachedVertices;
+	private int[] cachedIndices;
 	private int cachedNumberOfVertex;
 	private float[] cachedMorphWeights;
 	private float[][] cachedBoneMatrix;
@@ -100,7 +100,7 @@ public class VertexInfo {
 	}
 
 	public VertexInfo(VertexInfo vertexInfo) {
-		param               = vertexInfo.param;
+		vtype               = vertexInfo.vtype;
 		transform2D         = vertexInfo.transform2D;
 		skinningWeightCount = vertexInfo.skinningWeightCount;
 		morphingVertexCount = vertexInfo.morphingVertexCount;
@@ -120,13 +120,13 @@ public class VertexInfo {
 		positionOffset      = vertexInfo.positionOffset;
 		alignmentSize       = vertexInfo.alignmentSize;
 		morph_weight        = vertexInfo.morph_weight;
-		hashCode            = vertexInfo.hashCode;
-		hashCodeComputed    = vertexInfo.hashCodeComputed;
+		cachedIndices       = vertexInfo.cachedIndices;
+		cachedVertices      = vertexInfo.cachedVertices;
 		vertexCache         = vertexInfo.vertexCache;
 	}
 
 	public void processType(int param) {
-    	this.param          = param;
+    	vtype               = param & vtypeMask;
         texture             = (param >>  0) & 0x3;
         color               = (param >>  2) & 0x7;
         normal              = (param >>  5) & 0x3;
@@ -613,76 +613,71 @@ public class VertexInfo {
         return v;
     }
 
-    private static int hashCode(VertexInfo vertexInfo, int numberOfVertex) {
-    	int hashCode = vertexInfo.param;
-
-    	int vertexArraySize;
-    	if (vertexInfo.ptr_index != 0 && vertexInfo.index != 0) {
-    		IMemoryReader memoryReader = null;
-    		switch (vertexInfo.index) {
-    			case 1: { // GU_INDEX_8BIT
-    				memoryReader = MemoryReader.getMemoryReader(vertexInfo.ptr_index, 1 * numberOfVertex, 1);
-    				break;
-    			}
-    			case 2: { // GU_INDEX_16BIT
-    				memoryReader = MemoryReader.getMemoryReader(vertexInfo.ptr_index, 2 * numberOfVertex, 2);
-    				break;
-    			}
-    			case 3: { // GU_INDEX_UNK3 (assume 32bit)
-    				memoryReader = MemoryReader.getMemoryReader(vertexInfo.ptr_index, 4 * numberOfVertex, 4);
-    				break;
-    			}
-    		}
-
-    		// Compute hashCode on index array and remember the largest index
-    		int maxIndex = -1;
-    		if (memoryReader != null) {
-				for (int i = 0; i < numberOfVertex; i++) {
-					int index = memoryReader.readNext();
-					if (index > maxIndex) {
-						maxIndex = index;
-					}
-					hashCode ^= index + i;
-					hashCode += i;
-				}
-    		}
-
-			// The vertex array extends only up to the largest index
-			vertexArraySize = vertexInfo.vertexSize * (maxIndex + 1);
-    	} else {
-    		vertexArraySize = vertexInfo.vertexSize * numberOfVertex;
-    	}
-
-    	if (vertexInfo.ptr_vertex != 0) {
-    		hashCode = Hash.getHashCodeComplex(hashCode, vertexInfo.ptr_vertex, vertexArraySize, hashStride);
-    	}
-
-    	return hashCode;
-    }
-
     public void setDirty() {
-    	hashCodeComputed = false;
+    	cachedIndices = null;
+    	cachedVertices = null;
     }
 
-    public int hashCode(int numberOfVertex) {
-    	if (!hashCodeComputed) {
-    		hashCode = hashCode(this, numberOfVertex);
-    		hashCodeComputed = true;
+    private boolean equals(int[] a, int[] b) {
+    	if (a == null) {
+    		if (b != null) {
+    			return false;
+    		}
+    	} else {
+    		if (b == null) {
+    			return false;
+    		}
+
+    		if (a.length != b.length) {
+    			return false;
+    		}
+
+    		for (int i = 0; i < a.length; i++) {
+    			if (a[i] != b[i]) {
+    				return false;
+    			}
+    		}
     	}
 
-    	return hashCode;
+    	return true;
+    }
+
+    public boolean equals(VertexInfo vertexInfo, int numberOfVertex) {
+		// Do not compare the vertices and indices of the new vertex if it has already
+		// been checked during this display cycle
+		if (!vertexCache.vertexAlreadyChecked(vertexInfo)) {
+			vertexInfo.readForCache(numberOfVertex);
+			if (!equals(cachedVertices, vertexInfo.cachedVertices)) {
+				return false;
+			}
+			if (!equals(cachedIndices, vertexInfo.cachedIndices)) {
+				return false;
+			}
+			vertexCache.setVertexAlreadyChecked(vertexInfo);
+		} else {
+			if (index != 0 && cachedIndices == null) {
+				return false;
+			}
+			if (ptr_vertex != 0 && cachedVertices == null) {
+				return false;
+			}
+		}
+
+		return true;
     }
 
     public boolean equals(VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForBuffer) {
-		if (param != vertexInfo.param ||
+		if (vtype != vertexInfo.vtype ||
 		    cachedNumberOfVertex != numberOfVertex ||
 		    ptr_index != vertexInfo.ptr_index) {
 			return false;
 		}
 
-		for (int i = 0; i < morphingVertexCount; i++) {
-			if (cachedMorphWeights[i] != vertexInfo.morph_weight[i]) {
-				return false;
+		if (morphingVertexCount > 1) {
+			for (int i = 0; i < morphingVertexCount; i++) {
+				if (cachedMorphWeights[i] != vertexInfo.morph_weight[i]) {
+					return false;
+				}
 			}
 		}
 
@@ -697,29 +692,54 @@ public class VertexInfo {
 			}
 		}
 
-		// Do not compute the hashCode of the new vertex if it has already
-		// been checked during this display cycle
-		if (!vertexCache.vertexAlreadyHashed(vertexInfo)) {
-			int hashCode = vertexInfo.hashCode(numberOfVertex);
-			if (hashCode != hashCode(numberOfVertex)) {
+		if (VideoEngine.getInstance().useOptimisticVertexCache) {
+			if (index != 0 && cachedIndices == null) {
 				return false;
 			}
-			vertexCache.setVertexAlreadyHashed(vertexInfo);
+			if (ptr_vertex != 0 && cachedVertices == null) {
+				return false;
+			}
+			return true;
 		}
 
-		return true;
+		return equals(vertexInfo, numberOfVertex);
 	}
 
-	public void bindVertex(IRenderingEngine re) {
-		re.bindBuffer(IRenderingEngine.RE_ARRAY_BUFFER, bufferId);
+	public boolean bindVertex(IRenderingEngine re) {
+		return bindVertex(re, false);
 	}
 
-	public void loadVertex(IRenderingEngine re, FloatBuffer buffer, int size) {
+	private boolean bindVertex(IRenderingEngine re, boolean bindBuffer) {
+		boolean needSetDataPointers;
+		if (vertexArrayId >= 0) {
+			re.bindVertexArray(vertexArrayId);
+			needSetDataPointers = false;
+			if (bindBuffer) {
+				re.bindBuffer(IRenderingEngine.RE_ARRAY_BUFFER, bufferId);
+			}
+		} else {
+			re.bindBuffer(IRenderingEngine.RE_ARRAY_BUFFER, bufferId);
+			needSetDataPointers = true;
+		}
+
+		return needSetDataPointers;
+	}
+
+	public boolean loadVertex(IRenderingEngine re, FloatBuffer buffer, int size) {
+		boolean needSetDataPointers = false;
+
+		if (vertexArrayId == -1 && re.isVertexArrayAvailable()) {
+			vertexArrayId = re.genVertexArray();
+			needSetDataPointers = true;
+		}
 		if (bufferId == -1) {
             bufferId = re.genBuffer();
+            needSetDataPointers = true;
 		}
 
-		bindVertex(re);
+		if (bindVertex(re, true)) {
+			needSetDataPointers = true;
+		}
 
 		cachedBuffer = ByteBuffer.allocateDirect(size * VideoEngine.SIZEOF_FLOAT).order(ByteOrder.LITTLE_ENDIAN);
 		int oldLimit = buffer.limit();
@@ -730,6 +750,8 @@ public class VertexInfo {
 		cachedBuffer.rewind();
 
 		re.setBufferData(IRenderingEngine.RE_ARRAY_BUFFER, size * VideoEngine.SIZEOF_FLOAT, cachedBuffer, IRenderingEngine.RE_STATIC_DRAW);
+
+		return needSetDataPointers;
 	}
 
 	public void deleteVertex(IRenderingEngine re) {
@@ -737,10 +759,68 @@ public class VertexInfo {
 			re.deleteBuffer(bufferId);
             bufferId = -1;
 		}
+		if (vertexArrayId != -1) {
+			re.deleteVertexArray(vertexArrayId);
+			vertexArrayId = -1;
+		}
 		cachedMorphWeights = null;
 		cachedBoneMatrix = null;
 		cachedBuffer = null;
+    	cachedIndices = null;
+    	cachedVertices = null;
     }
+
+	private void readForCache(int numberOfVertex) {
+		if (cachedIndices != null || cachedVertices != null) {
+			return;
+		}
+
+		int vertexArraySize;
+    	if (ptr_index != 0 && index != 0) {
+    		IMemoryReader memoryReader = null;
+    		switch (index) {
+    			case 1: { // GU_INDEX_8BIT
+    				memoryReader = MemoryReader.getMemoryReader(ptr_index, 1 * numberOfVertex, 1);
+    				break;
+    			}
+    			case 2: { // GU_INDEX_16BIT
+    				memoryReader = MemoryReader.getMemoryReader(ptr_index, 2 * numberOfVertex, 2);
+    				break;
+    			}
+    			case 3: { // GU_INDEX_UNK3 (assume 32bit)
+    				memoryReader = MemoryReader.getMemoryReader(ptr_index, 4 * numberOfVertex, 4);
+    				break;
+    			}
+    		}
+
+    		// Remember the largest index
+    		int maxIndex = -1;
+    		if (memoryReader != null) {
+    			cachedIndices = new int[numberOfVertex];
+				for (int i = 0; i < numberOfVertex; i++) {
+					int index = memoryReader.readNext();
+					cachedIndices[i] = index;
+					if (index > maxIndex) {
+						maxIndex = index;
+					}
+				}
+    		}
+
+			// The vertex array extends only up to the largest index
+			vertexArraySize = vertexSize * (maxIndex + 1);
+    	} else {
+    		vertexArraySize = vertexSize * numberOfVertex;
+    	}
+
+    	if (ptr_vertex != 0) {
+    		vertexArraySize = (vertexArraySize + 3) & ~3;
+    		cachedVertices = new int[vertexArraySize >> 2];
+    		IMemoryReader verticesReader = MemoryReader.getMemoryReader(ptr_vertex, vertexArraySize, 4);
+    		for (int i = 0; i < cachedVertices.length; i++) {
+    			cachedVertices[i] = verticesReader.readNext();
+    		}
+    	}
+	}
 
 	public void prepareForCache(VertexCache vertexCache, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForBuffer) {
 		this.vertexCache = vertexCache;
@@ -759,8 +839,7 @@ public class VertexInfo {
 			cachedBoneMatrix = null;
 		}
 
-		// Force hashCode computation
-		hashCode(numberOfVertex);
+		readForCache(numberOfVertex);
 	}
 
 	@Override

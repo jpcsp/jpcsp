@@ -389,6 +389,12 @@ public class REShader extends BaseRenderingEngineFunction {
 	public void startDisplay() {
         re.useProgram(shaderProgram);
 		super.startDisplay();
+
+		// We don't use Client States
+		super.disableClientState(IRenderingEngine.RE_TEXTURE);
+		super.disableClientState(IRenderingEngine.RE_COLOR);
+		super.disableClientState(IRenderingEngine.RE_NORMAL);
+		super.disableClientState(IRenderingEngine.RE_VERTEX);
 	}
 
 	@Override
@@ -399,7 +405,6 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void enableClientState(int type) {
-		super.disableClientState(type);
 		switch (type) {
 			case RE_VERTEX:
 				re.enableVertexAttribArray(shaderAttribPosition);
@@ -446,7 +451,6 @@ public class REShader extends BaseRenderingEngineFunction {
 				re.disableVertexAttribArray(shaderAttribTexture);
 				break;
 		}
-		super.disableClientState(type);
 	}
 
 	@Override

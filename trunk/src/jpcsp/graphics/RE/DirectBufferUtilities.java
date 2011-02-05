@@ -60,12 +60,12 @@ public class DirectBufferUtilities {
 		size = round4(size);
 
 		if (buffer.isDirect()) {
-			buffer.limit(size / 4 + buffer.position());
+			buffer.limit(size >> 2 + buffer.position());
 			return buffer;
 		}
 
 		IntBuffer directBuffer = allocateDirectBuffer(size).asIntBuffer();
-		directBuffer.put((IntBuffer) ((IntBuffer) buffer).slice().limit(size / 4));
+		directBuffer.put((IntBuffer) ((IntBuffer) buffer).slice().limit(size >> 2));
 		directBuffer.rewind();
 
 		return directBuffer;

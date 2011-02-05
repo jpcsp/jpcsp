@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import java.nio.Buffer;
+import java.nio.IntBuffer;
 
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VertexInfo;
@@ -59,6 +60,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void setGeContext(GeContext context) {
 		this.context = context;
 		proxy.setGeContext(context);
+	}
+
+	@Override
+	public void exit() {
+		proxy.exit();
 	}
 
 	@Override
@@ -834,5 +840,79 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
 		proxy.setUniformBlockBinding(program, blockIndex, bindingPoint);
+	}
+	@Override
+	public void bindFramebuffer(int target, int framebuffer) {
+		proxy.bindFramebuffer(target, framebuffer);
+	}
+
+	@Override
+	public void bindRenderbuffer(int renderbuffer) {
+		proxy.bindRenderbuffer(renderbuffer);
+	}
+
+	@Override
+	public void deleteFramebuffer(int framebuffer) {
+		proxy.deleteFramebuffer(framebuffer);
+	}
+
+	@Override
+	public void deleteRenderbuffer(int renderbuffer) {
+		proxy.deleteRenderbuffer(renderbuffer);
+	}
+
+	@Override
+	public int genFramebuffer() {
+		return proxy.genFramebuffer();
+	}
+
+	@Override
+	public int genRenderbuffer() {
+		return proxy.genRenderbuffer();
+	}
+
+	@Override
+	public boolean isFramebufferObjectAvailable() {
+		return proxy.isFramebufferObjectAvailable();
+	}
+
+	@Override
+	public void setFramebufferRenderbuffer(int target, int attachment, int renderbuffer) {
+		proxy.setFramebufferRenderbuffer(target, attachment, renderbuffer);
+	}
+
+	@Override
+	public void setFramebufferTexture(int target, int attachment, int texture, int level) {
+		proxy.setFramebufferTexture(target, attachment, texture, level);
+	}
+
+	@Override
+	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height) {
+		proxy.setRenderbufferStorage(renderbuffer, internalFormat, width, height);
+	}
+
+	@Override
+	public void bindVertexArray(int id) {
+		proxy.bindVertexArray(id);
+	}
+
+	@Override
+	public void deleteVertexArray(int id) {
+		proxy.deleteVertexArray(id);
+	}
+
+	@Override
+	public int genVertexArray() {
+		return proxy.genVertexArray();
+	}
+
+	@Override
+	public boolean isVertexArrayAvailable() {
+		return proxy.isVertexArrayAvailable();
+	}
+
+	@Override
+	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
+		proxy.multiDrawArrays(primitive, first, count);
 	}
 }

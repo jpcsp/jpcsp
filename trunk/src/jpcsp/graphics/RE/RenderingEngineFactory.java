@@ -16,18 +16,25 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
+import jpcsp.util.DurationStatistics;
+
 /**
  * @author gid15
  *
  */
 public class RenderingEngineFactory {
 	private static final boolean enableDebugProxy = false;
+	private static final boolean enableStatisticsProxy = false;
 
 	public static IRenderingEngine createRenderingEngine() {
 		// Build the rendering pipeline, from the last entry to the first one.
 
 		// The RenderingEngine actually performing the OpenGL calls
 		IRenderingEngine re = RenderingEngineLwjgl.newInstance();
+
+		if (enableStatisticsProxy && DurationStatistics.collectStatistics) {
+			re = new StatisticsProxy(re);
+		}
 
 		if (enableDebugProxy) {
 			re = new DebugProxy(re);

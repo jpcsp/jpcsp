@@ -43,7 +43,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[][] uniformFloat;
 	protected float[][][] uniformFloatArray;
 	protected StateBoolean[] clientState;
-	protected boolean[] vertexAttribArray;
+	protected StateBoolean[] vertexAttribArray;
 	protected boolean colorMaskRed;
 	protected boolean colorMaskGreen;
 	protected boolean colorMaskBlue;
@@ -105,6 +105,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected boolean colorMaterialAmbient;
 	protected boolean colorMaterialDiffuse;
 	protected boolean colorMaterialSpecular;
+	protected int bindVertexArray;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -169,7 +170,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		for (int i = 0; i < clientState.length; i++) {
 			clientState[i] = new StateBoolean();
 		}
-		vertexAttribArray = new boolean[maxUniformId];
+		vertexAttribArray = new StateBoolean[maxUniformId];
+		for (int i = 0; i < vertexAttribArray.length; i++) {
+			vertexAttribArray[i] = new StateBoolean();
+		}
 		colorMask = new int[4];
 		bufferDataInt = new HashMap<Integer, int[]>();
 		textureStates = new HashMap<Integer, TextureState>();
@@ -275,6 +279,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		colorMaterialAmbient = false;
 		colorMaterialDiffuse = false;
 		colorMaterialSpecular = false;
+		bindVertexArray = 0;
 
 		super.startDisplay();
 	}
@@ -496,9 +501,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void disableVertexAttribArray(int id) {
 		if (id >= 0 && id <= maxUniformId) {
-			if (vertexAttribArray[id]) {
+			StateBoolean state = vertexAttribArray[id];
+			if (state.getValue() || state.isUndefined()) {
 				super.disableVertexAttribArray(id);
-				vertexAttribArray[id] = false;
+				state.setValue(false);
 			}
 		}
 	}
@@ -506,9 +512,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void enableVertexAttribArray(int id) {
 		if (id >= 0 && id <= maxUniformId) {
-			if (!vertexAttribArray[id]) {
+			StateBoolean state = vertexAttribArray[id];
+			if (!state.getValue() || state.isUndefined()) {
 				super.enableVertexAttribArray(id);
-				vertexAttribArray[id] = true;
+				state.setValue(true);
 			}
 		}
 	}
@@ -1020,5 +1027,33 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			lightModelAmbientColor[2] = color[2];
 			lightModelAmbientColor[3] = color[3];
 		}
+	}
+
+	private void onVertexArrayChanged() {
+		for (int i = 0; i < clientState.length; i++) {
+			clientState[i].setUndefined();
+		}
+		for (int i = 0; i < vertexAttribArray.length; i++) {
+			vertexAttribArray[i].setUndefined();
+		}
+	}
+
+	@Override
+	public void bindVertexArray(int id) {
+		if (id != bindVertexArray) {
+			onVertexArrayChanged();
+			super.bindVertexArray(id);
+			bindVertexArray = id;
+		}
+	}
+
+	@Override
+	public void deleteVertexArray(int id) {
+		// When deleting the current vertex array, the current binding is reset to 0
+		if (id == bindVertexArray) {
+			onVertexArrayChanged();
+			bindVertexArray = 0;
+		}
+		super.deleteVertexArray(id);
 	}
 }

@@ -37,6 +37,7 @@ import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.sound.SoundChannel;
+import jpcsp.util.DurationStatistics;
 import jpcsp.util.JpcspDialogManager;
 
 import org.apache.log4j.Logger;
@@ -78,13 +79,15 @@ public class Emulator implements Runnable {
     }
 
     public static void exit() {
-        log.info(TextureCache.getInstance().statistics.toString());
-        log.info(VertexCache.getInstance().statistics.toString());
+    	if (DurationStatistics.collectStatistics) {
+    		log.info(TextureCache.getInstance().statistics);
+    	}
+        VertexCache.getInstance().exit();
         Compiler.exit();
         RuntimeContext.exit();
         Profiler.exit();
         SyscallHandler.exit();
-        if (Modules.ThreadManForUserModule.statistics != null && Modules.sceDisplayModule.statistics != null) {
+        if (DurationStatistics.collectStatistics && Modules.ThreadManForUserModule.statistics != null && Modules.sceDisplayModule.statistics != null) {
             long totalMillis = getClock().milliTime();
             long displayMillis = Modules.sceDisplayModule.statistics.cumulatedTimeMillis;
             long syscallCpuMillis = SyscallHandler.durationStatistics.getCpuDurationMillis();

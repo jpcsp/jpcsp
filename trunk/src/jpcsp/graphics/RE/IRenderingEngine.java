@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics.RE;
 
 import java.nio.Buffer;
+import java.nio.IntBuffer;
 
 import jpcsp.graphics.GeContext;
 import jpcsp.graphics.VertexInfo;
@@ -189,8 +190,27 @@ public interface IRenderingEngine {
 	public static final int RE_ARRAY_BUFFER        = 0;
 	public static final int RE_UNIFORM_BUFFER      = 1;
 
+	// Framebuffer Target
+	public static final int RE_FRAMEBUFFER         = 0;
+	public static final int RE_READ_FRAMEBUFFER    = 1;
+	public static final int RE_DRAW_FRAMEBUFFER    = 2;
+
+	// Framebuffer Attachment
+	public static final int RE_DEPTH_ATTACHMENT         = 0;
+	public static final int RE_STENCIL_ATTACHMENT       = 1;
+	public static final int RE_DEPTH_STENCIL_ATTACHMENT = 2;
+	public static final int RE_COLOR_ATTACHMENT0        = 3;
+	public static final int RE_COLOR_ATTACHMENT1        = 4;
+	public static final int RE_COLOR_ATTACHMENT2        = 5;
+	public static final int RE_COLOR_ATTACHMENT3        = 6;
+	public static final int RE_COLOR_ATTACHMENT4        = 7;
+	public static final int RE_COLOR_ATTACHMENT5        = 8;
+	public static final int RE_COLOR_ATTACHMENT6        = 9;
+	public static final int RE_COLOR_ATTACHMENT7        = 10;
+
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
+	public void exit();
 	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height);
 	public void endDirectRendering();
 	public void startDisplay();
@@ -346,4 +366,19 @@ public interface IRenderingEngine {
 	public int getUniformBlockIndex(int program, String name);
 	public void bindBufferBase(int target, int bindingPoint, int buffer);
 	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint);
+	public boolean isFramebufferObjectAvailable();
+	public int genFramebuffer();
+	public int genRenderbuffer();
+	public void deleteFramebuffer(int framebuffer);
+	public void deleteRenderbuffer(int renderbuffer);
+	public void bindFramebuffer(int target, int framebuffer);
+	public void bindRenderbuffer(int renderbuffer);
+	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height);
+	public void setFramebufferRenderbuffer(int target, int attachment, int renderbuffer);
+	public void setFramebufferTexture(int target, int attachment, int texture, int level);
+	public int genVertexArray();
+	public void bindVertexArray(int id);
+	public void deleteVertexArray(int id);
+	public boolean isVertexArrayAvailable();
+	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count);
 }

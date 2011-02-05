@@ -22,6 +22,7 @@ import jpcsp.Emulator;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.util.CpuDurationStatistics;
+import jpcsp.util.DurationStatistics;
 
 public class SyscallHandler {
 	public static CpuDurationStatistics durationStatistics = new CpuDurationStatistics("Syscall");
@@ -34,15 +35,17 @@ public class SyscallHandler {
 	}
 
 	public static void exit() {
-        Emulator.log.info(durationStatistics.toString());
-        if (syscallStatistics != null) {
-	        Arrays.sort(syscallStatistics);
-	        int numberSyscalls = 20;
-	        Emulator.log.info(numberSyscalls + " most time intensive Syscalls:");
-	        for (int i = 0; i < numberSyscalls; i++) {
-	        	Emulator.log.info("    " + syscallStatistics[i].toString());
+		if (DurationStatistics.collectStatistics) {
+	        Emulator.log.info(durationStatistics);
+	        if (syscallStatistics != null) {
+		        Arrays.sort(syscallStatistics);
+		        int numberSyscalls = 20;
+		        Emulator.log.info(numberSyscalls + " most time intensive Syscalls:");
+		        for (int i = 0; i < numberSyscalls; i++) {
+		        	Emulator.log.info("    " + syscallStatistics[i]);
+		        }
 	        }
-        }
+		}
 	}
 
 	private static void initStatistics() {
@@ -78,9 +81,7 @@ public class SyscallHandler {
 	        }
             cpu.gpr[2] = 0;
         } else {
-        	final boolean collectStatistics = Modules.log.isInfoEnabled();
-
-	    	if (collectStatistics) {
+	    	if (DurationStatistics.collectStatistics) {
 		    	if (syscallStatistics == null) {
 		    		initStatistics();
 		    	}
@@ -103,7 +104,7 @@ public class SyscallHandler {
 	            Modules.log.warn(String.format("Unsupported syscall %X %s %08X %08X %08X", code, name, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 	        }
 
-	        if (collectStatistics) {
+	        if (DurationStatistics.collectStatistics) {
 		    	syscallStatistics[code].end();
 		        durationStatistics.end();
 	        }

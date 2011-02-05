@@ -387,13 +387,13 @@ public class Utilities {
 
 		int srcLimit = source.limit();
 		if (source instanceof IntBuffer) {
-    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + lengthInBytes / 4));
+    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + lengthInBytes >> 2));
     	} else if (source instanceof ShortBuffer) {
-    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + lengthInBytes / 2));
+    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + lengthInBytes >> 1));
     	} else if (source instanceof ByteBuffer) {
     		destination.put((ByteBuffer) source.limit(source.position() + lengthInBytes));
     	} else if (source instanceof FloatBuffer) {
-    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + lengthInBytes / 4));
+    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + lengthInBytes >> 2));
     	} else {
     		Modules.log.error("Utilities.putBuffer: Unsupported Buffer type " + source.getClass().getName());
     		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
@@ -488,6 +488,27 @@ public class Utilities {
 
     		int value = memoryReader.readNext();
     		dump.append(String.format(format, value));
+    	}
+
+    	return dump.toString();
+    }
+
+    public static String getMemoryDump(int[] values, int offset, int length, int entriesPerLine) {
+    	StringBuilder dump = new StringBuilder();
+
+    	boolean startOfLine = true;
+    	for (int i = 0; i < length; i++) {
+    		if ((i % entriesPerLine) == 0) {
+    			dump.append("\n");
+    			startOfLine = true;
+    		}
+    		if (startOfLine) {
+    			dump.append(String.format("0x%08X", (offset + i) << 2));
+    			startOfLine = false;
+    		}
+
+    		int value = values[offset + i];
+    		dump.append(String.format(" %08X", value));
     	}
 
     	return dump.toString();

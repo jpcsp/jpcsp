@@ -87,6 +87,7 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.scheduler.Scheduler;
+import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -648,15 +649,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
             log.info("----------------------------- ThreadMan exit -----------------------------");
 
-            statistics.endTimeMillis = System.currentTimeMillis();
-            log.info(String.format("ThreadMan Statistics (%,d cycles in %.3fs):", statistics.allCycles, statistics.getDurationMillis() / 1000.0));
-            Collections.sort(statistics.threads);
-            for (Statistics.ThreadStatistics threadStatistics : statistics.threads) {
-                double percentage = 0;
-                if (statistics.allCycles != 0) {
-                    percentage = (threadStatistics.runClocks / (double) statistics.allCycles) * 100;
-                }
-                log.info(String.format("    Thread %-30s %,12d cycles (%5.2f%%)", threadStatistics.getQuotedName(), threadStatistics.runClocks, percentage));
+            if (DurationStatistics.collectStatistics) {
+            	statistics.exit();
+	            log.info(String.format("ThreadMan Statistics (%,d cycles in %.3fs):", statistics.allCycles, statistics.getDurationMillis() / 1000.0));
+	            Collections.sort(statistics.threads);
+	            for (Statistics.ThreadStatistics threadStatistics : statistics.threads) {
+	                double percentage = 0;
+	                if (statistics.allCycles != 0) {
+	                    percentage = (threadStatistics.runClocks / (double) statistics.allCycles) * 100;
+	                }
+	                log.info(String.format("    Thread %-30s %,12d cycles (%5.2f%%)", threadStatistics.getQuotedName(), threadStatistics.runClocks, percentage));
+	            }
             }
         }
     }
@@ -4262,7 +4265,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         private void addThreadStatistics(SceKernelThreadInfo thread) {
-            ThreadStatistics threadStatistics = new ThreadStatistics();
+        	if (!DurationStatistics.collectStatistics) {
+        		return;
+        	}
+
+        	ThreadStatistics threadStatistics = new ThreadStatistics();
             threadStatistics.name = thread.name;
             threadStatistics.runClocks = thread.runClocks;
             threads.add(threadStatistics);
