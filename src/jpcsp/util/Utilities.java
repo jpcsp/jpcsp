@@ -387,13 +387,13 @@ public class Utilities {
 
 		int srcLimit = source.limit();
 		if (source instanceof IntBuffer) {
-    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + lengthInBytes >> 2));
+    		destination.asIntBuffer().put((IntBuffer) source.limit(source.position() + (lengthInBytes >> 2)));
     	} else if (source instanceof ShortBuffer) {
-    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + lengthInBytes >> 1));
+    		destination.asShortBuffer().put((ShortBuffer) source.limit(source.position() + (lengthInBytes >> 1)));
     	} else if (source instanceof ByteBuffer) {
     		destination.put((ByteBuffer) source.limit(source.position() + lengthInBytes));
     	} else if (source instanceof FloatBuffer) {
-    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + lengthInBytes >> 2));
+    		destination.asFloatBuffer().put((FloatBuffer) source.limit(source.position() + (lengthInBytes >> 2)));
     	} else {
     		Modules.log.error("Utilities.putBuffer: Unsupported Buffer type " + source.getClass().getName());
     		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
