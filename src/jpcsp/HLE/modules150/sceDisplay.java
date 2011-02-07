@@ -539,7 +539,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	}
 
 		boolean loadGEToScreen = true; // Always reload the GE memory to the screen
-		if (copyGEToMemory && topaddrGe != topaddr) {
+		if (copyGEToMemory && (topaddrGe != topaddr || pixelformatGe != pixelformat)) {
 			if (VideoEngine.log.isDebugEnabled()) {
 				VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", topaddrGe, bottomaddrGe));
 			}
