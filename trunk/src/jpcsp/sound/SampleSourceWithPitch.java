@@ -34,13 +34,13 @@ public class SampleSourceWithPitch implements ISampleSource {
 		this.pitch = pitch;
 	}
 
-	private int getSampleSourceIndex() {
-		return (int) (sampleIndex * (long) pitch / sceSasCore.PSP_SAS_PITCH_BASE);
+	private int getSampleSourceIndexFromSampleIndex(int index) {
+		return (int) (index * (long) pitch / sceSasCore.PSP_SAS_PITCH_BASE);
 	}
 
 	@Override
 	public short getNextSample() {
-		int nextSampleSourceIndex = getSampleSourceIndex();
+		int nextSampleSourceIndex = getSampleSourceIndexFromSampleIndex(sampleIndex);
 		if (nextSampleSourceIndex > sampleSourceIndex) {
 			currentSample = sampleSource.getNextSample();
 			sampleSourceIndex = nextSampleSourceIndex;
@@ -50,20 +50,31 @@ public class SampleSourceWithPitch implements ISampleSource {
 		return currentSample;
 	}
 
+	private int getSampleIndexFromSampleSourceIndex(int index) {
+		return (int) (index * (long) sceSasCore.PSP_SAS_PITCH_BASE / pitch);
+	}
+
 	@Override
 	public int getNumberSamples() {
 		if (pitch <= 0) {
 			return 0;
 		}
 
-		return (int) (sampleSource.getNumberSamples() * (long) sceSasCore.PSP_SAS_PITCH_BASE / pitch);
+		return getSampleIndexFromSampleSourceIndex(sampleSource.getNumberSamples());
 	}
 
 	@Override
 	public void setSampleIndex(int index) {
-		sampleIndex = index;
-		sampleSource.setSampleIndex(getSampleSourceIndex());
-		sampleSourceIndex = -1;
+		if (index != sampleIndex) {
+			sampleIndex = index;
+			sampleSource.setSampleIndex(getSampleSourceIndexFromSampleIndex(sampleIndex));
+			sampleSourceIndex = -1;
+		}
+	}
+
+	@Override
+	public int getSampleIndex() {
+		return getSampleIndexFromSampleSourceIndex(sampleSource.getSampleIndex());
 	}
 
 	@Override

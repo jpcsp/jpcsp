@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.sound;
 
+import jpcsp.HLE.modules.sceSasCore;
+
 public class SoftwareSynthesizer {
 	private SoundVoice voice;
 	private ISampleSource sampleSource;
@@ -30,7 +32,7 @@ public class SoftwareSynthesizer {
 
 			// Currently we build the samples only based on the pitch.
 			// ADSR has still to be added.
-			sampleSource = new SampleSourceVAG(voice.getVAGAddress(), voice.getVAGSize());
+			sampleSource = new SampleSourceVAG(voice.getVAGAddress(), voice.getVAGSize(), voice.getLoopMode() != sceSasCore.PSP_SAS_LOOP_MODE_OFF);
 			sampleSource = new SampleSourceWithPitch(sampleSource, voice.getPitch());
 		}
 

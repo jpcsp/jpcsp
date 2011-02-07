@@ -34,10 +34,13 @@ public class SampleSourceVAG implements ISampleSource {
     private final short[] samples = new short[28];
     private int sampleIndex = samples.length;
     private int numberVGABlocks;
-    private int currentVGABlock;
+    private int currentVAGBlock;
     private int currentSampleIndex;
     private int hist1;
     private int hist2;
+    private boolean loopMode;
+    private int loopStartVAGBlock;
+    private boolean loopAtNextVAGBlock;
     private static final double[][] VAG_f = {
         {0.0, 0.0},
         {60.0 / 64.0, 0.0},
@@ -46,8 +49,9 @@ public class SampleSourceVAG implements ISampleSource {
         {122.0 / 64.0, -60.0 / 64.0}
     };
 
-	public SampleSourceVAG(int address, int size) {
+	public SampleSourceVAG(int address, int size, boolean loopMode) {
 		this.address = address;
+		this.loopMode = loopMode;
 
 		if (address == 0) {
 			numberSamples = 0;
@@ -84,7 +88,7 @@ public class SampleSourceVAG implements ISampleSource {
 	private boolean unpackNextVAGBlock() {
 		sampleIndex = 0;
 
-		if (currentVGABlock >= numberVGABlocks) {
+		if (currentVAGBlock >= numberVGABlocks) {
 			return false;
 		}
 
@@ -101,14 +105,18 @@ public class SampleSourceVAG implements ISampleSource {
             // TODO: Implement loop processing by decoding
             // the same samples within the loop flags
             // when loop mode is on.
+        	if (loopMode) {
+        		loopAtNextVAGBlock = true;
+        	}
         } else if (flag == 0x06) {
             // If loop mode is enabled, this flag indicates
             // the first block of the loop.
             // TODO: Implement loop processing by decoding
             // the same samples within the loop flags
             // when loop mode is on.
+        	loopStartVAGBlock = currentVAGBlock;
         } else if (flag == 0x07) {
-        	numberVGABlocks = currentVGABlock;
+        	numberVGABlocks = currentVAGBlock;
         	numberSamples = numberVGABlocks * 28;
         	sampleIndex = samples.length;
             return false;	// End of stream flag.
@@ -135,7 +143,7 @@ public class SampleSourceVAG implements ISampleSource {
             }
         }
 
-        currentVGABlock++;
+        currentVAGBlock++;
 
         return true;
 	}
@@ -151,6 +159,11 @@ public class SampleSourceVAG implements ISampleSource {
 		short sample = samples[sampleIndex];
 		sampleIndex++;
 		currentSampleIndex++;
+
+		if (loopAtNextVAGBlock && sampleIndex >= samples.length) {
+			loopAtNextVAGBlock = false;
+			setSampleIndex(loopStartVAGBlock * 28);
+		}
 
 		return sample;
 	}
@@ -168,15 +181,20 @@ public class SampleSourceVAG implements ISampleSource {
 		}
 
 		currentSampleIndex = index;
-		currentVGABlock = index / 28;
-		if (currentVGABlock >= numberVGABlocks) {
+		currentVAGBlock = index / 28;
+		if (currentVAGBlock >= numberVGABlocks) {
 			sampleIndex = samples.length;
 		} else {
 			int restSamples = numberSamples - index;
-			memoryReader = MemoryReader.getMemoryReader(address + (currentVGABlock << 4), restSamples << 2, 1);
+			memoryReader = MemoryReader.getMemoryReader(address + (currentVAGBlock << 4), restSamples << 2, 1);
 			if (unpackNextVAGBlock()) {
 				sampleIndex = index % 28;
 			}
 		}
+	}
+
+	@Override
+	public int getSampleIndex() {
+		return currentSampleIndex;
 	}
 }
