@@ -273,14 +273,16 @@ public class SoundChannel {
 		StringBuilder s = new StringBuilder();
 
 		s.append(String.format("SoundChannel[%d](", index));
-		s.append(String.format("sourceSampleOffset=%d", getSourceSampleOffset()));
-		s.append(String.format(", restLength=%d", getRestLength()));
-		s.append(String.format(", buffers queued=%d", getWaitingBuffers()));
-		s.append(String.format(", isOutputBlock=%b", isOutputBlocking()));
-		s.append(String.format(", %s", isFormatStereo() ? "Stereo" : "Mono"));
-		s.append(String.format(", reserved=%b", reserved));
-		s.append(String.format(", sampleLength=%d", getSampleLength()));
-		s.append(String.format(", sampleRate=%d", getSampleRate()));
+		if (!isExit) {
+			s.append(String.format("sourceSampleOffset=%d", getSourceSampleOffset()));
+			s.append(String.format(", restLength=%d", getRestLength()));
+			s.append(String.format(", buffers queued=%d", getWaitingBuffers()));
+			s.append(String.format(", isOutputBlock=%b", isOutputBlocking()));
+			s.append(String.format(", %s", isFormatStereo() ? "Stereo" : "Mono"));
+			s.append(String.format(", reserved=%b", reserved));
+			s.append(String.format(", sampleLength=%d", getSampleLength()));
+			s.append(String.format(", sampleRate=%d", getSampleRate()));
+		}
 		s.append(")");
 
 		return s.toString();

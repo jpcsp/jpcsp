@@ -450,14 +450,15 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             log.debug("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + ")");
         }
 
-        // "Star Ocean" games call this function from inside a SYSTIMER interrupt handler.
-        // TODO: Investigate if this can also happen in other get methods in sceSasCore.
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
             int endFlag = 0;
             for (int i = 0; i < voices.length; i++) {
                 if (voices[i].isEnded()) {
                     endFlag |= (1 << i);
                 }
+            }
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("__sceSasGetEndFlag returning 0x%08X", endFlag));
             }
             cpu.gpr[2] = endFlag;
         } else {
