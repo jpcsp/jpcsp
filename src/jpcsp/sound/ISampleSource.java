@@ -23,5 +23,6 @@ package jpcsp.sound;
 public interface ISampleSource {
 	public short getNextSample();
 	public void setSampleIndex(int index);
+	public int getSampleIndex();
 	public int getNumberSamples();
 }

@@ -85,8 +85,8 @@ public class SoundMixer {
     		SoundVoice voice = voices[i];
 
             if (voice.isPlaying()) {
-            	int playSample = voice.getPlaySample();
             	ISampleSource sampleSource = synthesizers[i].getSampleSource();
+            	int playSample = voice.getPlaySample();
             	int restPlay = sampleSource.getNumberSamples() - playSample;
             	if (restPlay <= 0) {
             		// End of voice sample reached
@@ -94,8 +94,8 @@ public class SoundMixer {
             	} else {
             		int numSamples = Math.min(samples, restPlay);
             		mix(mixedSamples, sampleSource, playSample, numSamples, voice.getLeftVolume(), voice.getRightVolume());
-            		voice.setPlaySample(playSample + numSamples);
             		writeSamples = true;
+            		voice.setPlaySample(sampleSource.getSampleIndex());
             	}
             }
         }
