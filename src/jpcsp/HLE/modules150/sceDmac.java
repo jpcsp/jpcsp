@@ -61,7 +61,9 @@ public class sceDmac implements HLEModule {
         int source = cpu.gpr[5];
         int size   = cpu.gpr[6];
 
-        log.debug(String.format("sceDmacMemcpy dest=0x%08X, source=0x%08X, size=0x%08X", dest, source, size));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceDmacMemcpy dest=0x%08X, source=0x%08X, size=0x%08X", dest, source, size));
+        }
 
         mem.memcpy(dest, source, size);
 

@@ -18,6 +18,7 @@ package jpcsp.HLE.modules150;
 
 import java.util.HashMap;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -416,6 +417,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
 
         public void setData(int buffer, int bufferSize, int minSize, boolean isSecondBuf) {
+        	Emulator.getClock().pause();
             if (isSecondBuf) {
                 // Set the second buffer, but don't handle it.
                 // This allows it to be ignored while we can't handle it.
@@ -443,6 +445,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                 }
                 getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, bufferSize, inputFileSize);
             }
+        	Emulator.getClock().resume();
         }
 
         protected void addStreamData(int length) {

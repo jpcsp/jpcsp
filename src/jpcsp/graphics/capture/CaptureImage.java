@@ -26,6 +26,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.HashMap;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
@@ -48,6 +49,7 @@ public class CaptureImage {
 	private int compressedImageSize;
 	private boolean invert;
 	private boolean overwriteFile;
+	private static HashMap<Integer, Integer> lastFileIndex = new HashMap<Integer, Integer>();
 
 	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile) {
 		this.imageaddr = imageaddr;
@@ -70,7 +72,12 @@ public class CaptureImage {
     	}
 
     	String fileName = null;
-    	for (int i = 0; ; i++) {
+    	int scanIndex = 0;
+    	Integer lastIndex = lastFileIndex.get(imageaddr);
+    	if (lastIndex != null) {
+    		scanIndex = lastIndex.intValue() + 1;
+    	}
+    	for (int i = scanIndex; ; i++) {
     		String id = (i == 0 ? "" : "-" + i);
     		fileName = String.format("tmp/Image%08X%s%s.bmp", imageaddr, levelName, id);
     		if (overwriteFile) {
@@ -79,6 +86,7 @@ public class CaptureImage {
 
     		File file = new File(fileName);
     		if (!file.exists()) {
+    			lastFileIndex.put(imageaddr, i);
     			break;
     		}
     	}

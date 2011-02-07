@@ -963,6 +963,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 	            		int pixelsPerElement = 4 / getPixelFormatBytes(pixelformat);
 	            		int maxHeight = videoEngine.getMaxSpriteHeight();
 	            		int maxWidth = videoEngine.getMaxSpriteWidth();
+	            		int textureAlignment = (pixelsPerElement == 1 ? 3 : 7);
+            			maxHeight = (maxHeight + textureAlignment) & ~textureAlignment;
+            			maxWidth = (maxWidth + textureAlignment) & ~textureAlignment;
 	            		if (VideoEngine.log.isDebugEnabled()) {
 	            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight + ", maxSpriteWidth=" + maxWidth);
 	            		}

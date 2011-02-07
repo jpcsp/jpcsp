@@ -2077,7 +2077,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         mpegRingbufferAddr = cpu.gpr[4];
 
-        if(log.isDebugEnabled()) {
+        if (log.isDebugEnabled()) {
             log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x" + Integer.toHexString(mpegRingbufferAddr) + ")");
         }
 
@@ -2087,6 +2087,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     	mpegRingbuffer.read(mem, mpegRingbufferAddr);
         cpu.gpr[2] = mpegRingbuffer.packetsFree;
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegRingbufferAvailableSize returning " + mpegRingbuffer.packetsFree);
+        }
     }
 
     public void sceMpeg_11CAB459(Processor processor) {
