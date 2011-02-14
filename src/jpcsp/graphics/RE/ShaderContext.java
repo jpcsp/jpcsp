@@ -53,6 +53,11 @@ public class ShaderContext {
 	private float normalScale;
 	private float textureScale;
 	private float weightScale;
+	private int clutShift;
+	private int clutMask;
+	private int clutOffset;
+	private boolean mipmapShareClut;
+	private int clut;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -82,6 +87,11 @@ public class ShaderContext {
 		re.setUniform(Uniforms.normalScale.getId(shaderProgram), normalScale);
 		re.setUniform(Uniforms.textureScale.getId(shaderProgram), textureScale);
 		re.setUniform(Uniforms.weightScale.getId(shaderProgram), weightScale);
+		re.setUniform(Uniforms.clutShift.getId(shaderProgram), clutShift);
+		re.setUniform(Uniforms.clutMask.getId(shaderProgram), clutMask);
+		re.setUniform(Uniforms.clutOffset.getId(shaderProgram), clutOffset);
+		re.setUniform(Uniforms.mipmapShareClut.getId(shaderProgram), mipmapShareClut ? 1 : 0);
+		re.setUniform(Uniforms.clut.getId(shaderProgram), clut);
 	}
 
 	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
@@ -308,5 +318,45 @@ public class ShaderContext {
 
 	public void setWeightScale(float weightScale) {
 		this.weightScale = weightScale;
+	}
+
+	public int getClutShift() {
+		return clutShift;
+	}
+
+	public void setClutShift(int clutShift) {
+		this.clutShift = clutShift;
+	}
+
+	public int getClutMask() {
+		return clutMask;
+	}
+
+	public void setClutMask(int clutMask) {
+		this.clutMask = clutMask;
+	}
+
+	public int getClutOffset() {
+		return clutOffset;
+	}
+
+	public void setClutOffset(int clutOffset) {
+		this.clutOffset = clutOffset;
+	}
+
+	public boolean isMipmapShareClut() {
+		return mipmapShareClut;
+	}
+
+	public void setMipmapShareClut(boolean mipmapShareClut) {
+		this.mipmapShareClut = mipmapShareClut;
+	}
+
+	public int getClut() {
+		return clut;
+	}
+
+	public void setClut(int clut) {
+		this.clut = clut;
 	}
 }

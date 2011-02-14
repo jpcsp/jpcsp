@@ -817,7 +817,6 @@ public class GeCommands {
         pureStateCommands[TMAP] = true;
         pureStateCommands[TMODE] = true;
         pureStateCommands[TPSM] = true;
-        pureStateCommands[CLOAD] = true;
         pureStateCommands[CMODE] = true;
         pureStateCommands[TFLT] = true;
         pureStateCommands[TWRAP] = true;

@@ -424,59 +424,46 @@ public class sceGu extends AbstractNativeCodeSequence {
 		sceGuSetMatrix(context, listCurrentOffset, type, matrix);
 	}
 
+	static private int sceGuSetMatrix4x4(IMemoryWriter listWriter, IMemoryReader matrixReader, int startCmd, int matrixCmd) {
+		listWriter.writeNext(startCmd << 24);
+		int cmd = matrixCmd << 24;
+		for (int i = 0; i < 16; i++) {
+			listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
+		}
+		return 68;
+	}
+
+	static private int sceGuSetMatrix4x3(IMemoryWriter listWriter, IMemoryReader matrixReader, int startCmd, int matrixCmd) {
+		listWriter.writeNext(startCmd << 24);
+		int cmd = matrixCmd << 24;
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 3; j++) {
+				listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
+			}
+			matrixReader.skip(1);
+		}
+		return 52;
+	}
+
 	static private void sceGuSetMatrix(int context, int listCurrentOffset, int type, int matrix) {
 		Memory mem = getMemory();
 		int listCurrent = mem.read32(context + listCurrentOffset);
-		int cmd;
 
 		IMemoryWriter listWriter = MemoryWriter.getMemoryWriter(listCurrent, 68, 4);
 		IMemoryReader matrixReader = MemoryReader.getMemoryReader(matrix, 64, 4);
 		switch (type) {
-			case 0: {
-				listWriter.writeNext(GeCommands.PMS << 24);
-				cmd = GeCommands.PROJ << 24;
-				for (int i = 0; i < 16; i++) {
-					listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
-				}
-				listCurrent += 68;
+			case 0:
+				listCurrent += sceGuSetMatrix4x4(listWriter, matrixReader, GeCommands.PMS, GeCommands.PROJ);
 				break;
-			}
-			case 1: {
-				listWriter.writeNext(GeCommands.VMS << 24);
-				cmd = GeCommands.VIEW << 24;
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 3; j++) {
-						listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
-					}
-					matrixReader.skip(1);
-				}
-				listCurrent += 52;
+			case 1:
+				listCurrent += sceGuSetMatrix4x3(listWriter, matrixReader, GeCommands.VMS, GeCommands.VIEW);
 				break;
-			}
-			case 2: {
-				listWriter.writeNext(GeCommands.MMS << 24);
-				cmd = GeCommands.MODEL << 24;
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 3; j++) {
-						listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
-					}
-					matrixReader.skip(1);
-				}
-				listCurrent += 52;
+			case 2:
+				listCurrent += sceGuSetMatrix4x3(listWriter, matrixReader, GeCommands.MMS, GeCommands.MODEL);
 				break;
-			}
-			case 3: {
-				listWriter.writeNext(GeCommands.TMS << 24);
-				cmd = GeCommands.TMATRIX << 24;
-				for (int i = 0; i < 4; i++) {
-					for (int j = 0; j < 3; j++) {
-						listWriter.writeNext(cmd | (matrixReader.readNext() >>> 8));
-					}
-					matrixReader.skip(1);
-				}
-				listCurrent += 52;
+			case 3:
+				listCurrent += sceGuSetMatrix4x3(listWriter, matrixReader, GeCommands.TMS, GeCommands.TMATRIX);
 				break;
-			}
 		}
 		listWriter.flush();
 

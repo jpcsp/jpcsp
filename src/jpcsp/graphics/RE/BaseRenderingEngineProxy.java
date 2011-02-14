@@ -915,4 +915,54 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count) {
 		proxy.multiDrawArrays(primitive, first, count);
 	}
+
+	@Override
+	public void setPixelTransfer(int parameter, int value) {
+		proxy.setPixelTransfer(parameter, value);
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, float value) {
+		proxy.setPixelTransfer(parameter, value);
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, boolean value) {
+		proxy.setPixelTransfer(parameter, value);
+	}
+
+	@Override
+	public void setPixelMap(int map, int mapSize, Buffer buffer) {
+		proxy.setPixelMap(map, mapSize, buffer);
+	}
+
+	@Override
+	public boolean canNativeClut() {
+		return proxy.canNativeClut();
+	}
+
+	@Override
+	public void setTexImage1D(int level, int internalFormat, int width, int format, int type, int textureSize, Buffer buffer) {
+		proxy.setTexImage1D(level, internalFormat, width, format, type, textureSize, buffer);
+	}
+
+	@Override
+	public void setTexSubImage1D(int level, int xOffset, int width, int format, int type, int textureSize, Buffer buffer) {
+		proxy.setTexSubImage1D(level, xOffset, width, format, type, textureSize, buffer);
+	}
+
+	@Override
+	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut) {
+		proxy.setClut(address, numBlocks, mode, shift, mask, offset, mipmapShareClut);
+	}
+
+	@Override
+	public void setActiveTexture(int index) {
+		proxy.setActiveTexture(index);
+	}
+
+	@Override
+	public void bindTexture1D(int texture) {
+		proxy.bindTexture1D(texture);
+	}
 }

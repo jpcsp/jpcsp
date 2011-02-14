@@ -23,6 +23,7 @@
     uniform ivec3     ctestMsk;
 #endif
 uniform sampler2D tex;
+uniform sampler1D clut;
 
 vec4 getFragColor()
 {
