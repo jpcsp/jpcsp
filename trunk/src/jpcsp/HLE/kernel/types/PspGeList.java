@@ -34,6 +34,8 @@ import jpcsp.Memory;
 public class PspGeList
 {
 	private VideoEngine videoEngine;
+	private static final int pcAddressMask = 0xFFFFFFFC;
+	private Memory mem;
     public int list_addr;
     private int stall_addr;
     public int cbid;
@@ -59,6 +61,7 @@ public class PspGeList
 
     public PspGeList(int id) {
     	videoEngine = VideoEngine.getInstance();
+    	mem = Memory.getInstance();
     	this.id = id;
     	blockedThreadIds = new LinkedList<Integer>();
     	reset();
@@ -118,11 +121,11 @@ public class PspGeList
     }
 
     public int getAddressRel(int argument) {
-    	return (videoEngine.getBase() | argument);
+    	return mem.normalizeAddress((videoEngine.getBase() | argument));
     }
 
     public int getAddressRelOffset(int argument) {
-    	return (videoEngine.getBase() | argument) + videoEngine.getBaseOffset();
+    	return mem.normalizeAddress((videoEngine.getBase() | argument) + videoEngine.getBaseOffset());
     }
 
     public boolean isStackEmpty() {
@@ -130,15 +133,15 @@ public class PspGeList
     }
 
     public void jumpAbsolute(int argument) {
-    	pc = argument & 0xFFFFFFFC;
+    	pc = mem.normalizeAddress(argument) & pcAddressMask;
     }
 
     public void jumpRelative(int argument) {
-    	pc = getAddressRel(argument) & 0xFFFFFFFC;
+    	pc = getAddressRel(argument) & pcAddressMask;
     }
 
     public void jumpRelativeOffset(int argument) {
-    	pc = getAddressRelOffset(argument) & 0xFFFFFFFC;
+    	pc = getAddressRelOffset(argument) & pcAddressMask;
     }
 
     public void callAbsolute(int argument) {

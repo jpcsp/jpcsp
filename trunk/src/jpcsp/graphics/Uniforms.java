@@ -48,7 +48,12 @@ public enum Uniforms {
 	positionScale("positionScale"),
 	normalScale("normalScale"),
 	textureScale("textureScale"),
-	weightScale("weightScale");
+	weightScale("weightScale"),
+	clutShift("clutShift"),
+	clutMask("clutMask"),
+	clutOffset("clutOffset"),
+	clut("clut"),
+	mipmapShareClut("mipmapShareClut");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

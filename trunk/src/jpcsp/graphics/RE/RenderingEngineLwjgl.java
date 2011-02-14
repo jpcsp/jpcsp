@@ -265,10 +265,23 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        EXTTextureCompressionS3TC.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
+        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
+        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
+	};
+	protected static final int[] textureInternalFormatToGL = {
+		GL11.GL_RGB,                           // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
+		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
+		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
+		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+        1,                                     // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        1,                                     // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        1,                                     // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        1,                                     // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
@@ -278,10 +291,10 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         GL12.GL_UNSIGNED_SHORT_1_5_5_5_REV,    // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
         GL12.GL_UNSIGNED_SHORT_4_4_4_4_REV,    // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
         GL11.GL_UNSIGNED_BYTE,                 // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
-        0,                                   // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        GL11.GL_UNSIGNED_BYTE,                 // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        GL11.GL_UNSIGNED_BYTE,                 // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        GL11.GL_UNSIGNED_SHORT,                // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        GL11.GL_UNSIGNED_INT,                  // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
@@ -355,6 +368,34 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		ARBFramebufferObject.GL_COLOR_ATTACHMENT5, // RE_COLOR_ATTACHMENT5
 		ARBFramebufferObject.GL_COLOR_ATTACHMENT6, // RE_COLOR_ATTACHMENT6
 		ARBFramebufferObject.GL_COLOR_ATTACHMENT7  // RE_COLOR_ATTACHMENT7
+	};
+	protected static final int[] pixelTransferToGL = {
+		GL11.GL_MAP_COLOR,           // RE_MAP_COLOR
+		GL11.GL_MAP_STENCIL,         // RE_MAP_STENCIL
+		GL11.GL_INDEX_SHIFT,         // RE_INDEX_SHIFT
+		GL11.GL_INDEX_OFFSET,        // RE_INDEX_OFFSET
+		GL11.GL_RED_SCALE,           // RE_RED_SCALE
+		GL11.GL_GREEN_SCALE,         // RE_GREEN_SCALE
+		GL11.GL_BLUE_SCALE,          // RE_BLUE_SCALE
+		GL11.GL_ALPHA_SCALE,         // RE_ALPHA_SCALE
+		GL11.GL_DEPTH_BIAS,          // RE_DEPTH_SCALE
+		GL11.GL_RED_BIAS,            // RE_RED_BIAS
+		GL11.GL_GREEN_BIAS,          // RE_GREEN_BIAS
+		GL11.GL_BLUE_BIAS,           // RE_BLUE_BIAS
+		GL11.GL_ALPHA_BIAS,          // RE_ALPHA_BIAS
+		GL11.GL_DEPTH_BIAS           // RE_DEPTH_BIAS
+	};
+	protected static final int[] pixelMapToGL = {
+		GL11.GL_PIXEL_MAP_I_TO_I,    // RE_PIXEL_MAP_I_TO_I
+		GL11.GL_PIXEL_MAP_S_TO_S,    // RE_PIXEL_MAP_S_TO_S
+		GL11.GL_PIXEL_MAP_I_TO_R,    // RE_PIXEL_MAP_I_TO_R
+		GL11.GL_PIXEL_MAP_I_TO_G,    // RE_PIXEL_MAP_I_TO_G
+		GL11.GL_PIXEL_MAP_I_TO_B,    // RE_PIXEL_MAP_I_TO_B
+		GL11.GL_PIXEL_MAP_I_TO_A,    // RE_PIXEL_MAP_I_TO_A
+		GL11.GL_PIXEL_MAP_R_TO_R,    // RE_PIXEL_MAP_R_TO_R
+		GL11.GL_PIXEL_MAP_G_TO_G,    // RE_PIXEL_MAP_G_TO_G
+		GL11.GL_PIXEL_MAP_B_TO_B,    // RE_PIXEL_MAP_B_TO_B
+		GL11.GL_PIXEL_MAP_A_TO_A     // RE_PIXEL_MAP_A_TO_A
 	};
 
 	public static IRenderingEngine newInstance() {
@@ -1047,34 +1088,34 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
-		GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureFormatToGL[internalFormat], width, height, 0, getDirectByteBuffer(compressedSize, buffer));
+		GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, getDirectByteBuffer(compressedSize, buffer));
 	}
 
 	@Override
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
 		if (buffer instanceof ByteBuffer || buffer == null) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
 		} else if (buffer instanceof IntBuffer) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
 		} else if (buffer instanceof ShortBuffer) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
 		} else if (buffer instanceof FloatBuffer) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
 		} else {
 			throw new IllegalArgumentException();
 		}
 	}
 
 	@Override
-	public void setTexSubImage(int level, int xOffset, int yOoffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {
+	public void setTexSubImage(int level, int xOffset, int yOffset, int width, int height, int format, int type, int textureSize, Buffer buffer) {
 		if (buffer instanceof ByteBuffer || buffer == null) {
-			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOoffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
 		} else if (buffer instanceof IntBuffer) {
-			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOoffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
 		} else if (buffer instanceof ShortBuffer) {
-			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOoffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
 		} else if (buffer instanceof FloatBuffer) {
-			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOoffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+			GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, level, xOffset, yOffset, width, height, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
 		} else {
 			throw new IllegalArgumentException();
 		}
@@ -1423,7 +1464,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height) {
-		ARBFramebufferObject.glRenderbufferStorage(ARBFramebufferObject.GL_RENDERBUFFER, textureFormatToGL[internalFormat], width, height);
+		ARBFramebufferObject.glRenderbufferStorage(ARBFramebufferObject.GL_RENDERBUFFER, textureInternalFormatToGL[internalFormat], width, height);
 	}
 
 	@Override
@@ -1461,5 +1502,89 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		// "first" and "count" have to be direct buffers
 		//GL14.glMultiDrawArrays(primitive, first, count);
 		EXTMultiDrawArrays.glMultiDrawArraysEXT(primitive, first, count);
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, int value) {
+		GL11.glPixelTransferi(pixelTransferToGL[parameter], value);
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, float value) {
+		GL11.glPixelTransferf(pixelTransferToGL[parameter], value);
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, boolean value) {
+		GL11.glPixelTransferi(pixelTransferToGL[parameter], value ? GL11.GL_TRUE : GL11.GL_FALSE);
+	}
+
+	@Override
+	public void setPixelMap(int map, int mapSize, Buffer buffer) {
+		if (buffer instanceof IntBuffer) {
+			GL11.glPixelMapu(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (IntBuffer) buffer));
+		} else if (buffer instanceof FloatBuffer) {
+			GL11.glPixelMap(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (FloatBuffer) buffer));
+		} else if (buffer instanceof ShortBuffer) {
+			GL11.glPixelMapu(pixelMapToGL[map], DirectBufferUtilities.getDirectBuffer(mapSize, (ShortBuffer) buffer));
+		} else {
+			throw new IllegalArgumentException();
+		}
+	}
+
+	@Override
+	public boolean canNativeClut() {
+		return false;
+	}
+
+	@Override
+	public void setTexImage1D(int level, int internalFormat, int width, int format, int type, int textureSize, Buffer buffer) {
+		if (buffer instanceof ByteBuffer || buffer == null) {
+			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+		} else if (buffer instanceof IntBuffer) {
+			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+		} else if (buffer instanceof ShortBuffer) {
+			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+		} else if (buffer instanceof FloatBuffer) {
+			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+		} else {
+			throw new IllegalArgumentException();
+		}
+	}
+
+	@Override
+	public void setTexSubImage1D(int level, int xOffset, int width, int format, int type, int textureSize, Buffer buffer) {
+		if (buffer instanceof ByteBuffer || buffer == null) {
+			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+		} else if (buffer instanceof IntBuffer) {
+			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+		} else if (buffer instanceof ShortBuffer) {
+			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+		} else if (buffer instanceof FloatBuffer) {
+			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+		} else {
+			throw new IllegalArgumentException();
+		}
+	}
+
+	@Override
+	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut) {
+		// Nothing to do here
+	}
+
+	@Override
+	public void setActiveTexture(int index) {
+		GL13.glActiveTexture(GL13.GL_TEXTURE0 + index);
+	}
+
+	@Override
+	public void bindTexture1D(int texture) {
+		// TODO Clean-up
+		GL11.glBindTexture(GL11.GL_TEXTURE_1D, texture);
+		GL11.glEnable(GL11.GL_TEXTURE_1D);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL12.GL_TEXTURE_BASE_LEVEL, 0);
+        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL12.GL_TEXTURE_MAX_LEVEL, 0);
 	}
 }

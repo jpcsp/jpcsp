@@ -19,7 +19,10 @@ package jpcsp.graphics.RE;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
+import jpcsp.Memory;
 import jpcsp.Settings;
 import jpcsp.graphics.Uniforms;
 import jpcsp.graphics.VertexInfo;
@@ -38,6 +41,8 @@ import jpcsp.util.Utilities;
  * to the proxy.
  */
 public class REShader extends BaseRenderingEngineFunction {
+	protected final static int ACTIVE_TEXTURE_NORMAL = 0;
+	protected final static int ACTIVE_TEXTURE_CLUT = 1;
 	protected final static float[] positionScale = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] normalScale   = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] textureScale  = new float[] { 1, 0x80, 0x8000, 1 };
@@ -59,6 +64,8 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected final static int spriteGeometryShaderOutputType = GU_TRIANGLE_STRIP;
 	protected boolean useGeometryShader = true;
 	protected boolean useUniformBufferObject = true;
+	protected int clutTextureId;
+	protected ByteBuffer clutBuffer;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -109,6 +116,13 @@ public class REShader extends BaseRenderingEngineFunction {
         shaderAttribTexture  = re.getAttribLocation(shaderProgram, "texture");
 
 		shaderContext.setColorDoubling(1);
+
+		clutTextureId = re.genTexture();
+		re.setActiveTexture(ACTIVE_TEXTURE_CLUT);
+		re.bindTexture1D(clutTextureId);
+		re.setActiveTexture(ACTIVE_TEXTURE_NORMAL);
+		shaderContext.setClut(ACTIVE_TEXTURE_CLUT);
+		clutBuffer = ByteBuffer.allocateDirect(4096 * 4);
 	}
 
 	protected void addDefine(StringBuilder defines, String name, String value) {
@@ -560,5 +574,36 @@ public class REShader extends BaseRenderingEngineFunction {
 		// update the uniform values after switching the active shader program.
 		shaderContext.setUniforms(re, program);
 		super.drawArrays(type, first, count);
+	}
+
+	@Override
+	public boolean canNativeClut() {
+		// The clut processing is implemented into the fragment shader
+		// and the clut values are passed as a sampler1D
+		//return true;
+		return false; // TODO currently deactivated
+	}
+
+	private void loadClut(int address, int numBlocks, int mode, int offset) {
+		int bytesPerEntry = sizeOfTextureType[mode];
+		int clutSize = 32 * numBlocks;
+		int numEntries = clutSize / bytesPerEntry;
+
+		Buffer memoryBuffer = Memory.getInstance().getBuffer(address, clutSize);
+		clutBuffer.clear();
+		Utilities.putBuffer(clutBuffer, memoryBuffer, ByteOrder.LITTLE_ENDIAN, clutSize);
+
+		clutBuffer.rewind();
+		re.setTexImage1D(0, mode, numEntries, mode, mode, clutSize, clutBuffer);
+	}
+
+	@Override
+	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut) {
+		shaderContext.setClutShift(shift);
+		shaderContext.setClutMask(mask);
+		shaderContext.setClutOffset(offset);
+		shaderContext.setMipmapShareClut(mipmapShareClut);
+		loadClut(address, numBlocks, mode, offset);
+		super.setClut(address, numBlocks, mode, shift, mask, offset, mipmapShareClut);
 	}
 }

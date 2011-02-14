@@ -33,7 +33,14 @@ public interface IRenderingEngine {
 		2, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
 		2, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
 		2, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
-		4  // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+		4, // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+		0, // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        1, // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        2, // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        4, // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        0, // TPSM_PIXEL_STORAGE_MODE_DXT1
+        0, // TPSM_PIXEL_STORAGE_MODE_DXT3
+        0  // TPSM_PIXEL_STORAGE_MODE_DXT5
 	};
 
 	// Flags:
@@ -208,6 +215,34 @@ public interface IRenderingEngine {
 	public static final int RE_COLOR_ATTACHMENT6        = 9;
 	public static final int RE_COLOR_ATTACHMENT7        = 10;
 
+	// Pixel Transfer parameter
+	public static final int RE_MAP_COLOR           = 0;
+	public static final int RE_MAP_STENCIL         = 1;
+	public static final int RE_INDEX_SHIFT         = 2;
+	public static final int RE_INDEX_OFFSET        = 3;
+	public static final int RE_RED_SCALE           = 4;
+	public static final int RE_GREEN_SCALE         = 5;
+	public static final int RE_BLUE_SCALE          = 6;
+	public static final int RE_ALPHA_SCALE         = 7;
+	public static final int RE_DEPTH_SCALE         = 8;
+	public static final int RE_RED_BIAS            = 9;
+	public static final int RE_GREEN_BIAS          = 10;
+	public static final int RE_BLUE_BIAS           = 11;
+	public static final int RE_ALPHA_BIAS          = 12;
+	public static final int RE_DEPTH_BIAS          = 13;
+
+	// Pixel map
+	public static final int RE_PIXEL_MAP_I_TO_I    = 0;
+	public static final int RE_PIXEL_MAP_S_TO_S    = 1;
+	public static final int RE_PIXEL_MAP_I_TO_R    = 2;
+	public static final int RE_PIXEL_MAP_I_TO_G    = 3;
+	public static final int RE_PIXEL_MAP_I_TO_B    = 4;
+	public static final int RE_PIXEL_MAP_I_TO_A    = 5;
+	public static final int RE_PIXEL_MAP_R_TO_R    = 6;
+	public static final int RE_PIXEL_MAP_G_TO_G    = 7;
+	public static final int RE_PIXEL_MAP_B_TO_B    = 8;
+	public static final int RE_PIXEL_MAP_A_TO_A    = 9;
+
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
 	public void exit();
@@ -381,4 +416,14 @@ public interface IRenderingEngine {
 	public void deleteVertexArray(int id);
 	public boolean isVertexArrayAvailable();
 	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count);
+	public void setPixelTransfer(int parameter, int value);
+	public void setPixelTransfer(int parameter, float value);
+	public void setPixelTransfer(int parameter, boolean value);
+	public void setPixelMap(int map, int mapSize, Buffer buffer);
+	public boolean canNativeClut();
+	public void setTexImage1D(int level, int internalFormat, int width, int format, int type, int textureSize, Buffer buffer);
+	public void setTexSubImage1D(int level, int xOffset, int width, int format, int type, int textureSize, Buffer buffer);
+	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut);
+	public void setActiveTexture(int index);
+	public void bindTexture1D(int texture);
 }

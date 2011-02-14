@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import jpcsp.Settings;
 import jpcsp.graphics.Uniforms;
+import jpcsp.graphics.VideoEngine;
 
 /**
  * @author gid15
@@ -55,7 +56,11 @@ public class ShaderContextUBO extends ShaderContext {
 	private static final int OFFSET_VINFO_TRANSFORM2D = OFFSET_LIGHTING_ENABLE + 4;
 	private static final int OFFSET_CTEST_ENABLE      = OFFSET_VINFO_TRANSFORM2D + 4;
 	private static final int OFFSET_COLOR_ADDITION    = OFFSET_CTEST_ENABLE + 4;
-	private static final int OFFSET_NUMBER_BONES      = OFFSET_COLOR_ADDITION + 4;
+	private static final int OFFSET_CLUT_SHIFT        = OFFSET_COLOR_ADDITION + 4;
+	private static final int OFFSET_CLUT_MASK         = OFFSET_CLUT_SHIFT + 4;
+	private static final int OFFSET_CLUT_OFFSET       = OFFSET_CLUT_MASK + 4;
+	private static final int OFFSET_MIPMAP_SHARE_CLUT = OFFSET_CLUT_OFFSET + 4;
+	private static final int OFFSET_NUMBER_BONES      = OFFSET_MIPMAP_SHARE_CLUT + 4;
 	private static final int OFFSET_BONE_MATRIX       = OFFSET_NUMBER_BONES + 4;
 	private static final int OFFSET_END               = OFFSET_BONE_MATRIX + 8 * 4 * 4 * 4;
 	private static final int bufferSize = OFFSET_END - OFFSET_START;
@@ -97,6 +102,10 @@ public class ShaderContextUBO extends ShaderContext {
 
 	public static String getShaderUniformText() {
 		if (shaderUniformText == null) {
+			if ((OFFSET_BONE_MATRIX % 16) != 0) {
+				VideoEngine.log.error(String.format("ShaderContextUBO: bone matrix has to be 16bytes-aligned (offset=%d)", OFFSET_BONE_MATRIX));
+			}
+
 			StringBuilder s = new StringBuilder();
 			ArrayList<ShaderUniformInfo> shaderUniformInfos = new ArrayList<ShaderUniformInfo>();
 
@@ -125,6 +134,10 @@ public class ShaderContextUBO extends ShaderContext {
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.vinfoTransform2D, "bool",  OFFSET_VINFO_TRANSFORM2D));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.ctestEnable,      "bool",  OFFSET_CTEST_ENABLE));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.lightMode,        "bool",  OFFSET_COLOR_ADDITION));
+			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutShift,        "int",   OFFSET_CLUT_SHIFT));
+			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutMask,         "int",   OFFSET_CLUT_MASK));
+			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutOffset,       "int",   OFFSET_CLUT_OFFSET));
+			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.mipmapShareClut,  "bool",  OFFSET_MIPMAP_SHARE_CLUT));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.numberBones,      "int",   OFFSET_NUMBER_BONES));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.boneMatrix,       "mat4",  OFFSET_BONE_MATRIX, 8));
 
@@ -175,6 +188,7 @@ public class ShaderContextUBO extends ShaderContext {
 			startUpdate = OFFSET_END;
 			endUpdate = OFFSET_START;
 		}
+		re.setUniform(Uniforms.clut.getId(shaderProgram), getClut());
 	}
 
 	protected void prepareCopy(int offset, int length) {
@@ -213,6 +227,10 @@ public class ShaderContextUBO extends ShaderContext {
 		for (int i = start; i < end; i++) {
 			data.putFloat(values[i]);
 		}
+	}
+
+	protected void copy(boolean value, int offset) {
+		copy(value ? 1 : 0, offset);
 	}
 
 	@Override
@@ -432,6 +450,38 @@ public class ShaderContextUBO extends ShaderContext {
 		if (weightScale != getWeightScale()) {
 			copy(weightScale, OFFSET_WEIGHT_SCALE);
 			super.setWeightScale(weightScale);
+		}
+	}
+
+	@Override
+	public void setClutShift(int clutShift) {
+		if (clutShift != getClutShift()) {
+			copy(clutShift, OFFSET_CLUT_SHIFT);
+			super.setClutShift(clutShift);
+		}
+	}
+
+	@Override
+	public void setClutMask(int clutMask) {
+		if (clutMask != getClutMask()) {
+			copy(clutMask, OFFSET_CLUT_MASK);
+			super.setClutMask(clutMask);
+		}
+	}
+
+	@Override
+	public void setClutOffset(int clutOffset) {
+		if (clutOffset != getClutOffset()) {
+			copy(clutOffset, OFFSET_CLUT_OFFSET);
+			super.setClutOffset(clutOffset);
+		}
+	}
+
+	@Override
+	public void setMipmapShareClut(boolean mipmapShareClut) {
+		if (mipmapShareClut != isMipmapShareClut()) {
+			copy(mipmapShareClut, OFFSET_MIPMAP_SHARE_CLUT);
+			super.setMipmapShareClut(mipmapShareClut);
 		}
 	}
 }

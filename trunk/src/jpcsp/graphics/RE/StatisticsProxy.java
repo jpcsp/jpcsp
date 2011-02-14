@@ -209,6 +209,18 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("genVertexArray", 169);
 		addStatistic("isVertexArrayAvailable", 170);
 		addStatistic("multiDrawArrays", 171);
+		addStatistic("multMatrix", 172);
+		addStatistic("setMatrix", 173);
+		addStatistic("setMatrixMode", 174);
+		addStatistic("setPixelTransfer", 175);
+		addStatistic("setPixelTransfer", 176);
+		addStatistic("setPixelTransfer", 177);
+		addStatistic("setPixelMap", 178);
+		addStatistic("canNativeClut", 179);
+		addStatistic("setTexImage1D", 180);
+		addStatistic("setTexSubImage1D", 181);
+		addStatistic("setClut", 182);
+		addStatistic("setActiveTexture", 183);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1627,19 +1639,98 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void multMatrix(float[] values) {
-		// TODO Auto-generated method stub
+		DurationStatistics statistic = statistics[172];
+		statistic.start();
 		super.multMatrix(values);
+		statistic.end();
 	}
 
 	@Override
 	public void setMatrix(float[] values) {
-		// TODO Auto-generated method stub
+		DurationStatistics statistic = statistics[173];
+		statistic.start();
 		super.setMatrix(values);
+		statistic.end();
 	}
 
 	@Override
 	public void setMatrixMode(int type) {
-		// TODO Auto-generated method stub
+		DurationStatistics statistic = statistics[174];
+		statistic.start();
 		super.setMatrixMode(type);
+		statistic.end();
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, float value) {
+		DurationStatistics statistic = statistics[175];
+		statistic.start();
+		super.setPixelTransfer(parameter, value);
+		statistic.end();
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, int value) {
+		DurationStatistics statistic = statistics[176];
+		statistic.start();
+		super.setPixelTransfer(parameter, value);
+		statistic.end();
+	}
+
+	@Override
+	public void setPixelTransfer(int parameter, boolean value) {
+		DurationStatistics statistic = statistics[177];
+		statistic.start();
+		super.setPixelTransfer(parameter, value);
+		statistic.end();
+	}
+
+	@Override
+	public void setPixelMap(int map, int mapSize, Buffer buffer) {
+		DurationStatistics statistic = statistics[178];
+		statistic.start();
+		super.setPixelMap(map, mapSize, buffer);
+		statistic.end();
+	}
+
+	@Override
+	public boolean canNativeClut() {
+		DurationStatistics statistic = statistics[179];
+		statistic.start();
+		boolean value = super.canNativeClut();
+		statistic.end();
+		return value;
+	}
+
+	@Override
+	public void setTexImage1D(int level, int internalFormat, int width, int format, int type, int textureSize, Buffer buffer) {
+		DurationStatistics statistic = statistics[180];
+		statistic.start();
+		super.setTexImage1D(level, internalFormat, width, format, type, textureSize, buffer);
+		statistic.end();
+	}
+
+	@Override
+	public void setTexSubImage1D(int level, int xOffset, int width, int format, int type, int textureSize, Buffer buffer) {
+		DurationStatistics statistic = statistics[181];
+		statistic.start();
+		super.setTexSubImage1D(level, xOffset, width, format, type, textureSize, buffer);
+		statistic.end();
+	}
+
+	@Override
+	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut) {
+		DurationStatistics statistic = statistics[182];
+		statistic.start();
+		super.setClut(address, numBlocks, mode, shift, mask, offset, mipmapShareClut);
+		statistic.end();
+	}
+
+	@Override
+	public void setActiveTexture(int index) {
+		DurationStatistics statistic = statistics[183];
+		statistic.start();
+		super.setActiveTexture(index);
+		statistic.end();
 	}
 }
