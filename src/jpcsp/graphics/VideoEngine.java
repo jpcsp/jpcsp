@@ -5353,6 +5353,7 @@ public class VideoEngine {
 			dest.c[0] += f * src.c[0];
 			dest.c[1] += f * src.c[1];
 			dest.c[2] += f * src.c[2];
+			dest.c[3] += f * src.c[3];
 		}
 		if(useNormal) {
 			dest.n[0] += f * src.n[0];
