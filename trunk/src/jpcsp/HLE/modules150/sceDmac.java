@@ -23,6 +23,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.graphics.VideoEngine;
 
 import org.apache.log4j.Logger;
 
@@ -63,6 +64,11 @@ public class sceDmac implements HLEModule {
 
         if (log.isDebugEnabled()) {
         	log.debug(String.format("sceDmacMemcpy dest=0x%08X, source=0x%08X, size=0x%08X", dest, source, size));
+        }
+
+        // If copying to the frame buffer, do not cache the texture
+        if (Modules.sceDisplayModule.isFbAddress(dest)) {
+        	VideoEngine.getInstance().addVideoTexture(dest, dest + size);
         }
 
         mem.memcpy(dest, source, size);
