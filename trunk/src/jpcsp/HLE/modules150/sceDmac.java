@@ -66,8 +66,8 @@ public class sceDmac implements HLEModule {
         	log.debug(String.format("sceDmacMemcpy dest=0x%08X, source=0x%08X, size=0x%08X", dest, source, size));
         }
 
-        // If copying to the frame buffer, do not cache the texture
-        if (Modules.sceDisplayModule.isFbAddress(dest)) {
+        // If copying to the VRAM or the frame buffer, do not cache the texture
+        if (VideoEngine.getInstance().isVRAM(dest) || Modules.sceDisplayModule.isFbAddress(dest)) {
         	VideoEngine.getInstance().addVideoTexture(dest, dest + size);
         }
 
