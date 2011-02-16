@@ -5598,7 +5598,7 @@ public class VideoEngine {
         return (vinfo.ptr_vertex >= currentList.list_addr && vinfo.ptr_vertex < currentList.getStallAddr());
     }
 
-    private boolean isVRAM(int addr) {
+    public boolean isVRAM(int addr) {
         addr &= Memory.addressMask;
 
         return addr >= MemoryMap.START_VRAM && addr <= MemoryMap.END_VRAM;
