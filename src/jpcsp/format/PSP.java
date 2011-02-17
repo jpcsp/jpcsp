@@ -16,11 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.format;
 
-import jpcsp.util.Utilities;
-import jpcsp.crypto.CryptoEngine;
-
 import java.io.IOException;
+import java.io.File;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+
+import jpcsp.connector.Connector;
+import jpcsp.crypto.CryptoEngine;
+import jpcsp.util.Utilities;
 
 /**
  *
@@ -149,6 +152,18 @@ public class PSP {
         int retsize = crypto.DecryptPRX1(inBuf, outBuf, inSize, fileTag);
         if(retsize <= 0) {
             crypto.DecryptPRX2(inBuf, outBuf, inSize, fileTag);
+        }
+
+        if(CryptoEngine.getExtractEbootStatus()) {
+            try {
+                String ebootPath = Connector.baseDirectory + "EBOOT\\";
+                new File(ebootPath).mkdirs();
+                RandomAccessFile raf = new RandomAccessFile(ebootPath + "EBOOT.BIN", "rw");
+                raf.write(outBuf);
+                raf.close();
+            } catch (Exception e) {
+                // Ignore.
+            }
         }
 
         return ByteBuffer.wrap(outBuf);

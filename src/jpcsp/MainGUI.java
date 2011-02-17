@@ -77,6 +77,7 @@ import jpcsp.HLE.modules.sceFont;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.scePsmfPlayer;
+import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -1327,6 +1328,12 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
         SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
+
+        boolean extractEboot = Settings.getInstance().readBool("emu.extractEboot");
+        CryptoEngine.setExtractEbootStatus(extractEboot);
+
+        boolean cryptoSavedata = Settings.getInstance().readBool("emu.cryptoSavedata");
+        CryptoEngine.setSavedataCryptoStatus(cryptoSavedata);
     }
 
     /** @return true if a patch file was found */
@@ -1397,6 +1404,16 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             String ignoreUnmappedImports = patchSettings.getProperty("emu.ignoreUnmappedImports");
             if (ignoreUnmappedImports != null) {
                 SyscallHandler.setEnableIgnoreUnmappedImports(Integer.parseInt(ignoreUnmappedImports) != 0);
+            }
+
+            String extractEboot = patchSettings.getProperty("emu.extractEboot");
+            if (extractEboot != null) {
+                CryptoEngine.setExtractEbootStatus(Integer.parseInt(extractEboot) != 0);
+            }
+
+            String cryptoSavedata = patchSettings.getProperty("emu.cryptoSavedata");
+            if (cryptoSavedata != null) {
+                CryptoEngine.setSavedataCryptoStatus(Integer.parseInt(cryptoSavedata) != 0);
             }
 
         } catch (IOException e) {

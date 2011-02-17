@@ -18,6 +18,7 @@ package jpcsp.HLE.modules500;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -42,27 +43,32 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
         }
     }
 
-    /** based on __sceSasSetVoice, but it may have different parameters/behaviour (unchecked) */
+    /** Identical to __sceSasSetVoice, but for raw PCM data (VAG/ADPCM is not allowed). */
     public void __sceSasSetVoicePCM(Processor processor) {
         CpuState cpu = processor.cpu;
         
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int vagAddr = cpu.gpr[6];
+        int pcmAddr = cpu.gpr[6];
         int size = cpu.gpr[7];
-        int loopmode = cpu.gpr[8];
+        int loopsize = cpu.gpr[8];
 
-        log.warn("UNIMPLEMENTED __sceSasSetVoicePCM "
-            + String.format("sasCore=0x%08x voice=%d vagAddr=0x%08x size=0x%08x loopmode=%d",
-            sasCore, voice, vagAddr, size, loopmode));
+        if (log.isDebugEnabled()) {
+            log.debug("__sceSasSetVoicePCM: " + String.format("sasCore=0x%08x, voice=%d, pcmAddr=0x%08x, size=0x%08x, loopsize=0x%08x",
+                    sasCore, voice, pcmAddr, size, loopsize));
+        }
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
 
         if (size <= 0 || (size & 0xF) != 0) {
         	log.warn(String.format("__sceSasSetVoicePCM invalid size 0x%08X", size));
         	cpu.gpr[2] = SceKernelErrors.ERROR_SAS_INVALID_PARAMETER;
-        } else if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
-        	voices[voice].setVAG(vagAddr, size);
-            voices[voice].setLoopMode(loopmode);
-
+        } else if (isSasHandleGood(sasCore, "__sceSasSetVoicePCM", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoicePCM", cpu)) {
+            voices[voice].setSamples(decodeSamples(processor, pcmAddr, size));
+            voices[voice].setLoopMode(loopsize);
             cpu.gpr[2] = 0;
         }
     }

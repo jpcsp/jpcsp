@@ -110,7 +110,7 @@ public class AtracCodec {
     }
 
     public static String getBaseDirectory() {
-        return String.format("%s%s/Atrac/", Connector.baseDirectory, State.discId);
+        return String.format("%s%s\\Atrac\\", Connector.baseDirectory, State.discId);
     }
 
     protected String getCompleteFileName(String suffix) {
