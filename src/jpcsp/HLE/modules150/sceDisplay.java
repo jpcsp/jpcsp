@@ -557,7 +557,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 				statisticsCopyGeToMemory.start();
 			}
 
-			if (saveGEToTexture) {
+			if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
 				GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
 				geTexture.copyScreenToTexture(re);
 			} else {
@@ -607,7 +607,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 				statisticsCopyMemoryToGe.start();
 			}
 
-        	if (saveGEToTexture) {
+        	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
 				GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
 				geTexture.copyTextureToScreen(re);
         	} else {
@@ -1186,7 +1186,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("sceDisplay.paintGL - reloading the GE from memory 0x%08X", topaddrGe));
             	}
-            	if (saveGEToTexture) {
+            	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
             		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
             		geTexture.copyTextureToScreen(re);
             	} else {
@@ -1209,7 +1209,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             		log.debug(String.format("sceDisplay.paintGL - saving the GE to memory 0x%08X", topaddrGe));
             	}
 
-            	if (saveGEToTexture) {
+            	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
             		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
             		geTexture.copyScreenToTexture(re);
             	} else {

@@ -70,6 +70,10 @@ public class sceDmac implements HLEModule {
         if (VideoEngine.getInstance().isVRAM(dest) || Modules.sceDisplayModule.isFbAddress(dest)) {
         	VideoEngine.getInstance().addVideoTexture(dest, dest + size);
         }
+        // If copying from the VRAM, force the saving of the GE to memory
+        if (VideoEngine.getInstance().isVRAM(source) && Modules.sceDisplayModule.getSaveGEToTexture()) {
+        	VideoEngine.getInstance().addVideoTexture(source, source + size);
+        }
 
         mem.memcpy(dest, source, size);
 

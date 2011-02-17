@@ -377,6 +377,7 @@ public class scePsmfPlayer implements HLEModule {
             	pmfFileChannel = null;
             }
         }
+        VideoEngine.getInstance().resetVideoTextures();
 
         // Set to NONE.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_NONE;
@@ -451,6 +452,7 @@ public class scePsmfPlayer implements HLEModule {
             	pmfFileChannel = null;
             }
         }
+        VideoEngine.getInstance().resetVideoTextures();
 
         // Go back to INIT, because some applications recognize that another file can be
         // loaded after scePsmfPlayerReleasePsmf has been called.
@@ -541,6 +543,7 @@ public class scePsmfPlayer implements HLEModule {
             	pmfFileChannel = null;
             }
         }
+        VideoEngine.getInstance().resetVideoTextures();
 
         // Always switch to STANDBY, because this PSMF can still be resumed.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_STANDBY;
