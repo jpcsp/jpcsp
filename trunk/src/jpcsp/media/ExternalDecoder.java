@@ -421,12 +421,17 @@ public class ExternalDecoder {
 
 			// Check if the file data is really matching the data in memory
 			int checkLength = Math.min(length, MAGIC_HASH_LENGTH);
-			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, checkLength, 1);
-			for (int i = 0; i < checkLength; i++) {
-				if (memoryReader.readNext() != (fileData[i] & 0xFF)) {
-					// This is the wrong file...
-					return null;
-				}
+			boolean match;
+			if (checkData != null) {
+				// Check against checkData
+				match = cmp(fileData, checkData, checkLength);
+			} else {
+				// Check against memory data located at "address"
+				match = memcmp(fileData, address, checkLength);
+			}
+			if (!match) {
+				// This is the wrong file...
+				return null;
 			}
 
 			return fileData;
