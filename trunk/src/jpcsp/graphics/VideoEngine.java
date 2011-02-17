@@ -560,6 +560,9 @@ public class VideoEngine {
     		re.bindVertexArray(0);
     	}
 
+    	context.reTextureGenS.setEnabled(false);
+    	context.reTextureGenT.setEnabled(false);
+
     	if (useVertexCache) {
             if (primCount > VertexCache.cacheMaxSize) {
                 log.warn(String.format("VertexCache size (%d) too small to execute %d PRIM commands", VertexCache.cacheMaxSize, primCount));
@@ -1799,7 +1802,7 @@ public class VideoEngine {
                                 floatBuffer.put(normalizedNormal, 0, 3);
                             } else if (useTextureFromPosition) {
                                 floatBuffer.put(v.p, 0, 3);
-                            } else if (useTexture) {
+                            } else if (useTexture || vinfo.texture != 0) {
                                 floatBuffer.put(v.t);
                             }
                             if (useVertexColor) {
@@ -3034,6 +3037,13 @@ public class VideoEngine {
 
         if (old_light_pos != context.light_pos[lnum][component]) {
             lightingChanged = true;
+
+            // Environment mapping is using light positions
+            if (context.tex_map_mode == TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP) {
+            	if (context.tex_shade_u == lnum || context.tex_shade_v == lnum) {
+            		textureMatrixUpload.setChanged(true);
+            	}
+            }
         }
         if (isLogDebugEnabled) {
             log.debug(String.format("Light %d position (%f, %f, %f)", lnum, context.light_pos[lnum][0], context.light_pos[lnum][1], context.light_pos[lnum][2]));
@@ -3317,11 +3327,6 @@ public class VideoEngine {
     private void executeCommandTEXTURE_ENV_MAP_MATRIX() {
     	context.tex_shade_u = (normalArgument >> 0) & 0x3;
     	context.tex_shade_v = (normalArgument >> 8) & 0x3;
-
-        for (int i = 0; i < 3; i++) {
-        	context.tex_envmap_matrix[i + 0] = context.light_pos[context.tex_shade_u][i];
-        	context.tex_envmap_matrix[i + 4] = context.light_pos[context.tex_shade_v][i];
-        }
 
         textureMatrixUpload.setChanged(true);
         if (isLogDebugEnabled) {
@@ -5029,6 +5034,8 @@ public class VideoEngine {
         if (textureMatrixUpload.isChanged()) {
             if (context.transform_mode != VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
             	re.setTextureMapMode(TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV, TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES);
+            	context.reTextureGenS.setEnabled(false);
+            	context.reTextureGenT.setEnabled(false);
 
             	float[] textureMatrix = new float[] {
             			1.f / context.texture_width[0], 0, 0, 0,
@@ -5092,6 +5099,10 @@ public class VideoEngine {
                     	re.setTextureEnvironmentMapping(context.tex_shade_u, context.tex_shade_v);
                     	context.reTextureGenS.setEnabled(true);
                     	context.reTextureGenT.setEnabled(true);
+                        for (int i = 0; i < 3; i++) {
+                        	context.tex_envmap_matrix[i + 0] = context.light_pos[context.tex_shade_u][i];
+                        	context.tex_envmap_matrix[i + 4] = context.light_pos[context.tex_shade_v][i];
+                        }
                     	float[] textureMatrix = context.tex_envmap_matrix;
                     	if (textureFlipped) {
                     		// Map the (U,V) from ([0..1],[0..1]) to ([0..1],[1..0])
@@ -5218,14 +5229,6 @@ public class VideoEngine {
             vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
         } else {
             vinfo.ptr_index += numberOfVertex * vinfo.index;
-        }
-
-        switch (context.tex_map_mode) {
-            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-            	context.reTextureGenS.setEnabled(false);
-            	context.reTextureGenT.setEnabled(false);
-                break;
-            }
         }
     }
 
