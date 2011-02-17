@@ -110,7 +110,8 @@ public class HLEModuleManager {
         sceNpAuth(Modules.sceNpAuthModule),
         sceNpService(Modules.sceNpServiceModule),
         scePspNpDrm_user(Modules.scePspNpDrm_userModule),
-        sceVaudio(Modules.sceVaudioModule);
+        sceVaudio(Modules.sceVaudioModule),
+        sceMp4(Modules.sceMp4Module);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

@@ -272,8 +272,10 @@ public class Loader {
         if (psp.isValid()) {
             module.fileFormat |= FORMAT_PSP;
             Emulator.log.warn("Encrypted file detected! (~PSP)");
-            Emulator.log.info("Calling crypto engine for PRX.");
-            LoadELF(psp.decrypt(f), module, baseAddress);
+            if(!loadedFirstModule) {
+                Emulator.log.info("Calling crypto engine for PRX.");
+                LoadELF(psp.decrypt(f), module, baseAddress);
+            }
             return true;
         }
 		// Not a valid PSP
@@ -730,7 +732,7 @@ public class Loader {
                     if (A == 0) {
                         result = S - GP_ADDR;
                     } else {
-                        result = S + GP_OFFSET + (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) - GP_ADDR;
+                        result = S + GP_OFFSET + (((A & 0x00008000) != 0) ? (((A & 0x00003FFF) + 0x4000) | 0xFFFF0000) : A) - GP_ADDR;
                     }
                     if ((result > 32768) || (result < -32768)) {
                         Memory.log.warn("Relocation overflow (R_MIPS_GPREL16)");

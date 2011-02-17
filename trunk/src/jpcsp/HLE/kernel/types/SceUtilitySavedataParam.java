@@ -25,19 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jpcsp.Memory;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.HLE.Modules;
+import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSF;
 import jpcsp.util.Utilities;
-
-/*
- * TODO list:
- * 1. Check writePsf:
- *   -> sfoParam.parentalLevel & 0x3ff ? FF1 -> 1027 -> 3.
- *   -> Need to add SAVEDATA_FILE_LIST, SAVEDATA_PARAMS and SAVEDATA_DIRECTORY?
- *   -> Delete original file, size "map" cannot resize it smaller.
- */
 
 public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public final static String savedataPath     = "ms0:/PSP/SAVEDATA/";
@@ -109,7 +106,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public int msFreeAddr;      // Address of a buffer to hold MemoryStick free size data (used in MODE_SIZES only).
 	public int msDataAddr;      // Address of a buffer to hold MemoryStick size data (used in MODE_SIZES only).
 	public int utilityDataAddr; // Address of a buffer to hold utility size data (used in MODE_SIZES only).
-    public String key;		    // Encrypt/decrypt key for save with firmware >= 2.00.
+    public byte[] key = new byte[0x10];                   // Encrypt/decrypt key for saves with firmware >= 2.00.
     public int secureVersion;   // 0 - Pre 2.00 (no encrypted files) / 1 - Post 2.00 (encrypted files are now used).
     public int multiStatus;     // After 2.00, several modes can be triggered at the same time using this for sync.
         public final static int MULTI_STATUS_SINGLE = 0;  // Save data is all generated in one call.
@@ -262,7 +259,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		msFreeAddr = read32();
         msDataAddr = read32();
         utilityDataAddr = read32();
-		key = readStringNZ(16);
+        read8Array(key);
 		secureVersion = read32();
         multiStatus = read32();
 		idListAddr = read32();
@@ -303,7 +300,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		write32(msFreeAddr);
         write32(msDataAddr);
         write32(utilityDataAddr);
-		writeStringNZ(16, key);
+		write8Array(key);
 		write32(secureVersion);
         write32(multiStatus);
 		write32(idListAddr);
@@ -372,19 +369,31 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
     public void singleRead(Memory mem) throws IOException {
         String path = getBasePath();
-        dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+        if (CryptoEngine.getSavedataCryptoStatus()) {
+            dataSize = loadEncryptedFile(mem, path, fileName, dataBuf, dataBufSize, key, secureVersion);
+        } else {
+            dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+        }
     }
 
     public void singleWrite(Memory mem) throws IOException {
         String path = getBasePath();
         Modules.IoFileMgrForUserModule.mkdirs(path);
-        writeFile(mem, path, fileName, dataBuf, dataSize);
+        if (CryptoEngine.getSavedataCryptoStatus()) {
+            writeEncryptedFile(mem, path, fileName, dataBuf, dataSize, key, secureVersion);
+        } else {
+            writeFile(mem, path, fileName, dataBuf, dataSize);
+        }
     }
 
     public void load(Memory mem) throws IOException {
 		String path = getBasePath();
 
-		dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+        if (CryptoEngine.getSavedataCryptoStatus()) {
+            dataSize = loadEncryptedFile(mem, path, fileName, dataBuf, dataBufSize, key, secureVersion);
+        } else {
+            dataSize = loadFile(mem, path, fileName, dataBuf, dataBufSize);
+        }
         safeLoad(mem, icon0FileName, icon0FileData);
         safeLoad(mem, icon1FileName, icon1FileData);
         safeLoad(mem, pic1FileName, pic1FileData);
@@ -407,12 +416,20 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		String path = getBasePath();
 
 		Modules.IoFileMgrForUserModule.mkdirs(path);
-		writeFile(mem, path, fileName,      dataBuf,           dataSize);
+        if (CryptoEngine.getSavedataCryptoStatus()) {
+            writeEncryptedFile(mem, path, fileName, dataBuf, dataSize, key, secureVersion);
+        } else {
+            writeFile(mem, path, fileName, dataBuf, dataSize);
+        }
 		writeFile(mem, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
 		writeFile(mem, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
 		writeFile(mem, path, pic1FileName,  pic1FileData.buf,  pic1FileData.size);
 		writeFile(mem, path, snd0FileName,  snd0FileData.buf,  snd0FileData.size);
-		writePsf(mem, path, paramSfoFileName, sfoParam);
+        if (CryptoEngine.getSavedataCryptoStatus()) {
+            writeEncryptedPsf(mem, path, paramSfoFileName, sfoParam, fileName, dataSize, secureVersion);
+        } else {
+            writePsf(mem, path, paramSfoFileName, sfoParam);
+        }
 	}
 
     private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
@@ -434,6 +451,55 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		fileInput.close();
 
 		return fileSize;
+	}
+
+    private void writeEncryptedFile(Memory mem, String path, String name, int address, int length, byte[] key, int mode) throws IOException {
+		if (name == null || name.length() <= 0 || address == 0) {
+			return;
+		}
+
+		SeekableRandomFile fileOutput = getDataOutput(path, name);
+        CryptoEngine crypto = new CryptoEngine();
+		if (fileOutput == null) {
+			return;
+		}
+
+        byte[] inBuf = new byte[length];
+
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, 1);
+		for(int i = 0; i < length; i++) {
+            inBuf[i] = (byte) memoryReader.readNext();
+        }
+
+        byte[] outBuf = crypto.EncryptSavedata(inBuf, length, key, mode);
+
+        fileOutput.write(outBuf);
+		fileOutput.close();
+	}
+
+    private int loadEncryptedFile(Memory mem, String path, String name, int address, int maxLength, byte[] key, int mode) throws IOException {
+		if (name == null || name.length() <= 0 || address == 0 || maxLength <= 0) {
+			return 0;
+		}
+
+		SeekableDataInput fileInput = getDataInput(path, name);
+        CryptoEngine crypto = new CryptoEngine();
+		if (fileInput == null) {
+			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+		}
+
+		int fileSize = (int) fileInput.length();        
+        byte[] inBuf = new byte[fileSize];
+        fileInput.readFully(inBuf);
+
+        byte[] outBuf = crypto.DecryptSavedata(inBuf, fileSize, key, mode);
+
+        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, 1);
+		for(int i = 0; i < outBuf.length; i++) {
+            memoryWriter.writeNext(outBuf[i]);
+        }
+
+		return outBuf.length;
 	}
 
 	private void writeFile(Memory mem, String path, String name, int address, int length) throws IOException {
@@ -480,6 +546,27 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
 
         psf.write(fileOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
+	}
+
+    private void writeEncryptedPsf(Memory mem, String path, String psfName, PspUtilitySavedataSFOParam sfoParam, String dataName, int dataLength, int mode) throws IOException {
+        SeekableRandomFile psfOutput = getDataOutput(path, psfName);
+        SeekableRandomFile dataOutput = getDataOutput(path, dataName);
+		if ((psfOutput == null) || (dataOutput == null)) {
+			return;
+		}
+
+        CryptoEngine crypto = new CryptoEngine();
+        byte[] dataBuffer = new byte[dataLength];
+        dataOutput.readFully(dataBuffer);
+
+		PSF psf = new PSF();
+        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
+        psf.put("TITLE", sfoParam.title, 128);
+        psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
+        psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
+        psf.put("SAVEDATA_PARAMS", crypto.UpdateSavedataHashes(dataBuffer, dataLength, mode));
+
+        psf.write(psfOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
 	}
 
 	public boolean test(Memory mem) throws IOException {

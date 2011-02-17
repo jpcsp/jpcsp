@@ -41,6 +41,7 @@ import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.HLE.modules.sceHprm;
 import jpcsp.HLE.modules.sceImpose;
 import jpcsp.HLE.modules.sceMp3;
+import jpcsp.HLE.modules.sceMp4;
 import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.modules.sceNet;
 import jpcsp.HLE.modules.sceNetAdhoc;
@@ -113,6 +114,7 @@ public class Modules {
     public static sceNpService sceNpServiceModule = new sceNpService();
     public static scePspNpDrm_user scePspNpDrm_userModule = new scePspNpDrm_user();
     public static sceVaudio sceVaudioModule = new sceVaudio();
+    public static sceMp4 sceMp4Module = new sceMp4();
 
     public static Logger log = Logger.getLogger("hle");
 
