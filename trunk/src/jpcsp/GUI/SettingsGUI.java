@@ -91,6 +91,12 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.disableubo");
         disableUBOCheck.setSelected(enabled);
 
+        enabled = Settings.getInstance().readBool("emu.enablevao");
+        enableVAOCheck.setSelected(enabled);
+
+        enabled = Settings.getInstance().readBool("emu.enablegetexture");
+        enableGETextureCheck.setSelected(enabled);
+
         enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
         onlyGEGraphicsCheck.setSelected(enabled);
 
@@ -227,6 +233,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         shadersCheck = new javax.swing.JCheckBox();
         geometryShaderCheck = new javax.swing.JCheckBox();
         disableUBOCheck = new javax.swing.JCheckBox();
+        enableVAOCheck = new javax.swing.JCheckBox();
+        enableGETextureCheck = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -501,6 +509,10 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         disableUBOCheck.setText(Resource.get("disableubo"));
 
+        enableVAOCheck.setText(Resource.get("enablevao"));
+
+        enableGETextureCheck.setText(Resource.get("enablegetexture"));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -512,7 +524,9 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(useVertexCache)
                     .addComponent(shadersCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(geometryShaderCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(disableUBOCheck))
+                    .addComponent(disableUBOCheck)
+                    .addComponent(enableVAOCheck)
+                    .addComponent(enableGETextureCheck))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -529,6 +543,10 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(geometryShaderCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(disableUBOCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(enableVAOCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(enableGETextureCheck)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -546,7 +564,7 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(177, Short.MAX_VALUE))
+                .addContainerGap(131, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("video"), VideoPanel);
@@ -867,6 +885,12 @@ public void RefreshWindow() {
 	
 	enabled = Settings.getInstance().readBool("emu.disableubo");
 	disableUBOCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.enablevao");
+    enableVAOCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.enablegetexture");
+    enableGETextureCheck.setSelected(enabled);
 	
 	enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
 	onlyGEGraphicsCheck.setSelected(enabled);
@@ -940,6 +964,8 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeString("emu.sysparam.nickname", nicknameTextField.getText());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.disableubo", disableUBOCheck.isSelected());
+   Settings.getInstance().writeBool("emu.enablevao", enableVAOCheck.isSelected());
+   Settings.getInstance().writeBool("emu.enablegetexture", enableGETextureCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
    Settings.getInstance().writeBool("emu.useFlashFonts",useFlashFonts.isSelected());
@@ -1012,6 +1038,8 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableUBOCheck;
     private javax.swing.JCheckBox disableVBOCheck;
+    private javax.swing.JCheckBox enableGETextureCheck;
+    private javax.swing.JCheckBox enableVAOCheck;
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox filelogCheck;
     private javax.swing.JPanel generalPanel;
