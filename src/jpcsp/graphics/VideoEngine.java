@@ -1409,7 +1409,8 @@ public class VideoEngine {
     	bufferCount.clear();
     	int currentPtrVertex = vinfo.ptr_vertex + vinfo.vertexSize * currentNumberOfVertex;
 
-    	while (bufferFirst.remaining() > 0) {
+    	// Leave at least one entry free to put the last item
+    	while (bufferFirst.remaining() > 1) {
     		int instruction = mem.read32(pc);
     		pc += 4;
     		int cmd = command(instruction);
