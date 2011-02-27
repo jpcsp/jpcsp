@@ -33,7 +33,10 @@ public class SoftwareSynthesizer {
 			// Currently we build the samples only based on the pitch.
 			// ADSR has still to be added.
 			sampleSource = new SampleSourceVAG(voice.getVAGAddress(), voice.getVAGSize(), voice.getLoopMode() != sceSasCore.PSP_SAS_LOOP_MODE_OFF);
-			sampleSource = new SampleSourceWithPitch(sampleSource, voice.getPitch());
+			if (voice.getPitch() != sceSasCore.PSP_SAS_PITCH_BASE) {
+				// Modify the sample according to the pitch (only if not the default pitch)
+				sampleSource = new SampleSourceWithPitch(sampleSource, voice.getPitch());
+			}
 		}
 
 		return sampleSource;
