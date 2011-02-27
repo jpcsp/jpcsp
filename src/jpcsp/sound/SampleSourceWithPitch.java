@@ -41,9 +41,9 @@ public class SampleSourceWithPitch implements ISampleSource {
 	@Override
 	public short getNextSample() {
 		int nextSampleSourceIndex = getSampleSourceIndexFromSampleIndex(sampleIndex);
-		if (nextSampleSourceIndex > sampleSourceIndex) {
+		while (nextSampleSourceIndex > sampleSourceIndex) {
 			currentSample = sampleSource.getNextSample();
-			sampleSourceIndex = nextSampleSourceIndex;
+			sampleSourceIndex++;
 		}
 		sampleIndex++;
 
@@ -67,14 +67,21 @@ public class SampleSourceWithPitch implements ISampleSource {
 	public void setSampleIndex(int index) {
 		if (index != sampleIndex) {
 			sampleIndex = index;
-			sampleSource.setSampleIndex(getSampleSourceIndexFromSampleIndex(sampleIndex));
-			sampleSourceIndex = -1;
+			sampleSourceIndex = getSampleSourceIndexFromSampleIndex(sampleIndex);
+			sampleSource.setSampleIndex(sampleSourceIndex);
+			currentSample = sampleSource.getNextSample();
 		}
 	}
 
 	@Override
 	public int getSampleIndex() {
-		return getSampleIndexFromSampleSourceIndex(sampleSource.getSampleIndex());
+		int realSampleSourceIndex = sampleSource.getSampleIndex();
+		if (realSampleSourceIndex == sampleSourceIndex + 1) {
+			// The sampleSource is not looping, return our sampleIndex
+			return sampleIndex;
+		}
+		// The sampleSource is looping, compute the new sampleIndex
+		return getSampleIndexFromSampleSourceIndex(realSampleSourceIndex);
 	}
 
 	@Override
