@@ -197,4 +197,9 @@ public class SampleSourceVAG implements ISampleSource {
 	public int getSampleIndex() {
 		return currentSampleIndex;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("SampleSourceVAG[index=%d,VAG=%d[%d],loopStart=%d,loop at next=%b]", currentSampleIndex, currentVAGBlock, sampleIndex, loopStartVAGBlock, loopAtNextVAGBlock);
+	}
 }
