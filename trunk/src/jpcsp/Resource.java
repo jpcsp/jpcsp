@@ -42,9 +42,24 @@ public class Resource {
 	 * @param basename
 	 *            The basename of the resource bundle to add.
 	 */
-	public static void add(String basename) {
-		bundles = new LinkedList<ResourceBundle>();
-		bundles.addFirst(ResourceBundle.getBundle(basename));
+	private static void add(String basename) {
+		bundles.add(ResourceBundle.getBundle(basename));
+	}
+
+	/**
+	 * Sets the resource bundles related to a language.
+	 *
+	 * @param language
+	 *            The language (e.g. "en_EN") to be used.
+	 */
+	public static void setLanguage(String language) {
+		bundles.clear();
+
+		// Add language dependent resources
+		add("jpcsp.languages." + language);
+
+		// Add language independent resources
+		add("jpcsp.languages.common");
 	}
 
 	/**
@@ -105,9 +120,12 @@ public class Resource {
 
 		while (it.hasNext())
 		{
+			ResourceBundle bundle = it.next();
 			try
-			{ return it.next().getString(key); }
-			catch (MissingResourceException mrex) {
+			{
+				return bundle.getString(key);
+			} catch (MissingResourceException mrex) {
+				// Ignore exception, skip to the next resource bundle
             }
 		}
 
