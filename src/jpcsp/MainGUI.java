@@ -141,7 +141,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         emulator = new Emulator(this);
 
-        Resource.add("jpcsp.languages." + Settings.getInstance().readString("emu.language"));
+        Resource.setLanguage(Settings.getInstance().readString("emu.language"));
 
         /*next two lines are for overlay menus over joglcanvas*/
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
@@ -734,7 +734,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }// </editor-fold>//GEN-END:initComponents
 
     private void changeLanguage(String language) {
-        Resource.add("jpcsp.languages." + language);
+        Resource.setLanguage(language);
         Settings.getInstance().writeString("emu.language", language);
         initComponents();
     }
