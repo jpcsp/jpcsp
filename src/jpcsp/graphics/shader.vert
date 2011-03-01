@@ -6,13 +6,13 @@
 #if USE_UBO
 #   extension GL_ARB_uniform_buffer_object : enable
 #endif
-#if __VERSION__ >= 140
+#if __VERSION__ >= 130
 #   extension GL_ARB_compatibility : enable
 #endif
 
 // Use attributes instead of gl_Vertex, gl_Normal...: attributes support all the
 // data types used by the PSP (signed/unsigned bytes/shorts/floats).
-#if __VERSION__ >= 140
+#if __VERSION__ >= 130
 #   define ATTRIBUTE in
 #else
 #   define ATTRIBUTE attribute
@@ -177,22 +177,22 @@ void DecodePosition(inout vec3 V)
         {
         case 1: // GU_VERTEX_8BIT
             // V.z is unsigned 8 bit in 2D
-            if (V.z < 0) V.z += 0x100;
+            if (V.z < 0.0) V.z += 256.0;
             break;
         case 2: // GU_VERTEX_16BIT
             // V.z is unsigned 16 bit in 2D
-            if (V.z < 0) V.z += 0x10000;
+            if (V.z < 0.0) V.z += 65536.0;
             break;
         case 3: // GU_VERTEX_32BITF
-            if (V.z < 0)
+            if (V.z < 0.0)
             {
                 // Negative V.z are interpreted as 0 in 2D
-                V.z = 0;
+                V.z = 0.0;
             }
             else
             {
                 // 2D positions are always integer values
-                V.z = int(V.z);
+                V.z = float(int(V.z));
             }
         }
     }
@@ -215,11 +215,11 @@ void DecodeColor(inout vec4 C)
         int rBits = (packedBits      ) & 0x1F;
         int gBits = (packedBits >>  5) & 0x3F;
         int bBits = (packedBits >> 11) & 0x1F;
-        C.r = (rBits << 3) | (rBits >> 2);
-        C.g = (gBits << 2) | (gBits >> 4);
-        C.b = (bBits << 3) | (bBits >> 2);
-        C.a = 1;
-        C.rgb /= 255.0f;
+        C.r = float((rBits << 3) | (rBits >> 2));
+        C.g = float((gBits << 2) | (gBits >> 4));
+        C.b = float((bBits << 3) | (bBits >> 2));
+        C.a = 1.0;
+        C.rgb /= 255.0;
         break;
     }
     case 5: // GU_COLOR_5551
@@ -228,11 +228,11 @@ void DecodeColor(inout vec4 C)
         int rBits = (packedBits      ) & 0x1F;
         int gBits = (packedBits >>  5) & 0x1F;
         int bBits = (packedBits >> 10) & 0x1F;
-        C.r = (rBits << 3) | (rBits >> 2);
-        C.g = (gBits << 3) | (gBits >> 2);
-        C.b = (bBits << 3) | (bBits >> 2);
-        C.a = (packedBits >> 15) & 0x01;
-        C.rgb /= 255.0f;
+        C.r = float((rBits << 3) | (rBits >> 2));
+        C.g = float((gBits << 3) | (gBits >> 2));
+        C.b = float((bBits << 3) | (bBits >> 2));
+        C.a = float((packedBits >> 15) & 0x01);
+        C.rgb /= 255.0;
         break;
     }
     case 6: // GU_COLOR_4444
@@ -242,15 +242,15 @@ void DecodeColor(inout vec4 C)
         int gBits = (packedBits >>  4) & 0x0F;
         int bBits = (packedBits >>  8) & 0x0F;
         int aBits = (packedBits >> 12) & 0x0F;
-        C.r = (rBits << 4) | rBits;
-        C.g = (gBits << 4) | gBits;
-        C.b = (bBits << 4) | bBits;
-        C.a = (aBits << 4) | aBits;
-        C /= 255.0f;
+        C.r = float((rBits << 4) | rBits);
+        C.g = float((gBits << 4) | gBits);
+        C.b = float((bBits << 4) | bBits);
+        C.a = float((aBits << 4) | aBits);
+        C /= 255.0;
         break;
     }
     case 7: // GU_COLOR_8888
-        C /= 255.0f;
+        C /= 255.0;
         break;
     }
 
