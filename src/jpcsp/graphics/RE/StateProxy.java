@@ -61,7 +61,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int stencilOpZFail;
 	protected int stencilOpZPass;
 	protected int depthFunc;
-	protected int bindTexture;
+	protected int[] bindTexture;
 	protected int[] bindBuffer;
 	protected int useProgram;
 	protected int textureMapMode;
@@ -106,6 +106,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected boolean colorMaterialDiffuse;
 	protected boolean colorMaterialSpecular;
 	protected int bindVertexArray;
+	protected int activeTextureUnit;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -191,6 +192,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		materialSpecularColor = new float[4];
 		materialDiffuseColor = new float[4];
 		materialEmissiveColor = new float[4];
+		bindTexture = new int[2]; // assume max 2 active texture units
 	}
 
 	@Override
@@ -225,11 +227,14 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		stencilOpZFail = -1;
 		stencilOpZPass = -1;
 		depthFunc = -1;
-		bindTexture = -1;
+		for (int i = 0; i < bindTexture.length; i++) {
+			bindTexture[i] = -1;
+		}
 		currentTextureState = textureStates.get(0);
 		for (int i = 0; i < bindBuffer.length; i++) {
 			bindBuffer[i] = -1;
 		}
+		activeTextureUnit = 0;
 		frontFace = false;
 		useProgram = 0;
 		textureMapMode = -1;
@@ -615,9 +620,9 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void bindTexture(int texture) {
-		if (texture != bindTexture) {
+		if (texture != bindTexture[activeTextureUnit]) {
 			super.bindTexture(texture);
-			bindTexture = texture;
+			bindTexture[activeTextureUnit] = texture;
 			// Binding a new texture change the OpenGL texture wrap mode and min/mag filters
 			currentTextureState = textureStates.get(texture);
 			if (currentTextureState == null) {
@@ -659,9 +664,13 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void deleteTexture(int texture) {
 		textureStates.remove(texture);
 		// When deleting the current texture, the current binding is reset to 0
-		if (texture == bindTexture) {
-			bindTexture = 0;
-			currentTextureState = textureStates.get(bindTexture);
+		for (int i = 0; i < bindTexture.length; i++) {
+			if (texture == bindTexture[i]) {
+				bindTexture[i] = 0;
+				if (i == activeTextureUnit) {
+					currentTextureState = textureStates.get(bindTexture[activeTextureUnit]);
+				}
+			}
 		}
 		super.deleteTexture(texture);
 	}
@@ -1055,5 +1064,14 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			bindVertexArray = 0;
 		}
 		super.deleteVertexArray(id);
+	}
+
+	@Override
+	public void setActiveTexture(int index) {
+		if (index != activeTextureUnit) {
+			super.setActiveTexture(index);
+			activeTextureUnit = index;
+			currentTextureState = textureStates.get(bindTexture[activeTextureUnit]);
+		}
 	}
 }

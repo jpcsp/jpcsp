@@ -74,6 +74,7 @@ public class GETexture {
 		if (textureId == -1) {
 			textureId = re.genTexture();
 			re.bindTexture(textureId);
+			re.setTextureFormat(pixelFormat, false);
     		re.setTexImage(0, pixelFormat, getTexImageWidth(), getTexImageHeight(), pixelFormat, pixelFormat, 0, null);
             re.setTextureMipmapMinFilter(TFLT_NEAREST);
             re.setTextureMipmapMagFilter(TFLT_NEAREST);
@@ -85,6 +86,7 @@ public class GETexture {
             }
 		} else {
 			re.bindTexture(textureId);
+			re.setTextureFormat(pixelFormat, false);
 		}
 	}
 
@@ -213,6 +215,7 @@ public class GETexture {
 		Buffer memoryBuffer = Memory.getInstance().getBuffer(address, length);
     	prepareBuffer();
         re.bindTexture(textureId);
+		re.setTextureFormat(pixelFormat, false);
         re.setPixelStore(bufferWidth, sceDisplay.getPixelFormatBytes(pixelFormat));
         re.getTexImage(0, pixelFormat, pixelFormat, buffer);
 

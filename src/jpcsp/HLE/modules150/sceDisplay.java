@@ -563,6 +563,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 			} else {
 	        	// Set texFb as the current texture
 			    re.bindTexture(texFb);
+				re.setTextureFormat(pixelformatGe, false);
 
 			    // Copy screen to the current texture
 			    re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferwidthGe, widthGe), heightGe);
@@ -801,6 +802,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         int texGe = re.genTexture();
 
         re.bindTexture(texGe);
+		re.setTextureFormat(pixelformatGe, false);
         re.setTexImage(0,
             internalTextureFormat,
             bufferwidthGe, Utilities.makePow2(heightGe),
@@ -915,6 +917,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
         re.bindTexture(texFb);
+		re.setTextureFormat(pixelformat, false);
 
         IREBufferManager bufferManager = re.getBufferManager();
         ByteBuffer drawByteBuffer = bufferManager.getBuffer(drawBuffer);
@@ -977,6 +980,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         } else {
         	// Set texFb as the current texture
             re.bindTexture(texFb);
+			re.setTextureFormat(pixelformatFb, false);
 
             re.setPixelStore(bufferwidth, getPixelFormatBytes(pixelformat));
 
@@ -1133,6 +1137,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             texFb = re.genTexture();
 
             re.bindTexture(texFb);
+			re.setTextureFormat(pixelformatFb, false);
 
             //
             // The format of the frame (or GE) buffer is
@@ -1192,6 +1197,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             	} else {
 		            pixelsGe.clear();
 		            re.bindTexture(texFb);
+					re.setTextureFormat(pixelformatGe, false);
 		            re.setPixelStore(bufferwidthGe, pixelformatGe);
 		            int textureSize = bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe);
 					re.setTexSubImage(0,
@@ -1216,6 +1222,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 	                // Update VRAM only if GE actually drew something
 	                // Set texFb as the current texture
 	                re.bindTexture(texFb);
+	    			re.setTextureFormat(pixelformatGe, false);
 
 	                // Copy screen to the current texture
 	                re.copyTexSubImage(0, 0, 0, 0, 0, widthGe, heightGe);
@@ -1238,6 +1245,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         	} else {
 	            pixelsFb.clear();
 	            re.bindTexture(texFb);
+				re.setTextureFormat(pixelformatFb, false);
 	            re.setPixelStore(bufferwidthFb, pixelformatFb);
 	            int textureSize = bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
 	            re.setTexSubImage(0,

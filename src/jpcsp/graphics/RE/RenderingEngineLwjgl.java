@@ -265,26 +265,34 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
-        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
-        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
-        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
-        GL11.GL_RED,                           // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        GL30.GL_RED_INTEGER,                   // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        GL30.GL_RED_INTEGER,                   // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        GL30.GL_RED_INTEGER,                   // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        GL30.GL_RED_INTEGER,                   // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
-        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
+        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT5
+        GL11.GL_RGB,                           // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
+        GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
+        GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
+        GL11.GL_RGBA                           // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
 	};
 	protected static final int[] textureInternalFormatToGL = {
 		GL11.GL_RGB,                           // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
 		GL11.GL_RGBA,                          // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
-        1,                                     // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
-        1,                                     // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
-        1,                                     // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
-        1,                                     // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        GL30.GL_R8UI,                          // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        GL30.GL_R8UI,                          // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        GL30.GL_R16UI,                         // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        GL30.GL_R32UI,                         // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
-        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
+        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT5
+        GL11.GL_RGB,                           // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
+        GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
+        GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
+        GL11.GL_RGBA                           // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
 	};
 	protected static final int[] textureTypeToGL = {
         GL12.GL_UNSIGNED_SHORT_5_6_5_REV,      // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
@@ -297,7 +305,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         GL11.GL_UNSIGNED_INT,                  // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGB_S3TC_DXT1_EXT,  // TPSM_PIXEL_STORAGE_MODE_DXT1
         EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT3
-        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  // TPSM_PIXEL_STORAGE_MODE_DXT5
+        EXTTextureCompressionS3TC.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // TPSM_PIXEL_STORAGE_MODE_DXT5
+        GL12.GL_UNSIGNED_SHORT_5_6_5_REV,      // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
+        GL12.GL_UNSIGNED_SHORT_1_5_5_5_REV,    // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
+        GL12.GL_UNSIGNED_SHORT_4_4_4_4_REV,    // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
+        GL11.GL_UNSIGNED_BYTE                  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
 	};
 	protected static final int[] stencilOpToGL = {
 		GL11.GL_KEEP,                // SOP_KEEP_STENCIL_VALUE
@@ -1534,42 +1546,8 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public boolean canNativeClut() {
-		return false;
-	}
-
-	@Override
-	public void setTexImage1D(int level, int internalFormat, int width, int format, int type, int textureSize, Buffer buffer) {
-		if (buffer instanceof ByteBuffer || buffer == null) {
-			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
-		} else if (buffer instanceof IntBuffer) {
-			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
-		} else if (buffer instanceof ShortBuffer) {
-			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
-		} else if (buffer instanceof FloatBuffer) {
-			GL11.glTexImage1D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
-		} else {
-			throw new IllegalArgumentException();
-		}
-	}
-
-	@Override
-	public void setTexSubImage1D(int level, int xOffset, int width, int format, int type, int textureSize, Buffer buffer) {
-		if (buffer instanceof ByteBuffer || buffer == null) {
-			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
-		} else if (buffer instanceof IntBuffer) {
-			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
-		} else if (buffer instanceof ShortBuffer) {
-			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
-		} else if (buffer instanceof FloatBuffer) {
-			GL11.glTexSubImage1D(GL11.GL_TEXTURE_2D, level, xOffset, width, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
-		} else {
-			throw new IllegalArgumentException();
-		}
-	}
-
-	@Override
-	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut) {
-		// Nothing to do here
+		// Requires at least OpenGL 3.0
+		return GLContext.getCapabilities().OpenGL30;
 	}
 
 	@Override
@@ -1578,13 +1556,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void bindTexture1D(int texture) {
-		// TODO Clean-up
-		GL11.glBindTexture(GL11.GL_TEXTURE_1D, texture);
-		GL11.glEnable(GL11.GL_TEXTURE_1D);
-        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
-        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL12.GL_TEXTURE_BASE_LEVEL, 0);
-        GL11.glTexParameteri(GL11.GL_TEXTURE_1D, GL12.GL_TEXTURE_MAX_LEVEL, 0);
+	public void setTextureFormat(int pixelFormat, boolean swizzle) {
+		// Nothing to do here
 	}
 }

@@ -92,4 +92,16 @@ public class GETextureManager {
 
 		return geTexture;
 	}
+
+	public GETexture getGEIndexedTexture(IRenderingEngine re, GETexture baseGETexture, int address, int bufferWidth, int width, int height, int pixelFormat) {
+		GETexture geTexture = checkGETexture(address, bufferWidth, width, height, pixelFormat);
+
+		if (geTexture == null) {
+			Long key = getKey(address, bufferWidth, width, height, pixelFormat);
+			geTexture = new GEIndexedTexture(baseGETexture, address, bufferWidth, width, height, pixelFormat);
+			geTextures.put(key, geTexture);
+		}
+
+		return geTexture;
+	}
 }

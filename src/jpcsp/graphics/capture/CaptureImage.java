@@ -66,6 +66,11 @@ public class CaptureImage {
 	}
 
     public void write() throws IOException {
+    	if (bufferStorage >= GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && bufferStorage <= GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
+    		// Writing of indexed images not supported
+    		return;
+    	}
+
     	String levelName = "";
     	if (level > 0) {
     		levelName = "_" + level;

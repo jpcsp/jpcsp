@@ -20,6 +20,7 @@ import java.nio.Buffer;
 import java.nio.IntBuffer;
 
 import jpcsp.graphics.Uniforms;
+import jpcsp.graphics.VideoEngine;
 
 /**
  * @author gid15
@@ -246,6 +247,7 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void drawArrays(int type, int first, int count) {
+		isLogDebugEnabled = log.isDebugEnabled();
 		if (isLogDebugEnabled) {
 			log.debug(String.format("drawArrays type=%d, first=%d, count=%d", type, first, count));
 		}
@@ -678,5 +680,21 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 			log.debug(String.format("multiDrawArrays primitive=%d, count=%d,%s", primitive, n, s.toString()));
 		}
 		super.multiDrawArrays(primitive, first, count);
+	}
+
+	@Override
+	public void setActiveTexture(int index) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setActiveTexture %d", index));
+		}
+		super.setActiveTexture(index);
+	}
+
+	@Override
+	public void setTextureFormat(int pixelFormat, boolean swizzle) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setTextureFormat pixelFormat=%d(%s), swizzle=%b", pixelFormat, VideoEngine.getPsmName(pixelFormat), swizzle));
+		}
+		super.setTextureFormat(pixelFormat, swizzle);
 	}
 }

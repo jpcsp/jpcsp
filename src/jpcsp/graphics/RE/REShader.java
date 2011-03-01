@@ -22,10 +22,15 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import jpcsp.Memory;
 import jpcsp.Settings;
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.Uniforms;
 import jpcsp.graphics.VertexInfo;
+import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.textures.Texture;
+import jpcsp.graphics.textures.TextureCache;
+import jpcsp.util.CpuDurationStatistics;
+import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
 /**
@@ -64,8 +69,10 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected final static int spriteGeometryShaderOutputType = GU_TRIANGLE_STRIP;
 	protected boolean useGeometryShader = true;
 	protected boolean useUniformBufferObject = true;
-	protected int clutTextureId;
+	protected boolean useNativeClut = true;
+	protected int clutTextureId = -1;
 	protected ByteBuffer clutBuffer;
+    protected DurationStatistics textureCacheLookupStatistics = new CpuDurationStatistics("Lookup in TextureCache for CLUTs");
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -90,6 +97,16 @@ public class REShader extends BaseRenderingEngineFunction {
 		if (useUniformBufferObject) {
 			log.info("Using Uniform Buffer Object (UBO)");
 		}
+
+        useNativeClut = Settings.getInstance().readBool("emu.enablenativeclut");
+        if (useNativeClut) {
+        	if (!super.canNativeClut()) {
+    			log.warn("Disabling Native Color Lookup Tables (CLUT)");
+        		useNativeClut = false;
+        	} else {
+    			log.info("Using Native Color Lookup Tables (CLUT)");
+        	}
+        }
 
 		loadShaders();
 
@@ -117,12 +134,12 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		shaderContext.setColorDoubling(1);
 
-		clutTextureId = re.genTexture();
-		re.setActiveTexture(ACTIVE_TEXTURE_CLUT);
-		re.bindTexture1D(clutTextureId);
-		re.setActiveTexture(ACTIVE_TEXTURE_NORMAL);
-		shaderContext.setClut(ACTIVE_TEXTURE_CLUT);
-		clutBuffer = ByteBuffer.allocateDirect(4096 * 4);
+		shaderContext.setTex(ACTIVE_TEXTURE_NORMAL);
+		if (useNativeClut) {
+			shaderContext.setClut(ACTIVE_TEXTURE_CLUT);
+			shaderContext.setUtex(ACTIVE_TEXTURE_NORMAL);
+			clutBuffer = ByteBuffer.allocateDirect(4096 * 4).order(ByteOrder.LITTLE_ENDIAN);
+		}
 	}
 
 	protected void addDefine(StringBuilder defines, String name, String value) {
@@ -158,6 +175,12 @@ public class REShader extends BaseRenderingEngineFunction {
 			// UBO requires at least shader version 1.40
 			shaderVersion = Math.max(140, shaderVersion);
 			addDefine(defines, "UBO_STRUCTURE", ShaderContextUBO.getShaderUniformText());
+		}
+		addDefine(defines, "USE_NATIVE_CLUT", useNativeClut);
+
+		if (useNativeClut) {
+			// Native clut requires at least shader version 1.30
+			shaderVersion = Math.max(130, shaderVersion);
 		}
 
 		if (shaderContext != null) {
@@ -299,6 +322,16 @@ public class REShader extends BaseRenderingEngineFunction {
 				shaderContext.setTexEnable(value);
 				break;
 		}
+	}
+
+	@Override
+	public void exit() {
+		if (DurationStatistics.collectStatistics) {
+			if (useNativeClut) {
+				log.info(textureCacheLookupStatistics);
+			}
+		}
+		super.exit();
 	}
 
 	@Override
@@ -579,31 +612,92 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public boolean canNativeClut() {
 		// The clut processing is implemented into the fragment shader
-		// and the clut values are passed as a sampler1D
-		//return true;
-		return false; // TODO currently deactivated
+		// and the clut values are passed as a sampler2D
+		return useNativeClut;
 	}
 
-	private void loadClut(int address, int numBlocks, int mode, int offset) {
-		int bytesPerEntry = sizeOfTextureType[mode];
-		int clutSize = 32 * numBlocks;
-		int numEntries = clutSize / bytesPerEntry;
+	private void loadClut() {
+		// E.g. mask==0xFF requires 256 entries
+		// also mask==0xF0 requires 256 entries
+		int numEntries = Integer.highestOneBit(context.tex_clut_mask) << 1;
+		int pixelFormat = context.tex_clut_mode;
+		int bytesPerEntry = sizeOfTextureType[pixelFormat];
 
-		Buffer memoryBuffer = Memory.getInstance().getBuffer(address, clutSize);
-		clutBuffer.clear();
-		Utilities.putBuffer(clutBuffer, memoryBuffer, ByteOrder.LITTLE_ENDIAN, clutSize);
+		shaderContext.setClutShift(context.tex_clut_shift);
+		shaderContext.setClutMask(context.tex_clut_mask);
+		shaderContext.setClutOffset(context.tex_clut_start);
+		shaderContext.setMipmapShareClut(context.mipmapShareClut);
 
-		clutBuffer.rewind();
-		re.setTexImage1D(0, mode, numEntries, mode, mode, clutSize, clutBuffer);
+		int[]   clut32 = (bytesPerEntry == 4 ? VideoEngine.getInstance().readClut32(0) : null);
+		short[] clut16 = (bytesPerEntry == 2 ? VideoEngine.getInstance().readClut16(0) : null);
+
+		Texture texture;
+		re.setActiveTexture(ACTIVE_TEXTURE_CLUT);
+		if (VideoEngine.useTextureCache) {
+			TextureCache textureCache = TextureCache.getInstance();
+
+			textureCacheLookupStatistics.start();
+			texture = textureCache.getTexture(context.tex_clut_addr, numEntries, numEntries, 1, pixelFormat, 0, 0, 0, 0, 0, 0, 0, false, clut16, clut32);
+			textureCacheLookupStatistics.end();
+
+			if (texture == null) {
+				texture = new Texture(textureCache, context.tex_clut_addr, numEntries, numEntries, 1, pixelFormat, 0, 0, 0, 0, 0, 0, 0, false, clut16, clut32);
+				textureCache.addTexture(re, texture);
+			}
+
+			texture.bindTexture(re);
+		} else {
+			texture = null;
+			if (clutTextureId == -1) {
+				clutTextureId = re.genTexture();
+			}
+
+			re.bindTexture(clutTextureId);
+		}
+
+		if (texture == null || !texture.isLoaded()) {
+			clutBuffer.clear();
+			if (clut32 != null) {
+				clutBuffer.asIntBuffer().put(clut32, 0, numEntries);
+			} else {
+				clutBuffer.asShortBuffer().put(clut16, 0, numEntries);
+			}
+
+	        re.setPixelStore(numEntries, bytesPerEntry);
+			re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
+			re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
+			re.setTextureMipmapMinLevel(0);
+			re.setTextureMipmapMaxLevel(0);
+			re.setTextureWrapMode(GeCommands.TWRAP_WRAP_MODE_CLAMP, GeCommands.TWRAP_WRAP_MODE_CLAMP);
+
+			// Load the CLUT as a Nx1 texture.
+			// (gid15) I did not manage to make this code work with 1D textures,
+			// probably because they are very seldom used and buggy.
+			// To use a 2D texture Nx1 is the safest way...
+			int clutSize = bytesPerEntry * numEntries;
+			re.setTexImage(0, pixelFormat, numEntries, 1, pixelFormat, pixelFormat, clutSize, clutBuffer);
+
+			if (texture != null) {
+				texture.setIsLoaded();
+			}
+		}
+		re.setActiveTexture(ACTIVE_TEXTURE_NORMAL);
 	}
 
 	@Override
-	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut) {
-		shaderContext.setClutShift(shift);
-		shaderContext.setClutMask(mask);
-		shaderContext.setClutOffset(offset);
-		shaderContext.setMipmapShareClut(mipmapShareClut);
-		loadClut(address, numBlocks, mode, offset);
-		super.setClut(address, numBlocks, mode, shift, mask, offset, mipmapShareClut);
+	public void setTextureFormat(int pixelFormat, boolean swizzle) {
+		if (isTextureTypeIndexed[pixelFormat]) {
+			if (pixelFormat == GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED) {
+				// 4bit index has been decoded in the VideoEngine
+				pixelFormat = context.tex_clut_mode;
+			} else if (!useNativeClut) {
+				// Textures are decoded in the VideoEngine when not using native CLUTs
+				pixelFormat = context.tex_clut_mode;
+			} else {
+				loadClut();
+			}
+		}
+		shaderContext.setTexPixelFormat(pixelFormat);
+		super.setTextureFormat(pixelFormat, swizzle);
 	}
 }

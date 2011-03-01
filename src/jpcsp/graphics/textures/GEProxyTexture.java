@@ -50,6 +50,7 @@ public abstract class GEProxyTexture extends GETexture {
 
 			re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, 0);
 			re.bindTexture(textureId);
+			re.setTextureFormat(pixelFormat, false);
 
 			geTexture.setChanged(false);
 		}

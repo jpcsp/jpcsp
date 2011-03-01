@@ -97,6 +97,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.enablegetexture");
         enableGETextureCheck.setSelected(enabled);
 
+        enabled = Settings.getInstance().readBool("emu.enablenativeclut");
+        enableNativeCLUTCheck.setSelected(enabled);
+
         enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
         onlyGEGraphicsCheck.setSelected(enabled);
 
@@ -235,6 +238,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         disableUBOCheck = new javax.swing.JCheckBox();
         enableVAOCheck = new javax.swing.JCheckBox();
         enableGETextureCheck = new javax.swing.JCheckBox();
+        enableNativeCLUTCheck = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -513,6 +517,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         enableGETextureCheck.setText(Resource.get("enablegetexture"));
 
+        enableNativeCLUTCheck.setText(Resource.get("enablenativeclut"));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -526,7 +532,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(geometryShaderCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(disableUBOCheck)
                     .addComponent(enableVAOCheck)
-                    .addComponent(enableGETextureCheck))
+                    .addComponent(enableGETextureCheck)
+                    .addComponent(enableNativeCLUTCheck))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -547,6 +554,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(enableVAOCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(enableGETextureCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(enableNativeCLUTCheck)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -892,6 +901,9 @@ public void RefreshWindow() {
     enabled = Settings.getInstance().readBool("emu.enablegetexture");
     enableGETextureCheck.setSelected(enabled);
 	
+	enabled = Settings.getInstance().readBool("emu.enablenativeclut");
+	enableNativeCLUTCheck.setSelected(enabled);
+	
 	enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
 	onlyGEGraphicsCheck.setSelected(enabled);
 	
@@ -966,6 +978,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.disableubo", disableUBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.enablevao", enableVAOCheck.isSelected());
    Settings.getInstance().writeBool("emu.enablegetexture", enableGETextureCheck.isSelected());
+   Settings.getInstance().writeBool("emu.enablenativeclut", enableNativeCLUTCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
    Settings.getInstance().writeBool("emu.useFlashFonts",useFlashFonts.isSelected());
@@ -1040,6 +1053,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JCheckBox enableGETextureCheck;
     private javax.swing.JCheckBox enableVAOCheck;
+    private javax.swing.JCheckBox enableNativeCLUTCheck;
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox filelogCheck;
     private javax.swing.JPanel generalPanel;

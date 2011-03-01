@@ -60,8 +60,9 @@ public class ShaderContextUBO extends ShaderContext {
 	private static final int OFFSET_CLUT_MASK         = OFFSET_CLUT_SHIFT + 4;
 	private static final int OFFSET_CLUT_OFFSET       = OFFSET_CLUT_MASK + 4;
 	private static final int OFFSET_MIPMAP_SHARE_CLUT = OFFSET_CLUT_OFFSET + 4;
-	private static final int OFFSET_NUMBER_BONES      = OFFSET_MIPMAP_SHARE_CLUT + 4;
-	private static final int OFFSET_BONE_MATRIX       = OFFSET_NUMBER_BONES + 4;
+	private static final int OFFSET_TEX_PIXEL_FORMAT  = OFFSET_MIPMAP_SHARE_CLUT + 4;
+	private static final int OFFSET_NUMBER_BONES      = OFFSET_TEX_PIXEL_FORMAT + 4;
+	private static final int OFFSET_BONE_MATRIX       = OFFSET_NUMBER_BONES + 4 + 12; // 12 alignment for matrix
 	private static final int OFFSET_END               = OFFSET_BONE_MATRIX + 8 * 4 * 4 * 4;
 	private static final int bufferSize = OFFSET_END - OFFSET_START;
 	protected static final int bindingPoint = 0;
@@ -138,6 +139,7 @@ public class ShaderContextUBO extends ShaderContext {
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutMask,         "int",   OFFSET_CLUT_MASK));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutOffset,       "int",   OFFSET_CLUT_OFFSET));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.mipmapShareClut,  "bool",  OFFSET_MIPMAP_SHARE_CLUT));
+			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.texPixelFormat,   "int",   OFFSET_TEX_PIXEL_FORMAT));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.numberBones,      "int",   OFFSET_NUMBER_BONES));
 			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.boneMatrix,       "mat4",  OFFSET_BONE_MATRIX, 8));
 
@@ -188,7 +190,9 @@ public class ShaderContextUBO extends ShaderContext {
 			startUpdate = OFFSET_END;
 			endUpdate = OFFSET_START;
 		}
-		re.setUniform(Uniforms.clut.getId(shaderProgram), getClut());
+
+		// Samplers can only be passed as uniforms
+		setUniformsSamplers(re, shaderProgram);
 	}
 
 	protected void prepareCopy(int offset, int length) {
@@ -482,6 +486,14 @@ public class ShaderContextUBO extends ShaderContext {
 		if (mipmapShareClut != isMipmapShareClut()) {
 			copy(mipmapShareClut, OFFSET_MIPMAP_SHARE_CLUT);
 			super.setMipmapShareClut(mipmapShareClut);
+		}
+	}
+
+	@Override
+	public void setTexPixelFormat(int texPixelFormat) {
+		if (texPixelFormat != getTexPixelFormat()) {
+			copy(texPixelFormat, OFFSET_TEX_PIXEL_FORMAT);
+			super.setTexPixelFormat(texPixelFormat);
 		}
 	}
 }
