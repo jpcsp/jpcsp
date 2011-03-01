@@ -184,4 +184,10 @@ public class REFixedFunction extends BaseRenderingEngineFunction {
 	public void disableVertexAttribArray(int id) {
 		// This call is used only by Shader
 	}
+
+	@Override
+	public boolean canNativeClut() {
+		// Shaders are required for native clut
+		return false;
+	}
 }

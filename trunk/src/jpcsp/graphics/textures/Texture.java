@@ -40,8 +40,10 @@ public class Texture {
 	private boolean loaded = false;	// is the texture already loaded?
 	private TextureCache textureCache;
 	private final static int hashStride = 64 + 8;
+	private short[] cachedValues16;
+	private int[] cachedValues32;
 
-	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut) {
+	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut, short[] values16, int[] values32) {
 		this.textureCache = textureCache;
 		this.addr = addr;
 		this.lineWidth = lineWidth;
@@ -57,7 +59,15 @@ public class Texture {
 		this.mipmapLevels = mipmapLevels;
 		this.mipmapShareClut = mipmapShareClut;
 
-		hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
+		if (values16 != null) {
+			cachedValues16 = new short[lineWidth];
+			System.arraycopy(values16, 0, cachedValues16, 0, lineWidth);
+		} else if (values32 != null) {
+			cachedValues32 = new int[lineWidth];
+			System.arraycopy(values32, 0, cachedValues32, 0, lineWidth);
+		} else {
+			hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
+		}
 	}
 
 	/**
@@ -139,7 +149,7 @@ public class Texture {
 		return hashCode;
 	}
 
-	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut) {
+	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut, short[] values16, int[] values32) {
 		if (this.addr != addr ||
 			this.lineWidth != lineWidth ||
 			this.width != width ||
@@ -160,11 +170,45 @@ public class Texture {
 		// Do not compute the hashCode of the new texture if it has already
 		// been checked during this display cycle
 		if (!textureCache.textureAlreadyHashed(addr, clutAddr)) {
+			if (values16 != null) {
+				return equals(values16);
+			}
+			if (values32 != null) {
+				return equals(values32);
+			}
 			int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
 			if (hashCode != hashCode()) {
 				return false;
 			}
 			textureCache.setTextureAlreadyHashed(addr, clutAddr);
+		}
+
+		return true;
+	}
+
+	private boolean equals(short[] values16) {
+		if (cachedValues16 == null) {
+			return false;
+		}
+
+		for (int i = 0; i < lineWidth; i++) {
+			if (values16[i] != cachedValues16[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private boolean equals(int[] values32) {
+		if (cachedValues32 == null) {
+			return false;
+		}
+
+		for (int i = 0; i < lineWidth; i++) {
+			if (values32[i] != cachedValues32[i]) {
+				return false;
+			}
 		}
 
 		return true;

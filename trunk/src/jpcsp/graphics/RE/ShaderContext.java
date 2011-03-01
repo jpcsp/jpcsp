@@ -57,7 +57,10 @@ public class ShaderContext {
 	private int clutMask;
 	private int clutOffset;
 	private boolean mipmapShareClut;
-	private int clut;
+	private int clut = -1;
+	private int texPixelFormat;
+	private int tex = 0;
+	private int utex = -1;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -91,7 +94,13 @@ public class ShaderContext {
 		re.setUniform(Uniforms.clutMask.getId(shaderProgram), clutMask);
 		re.setUniform(Uniforms.clutOffset.getId(shaderProgram), clutOffset);
 		re.setUniform(Uniforms.mipmapShareClut.getId(shaderProgram), mipmapShareClut ? 1 : 0);
+		re.setUniform(Uniforms.texPixelFormat.getId(shaderProgram), texPixelFormat);
+	}
+
+	protected void setUniformsSamplers(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.clut.getId(shaderProgram), clut);
+		re.setUniform(Uniforms.tex.getId(shaderProgram), tex);
+		re.setUniform(Uniforms.utex.getId(shaderProgram), utex);
 	}
 
 	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
@@ -358,5 +367,29 @@ public class ShaderContext {
 
 	public void setClut(int clut) {
 		this.clut = clut;
+	}
+
+	public int getTexPixelFormat() {
+		return texPixelFormat;
+	}
+
+	public void setTexPixelFormat(int texPixelFormat) {
+		this.texPixelFormat = texPixelFormat;
+	}
+
+	public int getTex() {
+		return tex;
+	}
+
+	public void setTex(int tex) {
+		this.tex = tex;
+	}
+
+	public int getUtex() {
+		return utex;
+	}
+
+	public void setUtex(int utex) {
+		this.utex = utex;
 	}
 }

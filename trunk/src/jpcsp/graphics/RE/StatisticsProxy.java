@@ -217,10 +217,8 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("setPixelTransfer", 177);
 		addStatistic("setPixelMap", 178);
 		addStatistic("canNativeClut", 179);
-		addStatistic("setTexImage1D", 180);
-		addStatistic("setTexSubImage1D", 181);
-		addStatistic("setClut", 182);
-		addStatistic("setActiveTexture", 183);
+		addStatistic("setActiveTexture", 180);
+		addStatistic("setTextureFormat", 181);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1703,34 +1701,18 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setTexImage1D(int level, int internalFormat, int width, int format, int type, int textureSize, Buffer buffer) {
+	public void setActiveTexture(int index) {
 		DurationStatistics statistic = statistics[180];
 		statistic.start();
-		super.setTexImage1D(level, internalFormat, width, format, type, textureSize, buffer);
+		super.setActiveTexture(index);
 		statistic.end();
 	}
 
 	@Override
-	public void setTexSubImage1D(int level, int xOffset, int width, int format, int type, int textureSize, Buffer buffer) {
+	public void setTextureFormat(int pixelFormat, boolean swizzle) {
 		DurationStatistics statistic = statistics[181];
 		statistic.start();
-		super.setTexSubImage1D(level, xOffset, width, format, type, textureSize, buffer);
-		statistic.end();
-	}
-
-	@Override
-	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut) {
-		DurationStatistics statistic = statistics[182];
-		statistic.start();
-		super.setClut(address, numBlocks, mode, shift, mask, offset, mipmapShareClut);
-		statistic.end();
-	}
-
-	@Override
-	public void setActiveTexture(int index) {
-		DurationStatistics statistic = statistics[183];
-		statistic.start();
-		super.setActiveTexture(index);
+		super.setTextureFormat(pixelFormat, swizzle);
 		statistic.end();
 	}
 }

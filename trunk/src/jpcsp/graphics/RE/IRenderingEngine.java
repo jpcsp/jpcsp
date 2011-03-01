@@ -40,8 +40,35 @@ public interface IRenderingEngine {
         4, // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
         0, // TPSM_PIXEL_STORAGE_MODE_DXT1
         0, // TPSM_PIXEL_STORAGE_MODE_DXT3
-        0  // TPSM_PIXEL_STORAGE_MODE_DXT5
+        0, // TPSM_PIXEL_STORAGE_MODE_DXT5
+        2, // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
+        2, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5651
+        2, // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
+        4  // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
 	};
+	public static final boolean[] isTextureTypeIndexed = {
+		false, // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
+		false, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551
+		false, // TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444
+		false, // TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888
+		true,  // TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED
+        true,  // TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED
+        true,  // TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED
+        true,  // TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED
+        false, // TPSM_PIXEL_STORAGE_MODE_DXT1
+        false, // TPSM_PIXEL_STORAGE_MODE_DXT3
+        false, // TPSM_PIXEL_STORAGE_MODE_DXT5
+        true,  // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
+        true,  // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
+        true,  // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
+        true   // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+	};
+
+	// Additional Texture types
+	public static final int RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650  = 11;
+	public static final int RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551 = 12;
+	public static final int RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444 = 13;
+	public static final int RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888 = 14;
 
 	// Flags:
 	public static final int GU_ALPHA_TEST          = 0;
@@ -421,9 +448,6 @@ public interface IRenderingEngine {
 	public void setPixelTransfer(int parameter, boolean value);
 	public void setPixelMap(int map, int mapSize, Buffer buffer);
 	public boolean canNativeClut();
-	public void setTexImage1D(int level, int internalFormat, int width, int format, int type, int textureSize, Buffer buffer);
-	public void setTexSubImage1D(int level, int xOffset, int width, int format, int type, int textureSize, Buffer buffer);
-	public void setClut(int address, int numBlocks, int mode, int shift, int mask, int offset, boolean mipmapShareClut);
 	public void setActiveTexture(int index);
-	public void bindTexture1D(int texture);
+	public void setTextureFormat(int pixelFormat, boolean swizzle);
 }
