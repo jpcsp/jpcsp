@@ -842,7 +842,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        int offset = endianSwap32(mem.read32(buffer_addr + 8));
+        int offset = endianSwap32(mem.read32(buffer_addr + sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
         mem.write32(offset_addr, offset);
 
         // Always let sceMpeg handle the PSMF analysis.
@@ -866,8 +866,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        int size = endianSwap32(mem.read32(buffer_addr + 12));
-        if ((size & 0x7FF) == 0) {
+        int size = endianSwap32(mem.read32(buffer_addr + sceMpeg.PSMF_STREAM_SIZE_OFFSET));
+        if ((size & 0x7FF) != 0) {
             mem.write32(size_addr, 0);
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_VALUE;
         } else {
@@ -937,7 +937,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             return;
         }
         if (Memory.isAddressGood(buffer_addr)) {
-            int version = mem.read32(buffer_addr + 4);
+            int version = mem.read32(buffer_addr + sceMpeg.PSMF_STREAM_VERSION_OFFSET);
             if (version > sceMpeg.PSMF_VERSION_0015) {
                 cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_PSMF;
             } else {

@@ -199,6 +199,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final int PSMF_VERSION_0013 = 0x33313030;
     public static final int PSMF_VERSION_0014 = 0x34313030;
     public static final int PSMF_VERSION_0015 = 0x35313030;
+    public static final int PSMF_STREAM_VERSION_OFFSET = 4;
     public static final int PSMF_STREAM_OFFSET_OFFSET = 8;
     public static final int PSMF_STREAM_SIZE_OFFSET = 12;
     public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 86;
@@ -370,7 +371,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         mpegStreamAddr = buffer_addr;
         mpegMagic = mem.read32(buffer_addr);
-        mpegRawVersion = mem.read32(buffer_addr + 4);
+        mpegRawVersion = mem.read32(buffer_addr + PSMF_STREAM_VERSION_OFFSET);
         switch (mpegRawVersion) {
             case PSMF_VERSION_0012:
                 mpegVersion = MPEG_VERSION_0012;
