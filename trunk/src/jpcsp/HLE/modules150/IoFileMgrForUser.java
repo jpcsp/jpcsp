@@ -63,6 +63,7 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.connector.PGDFileConnector;
+import jpcsp.crypto.CryptoEngine;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
@@ -1507,7 +1508,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     }
                     break;
                 }
-                //Get UMD file pointer.
+                // Get UMD file pointer.
                 case 0x01020004: {
                     if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
                         if (info.isUmdFile()) {
@@ -1629,22 +1630,64 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     }
                     break;
                 }
-                // Define decryption key (Kirk / AES-128?).
+                // Define decryption key (DRM by amctrl.prx).
                 case 0x04100001: {
                     if (Memory.isAddressGood(indata_addr) && inlen == 16) {
+                        CryptoEngine crypto = new CryptoEngine();
                         String keyHex = "";
-                        for (int i = 0; i < inlen; i++) {
-                            AES128Key[i] = (byte) mem.read8(indata_addr + i);
-                            keyHex += String.format("%02x", AES128Key[i] & 0xFF);
+
+                        if (pgdFileConnector == null) {
+                            pgdFileConnector = new PGDFileConnector();
+                        }
+
+                        try {
+                            SeekableRandomFile decFile = new SeekableRandomFile(PGDFileConnector.decryptedFileName, "rw");
+                            int fileLength = (int) info.readOnlyFile.length();
+                            byte[] inBuf = new byte[fileLength];
+                            byte[] outBuf = new byte[fileLength];
+                            byte[] headerBuf = new byte[0x30 + 0x10];
+                            byte[] keyBuf = new byte[0x10];
+                            byte[] hashBuf = new byte[0x10];
+
+                            info.readOnlyFile.readFully(inBuf);
+
+                            // Store the key.
+                            for (int i = 0; i < 0x10; i++) {
+                                keyBuf[i] = (byte) mem.read8(indata_addr + i);
+                                keyHex += String.format("%02x", keyBuf[i] & 0xFF);
+                            }
+
+                            // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
+                            System.arraycopy(inBuf, 0x10, headerBuf, 0, 0x10);
+                            System.arraycopy(inBuf, 0x30, headerBuf, 0x10, 0x30);
+                            byte headerBufDec[] = crypto.DecryptPGD(headerBuf, 0x30 + 0x10, keyBuf);
+
+                            // Extract the decrypting parameters.
+                            System.arraycopy(headerBufDec, 0, hashBuf, 0, 0x10);
+                            int dataSize = (headerBufDec[0x14] & 0xFF) | ((headerBufDec[0x15] & 0xFF) << 8) |
+                                    ((headerBufDec[0x16] & 0xFF) << 16) | ((headerBufDec[0x17] & 0xFF) << 24);
+                            int chunkSize = (headerBufDec[0x18] & 0xFF) | ((headerBufDec[0x19] & 0xFF) << 8) |
+                                    ((headerBufDec[0x1A] & 0xFF) << 16) | ((headerBufDec[0x1B] & 0xFF) << 24);
+                            int hashOffset = (headerBufDec[0x1C] & 0xFF) | ((headerBufDec[0x1D] & 0xFF) << 8) |
+                                    ((headerBufDec[0x1E] & 0xFF) << 16) | ((headerBufDec[0x1F] & 0xFF) << 24);
+
+                            // Write the newly extracted hash at the top of the output buffer,
+                            // locate the data hash at hashOffset and start decrypting until
+                            // dataSize is reached.
+                            System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
+                            System.arraycopy(inBuf, hashOffset, outBuf, 0x10, dataSize);
+
+                            decFile.write(crypto.DecryptPGD(outBuf, dataSize + 0x10, keyBuf));
+                            decFile.close();
+                        } catch (Exception e) {
+                            // Ignore.
                         }
 
                         if (log.isDebugEnabled()) {
                             log.debug("hleIoIoctl get AES key " + keyHex);
                         }
 
-                        if (pgdFileConnector == null) {
-                            pgdFileConnector = new PGDFileConnector();
-                        }
+                        // Send the manually decrypted file generated just now.
                         info.readOnlyFile = pgdFileConnector.decryptPGDFile(info.filename, info.readOnlyFile, keyHex);
 
                         result = 0;

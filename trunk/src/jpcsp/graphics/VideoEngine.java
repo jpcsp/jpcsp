@@ -194,6 +194,9 @@ public class VideoEngine {
     private IntBuffer multiDrawFirst;
     private IntBuffer multiDrawCount;
     private static final int maxMultiDrawElements = 1000;
+    private static int viewportResWidth = 480;
+    private static int viewportResHeigth = 272;
+    private static float viewportResScale = 1.0f;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -387,6 +390,12 @@ public class VideoEngine {
         if (useAsyncVertexCache) {
         	AsyncVertexCache.getInstance().setUseVertexArray(re.isVertexArrayAvailable());
         }
+    }
+
+    public static void setViewportResolution(int width, int heigth) {
+        viewportResWidth = width;
+        viewportResHeigth = heigth;
+        viewportResScale = (float) (((width / 480) + (heigth / 272)) / 2);
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -4858,13 +4867,15 @@ public class VideoEngine {
     }
 
     private void setScissor() {
-        if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0 && context.scissor_width <= context.region_width && context.scissor_height <= context.region_height) {
-        	int scissorX = context.scissor_x1;
-        	int scissorY = context.scissor_y1;
-        	int scissorWidth = context.scissor_width;
-        	int scissorHeight = context.scissor_height;
-        	if (scissorHeight < 272) {
-        		scissorY = 272 - scissorHeight - scissorY;
+        if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0
+                && context.scissor_width <= context.region_width * viewportResScale
+                && context.scissor_height <= context.region_height * viewportResScale) {
+        	int scissorX = (int) (context.scissor_x1 * viewportResScale);
+        	int scissorY = (int) (context.scissor_y1 * viewportResScale);
+        	int scissorWidth = (int) (context.scissor_width * viewportResScale);
+        	int scissorHeight = (int) (context.scissor_height * viewportResScale);
+        	if (scissorHeight < viewportResHeigth) {
+        		scissorY = viewportResHeigth - scissorHeight - scissorY;
         	}
             re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
         	context.scissorTestFlag.setEnabled(true);
@@ -4929,15 +4940,15 @@ public class VideoEngine {
         boolean loadOrtho2D = false;
         if (viewportChanged) {
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-                re.setViewport(0, 0, 480, 272);
+                re.setViewport(0, 0, viewportResWidth, viewportResHeigth);
                 // Load the ortho for 2D after the depth settings
                 loadOrtho2D = true;
             } else {
                 if (context.viewport_cx == 0 && context.viewport_cy == 0 && context.viewport_height == 0 && context.viewport_width == 0) {
                 	context.viewport_cx = 2048;
                 	context.viewport_cy = 2048;
-                	context.viewport_width = 480;
-                	context.viewport_height = 272;
+                	context.viewport_width = viewportResWidth;
+                	context.viewport_height = viewportResHeigth;
                 }
 
                 int halfHeight = Math.abs(context.viewport_height);

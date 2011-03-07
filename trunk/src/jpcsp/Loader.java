@@ -322,8 +322,13 @@ public class Loader {
             module.loadAddressHigh = baseAddress;
 
             // Load into mem
-            LoadELFProgram(f, module, baseAddress, elf, elfOffset);
-            LoadELFSections(f, module, baseAddress, elf, elfOffset);
+            if(Emulator.getInstance().getFirmwareVersion() >= 630) {
+                LoadELFProgram_630(f, module, baseAddress, elf, elfOffset);
+                LoadELFSections_630(f, module, baseAddress, elf, elfOffset);
+            } else {
+                LoadELFProgram(f, module, baseAddress, elf, elfOffset);
+                LoadELFSections(f, module, baseAddress, elf, elfOffset);
+            }
 
             // Relocate PRX
             if (elf.getHeader().requiresRelocation()) {
@@ -403,6 +408,12 @@ public class Loader {
 
     // ELF Loader
 
+     private void LoadELFProgram_630(ByteBuffer f, SceModule module, int baseAddress,
+        Elf32 elf, int elfOffset) throws IOException {
+         Emulator.log.info("6.30 firmware version's ELF program detected!");
+         LoadELFProgram(f, module, 0, elf, elfOffset);
+     };
+
     /** Load some programs into memory */
     private void LoadELFProgram(ByteBuffer f, SceModule module, int baseAddress,
         Elf32 elf, int elfOffset) throws IOException {
@@ -447,6 +458,12 @@ public class Loader {
 
         Memory.log.debug(String.format("PH alloc consumption %08X (mem %08X)", (module.loadAddressHigh - module.loadAddressLow), module.bss_size));
     }
+
+    private void LoadELFSections_630(ByteBuffer f, SceModule module, int baseAddress,
+        Elf32 elf, int elfOffset) throws IOException {
+        Emulator.log.info("6.30 firmware version's ELF sections detected!");
+         LoadELFSections(f, module, 0, elf, elfOffset);
+     };
 
     /** Load some sections into memory */
     private void LoadELFSections(ByteBuffer f, SceModule module, int baseAddress,
