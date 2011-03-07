@@ -1390,7 +1390,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcAu.pts);
             }
-            if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+            if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets && packetsConsumed > 0) {
                 mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                 mpegRingbuffer.write(mem, mpegRingbufferAddr);
             }
@@ -1865,7 +1865,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcAu.pts);
                 }
 
-                if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+                if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets && packetsConsumed > 0) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                     mpegRingbuffer.write(mem, mpegRingbufferAddr);
                 }
