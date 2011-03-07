@@ -19,7 +19,6 @@ package jpcsp.graphics.RE;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import jpcsp.Settings;
 import jpcsp.graphics.Uniforms;
@@ -32,67 +31,90 @@ import jpcsp.graphics.VideoEngine;
  * to allow a faster shader program switch.
  */
 public class ShaderContextUBO extends ShaderContext {
-	private static final int OFFSET_START             = 0;
-	private static final int OFFSET_LIGHT_TYPE        = OFFSET_START;
-	private static final int OFFSET_LIGHT_KIND        = OFFSET_LIGHT_TYPE + 4 * 4;
-	private static final int OFFSET_LIGHT_ENABLED     = OFFSET_LIGHT_KIND + 4 * 4;
-	private static final int OFFSET_MAT_FLAGS         = OFFSET_LIGHT_ENABLED + 4 * 4;
-	private static final int OFFSET_CTEST_REF         = OFFSET_MAT_FLAGS + 4 * 4;
-	private static final int OFFSET_CTEST_MSK         = OFFSET_CTEST_REF + 4 * 4;
-	private static final int OFFSET_TEX_SHADE         = OFFSET_CTEST_MSK + 4 * 4;
-	private static final int OFFSET_TEX_ENV_MODE      = OFFSET_TEX_SHADE + 2 * 4;
-	private static final int OFFSET_CTEST_FUNC        = OFFSET_TEX_ENV_MODE + 2 * 4;
-	private static final int OFFSET_TEX_MAP_MODE      = OFFSET_CTEST_FUNC + 4;
-	private static final int OFFSET_TEX_MAP_PROJ      = OFFSET_TEX_MAP_MODE + 4;
-	private static final int OFFSET_VINFO_COLOR       = OFFSET_TEX_MAP_PROJ + 4;
-	private static final int OFFSET_VINFO_POSITION    = OFFSET_VINFO_COLOR + 4;
-	private static final int OFFSET_POSITION_SCALE    = OFFSET_VINFO_POSITION + 4;
-	private static final int OFFSET_NORMAL_SCALE      = OFFSET_POSITION_SCALE + 4;
-	private static final int OFFSET_TEXTURE_SCALE     = OFFSET_NORMAL_SCALE + 4;
-	private static final int OFFSET_WEIGHT_SCALE      = OFFSET_TEXTURE_SCALE + 4;
-	private static final int OFFSET_COLOR_DOUBLING    = OFFSET_WEIGHT_SCALE + 4;
-	private static final int OFFSET_TEX_ENABLE        = OFFSET_COLOR_DOUBLING + 4;
-	private static final int OFFSET_LIGHTING_ENABLE   = OFFSET_TEX_ENABLE + 4;
-	private static final int OFFSET_VINFO_TRANSFORM2D = OFFSET_LIGHTING_ENABLE + 4;
-	private static final int OFFSET_CTEST_ENABLE      = OFFSET_VINFO_TRANSFORM2D + 4;
-	private static final int OFFSET_COLOR_ADDITION    = OFFSET_CTEST_ENABLE + 4;
-	private static final int OFFSET_CLUT_SHIFT        = OFFSET_COLOR_ADDITION + 4;
-	private static final int OFFSET_CLUT_MASK         = OFFSET_CLUT_SHIFT + 4;
-	private static final int OFFSET_CLUT_OFFSET       = OFFSET_CLUT_MASK + 4;
-	private static final int OFFSET_MIPMAP_SHARE_CLUT = OFFSET_CLUT_OFFSET + 4;
-	private static final int OFFSET_TEX_PIXEL_FORMAT  = OFFSET_MIPMAP_SHARE_CLUT + 4;
-	private static final int OFFSET_NUMBER_BONES      = OFFSET_TEX_PIXEL_FORMAT + 4;
-	private static final int OFFSET_BONE_MATRIX       = OFFSET_NUMBER_BONES + 4 + 12; // 12 alignment for matrix
-	private static final int OFFSET_END               = OFFSET_BONE_MATRIX + 8 * 4 * 4 * 4;
-	private static final int bufferSize = OFFSET_END - OFFSET_START;
-	protected static final int bindingPoint = 0;
+	private ShaderUniformInfo lightType;
+	private ShaderUniformInfo lightKind;
+	private ShaderUniformInfo lightEnabled;
+	private ShaderUniformInfo vertexColor;
+	private ShaderUniformInfo matFlags;
+	private ShaderUniformInfo ctestRef;
+	private ShaderUniformInfo ctestMsk;
+	private ShaderUniformInfo texShade;
+	private ShaderUniformInfo texEnvMode;
+	private ShaderUniformInfo ctestFunc;
+	private ShaderUniformInfo texMapMode;
+	private ShaderUniformInfo texMapProj;
+	private ShaderUniformInfo vinfoColor;
+	private ShaderUniformInfo vinfoPosition;
+	private ShaderUniformInfo positionScale;
+	private ShaderUniformInfo normalScale;
+	private ShaderUniformInfo textureScale;
+	private ShaderUniformInfo weightScale;
+	private ShaderUniformInfo colorDoubling;
+	private ShaderUniformInfo texEnable;
+	private ShaderUniformInfo lightingEnable;
+	private ShaderUniformInfo vinfoTransform2D;
+	private ShaderUniformInfo ctestEnable;
+	private ShaderUniformInfo lightMode;
+	private ShaderUniformInfo clutShift;
+	private ShaderUniformInfo clutMask;
+	private ShaderUniformInfo clutOffset;
+	private ShaderUniformInfo mipmapShareClut;
+	private ShaderUniformInfo texPixelFormat;
+	private ShaderUniformInfo numberBones;
+	private ShaderUniformInfo boneMatrix;
+	private ShaderUniformInfo endOfUBO;
+	private int bufferSize;
+	protected static final int bindingPoint = 1;
 	protected static final String uniformBlockName = "psp";
+	protected static final String uniformMemoryLayout = "std140";
 	protected int buffer;
 	protected ByteBuffer data;
 	private int startUpdate;
 	private int endUpdate;
-	private static String shaderUniformText;
+	private String shaderUniformText;
+	private ArrayList<ShaderUniformInfo> shaderUniformInfos;
 
-	private static class ShaderUniformInfo implements Comparable<ShaderUniformInfo> {
-		public String name;
-		public String type;
+	private static class ShaderUniformInfo {
+		private String name;
+		private String structureName;
+		private String type;
 		private int offset;
 
-		public ShaderUniformInfo(Uniforms uniform, String type, int offset) {
-			this.name = uniform.getUniformString();
+		public ShaderUniformInfo(Uniforms uniform, String type) {
+			name = uniform.getUniformString();
+			structureName = this.name;
 			this.type = type;
+		}
+
+		public ShaderUniformInfo(Uniforms uniform, String type, int matrixSize) {
+			name = uniform.getUniformString();
+			structureName = String.format("%s[%d]", name, matrixSize);
+			this.type = type;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getStructureName() {
+			return structureName;
+		}
+
+		public int getOffset() {
+			return offset;
+		}
+
+		public void setOffset(int offset) {
 			this.offset = offset;
 		}
 
-		public ShaderUniformInfo(Uniforms uniform, String type, int offset, int matrixSize) {
-			this.name = String.format("%s[%d]", uniform.getUniformString(), matrixSize);
-			this.type = type;
-			this.offset = offset;
+		private String getType() {
+			return type;
 		}
 
 		@Override
-		public int compareTo(ShaderUniformInfo o) {
-			return offset - o.offset;
+		public String toString() {
+			return String.format("%s(offset=%d)", getName(), getOffset());
 		}
 	}
 
@@ -101,80 +123,107 @@ public class ShaderContextUBO extends ShaderContext {
             && re.isExtensionAvailable("GL_ARB_uniform_buffer_object");
 	}
 
-	public static String getShaderUniformText() {
-		if (shaderUniformText == null) {
-			if ((OFFSET_BONE_MATRIX % 16) != 0) {
-				VideoEngine.log.error(String.format("ShaderContextUBO: bone matrix has to be 16bytes-aligned (offset=%d)", OFFSET_BONE_MATRIX));
-			}
+	public ShaderContextUBO(IRenderingEngine re) {
+		shaderUniformInfos = new ArrayList<ShaderUniformInfo>();
 
-			StringBuilder s = new StringBuilder();
-			ArrayList<ShaderUniformInfo> shaderUniformInfos = new ArrayList<ShaderUniformInfo>();
+		// Add all the shader uniform objects
+		// in the order they have to be defined in the shader structure
+		lightType = addShaderUniform(Uniforms.lightType, "ivec4");
+		lightKind = addShaderUniform(Uniforms.lightKind, "ivec4");
+		lightEnabled = addShaderUniform(Uniforms.lightEnabled, "ivec4");
+		vertexColor = addShaderUniform(Uniforms.vertexColor, "vec4");
+		matFlags = addShaderUniform(Uniforms.matFlags, "ivec3");
+		ctestRef = addShaderUniform(Uniforms.ctestRef, "ivec3");
+		ctestMsk = addShaderUniform(Uniforms.ctestMsk, "ivec3");
+		texShade = addShaderUniform(Uniforms.texShade, "ivec2");
+		texEnvMode = addShaderUniform(Uniforms.texEnvMode, "ivec2");
+		ctestFunc = addShaderUniform(Uniforms.ctestFunc, "int");
+		texMapMode = addShaderUniform(Uniforms.texMapMode, "int");
+		texMapProj = addShaderUniform(Uniforms.texMapProj, "int");
+		vinfoColor = addShaderUniform(Uniforms.vinfoColor, "int");
+		vinfoPosition = addShaderUniform(Uniforms.vinfoPosition, "int");
+		positionScale = addShaderUniform(Uniforms.positionScale, "float");
+		normalScale = addShaderUniform(Uniforms.normalScale, "float");
+		textureScale = addShaderUniform(Uniforms.textureScale, "float");
+		weightScale = addShaderUniform(Uniforms.weightScale, "float");
+		colorDoubling = addShaderUniform(Uniforms.colorDoubling, "float");
+		texEnable = addShaderUniform(Uniforms.texEnable, "bool");
+		lightingEnable = addShaderUniform(Uniforms.lightingEnable, "bool");
+		vinfoTransform2D = addShaderUniform(Uniforms.vinfoTransform2D, "bool");
+		ctestEnable = addShaderUniform(Uniforms.ctestEnable, "bool");
+		lightMode = addShaderUniform(Uniforms.lightMode, "bool");
+		clutShift = addShaderUniform(Uniforms.clutShift, "int");
+		clutMask = addShaderUniform(Uniforms.clutMask, "int");
+		clutOffset = addShaderUniform(Uniforms.clutOffset, "int");
+		mipmapShareClut = addShaderUniform(Uniforms.mipmapShareClut, "bool");
+		texPixelFormat = addShaderUniform(Uniforms.texPixelFormat, "int");
+		numberBones = addShaderUniform(Uniforms.numberBones, "int");
+		boneMatrix = addShaderUniform(Uniforms.boneMatrix, "mat4", 8);
+		// The following entry has always to be the last one
+		endOfUBO = addShaderUniform(Uniforms.endOfUBO, "int");
 
-			// Add all the shader uniform objects in any order,
-			// they will be sorted by offset afterwards
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.lightType,        "ivec4", OFFSET_LIGHT_TYPE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.lightKind,        "ivec4", OFFSET_LIGHT_KIND));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.lightEnabled,     "ivec4", OFFSET_LIGHT_ENABLED));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.matFlags,         "ivec3", OFFSET_MAT_FLAGS));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.ctestRef,         "ivec3", OFFSET_CTEST_REF));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.ctestMsk,         "ivec3", OFFSET_CTEST_MSK));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.texShade,         "ivec2", OFFSET_TEX_SHADE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.texEnvMode,       "ivec2", OFFSET_TEX_ENV_MODE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.ctestFunc,        "int",   OFFSET_CTEST_FUNC));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.texMapMode,       "int",   OFFSET_TEX_MAP_MODE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.texMapProj,       "int",   OFFSET_TEX_MAP_PROJ));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.vinfoColor,       "int",   OFFSET_VINFO_COLOR));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.vinfoPosition,    "int",   OFFSET_VINFO_POSITION));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.positionScale,    "float", OFFSET_POSITION_SCALE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.normalScale,      "float", OFFSET_NORMAL_SCALE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.textureScale,     "float", OFFSET_TEXTURE_SCALE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.weightScale,      "float", OFFSET_WEIGHT_SCALE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.colorDoubling,    "float", OFFSET_COLOR_DOUBLING));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.texEnable,        "bool",  OFFSET_TEX_ENABLE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.lightingEnable,   "bool",  OFFSET_LIGHTING_ENABLE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.vinfoTransform2D, "bool",  OFFSET_VINFO_TRANSFORM2D));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.ctestEnable,      "bool",  OFFSET_CTEST_ENABLE));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.lightMode,        "bool",  OFFSET_COLOR_ADDITION));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutShift,        "int",   OFFSET_CLUT_SHIFT));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutMask,         "int",   OFFSET_CLUT_MASK));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.clutOffset,       "int",   OFFSET_CLUT_OFFSET));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.mipmapShareClut,  "bool",  OFFSET_MIPMAP_SHARE_CLUT));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.texPixelFormat,   "int",   OFFSET_TEX_PIXEL_FORMAT));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.numberBones,      "int",   OFFSET_NUMBER_BONES));
-			shaderUniformInfos.add(new ShaderUniformInfo(Uniforms.boneMatrix,       "mat4",  OFFSET_BONE_MATRIX, 8));
-
-			// Sort the shader uniform objects by offset
-			ShaderUniformInfo[] sortedShaderUniformInfos = new ShaderUniformInfo[shaderUniformInfos.size()];
-			shaderUniformInfos.toArray(sortedShaderUniformInfos);
-			Arrays.sort(sortedShaderUniformInfos);
-
-			s.append(String.format("layout(std140) uniform %s\n", uniformBlockName));
-			s.append(String.format("{\n"));
-			for (ShaderUniformInfo shaderUniformInfo : sortedShaderUniformInfos) {
-				s.append(String.format("   %s %s;\n", shaderUniformInfo.type, shaderUniformInfo.name));
-			}
-			s.append(String.format("};\n"));
-
-			shaderUniformText = s.toString();
+		StringBuilder s = new StringBuilder();
+		s.append(String.format("layout(%s) uniform %s\n", uniformMemoryLayout, uniformBlockName));
+		s.append(String.format("{\n"));
+		for (ShaderUniformInfo shaderUniformInfo : shaderUniformInfos) {
+			s.append(String.format("   %s %s;\n", shaderUniformInfo.getType(), shaderUniformInfo.getStructureName()));
 		}
+		s.append(String.format("};\n"));
 
-		return shaderUniformText;
+		shaderUniformText = s.toString();
 	}
 
-	public ShaderContextUBO(IRenderingEngine re) {
-		data = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
-		buffer = re.genBuffer();
-		re.bindBuffer(IRenderingEngine.RE_UNIFORM_BUFFER, buffer);
-		re.setBufferData(IRenderingEngine.RE_UNIFORM_BUFFER, bufferSize, null, IRenderingEngine.RE_DYNAMIC_DRAW);
-		re.bindBufferBase(IRenderingEngine.RE_UNIFORM_BUFFER, bindingPoint, buffer);
-		startUpdate = OFFSET_START;
-		endUpdate = OFFSET_END;
+	protected ShaderUniformInfo addShaderUniform(Uniforms uniform, String type) {
+		ShaderUniformInfo shaderUniformInfo = new ShaderUniformInfo(uniform, type);
+		shaderUniformInfos.add(shaderUniformInfo);
+
+		return shaderUniformInfo;
+	}
+
+	protected ShaderUniformInfo addShaderUniform(Uniforms uniform, String type, int matrixSize) {
+		ShaderUniformInfo shaderUniformInfo = new ShaderUniformInfo(uniform, type, matrixSize);
+		shaderUniformInfos.add(shaderUniformInfo);
+
+		return shaderUniformInfo;
+	}
+
+	public String getShaderUniformText() {
+		return shaderUniformText;
 	}
 
 	@Override
 	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
 		int blockIndex = re.getUniformBlockIndex(shaderProgram, uniformBlockName);
 		re.setUniformBlockBinding(shaderProgram, blockIndex, bindingPoint);
+
+		if (data == null) {
+			buffer = re.genBuffer();
+			re.bindBuffer(IRenderingEngine.RE_UNIFORM_BUFFER, buffer);
+			re.bindBufferBase(IRenderingEngine.RE_UNIFORM_BUFFER, bindingPoint, buffer);
+		}
+
+		if (data == null) {
+			for (ShaderUniformInfo shaderUniformInfo : shaderUniformInfos) {
+				int index = re.getUniformIndex(shaderProgram, shaderUniformInfo.getName());
+				int offset = re.getActiveUniformOffset(shaderProgram, index);
+				shaderUniformInfo.setOffset(offset);
+			}
+
+			// The size returned by
+			//    glGetActiveUniformBlock(program, blockIndex, ARBUniformBufferObject.GL_UNIFORM_BLOCK_DATA_SIZE)
+			// is not reliable as the driver is free to reduce array sizes when they
+			// are not used in the shader.
+			// Use a dummy element of the structure to find the total structure size.
+			bufferSize = endOfUBO.getOffset() + 4;
+			if (VideoEngine.log.isDebugEnabled()) {
+				VideoEngine.log.debug(String.format("UBO Structure size: %d (including endOfUBO)", bufferSize));
+			}
+
+			data = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
+			re.setBufferData(IRenderingEngine.RE_UNIFORM_BUFFER, bufferSize, data, IRenderingEngine.RE_DYNAMIC_DRAW);
+			startUpdate = 0;
+			endUpdate = bufferSize;
+		}
 
 		super.initShaderProgram(re, shaderProgram);
 	}
@@ -187,8 +236,8 @@ public class ShaderContextUBO extends ShaderContext {
 			data.position(startUpdate);
 			re.setBufferSubData(IRenderingEngine.RE_UNIFORM_BUFFER, startUpdate, endUpdate - startUpdate, data);
 			data.limit(data.capacity());
-			startUpdate = OFFSET_END;
-			endUpdate = OFFSET_START;
+			startUpdate = bufferSize;
+			endUpdate = 0;
 		}
 
 		// Samplers can only be passed as uniforms
@@ -206,41 +255,41 @@ public class ShaderContextUBO extends ShaderContext {
 		}
 	}
 
-	protected void copy(int value, int offset) {
-		prepareCopy(offset, 4);
+	protected void copy(int value, ShaderUniformInfo shaderUniformInfo) {
+		prepareCopy(shaderUniformInfo.getOffset(), 4);
 		data.putInt(value);
 	}
 
-	protected void copy(int value, int offset, int index) {
-		prepareCopy(offset + index * 4, 4);
+	protected void copy(int value, ShaderUniformInfo shaderUniformInfo, int index) {
+		prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
 		data.putInt(value);
 	}
 
-	protected void copy(float value, int offset) {
-		prepareCopy(offset, 4);
+	protected void copy(float value, ShaderUniformInfo shaderUniformInfo) {
+		prepareCopy(shaderUniformInfo.getOffset(), 4);
 		data.putFloat(value);
 	}
 
-	protected void copy(float value, int offset, int index) {
-		prepareCopy(offset + index * 4, 4);
+	protected void copy(float value, ShaderUniformInfo shaderUniformInfo, int index) {
+		prepareCopy(shaderUniformInfo.getOffset() + index * 4, 4);
 		data.putFloat(value);
 	}
 
-	protected void copy(float[] values, int offset, int start, int end) {
-		prepareCopy(offset + start * 4, (end - start) * 4);
+	protected void copy(float[] values, ShaderUniformInfo shaderUniformInfo, int start, int end) {
+		prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
 		for (int i = start; i < end; i++) {
 			data.putFloat(values[i]);
 		}
 	}
 
-	protected void copy(boolean value, int offset) {
-		copy(value ? 1 : 0, offset);
+	protected void copy(boolean value, ShaderUniformInfo shaderUniformInfo) {
+		copy(value ? 1 : 0, shaderUniformInfo);
 	}
 
 	@Override
 	public void setTexEnable(int texEnable) {
 		if (texEnable != getTexEnable()) {
-			copy(texEnable, OFFSET_TEX_ENABLE);
+			copy(texEnable, this.texEnable);
 			super.setTexEnable(texEnable);
 		}
 	}
@@ -266,7 +315,7 @@ public class ShaderContextUBO extends ShaderContext {
 						break;
 					}
 				}
-				copy(boneMatrix, OFFSET_BONE_MATRIX, start, end);
+				copy(boneMatrix, this.boneMatrix, start, end);
 
 				super.setBoneMatrix(count, boneMatrix);
 			}
@@ -276,7 +325,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setColorDoubling(float colorDoubling) {
 		if (colorDoubling != getColorDoubling()) {
-			copy(colorDoubling, OFFSET_COLOR_DOUBLING);
+			copy(colorDoubling, this.colorDoubling);
 			super.setColorDoubling(colorDoubling);
 		}
 	}
@@ -284,7 +333,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setCtestEnable(int ctestEnable) {
 		if (ctestEnable != getCtestEnable()) {
-			copy(ctestEnable, OFFSET_CTEST_ENABLE);
+			copy(ctestEnable, this.ctestEnable);
 			super.setCtestEnable(ctestEnable);
 		}
 	}
@@ -292,7 +341,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setCtestFunc(int ctestFunc) {
 		if (ctestFunc != getCtestFunc()) {
-			copy(ctestFunc, OFFSET_CTEST_FUNC);
+			copy(ctestFunc, this.ctestFunc);
 			super.setCtestFunc(ctestFunc);
 		}
 	}
@@ -300,7 +349,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setCtestMsk(int index, int ctestMsk) {
 		if (ctestMsk != getCtestMsk(index)) {
-			copy(ctestMsk, OFFSET_CTEST_MSK, index);
+			copy(ctestMsk, this.ctestMsk, index);
 			super.setCtestMsk(index, ctestMsk);
 		}
 	}
@@ -308,7 +357,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setCtestRef(int index, int ctestRef) {
 		if (ctestRef != getCtestRef(index)) {
-			copy(ctestRef, OFFSET_CTEST_REF, index);
+			copy(ctestRef, this.ctestRef, index);
 			super.setCtestRef(index, ctestRef);
 		}
 	}
@@ -316,7 +365,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setLightEnabled(int light, int lightEnabled) {
 		if (lightEnabled != getLightEnabled(light)) {
-			copy(lightEnabled, OFFSET_LIGHT_ENABLED, light);
+			copy(lightEnabled, this.lightEnabled, light);
 			super.setLightEnabled(light, lightEnabled);
 		}
 	}
@@ -324,7 +373,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setLightingEnable(int lightingEnable) {
 		if (lightingEnable != getLightingEnable()) {
-			copy(lightingEnable, OFFSET_LIGHTING_ENABLE);
+			copy(lightingEnable, this.lightingEnable);
 			super.setLightingEnable(lightingEnable);
 		}
 	}
@@ -332,7 +381,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setLightKind(int light, int lightKind) {
 		if (lightKind != getLightKind(light)) {
-			copy(lightKind, OFFSET_LIGHT_KIND, light);
+			copy(lightKind, this.lightKind, light);
 			super.setLightKind(light, lightKind);
 		}
 	}
@@ -340,7 +389,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setLightMode(int lightMode) {
 		if (lightMode != getLightMode()) {
-			copy(lightMode, OFFSET_COLOR_ADDITION);
+			copy(lightMode, this.lightMode);
 			super.setLightMode(lightMode);
 		}
 	}
@@ -348,7 +397,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setLightType(int light, int lightType) {
 		if (lightType != getLightType(light)) {
-			copy(lightType, OFFSET_LIGHT_TYPE, light);
+			copy(lightType, this.lightType, light);
 			super.setLightType(light, lightType);
 		}
 	}
@@ -356,7 +405,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setMatFlags(int index, int matFlags) {
 		if (matFlags != getMatFlags(index)) {
-			copy(matFlags, OFFSET_MAT_FLAGS, index);
+			copy(matFlags, this.matFlags, index);
 			super.setMatFlags(index, matFlags);
 		}
 	}
@@ -364,7 +413,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setNormalScale(float normalScale) {
 		if (normalScale != getNormalScale()) {
-			copy(normalScale, OFFSET_NORMAL_SCALE);
+			copy(normalScale, this.normalScale);
 			super.setNormalScale(normalScale);
 		}
 	}
@@ -372,7 +421,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setNumberBones(int numberBones) {
 		if (numberBones != getNumberBones()) {
-			copy(numberBones, OFFSET_NUMBER_BONES);
+			copy(numberBones, this.numberBones);
 			super.setNumberBones(numberBones);
 		}
 	}
@@ -380,7 +429,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setPositionScale(float positionScale) {
 		if (positionScale != getPositionScale()) {
-			copy(positionScale, OFFSET_POSITION_SCALE);
+			copy(positionScale, this.positionScale);
 			super.setPositionScale(positionScale);
 		}
 	}
@@ -388,7 +437,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setTexEnvMode(int index, int texEnvMode) {
 		if (texEnvMode != getTexEnvMode(index)) {
-			copy(texEnvMode, OFFSET_TEX_ENV_MODE, index);
+			copy(texEnvMode, this.texEnvMode, index);
 			super.setTexEnvMode(index, texEnvMode);
 		}
 	}
@@ -396,7 +445,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setTexMapMode(int texMapMode) {
 		if (texMapMode != getTexMapMode()) {
-			copy(texMapMode, OFFSET_TEX_MAP_MODE);
+			copy(texMapMode, this.texMapMode);
 			super.setTexMapMode(texMapMode);
 		}
 	}
@@ -404,7 +453,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setTexMapProj(int texMapProj) {
 		if (texMapProj != getTexMapProj()) {
-			copy(texMapProj, OFFSET_TEX_MAP_PROJ);
+			copy(texMapProj, this.texMapProj);
 			super.setTexMapProj(texMapProj);
 		}
 	}
@@ -412,7 +461,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setTexShade(int index, int texShade) {
 		if (texShade != getTexShade(index)) {
-			copy(texShade, OFFSET_TEX_SHADE, index);
+			copy(texShade, this.texShade, index);
 			super.setTexShade(index, texShade);
 		}
 	}
@@ -420,7 +469,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setTextureScale(float textureScale) {
 		if (textureScale != getTextureScale()) {
-			copy(textureScale, OFFSET_TEXTURE_SCALE);
+			copy(textureScale, this.textureScale);
 			super.setTextureScale(textureScale);
 		}
 	}
@@ -428,7 +477,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setVinfoColor(int vinfoColor) {
 		if (vinfoColor != getVinfoColor()) {
-			copy(vinfoColor, OFFSET_VINFO_COLOR);
+			copy(vinfoColor, this.vinfoColor);
 			super.setVinfoColor(vinfoColor);
 		}
 	}
@@ -436,7 +485,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setVinfoPosition(int vinfoPosition) {
 		if (vinfoPosition != getVinfoPosition()) {
-			copy(vinfoPosition, OFFSET_VINFO_POSITION);
+			copy(vinfoPosition, this.vinfoPosition);
 			super.setVinfoPosition(vinfoPosition);
 		}
 	}
@@ -444,7 +493,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setVinfoTransform2D(int vinfoTransform2D) {
 		if (vinfoTransform2D != getVinfoTransform2D()) {
-			copy(vinfoTransform2D, OFFSET_VINFO_TRANSFORM2D);
+			copy(vinfoTransform2D, this.vinfoTransform2D);
 			super.setVinfoTransform2D(vinfoTransform2D);
 		}
 	}
@@ -452,7 +501,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setWeightScale(float weightScale) {
 		if (weightScale != getWeightScale()) {
-			copy(weightScale, OFFSET_WEIGHT_SCALE);
+			copy(weightScale, this.weightScale);
 			super.setWeightScale(weightScale);
 		}
 	}
@@ -460,7 +509,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setClutShift(int clutShift) {
 		if (clutShift != getClutShift()) {
-			copy(clutShift, OFFSET_CLUT_SHIFT);
+			copy(clutShift, this.clutShift);
 			super.setClutShift(clutShift);
 		}
 	}
@@ -468,7 +517,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setClutMask(int clutMask) {
 		if (clutMask != getClutMask()) {
-			copy(clutMask, OFFSET_CLUT_MASK);
+			copy(clutMask, this.clutMask);
 			super.setClutMask(clutMask);
 		}
 	}
@@ -476,7 +525,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setClutOffset(int clutOffset) {
 		if (clutOffset != getClutOffset()) {
-			copy(clutOffset, OFFSET_CLUT_OFFSET);
+			copy(clutOffset, this.clutOffset);
 			super.setClutOffset(clutOffset);
 		}
 	}
@@ -484,7 +533,7 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setMipmapShareClut(boolean mipmapShareClut) {
 		if (mipmapShareClut != isMipmapShareClut()) {
-			copy(mipmapShareClut, OFFSET_MIPMAP_SHARE_CLUT);
+			copy(mipmapShareClut, this.mipmapShareClut);
 			super.setMipmapShareClut(mipmapShareClut);
 		}
 	}
@@ -492,8 +541,17 @@ public class ShaderContextUBO extends ShaderContext {
 	@Override
 	public void setTexPixelFormat(int texPixelFormat) {
 		if (texPixelFormat != getTexPixelFormat()) {
-			copy(texPixelFormat, OFFSET_TEX_PIXEL_FORMAT);
+			copy(texPixelFormat, this.texPixelFormat);
 			super.setTexPixelFormat(texPixelFormat);
+		}
+	}
+
+	@Override
+	public void setVertexColor(float[] vertexColor) {
+		float[] currentVertexColor = getVertexColor();
+		if (vertexColor[0] != currentVertexColor[0] || vertexColor[1] != currentVertexColor[1] || vertexColor[2] != currentVertexColor[2] || vertexColor[3] != currentVertexColor[3]) {
+			copy(vertexColor, this.vertexColor, 0, 4);
+			super.setVertexColor(vertexColor);
 		}
 	}
 }

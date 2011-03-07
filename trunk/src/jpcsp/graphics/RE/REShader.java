@@ -52,27 +52,30 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected final static float[] normalScale   = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] textureScale  = new float[] { 1, 0x80, 0x8000, 1 };
 	protected final static float[] weightScale   = new float[] { 1, 0x80, 0x8000, 1 };
+	protected final static String attributeNameTexture = "pspTexture";
+	protected final static String attributeNameColor = "pspColor";
+	protected final static String attributeNameNormal = "pspNormal";
+	protected final static String attributeNamePosition = "pspPosition";
+	protected final static String attributeNameWeights1 = "pspWeights1";
+	protected final static String attributeNameWeights2 = "pspWeights2";
 	protected ShaderContext shaderContext;
-	protected int shaderProgram;
-	protected int spriteShaderProgram;
-	protected int vertexShader;
-	protected int geometryShader;
-	protected int fragmentShader;
-	protected int shaderAttribPosition;
-	protected int shaderAttribNormal;
-	protected int shaderAttribColor;
-	protected int shaderAttribTexture;
-	protected int shaderAttribWeights1;
-	protected int shaderAttribWeights2;
+	protected ShaderProgram defaultShaderProgram;
+	protected ShaderProgram defaultSpriteShaderProgram;
 	protected int numberOfWeightsForShader;
 	protected final static int spriteGeometryShaderInputType = GU_LINES;
 	protected final static int spriteGeometryShaderOutputType = GU_TRIANGLE_STRIP;
-	protected boolean useGeometryShader = true;
+	protected boolean useGeometryShader;
 	protected boolean useUniformBufferObject = true;
-	protected boolean useNativeClut = true;
+	protected boolean useNativeClut;
 	protected int clutTextureId = -1;
 	protected ByteBuffer clutBuffer;
     protected DurationStatistics textureCacheLookupStatistics = new CpuDurationStatistics("Lookup in TextureCache for CLUTs");
+	protected String shaderStaticDefines;
+	protected String shaderDummyDynamicDefines;
+	protected int shaderVersion = 120;
+	protected ShaderProgramManager shaderProgramManager;
+	protected boolean useDynamicShaders;
+	protected ShaderProgram currentShaderProgram;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -80,9 +83,15 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	protected void initShader() {
-		useGeometryShader = Settings.getInstance().readBool("emu.useGeometryShader");
-
 		log.info("Using shaders with Skinning");
+
+		useDynamicShaders = Settings.getInstance().readBool("emu.enabledynamicshaders");
+		if (useDynamicShaders) {
+			log.info("Using dynamic shaders");
+			shaderProgramManager = new ShaderProgramManager();
+		}
+
+		useGeometryShader = Settings.getInstance().readBool("emu.useGeometryShader");
 
 		if (!re.isExtensionAvailable("GL_ARB_geometry_shader4")) {
 			useGeometryShader = false;
@@ -108,29 +117,14 @@ public class REShader extends BaseRenderingEngineFunction {
         	}
         }
 
-		loadShaders();
-
 		if (useUniformBufferObject) {
 			shaderContext = new ShaderContextUBO(re);
 		} else {
 			shaderContext = new ShaderContext();
 		}
 
-		shaderContext.initShaderProgram(re, shaderProgram);
-
-		for (Uniforms uniform : Uniforms.values()) {
-            uniform.allocateId(re, shaderProgram);
-            if (useGeometryShader) {
-            	uniform.allocateId(re, spriteShaderProgram);
-            }
-        }
-
-        shaderAttribWeights1 = re.getAttribLocation(shaderProgram, "weights1");
-        shaderAttribWeights2 = re.getAttribLocation(shaderProgram, "weights2");
-        shaderAttribPosition = re.getAttribLocation(shaderProgram, "position");
-        shaderAttribNormal   = re.getAttribLocation(shaderProgram, "normal");
-        shaderAttribColor    = re.getAttribLocation(shaderProgram, "color");
-        shaderAttribTexture  = re.getAttribLocation(shaderProgram, "texture");
+        initShadersDefines();
+		loadShaders();
 
 		shaderContext.setColorDoubling(1);
 
@@ -142,15 +136,15 @@ public class REShader extends BaseRenderingEngineFunction {
 		}
 	}
 
-	protected void addDefine(StringBuilder defines, String name, String value) {
+	protected static void addDefine(StringBuilder defines, String name, String value) {
 		defines.append(String.format("#define %s %s%s", name, escapeString(value), System.getProperty("line.separator")));
 	}
 
-	protected void addDefine(StringBuilder defines, String name, int value) {
+	protected static void addDefine(StringBuilder defines, String name, int value) {
 		addDefine(defines, name, Integer.toString(value));
 	}
 
-	protected void addDefine(StringBuilder defines, String name, boolean value) {
+	protected static void addDefine(StringBuilder defines, String name, boolean value) {
 		addDefine(defines, name, value ? 1 : 0);
 	}
 
@@ -161,50 +155,57 @@ public class REShader extends BaseRenderingEngineFunction {
 		}
 	}
 
-	protected String escapeString(String s) {
+	protected static String escapeString(String s) {
 		return s.replace('\n', ' ');
 	}
 
-	protected void preprocessShader(StringBuilder src) {
-		StringBuilder defines = new StringBuilder();
-		int shaderVersion = 120;
+	protected void initShadersDefines() {
+        StringBuilder staticDefines = new StringBuilder();
 
-		addDefine(defines, "USE_GEOMETRY_SHADER", useGeometryShader);
-		addDefine(defines, "USE_UBO", useUniformBufferObject);
+        addDefine(staticDefines, "USE_GEOMETRY_SHADER", useGeometryShader);
+		addDefine(staticDefines, "USE_UBO", useUniformBufferObject);
 		if (useUniformBufferObject) {
 			// UBO requires at least shader version 1.40
 			shaderVersion = Math.max(140, shaderVersion);
-			addDefine(defines, "UBO_STRUCTURE", ShaderContextUBO.getShaderUniformText());
+			addDefine(staticDefines, "UBO_STRUCTURE", ((ShaderContextUBO) shaderContext).getShaderUniformText());
 		}
-		addDefine(defines, "USE_NATIVE_CLUT", useNativeClut);
 
+		addDefine(staticDefines, "USE_NATIVE_CLUT", useNativeClut);
 		if (useNativeClut) {
 			// Native clut requires at least shader version 1.30
 			shaderVersion = Math.max(130, shaderVersion);
 		}
 
-		if (shaderContext != null) {
-			addDefine(defines, "VINFO_TRANSFORM2D", shaderContext.getVinfoTransform2D());
-			addDefine(defines, "VINFO_COLOR", shaderContext.getVinfoColor());
-			addDefine(defines, "VINFO_POSITION", shaderContext.getVinfoPosition());
-			addDefine(defines, "COLOR_ADDITION", shaderContext.getLightMode());
-			addDefine(defines, "TEX_MAP_MODE", shaderContext.getTexMapMode());
-			addDefine(defines, "TEX_MAP_PROJ", shaderContext.getTexMapProj());
-			addDefine(defines, "NUMBER_BONES", shaderContext.getNumberBones());
-			addDefine(defines, "LIGHTING_ENABLE", shaderContext.getLightingEnable());
-			addDefine(defines, "TEX_ENABLE", shaderContext.getTexEnable());
-			addDefine(defines, "TEX_ENABLE", shaderContext.getTexEnable());
-			addDefine(defines, "TEX_ENV_MODE_FUNC", shaderContext.getTexEnvMode(0));
-			addDefine(defines, "TEX_ENV_MODE_USE_ALPHA", shaderContext.getTexEnvMode(1));
-			addDefine(defines, "CTEST_ENABLE", shaderContext.getCtestEnable());
-			addDefine(defines, "CTEST_FUNC", shaderContext.getCtestFunc());
+		boolean useBitOperators = re.isExtensionAvailable("GL_EXT_gpu_shader4");
+		addDefine(staticDefines, "USE_BIT_OPERATORS", useBitOperators);
+		if (!useBitOperators) {
+			log.info("Extension GL_EXT_gpu_shader4 not available: not using bit operators in shader");
 		}
+
+		shaderStaticDefines = staticDefines.toString();
+		shaderDummyDynamicDefines = ShaderProgram.getDummyDynamicDefines();
+	}
+
+	protected void preprocessShader(StringBuilder src, ShaderProgram shaderProgram) {
+		StringBuilder defines = new StringBuilder(shaderStaticDefines);
+
+		boolean useDynamicDefines;
+		if (shaderProgram != null) {
+			defines.append(shaderProgram.getDynamicDefines());
+			useDynamicDefines = true;
+		} else {
+			// Set dummy values to the dynamic defines
+			// so that the preprocessor doesn't complain about undefined values
+			defines.append(shaderDummyDynamicDefines);
+			useDynamicDefines = false;
+		}
+		addDefine(defines, "USE_DYNAMIC_DEFINES", useDynamicDefines);
 
 		replace(src, "// INSERT VERSION", String.format("#version %d", shaderVersion));
 		replace(src, "// INSERT DEFINES", defines.toString());
 	}
 
-	protected boolean loadShader(int shader, String resourceName, boolean silentError) {
+	protected boolean loadShader(int shader, String resourceName, boolean silentError, ShaderProgram shaderProgram) {
 		StringBuilder src = new StringBuilder();
 
         try {
@@ -218,7 +219,11 @@ public class REShader extends BaseRenderingEngineFunction {
         	return false;
         }
 
-        preprocessShader(src);
+        preprocessShader(src, shaderProgram);
+
+        if (log.isTraceEnabled()) {
+        	log.trace(String.format("Compiling shader %d from %s:\n%s", shader, resourceName, src.toString()));
+        }
 
         boolean compiled = re.compilerShader(shader, src.toString());
         if (compiled || !silentError) {
@@ -231,52 +236,90 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected void linkShaderProgram(int program) {
         re.linkProgram(program);
         printProgramInfoLog(program);
+
+        // Trying to avoid warning message from AMD drivers:
+        // "Validation warning! - Sampler value tex has not been set."
+        re.setUniform(re.getUniformLocation(program, Uniforms.tex.getUniformString()), ACTIVE_TEXTURE_NORMAL);
+
         re.validateProgram(program);
         printProgramInfoLog(program);
 	}
 
-	protected void loadShaders() {
-		vertexShader = re.createShader(RE_VERTEX_SHADER);
-        fragmentShader = re.createShader(RE_FRAGMENT_SHADER);
+	protected int createShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
+		int vertexShader = re.createShader(RE_VERTEX_SHADER);
+        int fragmentShader = re.createShader(RE_FRAGMENT_SHADER);
 
-        loadShader(vertexShader, "/jpcsp/graphics/shader.vert", false);
-        loadShader(fragmentShader, "/jpcsp/graphics/shader.frag", false);
+        loadShader(vertexShader, "/jpcsp/graphics/shader.vert", false, shaderProgram);
+        loadShader(fragmentShader, "/jpcsp/graphics/shader.frag", false, shaderProgram);
 
-        shaderProgram = re.createProgram();
-        re.attachShader(shaderProgram, vertexShader);
-        re.attachShader(shaderProgram, fragmentShader);
-        linkShaderProgram(shaderProgram);
+        int program = re.createProgram();
+        re.attachShader(program, vertexShader);
+        re.attachShader(program, fragmentShader);
 
-        if (useGeometryShader) {
-	        // Create a different shader program where the geometry shader is attached.
-	        // This program will be used to process GU_SPRITES primitives.
-	        geometryShader = re.createShader(RE_GEOMETRY_SHADER);
+        if (hasGeometryShader) {
+	        int geometryShader = re.createShader(RE_GEOMETRY_SHADER);
 	        boolean compiled;
-	        compiled = loadShader(geometryShader, "/jpcsp/graphics/shader-150.geom", false);
+	        compiled = loadShader(geometryShader, "/jpcsp/graphics/shader-150.geom", false, shaderProgram);
 	        if (compiled) {
 	        	log.info("Using Geometry Shader shader-150.geom");
 	        } else {
-	        	compiled = loadShader(geometryShader, "/jpcsp/graphics/shader-120.geom", false);
+	        	compiled = loadShader(geometryShader, "/jpcsp/graphics/shader-120.geom", false, shaderProgram);
 	        	if (compiled) {
 		        	log.info("Using Geometry Shader shader-120.geom");
 	        	}
 	        }
 
 	        if (!compiled) {
-	        	useGeometryShader = false;
-	        } else {
-		        spriteShaderProgram = re.createProgram();
-		        re.attachShader(spriteShaderProgram, vertexShader);
-		        re.attachShader(spriteShaderProgram, geometryShader);
-		        re.attachShader(spriteShaderProgram, fragmentShader);
-		        re.setProgramParameter(spriteShaderProgram, RE_GEOMETRY_INPUT_TYPE, spriteGeometryShaderInputType);
-		        re.setProgramParameter(spriteShaderProgram, RE_GEOMETRY_OUTPUT_TYPE, spriteGeometryShaderOutputType);
-		        re.setProgramParameter(spriteShaderProgram, RE_GEOMETRY_VERTICES_OUT, 4);
-		        linkShaderProgram(spriteShaderProgram);
+	        	return -1;
 	        }
+	        re.attachShader(program, geometryShader);
+	        re.setProgramParameter(program, RE_GEOMETRY_INPUT_TYPE, spriteGeometryShaderInputType);
+	        re.setProgramParameter(program, RE_GEOMETRY_OUTPUT_TYPE, spriteGeometryShaderOutputType);
+	        re.setProgramParameter(program, RE_GEOMETRY_VERTICES_OUT, 4);
         }
 
-        re.useProgram(shaderProgram);
+        // Use the same attribute index values for all shader programs
+        re.bindAttribLocation(program, 0, attributeNameWeights1);
+        re.bindAttribLocation(program, 1, attributeNameWeights2);
+        re.bindAttribLocation(program, 2, attributeNamePosition);
+        re.bindAttribLocation(program, 3, attributeNameNormal);
+        re.bindAttribLocation(program, 4, attributeNameColor);
+        re.bindAttribLocation(program, 5, attributeNameTexture);
+
+        linkShaderProgram(program);
+
+        if (log.isDebugEnabled()) {
+        	int shaderAttribWeights1 = re.getAttribLocation(program, attributeNameWeights1);
+        	int shaderAttribWeights2 = re.getAttribLocation(program, attributeNameWeights2);
+        	int shaderAttribPosition = re.getAttribLocation(program, attributeNamePosition);
+        	int shaderAttribNormal   = re.getAttribLocation(program, attributeNameNormal);
+        	int shaderAttribColor    = re.getAttribLocation(program, attributeNameColor);
+        	int shaderAttribTexture  = re.getAttribLocation(program, attributeNameTexture);
+        	log.debug(String.format("Program %d attribute locations: weights1=%d, weights2=%d, position=%d, normal=%d, color=%d, texture=%d", program, shaderAttribWeights1, shaderAttribWeights2, shaderAttribPosition, shaderAttribNormal, shaderAttribColor, shaderAttribTexture));
+        }
+
+		for (Uniforms uniform : Uniforms.values()) {
+            uniform.allocateId(re, program);
+        }
+
+		shaderContext.initShaderProgram(re, program);
+
+		return program;
+	}
+
+	protected void loadShaders() {
+		int defaultShaderProgramId = createShader(false, null);
+		defaultShaderProgram = new ShaderProgram(re, defaultShaderProgramId);
+		if (useGeometryShader) {
+			int defaultSpriteShaderProgramId = createShader(true, null);
+			if (defaultSpriteShaderProgramId == -1) {
+				useGeometryShader = false;
+			} else {
+				defaultSpriteShaderProgram = new ShaderProgram(re, defaultSpriteShaderProgramId);
+			}
+		}
+
+		re.useProgram(defaultShaderProgramId);
 	}
 
 	public static boolean useShaders(IRenderingEngine re) {
@@ -434,7 +477,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void startDisplay() {
-        re.useProgram(shaderProgram);
+		re.useProgram(defaultShaderProgram.getProgramId());
 		super.startDisplay();
 
 		// We don't use Client States
@@ -454,28 +497,28 @@ public class REShader extends BaseRenderingEngineFunction {
 	public void enableClientState(int type) {
 		switch (type) {
 			case RE_VERTEX:
-				re.enableVertexAttribArray(shaderAttribPosition);
+				re.enableVertexAttribArray(currentShaderProgram.getShaderAttribPosition());
 
 				if (numberOfWeightsForShader > 0) {
-		            re.enableVertexAttribArray(shaderAttribWeights1);
+		            re.enableVertexAttribArray(currentShaderProgram.getShaderAttribWeights1());
 		            if (numberOfWeightsForShader > 4) {
-		            	re.enableVertexAttribArray(shaderAttribWeights2);
+		            	re.enableVertexAttribArray(currentShaderProgram.getShaderAttribWeights2());
 		            } else {
-		            	re.disableVertexAttribArray(shaderAttribWeights2);
+		            	re.disableVertexAttribArray(currentShaderProgram.getShaderAttribWeights2());
 		            }
 				} else {
-		        	re.disableVertexAttribArray(shaderAttribWeights1);
-		        	re.disableVertexAttribArray(shaderAttribWeights2);
+		        	re.disableVertexAttribArray(currentShaderProgram.getShaderAttribWeights1());
+		        	re.disableVertexAttribArray(currentShaderProgram.getShaderAttribWeights2());
 				}
 				break;
 			case RE_NORMAL:
-				re.enableVertexAttribArray(shaderAttribNormal);
+				re.enableVertexAttribArray(currentShaderProgram.getShaderAttribNormal());
 				break;
 			case RE_COLOR:
-				re.enableVertexAttribArray(shaderAttribColor);
+				re.enableVertexAttribArray(currentShaderProgram.getShaderAttribColor());
 				break;
 			case RE_TEXTURE:
-				re.enableVertexAttribArray(shaderAttribTexture);
+				re.enableVertexAttribArray(currentShaderProgram.getShaderAttribTexture());
 				break;
 		}
 	}
@@ -484,18 +527,18 @@ public class REShader extends BaseRenderingEngineFunction {
 	public void disableClientState(int type) {
 		switch (type) {
 			case RE_VERTEX:
-				re.disableVertexAttribArray(shaderAttribPosition);
-	        	re.disableVertexAttribArray(shaderAttribWeights1);
-	        	re.disableVertexAttribArray(shaderAttribWeights2);
+				re.disableVertexAttribArray(currentShaderProgram.getShaderAttribPosition());
+	        	re.disableVertexAttribArray(currentShaderProgram.getShaderAttribWeights1());
+	        	re.disableVertexAttribArray(currentShaderProgram.getShaderAttribWeights2());
 				break;
 			case RE_NORMAL:
-				re.disableVertexAttribArray(shaderAttribNormal);
+				re.disableVertexAttribArray(currentShaderProgram.getShaderAttribNormal());
 				break;
 			case RE_COLOR:
-				re.disableVertexAttribArray(shaderAttribColor);
+				re.disableVertexAttribArray(currentShaderProgram.getShaderAttribColor());
 				break;
 			case RE_TEXTURE:
-				re.disableVertexAttribArray(shaderAttribTexture);
+				re.disableVertexAttribArray(currentShaderProgram.getShaderAttribTexture());
 				break;
 		}
 	}
@@ -503,9 +546,9 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public void setWeightPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		if (size > 0) {
-            re.setVertexAttribPointer(shaderAttribWeights1, Math.min(size, 4), type, false, stride, bufferSize, buffer);
+            re.setVertexAttribPointer(currentShaderProgram.getShaderAttribWeights1(), Math.min(size, 4), type, false, stride, bufferSize, buffer);
             if (size > 4) {
-                re.setVertexAttribPointer(shaderAttribWeights2, size - 4, type, false, stride, bufferSize, buffer);
+                re.setVertexAttribPointer(currentShaderProgram.getShaderAttribWeights2(), size - 4, type, false, stride, bufferSize, buffer);
             }
 		}
 	}
@@ -513,9 +556,9 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public void setWeightPointer(int size, int type, int stride, long offset) {
 		if (size > 0) {
-            re.setVertexAttribPointer(shaderAttribWeights1, Math.min(size, 4), type, false, stride, offset);
+            re.setVertexAttribPointer(currentShaderProgram.getShaderAttribWeights1(), Math.min(size, 4), type, false, stride, offset);
             if (size > 4) {
-                re.setVertexAttribPointer(shaderAttribWeights2, size - 4, type, false, stride, offset + sizeOfType[type] * 4);
+                re.setVertexAttribPointer(currentShaderProgram.getShaderAttribWeights2(), size - 4, type, false, stride, offset + sizeOfType[type] * 4);
             }
 		}
 	}
@@ -533,80 +576,109 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
 		if (allNativeVertexInfo) {
 			shaderContext.setWeightScale(weightScale[vinfo.weight]);
 			shaderContext.setTextureScale(vinfo.transform2D ? 1.f : textureScale[vinfo.texture]);
-			shaderContext.setVinfoColor(useVertexColor ? vinfo.color : -1);
+			shaderContext.setVinfoColor(useVertexColor ? vinfo.color : 8);
 			shaderContext.setNormalScale(vinfo.transform2D ? 1.f : normalScale[vinfo.normal]);
 			shaderContext.setVinfoPosition(vinfo.position);
 			shaderContext.setPositionScale(vinfo.transform2D ? 1.f : positionScale[vinfo.position]);
 		} else {
 			shaderContext.setWeightScale(1);
 			shaderContext.setTextureScale(1);
-			shaderContext.setVinfoColor(useVertexColor ? 0 : -1);
+			shaderContext.setVinfoColor(useVertexColor ? 0 : 8);
 			shaderContext.setNormalScale(1);
 			shaderContext.setVinfoPosition(0);
 			shaderContext.setPositionScale(1);
 		}
 		shaderContext.setVinfoTransform2D(vinfo == null || vinfo.transform2D ? 1 : 0);
-		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor);
+		setCurrentShaderProgram(type);
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, type);
+	}
+
+	private void setCurrentShaderProgram(int type) {
+		ShaderProgram shaderProgram;
+		boolean hasGeometryShader = (type == GU_SPRITES);
+		if (useDynamicShaders) {
+			shaderProgram = shaderProgramManager.getShaderProgram(shaderContext, hasGeometryShader);
+			if (shaderProgram.getProgramId() == -1) {
+				int programId = createShader(hasGeometryShader, shaderProgram);
+				if (VideoEngine.log.isDebugEnabled()) {
+					VideoEngine.log.debug("Created shader " + shaderProgram);
+				}
+				shaderProgram.setProgramId(re, programId);
+			}
+			shaderProgram.use(re);
+		} else if (hasGeometryShader) {
+			shaderProgram = defaultSpriteShaderProgram;
+		} else {
+			shaderProgram = defaultShaderProgram;
+		}
+		shaderProgram.use(re);
+		if (VideoEngine.log.isTraceEnabled()) {
+			VideoEngine.log.trace("Using shader " + shaderProgram);
+		}
+		currentShaderProgram = shaderProgram;
 	}
 
 	@Override
 	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribPosition, size, type, false, stride, bufferSize, buffer);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribPosition(), size, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override
 	public void setVertexPointer(int size, int type, int stride, long offset) {
-		re.setVertexAttribPointer(shaderAttribPosition, size, type, false, stride, offset);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribPosition(), size, type, false, stride, offset);
 	}
 
 	@Override
 	public void setColorPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribColor, size, type, false, stride, bufferSize, buffer);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribColor(), size, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override
 	public void setColorPointer(int size, int type, int stride, long offset) {
-		re.setVertexAttribPointer(shaderAttribColor, size, type, false, stride, offset);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribColor(), size, type, false, stride, offset);
 	}
 
 	@Override
 	public void setNormalPointer(int type, int stride, int bufferSize, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribNormal, 3, type, false, stride, bufferSize, buffer);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribNormal(), 3, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override
 	public void setNormalPointer(int type, int stride, long offset) {
-		re.setVertexAttribPointer(shaderAttribNormal, 3, type, false, stride, offset);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribNormal(), 3, type, false, stride, offset);
 	}
 
 	@Override
 	public void setTexCoordPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
-		re.setVertexAttribPointer(shaderAttribTexture, size, type, false, stride, bufferSize, buffer);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribTexture(), size, type, false, stride, bufferSize, buffer);
 	}
 
 	@Override
 	public void setTexCoordPointer(int size, int type, int stride, long offset) {
-		re.setVertexAttribPointer(shaderAttribTexture, size, type, false, stride, offset);
+		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribTexture(), size, type, false, stride, offset);
 	}
 
 	@Override
 	public void drawArrays(int type, int first, int count) {
-		int program;
 		if (type == GU_SPRITES) {
 			type = spriteGeometryShaderInputType;
-			program = spriteShaderProgram;
-		} else {
-			program = shaderProgram;
 		}
-		re.useProgram(program);
 		// The uniform values are specific to a shader program:
 		// update the uniform values after switching the active shader program.
-		shaderContext.setUniforms(re, program);
+		shaderContext.setUniforms(re, currentShaderProgram.getProgramId());
 		super.drawArrays(type, first, count);
+	}
+
+	@Override
+	public void drawArraysBurstMode(int type, int first, int count) {
+		if (type == GU_SPRITES) {
+			type = spriteGeometryShaderInputType;
+		}
+		super.drawArraysBurstMode(type, first, count);
 	}
 
 	@Override
@@ -616,46 +688,112 @@ public class REShader extends BaseRenderingEngineFunction {
 		return useNativeClut;
 	}
 
-	private void loadClut() {
+	private int getClutIndexHint(int pixelFormat, int numEntries) {
+		if (context.tex_clut_start == 0 && context.tex_clut_mask == numEntries - 1) {
+			int currentBit = 0;
+			if (context.tex_clut_shift == currentBit) {
+				return IRenderingEngine.RE_CLUT_INDEX_RED_ONLY;
+			}
+
+			switch (pixelFormat) {
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650:  currentBit += 5; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551: currentBit += 5; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444: currentBit += 4; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888: currentBit += 8; break;
+				default:
+					switch (context.tex_clut_mode) {
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:  currentBit += 5; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551: currentBit += 5; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: currentBit += 4; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: currentBit += 8; break;
+					}
+			}
+			if (context.tex_clut_shift == currentBit) {
+				return IRenderingEngine.RE_CLUT_INDEX_GREEN_ONLY;
+			}
+
+			switch (pixelFormat) {
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650:  currentBit += 6; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551: currentBit += 5; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444: currentBit += 4; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888: currentBit += 8; break;
+				default:
+					switch (context.tex_clut_mode) {
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:  currentBit += 6; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551: currentBit += 5; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: currentBit += 4; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: currentBit += 8; break;
+					}
+			}
+			if (context.tex_clut_shift == currentBit) {
+				return IRenderingEngine.RE_CLUT_INDEX_BLUE_ONLY;
+			}
+
+			switch (pixelFormat) {
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650:  currentBit += 5; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551: currentBit += 5; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444: currentBit += 4; break;
+				case IRenderingEngine.RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888: currentBit += 8; break;
+				default:
+					switch (context.tex_clut_mode) {
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:  currentBit += 5; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551: currentBit += 5; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: currentBit += 4; break;
+						case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: currentBit += 8; break;
+					}
+			}
+			if (context.tex_clut_shift == currentBit) {
+				return IRenderingEngine.RE_CLUT_INDEX_ALPHA_ONLY;
+			}
+		}
+
+		return IRenderingEngine.RE_CLUT_INDEX_NO_HINT;
+	}
+
+	private void loadClut(int pixelFormat) {
 		// E.g. mask==0xFF requires 256 entries
 		// also mask==0xF0 requires 256 entries
 		int numEntries = Integer.highestOneBit(context.tex_clut_mask) << 1;
-		int pixelFormat = context.tex_clut_mode;
-		int bytesPerEntry = sizeOfTextureType[pixelFormat];
+		int clutPixelFormat = context.tex_clut_mode;
+		int bytesPerEntry = sizeOfTextureType[clutPixelFormat];
 
 		shaderContext.setClutShift(context.tex_clut_shift);
 		shaderContext.setClutMask(context.tex_clut_mask);
 		shaderContext.setClutOffset(context.tex_clut_start);
 		shaderContext.setMipmapShareClut(context.mipmapShareClut);
+		shaderContext.setClutIndexHint(getClutIndexHint(pixelFormat, numEntries));
 
 		int[]   clut32 = (bytesPerEntry == 4 ? VideoEngine.getInstance().readClut32(0) : null);
 		short[] clut16 = (bytesPerEntry == 2 ? VideoEngine.getInstance().readClut16(0) : null);
 
 		Texture texture;
-		re.setActiveTexture(ACTIVE_TEXTURE_CLUT);
+		int textureId;
 		if (VideoEngine.useTextureCache) {
 			TextureCache textureCache = TextureCache.getInstance();
 
 			textureCacheLookupStatistics.start();
-			texture = textureCache.getTexture(context.tex_clut_addr, numEntries, numEntries, 1, pixelFormat, 0, 0, 0, 0, 0, 0, 0, false, clut16, clut32);
+			texture = textureCache.getTexture(context.tex_clut_addr, numEntries, numEntries, 1, clutPixelFormat, 0, 0, 0, 0, 0, 0, 0, false, clut16, clut32);
 			textureCacheLookupStatistics.end();
 
 			if (texture == null) {
-				texture = new Texture(textureCache, context.tex_clut_addr, numEntries, numEntries, 1, pixelFormat, 0, 0, 0, 0, 0, 0, 0, false, clut16, clut32);
+				texture = new Texture(textureCache, context.tex_clut_addr, numEntries, numEntries, 1, clutPixelFormat, 0, 0, 0, 0, 0, 0, 0, false, clut16, clut32);
 				textureCache.addTexture(re, texture);
 			}
 
-			texture.bindTexture(re);
+			textureId = texture.getTextureId(re);
 		} else {
 			texture = null;
 			if (clutTextureId == -1) {
 				clutTextureId = re.genTexture();
 			}
 
-			re.bindTexture(clutTextureId);
+			textureId = clutTextureId;
 		}
 
 		if (texture == null || !texture.isLoaded()) {
+			re.setActiveTexture(ACTIVE_TEXTURE_CLUT);
+			re.bindTexture(textureId);
+
 			clutBuffer.clear();
 			if (clut32 != null) {
 				clutBuffer.asIntBuffer().put(clut32, 0, numEntries);
@@ -675,13 +813,24 @@ public class REShader extends BaseRenderingEngineFunction {
 			// probably because they are very seldom used and buggy.
 			// To use a 2D texture Nx1 is the safest way...
 			int clutSize = bytesPerEntry * numEntries;
-			re.setTexImage(0, pixelFormat, numEntries, 1, pixelFormat, pixelFormat, clutSize, clutBuffer);
+			re.setTexImage(0, clutPixelFormat, numEntries, 1, clutPixelFormat, clutPixelFormat, clutSize, clutBuffer);
 
 			if (texture != null) {
 				texture.setIsLoaded();
 			}
+
+			re.setActiveTexture(ACTIVE_TEXTURE_NORMAL);
+		} else {
+			// The call
+			//     bindActiveTexture(ACTIVE_TEXTURE_CLUT, textureId)
+			// is equivalent to
+			//     setActiveTexture(ACTIVE_TEXTURE_CLUT)
+			//     bindTexture(textureId)
+			//     setActiveTexture(ACTIVE_TEXTURE_NORMAL)
+			// but executes faster: StateProxy can eliminate the 3 OpenGL calls
+			// if they are redundant.
+			re.bindActiveTexture(ACTIVE_TEXTURE_CLUT, textureId);
 		}
-		re.setActiveTexture(ACTIVE_TEXTURE_NORMAL);
 	}
 
 	@Override
@@ -694,10 +843,16 @@ public class REShader extends BaseRenderingEngineFunction {
 				// Textures are decoded in the VideoEngine when not using native CLUTs
 				pixelFormat = context.tex_clut_mode;
 			} else {
-				loadClut();
+				loadClut(pixelFormat);
 			}
 		}
 		shaderContext.setTexPixelFormat(pixelFormat);
 		super.setTextureFormat(pixelFormat, swizzle);
+	}
+
+	@Override
+	public void setVertexColor(float[] color) {
+		shaderContext.setVertexColor(color);
+		super.setVertexColor(color);
 	}
 }

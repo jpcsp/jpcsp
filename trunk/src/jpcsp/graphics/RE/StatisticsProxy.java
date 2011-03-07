@@ -219,6 +219,13 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("canNativeClut", 179);
 		addStatistic("setActiveTexture", 180);
 		addStatistic("setTextureFormat", 181);
+		addStatistic("getUniformIndex", 182);
+		addStatistic("getUniformIndices", 183);
+		addStatistic("getActiveUniformOffset", 184);
+		addStatistic("bindAttribLocation", 185);
+		addStatistic("setUniform4", 186);
+		addStatistic("drawArraysBurstMode", 187);
+		addStatistic("bindActiveTexture", 188);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1498,10 +1505,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
 		DurationStatistics statistic = statistics[155];
 		statistic.start();
-		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor);
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, type);
 		statistic.end();
 	}
 
@@ -1713,6 +1720,65 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		DurationStatistics statistic = statistics[181];
 		statistic.start();
 		super.setTextureFormat(pixelFormat, swizzle);
+		statistic.end();
+	}
+
+	@Override
+	public int getUniformIndex(int program, String name) {
+		DurationStatistics statistic = statistics[182];
+		statistic.start();
+		int value = super.getUniformIndex(program, name);
+		statistic.end();
+		return value;
+	}
+
+	@Override
+	public int[] getUniformIndices(int program, String[] names) {
+		DurationStatistics statistic = statistics[183];
+		statistic.start();
+		int[] value = super.getUniformIndices(program, names);
+		statistic.end();
+		return value;
+	}
+
+	@Override
+	public int getActiveUniformOffset(int program, int uniformIndex) {
+		DurationStatistics statistic = statistics[184];
+		statistic.start();
+		int value = super.getActiveUniformOffset(program, uniformIndex);
+		statistic.end();
+		return value;
+	}
+
+	@Override
+	public void bindAttribLocation(int program, int index, String name) {
+		DurationStatistics statistic = statistics[185];
+		statistic.start();
+		super.bindAttribLocation(program, index, name);
+		statistic.end();
+	}
+
+	@Override
+	public void setUniform4(int id, float[] values) {
+		DurationStatistics statistic = statistics[186];
+		statistic.start();
+		super.setUniform4(id, values);
+		statistic.end();
+	}
+
+	@Override
+	public void drawArraysBurstMode(int primitive, int first, int count) {
+		DurationStatistics statistic = statistics[187];
+		statistic.start();
+		super.drawArraysBurstMode(primitive, first, count);
+		statistic.end();
+	}
+
+	@Override
+	public void bindActiveTexture(int index, int texture) {
+		DurationStatistics statistic = statistics[188];
+		statistic.start();
+		super.bindActiveTexture(index, texture);
 		statistic.end();
 	}
 }

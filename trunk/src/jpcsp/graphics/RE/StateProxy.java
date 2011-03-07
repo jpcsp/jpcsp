@@ -36,7 +36,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[][] matrix;
 	protected static final int RE_BONES_MATRIX = 4;
 	protected static final int matrix4Size = 4 * 4;
-	public    static final int maxProgramId = 10;
+	public    static final int maxProgramId = 1000;
 	public    static final int maxUniformId = 200;
 	protected int[][] uniformInt;
 	protected int[][][] uniformIntArray;
@@ -1072,6 +1072,22 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			super.setActiveTexture(index);
 			activeTextureUnit = index;
 			currentTextureState = textureStates.get(bindTexture[activeTextureUnit]);
+		}
+	}
+
+	@Override
+	public void bindActiveTexture(int index, int texture) {
+		if (texture != bindTexture[index]) {
+			super.bindActiveTexture(index, texture);
+			bindTexture[index] = texture;
+			if (index == activeTextureUnit) {
+				// Binding a new texture change the OpenGL texture wrap mode and min/mag filters
+				currentTextureState = textureStates.get(texture);
+				if (currentTextureState == null) {
+					currentTextureState = new TextureState();
+					textureStates.put(texture, currentTextureState);
+				}
+			}
 		}
 	}
 }

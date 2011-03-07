@@ -270,6 +270,13 @@ public interface IRenderingEngine {
 	public static final int RE_PIXEL_MAP_B_TO_B    = 8;
 	public static final int RE_PIXEL_MAP_A_TO_A    = 9;
 
+	// Clut Index Hint
+	public static final int RE_CLUT_INDEX_NO_HINT    = 0;
+	public static final int RE_CLUT_INDEX_RED_ONLY   = 1;
+	public static final int RE_CLUT_INDEX_GREEN_ONLY = 2;
+	public static final int RE_CLUT_INDEX_BLUE_ONLY  = 3;
+	public static final int RE_CLUT_INDEX_ALPHA_ONLY = 4;
+
 	public void setRenderingEngine(IRenderingEngine re);
 	public void setGeContext(GeContext context);
 	public void exit();
@@ -334,6 +341,7 @@ public interface IRenderingEngine {
 	public void setUniform2(int id, int[] values);
 	public void setUniform3(int id, int[] values);
 	public void setUniform4(int id, int[] values);
+	public void setUniform4(int id, float[] values);
 	public void setUniformMatrix4(int id, int count, float[] values);
 	public void setColorTestFunc(int func);
 	public void setColorTestReference(int[] values);
@@ -353,6 +361,7 @@ public interface IRenderingEngine {
 	public void validateProgram(int program);
 	public int getUniformLocation(int program, String name);
 	public int getAttribLocation(int program, String name);
+	public void bindAttribLocation(int program, int index, String name);
 	public String getShaderInfoLog(int shader);
 	public String getProgramInfoLog(int program);
 	public boolean isExtensionAvailable(String name);
@@ -421,13 +430,16 @@ public interface IRenderingEngine {
 	public IREBufferManager getBufferManager();
 	public boolean canAllNativeVertexInfo();
 	public boolean canNativeSpritesPrimitive();
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor);
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type);
 	public void setProgramParameter(int program, int parameter, int value);
 	public boolean isQueryAvailable();
 	public boolean isShaderAvailable();
 	public int getUniformBlockIndex(int program, String name);
 	public void bindBufferBase(int target, int bindingPoint, int buffer);
 	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint);
+	public int getUniformIndex(int program, String name);
+	public int[] getUniformIndices(int program, String[] names);
+	public int getActiveUniformOffset(int program, int uniformIndex);
 	public boolean isFramebufferObjectAvailable();
 	public int genFramebuffer();
 	public int genRenderbuffer();
@@ -443,6 +455,7 @@ public interface IRenderingEngine {
 	public void deleteVertexArray(int id);
 	public boolean isVertexArrayAvailable();
 	public void multiDrawArrays(int primitive, IntBuffer first, IntBuffer count);
+	public void drawArraysBurstMode(int primitive, int first, int count);
 	public void setPixelTransfer(int parameter, int value);
 	public void setPixelTransfer(int parameter, float value);
 	public void setPixelTransfer(int parameter, boolean value);
@@ -450,4 +463,5 @@ public interface IRenderingEngine {
 	public boolean canNativeClut();
 	public void setActiveTexture(int index);
 	public void setTextureFormat(int pixelFormat, boolean swizzle);
+	public void bindActiveTexture(int index, int texture);
 }

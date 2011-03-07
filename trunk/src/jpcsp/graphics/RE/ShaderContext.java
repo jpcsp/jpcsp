@@ -61,6 +61,8 @@ public class ShaderContext {
 	private int texPixelFormat;
 	private int tex = 0;
 	private int utex = -1;
+	private float[] vertexColor = new float[4];
+	private int clutIndexHint;
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -95,6 +97,7 @@ public class ShaderContext {
 		re.setUniform(Uniforms.clutOffset.getId(shaderProgram), clutOffset);
 		re.setUniform(Uniforms.mipmapShareClut.getId(shaderProgram), mipmapShareClut ? 1 : 0);
 		re.setUniform(Uniforms.texPixelFormat.getId(shaderProgram), texPixelFormat);
+		re.setUniform4(Uniforms.vertexColor.getId(shaderProgram), vertexColor);
 	}
 
 	protected void setUniformsSamplers(IRenderingEngine re, int shaderProgram) {
@@ -391,5 +394,24 @@ public class ShaderContext {
 
 	public void setUtex(int utex) {
 		this.utex = utex;
+	}
+
+	public float[] getVertexColor() {
+		return vertexColor;
+	}
+
+	public void setVertexColor(float[] vertexColor) {
+		this.vertexColor[0] = vertexColor[0];
+		this.vertexColor[1] = vertexColor[1];
+		this.vertexColor[2] = vertexColor[2];
+		this.vertexColor[3] = vertexColor[3];
+	}
+
+	public int getClutIndexHint() {
+		return clutIndexHint;
+	}
+
+	public void setClutIndexHint(int clutIndexHint) {
+		this.clutIndexHint = clutIndexHint;
 	}
 }

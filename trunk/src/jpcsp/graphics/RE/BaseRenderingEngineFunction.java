@@ -138,6 +138,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 		notVisibleBottom,
 		mustUseQuery
 	};
+	protected int activeTextureUnit = 0;
 
 	public BaseRenderingEngineFunction(IRenderingEngine proxy) {
 		super(proxy);
@@ -775,11 +776,30 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 					return;
 				}
 			}
-			for (int i = 0; i < primitiveCount; i++) {
-				re.drawArrays(primitive, first.get(positionFirst + i), count.get(positionCount + i));
+
+			// Implement multiDrawArrays using multiple drawArrays.
+			// The first call is using drawArrays and the subsequent calls,
+			// drawArraysBurstMode (allowing a faster implementation).
+			re.drawArrays(primitive, first.get(positionFirst), count.get(positionCount));
+			for (int i = 1; i < primitiveCount; i++) {
+				re.drawArraysBurstMode(primitive, first.get(positionFirst + i), count.get(positionCount + i));
 			}
 		} else {
 			super.multiDrawArrays(primitive, first, count);
 		}
+	}
+
+	@Override
+	public void bindActiveTexture(int index, int texture) {
+		int previousActiveTextureUnit = activeTextureUnit;
+		re.setActiveTexture(index);
+		re.bindTexture(texture);
+		re.setActiveTexture(previousActiveTextureUnit);
+	}
+
+	@Override
+	public void setActiveTexture(int index) {
+		activeTextureUnit = index;
+		super.setActiveTexture(index);
 	}
 }

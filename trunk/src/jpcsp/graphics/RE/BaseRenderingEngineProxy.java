@@ -363,6 +363,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
+	public void setUniform4(int id, float[] values) {
+		proxy.setUniform4(id, values);
+	}
+
+	@Override
 	public void setUniformMatrix4(int id, int count, float[] values) {
 		proxy.setUniformMatrix4(id, count, values);
 	}
@@ -445,6 +450,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public int getAttribLocation(int program, String name) {
 		return proxy.getAttribLocation(program, name);
+	}
+
+	@Override
+	public void bindAttribLocation(int program, int index, String name) {
+		proxy.bindAttribLocation(program, index, name);
 	}
 
 	@Override
@@ -808,8 +818,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor) {
-		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor);
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
+		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, type);
 	}
 
 	@Override
@@ -841,6 +851,22 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
 		proxy.setUniformBlockBinding(program, blockIndex, bindingPoint);
 	}
+
+	@Override
+	public int getUniformIndex(int program, String name) {
+		return proxy.getUniformIndex(program, name);
+	}
+
+	@Override
+	public int[] getUniformIndices(int program, String[] names) {
+		return proxy.getUniformIndices(program, names);
+	}
+
+	@Override
+	public int getActiveUniformOffset(int program, int uniformIndex) {
+		return proxy.getActiveUniformOffset(program, uniformIndex);
+	}
+
 	@Override
 	public void bindFramebuffer(int target, int framebuffer) {
 		proxy.bindFramebuffer(target, framebuffer);
@@ -917,6 +943,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
+	public void drawArraysBurstMode(int primitive, int first, int count) {
+		proxy.drawArraysBurstMode(primitive, first, count);
+	}
+
+	@Override
 	public void setPixelTransfer(int parameter, int value) {
 		proxy.setPixelTransfer(parameter, value);
 	}
@@ -949,5 +980,10 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public void setTextureFormat(int pixelFormat, boolean swizzle) {
 		proxy.setTextureFormat(pixelFormat, swizzle);
+	}
+
+	@Override
+	public void bindActiveTexture(int index, int texture) {
+		proxy.bindActiveTexture(index, texture);
 	}
 }

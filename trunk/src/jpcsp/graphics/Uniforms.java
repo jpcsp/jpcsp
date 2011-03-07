@@ -55,7 +55,9 @@ public enum Uniforms {
 	clut("clut"),
 	mipmapShareClut("mipmapShareClut"),
 	texPixelFormat("texPixelFormat"),
-	utex("utex");
+	utex("utex"),
+	endOfUBO("endOfUBO"),
+	vertexColor("vertexColor");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

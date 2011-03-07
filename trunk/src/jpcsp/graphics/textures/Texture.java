@@ -215,11 +215,14 @@ public class Texture {
 	}
 
 	public void bindTexture(IRenderingEngine re) {
+		re.bindTexture(getTextureId(re));
+	}
+
+	public int getTextureId(IRenderingEngine re) {
 		if (textureId == -1) {
 			textureId = re.genTexture();
 		}
-
-		re.bindTexture(textureId);
+		return textureId;
 	}
 
 	public void deleteTexture(IRenderingEngine re) {
