@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.awt.Dimension;
+import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -82,6 +83,7 @@ import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.RE.RenderingEngineLwjgl;
 import jpcsp.hardware.Audio;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
@@ -185,6 +187,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        filtersGroup = new javax.swing.ButtonGroup();
+        resGroup = new javax.swing.ButtonGroup();
         jToolBar1 = new javax.swing.JToolBar();
         RunButton = new javax.swing.JToggleButton();
         PauseButton = new javax.swing.JToggleButton();
@@ -208,6 +212,20 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         TwoItem = new javax.swing.JMenuItem();
         TwoHalfItem = new javax.swing.JMenuItem();
         ThreeItem = new javax.swing.JMenuItem();
+        FullItem = new javax.swing.JMenuItem();
+        FiltersMenu = new javax.swing.JMenu();
+        noneCheck = new javax.swing.JCheckBoxMenuItem();
+        bilinearCheck = new javax.swing.JCheckBoxMenuItem();
+        ResolutionMenu = new javax.swing.JMenu();
+        resCheck1 = new javax.swing.JCheckBoxMenuItem();
+        resCheck2 = new javax.swing.JCheckBoxMenuItem();
+        resCheck3 = new javax.swing.JCheckBoxMenuItem();
+        resCheck4 = new javax.swing.JCheckBoxMenuItem();
+        resCheck5 = new javax.swing.JCheckBoxMenuItem();
+        resCheck6 = new javax.swing.JCheckBoxMenuItem();
+        resCheck7 = new javax.swing.JCheckBoxMenuItem();
+        resCheck8 = new javax.swing.JCheckBoxMenuItem();
+        resCheck9 = new javax.swing.JCheckBoxMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
         AudioOpt = new javax.swing.JMenu();
@@ -252,18 +270,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-			public void windowClosing(java.awt.event.WindowEvent evt) {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
         addComponentListener(new java.awt.event.ComponentAdapter() {
-            @Override
-			public void componentMoved(java.awt.event.ComponentEvent evt) {
+            public void componentMoved(java.awt.event.ComponentEvent evt) {
                 formComponentMoved(evt);
             }
-            @Override
-			public void componentResized(java.awt.event.ComponentEvent evt) {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
                 formComponentResized(evt);
             }
         });
@@ -428,7 +443,125 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         ResizeMenu.add(ThreeItem);
 
+        FullItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
+        FullItem.setText("Full Screen");
+        FullItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                FullItemActionPerformed(evt);
+            }
+        });
+        ResizeMenu.add(FullItem);
+
         VideoOpt.add(ResizeMenu);
+
+        FiltersMenu.setText("Filters");
+
+        filtersGroup.add(noneCheck);
+        noneCheck.setSelected(true);
+        noneCheck.setText("None");
+        noneCheck.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                noneCheckActionPerformed(evt);
+            }
+        });
+        FiltersMenu.add(noneCheck);
+
+        filtersGroup.add(bilinearCheck);
+        bilinearCheck.setText("Bilinear");
+        bilinearCheck.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                bilinearCheckActionPerformed(evt);
+            }
+        });
+        FiltersMenu.add(bilinearCheck);
+
+        VideoOpt.add(FiltersMenu);
+
+        ResolutionMenu.setText("Resolution");
+
+        resGroup.add(resCheck1);
+        resCheck1.setSelected(true);
+        resCheck1.setText("480x272");
+        resCheck1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck1ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck1);
+
+        resGroup.add(resCheck2);
+        resCheck2.setText("800x600");
+        resCheck2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck2ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck2);
+
+        resGroup.add(resCheck3);
+        resCheck3.setText("960x544");
+        resCheck3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck3ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck3);
+
+        resGroup.add(resCheck4);
+        resCheck4.setText("1240x768");
+        resCheck4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck4ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck4);
+
+        resGroup.add(resCheck5);
+        resCheck5.setText("1152x768");
+        resCheck5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck5ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck5);
+
+        resGroup.add(resCheck6);
+        resCheck6.setText("1280x720");
+        resCheck6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck6ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck6);
+
+        resGroup.add(resCheck7);
+        resCheck7.setText("1280x768");
+        resCheck7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck7ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck7);
+
+        resGroup.add(resCheck8);
+        resCheck8.setText("1366x768");
+        resCheck8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck8ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck8);
+
+        resGroup.add(resCheck9);
+        resCheck9.setText("1440x816");
+        resCheck9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resCheck9ActionPerformed(evt);
+            }
+        });
+        ResolutionMenu.add(resCheck9);
+
+        VideoOpt.add(ResolutionMenu);
 
         ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
         ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
@@ -1670,6 +1803,85 @@ private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:
 private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
     Modules.sceDisplayModule.componentResized(evt);
 }//GEN-LAST:event_formComponentResized
+
+private void noneCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noneCheckActionPerformed
+    RenderingEngineLwjgl.setBilinearFilterStatus(false);
+}//GEN-LAST:event_noneCheckActionPerformed
+
+private void bilinearCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bilinearCheckActionPerformed
+    RenderingEngineLwjgl.setBilinearFilterStatus(true);
+}//GEN-LAST:event_bilinearCheckActionPerformed
+
+private void resCheck1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck1ActionPerformed
+    int width = 480;
+    int heigth = 272;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck1ActionPerformed
+
+private void resCheck2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck2ActionPerformed
+    int width = 800;
+    int heigth = 600;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck2ActionPerformed
+
+private void resCheck3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck3ActionPerformed
+    int width = 960;
+    int heigth = 544;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck3ActionPerformed
+
+private void resCheck4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck4ActionPerformed
+    int width = 1240;
+    int heigth = 768;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck4ActionPerformed
+
+private void resCheck5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck5ActionPerformed
+    int width = 1152;
+    int heigth = 768;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck5ActionPerformed
+
+private void resCheck6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck6ActionPerformed
+    int width = 1280;
+    int heigth = 720;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck6ActionPerformed
+
+private void resCheck7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck7ActionPerformed
+    int width = 1280;
+    int heigth = 768;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck7ActionPerformed
+
+private void resCheck8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck8ActionPerformed
+    int width = 1366;
+    int heigth = 768;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck8ActionPerformed
+
+private void resCheck9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck9ActionPerformed
+    int width = 1440;
+    int heigth = 816;
+    Modules.sceDisplayModule.setScreenResolution(width, heigth);
+    VideoEngine.setViewportResolution(width, heigth);
+}//GEN-LAST:event_resCheck9ActionPerformed
+
+private void FullItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FullItemActionPerformed
+    if(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getFullScreenWindow() == null) {
+        GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().setFullScreenWindow(this);  
+    } else {
+       GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().setFullScreenWindow(null);
+    }
+}//GEN-LAST:event_FullItemActionPerformed
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1830,7 +2042,9 @@ private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRS
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenuItem FileLog;
     private javax.swing.JMenu FileMenu;
+    private javax.swing.JMenu FiltersMenu;
     private javax.swing.JMenuItem French;
+    private javax.swing.JMenuItem FullItem;
     private javax.swing.JMenuItem German;
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuItem InstructionCounter;
@@ -1854,6 +2068,7 @@ private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRS
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenu ResizeMenu;
+    private javax.swing.JMenu ResolutionMenu;
     private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
@@ -1868,11 +2083,24 @@ private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRS
     private javax.swing.JMenuItem TwoItem;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JMenu VideoOpt;
+    private javax.swing.JCheckBoxMenuItem bilinearCheck;
     private javax.swing.JMenuItem cwcheat;
+    private javax.swing.ButtonGroup filtersGroup;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JToolBar jToolBar1;
+    private javax.swing.JCheckBoxMenuItem noneCheck;
     private javax.swing.JMenuItem openUmd;
+    private javax.swing.JCheckBoxMenuItem resCheck1;
+    private javax.swing.JCheckBoxMenuItem resCheck2;
+    private javax.swing.JCheckBoxMenuItem resCheck3;
+    private javax.swing.JCheckBoxMenuItem resCheck4;
+    private javax.swing.JCheckBoxMenuItem resCheck5;
+    private javax.swing.JCheckBoxMenuItem resCheck6;
+    private javax.swing.JCheckBoxMenuItem resCheck7;
+    private javax.swing.JCheckBoxMenuItem resCheck8;
+    private javax.swing.JCheckBoxMenuItem resCheck9;
+    private javax.swing.ButtonGroup resGroup;
     // End of variables declaration//GEN-END:variables
 
     private boolean userChooseSomething(int returnVal) {

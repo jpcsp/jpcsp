@@ -85,6 +85,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 
+    // Screen default resolution
+    public int screenWidth = 480;
+    public int screenHeight = 272;
+
     // sceDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
     public static final int PSP_DISPLAY_PIXEL_FORMAT_5551 = 1;
@@ -146,6 +150,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private int captureY;
     private int captureWidth;
     private int captureHeight;
+    private Robot captureRobot;
     public boolean getscreen = false;
 
     //Rotation vars
@@ -327,11 +332,17 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     }
 
     public sceDisplay() throws LWJGLException {
-    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8), null, new ContextAttribs().withDebug(useDebugGL));
-        setSize(480, 272);
+    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(16), null, new ContextAttribs().withDebug(useDebugGL));
+        setSize(screenWidth, screenHeight);
+
         texFb = -1;
         startModules = false;
         tempSize = 0;
+    }
+
+    public void setScreenResolution(int width, int height) {
+        screenWidth = width;
+        screenHeight = height;
     }
 
     @Override
@@ -402,6 +413,17 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	if (saveGEToTexture) {
     		log.info("Saving GE to Textures");
     	}
+
+        captureX = Settings.getInstance().readInt("gui.windows.mainwindow.x") + 4;
+        captureY = Settings.getInstance().readInt("gui.windows.mainwindow.y") + 76;
+        captureWidth = getCanvasWidth();
+        captureHeight = getCanvasHeight();
+        try {
+            captureRobot = new Robot();
+            captureRobot.setAutoDelay(0);
+        } catch (Exception e) {
+            // Ignore.
+        }
     }
 
     @Override
@@ -676,12 +698,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
     }
 
-    //Screen rotation function
-    public void rotate(int angleid)
-    {
-        ang = angleid;
+    public void rotate(int angleId) {
+        ang = angleId;
 
-        switch(angleid){
+        switch(angleId){
             case 0: //Rotate screen - 90º CW
                 texS1 = texS2 = texS;
                 texT2 = texT3 = texT;
@@ -730,7 +750,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
-    public void savescreen() {
+    public void saveScreen() {
         int tag = 0;
         File screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
         File directory = new File(System.getProperty("user.dir"));
@@ -744,7 +764,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
         Rectangle rect = new Rectangle(captureX, captureY, captureWidth, captureHeight);
         try {
-            BufferedImage img = new Robot().createScreenCapture(rect);
+            BufferedImage img = captureRobot.createScreenCapture(rect);
             ImageIO.write(img, "png", screenshot);
             img.flush();
         } catch (Exception e) {
@@ -1280,7 +1300,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
         if (getscreen) {
-        	savescreen();
+        	saveScreen();
         }
 	}
 

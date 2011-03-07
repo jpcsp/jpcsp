@@ -36,6 +36,7 @@ import org.lwjgl.opengl.ARBVertexArrayObject;
 import org.lwjgl.opengl.EXTGeometryShader4;
 import org.lwjgl.opengl.EXTMultiDrawArrays;
 import org.lwjgl.opengl.EXTTextureCompressionS3TC;
+import org.lwjgl.opengl.EXTTextureFilterAnisotropic;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL13;
@@ -56,6 +57,7 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
  * The class contains no rendering logic, it just implements the interface to LWJGL.
  */
 public class RenderingEngineLwjgl extends BaseRenderingEngine {
+    public static boolean forceBilinear = false;
 	protected static final int[] flagToGL = {
 		GL11.GL_ALPHA_TEST,     // GU_ALPHA_TEST
 		GL11.GL_DEPTH_TEST,     // GU_DEPTH_TEST
@@ -426,6 +428,14 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		return new RenderingEngineLwjgl();
 	}
 
+    public static void setBilinearFilterStatus(boolean status) {
+        forceBilinear = status;
+    }
+
+    public static boolean getBilinearFilterStatus() {
+        return forceBilinear;
+    }
+
 	public RenderingEngineLwjgl() {
 		init();
 	}
@@ -683,12 +693,20 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public void setTextureMipmapMinFilter(int filter) {
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, mipmapFilterToGL[filter]);
+        if(forceBilinear) {
+            GL11.glTexParameterf(GL11.GL_TEXTURE_2D, EXTTextureFilterAnisotropic.GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+        } else {
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, mipmapFilterToGL[filter]);
+        }
 	}
 
 	@Override
 	public void setTextureMipmapMagFilter(int filter) {
-        GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, mipmapFilterToGL[filter]);
+        if(forceBilinear){
+            GL11.glTexParameterf(GL11.GL_TEXTURE_2D, EXTTextureFilterAnisotropic.GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+        } else {
+            GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, mipmapFilterToGL[filter]);
+        }
 	}
 
 	@Override
@@ -1110,19 +1128,28 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public void setCompressedTexImage(int level, int internalFormat, int width, int height, int compressedSize, Buffer buffer) {
-		GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, getDirectByteBuffer(compressedSize, buffer));
+		int depth = 0;
+        if(forceBilinear) {
+            depth = 1;
+        }
+        GL13.glCompressedTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, depth, getDirectByteBuffer(compressedSize, buffer));
 	}
 
 	@Override
 	public void setTexImage(int level, int internalFormat, int width, int height, int format, int type, int textureSize, Buffer buffer) {
-		if (buffer instanceof ByteBuffer || buffer == null) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
+		int depth = 0;
+        if(forceBilinear) {
+            depth = 1;
+        }
+
+        if (buffer instanceof ByteBuffer || buffer == null) {
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, depth, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ByteBuffer) buffer));
 		} else if (buffer instanceof IntBuffer) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, depth, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (IntBuffer) buffer));
 		} else if (buffer instanceof ShortBuffer) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, depth, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (ShortBuffer) buffer));
 		} else if (buffer instanceof FloatBuffer) {
-			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, 0, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
+			GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, textureInternalFormatToGL[internalFormat], width, height, depth, textureFormatToGL[format], textureTypeToGL[type], getDirectBuffer(textureSize, (FloatBuffer) buffer));
 		} else {
 			throw new IllegalArgumentException();
 		}

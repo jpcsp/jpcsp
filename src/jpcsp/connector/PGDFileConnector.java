@@ -37,8 +37,8 @@ import jpcsp.util.Utilities;
  *
  */
 public class PGDFileConnector {
-	protected static final String encryptedFileName = "PGDfile.raw";
-	protected static final String decryptedFileName = encryptedFileName + ".decrypted";
+	public static final String encryptedFileName = "PGDfile.raw";
+	public static final String decryptedFileName = encryptedFileName + ".decrypted";
 	protected String id;
 
 	public PGDFileConnector() {
