@@ -163,6 +163,7 @@ public class GETexture {
         if (re.isVertexArrayAvailable()) {
         	re.bindVertexArray(0);
         }
+        re.setVertexInfo(null, false, false, -1);
         re.enableClientState(IRenderingEngine.RE_TEXTURE);
         re.disableClientState(IRenderingEngine.RE_COLOR);
         re.disableClientState(IRenderingEngine.RE_NORMAL);
@@ -170,7 +171,6 @@ public class GETexture {
         bufferManager.setTexCoordPointer(drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 0);
         bufferManager.setVertexPointer(drawBufferId, 2, IRenderingEngine.RE_FLOAT, 4 * SIZEOF_FLOAT, 2 * SIZEOF_FLOAT);
         bufferManager.setBufferData(drawBufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_DYNAMIC_DRAW);
-        re.setVertexInfo(null, false, false);
         re.drawArrays(IRenderingEngine.RE_QUADS, 0, 4);
 
         re.endDirectRendering();

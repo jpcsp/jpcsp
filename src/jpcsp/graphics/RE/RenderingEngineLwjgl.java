@@ -739,6 +739,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
+	public void setUniform4(int id, float[] values) {
+        GL20.glUniform4f(id, values[0], values[1], values[2], values[3]);
+	}
+
+	@Override
 	public void setUniformMatrix4(int id, int count, float[] values) {
 		GL20.glUniformMatrix4(id, false, getDirectBuffer(values, count * 16));
 	}
@@ -823,6 +828,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public int getAttribLocation(int program, String name) {
 		return GL20.glGetAttribLocation(program, name);
+	}
+
+	@Override
+	public void bindAttribLocation(int program, int index, String name) {
+		GL20.glBindAttribLocation(program, index, name);
 	}
 
 	@Override
@@ -1374,7 +1384,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
 		// Nothing to do
 	}
 
@@ -1416,6 +1426,27 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	@Override
 	public void setUniformBlockBinding(int program, int blockIndex, int bindingPoint) {
 		ARBUniformBufferObject.glUniformBlockBinding(program, blockIndex, bindingPoint);
+	}
+
+	@Override
+	public int getUniformIndex(int program, String name) {
+		IntBuffer indicesBuffer = DirectBufferUtilities.allocateDirectBuffer(4).asIntBuffer();
+		ARBUniformBufferObject.glGetUniformIndices(program, new String[] { name }, indicesBuffer);
+		return indicesBuffer.get(0);
+	}
+
+	@Override
+	public int[] getUniformIndices(int program, String[] names) {
+		IntBuffer indicesBuffer = DirectBufferUtilities.allocateDirectBuffer(names.length << 2).asIntBuffer();
+		ARBUniformBufferObject.glGetUniformIndices(program, names, indicesBuffer);
+		int[] indices = new int[names.length];
+		indicesBuffer.get(indices);
+		return indices;
+	}
+
+	@Override
+	public int getActiveUniformOffset(int program, int uniformIndex) {
+		return ARBUniformBufferObject.glGetActiveUniforms(program, uniformIndex, ARBUniformBufferObject.GL_UNIFORM_OFFSET);
 	}
 
 	@Override
@@ -1517,6 +1548,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
+	public void drawArraysBurstMode(int primitive, int first, int count) {
+		drawArrays(primitive, first, count);
+	}
+
+	@Override
 	public void setPixelTransfer(int parameter, int value) {
 		GL11.glPixelTransferi(pixelTransferToGL[parameter], value);
 	}
@@ -1557,6 +1593,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 
 	@Override
 	public void setTextureFormat(int pixelFormat, boolean swizzle) {
+		// Nothing to do here
+	}
+
+	@Override
+	public void bindActiveTexture(int index, int texture) {
 		// Nothing to do here
 	}
 }

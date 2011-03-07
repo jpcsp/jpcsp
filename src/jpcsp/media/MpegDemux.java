@@ -55,6 +55,11 @@ public class MpegDemux {
 			dts = 0;
 			this.channel = channel;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("PesHeader(channel=%d, pts=%d, dts=%d)", channel, pts, dts);
+		}
 	}
 
 	public MpegDemux(byte[] buffer, int offset) {

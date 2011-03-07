@@ -74,14 +74,13 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         fieldAnalogRight.addKeyListener(this);
     }
     
-    @SuppressWarnings("unchecked")
 	private void loadKeys() {
         currentKeys = Settings.getInstance().loadKeys();
         revertKeys = new HashMap<keyCode, Integer>(22);
         
-        Iterator iter = currentKeys.entrySet().iterator();
+        Iterator<Map.Entry<Integer, keyCode>> iter = currentKeys.entrySet().iterator();
         while(iter.hasNext()) {
-            Map.Entry<Integer, keyCode> entry = (Map.Entry)iter.next();
+            Map.Entry<Integer, keyCode> entry = iter.next();
             keyCode key = (keyCode)entry.getValue();
             int value = (Integer)entry.getKey();
             

@@ -542,10 +542,8 @@ public class ImageReader {
 	 * Base class for the DXT-compressed decoders
 	 */
 	private static abstract class DXTDecoder extends ImageDecoder {
-		protected int compressedImageSize;
 		protected int width;
 		protected int dxtLevel;
-		protected int x;
 		protected int[] buffer;
 		protected int index;
 		protected int maxIndex;
@@ -556,7 +554,7 @@ public class ImageReader {
 			this.width = width;
 			this.dxtLevel = dxtLevel;
 
-			compressedImageSize = round4(width) * round4(height) * 4 / compressionRatio;
+			//compressedImageSize = round4(width) * round4(height) * 4 / compressionRatio;
 
 			buffer = new int[width * 4]; // DXT images are compressed in blocks of 4 rows
 			maxIndex = width * 4;

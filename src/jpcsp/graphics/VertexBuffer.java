@@ -60,10 +60,6 @@ public class VertexBuffer {
 		public AddressRange() {
 		}
 
-		public AddressRange(int address, int length) {
-			setRange(address, length);
-		}
-
 		public void setRange(int address, int length) {
 			this.address = address;
 			this.length = length;

@@ -156,5 +156,10 @@ public class AsyncVertexCache extends VertexCache {
 			this.indices = indices;
 			this.vertices = vertices;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("AsyncEntry(prim=%d, vtype=0x%X, count=%d, indices=0x%08X, vertices=0x%08X", prim, vtype, count, indices, vertices);
+		}
 	}
 }

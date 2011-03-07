@@ -1706,7 +1706,7 @@ public class VideoEngine {
 	            }
         	}
 
-            re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor);
+            re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor, type);
 
             if (needSetDataPointers) {
 	            if (vinfo.texture != 0 || useTexture) {
@@ -1766,7 +1766,6 @@ public class VideoEngine {
     		if (!useVertexCache && re.isVertexArrayAvailable()) {
 				re.bindVertexArray(0);
     		}
-            re.setVertexInfo(vinfo, false, useVertexColor);
 
             switch (type) {
                 case PRIM_POINT:
@@ -1775,7 +1774,9 @@ public class VideoEngine {
                 case PRIM_TRIANGLE:
                 case PRIM_TRIANGLE_STRIPS:
                 case PRIM_TRIANGLE_FANS:
-                	float[] normalizedNormal = new float[3];
+                    re.setVertexInfo(vinfo, false, useVertexColor, type);
+
+                    float[] normalizedNormal = new float[3];
                     if (cachedVertexInfo == null) {
                 		vertexReadingStatistics.start();
                         for (int i = 0; i < numberOfVertex; i++) {
@@ -1848,6 +1849,7 @@ public class VideoEngine {
                     break;
 
                 case PRIM_SPRITES:
+                    re.setVertexInfo(vinfo, false, useVertexColor, IRenderingEngine.RE_QUADS);
                 	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
 
                 	float[] mvpMatrix = null;
@@ -2203,7 +2205,7 @@ public class VideoEngine {
 
         boolean useVertexColor = initRendering();
 
-        re.setVertexInfo(vinfo, false, useVertexColor);
+        re.setVertexInfo(vinfo, false, useVertexColor, -1);
         re.beginBoundingBox(numberOfVertexBoundingBox);
         for (int i = 0; i < numberOfVertexBoundingBox; i++) {
             int addr = vinfo.getAddress(mem, i);
@@ -5474,7 +5476,8 @@ public class VideoEngine {
 		// TODO: Compute the normals
 		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
 
-		re.setVertexInfo(vinfo, false, useVertexColor);
+		int type = patch_prim_types[context.patch_prim];
+		re.setVertexInfo(vinfo, false, useVertexColor, type);
 
 		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
 		drawByteBuffer.clear();
@@ -5499,7 +5502,7 @@ public class VideoEngine {
 
         	bufferManager.setBufferData(bufferId, drawFloatBuffer.position() * SIZEOF_FLOAT, drawByteBuffer.rewind(), IRenderingEngine.RE_STREAM_DRAW);
     		drawArraysStatistics.start();
-            re.drawArrays(patch_prim_types[context.patch_prim], 0, (context.patch_div_s + 1) * 2);
+            re.drawArrays(type, 0, (context.patch_div_s + 1) * 2);
         	drawArraysStatistics.end();
         }
 

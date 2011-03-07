@@ -697,4 +697,28 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 		}
 		super.setTextureFormat(pixelFormat, swizzle);
 	}
+
+	@Override
+	public int createProgram() {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("createProgram"));
+		}
+		return super.createProgram();
+	}
+
+	@Override
+	public void setVertexColor(float[] color) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setVertexColor (r=%.3f, b=%.3f, g=%.3f, a=%.3f)", color[0], color[1], color[2], color[3]));
+		}
+		super.setVertexColor(color);
+	}
+
+	@Override
+	public void setUniform4(int id, float[] values) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("setUniform4 %s=%f, %f, %f, %f", getUniformName(id), values[0], values[1], values[2], values[3]));
+		}
+		super.setUniform4(id, values);
+	}
 }
