@@ -986,4 +986,14 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void bindActiveTexture(int index, int texture) {
 		proxy.bindActiveTexture(index, texture);
 	}
+
+	@Override
+	public float getMaxTextureAnisotropy() {
+		return proxy.getMaxTextureAnisotropy();
+	}
+
+	@Override
+	public void setTextureAnisotropy(float value) {
+		proxy.setTextureAnisotropy(value);
+	}
 }

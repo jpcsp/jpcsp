@@ -22,6 +22,7 @@ import java.nio.IntBuffer;
 import java.util.HashMap;
 
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.VideoEngine;
 
 /**
  * @author gid15
@@ -107,6 +108,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected boolean colorMaterialSpecular;
 	protected int bindVertexArray;
 	protected int activeTextureUnit;
+	protected boolean useTextureAnisotropicFilter;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -145,6 +147,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		public int textureMipmapMagFilter = GeCommands.TFLT_LINEAR;
 		public int textureMipmapMinLevel = 0;
 		public int textureMipmapMaxLevel = 1000;
+		public float textureAnisotropy = 0;
 	}
 
 	public StateProxy(IRenderingEngine proxy) {
@@ -285,6 +288,15 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		colorMaterialDiffuse = false;
 		colorMaterialSpecular = false;
 		bindVertexArray = 0;
+
+		if (VideoEngine.getInstance().isUseTextureAnisotropicFilter() != useTextureAnisotropicFilter) {
+			// The texture anisotropic filter has been changed,
+			// invalidate all the texture magnification filters
+			for (TextureState textureState : textureStates.values()) {
+				textureState.textureMipmapMagFilter = -1;
+			}
+			useTextureAnisotropicFilter = VideoEngine.getInstance().isUseTextureAnisotropicFilter();
+		}
 
 		super.startDisplay();
 	}
@@ -1088,6 +1100,14 @@ public class StateProxy extends BaseRenderingEngineProxy {
 					textureStates.put(texture, currentTextureState);
 				}
 			}
+		}
+	}
+
+	@Override
+	public void setTextureAnisotropy(float value) {
+		if (value != currentTextureState.textureAnisotropy) {
+			super.setTextureAnisotropy(value);
+			currentTextureState.textureAnisotropy = value;
 		}
 	}
 }

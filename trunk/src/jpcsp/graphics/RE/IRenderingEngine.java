@@ -464,4 +464,6 @@ public interface IRenderingEngine {
 	public void setActiveTexture(int index);
 	public void setTextureFormat(int pixelFormat, boolean swizzle);
 	public void bindActiveTexture(int index, int texture);
+	public void setTextureAnisotropy(float value);
+	public float getMaxTextureAnisotropy();
 }
