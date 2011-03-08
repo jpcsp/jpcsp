@@ -130,7 +130,7 @@ vec4 getIndexedTexture5551()
 // and must be transformed into 16-bit (ABGR4444)
 vec4 getIndexedTexture4444()
 {
-    vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz) * 15.0;
+    vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz) * vec4(15.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 4u) | (uint(Ct.b) << 8u) | (uint(Ct.a) << 12u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -159,7 +159,7 @@ vec4 getIndexedTexture4444()
 // and must be transformed into 32-bit (ABGR8888)
 vec4 getIndexedTexture8888()
 {
-    vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz) * 255.0;
+    vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz) * vec4(255.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 8u) | (uint(Ct.b) << 16u) | (uint(Ct.a) << 24u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
