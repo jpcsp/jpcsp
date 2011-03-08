@@ -83,7 +83,6 @@ import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.graphics.RE.RenderingEngineLwjgl;
 import jpcsp.hardware.Audio;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
@@ -270,15 +269,18 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
+            @Override
+			public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
         addComponentListener(new java.awt.event.ComponentAdapter() {
-            public void componentMoved(java.awt.event.ComponentEvent evt) {
+            @Override
+			public void componentMoved(java.awt.event.ComponentEvent evt) {
                 formComponentMoved(evt);
             }
-            public void componentResized(java.awt.event.ComponentEvent evt) {
+            @Override
+			public void componentResized(java.awt.event.ComponentEvent evt) {
                 formComponentResized(evt);
             }
         });
@@ -1805,11 +1807,11 @@ private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_formComponentResized
 
 private void noneCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noneCheckActionPerformed
-    RenderingEngineLwjgl.setBilinearFilterStatus(false);
+	VideoEngine.getInstance().setUseTextureAnisotropicFilter(false);
 }//GEN-LAST:event_noneCheckActionPerformed
 
 private void bilinearCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bilinearCheckActionPerformed
-    RenderingEngineLwjgl.setBilinearFilterStatus(true);
+	VideoEngine.getInstance().setUseTextureAnisotropicFilter(true);
 }//GEN-LAST:event_bilinearCheckActionPerformed
 
 private void resCheck1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck1ActionPerformed

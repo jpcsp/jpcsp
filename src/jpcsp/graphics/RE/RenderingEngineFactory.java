@@ -48,6 +48,9 @@ public class RenderingEngineFactory {
 			re = new REFixedFunction(re);
 		}
 
+		// Proxy implementing a texture anisotropic filter
+		re = new AnisotropicFilter(re);
+
 		// Proxy removing redundant calls.
 		// E.g. calls setting multiple times the same value,
 		// or calls with an invalid parameter (e.g. for unused shader uniforms).

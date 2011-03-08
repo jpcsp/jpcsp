@@ -127,6 +127,7 @@ public class VideoEngine {
     private boolean useVertexCache = false;
     private boolean useAsyncVertexCache = true;
     public boolean useOptimisticVertexCache = false;
+    private boolean useTextureAnisotropicFilter = false;
     private static GeCommands helper;
     private int command;
     private int normalArgument;
@@ -5807,6 +5808,14 @@ public class VideoEngine {
     		result[i] = s;
     	}
     }
+
+	public boolean isUseTextureAnisotropicFilter() {
+		return useTextureAnisotropicFilter;
+	}
+
+	public void setUseTextureAnisotropicFilter(boolean useTextureAnisotropicFilter) {
+		this.useTextureAnisotropicFilter = useTextureAnisotropicFilter;
+	}
 
     private class SaveContextAction implements IAction {
         private int addr;
