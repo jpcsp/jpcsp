@@ -37,6 +37,11 @@ uniform sampler2D tex;
     uniform sampler2D clut;
 #endif
 
+#if __VERSION__ >= 140
+    #define TEXTURE_2D_PROJ textureProj
+#else
+    #define TEXTURE_2D_PROJ texture2DProj
+#endif
 
 ///////////////////////////////////////////////////////////////
 // Decode Indexed Texture & Compute Fragment Color
@@ -48,7 +53,7 @@ uniform sampler2D tex;
 // The index is stored in the RED component of the texture
 vec4 getIndexedTextureRED()
 {
-    uint Ci = texture2DProj(utex, gl_TexCoord[0].xyz).r;
+    uint Ci = TEXTURE_2D_PROJ(utex, gl_TexCoord[0].xyz).r;
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
     #elif CLUT_INDEX_HINT == 1
@@ -72,7 +77,7 @@ vec4 getIndexedTextureRED()
 // and must be transformed into 16-bit (BGR5650)
 vec4 getIndexedTexture5650()
 {
-    vec3 Ct = texture2DProj(tex, gl_TexCoord[0].xyz).rgb * vec3(31.0, 63.0, 31.0);
+    vec3 Ct = TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz).rgb * vec3(31.0, 63.0, 31.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 5u) | (uint(Ct.b) << 11u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -101,7 +106,7 @@ vec4 getIndexedTexture5650()
 // and must be transformed into 16-bit (ABGR5551)
 vec4 getIndexedTexture5551()
 {
-    vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz) * vec4(31.0, 31.0, 31.0, 1.0);
+    vec4 Ct = TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * vec4(31.0, 31.0, 31.0, 1.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 5u) | (uint(Ct.b) << 10u) | (uint(Ct.a) << 15u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -130,7 +135,7 @@ vec4 getIndexedTexture5551()
 // and must be transformed into 16-bit (ABGR4444)
 vec4 getIndexedTexture4444()
 {
-    vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz) * vec4(15.0);
+    vec4 Ct = TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * vec4(15.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 4u) | (uint(Ct.b) << 8u) | (uint(Ct.a) << 12u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -159,7 +164,7 @@ vec4 getIndexedTexture4444()
 // and must be transformed into 32-bit (ABGR8888)
 vec4 getIndexedTexture8888()
 {
-    vec4 Ct = texture2DProj(tex, gl_TexCoord[0].xyz) * vec4(255.0);
+    vec4 Ct = TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * vec4(255.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 8u) | (uint(Ct.b) << 16u) | (uint(Ct.a) << 24u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -186,7 +191,7 @@ vec4 getIndexedTexture8888()
 // Non-indexed texture
 vec4 getNonIndexedTexture()
 {
-    return texture2DProj(tex, gl_TexCoord[0].xyz);
+    return TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz);
 }
 
 
