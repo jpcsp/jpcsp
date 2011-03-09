@@ -332,7 +332,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     }
 
     public sceDisplay() throws LWJGLException {
-    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(16), null, new ContextAttribs().withDebug(useDebugGL));
+    	// A PixelFormat defining "withSamples(16)" is not working for most video
+    	// drivers (KO on AMD and Intel, OK on NVIDIA): only a black screen is displayed
+    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8), null, new ContextAttribs().withDebug(useDebugGL));
         setSize(screenWidth, screenHeight);
 
         texFb = -1;
