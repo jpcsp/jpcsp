@@ -279,11 +279,12 @@ public class REShader extends BaseRenderingEngineFunction {
         }
 
         // Use the same attribute index values for all shader programs
-        re.bindAttribLocation(program, 0, attributeNameWeights1);
+        // FIXME the "color" attribute has to be bound to location 0 on AMD, otherwise incorrect display
+        //re.bindAttribLocation(program, 0, attributeNameWeights1);
         re.bindAttribLocation(program, 1, attributeNameWeights2);
         re.bindAttribLocation(program, 2, attributeNamePosition);
         re.bindAttribLocation(program, 3, attributeNameNormal);
-        re.bindAttribLocation(program, 4, attributeNameColor);
+        //re.bindAttribLocation(program, 4, attributeNameColor);
         re.bindAttribLocation(program, 5, attributeNameTexture);
 
         linkShaderProgram(program);
