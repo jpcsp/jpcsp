@@ -197,12 +197,6 @@ public class ShaderContextUBO extends ShaderContext {
 		re.setUniformBlockBinding(shaderProgram, blockIndex, bindingPoint);
 
 		if (data == null) {
-			buffer = re.genBuffer();
-			re.bindBuffer(IRenderingEngine.RE_UNIFORM_BUFFER, buffer);
-			re.bindBufferBase(IRenderingEngine.RE_UNIFORM_BUFFER, bindingPoint, buffer);
-		}
-
-		if (data == null) {
 			for (ShaderUniformInfo shaderUniformInfo : shaderUniformInfos) {
 				int index = re.getUniformIndex(shaderProgram, shaderUniformInfo.getName());
 				int offset = re.getActiveUniformOffset(shaderProgram, index);
@@ -219,8 +213,15 @@ public class ShaderContextUBO extends ShaderContext {
 				VideoEngine.log.debug(String.format("UBO Structure size: %d (including endOfUBO)", bufferSize));
 			}
 
+			buffer = re.genBuffer();
+			re.bindBuffer(IRenderingEngine.RE_UNIFORM_BUFFER, buffer);
+
 			data = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.nativeOrder());
 			re.setBufferData(IRenderingEngine.RE_UNIFORM_BUFFER, bufferSize, data, IRenderingEngine.RE_DYNAMIC_DRAW);
+
+			// On AMD hardware, the buffer data has to be set (setBufferData) before calling bindBufferBase
+			re.bindBufferBase(IRenderingEngine.RE_UNIFORM_BUFFER, bindingPoint, buffer);
+
 			startUpdate = 0;
 			endUpdate = bufferSize;
 		}
