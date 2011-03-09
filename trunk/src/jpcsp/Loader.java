@@ -408,11 +408,16 @@ public class Loader {
 
     // ELF Loader
 
-     private void LoadELFProgram_630(ByteBuffer f, SceModule module, int baseAddress,
+    private void LoadELFProgram_630(ByteBuffer f, SceModule module, int baseAddress,
         Elf32 elf, int elfOffset) throws IOException {
-         Emulator.log.info("6.30 firmware version's ELF program detected!");
-         LoadELFProgram(f, module, 0, elf, elfOffset);
-     };
+        Emulator.log.info("6.30 firmware version's ELF program detected!");
+
+        // FIXME: How to detect if we have to use a baseAddress == 0?
+        if (elf.getProgramHeader(0).getP_vaddr() >= MemoryMap.START_USERSPACE) {
+            baseAddress = 0;
+        }
+        LoadELFProgram(f, module, baseAddress, elf, elfOffset);
+    }
 
     /** Load some programs into memory */
     private void LoadELFProgram(ByteBuffer f, SceModule module, int baseAddress,
@@ -462,8 +467,13 @@ public class Loader {
     private void LoadELFSections_630(ByteBuffer f, SceModule module, int baseAddress,
         Elf32 elf, int elfOffset) throws IOException {
         Emulator.log.info("6.30 firmware version's ELF sections detected!");
-         LoadELFSections(f, module, 0, elf, elfOffset);
-     };
+
+        // FIXME: How to detect if we have to use a baseAddress == 0?
+        if (elf.getProgramHeader(0).getP_vaddr() >= MemoryMap.START_USERSPACE) {
+       	    baseAddress = 0;
+        }
+        LoadELFSections(f, module, baseAddress, elf, elfOffset);
+    }
 
     /** Load some sections into memory */
     private void LoadELFSections(ByteBuffer f, SceModule module, int baseAddress,
