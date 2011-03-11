@@ -1101,6 +1101,41 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    public void hleKernelChangeThreadPriority(SceKernelThreadInfo thread, int newPriority) {
+    	if (thread == null) {
+    		return;
+    	}
+
+    	int oldPriority = thread.currentPriority;
+        thread.currentPriority = newPriority;
+        // switch in the target thread if it's now higher priority
+        if ((thread.status & PSP_THREAD_READY) == PSP_THREAD_READY &&
+        		newPriority < currentThread.currentPriority) {
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelChangeThreadPriority yielding to thread with higher priority");
+            }
+            needThreadReschedule = true;
+            hleRescheduleCurrentThread();
+        } else if ((thread.status & PSP_THREAD_READY) == PSP_THREAD_READY &&
+            		newPriority == oldPriority) {
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelChangeThreadPriority yielding to thread with same priority");
+            }
+            // Move the thread to the end of the list
+        	removeFromReadyThreads(thread);
+            addToReadyThreads(thread, false);
+            needThreadReschedule = true;
+            hleRescheduleCurrentThread();
+        } else if (thread.uid == currentThread.uid && newPriority > oldPriority) {
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelChangeThreadPriority rescheduling");
+            }
+            // yield if we moved ourself to lower priority
+            needThreadReschedule = true;
+            hleRescheduleCurrentThread();
+        }
+    }
+
     /**
      * Change to state of a thread.
      * This function must be used when changing the state of a thread as
@@ -3865,29 +3900,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
             }
-            int oldPriority = thread.currentPriority;
-            thread.currentPriority = priority;
             cpu.gpr[2] = 0;
-            // switch in the target thread if it's now higher priority
-            if ((thread.status & PSP_THREAD_READY) == PSP_THREAD_READY &&
-                    priority < currentThread.currentPriority) {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceKernelChangeThreadPriority yielding to thread with higher priority");
-                }
-                hleRescheduleCurrentThread();
-            } else if (uid == currentThread.uid && priority > oldPriority) {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceKernelChangeThreadPriority rescheduling");
-                }
-                // yield if we moved ourself to lower priority
-                hleRescheduleCurrentThread();
-            } else if (priority == oldPriority) {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceKernelChangeThreadPriority yielding to thread with same priority");
-                }
-                // yield to a thread having the same priority
-                hleRescheduleCurrentThread();
-            }
+            hleKernelChangeThreadPriority(thread, priority);
         }
     }
 
