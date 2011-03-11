@@ -331,7 +331,7 @@ public class MediaEngine {
             	// Try to use an external audio file instead
             	if (!initExtAudio()) {
             		log.error("MediaEngine: No audio streams found!");
-            		audioStreamState = new StreamState(this, -1, null, 0);
+            		audioStreamState = new StreamState(this, -1, null, sceMpeg.audioFirstTimestamp);
             	}
             } else if (audioCoder.open() < 0) {
             	audioCoder.delete();
@@ -574,7 +574,7 @@ public class MediaEngine {
         }
 
         if (audioStreamID == -1) {
-            log.error("MediaEngine: No audio streams found!");
+            log.error("MediaEngine: No audio streams found in external audio!");
             extContainer.close();
             extContainer = null;
             return false;

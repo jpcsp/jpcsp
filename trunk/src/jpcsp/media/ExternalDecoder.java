@@ -80,6 +80,8 @@ public class ExternalDecoder {
 
             if (extAudioDecoder == null) {
             	enabled = false;
+            } else {
+            	log.info("Using the external audio decoder (SonicStage)");
             }
     	}
 
