@@ -167,7 +167,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     private int defaultAsyncPriority;
     private final static int asyncThreadRegisterArgument = 16; // $s0 is preserved across calls
 
-    private byte[] AES128Key = new byte[16];
     private PGDFileConnector pgdFileConnector;
 
     // Implement the list of IIoListener as an array to improve the performance
@@ -1640,22 +1639,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                             pgdFileConnector = new PGDFileConnector();
                         }
 
+                        // Store the key.
+                        byte[] keyBuf = new byte[0x10];
+                        for (int i = 0; i < 0x10; i++) {
+                            keyBuf[i] = (byte) mem.read8(indata_addr + i);
+                            keyHex += String.format("%02x", keyBuf[i] & 0xFF);
+                        }
+
                         try {
                             SeekableRandomFile decFile = new SeekableRandomFile(PGDFileConnector.decryptedFileName, "rw");
                             int fileLength = (int) info.readOnlyFile.length();
                             byte[] inBuf = new byte[fileLength];
                             byte[] outBuf = new byte[fileLength];
                             byte[] headerBuf = new byte[0x30 + 0x10];
-                            byte[] keyBuf = new byte[0x10];
                             byte[] hashBuf = new byte[0x10];
 
                             info.readOnlyFile.readFully(inBuf);
-
-                            // Store the key.
-                            for (int i = 0; i < 0x10; i++) {
-                                keyBuf[i] = (byte) mem.read8(indata_addr + i);
-                                keyHex += String.format("%02x", keyBuf[i] & 0xFF);
-                            }
 
                             // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
                             System.arraycopy(inBuf, 0x10, headerBuf, 0, 0x10);
@@ -1679,9 +1678,17 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
                             decFile.write(crypto.DecryptPGD(outBuf, dataSize + 0x10, keyBuf));
                             decFile.close();
+                        } catch (OutOfMemoryError e) {
+                            // Ignore.
                         } catch (Exception e) {
                             // Ignore.
                         }
+
+                        try {
+							info.readOnlyFile.seek(info.position);
+						} catch (IOException e) {
+							log.error(e);
+						}
 
                         if (log.isDebugEnabled()) {
                             log.debug("hleIoIoctl get AES key " + keyHex);
@@ -1818,9 +1825,8 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("sceIoChangeAsyncPriority changing priority of async thread from fd=%x to %d", info.uid, priority));
                 }
-                info.asyncThread.currentPriority = priority;
                 cpu.gpr[2] = 0;
-                Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+                Modules.ThreadManForUserModule.hleKernelChangeThreadPriority(info.asyncThread, priority);
             } else {
                 log.warn("sceIoChangeAsyncPriority invalid fd=" + uid);
                 cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
