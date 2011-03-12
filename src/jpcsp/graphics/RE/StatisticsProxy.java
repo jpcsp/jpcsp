@@ -541,10 +541,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void endBoundingBox() {
+	public void endBoundingBox(VertexInfo vinfo) {
 		DurationStatistics statistic = statistics[34];
 		statistic.start();
-		super.endBoundingBox();
+		super.endBoundingBox(vinfo);
 		statistic.end();
 	}
 
@@ -1505,10 +1505,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
 		DurationStatistics statistic = statistics[155];
 		statistic.start();
-		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, type);
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, type);
 		statistic.end();
 	}
 

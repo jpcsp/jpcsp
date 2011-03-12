@@ -410,7 +410,7 @@ public interface IRenderingEngine {
 	public boolean hasBoundingBox();
 	public void beginBoundingBox(int numberOfVertexBoundingBox);
 	public void drawBoundingBox(float[][] values);
-	public void endBoundingBox();
+	public void endBoundingBox(VertexInfo vinfo);
 	public boolean isBoundingBoxVisible();
 	public int genQuery();
 	public void beginQuery(int id);
@@ -430,7 +430,7 @@ public interface IRenderingEngine {
 	public IREBufferManager getBufferManager();
 	public boolean canAllNativeVertexInfo();
 	public boolean canNativeSpritesPrimitive();
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type);
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type);
 	public void setProgramParameter(int program, int parameter, int value);
 	public boolean isQueryAvailable();
 	public boolean isShaderAvailable();

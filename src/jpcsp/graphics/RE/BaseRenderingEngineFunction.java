@@ -30,6 +30,7 @@ import org.apache.log4j.Level;
 
 import jpcsp.Settings;
 import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.GeContext.EnableDisableFlag;
 import jpcsp.graphics.RE.buffer.BufferManagerFactory;
@@ -601,11 +602,12 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void endBoundingBox() {
+	public void endBoundingBox(VertexInfo vinfo) {
 		if (bboxQueryInitialized) {
 			if (re.isVertexArrayAvailable()) {
 				re.bindVertexArray(0);
 			}
+	        re.setVertexInfo(vinfo, false, false, false, -1);
 			re.bindBuffer(RE_ARRAY_BUFFER, 0);
 	        re.disableClientState(IRenderingEngine.RE_TEXTURE);
 	        re.disableClientState(IRenderingEngine.RE_COLOR);
@@ -619,7 +621,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	        re.endDirectRendering();
 		}
 
-        super.endBoundingBox();
+        super.endBoundingBox(vinfo);
 	}
 
 	@Override

@@ -48,6 +48,8 @@ public class ShaderContext {
 	private float colorDoubling;
 	private int vinfoColor;
 	private int vinfoPosition;
+	private int vinfoTexture;
+	private int vinfoNormal;
 	private int vinfoTransform2D;
 	private float positionScale;
 	private float normalScale;
@@ -98,6 +100,8 @@ public class ShaderContext {
 		re.setUniform(Uniforms.mipmapShareClut.getId(shaderProgram), mipmapShareClut ? 1 : 0);
 		re.setUniform(Uniforms.texPixelFormat.getId(shaderProgram), texPixelFormat);
 		re.setUniform4(Uniforms.vertexColor.getId(shaderProgram), vertexColor);
+		re.setUniform(Uniforms.vinfoTexture.getId(shaderProgram), vinfoTexture);
+		re.setUniform(Uniforms.vinfoNormal.getId(shaderProgram), vinfoNormal);
 	}
 
 	protected void setUniformsSamplers(IRenderingEngine re, int shaderProgram) {
@@ -413,5 +417,21 @@ public class ShaderContext {
 
 	public void setClutIndexHint(int clutIndexHint) {
 		this.clutIndexHint = clutIndexHint;
+	}
+
+	public int getVinfoTexture() {
+		return vinfoTexture;
+	}
+
+	public void setVinfoTexture(int vinfoTexture) {
+		this.vinfoTexture = vinfoTexture;
+	}
+
+	public int getVinfoNormal() {
+		return vinfoNormal;
+	}
+
+	public void setVinfoNormal(int vinfoNormal) {
+		this.vinfoNormal = vinfoNormal;
 	}
 }

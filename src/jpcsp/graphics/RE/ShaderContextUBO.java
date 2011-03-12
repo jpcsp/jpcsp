@@ -45,6 +45,8 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo texMapProj;
 	private ShaderUniformInfo vinfoColor;
 	private ShaderUniformInfo vinfoPosition;
+	private ShaderUniformInfo vinfoTexture;
+	private ShaderUniformInfo vinfoNormal;
 	private ShaderUniformInfo positionScale;
 	private ShaderUniformInfo normalScale;
 	private ShaderUniformInfo textureScale;
@@ -142,6 +144,8 @@ public class ShaderContextUBO extends ShaderContext {
 		texMapProj = addShaderUniform(Uniforms.texMapProj, "int");
 		vinfoColor = addShaderUniform(Uniforms.vinfoColor, "int");
 		vinfoPosition = addShaderUniform(Uniforms.vinfoPosition, "int");
+		vinfoTexture = addShaderUniform(Uniforms.vinfoTexture, "int");
+		vinfoNormal = addShaderUniform(Uniforms.vinfoNormal, "int");
 		positionScale = addShaderUniform(Uniforms.positionScale, "float");
 		normalScale = addShaderUniform(Uniforms.normalScale, "float");
 		textureScale = addShaderUniform(Uniforms.textureScale, "float");
@@ -553,6 +557,22 @@ public class ShaderContextUBO extends ShaderContext {
 		if (vertexColor[0] != currentVertexColor[0] || vertexColor[1] != currentVertexColor[1] || vertexColor[2] != currentVertexColor[2] || vertexColor[3] != currentVertexColor[3]) {
 			copy(vertexColor, this.vertexColor, 0, 4);
 			super.setVertexColor(vertexColor);
+		}
+	}
+
+	@Override
+	public void setVinfoTexture(int vinfoTexture) {
+		if (vinfoTexture != getVinfoTexture()) {
+			copy(vinfoTexture, this.vinfoTexture);
+			super.setVinfoTexture(vinfoTexture);
+		}
+	}
+
+	@Override
+	public void setVinfoNormal(int vinfoNormal) {
+		if (vinfoNormal != getVinfoNormal()) {
+			copy(vinfoNormal, this.vinfoNormal);
+			super.setVinfoNormal(vinfoNormal);
 		}
 	}
 }

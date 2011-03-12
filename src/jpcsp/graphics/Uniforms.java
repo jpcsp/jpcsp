@@ -57,7 +57,9 @@ public enum Uniforms {
 	texPixelFormat("texPixelFormat"),
 	utex("utex"),
 	endOfUBO("endOfUBO"),
-	vertexColor("vertexColor");
+	vertexColor("vertexColor"),
+	vinfoTexture("vinfoTexture"),
+	vinfoNormal("vinfoNormal");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

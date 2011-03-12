@@ -76,6 +76,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected ShaderProgramManager shaderProgramManager;
 	protected boolean useDynamicShaders;
 	protected ShaderProgram currentShaderProgram;
+	protected StringBuilder infoLogs;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -227,7 +228,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
         boolean compiled = re.compilerShader(shader, src.toString());
         if (compiled || !silentError) {
-        	printShaderInfoLog(shader);
+        	addShaderInfoLog(shader);
         }
 
         return compiled;
@@ -235,22 +236,44 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	protected void linkShaderProgram(int program) {
         re.linkProgram(program);
-        printProgramInfoLog(program);
+        addProgramInfoLog(program);
 
         // Trying to avoid warning message from AMD drivers:
         // "Validation warning! - Sampler value tex has not been set."
         re.setUniform(re.getUniformLocation(program, Uniforms.tex.getUniformString()), ACTIVE_TEXTURE_NORMAL);
 
         re.validateProgram(program);
-        printProgramInfoLog(program);
+        addProgramInfoLog(program);
 	}
 
-	protected int createShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
+	protected ShaderProgram createShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
+		infoLogs = new StringBuilder();
+
+		int programId = tryCreateShader(hasGeometryShader, shaderProgram);
+		if (programId == -1) {
+			printInfoLog(true);
+			shaderProgram = null;
+		} else {
+			if (shaderProgram == null) {
+				shaderProgram = new ShaderProgram();
+			}
+			shaderProgram.setProgramId(re, programId);
+			printInfoLog(false);
+		}
+
+		return shaderProgram;
+	}
+
+	private int tryCreateShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
 		int vertexShader = re.createShader(RE_VERTEX_SHADER);
         int fragmentShader = re.createShader(RE_FRAGMENT_SHADER);
 
-        loadShader(vertexShader, "/jpcsp/graphics/shader.vert", false, shaderProgram);
-        loadShader(fragmentShader, "/jpcsp/graphics/shader.frag", false, shaderProgram);
+        if (!loadShader(vertexShader, "/jpcsp/graphics/shader.vert", false, shaderProgram)) {
+        	return -1;
+        }
+        if (!loadShader(fragmentShader, "/jpcsp/graphics/shader.frag", false, shaderProgram)) {
+        	return -1;
+        }
 
         int program = re.createProgram();
         re.attachShader(program, vertexShader);
@@ -278,14 +301,20 @@ public class REShader extends BaseRenderingEngineFunction {
 	        re.setProgramParameter(program, RE_GEOMETRY_VERTICES_OUT, 4);
         }
 
-        // Use the same attribute index values for all shader programs
-        // FIXME the "color" attribute has to be bound to location 0 on AMD, otherwise incorrect display
-        //re.bindAttribLocation(program, 0, attributeNameWeights1);
-        re.bindAttribLocation(program, 1, attributeNameWeights2);
-        re.bindAttribLocation(program, 2, attributeNamePosition);
-        re.bindAttribLocation(program, 3, attributeNameNormal);
-        //re.bindAttribLocation(program, 4, attributeNameColor);
-        re.bindAttribLocation(program, 5, attributeNameTexture);
+        // Use the same attribute index values for all shader programs.
+        //
+        // Issue: AMD driver is incorrectly handling attributes referenced in a shader
+        // (even when not really used, e.g. in an "if" statement)
+        // but disabled using disableVertexAttribArray. The solution for this
+        // issue is to use dynamic shaders.
+        //
+        int index = 0;
+        re.bindAttribLocation(program, index++, attributeNameTexture);
+        re.bindAttribLocation(program, index++, attributeNameColor);
+        re.bindAttribLocation(program, index++, attributeNameNormal);
+        re.bindAttribLocation(program, index++, attributeNamePosition);
+        re.bindAttribLocation(program, index++, attributeNameWeights1);
+        re.bindAttribLocation(program, index++, attributeNameWeights2);
 
         linkShaderProgram(program);
 
@@ -309,18 +338,15 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	protected void loadShaders() {
-		int defaultShaderProgramId = createShader(false, null);
-		defaultShaderProgram = new ShaderProgram(re, defaultShaderProgramId);
+		defaultShaderProgram = createShader(false, null);
 		if (useGeometryShader) {
-			int defaultSpriteShaderProgramId = createShader(true, null);
-			if (defaultSpriteShaderProgramId == -1) {
+			defaultSpriteShaderProgram = createShader(true, null);
+			if (defaultSpriteShaderProgram == null) {
 				useGeometryShader = false;
-			} else {
-				defaultSpriteShaderProgram = new ShaderProgram(re, defaultSpriteShaderProgramId);
 			}
 		}
 
-		re.useProgram(defaultShaderProgramId);
+		defaultShaderProgram.use(re);
 	}
 
 	public static boolean useShaders(IRenderingEngine re) {
@@ -334,18 +360,39 @@ public class REShader extends BaseRenderingEngineFunction {
 		return useShaders && availableShaders;
 	}
 
-	protected void printShaderInfoLog(int shader) {
-		String infoLog = re.getShaderInfoLog(shader);
-		if (infoLog != null) {
-			log.error("Shader info log: " + infoLog);
+	protected void printInfoLog(boolean isError) {
+		if (infoLogs != null && infoLogs.length() > 0) {
+			if (isError) {
+				log.error("Shader error log: " + infoLogs);
+			} else {
+				// Remove all the AMD useless messages
+				String infoLog = infoLogs.toString();
+				infoLog = infoLog.replace("Vertex shader was successfully compiled to run on hardware.\n", "");
+				infoLog = infoLog.replace("Fragment shader was successfully compiled to run on hardware.\n", "");
+				infoLog = infoLog.replace("Fragment shader(s) linked, vertex shader(s) linked. \n", "");
+				infoLog = infoLog.replace("Validation successful.\n", "");
+
+				if (infoLog.length() > 0) {
+					log.warn("Shader log: " + infoLog);
+				}
+			}
 		}
 	}
 
-    protected void printProgramInfoLog(int program) {
-		String infoLog = re.getProgramInfoLog(program);
-		if (infoLog != null) {
-			log.error("Program info log: " + infoLog);
+	protected void addInfoLog(String infoLog) {
+		if (infoLog != null && infoLog.length() > 0) {
+			infoLogs.append(infoLog);
 		}
+	}
+
+	protected void addShaderInfoLog(int shader) {
+		String infoLog = re.getShaderInfoLog(shader);
+		addInfoLog(infoLog);
+	}
+
+    protected void addProgramInfoLog(int program) {
+		String infoLog = re.getProgramInfoLog(program);
+		addInfoLog(infoLog);
     }
 
 	protected void setShaderFlag(int flag, int value) {
@@ -577,25 +624,48 @@ public class REShader extends BaseRenderingEngineFunction {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
 		if (allNativeVertexInfo) {
+			// Weight
 			shaderContext.setWeightScale(weightScale[vinfo.weight]);
+
+			// Texture
+			shaderContext.setVinfoTexture(useTexture ? (vinfo.texture != 0 ? vinfo.texture : 3) : 0);
 			shaderContext.setTextureScale(vinfo.transform2D ? 1.f : textureScale[vinfo.texture]);
+
+			// Color
 			shaderContext.setVinfoColor(useVertexColor ? vinfo.color : 8);
+
+			// Normal
+			shaderContext.setVinfoNormal(vinfo.normal);
 			shaderContext.setNormalScale(vinfo.transform2D ? 1.f : normalScale[vinfo.normal]);
+
+			// Position
 			shaderContext.setVinfoPosition(vinfo.position);
 			shaderContext.setPositionScale(vinfo.transform2D ? 1.f : positionScale[vinfo.position]);
 		} else {
+			// Weight
 			shaderContext.setWeightScale(1);
+
+			// Texture
+			shaderContext.setVinfoTexture(useTexture ? 3 : 0);
 			shaderContext.setTextureScale(1);
+
+			// Color
 			shaderContext.setVinfoColor(useVertexColor ? 0 : 8);
+
+			// Normal
+			shaderContext.setVinfoNormal(vinfo == null || vinfo.normal == 0 ? 0 : 3);
 			shaderContext.setNormalScale(1);
-			shaderContext.setVinfoPosition(0);
+
+			// Position
+			shaderContext.setVinfoPosition(vinfo != null && vinfo.position == 0 ? 0 : 3);
 			shaderContext.setPositionScale(1);
 		}
 		shaderContext.setVinfoTransform2D(vinfo == null || vinfo.transform2D ? 1 : 0);
 		setCurrentShaderProgram(type);
-		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, type);
+
+		super.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, type);
 	}
 
 	private void setCurrentShaderProgram(int type) {
@@ -604,11 +674,14 @@ public class REShader extends BaseRenderingEngineFunction {
 		if (useDynamicShaders) {
 			shaderProgram = shaderProgramManager.getShaderProgram(shaderContext, hasGeometryShader);
 			if (shaderProgram.getProgramId() == -1) {
-				int programId = createShader(hasGeometryShader, shaderProgram);
+				shaderProgram = createShader(hasGeometryShader, shaderProgram);
 				if (VideoEngine.log.isDebugEnabled()) {
 					VideoEngine.log.debug("Created shader " + shaderProgram);
 				}
-				shaderProgram.setProgramId(re, programId);
+				if (shaderProgram == null) {
+					VideoEngine.log.error("Cannot create shader");
+					return;
+				}
 			}
 			shaderProgram.use(re);
 		} else if (hasGeometryShader) {

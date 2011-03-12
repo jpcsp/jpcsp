@@ -45,6 +45,8 @@ ATTRIBUTE vec4 pspWeights2;
     uniform bool  colorAddition;
     uniform int   vinfoColor;
     uniform int   vinfoPosition;
+    uniform int   vinfoTexture;
+    uniform int   vinfoNormal;
     uniform bool  vinfoTransform2D;
     uniform float positionScale;
     uniform float normalScale;
@@ -256,7 +258,9 @@ void ApplySkinning(inout vec3 Vv, inout vec3 Nv)
     float W;
     mat3  M;
     vec4  W1 = pspWeights1 / weightScale;
-    vec4  W2 = pspWeights2 / weightScale;
+    #if !USE_DYNAMIC_DEFINES || NUMBER_BONES > 4
+        vec4  W2 = pspWeights2 / weightScale;
+    #endif
 
     #if USE_DYNAMIC_DEFINES
         #if NUMBER_BONES >= 8
@@ -469,7 +473,7 @@ void DecodeColor8888(inout vec4 C)
 
 #if !USE_DYNAMIC_DEFINES || VINFO_COLOR == 8
 // !useVertexColor
-void DecodeNoVertexColor(inout vec4 C)
+void DecodeNoVertexColor(out vec4 C)
 {
     C = vertexColor;
 }
@@ -495,12 +499,36 @@ void DecodeColor(inout vec4 C)
 ///////////////////////////////////////////////////////////////
 void main()
 {
-    vec3 N  = pspNormal;
-    vec4 V  = pspPosition;
+    #if !USE_DYNAMIC_DEFINES
+        vec3 N  = (vinfoNormal != 0 ? pspNormal : vec3(1.0, 0.0, 0.0));
+    #elif VINFO_NORMAL != 0
+        vec3 N = pspNormal;
+    #else
+        vec3 N = vec3(1.0, 0.0, 0.0);
+    #endif
+    #if !USE_DYNAMIC_DEFINES
+        vec4 V  = (vinfoPosition != 0 ? pspPosition : vec4(0.0));
+    #elif VINFO_POSITION != 0
+        vec4 V = pspPosition;
+    #else
+        vec4 V = vec4(0.0);
+    #endif
+    #if !USE_DYNAMIC_DEFINES
+        vec4 T  = (vinfoTexture != 0 ? pspTexture : vec4(0.0));
+    #elif VINFO_TEXTURE != 0
+        vec4 T = pspTexture;
+    #else
+        vec4 T = vec4(0.0);
+    #endif
+    #if !USE_DYNAMIC_DEFINES
+        vec4 Cp = (vinfoColor != 8 ? pspColor : vec4(0.0));
+    #elif VINFO_COLOR != 8
+        vec4 Cp = pspColor;
+    #else
+        vec4 Cp = vec4(0.0);
+    #endif
     vec3 Ve = vec3(gl_ModelViewMatrix * V);
-    vec4 Cp = pspColor;
     vec4 Cs = vec4(0.0);
-    vec4 T  = pspTexture;
 
     #if !USE_DYNAMIC_DEFINES
         DecodeColor(Cp);
