@@ -1271,7 +1271,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void endBoundingBox() {
+	public void endBoundingBox(VertexInfo vinfo) {
 		// Nothing to do
 	}
 
@@ -1385,7 +1385,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
 		// Nothing to do
 	}
 

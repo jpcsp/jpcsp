@@ -1716,7 +1716,7 @@ public class VideoEngine {
 	            }
         	}
 
-            re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor, type);
+            re.setVertexInfo(vinfo, re.canAllNativeVertexInfo(), useVertexColor, useTexture, type);
 
             if (needSetDataPointers) {
 	            if (vinfo.texture != 0 || useTexture) {
@@ -1784,7 +1784,7 @@ public class VideoEngine {
                 case PRIM_TRIANGLE:
                 case PRIM_TRIANGLE_STRIPS:
                 case PRIM_TRIANGLE_FANS:
-                    re.setVertexInfo(vinfo, false, useVertexColor, type);
+                    re.setVertexInfo(vinfo, false, useVertexColor, useTexture, type);
 
                     float[] normalizedNormal = new float[3];
                     if (cachedVertexInfo == null) {
@@ -1859,7 +1859,7 @@ public class VideoEngine {
                     break;
 
                 case PRIM_SPRITES:
-                    re.setVertexInfo(vinfo, false, useVertexColor, IRenderingEngine.RE_QUADS);
+                    re.setVertexInfo(vinfo, false, useVertexColor, useTexture, IRenderingEngine.RE_QUADS);
                 	re.disableFlag(IRenderingEngine.GU_CULL_FACE);
 
                 	float[] mvpMatrix = null;
@@ -2215,7 +2215,6 @@ public class VideoEngine {
 
         boolean useVertexColor = initRendering();
 
-        re.setVertexInfo(vinfo, false, useVertexColor, -1);
         re.beginBoundingBox(numberOfVertexBoundingBox);
         for (int i = 0; i < numberOfVertexBoundingBox; i++) {
             int addr = vinfo.getAddress(mem, i);
@@ -2234,7 +2233,7 @@ public class VideoEngine {
             	re.drawBoundingBox(bboxVertices);
             }
         }
-        re.endBoundingBox();
+        re.endBoundingBox(vinfo);
 
         endRendering(useVertexColor, false, numberOfVertexBoundingBox);
     }
@@ -5489,7 +5488,7 @@ public class VideoEngine {
 		setDataPointers(3, useVertexColor, 4, useTexture, 2, useNormal, 0, true);
 
 		int type = patch_prim_types[context.patch_prim];
-		re.setVertexInfo(vinfo, false, useVertexColor, type);
+		re.setVertexInfo(vinfo, false, useVertexColor, useTexture, type);
 
 		ByteBuffer drawByteBuffer = bufferManager.getBuffer(bufferId);
 		drawByteBuffer.clear();

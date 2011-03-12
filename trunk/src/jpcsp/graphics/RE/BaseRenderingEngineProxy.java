@@ -743,8 +743,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void endBoundingBox() {
-		proxy.endBoundingBox();
+	public void endBoundingBox(VertexInfo vinfo) {
+		proxy.endBoundingBox(vinfo);
 	}
 
 	@Override
@@ -818,8 +818,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, int type) {
-		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, type);
+	public void setVertexInfo(VertexInfo vinfo, boolean allNativeVertexInfo, boolean useVertexColor, boolean useTexture, int type) {
+		proxy.setVertexInfo(vinfo, allNativeVertexInfo, useVertexColor, useTexture, type);
 	}
 
 	@Override

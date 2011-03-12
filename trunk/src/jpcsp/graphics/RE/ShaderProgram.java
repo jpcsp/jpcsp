@@ -43,6 +43,8 @@ public class ShaderProgram {
 	private int texMapProj; // values: [0..3]
 	private int vinfoColor; // values: [0..8]
 	private int vinfoPosition; // values: [0..3]
+	private int vinfoTexture; // values: [0..3]
+	private int vinfoNormal; // values: [0..3]
 	private float colorDoubling; // values: [1..2]
 	private int texEnable; // values: [0..1]
 	private int lightingEnable; // values: [0..1]
@@ -53,8 +55,7 @@ public class ShaderProgram {
 	private int numberBones; // values: [0..8]
 	private int clutIndexHint; // values: [0..4]
 
-	public ShaderProgram(IRenderingEngine re, int programId) {
-		setProgramId(re, programId);
+	public ShaderProgram() {
 	}
 
 	public ShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader) {
@@ -76,6 +77,8 @@ public class ShaderProgram {
 		texMapProj = shaderContext.getTexMapProj();
 		vinfoColor = shaderContext.getVinfoColor();
 		vinfoPosition = shaderContext.getVinfoPosition();
+		vinfoTexture = shaderContext.getVinfoTexture();
+		vinfoNormal = shaderContext.getVinfoNormal();
 		colorDoubling = shaderContext.getColorDoubling();
 		texEnable = shaderContext.getTexEnable();
 		lightingEnable = shaderContext.getLightingEnable();
@@ -84,6 +87,7 @@ public class ShaderProgram {
 		lightMode = shaderContext.getLightMode();
 		texPixelFormat = shaderContext.getTexPixelFormat();
 		numberBones = shaderContext.getNumberBones();
+		clutIndexHint = shaderContext.getClutIndexHint();
 
 		key = getKey(shaderContext, hasGeometryShader);
 	}
@@ -93,8 +97,9 @@ public class ShaderProgram {
 		int dummyValue = -1;
 
 		for (int i = 0; i < VideoEngine.NUM_LIGHTS; i++) {
-			REShader.addDefine(defines, "LIGHT_TYPE" + i, dummyValue);
-			REShader.addDefine(defines, "LIGHT_KIND" + i, dummyValue);
+			// LightType and LightKind are currently not used as defines in the shaders
+			//REShader.addDefine(defines, "LIGHT_TYPE" + i, dummyValue);
+			//REShader.addDefine(defines, "LIGHT_KIND" + i, dummyValue);
 			REShader.addDefine(defines, "LIGHT_ENABLED" + i, dummyValue);
 		}
 		REShader.addDefine(defines, "MAT_FLAGS0", dummyValue);
@@ -109,6 +114,8 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "TEX_MAP_PROJ", dummyValue);
 		REShader.addDefine(defines, "VINFO_COLOR", dummyValue);
 		REShader.addDefine(defines, "VINFO_POSITION", dummyValue);
+		REShader.addDefine(defines, "VINFO_TEXTURE", dummyValue);
+		REShader.addDefine(defines, "VINFO_NORMAL", dummyValue);
 		REShader.addDefine(defines, "COLOR_DOUBLING", dummyValue);
 		REShader.addDefine(defines, "TEX_ENABLE", dummyValue);
 		REShader.addDefine(defines, "LIGHTING_ENABLE", dummyValue);
@@ -126,8 +133,9 @@ public class ShaderProgram {
 		StringBuilder defines = new StringBuilder();
 
 		for (int i = 0; i < lightType.length; i++) {
-			REShader.addDefine(defines, "LIGHT_TYPE" + i, lightType[i]);
-			REShader.addDefine(defines, "LIGHT_KIND" + i, lightKind[i]);
+			// LightType and LightKind are currently not used as defines in the shaders
+			//REShader.addDefine(defines, "LIGHT_TYPE" + i, lightType[i]);
+			//REShader.addDefine(defines, "LIGHT_KIND" + i, lightKind[i]);
 			REShader.addDefine(defines, "LIGHT_ENABLED" + i, lightEnabled[i]);
 		}
 		REShader.addDefine(defines, "MAT_FLAGS0", matFlags[0]);
@@ -142,6 +150,8 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "TEX_MAP_PROJ", texMapProj);
 		REShader.addDefine(defines, "VINFO_COLOR", vinfoColor);
 		REShader.addDefine(defines, "VINFO_POSITION", vinfoPosition);
+		REShader.addDefine(defines, "VINFO_TEXTURE", vinfoTexture);
+		REShader.addDefine(defines, "VINFO_NORMAL", vinfoNormal);
 		REShader.addDefine(defines, "COLOR_DOUBLING", (int) colorDoubling);
 		REShader.addDefine(defines, "TEX_ENABLE", texEnable);
 		REShader.addDefine(defines, "LIGHTING_ENABLE", lightingEnable);
@@ -162,10 +172,11 @@ public class ShaderProgram {
 		key += hasGeometryShader ? 1 : 0;
 		shift++;
 		for (int i = 0; i < VideoEngine.NUM_LIGHTS; i++) {
-			key += shaderContext.getLightType(i) << shift;
-			shift += 2;
-			key += shaderContext.getLightKind(i) << shift;
-			shift += 2;
+			// LightType and LightKind are currently not used as defines in the shaders
+			//key += shaderContext.getLightType(i) << shift;
+			//shift += 2;
+			//key += shaderContext.getLightKind(i) << shift;
+			//shift += 2;
 			key += shaderContext.getLightEnabled(i) << shift;
 			shift++;
 		}
@@ -192,6 +203,10 @@ public class ShaderProgram {
 		key += ((long) shaderContext.getVinfoColor()) << shift;
 		shift += 4;
 		key += ((long) shaderContext.getVinfoPosition()) << shift;
+		shift += 2;
+		key += ((long) shaderContext.getVinfoTexture()) << shift;
+		shift += 2;
+		key += ((long) shaderContext.getVinfoNormal()) << shift;
 		shift += 2;
 		key += (shaderContext.getColorDoubling() == 2.f ? 1L : 0L) << shift;
 		shift++;

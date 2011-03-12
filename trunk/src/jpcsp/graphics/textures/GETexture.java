@@ -163,7 +163,7 @@ public class GETexture {
         if (re.isVertexArrayAvailable()) {
         	re.bindVertexArray(0);
         }
-        re.setVertexInfo(null, false, false, -1);
+        re.setVertexInfo(null, false, false, true, -1);
         re.enableClientState(IRenderingEngine.RE_TEXTURE);
         re.disableClientState(IRenderingEngine.RE_COLOR);
         re.disableClientState(IRenderingEngine.RE_NORMAL);

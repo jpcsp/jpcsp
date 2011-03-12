@@ -969,7 +969,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         if (re.isVertexArrayAvailable()) {
         	re.bindVertexArray(0);
         }
-        re.setVertexInfo(null, false, false, IRenderingEngine.RE_QUADS);
+        re.setVertexInfo(null, false, false, true, IRenderingEngine.RE_QUADS);
         re.enableClientState(IRenderingEngine.RE_TEXTURE);
         re.disableClientState(IRenderingEngine.RE_COLOR);
         re.disableClientState(IRenderingEngine.RE_NORMAL);
