@@ -145,6 +145,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.cryptoSavedata");
         cryptoSavedata.setSelected(enabled);
 
+        enabled = Settings.getInstance().readBool("emu.extractPGD");
+        extractPGD.setSelected(enabled);
+
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled) {
             umdBrowser.setSelected(true);
@@ -268,6 +271,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jPanel6 = new javax.swing.JPanel();
         extractEboot = new javax.swing.JCheckBox();
         cryptoSavedata = new javax.swing.JCheckBox();
+        extractPGD = new javax.swing.JCheckBox();
 
         setTitle("Configuration");
         setResizable(false);
@@ -582,7 +586,7 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(131, Short.MAX_VALUE))
+                .addContainerGap(85, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("video"), VideoPanel);
@@ -782,6 +786,8 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         cryptoSavedata.setText(Resource.get("cryptoSavedata"));
 
+        extractPGD.setText(Resource.get("extractPGD"));
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
@@ -789,7 +795,8 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                     .addComponent(extractEboot, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(cryptoSavedata, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(cryptoSavedata, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(extractPGD, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel6Layout.setVerticalGroup(
@@ -798,6 +805,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(extractEboot)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(cryptoSavedata)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(extractPGD)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -815,7 +824,7 @@ public class SettingsGUI extends javax.swing.JFrame {
             .addGroup(CryptoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(269, Short.MAX_VALUE))
+                .addContainerGap(246, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("crypto"), CryptoPanel);
@@ -958,6 +967,9 @@ public void RefreshWindow() {
     enabled = Settings.getInstance().readBool("emu.cryptoSavedata");
     cryptoSavedata.setSelected(enabled);
 
+    enabled = Settings.getInstance().readBool("emu.extractPGD");
+    extractPGD.setSelected(enabled);
+
     enabled = Settings.getInstance().readBool("emu.umdbrowser");
     if (enabled) {
         umdBrowser.setSelected(true);
@@ -1006,6 +1018,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeInt("emu.compiler.methodMaxInstructions", Integer.parseInt(methodMaxInstructionsBox.getSelectedItem().toString()));
    Settings.getInstance().writeBool("emu.extractEboot",extractEboot.isSelected());
    Settings.getInstance().writeBool("emu.cryptoSavedata",cryptoSavedata.isSelected());
+   Settings.getInstance().writeBool("emu.extractPGD",extractPGD.isSelected());
 
    if(umdBrowser.isSelected()) {
        Settings.getInstance().writeBool("emu.umdbrowser", true);
@@ -1064,11 +1077,12 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableUBOCheck;
     private javax.swing.JCheckBox disableVBOCheck;
-    private javax.swing.JCheckBox enableGETextureCheck;
-    private javax.swing.JCheckBox enableVAOCheck;
-    private javax.swing.JCheckBox enableNativeCLUTCheck;
     private javax.swing.JCheckBox enableDynamicShadersCheck;
+    private javax.swing.JCheckBox enableGETextureCheck;
+    private javax.swing.JCheckBox enableNativeCLUTCheck;
+    private javax.swing.JCheckBox enableVAOCheck;
     private javax.swing.JCheckBox extractEboot;
+    private javax.swing.JCheckBox extractPGD;
     private javax.swing.JCheckBox filelogCheck;
     private javax.swing.JPanel generalPanel;
     private javax.swing.JCheckBox geometryShaderCheck;
