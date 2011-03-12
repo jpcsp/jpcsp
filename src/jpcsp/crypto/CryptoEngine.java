@@ -26,6 +26,8 @@ public class CryptoEngine {
     private boolean isCryptoEngineInit;
     private static boolean extractEboot;
     private static boolean cryptoSavedata;
+    private static BBCipherCtx pgdCipherContext;
+    private static BBMacCtx pgdMacContext;
     private int[] fuseID = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
     // KIRK CMD1 AESCBC128-CMAC key.
@@ -1408,12 +1410,12 @@ public class CryptoEngine {
         // Store the calculated key.
         System.arraycopy(dataBuf, 0, keyBuf, 0x10, 0x10);
 
-        if (ctx.unk != 0x01) {
+        if (ctx.unk != 0x1) {
             System.arraycopy(keyBuf, 0x10, keyBuf, 0, 0xC);
-            keyBuf[0xC] = (byte) 0xFF;
-            keyBuf[0xD] = (byte) 0xFF;
-            keyBuf[0xE] = (byte) 0xFF;
-            keyBuf[0xF] = (byte) 0xFF;
+            keyBuf[0xC] = (byte) ((ctx.unk - 1) & 0xFF);
+            keyBuf[0xD] = (byte) (((ctx.unk - 1) >> 8) & 0xFF);
+            keyBuf[0xE] = (byte) (((ctx.unk - 1) >> 16) & 0xFF);
+            keyBuf[0xF] = (byte) (((ctx.unk - 1) >> 24) & 0xFF);
         }
 
         // Copy the first 0xC bytes of the obtained key and replicate them
@@ -1698,12 +1700,12 @@ public class CryptoEngine {
         // Store the calculated key.
         System.arraycopy(dataBuf, 0, keyBuf, 0x10, 0x10);
 
-        if (ctx.unk != 0x01) {
+        if (ctx.unk != 0x1) {
             System.arraycopy(keyBuf, 0x10, keyBuf, 0, 0xC);
-            keyBuf[0xC] = (byte) 0xFF;
-            keyBuf[0xD] = (byte) 0xFF;
-            keyBuf[0xE] = (byte) 0xFF;
-            keyBuf[0xF] = (byte) 0xFF;
+            keyBuf[0xC] = (byte) ((ctx.unk - 1) & 0xFF);
+            keyBuf[0xD] = (byte) (((ctx.unk - 1) >> 8) & 0xFF);
+            keyBuf[0xE] = (byte) (((ctx.unk - 1) >> 16) & 0xFF);
+            keyBuf[0xF] = (byte) (((ctx.unk - 1) >> 24) & 0xFF);
         }
 
         // Copy the first 0xC bytes of the obtained key and replicate them
@@ -2229,8 +2231,8 @@ public class CryptoEngine {
         // Setup the crypto and keygen modes and initialize both context structs.
         int sdEncMode = 1;
         int sdGenMode = 2;
-        BBMacCtx mCtx = new BBMacCtx();
-        BBCipherCtx cCtx = new BBCipherCtx();
+        pgdMacContext = new BBMacCtx();
+        pgdCipherContext = new BBCipherCtx();
 
         // Align the buffers to 16-bytes.
         int alignedSize = ((size + 0xF) >> 4) << 4;
@@ -2241,13 +2243,34 @@ public class CryptoEngine {
         System.arraycopy(inbuf, 0, dataBuf, 0, size);
 
         // Call the SD functions.
-        hleDrmBBMacInit(mCtx, sdEncMode);
-        hleDrmBBCipherInit(cCtx, sdEncMode, sdGenMode, dataBuf, key);
-        hleDrmBBMacUpdate(mCtx, dataBuf, 0x10);
+        hleDrmBBMacInit(pgdMacContext, sdEncMode);
+        hleDrmBBCipherInit(pgdCipherContext, sdEncMode, sdGenMode, dataBuf, key);
+        hleDrmBBMacUpdate(pgdMacContext, dataBuf, 0x10);
         System.arraycopy(dataBuf, 0x10, outbuf, 0, alignedSize - 0x10);
-        hleDrmBBMacUpdate(mCtx, outbuf, alignedSize - 0x10);
-        hleDrmBBCipherUpdate(cCtx, outbuf, alignedSize - 0x10);
+        hleDrmBBMacUpdate(pgdMacContext, outbuf, alignedSize - 0x10);
+        hleDrmBBCipherUpdate(pgdCipherContext, outbuf, alignedSize - 0x10);
 
         return outbuf;
+    }
+
+    public byte[] UpdatePGDCipher(byte[] inbuf, int size) {
+        // Align the buffers to 16-bytes.
+        int alignedSize = ((size + 0xF) >> 4) << 4;
+        byte[] outbuf = new byte[alignedSize - 0x10];
+        byte[] dataBuf = new byte[alignedSize];
+
+        // Fully copy the contents of the encrypted file.
+        System.arraycopy(inbuf, 0, dataBuf, 0, size);
+
+        // Call the SD functions.
+        System.arraycopy(dataBuf, 0x10, outbuf, 0, alignedSize - 0x10);
+        hleDrmBBCipherUpdate(pgdCipherContext, outbuf, alignedSize - 0x10);
+
+        return outbuf;
+    }
+
+    public void FinishPGDCipher() {
+        // Call the SD functions.
+        hleDrmBBCipherFinal(pgdCipherContext);
     }
 }

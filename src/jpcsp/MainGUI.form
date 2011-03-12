@@ -189,7 +189,7 @@
                     <MenuItem class="javax.swing.JMenuItem" name="FullItem">
                       <Properties>
                         <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
-                          <KeyStroke key="F11"/>
+                          <KeyStroke key="F4"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Full Screen"/>
                       </Properties>
@@ -209,7 +209,9 @@
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="filtersGroup"/>
                         </Property>
-                        <Property name="selected" type="boolean" value="true"/>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.none&quot;)" type="code"/>
+                        </Property>
                         <Property name="text" type="java.lang.String" value="None"/>
                       </Properties>
                       <Events>
@@ -220,6 +222,9 @@
                       <Properties>
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="filtersGroup"/>
+                        </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.bilinear&quot;)" type="code"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Bilinear"/>
                       </Properties>
@@ -239,7 +244,9 @@
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
                         </Property>
-                        <Property name="selected" type="boolean" value="true"/>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res1&quot;)" type="code"/>
+                        </Property>
                         <Property name="text" type="java.lang.String" value="480x272"/>
                       </Properties>
                       <Events>
@@ -250,6 +257,9 @@
                       <Properties>
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
+                        </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res2&quot;)" type="code"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="800x600"/>
                       </Properties>
@@ -262,6 +272,9 @@
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
                         </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res3&quot;)" type="code"/>
+                        </Property>
                         <Property name="text" type="java.lang.String" value="960x544"/>
                       </Properties>
                       <Events>
@@ -272,6 +285,9 @@
                       <Properties>
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
+                        </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res4&quot;)" type="code"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="1240x768"/>
                       </Properties>
@@ -284,6 +300,9 @@
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
                         </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res5&quot;)" type="code"/>
+                        </Property>
                         <Property name="text" type="java.lang.String" value="1152x768"/>
                       </Properties>
                       <Events>
@@ -294,6 +313,9 @@
                       <Properties>
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
+                        </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res6&quot;)" type="code"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="1280x720"/>
                       </Properties>
@@ -306,6 +328,9 @@
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
                         </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res7&quot;)" type="code"/>
+                        </Property>
                         <Property name="text" type="java.lang.String" value="1280x768"/>
                       </Properties>
                       <Events>
@@ -317,6 +342,9 @@
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
                         </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res8&quot;)" type="code"/>
+                        </Property>
                         <Property name="text" type="java.lang.String" value="1366x768"/>
                       </Properties>
                       <Events>
@@ -327,6 +355,9 @@
                       <Properties>
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="resGroup"/>
+                        </Property>
+                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res9&quot;)" type="code"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="1440x816"/>
                       </Properties>
