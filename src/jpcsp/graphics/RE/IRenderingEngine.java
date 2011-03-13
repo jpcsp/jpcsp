@@ -466,4 +466,5 @@ public interface IRenderingEngine {
 	public void bindActiveTexture(int index, int texture);
 	public void setTextureAnisotropy(float value);
 	public float getMaxTextureAnisotropy();
+	public String getShadingLanguageVersion();
 }

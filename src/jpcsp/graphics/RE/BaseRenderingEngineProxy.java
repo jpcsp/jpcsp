@@ -996,4 +996,9 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	public void setTextureAnisotropy(float value) {
 		proxy.setTextureAnisotropy(value);
 	}
+
+	@Override
+	public String getShadingLanguageVersion() {
+		return proxy.getShadingLanguageVersion();
+	}
 }
