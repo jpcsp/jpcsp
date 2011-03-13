@@ -226,6 +226,9 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		addStatistic("setUniform4", 186);
 		addStatistic("drawArraysBurstMode", 187);
 		addStatistic("bindActiveTexture", 188);
+		addStatistic("setTextureAnisotropy", 189);
+		addStatistic("getMaxTextureAnisotropy", 190);
+		addStatistic("getShadingLanguageVersion", 191);
 	}
 
 	private void addStatistic(String name, int index) {
@@ -1780,5 +1783,31 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 		statistic.start();
 		super.bindActiveTexture(index, texture);
 		statistic.end();
+	}
+
+	@Override
+	public void setTextureAnisotropy(float value) {
+		DurationStatistics statistic = statistics[189];
+		statistic.start();
+		super.setTextureAnisotropy(value);
+		statistic.end();
+	}
+
+	@Override
+	public float getMaxTextureAnisotropy() {
+		DurationStatistics statistic = statistics[190];
+		statistic.start();
+		float value = super.getMaxTextureAnisotropy();
+		statistic.end();
+		return value;
+	}
+
+	@Override
+	public String getShadingLanguageVersion() {
+		DurationStatistics statistic = statistics[191];
+		statistic.start();
+		String value = super.getShadingLanguageVersion();
+		statistic.end();
+		return value;
 	}
 }

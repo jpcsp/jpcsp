@@ -1611,4 +1611,13 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	public void setTextureAnisotropy(float value) {
         GL11.glTexParameterf(GL11.GL_TEXTURE_2D, EXTTextureFilterAnisotropic.GL_TEXTURE_MAX_ANISOTROPY_EXT, value);
 	}
+
+	@Override
+	public String getShadingLanguageVersion() {
+        if (GLContext.getCapabilities().OpenGL20) {
+        	return GL11.glGetString(GL20.GL_SHADING_LANGUAGE_VERSION);
+        }
+
+        return null;
+	}
 }

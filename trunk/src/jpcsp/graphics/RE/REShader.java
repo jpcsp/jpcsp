@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jpcsp.Settings;
 import jpcsp.graphics.GeCommands;
@@ -160,8 +162,40 @@ public class REShader extends BaseRenderingEngineFunction {
 		return s.replace('\n', ' ');
 	}
 
+	protected int getAvailableShadingLanguageVersion() {
+		int availableVersion = 0;
+
+		String shadingLanguageVersion = re.getShadingLanguageVersion();
+        if (shadingLanguageVersion == null) {
+        	return availableVersion;
+        }
+
+        Matcher matcher = Pattern.compile("(\\d+)\\.(\\d+).*").matcher(shadingLanguageVersion);
+        if (!matcher.matches()) {
+        	log.error(String.format("Cannot parse Shading Language Version '%s'", shadingLanguageVersion));
+        	return availableVersion;
+        }
+
+        try {
+        	int majorNumber = Integer.parseInt(matcher.group(1));
+        	int minorNumber = Integer.parseInt(matcher.group(2));
+
+        	availableVersion = majorNumber * 100 + minorNumber;
+        } catch (NumberFormatException e) {
+        	log.error(String.format("Cannot parse Shading Language Version '%s'", shadingLanguageVersion));
+        }
+
+        return availableVersion;
+	}
+
 	protected void initShadersDefines() {
         StringBuilder staticDefines = new StringBuilder();
+
+        if (getAvailableShadingLanguageVersion() >= 140) {
+        	// Use at least version 1.40 when available.
+        	// Version 1.20/1.30 is causing problems with AMD drivers.
+        	shaderVersion = Math.max(140, shaderVersion);
+        }
 
         addDefine(staticDefines, "USE_GEOMETRY_SHADER", useGeometryShader);
 		addDefine(staticDefines, "USE_UBO", useUniformBufferObject);
