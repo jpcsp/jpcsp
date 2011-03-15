@@ -508,11 +508,11 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
     }
 
-    public void hleDisplaySetGeBuf(int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory) {
-    	hleDisplaySetGeBuf(topaddr, bufferwidth, pixelformat, copyGEToMemory, widthGe, heightGe);
+    public void hleDisplaySetGeBuf(int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory, boolean forceLoadGEToScreen) {
+    	hleDisplaySetGeBuf(topaddr, bufferwidth, pixelformat, copyGEToMemory, forceLoadGEToScreen, widthGe, heightGe);
     }
 
-    public void hleDisplaySetGeBuf(int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory, int width, int height) {
+    public void hleDisplaySetGeBuf(int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory, boolean forceLoadGEToScreen, int width, int height) {
         topaddr &= Memory.addressMask;
         // We can get the address relative to 0 or already relative to START_VRAM
         if (topaddr < MemoryMap.START_VRAM) {
@@ -526,7 +526,12 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         if (topaddr == topaddrGe && bufferwidth == bufferwidthGe &&
             pixelformat == pixelformatGe &&
             width == widthGe && height == heightGe) {
+
         	// Nothing changed
+        	if (forceLoadGEToScreen) {
+        		loadGEToScreen();
+        	}
+
         	return;
         }
 
@@ -624,37 +629,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		checkTemp();
 
 		if (loadGEToScreen) {
-			if (VideoEngine.log.isDebugEnabled()) {
-				VideoEngine.log.debug(String.format("Reloading GE Memory (0x%08X-0x%08X) to screen (%dx%d)", topaddrGe, bottomaddrGe, widthGe, heightGe));
-			}
-
-			if (statisticsCopyMemoryToGe != null) {
-				statisticsCopyMemoryToGe.start();
-			}
-
-        	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
-				GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
-				geTexture.copyTextureToScreen(re);
-        	} else {
-            	if (re.isVertexArrayAvailable()) {
-            		re.bindVertexArray(0);
-            	}
-
-				// Set texFb as the current texture
-				re.bindTexture(texFb);
-
-				// Define the texture from the GE Memory
-			    re.setPixelStore(bufferwidthGe, getPixelFormatBytes(pixelformatGe));
-			    int textureSize = bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe);
-				re.setTexSubImage(0, 0, 0, bufferwidthGe, heightGe, pixelformatGe, pixelformatGe, textureSize, pixelsGe);
-
-				// Draw the GE
-			    drawFrameBuffer(false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
-        	}
-
-			if (statisticsCopyMemoryToGe != null) {
-				statisticsCopyMemoryToGe.end();
-			}
+			loadGEToScreen();
 
 			if (State.captureGeNextFrame) {
 		    	captureGeImage();
@@ -918,6 +893,41 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
             Emulator.setFpsTitle(String.format("FPS: %d, averageFPS: %.1f", lastFPS, averageFPS));
         }
+    }
+
+    private void loadGEToScreen() {
+		if (VideoEngine.log.isDebugEnabled()) {
+			VideoEngine.log.debug(String.format("Reloading GE Memory (0x%08X-0x%08X) to screen (%dx%d)", topaddrGe, bottomaddrGe, widthGe, heightGe));
+		}
+
+		if (statisticsCopyMemoryToGe != null) {
+			statisticsCopyMemoryToGe.start();
+		}
+
+    	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
+			GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
+			geTexture.copyTextureToScreen(re);
+    	} else {
+        	if (re.isVertexArrayAvailable()) {
+        		re.bindVertexArray(0);
+        	}
+
+			// Set texFb as the current texture
+			re.bindTexture(texFb);
+
+			// Define the texture from the GE Memory
+		    re.setPixelStore(bufferwidthGe, getPixelFormatBytes(pixelformatGe));
+		    int textureSize = bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe);
+		    pixelsGe.clear();
+			re.setTexSubImage(0, 0, 0, bufferwidthGe, heightGe, pixelformatGe, pixelformatGe, textureSize, pixelsGe);
+
+			// Draw the GE
+		    drawFrameBuffer(false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+    	}
+
+		if (statisticsCopyMemoryToGe != null) {
+			statisticsCopyMemoryToGe.end();
+		}
     }
 
     /** @param first : true  = draw as psp size
@@ -1204,35 +1214,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         	}
         	re.startDisplay();
 
-        	// Render GE
-            re.setViewport(0, 0, width, height);
-
-            // If the GE is not at the same address as the FrameBuffer,
-            // redisplay the GE so that the VideoEngine can update it
-            if (bottomaddrGe != bottomaddrFb) {
-            	if (log.isDebugEnabled()) {
-            		log.debug(String.format("sceDisplay.paintGL - reloading the GE from memory 0x%08X", topaddrGe));
-            	}
-            	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
-            		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
-            		geTexture.copyTextureToScreen(re);
-            	} else {
-		            pixelsGe.clear();
-		            re.bindTexture(texFb);
-					re.setTextureFormat(pixelformatGe, false);
-		            re.setPixelStore(bufferwidthGe, pixelformatGe);
-		            int textureSize = bufferwidthGe * heightGe * getPixelFormatBytes(pixelformatGe);
-					re.setTexSubImage(0,
-		                0, 0, bufferwidthGe, heightGe,
-		                pixelformatGe,
-		                pixelformatGe,
-		                textureSize, pixelsGe);
-
-					drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
-            	}
-            }
-
+        	// The GE will be reloaded to the screen by the VideoEngine
             if (VideoEngine.getInstance().update()) {
+                // Save the GE only if it actually drew something
             	if (log.isDebugEnabled()) {
             		log.debug(String.format("sceDisplay.paintGL - saving the GE to memory 0x%08X", topaddrGe));
             	}
@@ -1241,7 +1225,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
             		geTexture.copyScreenToTexture(re);
             	} else {
-	                // Update VRAM only if GE actually drew something
 	                // Set texFb as the current texture
 	                re.bindTexture(texFb);
 	    			re.setTextureFormat(pixelformatGe, false);
@@ -1257,7 +1240,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             	}
             }
 
-            // Render FB
+            // Render the FB
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("sceDisplay.paintGL - rendering the FB 0x%08X", topaddrFb));
         	}
@@ -1276,9 +1259,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 	                pixelformatFb,
 	                textureSize, pixelsFb);
 
-	            //Call the rotating function (if needed)
-	            if(ang != 4)
+	            // Call the rotating function (if needed)
+	            if (ang != 4) {
 	                rotate(ang);
+	            }
 
 	            drawFrameBuffer(false, true, bufferwidthFb, pixelformatFb, width, height);
         	}
