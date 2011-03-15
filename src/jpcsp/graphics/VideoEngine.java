@@ -186,6 +186,7 @@ public class VideoEngine {
     float[][] bboxVertices;
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
+    private boolean forceLoadGEToScreen;
     private boolean geBufChanged;
     private IAction hleAction;
     private int[] currentCMDValues;
@@ -494,7 +495,7 @@ public class VideoEngine {
 
         endUpdate();
 
-        return true;
+        return somethingDisplayed;
     }
 
     private void logLevelUpdated() {
@@ -538,6 +539,8 @@ public class VideoEngine {
         logLevelUpdated();
         memoryForGEUpdated();
         somethingDisplayed = false;
+        geBufChanged = true;
+        forceLoadGEToScreen = true;
         textureChanged = true;
         projectionMatrixUpload.setChanged(true);
         modelMatrixUpload.setChanged(true);
@@ -663,6 +666,9 @@ public class VideoEngine {
             // compiling a huge CodeBlock on the first call).
             // This avoids aborting the first list enqueued.
             int maxStallCount = (currentList.pc != currentList.list_addr ? 100 : 400);
+            if (isLogDebugEnabled) {
+            	maxStallCount = Integer.MAX_VALUE;
+            }
 
             if (waitForSyncCount > maxStallCount) {
                 error(String.format("Waiting too long on stall address 0x%08X, aborting the list %s", currentList.pc, currentList));
@@ -934,6 +940,13 @@ public class VideoEngine {
         if (!clutIsDirty || context.tex_clut_addr == 0) {
             return;
         }
+
+		if (!Memory.isAddressGood(context.tex_clut_addr)) {
+			if (isLogWarnEnabled) {
+				log.warn(String.format("Invalid clut address 0x%08X", context.tex_clut_addr));
+			}
+			return;
+		}
 
         if (context.tex_clut_mode == CMODE_FORMAT_32BIT_ABGR8888) {
             readClut32(0);
@@ -2323,6 +2336,7 @@ public class VideoEngine {
         }
 
         updateGeBuf();
+        somethingDisplayed = true;
         loadTexture();
 
         drawBezier(ucount, vcount);
@@ -2342,6 +2356,7 @@ public class VideoEngine {
         }
 
         updateGeBuf();
+        somethingDisplayed = true;
         loadTexture();
 
         drawSpline(sp_ucount, sp_vcount, sp_utype, sp_vtype);
@@ -3534,6 +3549,11 @@ public class VideoEngine {
     private void executeCommandSCISSOR1() {
     	context.scissor_x1 = normalArgument & 0x3ff;
     	context.scissor_y1 = (normalArgument >> 10) & 0x3ff;
+
+    	// Already update width&height in case SCISSOR2 is not coming...
+    	context.scissor_width = 1 + context.scissor_x2 - context.scissor_x1;
+    	context.scissor_height = 1 + context.scissor_y2 - context.scissor_y1;
+
     	scissorChanged = true;
     }
 
@@ -4270,11 +4290,18 @@ public class VideoEngine {
             return;
         }
 
+        int tex_addr = context.texture_base_pointer[0] & Memory.addressMask;
+        if (!Memory.isAddressGood(tex_addr)) {
+        	if (isLogWarnEnabled) {
+        		log.warn(String.format("Invalid texture address 0x%08X for texture level 0", tex_addr));
+        	}
+    		return;
+        }
+
         re.setTextureFormat(context.texture_storage, context.texture_swizzle);
 
         Texture texture;
-        int tex_addr = context.texture_base_pointer[0] & Memory.addressMask;
-        if (!canCacheTexture(tex_addr)) {
+		if (!canCacheTexture(tex_addr)) {
         	if (loadGETexture(tex_addr)) {
                 re.setTextureMipmapMagFilter(context.tex_mag_filter);
                 re.setTextureMipmapMinFilter(context.tex_min_filter);
@@ -5595,7 +5622,7 @@ public class VideoEngine {
 
     private void updateGeBuf() {
         if (geBufChanged) {
-            display.hleDisplaySetGeBuf(context.fbp, context.fbw, context.psm, somethingDisplayed);
+            display.hleDisplaySetGeBuf(context.fbp, context.fbw, context.psm, somethingDisplayed, forceLoadGEToScreen);
             geBufChanged = false;
 
             textureChanged = true;

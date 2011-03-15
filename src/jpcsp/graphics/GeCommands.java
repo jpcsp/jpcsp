@@ -730,7 +730,6 @@ public class GeCommands {
         pureStateCommands[NOP] = true;
         pureStateCommands[BASE] = true;
         pureStateCommands[VTYPE] = true;
-        pureStateCommands[OFFSET_ADDR] = true;
         pureStateCommands[REGION1] = true;
         pureStateCommands[REGION2] = true;
         pureStateCommands[LTE] = true;
