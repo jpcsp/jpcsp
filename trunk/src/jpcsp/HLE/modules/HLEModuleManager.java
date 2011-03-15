@@ -24,6 +24,7 @@ import java.util.List;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -260,6 +261,11 @@ public class HLEModuleManager {
         sceModule.free();
 
         Managers.modules.removeModule(sceModule.modid);
+
+        if (!sceModule.isFlashModule) {
+        	// Invalidate the compiled code from the unloaded module
+        	RuntimeContext.invalidateAll();
+        }
     }
 
     public int getSyscallFromNid(int nid) {
