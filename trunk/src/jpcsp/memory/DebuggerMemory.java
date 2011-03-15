@@ -19,9 +19,13 @@ package jpcsp.memory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -30,11 +34,13 @@ import jpcsp.util.Utilities;
 public class DebuggerMemory extends Memory {
 	public boolean traceMemoryRead = false;
 	public boolean traceMemoryWrite = false;
+	public boolean traceMemoryRead8 = false;
+	public boolean traceMemoryWrite8 = false;
+	public boolean traceMemoryRead16 = false;
+	public boolean traceMemoryWrite16 = false;
+	public boolean traceMemoryRead32 = false;
+	public boolean traceMemoryWrite32 = false;
 	public boolean pauseEmulatorOnMemoryBreakpoint = false;
-	// List of breakpoints for memory read
-	public static int[] readBreakpoints  = { 0x1234567, 0x7654321 };
-	// List of breakpoints for memory write
-	public static int[] writeBreakpoints = { 0x1234567, 0x7654321 };
     // External breakpoints' list.
     public static String mBrkFilePath = "Memory.mbrk";
 
@@ -48,78 +54,82 @@ public class DebuggerMemory extends Memory {
 		initBreakpoints();
 	}
 
-    private void initBreakpoints() {
+	private void setBreakpointToken(String token) {
+		if (token.equals("read")) {
+			traceMemoryRead = true;
+		} else if (token.equals("read8")) {
+			traceMemoryRead8 = true;
+		} else if (token.equals("read16")) {
+			traceMemoryRead16 = true;
+		} else if (token.equals("read32")) {
+			traceMemoryRead32 = true;
+		} else if (token.equals("write")) {
+			traceMemoryWrite = true;
+		} else if (token.equals("write8")) {
+			traceMemoryWrite8 = true;
+		} else if (token.equals("write16")) {
+			traceMemoryWrite16 = true;
+		} else if (token.equals("write32")) {
+			traceMemoryWrite32 = true;
+		} else if (token.equals("pause")) {
+			pauseEmulatorOnMemoryBreakpoint = true;
+		} else {
+			log.error(String.format("Unknown token '%s'", token));
+		}
+	}
+
+	private void initBreakpoints() {
         memoryReadBreakpoint = new HashSet<Integer>();
         memoryWriteBreakpoint = new HashSet<Integer>();
 
         BufferedReader in = null;
-        boolean addDefaultBreakpoints = true;
         try {
             File f = new File(mBrkFilePath);
             in = new BufferedReader(new FileReader(f));
 
-            String line = in.readLine();
-            if (line.equalsIgnoreCase("READ")) {
-                traceMemoryRead = true;
-                traceMemoryWrite = false;
-                line = in.readLine();
-            } else if (line.equalsIgnoreCase("WRITE")) {
-                traceMemoryRead = false;
-                traceMemoryWrite = true;
-                line = in.readLine();
-            } else if (line.equalsIgnoreCase("READ|WRITE")) {
-                traceMemoryRead = true;
-                traceMemoryWrite = true;
-                line = in.readLine();
-            } else {
-                traceMemoryRead = false;
-                traceMemoryWrite = false;
-            }
-
-            while (line != null) {
+            while (in != null) {
+            	String line = in.readLine();
+            	if (line == null) {
+            		break;
+            	}
+            	line = line.trim();
             	int rangeIndex = line.indexOf("-");
             	if (rangeIndex >= 0) {
             		// Range parsing
-            		if (line.startsWith("RW")) {
+            		if (line.startsWith("RW ")) {
             			int start = Utilities.parseAddress(line.substring(2, rangeIndex));
             			int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
             			addRangeReadWriteBreakpoint(start, end);
-            		} else if (line.startsWith("R")) {
+            		} else if (line.startsWith("R ")) {
             			int start = Utilities.parseAddress(line.substring(1, rangeIndex));
             			int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
             			addRangeReadBreakpoint(start, end);
-            		} else if (line.startsWith("W")) {
+            		} else if (line.startsWith("W ")) {
             			int start = Utilities.parseAddress(line.substring(1, rangeIndex));
             			int end = Utilities.parseAddress(line.substring(rangeIndex + 1));
             			addRangeWriteBreakpoint(start, end);
             		}
-            	} else if (line.startsWith("RW")) {
+            	} else if (line.startsWith("RW ")) {
             		int address = Utilities.parseAddress(line.substring(2));
             		addReadWriteBreakpoint(address);
-            	} else if (line.startsWith("R")) {
+            	} else if (line.startsWith("R ")) {
                     int address = Utilities.parseAddress(line.substring(1));
                     addReadBreakpoint(address);
-                } else if (line.startsWith("W")) {
+                } else if (line.startsWith("W ")) {
                     int address = Utilities.parseAddress(line.substring(1));
                     addWriteBreakpoint(address);
+                } else if (!line.startsWith("#")) {
+                	String[] tokens = line.split("\\|");
+                	for (int i = 0; tokens != null && i < tokens.length; i++) {
+                		String token = tokens[i].trim().toLowerCase();
+                		setBreakpointToken(token);
+                	}
                 }
-                line = in.readLine();
             }
-
-            addDefaultBreakpoints = false;
-        } catch (Exception e) {
+        } catch (IOException e) {
             // Ignore.
         } finally {
             Utilities.close(in);
-        }
-
-        if (addDefaultBreakpoints) {
-	        for (int i = 0; readBreakpoints != null && i < readBreakpoints.length; i++) {
-	        	addReadBreakpoint(readBreakpoints[i]);
-	        }
-	        for (int i = 0; writeBreakpoints != null && i < writeBreakpoints.length; i++) {
-	        	addWriteBreakpoint(writeBreakpoints[i]);
-	        }
         }
     }
 
@@ -222,8 +232,8 @@ public class DebuggerMemory extends Memory {
 		return message.toString();
 	}
 
-	protected void memoryRead(int address, int width) {
-		if (traceMemoryRead && log.isTraceEnabled()) {
+	protected void memoryRead(int address, int width, boolean trace) {
+		if ((traceMemoryRead || trace) && log.isTraceEnabled()) {
     		log.trace(getMemoryReadMessage(address, width));
 		}
 
@@ -251,8 +261,8 @@ public class DebuggerMemory extends Memory {
 		return message.toString();
 	}
 
-	protected void memoryWrite(int address, int value, int width) {
-		if (traceMemoryWrite && log.isTraceEnabled()) {
+	protected void memoryWrite(int address, int value, int width, boolean trace) {
+		if ((traceMemoryWrite || trace) && log.isTraceEnabled()) {
     		log.trace(getMemoryWriteMessage(address, value, width));
 		}
 
@@ -285,7 +295,7 @@ public class DebuggerMemory extends Memory {
 
 	@Override
 	public Buffer getBuffer(int address, int length) {
-		memoryRead(address, length * 8);
+		memoryRead(address, length * 8, false);
 		return mem.getBuffer(address, length);
 	}
 
@@ -312,37 +322,37 @@ public class DebuggerMemory extends Memory {
 
 	@Override
 	public int read8(int address) {
-		memoryRead(address, 8);
+		memoryRead(address, 8, traceMemoryRead8);
 		return mem.read8(address);
 	}
 
 	@Override
 	public int read16(int address) {
-		memoryRead(address, 16);
+		memoryRead(address, 16, traceMemoryRead16);
 		return mem.read16(address);
 	}
 
 	@Override
 	public int read32(int address) {
-		memoryRead(address, 32);
+		memoryRead(address, 32, traceMemoryRead32);
 		return mem.read32(address);
 	}
 
 	@Override
 	public void write8(int address, byte data) {
-		memoryWrite(address, data, 8);
+		memoryWrite(address, data, 8, traceMemoryWrite8);
 		mem.write8(address, data);
 	}
 
 	@Override
 	public void write16(int address, short data) {
-		memoryWrite(address, data, 16);
+		memoryWrite(address, data, 16, traceMemoryWrite16);
 		mem.write16(address, data);
 	}
 
 	@Override
 	public void write32(int address, int data) {
-		memoryWrite(address, data, 32);
+		memoryWrite(address, data, 32, traceMemoryWrite32);
 		mem.write32(address, data);
 	}
 }

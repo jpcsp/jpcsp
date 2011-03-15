@@ -40,7 +40,7 @@ public class Profiler {
     private static final HashMap<Integer, Long> backBranchCounts = new HashMap<Integer, Long>();
     private static final Long zero = new Long(0);
     private static final int detailedCodeBlockLogThreshold = 50;
-    private static final int codeLogMaxLength = 500;
+    private static final int codeLogMaxLength = 700;
     private static final int backBranchMaxLength = 100;
     private static final int backBranchContextBefore = 5;
     private static final int backBranchContextAfter = 3;
