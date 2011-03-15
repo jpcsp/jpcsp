@@ -346,7 +346,7 @@ public class LwMutexManager {
             log.warn("sceKernelUnlockLwMutex unknown uid");
             cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         } else if (info.lockedCount == 0) {
-            log.warn("sceKernelUnlockLwMutex not locked");
+            log.debug("sceKernelUnlockLwMutex not locked");
             cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_UNLOCKED;
         } else if (info.lockedCount < 0) {
             log.warn("sceKernelUnlockLwMutex underflow");
