@@ -172,9 +172,7 @@ public class MemoryWriter {
 			this.buffer = buffer;
 			offset = addr >> 2;
 			index = addr & 3;
-			if (index > 0) {
-				value = buffer[offset] & mask[index];
-			}
+			value = buffer[offset] & mask[index];
 		}
 
 		@Override
@@ -203,9 +201,7 @@ public class MemoryWriter {
 			index += n;
 			offset += index >> 2;
 			index &= 3;
-			if (index > 0) {
-				value = buffer[offset] & mask[index];
-			}
+			value = buffer[offset] & mask[index];
 		}
 	}
 
