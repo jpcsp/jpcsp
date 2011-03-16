@@ -68,14 +68,15 @@ public class VertexCache {
 		return cache.containsKey(getKey(vertexInfo));
 	}
 
-	protected VertexInfo getVertex(VertexInfo vertexInfo) {
+	protected synchronized VertexInfo getVertex(VertexInfo vertexInfo) {
 		return cache.get(getKey(vertexInfo));
 	}
 
-	public void addVertex(IRenderingEngine re, VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForShader) {
+	public synchronized void addVertex(IRenderingEngine re, VertexInfo vertexInfo, int numberOfVertex, float[][] boneMatrix, int numberOfWeightsForShader) {
 		Integer key = getKey(vertexInfo);
 		VertexInfo previousVertex = cache.get(key);
 		if (previousVertex != null) {
+		    vertexInfo.reuseCachedBuffer(previousVertex);
 		    previousVertex.deleteVertex(re);
 		} else {
 			// Check if the cache is not growing too large
