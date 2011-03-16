@@ -5623,6 +5623,7 @@ public class VideoEngine {
     private void updateGeBuf() {
         if (geBufChanged) {
             display.hleDisplaySetGeBuf(context.fbp, context.fbw, context.psm, somethingDisplayed, forceLoadGEToScreen);
+            forceLoadGEToScreen = false;
             geBufChanged = false;
 
             textureChanged = true;

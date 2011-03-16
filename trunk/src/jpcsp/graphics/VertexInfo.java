@@ -741,7 +741,13 @@ public class VertexInfo {
 			needSetDataPointers = true;
 		}
 
-		cachedBuffer = ByteBuffer.allocateDirect(size * VideoEngine.SIZEOF_FLOAT).order(ByteOrder.LITTLE_ENDIAN);
+		int bufferSize = size * VideoEngine.SIZEOF_FLOAT;
+		if (cachedBuffer == null || cachedBuffer.capacity() < bufferSize) {
+			cachedBuffer = ByteBuffer.allocateDirect(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
+		} else {
+			cachedBuffer.clear();
+		}
+
 		int oldLimit = buffer.limit();
 		buffer.limit(size);
 		cachedBuffer.asFloatBuffer().put(buffer);
@@ -840,6 +846,17 @@ public class VertexInfo {
 		}
 
 		readForCache(numberOfVertex);
+	}
+
+	public void reuseCachedBuffer(VertexInfo vertexInfo) {
+		if (vertexInfo != null && vertexInfo.cachedBuffer != null) {
+			// Reuse the cachedBuffer if we don't have one or if we have a smaller one
+			if (cachedBuffer == null || cachedBuffer.capacity() < vertexInfo.cachedBuffer.capacity()) {
+				// Reuse the cachedBuffer
+				cachedBuffer = vertexInfo.cachedBuffer;
+				vertexInfo.cachedBuffer = null;
+			}
+		}
 	}
 
 	@Override
