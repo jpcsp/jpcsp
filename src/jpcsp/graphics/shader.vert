@@ -556,7 +556,9 @@ void main()
         DecodePosition3D(V.xyz);
     #endif
 
-    N /= normalScale;
+    #if !USE_DYNAMIC_DEFINES || VINFO_NORMAL != 0
+        N /= normalScale;
+    #endif
 
     #if !USE_DYNAMIC_DEFINES
         if (psp_numberBones > 0) ApplySkinning(V.xyz, N);
@@ -564,7 +566,9 @@ void main()
         ApplySkinning(V.xyz, N);
     #endif
 
-    N  = gl_NormalMatrix * N;
+    #if !USE_DYNAMIC_DEFINES || VINFO_NORMAL != 0
+        N  = gl_NormalMatrix * N;
+    #endif
 
     #if !USE_DYNAMIC_DEFINES
         if (lightingEnable) ApplyLighting(Cp, Cs, Ve, normalize(N));

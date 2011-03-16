@@ -342,11 +342,14 @@ public class REShader extends BaseRenderingEngineFunction {
         // but disabled using disableVertexAttribArray. The solution for this
         // issue is to use dynamic shaders.
         //
+        // Read on AMD forum: the vertex attribute 0 has to be defined.
+        // Using the position here, as it is always defined.
+        //
         int index = 0;
+        re.bindAttribLocation(program, index++, attributeNamePosition);
         re.bindAttribLocation(program, index++, attributeNameTexture);
         re.bindAttribLocation(program, index++, attributeNameColor);
         re.bindAttribLocation(program, index++, attributeNameNormal);
-        re.bindAttribLocation(program, index++, attributeNamePosition);
         re.bindAttribLocation(program, index++, attributeNameWeights1);
         re.bindAttribLocation(program, index++, attributeNameWeights2);
 
@@ -404,6 +407,7 @@ public class REShader extends BaseRenderingEngineFunction {
 				infoLog = infoLog.replace("Vertex shader was successfully compiled to run on hardware.\n", "");
 				infoLog = infoLog.replace("Fragment shader was successfully compiled to run on hardware.\n", "");
 				infoLog = infoLog.replace("Fragment shader(s) linked, vertex shader(s) linked. \n", "");
+				infoLog = infoLog.replace("Vertex shader(s) linked, fragment shader(s) linked. \n", "");
 				infoLog = infoLog.replace("Validation successful.\n", "");
 
 				if (infoLog.length() > 0) {
