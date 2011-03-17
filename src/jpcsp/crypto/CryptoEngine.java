@@ -891,9 +891,8 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
-        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        outBuf = aes.decryptCBC(inBuf, decKey, iv);
+        byte[] outBuf = aes.decryptCBC(inBuf, decKey, iv);
 
         out.clear();
         out.put(outBuf);
