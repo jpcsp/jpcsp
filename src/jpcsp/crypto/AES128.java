@@ -34,17 +34,16 @@ public class AES128 {
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
     private static final Cipher c;
+    private volatile long treadId = -1;
     static {
         try {
+            Security.addProvider(new BouncyCastleProvider());
             c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
         } catch (Exception ex) {
             throw new AssertionError(ex);
         }
     }
 
-    public AES128() {
-        Security.addProvider(new BouncyCastleProvider());
-    }
 
     // Private encrypting method for CMAC (IV == 0).
     private static byte[] encrypt(byte[] in, byte[] encKey) {
