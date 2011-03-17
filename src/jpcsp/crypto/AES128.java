@@ -14,7 +14,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.crypto;
 
 import java.io.ByteArrayInputStream;
@@ -34,17 +33,14 @@ public class AES128 {
     private static byte[] const_Rb = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x87};
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
-    private static final ThreadLocal<Cipher> tlCipher = new ThreadLocal<Cipher>(){
-        @Override
-        protected Cipher initialValue() {
-            try {
-                return Cipher.getInstance("AES/CBC/NoPadding", "BC");
-            } catch (Exception ex) {
-                throw new AssertionError(ex);
-            } 
-
+    private static final Cipher c;
+    static {
+        try {
+            c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+        } catch (Exception ex) {
+            throw new AssertionError(ex);
         }
-    };
+    }
 
     public AES128() {
         Security.addProvider(new BouncyCastleProvider());
@@ -55,14 +51,14 @@ public class AES128 {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec); 
+        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec);
     }
 
     // Public encrypting/decrypting methods (for CryptoEngine calls).
     public byte[] encryptCBC(byte[] in, byte[] encKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec);       
+        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec);
     }
 
     public byte[] decryptCBC(byte[] in, byte[] decKey, byte[] iv) {
@@ -71,22 +67,21 @@ public class AES128 {
         return cipherAux(in, Cipher.DECRYPT_MODE, keySpec, ivec);
     }
 
-    private static byte[] cipherAux(byte[] in, int cipherMode, Key keySpec, IvParameterSpec ivec){
-        try{
-            Cipher c = tlCipher.get();
+    private static byte[] cipherAux(byte[] in, int cipherMode, Key keySpec, IvParameterSpec ivec) {
+        try {
             c.init(cipherMode, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
             CipherInputStream cIn = new CipherInputStream(inStream, c);
             byte[] bytes = new byte[in.length];
             int nRead = cIn.read(bytes, 0, bytes.length);
-            assert(nRead == -1);
+            assert (nRead == -1);
             return bytes;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
-    
+
     public void doInitCMAC(byte[] contentKey) {
         this.contentKey = contentKey;
         barros = new ByteArrayOutputStream();
@@ -156,7 +151,7 @@ public class AES128 {
     }
 
     public boolean doVerifyCMAC(byte[] verificationCMAC) {
-        byte[] cmac = doFinalCMAC();        
+        byte[] cmac = doFinalCMAC();
         return Arrays.equals(cmac, verificationCMAC);
     }
 
