@@ -51,9 +51,8 @@ public class AES128 {
             CipherInputStream cIn = new CipherInputStream(inStream, c);
             DataInputStream dIn = new DataInputStream(cIn);
             byte[] bytes = new byte[in.length];
-            for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = (byte) dIn.read();
-            }
+            int nRead = dIn.read(bytes, 0, bytes.length);
+            assert(nRead == -1);
             return bytes;
         } catch (Exception e) {
             e.printStackTrace();
