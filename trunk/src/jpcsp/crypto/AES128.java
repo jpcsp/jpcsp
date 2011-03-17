@@ -19,9 +19,9 @@ package jpcsp.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.security.Key;
 import java.security.Security;
+import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
@@ -165,19 +165,8 @@ public class AES128 {
     }
 
     public boolean doVerifyCMAC(byte[] verificationCMAC) {
-        byte[] cmac = doFinalCMAC();
-
-        if (verificationCMAC == null || verificationCMAC.length != cmac.length) {
-            return false;
-        }
-
-        for (int i = 0; i < cmac.length; i++) {
-            if (cmac[i] != verificationCMAC[i]) {
-                return false;
-            }
-        }
-
-        return true;
+        byte[] cmac = doFinalCMAC();        
+        return Arrays.equals(cmac, verificationCMAC);
     }
 
     private byte[] doPaddingCMAC(byte[] input) {
