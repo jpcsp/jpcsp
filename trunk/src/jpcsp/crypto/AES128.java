@@ -49,9 +49,8 @@ public class AES128 {
             c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
             CipherInputStream cIn = new CipherInputStream(inStream, c);
-            DataInputStream dIn = new DataInputStream(cIn);
             byte[] bytes = new byte[in.length];
-            int nRead = dIn.read(bytes, 0, bytes.length);
+            int nRead = cIn.read(bytes, 0, bytes.length);
             assert(nRead == -1);
             return bytes;
         } catch (Exception e) {
