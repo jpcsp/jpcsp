@@ -34,7 +34,9 @@ public class SHA1 {
     public byte[] doSHA1(byte[] bytes, int lenght) {
         try {
             md.update(bytes, 0, lenght);
-            return md.digest();
+            byte[] ret = md.digest();
+            md.reset();
+            return ret;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
