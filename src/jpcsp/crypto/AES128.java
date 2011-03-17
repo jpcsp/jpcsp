@@ -34,7 +34,7 @@ public class AES128 {
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
     private static final Cipher c;
-    private static volatile long treadId = -1;
+    private static long threadId = -1;
     static {
         try {
             Security.addProvider(new BouncyCastleProvider());
@@ -44,12 +44,11 @@ public class AES128 {
         }
     }
 
-    private final static void checkThreadInvariant(){
-        assert (
-                treadId == -1 ?
-                (treadId = Thread.currentThread().getId()) == treadId :
-                treadId == Thread.currentThread().getId()
-        ) : "sharing thread static cipher object across threads, should make non-static";
+    private final synchronized static boolean checkThreadInvariant(){
+         if(threadId == -1)
+            threadId = Thread.currentThread().getId();
+         
+         return threadId == Thread.currentThread().getId();
     }
 
     // Private encrypting method for CMAC (IV == 0).
@@ -74,7 +73,7 @@ public class AES128 {
     }
 
     private static byte[] cipherAux(byte[] in, int cipherMode, Key keySpec, IvParameterSpec ivec) {
-        checkThreadInvariant();
+        assert checkThreadInvariant() : "sharing thread static cipher object across threads, should make non-static";
         try {
             c.init(cipherMode, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
