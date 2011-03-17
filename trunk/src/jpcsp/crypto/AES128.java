@@ -44,46 +44,26 @@ public class AES128 {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
-            c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
-            ByteArrayInputStream inStream = new ByteArrayInputStream(in);
-            CipherInputStream cIn = new CipherInputStream(inStream, c);
-            byte[] bytes = new byte[in.length];
-            int nRead = cIn.read(bytes, 0, bytes.length);
-            assert(nRead == -1);
-            return bytes;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec); 
     }
 
     // Public encrypting/decrypting methods (for CryptoEngine calls).
     public byte[] encryptCBC(byte[] in, byte[] encKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        try {
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
-            c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
-            ByteArrayInputStream inStream = new ByteArrayInputStream(in);
-            CipherInputStream cIn = new CipherInputStream(inStream, c);
-            byte[] bytes = new byte[in.length];
-            int nRead = cIn.read(bytes, 0, bytes.length);
-            assert(nRead == -1);
-            return bytes;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec);       
     }
 
     public byte[] decryptCBC(byte[] in, byte[] decKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(decKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        try {
+        return cipherAux(in, Cipher.DECRYPT_MODE, keySpec, ivec);
+    }
+
+    private static byte[] cipherAux(byte[] in, int cipherMode, Key keySpec, IvParameterSpec ivec){
+        try{
             Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
-            c.init(Cipher.DECRYPT_MODE, keySpec, ivec);
+            c.init(cipherMode, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
             CipherInputStream cIn = new CipherInputStream(inStream, c);
             byte[] bytes = new byte[in.length];
@@ -95,7 +75,7 @@ public class AES128 {
             return null;
         }
     }
-
+    
     public void doInitCMAC(byte[] contentKey) {
         this.contentKey = contentKey;
         barros = new ByteArrayOutputStream();
