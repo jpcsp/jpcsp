@@ -34,6 +34,17 @@ public class AES128 {
     private static byte[] const_Rb = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x87};
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
+    private static final ThreadLocal<Cipher> tlCipher = new ThreadLocal<Cipher>(){
+        @Override
+        protected Cipher initialValue() {
+            try {
+                return Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            } catch (Exception ex) {
+                throw new AssertionError(ex);
+            } 
+
+        }
+    };
 
     public AES128() {
         Security.addProvider(new BouncyCastleProvider());
@@ -62,7 +73,7 @@ public class AES128 {
 
     private static byte[] cipherAux(byte[] in, int cipherMode, Key keySpec, IvParameterSpec ivec){
         try{
-            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            Cipher c = tlCipher.get();
             c.init(cipherMode, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
             CipherInputStream cIn = new CipherInputStream(inStream, c);

@@ -21,25 +21,23 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class SHA1 {
-    static MessageDigest md;
-    static{
-        try{
-           md  = MessageDigest.getInstance("SHA-1");
-        }catch(NoSuchAlgorithmException e){
-            //impossible
-            throw new AssertionError(e);
+    static ThreadLocal<MessageDigest> md = new ThreadLocal<MessageDigest>() {
+
+        @Override
+        protected MessageDigest initialValue() {
+            try {
+                return MessageDigest.getInstance("SHA-1");
+            } catch (NoSuchAlgorithmException e) {
+                //impossible
+                throw new AssertionError(e);
+            }
         }
-    }
+    };
 
     public byte[] doSHA1(byte[] bytes, int lenght) {
-        try {
-            md.update(bytes, 0, lenght);
-            byte[] ret = md.digest();
-            md.reset();
-            return ret;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+            MessageDigest digest = md.get();
+            digest.reset();
+            digest.update(bytes, 0, lenght);
+            return digest.digest();
     }
 }
