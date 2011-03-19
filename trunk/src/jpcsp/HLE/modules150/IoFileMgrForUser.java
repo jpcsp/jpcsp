@@ -1678,7 +1678,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         if (pgdFileConnector == null) {
                             pgdFileConnector = new PGDFileConnector();
                         }
-                        
+
                         // Store the key.
                         byte[] keyBuf = new byte[0x10];
                         for (int i = 0; i < 0x10; i++) {
@@ -1731,22 +1731,33 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                                 // Write the newly extracted hash at the top of the output buffer,
                                 // locate the data hash at hashOffset and start decrypting until
                                 // dataSize is reached.
-                                int maxAlignedChunkSize = 0x4EF0; // Optimizes the performance of the algorithm.
 
-                                // Read and decrypt the first chunk of data.
-                                info.readOnlyFile.readFully(inBuf, 0xA0, maxAlignedChunkSize);
+                                // Maximum 16-byte aligned block size to use during stream read/write.
+                                int maxAlignedChunkSize = 0x4EF0;
 
-                                System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
-                                System.arraycopy(inBuf, hashOffset, outBuf, 0x10, maxAlignedChunkSize);
-                                decFile.write(crypto.DecryptPGD(outBuf, maxAlignedChunkSize + 0x10, keyBuf));
-
-                                // Keep reading and decrypting data by updating the PGD cipher.
-                                for (int i = 0; i < dataSize; i += maxAlignedChunkSize) {
-                                    info.readOnlyFile.readFully(inBuf, 0xA0 + i, maxAlignedChunkSize);
+                                // If the data is smaller than maxAlignedChunkSize, decrypt it right away.
+                                if (dataSize <= maxAlignedChunkSize) {
+                                    info.readOnlyFile.readFully(inBuf, 0xA0, dataSize);
 
                                     System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
-                                    System.arraycopy(inBuf, hashOffset + i, outBuf, 0x10, maxAlignedChunkSize);
-                                    decFile.write(crypto.UpdatePGDCipher(outBuf, maxAlignedChunkSize + 0x10));
+                                    System.arraycopy(inBuf, hashOffset, outBuf, 0x10, dataSize);
+                                    decFile.write(crypto.DecryptPGD(outBuf, dataSize + 0x10, keyBuf));
+                                } else {
+                                    // Read and decrypt the first chunk of data.
+                                    info.readOnlyFile.readFully(inBuf, 0xA0, maxAlignedChunkSize);
+
+                                    System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
+                                    System.arraycopy(inBuf, hashOffset, outBuf, 0x10, maxAlignedChunkSize);
+                                    decFile.write(crypto.DecryptPGD(outBuf, maxAlignedChunkSize + 0x10, keyBuf));
+
+                                    // Keep reading and decrypting data by updating the PGD cipher.
+                                    for (int i = 0; i < dataSize; i += maxAlignedChunkSize) {
+                                        info.readOnlyFile.readFully(inBuf, 0xA0 + i, maxAlignedChunkSize);
+
+                                        System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
+                                        System.arraycopy(inBuf, hashOffset + i, outBuf, 0x10, maxAlignedChunkSize);
+                                        decFile.write(crypto.UpdatePGDCipher(outBuf, maxAlignedChunkSize + 0x10));
+                                    }
                                 }
 
                                 // Finish the PGD cipher operations, set the real file length and close it.

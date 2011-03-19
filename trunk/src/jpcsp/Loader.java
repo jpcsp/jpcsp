@@ -655,6 +655,16 @@ public class Loader {
             	Memory.log.trace(String.format("Relocation #%d type=%d,base=%08X,addr=%08X", i, R_TYPE, OFS_BASE, ADDR_BASE));
             }
 
+            // Check if R_TYPE is 0xFF (break code) and break the loop
+            // immediately in order to avoid fetching non existent program
+            // headers.
+            // Some games (e.g.: "Final Fantasy: Dissidia") use this kind of relocation
+            // suggesting that the PSP's ELF Loader is capable of recognizing it and stop.
+            if (R_TYPE == 0xFF) {
+                Memory.log.warn("Special relocation code 0xFF detected!");
+                break;
+            }
+
             int phOffset     = (int)elf.getProgramHeader(OFS_BASE).getP_vaddr();
             int phBaseOffset = (int)elf.getProgramHeader(ADDR_BASE).getP_vaddr();
 

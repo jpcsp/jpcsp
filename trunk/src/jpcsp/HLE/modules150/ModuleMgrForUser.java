@@ -50,7 +50,6 @@ public class ModuleMgrForUser implements HLEModule {
     protected static Logger log = Modules.getLogger("ModuleMgrForUser");
 
     enum bannedModulesList {
-
         LIBFONT,
         sc_sascore,
         audiocodec,
@@ -71,8 +70,7 @@ public class ModuleMgrForUser implements HLEModule {
         libparse_uri,
         libparse_http,
         libhttp_rfc,
-        libssl,
-        libsuppreacc
+        libssl
     }
 
     @Override

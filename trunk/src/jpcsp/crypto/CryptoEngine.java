@@ -677,13 +677,14 @@ public class CryptoEngine {
 
         // Decrypt and extract the new AES and CMAC keys from the top of the data.
         byte[] encryptedKeys = new byte[32];
+        byte[] decryptedKeys = new byte[32];
         for (int i = 0; i < 16; i++) {
             encryptedKeys[i] = (byte) header.AES128Key[i];
         }
         for (int i = 0; i < 16; i++) {
             encryptedKeys[i + 16] = (byte) header.CMACKey[i];
         }
-        byte[] decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
+        decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
 
         // Check for a valid signature.
         int sigCheck = executeKIRKCmd10(sigIn, size);
@@ -692,7 +693,9 @@ public class CryptoEngine {
         // full data decryption.
         if (decryptedKeys != null) {
             byte[] aesBuf = new byte[16];
-            System.arraycopy(decryptedKeys, 0, aesBuf, 0, 16);
+            for (int i = 0; i < 16; i++) {
+                aesBuf[i] = decryptedKeys[i];
+            }
             // Skip the CMD1 header.
             int headerSize = 0x90;
             int headerOffset = 0x40;
@@ -755,8 +758,9 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
+        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.encryptCBC(inBuf, encKey, iv);
+        outBuf = aes.encryptCBC(inBuf, encKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -799,8 +803,9 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
+        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.encryptCBC(inBuf, encKey, iv);
+        outBuf = aes.encryptCBC(inBuf, encKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -841,8 +846,9 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
+        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.decryptCBC(inBuf, decKey, iv);
+        outBuf = aes.decryptCBC(inBuf, decKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -885,8 +891,9 @@ public class CryptoEngine {
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
         byte[] inBuf = new byte[size];
+        byte[] outBuf = new byte[size];
         in.get(inBuf, 0, size);
-        byte[] outBuf = aes.decryptCBC(inBuf, decKey, iv);
+        outBuf = aes.decryptCBC(inBuf, decKey, iv);
 
         out.clear();
         out.put(outBuf);
@@ -925,13 +932,17 @@ public class CryptoEngine {
 
         // Decrypt and extract the new AES and CMAC keys from the top of the data.
         byte[] encryptedKeys = new byte[32];
+        byte[] decryptedKeys = new byte[32];
         for (int i = 0; i < 16; i++) {
             encryptedKeys[i] = (byte) header.AES128Key[i];
         }
         for (int i = 0; i < 16; i++) {
             encryptedKeys[i + 16] = (byte) header.CMACKey[i];
         }
-        byte[] decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
+        decryptedKeys = aes.decryptCBC(encryptedKeys, k, iv);
+
+        byte[] cmacHeaderHash = new byte[16];
+        byte[] cmacDataHash = new byte[16];
 
         byte[] cmacBuf = new byte[16];
         for (int i = 0; i < 16; i++) {
@@ -947,7 +958,7 @@ public class CryptoEngine {
         // Calculate CMAC header hash.
         aes.doInitCMAC(cmacBuf);
         aes.doUpdateCMAC(inBuf, 0, 0x30);
-        byte[] cmacHeaderHash = aes.doFinalCMAC();
+        cmacHeaderHash = aes.doFinalCMAC();
 
         int blockSize = Integer.reverseBytes(header.dataSize);
         if ((blockSize % 16) != 0) {
@@ -957,7 +968,7 @@ public class CryptoEngine {
         // Calculate CMAC data hash.
         aes.doInitCMAC(cmacBuf);
         aes.doUpdateCMAC(inBuf, 0, 0x30 + blockSize + Integer.reverseBytes(header.dataOffset));
-        byte[] cmacDataHash = aes.doFinalCMAC();
+        cmacDataHash = aes.doFinalCMAC();
 
         if (cmacHeaderHash != header.CMACHeaderHash) {
             return PSP_KIRK_INVALID_HEADER_HASH;
@@ -1878,10 +1889,10 @@ public class CryptoEngine {
         buffer[1] = 0x45;
         buffer[2] = 0x4C;
         buffer[3] = 0x46;
-        buffer[4] = 0x01;
+        buffer[4] = 0x00;
         buffer[5] = 0x01;
         buffer[6] = 0x01;
-        buffer[7] = 0x00;
+        buffer[7] = 0x01;
         buffer[8] = 0x00;
         buffer[9] = 0x00;
         buffer[10] = 0x00;
