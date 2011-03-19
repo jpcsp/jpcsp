@@ -159,14 +159,14 @@ public class PSP {
                 String ebootPath = Connector.baseDirectory + "EBOOT\\";
                 new File(ebootPath).mkdirs();
                 RandomAccessFile raf = new RandomAccessFile(ebootPath + "EBOOT.BIN", "rw");
-                raf.write(outBuf);
+                raf.write(outBuf, 0, retsize);
                 raf.close();
             } catch (Exception e) {
                 // Ignore.
             }
         }
 
-        return ByteBuffer.wrap(outBuf);
+        return ByteBuffer.wrap(outBuf, 0, retsize);
     }
 
     public boolean isValid() {

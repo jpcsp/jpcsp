@@ -14,13 +14,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package jpcsp.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.security.Key;
 import java.security.Security;
-import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
@@ -33,22 +34,9 @@ public class AES128 {
     private static byte[] const_Rb = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x87};
     private byte[] contentKey;
     private ByteArrayOutputStream barros;
-    private static final Cipher c;
-    private static long threadId = -1;
-    static {
-        try {
-            Security.addProvider(new BouncyCastleProvider());
-            c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
-        } catch (Exception ex) {
-            throw new AssertionError(ex);
-        }
-    }
 
-    private final synchronized static boolean checkThreadInvariant(){
-         if(threadId == -1)
-            threadId = Thread.currentThread().getId();
-         
-         return threadId == Thread.currentThread().getId();
+    public AES128() {
+        Security.addProvider(new BouncyCastleProvider());
     }
 
     // Private encrypting method for CMAC (IV == 0).
@@ -56,31 +44,57 @@ public class AES128 {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         byte[] iv = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec);
+        try {
+            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
+            ByteArrayInputStream inStream = new ByteArrayInputStream(in);
+            CipherInputStream cIn = new CipherInputStream(inStream, c);
+            DataInputStream dIn = new DataInputStream(cIn);
+            byte[] bytes = new byte[in.length];
+            for (int i = 0; i < bytes.length; i++) {
+                bytes[i] = (byte) dIn.read();
+            }
+            return bytes;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // Public encrypting/decrypting methods (for CryptoEngine calls).
     public byte[] encryptCBC(byte[] in, byte[] encKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(encKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        return cipherAux(in, Cipher.ENCRYPT_MODE, keySpec, ivec);
+        try {
+            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            c.init(Cipher.ENCRYPT_MODE, keySpec, ivec);
+            ByteArrayInputStream inStream = new ByteArrayInputStream(in);
+            CipherInputStream cIn = new CipherInputStream(inStream, c);
+            DataInputStream dIn = new DataInputStream(cIn);
+            byte[] bytes = new byte[in.length];
+            for (int i = 0; i < bytes.length; i++) {
+                bytes[i] = (byte) dIn.read();
+            }
+            return bytes;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public byte[] decryptCBC(byte[] in, byte[] decKey, byte[] iv) {
         Key keySpec = new SecretKeySpec(decKey, "AES");
         IvParameterSpec ivec = new IvParameterSpec(iv);
-        return cipherAux(in, Cipher.DECRYPT_MODE, keySpec, ivec);
-    }
-
-    private static byte[] cipherAux(byte[] in, int cipherMode, Key keySpec, IvParameterSpec ivec) {
-        assert checkThreadInvariant() : "sharing thread static cipher object across threads, should make non-static";
         try {
-            c.init(cipherMode, keySpec, ivec);
+            Cipher c = Cipher.getInstance("AES/CBC/NoPadding", "BC");
+            c.init(Cipher.DECRYPT_MODE, keySpec, ivec);
             ByteArrayInputStream inStream = new ByteArrayInputStream(in);
             CipherInputStream cIn = new CipherInputStream(inStream, c);
+            DataInputStream dIn = new DataInputStream(cIn);
             byte[] bytes = new byte[in.length];
-            int nRead = cIn.read(bytes, 0, bytes.length);
-            assert (nRead == -1);
+            for (int i = 0; i < in.length; i++) {
+                bytes[i] = (byte) dIn.read();
+            }
             return bytes;
         } catch (Exception e) {
             e.printStackTrace();
@@ -158,7 +172,18 @@ public class AES128 {
 
     public boolean doVerifyCMAC(byte[] verificationCMAC) {
         byte[] cmac = doFinalCMAC();
-        return Arrays.equals(cmac, verificationCMAC);
+
+        if (verificationCMAC == null || verificationCMAC.length != cmac.length) {
+            return false;
+        }
+
+        for (int i = 0; i < cmac.length; i++) {
+            if (cmac[i] != verificationCMAC[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private byte[] doPaddingCMAC(byte[] input) {
