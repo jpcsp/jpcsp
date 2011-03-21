@@ -858,9 +858,10 @@ public class VideoEngine {
     private int getStencilOp(int pspOP) {
     	if (pspOP > SOP_DECREMENT_STENCIL_VALUE) {
             log.warn("UNKNOWN stencil op " + pspOP);
+            return SOP_KEEP_STENCIL_VALUE;
     	}
 
-        return SOP_KEEP_STENCIL_VALUE;
+    	return pspOP;
     }
 
     private int getBlendFix(float[] fix_color) {

@@ -998,7 +998,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
-    	// Update: glReadPixels has a poorer performance than glGetTextImage
+    	// Update: glReadPixels has a poorer performance than glGetTexImage
     	// on modern graphic cards.
         if (useReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
             re.setProjectionMatrix(VideoEngine.getOrthoMatrix(0, width, height, 0, -1, 1));
