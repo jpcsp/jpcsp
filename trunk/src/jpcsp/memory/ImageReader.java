@@ -374,14 +374,20 @@ public class ImageReader {
 		private int[] buffer;
 		private int index;
 		private int maxIndex;
+		private int rowWidth;
+		private int pitch;
+		private int bxc;
 
 		public SwizzleDecoder(IMemoryReader memoryReader, int bufferWidth, int bytesPerPixel) {
 			super(memoryReader);
 			this.bufferWidth = bufferWidth;
 			this.bytesPerPixel = bytesPerPixel;
+	        rowWidth = (bytesPerPixel > 0) ? (bufferWidth * bytesPerPixel) : (bufferWidth / 2);
+	        pitch = rowWidth / 4;
+	        bxc = rowWidth / 16;
 
 			// Swizzle buffer providing space for 8 pixel rows
-			buffer = new int[bufferWidth * 8];
+			buffer = new int[pitch * 8];
 			maxIndex = buffer.length;
 			index = maxIndex;
 		}
@@ -390,22 +396,52 @@ public class ImageReader {
 		public int readNext() {
 			if (index >= maxIndex) {
 				// Reload the swizzle buffer with the next 8 pixel rows
-		        int rowWidth = (bytesPerPixel > 0) ? (bufferWidth * bytesPerPixel) : (bufferWidth / 2);
-		        int pitch = (rowWidth - 16) / 4;
-		        int bxc = rowWidth / 16;
 		        int xdest = 0;
-				for (int bx = 0; bx < bxc; bx++) {
-					int dest = xdest;
-					for (int n = 0; n < 8; n++) {
-						buffer[dest    ] = memoryReader.readNext();
-						buffer[dest + 1] = memoryReader.readNext();
-						buffer[dest + 2] = memoryReader.readNext();
-						buffer[dest + 3] = memoryReader.readNext();
-
-						dest += pitch + 4;
+		        if (rowWidth >= 16) {
+					for (int bx = 0; bx < bxc; bx++) {
+						int dest = xdest;
+						for (int n = 0; n < 8; n++) {
+							buffer[dest    ] = memoryReader.readNext();
+							buffer[dest + 1] = memoryReader.readNext();
+							buffer[dest + 2] = memoryReader.readNext();
+							buffer[dest + 3] = memoryReader.readNext();
+	
+							dest += pitch;
+						}
+						xdest += 4;
 					}
-					xdest += (16 / 4);
-				}
+		        } else if (rowWidth == 8) {
+	            	for (int n = 0; n < 8; n++, xdest += 2) {
+	                    buffer[xdest] = memoryReader.readNext();
+	                    buffer[xdest + 1] = memoryReader.readNext();
+	                    memoryReader.skip(2);
+	            	}
+		        } else if (rowWidth == 4) {
+	            	for (int n = 0; n < 8; n++, xdest++) {
+	                    buffer[xdest] = memoryReader.readNext();
+	                    memoryReader.skip(3);
+	            	}
+	            } else if (rowWidth == 2) {
+	            	for (int n = 0; n < 4; n++, xdest++) {
+	            		int n1 = memoryReader.readNext() & 0xFFFF;
+	            		memoryReader.skip(3);
+	            		int n2 = memoryReader.readNext() & 0xFFFF;
+	                    memoryReader.skip(3);
+	                    buffer[xdest] = n1 | (n2 << 16);
+	            	}
+	            } else if (rowWidth == 1) {
+	            	for (int n = 0; n < 2; n++, xdest++) {
+	            		int n1 = memoryReader.readNext() & 0xFF;
+	            		memoryReader.skip(3);
+	            		int n2 = memoryReader.readNext() & 0xFF;
+	                    memoryReader.skip(3);
+	            		int n3 = memoryReader.readNext() & 0xFF;
+	                    memoryReader.skip(3);
+	            		int n4 = memoryReader.readNext() & 0xFF;
+	                    memoryReader.skip(3);
+	                    buffer[xdest] = n1 | (n2 << 8) | (n3 << 16) | (n4 << 24);
+	            	}
+	            }
 
 				index = 0;
 			}
