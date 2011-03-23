@@ -116,6 +116,10 @@ public class FIFOByteBuffer {
     }
 
     public int readByteBuffer(ByteBuffer dst) {
+    	if (buffer == null) {
+    		return 0;
+    	}
+
     	int length = dst.remaining();
     	if (length > bufferLength) {
     		length = bufferLength;

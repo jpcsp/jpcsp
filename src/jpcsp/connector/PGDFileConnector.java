@@ -79,10 +79,12 @@ public class PGDFileConnector {
             id = generateID(startSector);
             String decryptedCompleteFileName = getCompleteFileName(decryptedFileName);
             File decryptedFile = new File(decryptedCompleteFileName);
-            try {
-                fileInput = new SeekableRandomFile(decryptedFile, "r");
-                Modules.log.info("Using decrypted file " + decryptedCompleteFileName);
-            } catch (FileNotFoundException e) {
+            if (decryptedFile.canRead() && decryptedFile.length() > 0) {
+	            try {
+	                fileInput = new SeekableRandomFile(decryptedFile, "r");
+	                Modules.log.info("Using decrypted file " + decryptedCompleteFileName);
+	            } catch (FileNotFoundException e) {
+	            }
             }
         }
         return fileInput;

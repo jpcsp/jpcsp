@@ -97,8 +97,8 @@ public class Utilities {
         return (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
     }
 
-    public static void skipUnknown(ByteBuffer buf, int lenght) throws IOException {
-        buf.position(buf.position() + lenght);
+    public static void skipUnknown(ByteBuffer buf, int length) throws IOException {
+        buf.position(buf.position() + length);
     }
 
     public static String readStringZ(ByteBuffer buf) throws IOException {

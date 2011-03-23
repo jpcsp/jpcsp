@@ -355,6 +355,8 @@ public class REShader extends BaseRenderingEngineFunction {
 
         linkShaderProgram(program);
 
+        re.useProgram(program);
+
         if (log.isDebugEnabled()) {
         	int shaderAttribWeights1 = re.getAttribLocation(program, attributeNameWeights1);
         	int shaderAttribWeights2 = re.getAttribLocation(program, attributeNameWeights2);
@@ -402,7 +404,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			if (isError) {
 				log.error("Shader error log: " + infoLogs);
 			} else {
-				// Remove all the AMD useless messages
+				// Remove all the useless AMD messages
 				String infoLog = infoLogs.toString();
 				infoLog = infoLog.replace("Vertex shader was successfully compiled to run on hardware.\n", "");
 				infoLog = infoLog.replace("Fragment shader was successfully compiled to run on hardware.\n", "");

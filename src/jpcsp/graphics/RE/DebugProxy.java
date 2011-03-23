@@ -700,10 +700,11 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public int createProgram() {
+		int program = super.createProgram();
 		if (isLogDebugEnabled) {
-			log.debug(String.format("createProgram"));
+			log.debug(String.format("createProgram %d", program));
 		}
-		return super.createProgram();
+		return program;
 	}
 
 	@Override
