@@ -77,7 +77,7 @@ public class Debug {
         return true;
     }
 
-    private static void setFontPixel(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelColor, int pixelformat) {
+    public static void setFontPixel(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelColor, int pixelformat) {
     	if (x < 0 || x >= bufWidth || y < 0 || y >= bufHeight) {
     		return;
     	}

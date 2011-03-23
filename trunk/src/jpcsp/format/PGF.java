@@ -84,7 +84,7 @@ public class PGF {
     protected int fontDataOffset;
     protected int fontDataLength;
 
-    protected String fileNamez;
+    protected String fileNamez = "";
 
     public PGF(ByteBuffer f) throws IOException {
         read(f);
@@ -189,12 +189,12 @@ public class PGF {
                 charmapCompressionTable2[1][i] = readUHalf(f);
             }
         }
-        int charMapSize = ((charMapLength * charMapBpe + 31) / 8);
+        int charMapSize = (((charMapLength * charMapBpe + 31) & ~31) / 8);
         charMap = new int[charMapSize];
         for(int i = 0; i < charMapSize; i++) {
             charMap[i] = readUByte(f);
         }
-        int charPointerSize = ((charPointerLength * charPointerBpe + 31) / 8);
+        int charPointerSize = (((charPointerLength * charPointerBpe + 31) & ~31) / 8);
         charPointerTable = new int[charPointerSize];
         for(int i = 0; i < charPointerSize; i++) {
             charPointerTable[i] = readUByte(f);
