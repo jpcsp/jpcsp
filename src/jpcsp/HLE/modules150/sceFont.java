@@ -62,10 +62,6 @@ import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
-/**
- * @author gd051135
- *
- */
 public class sceFont implements HLEModule, HLEStartModule {
 
     private static Logger log = Modules.getLogger("sceFont");

@@ -449,6 +449,9 @@ public class ModuleMgrForUser implements HLEModule {
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = sceModule.modid; // return the module id
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+            } else if (entryAddr == 0) {
+                Modules.log.info("sceKernelStartModule - no entry address");
+                cpu.gpr[2] = sceModule.modid; // return the module id
             } else {
                 Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(entryAddr));
                 cpu.gpr[2] = -1;
@@ -466,7 +469,7 @@ public class ModuleMgrForUser implements HLEModule {
         int status_addr = cpu.gpr[7]; // TODO
         int option_addr = cpu.gpr[8];
 
-        log.warn("sceKernelStopModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
+        log.info("sceKernelStopModule(uid=0x" + Integer.toHexString(uid) + ", argsize=" + argsize + ", argp=0x" + Integer.toHexString(argp_addr) + ", status=0x" + Integer.toHexString(status_addr) + ", option=0x" + Integer.toHexString(option_addr) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -497,10 +500,13 @@ public class ModuleMgrForUser implements HLEModule {
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = 0;
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+            } else if (sceModule.module_stop_func == 0) {
+                log.info("sceKernelStopModule - module has no stop function");
+                cpu.gpr[2] = 0;
             } else {
                 // TODO: 0x80020135 module already stopped.
                 // May be related to the SceModule status or with the thread exit status.
-                log.warn("sceKernelStopModule - no stop function found");
+                log.warn(String.format("sceKernelStopModule - invalid stop function 0x%08X", sceModule.module_stop_func));
                 cpu.gpr[2] = -1;
             }
         }
