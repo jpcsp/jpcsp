@@ -16,6 +16,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_FAMILY_SANS_SERIF;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_FAMILY_SERIF;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_JAPANESE;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_KOREAN;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_LANGUAGE_LATIN;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_BOLD;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_BOLD_ITALIC;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_DB;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_ITALIC;
+import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_REGULAR;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -23,13 +34,17 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.IAction;
@@ -40,11 +55,17 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.format.PGF;
+import jpcsp.graphics.GeCommands;
+import jpcsp.graphics.capture.CaptureImage;
 import jpcsp.util.Debug;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+/**
+ * @author gd051135
+ *
+ */
 public class sceFont implements HLEModule, HLEStartModule {
 
     private static Logger log = Modules.getLogger("sceFont");
@@ -118,16 +139,101 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     @Override
     public void start() {
+    	loadFontRegistry();
         loadDefaultSystemFont();
         fontLibMap = new HashMap<Integer, FontLib>();
-        PGFFilesMap = new HashMap<Integer, PGF>();
-        fontInfoMap = new HashMap<Integer, SceFontInfo>();
-        fontLibCount = 0;
+        fontMap = new HashMap<Integer, Font>();
+        loadAllFonts();
     }
 
     @Override
     public void stop() {
     }
+
+    private static class Font {
+    	public PGF pgf;
+    	public SceFontInfo fontInfo;
+    	public FontLib fontLib;
+    	public int fontHandle;
+
+    	public Font(PGF pgf, SceFontInfo fontInfo) {
+    		this.pgf = pgf;
+    		this.fontInfo = fontInfo;
+    		fontLib = null;
+    		fontHandle = -1;
+    	}
+
+    	public Font(Font font, FontLib fontLib, int fontHandle) {
+    		this.pgf = font.pgf;
+    		this.fontInfo = font.fontInfo;
+    		this.fontLib = fontLib;
+    		this.fontHandle = fontHandle;
+    	}
+
+    	public pspFontStyle getFontStyle() {
+    		pspFontStyle fontStyle = fontInfo.getFontStyle();
+    		if (fontStyle == null) {
+            	fontStyle = new pspFontStyle();
+            	fontStyle.fontH = pgf.getHSize() / 64.f;
+            	fontStyle.fontV = pgf.getVSize() / 64.f;
+            	fontStyle.fontHRes = pgf.getHResolution() / 64.f;
+            	fontStyle.fontVRes = pgf.getVResolution() / 64.f;
+            	fontStyle.fontStyle = sceFont.getFontStyle(pgf.getFontType());
+            	fontStyle.fontName = pgf.getFontName();
+            	fontStyle.fontFileName = pgf.getFileNamez();
+    		}
+
+    		return fontStyle;
+    	}
+
+    	@Override
+		public String toString() {
+			return String.format("Font '%s' - '%s'", pgf.getFileNamez(), pgf.getFontName());
+		}
+    }
+
+    private static class FontRegistryEntry {
+    	public int h_size;
+    	public int v_size;
+    	public int h_resolution;
+    	public int v_resolution;
+    	public int extra_attributes;
+    	public int weight;
+    	public int family_code;
+    	public int style;
+    	public int sub_style;
+    	public int language_code;
+    	public int region_code;
+    	public int country_code;
+    	public String file_name;
+    	public String font_name;
+    	public int expire_date;
+    	public int shadow_option;
+
+		public FontRegistryEntry(int h_size, int v_size, int h_resolution,
+				int v_resolution, int extra_attributes, int weight,
+				int family_code, int style, int sub_style, int language_code,
+				int region_code, int country_code, String file_name,
+				String font_name, int expire_date, int shadow_option) {
+			this.h_size = h_size;
+			this.v_size = v_size;
+			this.h_resolution = h_resolution;
+			this.v_resolution = v_resolution;
+			this.extra_attributes = extra_attributes;
+			this.weight = weight;
+			this.family_code = family_code;
+			this.style = style;
+			this.sub_style = sub_style;
+			this.language_code = language_code;
+			this.region_code = region_code;
+			this.country_code = country_code;
+			this.file_name = file_name;
+			this.font_name = font_name;
+			this.expire_date = expire_date;
+			this.shadow_option = shadow_option;
+		}
+    }
+
     public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
     public static final String fontDirPath = "flash0/font";
     public static final String customFontFile = "debug.jpft";
@@ -139,13 +245,13 @@ public class sceFont implements HLEModule, HLEStartModule {
     public static final int PSP_FONT_MODE_FILE = 0;
     public static final int PSP_FONT_MODE_MEMORY = 1;
     private HashMap<Integer, FontLib> fontLibMap;
-    private HashMap<Integer, PGF> PGFFilesMap;
-    private HashMap<Integer, SceFontInfo> fontInfoMap;
-    private int fontLibCount;
-    private float globalFontHRes = 0.0f;
-    private float globalFontVRes = 0.0f;
-    private static char alternateCharacter = '?';
+    private HashMap<Integer, Font> fontMap;
     private static boolean allowInternalFonts = false;
+    private static final boolean dumpFonts = false;
+    private List<Font> allFonts;
+    protected String uidPurpose = "sceFont";
+    private List<FontRegistryEntry> fontRegistry;
+    protected static final float pointDPI = 72.f;
 
     public static boolean getAllowInternalFonts() {
         return allowInternalFonts;
@@ -155,7 +261,29 @@ public class sceFont implements HLEModule, HLEStartModule {
         allowInternalFonts = status;
     }
 
-    public static void loadDefaultSystemFont() {
+    protected void loadFontRegistry() {
+    	fontRegistry = new LinkedList<FontRegistryEntry>();
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_DB         , 0, FONT_LANGUAGE_JAPANESE, 0, 1, "jpn0.pgf" , "FTT-NewRodin Pro DB"   , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR    , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn0.pgf" , "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_REGULAR    , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn1.pgf" , "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_ITALIC     , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn2.pgf" , "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_ITALIC     , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn3.pgf" , "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD       , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn4.pgf" , "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_BOLD       , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn5.pgf" , "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn6.pgf" , "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn7.pgf" , "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR    , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn8.pgf" , "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_REGULAR    , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn9.pgf" , "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_ITALIC     , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn10.pgf", "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_ITALIC     , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn11.pgf", "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD       , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn12.pgf", "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_BOLD       , 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn13.pgf", "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn14.pgf", "FTT-NewRodin Pro Latin", 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x1c0, 0x1c0, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SERIF     , FONT_STYLE_BOLD_ITALIC, 0, FONT_LANGUAGE_LATIN   , 0, 1, "ltn15.pgf", "FTT-Matisse Pro Latin" , 0, 0));
+    	fontRegistry.add(new FontRegistryEntry(0x288, 0x288, 0x2000, 0x2000, 0, 0, FONT_FAMILY_SANS_SERIF, FONT_STYLE_REGULAR    , 0, FONT_LANGUAGE_KOREAN  , 0, 3, "kr0.pgf"  , "AsiaNHH(512Johab)"     , 0, 0));
+    }
+
+    protected void loadDefaultSystemFont() {
         try {
             RandomAccessFile raf = new RandomAccessFile(fontDirPath + "/" + customFontFile, "r");
             raf.skipBytes(32);  // Skip custom header.
@@ -172,20 +300,174 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
-    public int makeFakeLibHandle() {
-        return 0xF8F80000 | (fontLibCount++ & 0xFFFF);
+    /**
+     * Dump a font as a .BMP image in the tmp directory for debugging purpose.
+     * 
+     * @param font the font to be dumped
+     */
+    protected void dumpFont(Font font) {
+    	int addr = MemoryMap.START_VRAM;
+    	int fontPixelFormat = PSP_FONT_PIXELFORMAT_32;
+    	int bufferStorage = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
+    	int bufferWidth = 800;
+    	int fontBufWidth = bufferWidth;
+    	int fontBpl = bufferWidth * sceDisplay.getPixelFormatBytes(bufferStorage);
+    	int fontBufHeight = MemoryMap.SIZE_VRAM / fontBpl;
+    	int x = 0;
+    	int y = 0;
+    	SceFontInfo fontInfo = font.fontInfo;
+    	PGF pgf = font.pgf;
+
+    	int memoryLength = fontBpl * fontBufHeight * sceDisplay.getPixelFormatBytes(bufferStorage);
+    	Memory.getInstance().memset(addr, (byte) 0, memoryLength);
+
+    	int maxGlyphWidth = pgf.getMaxSize()[0] >> 6;
+        int maxGlyphHeight = pgf.getMaxSize()[1] >> 6;
+    	for (int charCode = pgf.getFirstGlyphInCharMap(); charCode <= pgf.getLastGlyphInCharMap(); charCode++) {
+    		fontInfo.printFont(addr, fontBpl, fontBufWidth, fontBufHeight, x, y, fontPixelFormat, charCode, ' ');
+
+    		x += maxGlyphWidth;
+    		if (x + maxGlyphWidth >= fontBufWidth) {
+    			x = 0;
+    			y += maxGlyphHeight;
+    			if (y >= fontBufHeight) {
+    				break;
+    			}
+    		}
+    	}
+
+    	Buffer memoryBuffer = Memory.getInstance().getBuffer(addr, memoryLength);
+    	String fileNamePrefix = String.format("Font-%s-", pgf.getFileNamez());
+    	CaptureImage image = new CaptureImage(addr, 0, memoryBuffer, fontBufWidth, fontBufHeight, bufferWidth, bufferStorage, false, 0, false, true, fileNamePrefix);
+    	try {
+			image.write();
+		} catch (IOException e) {
+			log.error(e);
+		}
     }
 
-    public static char getAlternateChar() {
-        return alternateCharacter;
+    protected Font openFontFile(ByteBuffer pgfBuffer, String fileName) {
+    	Font font = null;
+
+    	try {
+	        PGF pgfFile = new PGF(pgfBuffer);
+	        if (fileName != null) {
+	        	pgfFile.setFileNamez(fileName);
+	        }
+
+	        SceFontInfo fontInfo = new SceFontInfo(pgfFile);
+
+	        font = new Font(pgfFile, fontInfo);
+
+	        if (dumpFonts) {
+	        	dumpFont(font);
+	        }
+        } catch (Exception e) {
+            // Can't parse file.
+        	log.error(e);
+        }
+
+        return font;
     }
 
-    public static void setAlternateChar(char newChar) {
-        alternateCharacter = newChar;
+    protected Font openFontFile(String fileName) {
+    	Font font = null;
+
+    	try {
+	        RandomAccessFile fontFile = new RandomAccessFile(fileName, "r");
+	        byte[] pgfBytes = new byte[(int) fontFile.length()];
+	        fontFile.read(pgfBytes);
+	        ByteBuffer pgfBuffer = ByteBuffer.wrap(pgfBytes);
+
+	        font = openFontFile(pgfBuffer, new File(fileName).getName());
+        } catch (IOException e) {
+            // Can't open file.
+        	log.warn(e);
+        }
+
+        return font;
+    }
+
+    protected Font openFontFile(int addr, int length) {
+        ByteBuffer pgfBuffer = ByteBuffer.allocate(length);
+        Buffer memBuffer = Memory.getInstance().getBuffer(addr, length);
+        Utilities.putBuffer(pgfBuffer, memBuffer, ByteOrder.LITTLE_ENDIAN, length);
+        pgfBuffer.rewind();
+
+        Font font = openFontFile(pgfBuffer, null);
+
+        return font;
+    }
+
+    protected void setFontAttributesFromRegistry(Font font, FontRegistryEntry fontRegistryEntry) {
+		pspFontStyle fontStyle = new pspFontStyle();
+		fontStyle.fontH = fontRegistryEntry.h_size / 64.f;
+		fontStyle.fontV = fontRegistryEntry.v_size / 64.f;
+		fontStyle.fontHRes = fontRegistryEntry.h_resolution / 64.f;
+		fontStyle.fontVRes = fontRegistryEntry.v_resolution / 64.f;
+		fontStyle.fontWeight = fontRegistryEntry.weight;
+		fontStyle.fontFamily = (short) fontRegistryEntry.family_code;
+		fontStyle.fontStyle = (short) fontRegistryEntry.style;
+		fontStyle.fontStyleSub = (short) fontRegistryEntry.sub_style;
+		fontStyle.fontLanguage = (short) fontRegistryEntry.language_code;
+		fontStyle.fontRegion = (short) fontRegistryEntry.region_code;
+		fontStyle.fontCountry = (short) fontRegistryEntry.country_code;
+		fontStyle.fontName = fontRegistryEntry.font_name;
+		fontStyle.fontFileName = fontRegistryEntry.file_name;
+		fontStyle.fontAttributes = fontRegistryEntry.extra_attributes;
+		fontStyle.fontExpire = fontRegistryEntry.expire_date;
+
+		font.fontInfo.setFontStyle(fontStyle);
+    }
+
+    protected void setFontAttributesFromRegistry(Font font) {
+    	for (FontRegistryEntry fontRegistryEntry : fontRegistry) {
+    		if (fontRegistryEntry.file_name.equals(font.pgf.getFileNamez())) {
+    			if (fontRegistryEntry.font_name.equals(font.pgf.getFontName())) {
+    				setFontAttributesFromRegistry(font, fontRegistryEntry);
+    				break;
+    			}
+    		}
+    	}
+    }
+
+    protected void loadAllFonts() {
+    	allFonts = new LinkedList<sceFont.Font>();
+
+    	// Load the fonts in the same order as on a PSP.
+    	// Some applications are always using the first font returned by
+    	// sceFontGetFontList.
+    	for (FontRegistryEntry fontRegistryEntry : fontRegistry) {
+    		File fontFile = new File(fontDirPath + File.separator + fontRegistryEntry.file_name);
+    		if (fontFile.canRead()) {
+    			Font font = openFontFile(fontFile.getPath());
+    			if (font != null) {
+            		setFontAttributesFromRegistry(font, fontRegistryEntry);
+            		allFonts.add(font);
+            		log.info(String.format("Loading font file '%s'. Font='%s' Type='%s'", fontRegistryEntry.file_name, font.pgf.getFontName(), font.pgf.getFontType()));
+    			}
+    		}
+    	}
+    }
+
+    protected static short getFontStyle(String styleString) {
+    	if ("Regular".equals(styleString)) {
+    		return FONT_STYLE_REGULAR;
+    	}
+    	if ("Italic".equals(styleString)) {
+    		return FONT_STYLE_ITALIC;
+    	}
+    	if ("Bold".equals(styleString)) {
+    		return FONT_STYLE_BOLD;
+    	}
+    	if ("Bold Italic".equals(styleString)) {
+    		return FONT_STYLE_BOLD_ITALIC;
+    	}
+
+    	return 0;
     }
 
     protected class FontLib {
-
         protected int userDataAddr;
         protected int numFonts;
         protected int cacheDataAddr;
@@ -197,73 +479,52 @@ public class sceFont implements HLEModule, HLEStartModule {
         protected int seekFuncAddr;
         protected int errorFuncAddr;
         protected int ioFinishFuncAddr;
-        protected int[] fonts;
-        protected int fileFontHandleCount;
-        protected int memFontHandleCount;
+        protected HashMap<Integer, Font> fonts;
         protected int memFontAddr;
         protected int fileFontHandle;
+        protected int altCharCode;
+        protected float fontHRes = 128.f;
+        protected float fontVRes = 128.f;
 
         public FontLib(int params) {
             read(params);
-            fonts = new int[numFonts];
-            fileFontHandleCount = 0;
-            memFontHandleCount = 0;
-            for (int i = 0; i < numFonts; i++) {
-                fonts[i] = makeFakeFontHandle(i);
-            }
-            loadFontFiles();
-        }
-
-        public void loadFontFiles() {
-            File f = new File(fontDirPath);
-            String[] files = f.list();
-            int index = 0;
-            for (int i = 0; i < files.length; i++) {
-                String currentFile = (fontDirPath + "/" + files[i]);
-                if (currentFile.endsWith(".pgf") && index < numFonts) {
-                    try {
-                        RandomAccessFile fontFile = new RandomAccessFile(currentFile, "r");
-                        byte[] pgfBuf = new byte[(int) fontFile.length()];
-                        fontFile.read(pgfBuf);
-                        ByteBuffer finalBuf = ByteBuffer.wrap(pgfBuf);
-
-                        PGF pgfFile = new PGF(finalBuf);
-                        pgfFile.setFileNamez(files[i]);
-
-                        int fontHandle = getFakeFontHandle(index);
-                        PGFFilesMap.put(fontHandle, pgfFile);
-                        fontInfoMap.put(fontHandle, new SceFontInfo(pgfFile));
-
-                        log.info("Found font file '" + files[i] + "'. Font='" + pgfFile.getFontName() + "' Type='" + pgfFile.getFontType() + "'");
-                    } catch (IOException e) {
-                        // Can't open file.
-                    } catch (Exception e) {
-                        // Can't parse file.
-                    	log.error(e);
-                    }
-                    index++;
-                }
-            }
-        }
-
-        public int makeFakeFontHandle(int fontNum) {
-            return 0xF9F90000 | (fontNum & 0xFFFF);
-        }
-
-        public int makeFakeMemFontHandle() {
-            return 0xF6F60000 | (memFontHandleCount++ & 0xFFFF);
-        }
-
-        public int makeFakeFileFontHandle() {
-            return 0xF7F70000 | (fileFontHandleCount++ & 0xFFFF);
-        }
-
-        public int getFakeFontHandle(int i) {
-            return fonts[i];
+            fonts = new HashMap<Integer, sceFont.Font>();
         }
 
         public int getNumFonts() {
             return numFonts;
+        }
+
+        public int openFont(Font font) {
+        	if (font == null || fonts.size() >= numFonts) {
+        		return -1;
+        	}
+
+        	int uid = SceUidManager.getNewUid(uidPurpose);
+        	font = new Font(font, this, uid);
+        	fonts.put(uid, font);
+        	fontMap.put(uid, font);
+
+        	return uid;
+        }
+
+        public void closeFont(Font font) {
+        	int uid = font.fontHandle;
+            SceUidManager.releaseUid(uid, uidPurpose);
+            fonts.remove(uid);
+            fontMap.remove(uid);
+
+            font.fontHandle = -1;
+            font.fontLib = null;
+            font.pgf = null;
+            font.fontInfo = null;
+        }
+
+        public void closeAllFonts() {
+        	while (fonts.size() > 0) {
+        		Font font = fonts.get(0);
+        		closeFont(font);
+        	}
         }
 
         private void triggerAllocCallback(int size) {
@@ -302,7 +563,15 @@ public class sceFont implements HLEModule, HLEStartModule {
             ioFinishFuncAddr = mem.read32(paramsAddr + 42);
         }
 
-        private class AfterAllocCallback implements IAction {
+		public int getAltCharCode() {
+			return altCharCode;
+		}
+
+		public void setAltCharCode(int altCharCode) {
+			this.altCharCode = altCharCode;
+		}
+
+		private class AfterAllocCallback implements IAction {
 
             @Override
             public void execute() {
@@ -323,6 +592,11 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
     }
 
+    protected boolean isFontMatchingStyle(Font font, pspFontStyle fontStyle) {
+    	// Faking: always matching
+    	return true;
+    }
+
     public void sceFontNewLib(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -339,16 +613,16 @@ public class sceFont implements HLEModule, HLEStartModule {
             return;
         }
         FontLib fl = null;
-        int handle = 0;
+        int libHandle = 0;
         if (Memory.isAddressGood(paramsAddr)) {
             fl = new FontLib(paramsAddr);
-            handle = makeFakeLibHandle();
-            fontLibMap.put(handle, fl);
+        	libHandle = SceUidManager.getNewUid(uidPurpose);
+            fontLibMap.put(libHandle, fl);
         }
         if (Memory.isAddressGood(errorCodeAddr)) {
             mem.write32(errorCodeAddr, 0);
         }
-        cpu.gpr[2] = handle;
+        cpu.gpr[2] = libHandle;
     }
 
     public void sceFontOpenUserFile(Processor processor) {
@@ -359,10 +633,11 @@ public class sceFont implements HLEModule, HLEStartModule {
         int fileNameAddr = cpu.gpr[5];
         int mode = cpu.gpr[6];
         int errorCodeAddr = cpu.gpr[7];
+        String fileName = Utilities.readStringZ(fileNameAddr);
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontOpenUserFile libHandle=0x%08X, fileNameAddr=0x%08X, mode=0x%08X, errorCodeAddr=0x%08X",
-                    libHandle, fileNameAddr, mode, errorCodeAddr));
+            log.debug(String.format("sceFontOpenUserFile libHandle=0x%08X, fileNameAddr=0x%08X ('%s'), mode=0x%08X, errorCodeAddr=0x%08X",
+                    libHandle, fileNameAddr, fileName, mode, errorCodeAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -377,7 +652,10 @@ public class sceFont implements HLEModule, HLEStartModule {
             int fontHandle = 0;
             if (fLib != null) {
                 fLib.triggerOpenCallback(fileNameAddr, errorCodeAddr);
-                fontHandle = fLib.makeFakeFileFontHandle();
+                Font font = openFontFile(fileName);
+                if (font != null) {
+                	fontHandle = fLib.openFont(font);
+                }
             }
             if (Memory.isAddressGood(errorCodeAddr)) {
                 mem.write32(errorCodeAddr, 0);
@@ -412,23 +690,12 @@ public class sceFont implements HLEModule, HLEStartModule {
             int fontHandle = 0;
             if (fLib != null) {
                 fLib.triggerAllocCallback(memoryFontLength);
-                fontHandle = fLib.makeFakeMemFontHandle();
 
                 if (getAllowInternalFonts()) {
-					try {
-		                ByteBuffer pgfBuffer = ByteBuffer.allocate(memoryFontLength);
-		                Buffer memBuffer = Memory.getInstance().getBuffer(memoryFontAddr, memoryFontLength);
-		                Utilities.putBuffer(pgfBuffer, memBuffer, ByteOrder.LITTLE_ENDIAN, memoryFontLength);
-		                pgfBuffer.rewind();
-						PGF pgfFile = new PGF(pgfBuffer);
-		                SceFontInfo fontInfo = new SceFontInfo(pgfFile);
-		                PGFFilesMap.put(fontHandle, pgfFile);
-		                fontInfoMap.put(fontHandle, fontInfo);
-					} catch (IOException e) {
-						log.error(e);
-					} catch (Exception e) {
-						log.error(e);
-					}
+                	Font font = openFontFile(memoryFontAddr, memoryFontLength);
+                	if (font != null) {
+                		fontHandle = fLib.openFont(font);
+                	}
                 }
             }
             if (Memory.isAddressGood(errorCodeAddr)) {
@@ -442,11 +709,11 @@ public class sceFont implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int fontAddr = cpu.gpr[4];
+        int fontHandle = cpu.gpr[4];
         int fontInfoAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontGetFontInfo fontAddr=0x%08X, fontInfoAddr=0x%08X", fontAddr, fontInfoAddr));
+            log.debug(String.format("sceFontGetFontInfo fontHandle=0x%08X, fontInfoAddr=0x%08X", fontHandle, fontInfoAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -454,9 +721,11 @@ public class sceFont implements HLEModule, HLEStartModule {
             return;
         }
         if (Memory.isAddressGood(fontInfoAddr)) {
-            PGF currentPGF = PGFFilesMap.get(fontAddr);
-            if (currentPGF != null) {
-                int maxGlyphWidthI = currentPGF.getMaxSize()[0];
+    		Font font = fontMap.get(fontHandle);
+        	if (font != null) {
+        		PGF currentPGF = font.pgf;
+
+        		int maxGlyphWidthI = currentPGF.getMaxSize()[0];
                 int maxGlyphHeightI = currentPGF.getMaxSize()[1];
                 int maxGlyphAscenderI = currentPGF.getMaxBaseYAdjust();
                 int maxGlyphDescenderI = (currentPGF.getMaxBaseYAdjust() - currentPGF.getMaxSize()[1]);
@@ -476,11 +745,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                 float maxGlyphTopYF = Float.intBitsToFloat(maxGlyphTopYI);
                 float maxGlyphAdvanceXF = Float.intBitsToFloat(maxGlyphAdvanceXI);
                 float maxGlyphAdvanceYF = Float.intBitsToFloat(maxGlyphAdvanceYI);
-                pspFontStyle fontStyle = new pspFontStyle();
-                fontStyle.fontHRes = globalFontHRes;
-                fontStyle.fontVRes = globalFontVRes;
-                fontStyle.fontName = currentPGF.getFontName();
-                fontStyle.fontFileName = currentPGF.getFileNamez();
+                pspFontStyle fontStyle = font.getFontStyle();
 
                 // Glyph metrics (in 26.6 signed fixed-point).
                 mem.write32(fontInfoAddr + 0, maxGlyphWidthI);
@@ -524,12 +789,12 @@ public class sceFont implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int fontAddr = cpu.gpr[4];
+        int fontHandle = cpu.gpr[4];
         int charCode = cpu.gpr[5];
         int charInfoAddr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontGetCharInfo fontAddr=0x%08X, charCode=%04X (%c), charInfoAddr=%08X", fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), charInfoAddr));
+            log.debug(String.format("sceFontGetCharInfo fontHandle=0x%08X, charCode=%04X (%c), charInfoAddr=%08X", fontHandle, charCode, (charCode <= 0xFF ? (char) charCode : '?'), charInfoAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -538,8 +803,8 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
         if (Memory.isAddressGood(charInfoAddr)) {
         	pspCharInfo pspCharInfo = null;
-        	if (getAllowInternalFonts() && fontInfoMap.containsKey(fontAddr)) {
-        		pspCharInfo = fontInfoMap.get(fontAddr).getCharInfo(charCode);
+        	if (getAllowInternalFonts() && fontMap.containsKey(fontHandle)) {
+        		pspCharInfo = fontMap.get(fontHandle).fontInfo.getCharInfo(charCode);
         	}
         	if (pspCharInfo == null) {
         		pspCharInfo = new pspCharInfo();
@@ -562,12 +827,12 @@ public class sceFont implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int fontAddr = cpu.gpr[4];
+        int fontHandle = cpu.gpr[4];
         int charCode = cpu.gpr[5];
         int glyphImageAddr = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontGetCharGlyphImage fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X", fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr));
+            log.debug(String.format("sceFontGetCharGlyphImage fontHandle=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X", fontHandle, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -593,20 +858,20 @@ public class sceFont implements HLEModule, HLEStartModule {
 
             // If there's an internal font loaded, use it to display the text.
             // Otherwise, switch to our Debug font.
-            if (getAllowInternalFonts() && (fontInfoMap.containsKey(fontAddr))) {
-                fontInfoMap.get(fontAddr).printFont(buffer, bytesPerLine, bufWidth, bufHeight,
-                        xPosI, yPosI, pixelFormat, charCode);
+        	Font font = fontMap.get(fontHandle);
+            if (getAllowInternalFonts() && font != null) {
+                font.fontInfo.printFont(buffer, bytesPerLine, bufWidth, bufHeight,
+                        xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
             } else {
-                PGF currentPGF = PGFFilesMap.get(fontAddr);
-                if (currentPGF != null) {
+                if (font != null) {
                     // Font adjustment.
                     // TODO: Instead of using the loaded PGF, figure out
                     // the proper values for the Debug font.
-                    yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
-                    yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+                    yPosI -= font.pgf.getMaxBaseYAdjust() >> 6;
+                    yPosI += font.pgf.getMaxTopYAdjust() >> 6;
                 }
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
-                        xPosI, yPosI, pixelFormat, (char) charCode);
+                        xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
             }
         }
         cpu.gpr[2] = 0;
@@ -640,27 +905,38 @@ public class sceFont implements HLEModule, HLEStartModule {
             log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
             cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
         } else {
-            // Return the first index.
-            int optimumFontIndex = 0;
+        	int fontIndex = -1;
+        	for (int i = 0; i < allFonts.size(); i++) {
+        		if (isFontMatchingStyle(allFonts.get(i), fontStyle)) {
+        			fontIndex = i;
+        			break;
+        		}
+        	}
             if (Memory.isAddressGood(errorCodeAddr)) {
                 mem.write32(errorCodeAddr, 0);
             }
-            cpu.gpr[2] = optimumFontIndex;
+            cpu.gpr[2] = fontIndex;
         }
     }
 
     public void sceFontClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int fontAddr = cpu.gpr[4];
+        int fontHandle = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontClose fontAddr=0x%08X", fontAddr));
+            log.debug(String.format("sceFontClose fontHandle=0x%08X", fontHandle));
         }
+
+        Font font = fontMap.get(fontHandle);
+        if (font != null && font.fontLib != null) {
+        	font.fontLib.closeFont(font);
+        }
+
         cpu.gpr[2] = 0;
     }
 
@@ -682,8 +958,12 @@ public class sceFont implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
         } else {
             // Free all reserved font lib space and close all open font files.
-            fontLibMap.get(libHandle).triggerFreeCallback();
-            fontLibMap.get(libHandle).triggerCloseCallback();
+        	FontLib fontLib = fontLibMap.get(libHandle);
+            fontLib.triggerFreeCallback();
+            fontLib.triggerCloseCallback();
+            fontLib.closeAllFonts();
+            SceUidManager.releaseUid(libHandle, uidPurpose);
+
             cpu.gpr[2] = 0;
         }
     }
@@ -707,12 +987,12 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
         FontLib fLib = fontLibMap.get(libHandle);
         int fontHandle = 0;
-        if (fLib != null) {
-            fontHandle = fLib.getFakeFontHandle(index);
-        }
-        PGF currentPGF = PGFFilesMap.get(fontHandle);
-        if (currentPGF != null) {
-            log.debug(String.format("Opening '%s' - '%s', fontHandle=0x%08X", currentPGF.getFontName(), currentPGF.getFontType(), fontHandle));
+        if (fLib != null && index < allFonts.size()) {
+        	Font font = allFonts.get(index);
+        	fontHandle = fLib.openFont(font);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("Opening '%s' - '%s', fontHandle=0x%08X", font.pgf.getFontName(), font.pgf.getFontType(), fontHandle));
+        	}
         }
         if (Memory.isAddressGood(errorCodeAddr)) {
             mem.write32(errorCodeAddr, 0);
@@ -724,7 +1004,7 @@ public class sceFont implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
 
-        int fontAddr = cpu.gpr[4];
+        int fontHandle = cpu.gpr[4];
         int charCode = cpu.gpr[5];
         int glyphImageAddr = cpu.gpr[6];
         int clipXPos = cpu.gpr[7];
@@ -733,8 +1013,8 @@ public class sceFont implements HLEModule, HLEStartModule {
         int clipHeight = cpu.gpr[10];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontGetCharGlyphImage_Clip fontAddr=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X" +
-                    ", clipXPos=%d, clipYPos=%d, clipWidth=%d, clipHeight=%d,", fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr, clipXPos, clipYPos, clipWidth, clipHeight));
+            log.debug(String.format("sceFontGetCharGlyphImage_Clip fontHandle=0x%08X, charCode=%04X (%c), glyphImageAddr=%08X" +
+                    ", clipXPos=%d, clipYPos=%d, clipWidth=%d, clipHeight=%d,", fontHandle, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr, clipXPos, clipYPos, clipWidth, clipHeight));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -762,23 +1042,23 @@ public class sceFont implements HLEModule, HLEStartModule {
 
             // If there's an internal font loaded, use it to display the text.
             // Otherwise, switch to our Debug font.
-            if (getAllowInternalFonts() && (fontInfoMap.containsKey(fontAddr))) {
-                fontInfoMap.get(fontAddr).printFont(buffer, bytesPerLine, bufWidth, bufHeight,
-                        xPosI, yPosI, pixelFormat, charCode);
+            Font font = fontMap.get(fontHandle);
+            if (getAllowInternalFonts() && font != null) {
+                font.fontInfo.printFont(buffer, bytesPerLine, bufWidth, bufHeight,
+                        xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
             } else {
-                PGF currentPGF = PGFFilesMap.get(fontAddr);
-                if (currentPGF != null) {
+                if (font != null) {
                     // Font adjustment.
                     // TODO: Instead of using the loaded PGF, figure out
                     // the proper values for the Debug font.
-                    yPosI -= (currentPGF.getMaxBaseYAdjust() >> 6);
-                    yPosI += (currentPGF.getMaxTopYAdjust() >> 6);
+                    yPosI -= font.pgf.getMaxBaseYAdjust() >> 6;
+                    yPosI += font.pgf.getMaxTopYAdjust() >> 6;
                     if (yPosI < 0) {
                         yPosI = 0;
                     }
                 }
                 Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
-                        xPosI, yPosI, pixelFormat, (char) charCode);
+                        xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
             }
         }
         cpu.gpr[2] = 0;
@@ -803,8 +1083,8 @@ public class sceFont implements HLEModule, HLEStartModule {
             log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
             cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
         } else {
-            // Get all the available fonts in this font lib.
-            int numFonts = fontLibMap.get(libHandle).getNumFonts();
+            // Get all the available fonts
+            int numFonts = allFonts.size();
             if (Memory.isAddressGood(errorCodeAddr)) {
                 mem.write32(errorCodeAddr, 0);
             }
@@ -835,24 +1115,17 @@ public class sceFont implements HLEModule, HLEStartModule {
             log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
             cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
         } else {
-            FontLib fLib = fontLibMap.get(libHandle);
-            int fonts = (numFonts > fLib.getNumFonts()) ? fLib.getNumFonts() : numFonts;
+            int fonts = Math.min(allFonts.size(), numFonts);
             for (int i = 0; i < fonts; i++) {
-                PGF currentPGF = PGFFilesMap.get(fLib.getFakeFontHandle(i));
-                if (currentPGF != null) {
-                	pspFontStyle fontStyle = new pspFontStyle();
-                	fontStyle.fontHRes = globalFontHRes;
-                	fontStyle.fontVRes = globalFontVRes;
-                	fontStyle.fontName = currentPGF.getFontName();
-                	fontStyle.fontFileName = currentPGF.getFileNamez();
-                	fontStyle.write(mem, fontStyleAddr);
+                Font font = allFonts.get(i);
+                pspFontStyle fontStyle = font.getFontStyle();
+            	fontStyle.write(mem, fontStyleAddr);
 
-                    if (log.isDebugEnabled()) {
-                        log.debug(String.format("sceFontGetFontList returning font #%d at 0x%08X: %s", i, fontStyleAddr, fontStyle.toString()));
-                    }
-
-                    fontStyleAddr += fontStyle.sizeof();
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceFontGetFontList returning font #%d at 0x%08X: %s", i, fontStyleAddr, fontStyle.toString()));
                 }
+
+                fontStyleAddr += fontStyle.sizeof();
             }
             cpu.gpr[2] = 0;
         }
@@ -872,7 +1145,13 @@ public class sceFont implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        setAlternateChar((char) charCode);
+        if (!fontLibMap.containsKey(libHandle)) {
+            log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+            cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
+        } else {
+            FontLib fLib = fontLibMap.get(libHandle);
+            fLib.setAltCharCode(charCode);
+        }
         cpu.gpr[2] = 0;
     }
 
@@ -901,26 +1180,28 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     public void sceFontPointToPixelH(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int libHandle = cpu.gpr[4];
-        int fontPointsH = cpu.gpr[5];
-        int errorCodeAddr = cpu.gpr[6];
+        float fontPointsH = cpu.fpr[12];
+        int errorCodeAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontPointToPixelH libHandle=0x%08X, fontPointsH=%d, errorCodeAddr=0x%08X", libHandle, fontPointsH, errorCodeAddr));
+            log.debug(String.format("sceFontPointToPixelH libHandle=0x%08X, fontPointsH=%f, errorCodeAddr=0x%08X", libHandle, fontPointsH, errorCodeAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+        int errorCode = 0;
+        if (!fontLibMap.containsKey(libHandle)) {
+            log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+            errorCode = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
+            cpu.fpr[0] = 0;
+        } else {
+        	FontLib fontLib = fontLibMap.get(libHandle);
+	        // Convert horizontal floating points to pixels (Points Per Inch to Pixels Per Inch).
+	        // points = (pixels * dpiX) / 72.
+	        cpu.fpr[0] = fontPointsH * fontLib.fontHRes / pointDPI;
         }
-        // Convert horizontal floating points to pixels (Points Per Inch to Pixels Per Inch).
-        // points = (pixels / dpiX) * 72.
-        // Assume dpiX = 100 and dpiY = 100.
-        float fontPointsHF = (float) fontPointsH;
-        int pixels = Float.floatToRawIntBits((fontPointsHF / 72) * 100);
-
-        cpu.gpr[2] = pixels;
+        mem.write32(errorCodeAddr, errorCode);
     }
 
     public void sceFontGetFontInfoByIndexNumber(Processor processor) {
@@ -943,10 +1224,10 @@ public class sceFont implements HLEModule, HLEStartModule {
             log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
             cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
         } else {
-            FontLib currentFontLib = fontLibMap.get(libHandle);
-            if (Memory.isAddressGood(fontInfoAddr) && currentFontLib.getNumFonts() > fontIndex) {
-                PGF currentPGF = PGFFilesMap.get(currentFontLib.getFakeFontHandle(fontIndex));
-                if (currentPGF != null) {
+            if (Memory.isAddressGood(fontInfoAddr) && fontIndex < allFonts.size()) {
+            	Font font = allFonts.get(fontIndex);
+                if (font != null) {
+                    PGF currentPGF = font.pgf;
                     int maxGlyphWidthI = currentPGF.getMaxSize()[0];
                     int maxGlyphHeightI = currentPGF.getMaxSize()[1];
                     int maxGlyphAscenderI = currentPGF.getMaxBaseYAdjust();
@@ -967,6 +1248,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                     float maxGlyphTopYF = Float.intBitsToFloat(maxGlyphTopYI);
                     float maxGlyphAdvanceXF = Float.intBitsToFloat(maxGlyphAdvanceXI);
                     float maxGlyphAdvanceYF = Float.intBitsToFloat(maxGlyphAdvanceYI);
+                    pspFontStyle fontStyle = font.getFontStyle();
 
                     // Glyph metrics (in 26.6 signed fixed-point).
                     mem.write32(fontInfoAddr + 0, maxGlyphWidthI);
@@ -996,21 +1278,7 @@ public class sceFont implements HLEModule, HLEStartModule {
                     mem.write32(fontInfoAddr + 84, currentPGF.getCharMapLength()); // Number of elements in the font's charmap.
                     mem.write32(fontInfoAddr + 88, currentPGF.getShadowMapLength());   // Number of elements in the font's shadow charmap.
                     // Font style (used by font comparison functions).
-                    mem.write32(fontInfoAddr + 92, Float.floatToRawIntBits(0.0f));   // Horizontal size.
-                    mem.write32(fontInfoAddr + 96, Float.floatToRawIntBits(0.0f));   // Vertical size.
-                    mem.write32(fontInfoAddr + 100, Float.floatToRawIntBits(globalFontHRes));  // Horizontal resolution.
-                    mem.write32(fontInfoAddr + 104, Float.floatToRawIntBits(globalFontVRes));  // Vertical resolution.
-                    mem.write32(fontInfoAddr + 108, Float.floatToRawIntBits(0.0f));  // Font weight.
-                    mem.write16(fontInfoAddr + 112, (short) 0);  // Font family (SYSTEM = 0, probably more).
-                    mem.write16(fontInfoAddr + 114, (short) 0);  // Style (SYSTEM = 0, STANDARD = 1, probably more).
-                    mem.write16(fontInfoAddr + 116, (short) 0);  // Subset of style (only used in Asian fonts, unknown values).
-                    mem.write16(fontInfoAddr + 118, (short) 0);  // Language code (UNK = 0, JAPANESE = 1, ENGLISH = 2, probably more).
-                    mem.write16(fontInfoAddr + 120, (short) 0);  // Region code (UNK = 0, JAPAN = 1, probably more).
-                    mem.write16(fontInfoAddr + 122, (short) 0);  // Country code (UNK = 0, JAPAN = 1, US = 2, probably more).
-                    Utilities.writeStringNZ(mem, fontInfoAddr + 124, 64, currentPGF.getFontName());    // Font name (maximum size is 64).
-                    Utilities.writeStringNZ(mem, fontInfoAddr + 188, 64, currentPGF.getFileNamez());   // File name (maximum size is 64).
-                    mem.write32(fontInfoAddr + 252, 0); // Additional attributes.
-                    mem.write32(fontInfoAddr + 256, 0); // Expiration date.
+                    fontStyle.write(mem, fontInfoAddr + 92);
                     mem.write8(fontInfoAddr + 260, (byte) 4); // Font's BPP.
                     mem.write8(fontInfoAddr + 261, (byte) 0); // Padding.
                     mem.write8(fontInfoAddr + 262, (byte) 0); // Padding.
@@ -1025,20 +1293,26 @@ public class sceFont implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int libHandle = cpu.gpr[4];
-        int hRes = cpu.gpr[5];
-        int vRes = cpu.gpr[6];
+        float hRes = cpu.fpr[12];
+        float vRes = cpu.fpr[13];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontSetResolution libHandle=0x%08X, hRes=%d, vRes=%d", libHandle, hRes, vRes));
+            log.debug(String.format("sceFontSetResolution libHandle=0x%08X, hRes=%f, vRes=%f", libHandle, hRes, vRes));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        globalFontHRes = (float) hRes;
-        globalFontVRes = (float) vRes;
-        cpu.gpr[2] = 0;
+        if (!fontLibMap.containsKey(libHandle)) {
+            log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+            cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
+        } else {
+            FontLib fLib = fontLibMap.get(libHandle);
+            fLib.fontHRes = hRes;
+            fLib.fontVRes = vRes;
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceFontFlush(Processor processor) {
@@ -1081,12 +1355,18 @@ public class sceFont implements HLEModule, HLEStartModule {
             log.debug(String.format("sceFontFindFont: %s", fontStyle.toString()));
         }
 
-        if (!fontLibMap.containsKey(libHandle)) {
+        FontLib fLib = fontLibMap.get(libHandle);
+        if (fLib == null) {
             log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
             cpu.gpr[2] = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
         } else {
-            // Faking. If a perfect match is not found, returns -1.
-            int fontIndex = 0;
+        	int fontIndex = -1;
+        	for (int i = 0; i < allFonts.size(); i++) {
+        		if (isFontMatchingStyle(allFonts.get(i), fontStyle)) {
+        			fontIndex = i;
+        			break;
+        		}
+        	}
             if (Memory.isAddressGood(errorCodeAddr)) {
                 mem.write32(errorCodeAddr, 0);
             }
@@ -1096,74 +1376,80 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     public void sceFontPointToPixelV(Processor processor) {
         CpuState cpu = processor.cpu;
+    	Memory mem = Processor.memory;
 
         int libHandle = cpu.gpr[4];
-        int fontPointsV = cpu.gpr[5];
-        int errorCodeAddr = cpu.gpr[6];
+        float fontPointsV = cpu.fpr[12];
+        int errorCodeAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontPointToPixelV libHandle=0x%08X, fontPointsV=%d, errorCodeAddr=0x%08X", libHandle, fontPointsV, errorCodeAddr));
+            log.debug(String.format("sceFontPointToPixelV libHandle=0x%08X, fontPointsV=%f, errorCodeAddr=0x%08X", libHandle, fontPointsV, errorCodeAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+        int errorCode = 0;
+        if (!fontLibMap.containsKey(libHandle)) {
+            log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+            errorCode = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
+            cpu.fpr[0] = 0;
+        } else {
+        	FontLib fontLib = fontLibMap.get(libHandle);
+	        // Convert vertical floating points to pixels (Points Per Inch to Pixels Per Inch).
+	        // points = (pixels * dpiX) / 72.
+	        cpu.fpr[0] = fontPointsV * fontLib.fontVRes / pointDPI;
         }
-        // Convert vertical floating points to pixels (Points Per Inch to Pixels Per Inch).
-        // points = (pixels / dpiX) * 72.
-        // Assume dpiX = 100 and dpiY = 100.
-        float fontPointsVF = (float) fontPointsV;
-        int pixels = Float.floatToRawIntBits((fontPointsVF / 72) * 100);
-
-        cpu.gpr[2] = pixels;
+        mem.write32(errorCodeAddr, errorCode);
     }
 
     public void sceFontPixelToPointH(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int libHandle = cpu.gpr[4];
-        int fontPixelsH = cpu.gpr[5];
-        int errorCodeAddr = cpu.gpr[6];
+        float fontPixelsH = cpu.fpr[12];
+        int errorCodeAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontPixelToPointH libHandle=0x%08X, fontPixelsH=%d, errorCodeAddr=0x%08X", libHandle, fontPixelsH, errorCodeAddr));
+            log.debug(String.format("sceFontPixelToPointH libHandle=0x%08X, fontPixelsH=%f, errorCodeAddr=0x%08X", libHandle, fontPixelsH, errorCodeAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+        int errorCode = 0;
+        if (!fontLibMap.containsKey(libHandle)) {
+            log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+            errorCode = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
+            cpu.fpr[0] = 0;
+        } else {
+        	FontLib fontLib = fontLibMap.get(libHandle);
+            // Convert horizontal pixels to floating points (Pixels Per Inch to Points Per Inch).
+            // points = (pixels / dpiX) * 72.
+	        cpu.fpr[0] = fontPixelsH * pointDPI / fontLib.fontHRes;
         }
-        // Convert horizontal pixels to floating points (Pixels Per Inch to Points Per Inch).
-        // points = (pixels / dpiX) * 72.
-        // Assume dpiX = 100 and dpiY = 100.
-        float fontPixelsHF = (float) fontPixelsH;
-        int points = Float.floatToRawIntBits((fontPixelsHF / 100) * 72);
-
-        cpu.gpr[2] = points;
+        mem.write32(errorCodeAddr, errorCode);
     }
 
     public void sceFontPixelToPointV(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int libHandle = cpu.gpr[4];
-        int fontPixelsV = cpu.gpr[5];
-        int errorCodeAddr = cpu.gpr[6];
+        float fontPixelsV = cpu.fpr[12];
+        int errorCodeAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("sceFontPixelToPointV libHandle=0x%08X, fontPixelsV=%d, errorCodeAddr=0x%08X", libHandle, fontPixelsV, errorCodeAddr));
+            log.debug(String.format("sceFontPixelToPointV libHandle=0x%08X, fontPixelsV=%f, errorCodeAddr=0x%08X", libHandle, fontPixelsV, errorCodeAddr));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
+        int errorCode = 0;
+        if (!fontLibMap.containsKey(libHandle)) {
+            log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+            errorCode = SceKernelErrors.ERROR_FONT_INVALID_LIBID;
+            cpu.fpr[0] = 0;
+        } else {
+        	FontLib fontLib = fontLibMap.get(libHandle);
+            // Convert vertical pixels to floating points (Pixels Per Inch to Points Per Inch).
+            // points = (pixels / dpiX) * 72.
+	        cpu.fpr[0] = fontPixelsV * pointDPI / fontLib.fontVRes;
         }
-        // Convert vertical pixels to floating points (Pixels Per Inch to Points Per Inch).
-        // points = (pixels / dpiX) * 72.
-        // Assume dpiX = 100 and dpiY = 100.
-        float fontPixelsVF = (float) fontPixelsV;
-        int points = Float.floatToRawIntBits((fontPixelsVF / 100) * 72);
-
-        cpu.gpr[2] = points;
+        mem.write32(errorCodeAddr, errorCode);
     }
 
     public final HLEModuleFunction sceFontFindOptimumFontFunction = new HLEModuleFunction("sceFont", "sceFontFindOptimumFont") {

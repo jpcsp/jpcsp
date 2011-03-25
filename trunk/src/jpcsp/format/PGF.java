@@ -40,6 +40,11 @@ public class PGF {
 	protected int charMapBpe;
 	protected int charPointerBpe;
 
+	protected int hSize;
+	protected int vSize;
+	protected int hResolution;
+	protected int vResolution;
+
 	protected String fontName;
 	protected String fontType;
 
@@ -107,7 +112,13 @@ public class PGF {
         charPointerLength = readWord(f);
         charMapBpe = readWord(f);
         charPointerBpe = readWord(f);
-        skipUnknown(f, 21);
+        skipUnknown(f, 4);
+
+        hSize = readWord(f);
+        vSize = readWord(f);
+        hResolution = readWord(f);
+        vResolution = readWord(f);
+        skipUnknown(f, 1);
 
         fontName = readStringNZ(f, 64);
         fontType = readStringNZ(f, 64);
@@ -158,42 +169,51 @@ public class PGF {
             dimensionTable[0][i] = readWord(f);
             dimensionTable[1][i] = readWord(f);
         }
+
         xAdjustTable = new int[2][xAdjustTableLength];
         for(int i = 0; i < xAdjustTableLength; i++) {
             xAdjustTable[0][i] = readWord(f);
             xAdjustTable[1][i] = readWord(f);
         }
+
         yAdjustTable = new int[2][yAdjustTableLength];
         for(int i = 0; i < yAdjustTableLength; i++) {
             yAdjustTable[0][i] = readWord(f);
             yAdjustTable[1][i] = readWord(f);
         }
+
         advanceTable = new int[2][advanceTableLength];
         for(int i = 0; i < advanceTableLength; i++) {
             advanceTable[0][i] = readWord(f);
             advanceTable[1][i] = readWord(f);
         }
-        shadowCharMap = new int[shadowMapLength];
-        for(int i = 0; i < shadowMapLength; i++) {
-            shadowCharMap[i] = readUHalf(f);
+
+        int shadowCharMapSize = ((shadowMapLength * shadowMapBpe + 31) & ~31) / 8;
+        shadowCharMap = new int[shadowCharMapSize];
+        for(int i = 0; i < shadowCharMapSize; i++) {
+            shadowCharMap[i] = readUByte(f);
         }
+
         if(revision == 3) {
             charmapCompressionTable1 = new int[2][compCharMapLength1];
             for(int i = 0; i < compCharMapLength1; i++) {
                 charmapCompressionTable1[0][i] = readUHalf(f);
                 charmapCompressionTable1[1][i] = readUHalf(f);
             }
+
             charmapCompressionTable2 = new int[2][compCharMapLength2];
             for(int i = 0; i < compCharMapLength2; i++) {
                 charmapCompressionTable2[0][i] = readUHalf(f);
                 charmapCompressionTable2[1][i] = readUHalf(f);
             }
         }
-        int charMapSize = (((charMapLength * charMapBpe + 31) & ~31) / 8);
+
+        int charMapSize = ((charMapLength * charMapBpe + 31) & ~31) / 8;
         charMap = new int[charMapSize];
         for(int i = 0; i < charMapSize; i++) {
             charMap[i] = readUByte(f);
         }
+
         int charPointerSize = (((charPointerLength * charPointerBpe + 31) & ~31) / 8);
         charPointerTable = new int[charPointerSize];
         for(int i = 0; i < charPointerSize; i++) {
@@ -308,4 +328,20 @@ public class PGF {
     public int[] getFontdata() {
         return fontData;
     }
+
+	public int getHSize() {
+		return hSize;
+	}
+
+	public int getVSize() {
+		return vSize;
+	}
+
+	public int getHResolution() {
+		return hResolution;
+	}
+
+	public int getVResolution() {
+		return vResolution;
+	}
 }

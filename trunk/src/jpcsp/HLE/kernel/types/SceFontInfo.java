@@ -64,6 +64,9 @@ public class SceFontInfo {
     protected int[] charPointerTable;
     protected int[][] advanceTable;
 
+    // Font style from registry
+    protected pspFontStyle fontStyle;
+
     // Glyph class.
     protected static class Glyph {
     	protected int x;
@@ -110,6 +113,11 @@ public class SceFontInfo {
         advanceTable = fontFile.getAdvanceTable();
 
         // Get shadow char map.
+        int[] rawShadowCharMap = fontFile.getShadowCharMap();
+        shadowCharMap = new int[fontFile.getShadowMapLength()];
+        for (int i = 0; i < shadowCharMap.length; i++) {
+        	shadowCharMap[i] = getBits(fontFile.getShadowMapBpe(), rawShadowCharMap, i * fontFile.getShadowMapBpe());
+        }
         shadowCharMap = fontFile.getShadowCharMap();
 
         // Get char map.
@@ -157,6 +165,9 @@ public class SceFontInfo {
     private Glyph getGlyph(int[] fontdata, long charPtr, int glyphType, int[] advanceHmap, int[] advanceVmap) {
     	Glyph glyph = new Glyph();
         if (glyphType == FONT_PGF_SHADOWGLYPH) {
+            if (charPtr + 96 > fontdataBits) {
+        		return null;
+        	}
             charPtr += getBits(14, fontdata, charPtr) * 8;
         }
         if (charPtr + 96 > fontdataBits) {
@@ -245,10 +256,15 @@ public class SceFontInfo {
     }
 
     // Generate a 4bpp texture for the given char id.
-    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, int charCode, int glyphType) {
+    private void generateFontTexture(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, int charCode, int altCharCode, int glyphType) {
     	Glyph glyph = getCharGlyph(charCode, glyphType);
     	if (glyph == null) {
-    		return;
+    		// No Glyph available for this charCode, try to use the alternate char.
+            charCode = altCharCode;
+            glyph = getCharGlyph(charCode, glyphType);
+            if (glyph == null) {
+            	return;
+            }
     	}
 
         if (glyph.w <= 0 || glyph.h <= 0) {
@@ -267,7 +283,7 @@ public class SceFontInfo {
         boolean bitmapHorizontalRows = (glyph.flags & FONT_PGF_BMP_OVERLAY) == FONT_PGF_BMP_H_ROWS;
         int numberPixels = glyph.w * glyph.h;
         int pixelIndex = 0;
-        while (pixelIndex < numberPixels) {
+        while (pixelIndex < numberPixels && bitPtr + 8 < fontdataBits) {
             nibble = getBits(nibbleBits, fontdata, bitPtr);
             bitPtr += nibbleBits;
 
@@ -319,14 +335,8 @@ public class SceFontInfo {
         }
     }
 
-    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, int charCode) {
-        if (charCode >= n_chars) {
-            if (sceFont.getAlternateChar() >= n_chars) {
-                sceFont.setAlternateChar('?');
-            }
-            charCode = sceFont.getAlternateChar();
-        }
-        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, pixelformat, charCode, FONT_PGF_CHARGLYPH);
+    public void printFont(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, int charCode, int altCharCode) {
+        generateFontTexture(base, bpl, bufWidth, bufHeight, x, y, pixelformat, charCode, altCharCode, FONT_PGF_CHARGLYPH);
     }
 
     public pspCharInfo getCharInfo(int charCode) {
@@ -353,4 +363,12 @@ public class SceFontInfo {
 
     	return charInfo;
     }
+
+	public pspFontStyle getFontStyle() {
+		return fontStyle;
+	}
+
+	public void setFontStyle(pspFontStyle fontStyle) {
+		this.fontStyle = fontStyle;
+	}
 }
