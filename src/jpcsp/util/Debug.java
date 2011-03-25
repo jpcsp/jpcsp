@@ -41,18 +41,19 @@ public class Debug {
 
     // For sceFont.
     // Use this function to print a char using the font buffer's dimensions.
-    public static void printFontbuffer(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, char c) {
+    public static void printFontbuffer(int base, int bpl, int bufWidth, int bufHeight, int x, int y, int pixelformat, int charCode, int altCharCode) {
         if (Modules.log.isInfoEnabled()) {
-        	Modules.log.info(String.format("printFontbuffer '%c' (%d, %d)", c, x, y));
+        	Modules.log.info(String.format("printFontbuffer 0x%04X '%c' (%d, %d)", charCode, (char) charCode, x, y));
         }
 
-        if (sceFont.getAlternateChar() * Font.charSize >= Font.font.length) {
-            sceFont.setAlternateChar('?');
+        int fontBaseIndex = charCode * Font.charSize;
+        if (fontBaseIndex >= Font.font.length || isFontCharNull(fontBaseIndex)) {
+            fontBaseIndex = altCharCode * Font.charSize;
+            if (fontBaseIndex >= Font.font.length || isFontCharNull(fontBaseIndex)) {
+            	return;
+            }
         }
-        int fontBaseIndex = c * Font.charSize;
-        if ((fontBaseIndex >= Font.font.length) || isFontCharNull(fontBaseIndex)) {
-            fontBaseIndex = sceFont.getAlternateChar() * Font.charSize;
-        }
+
         int pixelColor0 = getFontPixelColor(0x00000000, pixelformat);
 		int pixelColor1 = getFontPixelColor(0xFFFFFFFF, pixelformat);
         for (int i = 0; i < Font.charHeight; i++) {

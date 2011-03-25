@@ -17,6 +17,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 public class pspFontStyle extends pspAbstractMemoryMappedStructure {
+	public static final int FONT_FAMILY_SANS_SERIF = 1;
+	public static final int FONT_FAMILY_SERIF      = 2;
+
+	public static final int FONT_STYLE_REGULAR     = 1;
+	public static final int FONT_STYLE_ITALIC      = 2;
+	public static final int FONT_STYLE_BOLD        = 5;
+	public static final int FONT_STYLE_BOLD_ITALIC = 6;
+	public static final int FONT_STYLE_DB          = 103; // Demi-Bold / semi-bold
+
+	public static final int FONT_LANGUAGE_JAPANESE = 1;
+	public static final int FONT_LANGUAGE_LATIN    = 2;
+	public static final int FONT_LANGUAGE_KOREAN   = 3;
+
 	public float fontH;           // Horizontal size.
 	public float fontV;           // Vertical size.
 	public float fontHRes;        // Horizontal resolution.
@@ -28,10 +41,10 @@ public class pspFontStyle extends pspAbstractMemoryMappedStructure {
 	public short fontLanguage;    // Language code (UNK = 0, JAPANESE = 1, ENGLISH = 2, probably more).
 	public short fontRegion;      // Region code (UNK = 0, JAPAN = 1, probably more).
 	public short fontCountry;     // Country code (UNK = 0, JAPAN = 1, US = 2, probably more).
-	public String fontName;     // Font name (maximum size is 64).
-	public String fontFileName; // File name (maximum size is 64).
-	public int fontAttributes;  // Additional attributes.
-	public int fontExpire;      // Expiration date.
+	public String fontName;       // Font name (maximum size is 64).
+	public String fontFileName;   // File name (maximum size is 64).
+	public int fontAttributes;    // Additional attributes.
+	public int fontExpire;        // Expiration date.
 
 	@Override
 	protected void read() {

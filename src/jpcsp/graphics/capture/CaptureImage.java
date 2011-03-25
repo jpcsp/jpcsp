@@ -49,9 +49,10 @@ public class CaptureImage {
 	private int compressedImageSize;
 	private boolean invert;
 	private boolean overwriteFile;
+	private String fileNamePrefix;
 	private static HashMap<Integer, Integer> lastFileIndex = new HashMap<Integer, Integer>();
 
-	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile) {
+	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int bufferStorage, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile, String fileNamePrefix) {
 		this.imageaddr = imageaddr;
 		this.level = level;
 		this.buffer = buffer;
@@ -63,6 +64,7 @@ public class CaptureImage {
 		this.compressedImageSize = compressedImageSize;
 		this.invert = invert;
 		this.overwriteFile = overwriteFile;
+		this.fileNamePrefix = fileNamePrefix == null ? "Image" : fileNamePrefix;
 	}
 
     public void write() throws IOException {
@@ -84,7 +86,7 @@ public class CaptureImage {
     	}
     	for (int i = scanIndex; ; i++) {
     		String id = (i == 0 ? "" : "-" + i);
-    		fileName = String.format("tmp/Image%08X%s%s.bmp", imageaddr, levelName, id);
+    		fileName = String.format("tmp/%s%08X%s%s.bmp", fileNamePrefix, imageaddr, levelName, id);
     		if (overwriteFile) {
     			break;
     		}

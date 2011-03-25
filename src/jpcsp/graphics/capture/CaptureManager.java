@@ -203,7 +203,7 @@ public class CaptureManager {
     public static void captureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize, boolean invert, boolean overwriteFile) {
         try {
             // write image to the file system, not to the capture file itself
-            CaptureImage captureImage = new CaptureImage(imageaddr, level, buffer, width, height, bufferWidth, imageType, compressedImage, compressedImageSize, invert, overwriteFile);
+            CaptureImage captureImage = new CaptureImage(imageaddr, level, buffer, width, height, bufferWidth, imageType, compressedImage, compressedImageSize, invert, overwriteFile, null);
             captureImage.write();
             if (capturedImages != null) {
             	capturedImages.add(imageaddr);
