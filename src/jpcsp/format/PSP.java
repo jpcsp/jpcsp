@@ -151,7 +151,7 @@ public class PSP {
 
         int retsize = crypto.DecryptPRX1(inBuf, outBuf, inSize, fileTag);
         if(retsize <= 0) {
-            crypto.DecryptPRX2(inBuf, outBuf, inSize, fileTag);
+            retsize = crypto.DecryptPRX2(inBuf, outBuf, inSize, fileTag);
         }
 
         if(CryptoEngine.getExtractEbootStatus()) {
