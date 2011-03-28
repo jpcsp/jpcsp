@@ -192,6 +192,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public boolean closePending = false; // sceIoCloseAsync has been called on this file
         public boolean asyncPending; // Thread has not switched since an async operation was called on this file
         public long asyncDoneMillis; // When the async operation can be completed
+        public int asyncThreadPriority = defaultAsyncPriority;
         public SceKernelThreadInfo asyncThread;
 
         // Async callback
@@ -894,7 +895,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         if (info.asyncThread == null) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             // Inherit priority from current thread if no default priority set
-            int asyncPriority = defaultAsyncPriority;
+            int asyncPriority = info.asyncThreadPriority;
             if (asyncPriority < 0) {
                 asyncPriority = threadMan.getCurrentThread().currentPriority;
             }
@@ -1727,6 +1728,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                                         ((headerBufDec[0x1A] & 0xFF) << 16) | ((headerBufDec[0x1B] & 0xFF) << 24);
                                 int hashOffset = (headerBufDec[0x1C] & 0xFF) | ((headerBufDec[0x1D] & 0xFF) << 8) |
                                         ((headerBufDec[0x1E] & 0xFF) << 16) | ((headerBufDec[0x1F] & 0xFF) << 24);
+                                if (log.isDebugEnabled()) {
+                                	log.debug(String.format("PGD dataSize=%d, chunkSize=%d, hashOffset=%d", dataSize, chunkSize, hashOffset));
+                                }
 
                                 // Write the newly extracted hash at the top of the output buffer,
                                 // locate the data hash at hashOffset and start decrypting until
@@ -1906,10 +1910,11 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0;
         } else {
             IoInfo info = filelist.get(uid);
-            if (info != null && info.asyncThread != null) {
+            if (info != null) {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("sceIoChangeAsyncPriority changing priority of async thread from fd=%x to %d", info.uid, priority));
                 }
+                info.asyncThreadPriority = priority;
                 cpu.gpr[2] = 0;
                 Modules.ThreadManForUserModule.hleKernelChangeThreadPriority(info.asyncThread, priority);
             } else {
