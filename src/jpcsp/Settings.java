@@ -31,7 +31,6 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -205,85 +204,99 @@ public class Settings {
 		return m;
 	}
 
+	public HashMap<String, keyCode> loadController() {
+		HashMap<String, keyCode> m = new HashMap<String, keyCode>(22);
+
+		m.put(readController("up"), keyCode.UP);
+		m.put(readController("down"), keyCode.DOWN);
+		m.put(readController("left"), keyCode.LEFT);
+		m.put(readController("right"), keyCode.RIGHT);
+		m.put(readController("analogUp"), keyCode.ANUP);
+		m.put(readController("analogDown"), keyCode.ANDOWN);
+		m.put(readController("analogLeft"), keyCode.ANLEFT);
+		m.put(readController("analogRight"), keyCode.ANRIGHT);
+		m.put(readController("start"), keyCode.START);
+		m.put(readController("select"), keyCode.SELECT);
+		m.put(readController("triangle"), keyCode.TRIANGLE);
+		m.put(readController("square"), keyCode.SQUARE);
+		m.put(readController("circle"), keyCode.CIRCLE);
+		m.put(readController("cross"), keyCode.CROSS);
+		m.put(readController("lTrigger"), keyCode.L1);
+		m.put(readController("rTrigger"), keyCode.R1);
+		m.put(readController("home"), keyCode.HOME);
+		m.put(readController("hold"), keyCode.HOLD);
+		m.put(readController("volPlus"), keyCode.VOLPLUS);
+		m.put(readController("volMin"), keyCode.VOLMIN);
+		m.put(readController("screen"), keyCode.SCREEN);
+		m.put(readController("music"), keyCode.MUSIC);
+
+		// Remove the non-provided entries
+		m.remove(null);
+
+		return m;
+	}
+
 	public void writeKeys(HashMap<Integer, keyCode> keys) {
-		Iterator<Map.Entry<Integer, keyCode>> iter = keys.entrySet().iterator();
-		while (iter.hasNext()) {
-			Map.Entry<Integer, keyCode> entry = iter.next();
+		for (Map.Entry<Integer, keyCode> entry : keys.entrySet()) {
 			keyCode key = entry.getValue();
 			int value = entry.getKey();
 
 			switch (key) {
-			case DOWN:
-				writeKey("down", value);
-				break;
-			case UP:
-				writeKey("up", value);
-				break;
-			case LEFT:
-				writeKey("left", value);
-				break;
-			case RIGHT:
-				writeKey("right", value);
-				break;
-			case ANDOWN:
-				writeKey("analogDown", value);
-				break;
-			case ANUP:
-				writeKey("analogUp", value);
-				break;
-			case ANLEFT:
-				writeKey("analogLeft", value);
-				break;
-			case ANRIGHT:
-				writeKey("analogRight", value);
-				break;
+				case DOWN:	   writeKey("down", value); break;
+				case UP:	   writeKey("up", value); break;
+				case LEFT:	   writeKey("left", value); break;
+				case RIGHT:	   writeKey("right", value); break;
+				case ANDOWN:   writeKey("analogDown", value); break;
+				case ANUP:     writeKey("analogUp", value); break;
+				case ANLEFT:   writeKey("analogLeft", value); break;
+				case ANRIGHT:  writeKey("analogRight", value); break;
+				case TRIANGLE: writeKey("triangle", value); break;
+				case SQUARE:   writeKey("square", value); break;
+				case CIRCLE:   writeKey("circle", value); break;
+				case CROSS:    writeKey("cross", value); break;
+				case L1:       writeKey("lTrigger", value); break;
+				case R1:       writeKey("rTrigger", value); break;
+				case START:    writeKey("start", value); break;
+				case SELECT:   writeKey("select", value); break;
+				case HOME:     writeKey("home", value); break;
+				case HOLD:     writeKey("hold", value); break;
+				case VOLMIN:   writeKey("volMin", value); break;
+				case VOLPLUS:  writeKey("volPlus", value); break;
+				case SCREEN:   writeKey("screen", value); break;
+				case MUSIC:    writeKey("music", value); break;
+			}
+		}
+		writeSettings();
+	}
 
-			case TRIANGLE:
-				writeKey("triangle", value);
-				break;
-			case SQUARE:
-				writeKey("square", value);
-				break;
-			case CIRCLE:
-				writeKey("circle", value);
-				break;
-			case CROSS:
-				writeKey("cross", value);
-				break;
-			case L1:
-				writeKey("lTrigger", value);
-				break;
-			case R1:
-				writeKey("rTrigger", value);
-				break;
-			case START:
-				writeKey("start", value);
-				break;
-			case SELECT:
-				writeKey("select", value);
-				break;
+	public void writeController(HashMap<String, keyCode> keys) {
+		for (Map.Entry<String, keyCode> entry : keys.entrySet()) {
+			keyCode key = entry.getValue();
+			String value = entry.getKey();
 
-			case HOME:
-				writeKey("home", value);
-				break;
-			case HOLD:
-				writeKey("hold", value);
-				break;
-			case VOLMIN:
-				writeKey("volMin", value);
-				break;
-			case VOLPLUS:
-				writeKey("volPlus", value);
-				break;
-			case SCREEN:
-				writeKey("screen", value);
-				break;
-			case MUSIC:
-				writeKey("music", value);
-				break;
-
-			default:
-				break;
+			switch (key) {
+				case DOWN:	   writeController("down", value); break;
+				case UP:	   writeController("up", value); break;
+				case LEFT:	   writeController("left", value); break;
+				case RIGHT:	   writeController("right", value); break;
+				case ANDOWN:   writeController("analogDown", value); break;
+				case ANUP:     writeController("analogUp", value); break;
+				case ANLEFT:   writeController("analogLeft", value); break;
+				case ANRIGHT:  writeController("analogRight", value); break;
+				case TRIANGLE: writeController("triangle", value); break;
+				case SQUARE:   writeController("square", value); break;
+				case CIRCLE:   writeController("circle", value); break;
+				case CROSS:    writeController("cross", value); break;
+				case L1:       writeController("lTrigger", value); break;
+				case R1:       writeController("rTrigger", value); break;
+				case START:    writeController("start", value); break;
+				case SELECT:   writeController("select", value); break;
+				case HOME:     writeController("home", value); break;
+				case HOLD:     writeController("hold", value); break;
+				case VOLMIN:   writeController("volMin", value); break;
+				case VOLPLUS:  writeController("volPlus", value); break;
+				case SCREEN:   writeController("screen", value); break;
+				case MUSIC:    writeController("music", value); break;
 			}
 		}
 		writeSettings();
@@ -291,13 +304,22 @@ public class Settings {
 
 	private int readKey(String keyName) {
 		String str = loadedSettings.getProperty("keys." + keyName);
-		if(str == null)
+		if (str == null) {
 			return KeyEvent.VK_UNDEFINED;
+		}
 		return Integer.parseInt(str);
 	}
 
 	private void writeKey(String keyName, int key) {
 		loadedSettings.setProperty("keys." + keyName, Integer.toString(key));
+	}
+
+	private String readController(String name) {
+		return loadedSettings.getProperty("controller." + name);
+	}
+
+	private void writeController(String name, String value) {
+		loadedSettings.setProperty("controller." + name, value);
 	}
 
 	private static class SortedProperties extends Properties {
