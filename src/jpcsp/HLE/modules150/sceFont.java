@@ -291,8 +291,9 @@ public class sceFont implements HLEModule, HLEStartModule {
             Debug.Font.setDebugCharSize(8);
             Debug.Font.setDebugCharHeight(8);
             Debug.Font.setDebugCharWidth(8);
-        } catch (Exception e) {
+        } catch (IOException e) {
             // The file was removed from flash0.
+        	log.error(e);
         }
     }
 
