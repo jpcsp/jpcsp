@@ -114,6 +114,14 @@ public class Controller {
 				}
             }
 
+            if (inputController == null) {
+            	Emulator.log.info(String.format("No KEYBOARD controller found"));
+				for (int i = 0; controllers != null && i < controllers.length; i++) {
+					Emulator.log.info(String.format("    Controller: '%s'", controllers[i].getName()));
+				}
+            } else {
+            	Emulator.log.info(String.format("Using default controller '%s'", inputController.getName()));
+            }
     		instance = new Controller(inputController);
     	}
 
@@ -121,6 +129,9 @@ public class Controller {
     }
 
     public void setInputController(net.java.games.input.Controller inputController) {
+    	if (inputController != null) {
+    		Emulator.log.info(String.format("Using controller '%s'", inputController.getName()));
+    	}
     	this.inputController = inputController;
     	onInputControllerChanged();
     }
