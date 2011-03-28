@@ -47,7 +47,7 @@ public class State extends jpcsp.HLE.Modules {
 
     static {
         memory = Memory.getInstance();
-        controller = new Controller();
+        controller = Controller.getInstance();
         fileLogger = new FileLoggerFrame();
         discId = DISCID_UNKNOWN_NOTHING_LOADED;
         captureGeNextFrame = false;
