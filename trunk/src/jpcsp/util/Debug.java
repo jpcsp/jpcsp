@@ -46,6 +46,11 @@ public class Debug {
         	Modules.log.info(String.format("printFontbuffer 0x%04X '%c' (%d, %d)", charCode, (char) charCode, x, y));
         }
 
+        if (Font.font == null) {
+			// Debug font not available...
+        	return;
+        }
+
         int fontBaseIndex = charCode * Font.charSize;
         if (fontBaseIndex >= Font.font.length || isFontCharNull(fontBaseIndex)) {
             fontBaseIndex = altCharCode * Font.charSize;
@@ -160,6 +165,11 @@ public class Debug {
 	}
 
 	public static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int pixelformat, int size, String s) {
+		if (Font.font == null) {
+			// Debug font not available...
+			return;
+		}
+
 		int length = s.length();
 		for (int i = 0; i < length; i++) {
 			char c = s.charAt(i);
