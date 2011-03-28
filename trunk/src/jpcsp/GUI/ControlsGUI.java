@@ -283,6 +283,8 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 	        sender.setText(controllerName);
 
 	        getKey = false;
+		} else {
+			Emulator.log.warn(String.format("Unknown Controller Event on %s(%s): %f", component.getName(), identifier.getName(), value));
 		}
     }
 
