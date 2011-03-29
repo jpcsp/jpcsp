@@ -276,6 +276,6 @@ public class PspGeList
 
 	@Override
 	public String toString() {
-		return String.format("id=0x%x %s", id, PSP_GE_LIST_STRINGS[status]);
+		return String.format("PspGeList[id=0x%x, status=%s, pc=0x%08X, stall=0x%08X]", id, PSP_GE_LIST_STRINGS[status], pc, stall_addr);
 	}
 }
