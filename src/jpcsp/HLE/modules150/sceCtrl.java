@@ -19,9 +19,11 @@ package jpcsp.HLE.modules150;
 import java.util.LinkedList;
 import java.util.List;
 
+import jpcsp.Controller;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
@@ -96,8 +98,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         return false;
     }
 
-    /** Need to call setButtons even if the user didn't move any fingers, otherwise we can't track "press" properly */
-    public void setButtons(byte Lx, byte Ly, int Buttons) {
+    private void setButtons(byte Lx, byte Ly, int Buttons) {
         int oldButtons = this.Buttons;
 
         this.TimeStamp = ((int) SystemTimeManager.getSystemTime()) & 0x7FFFFFFF;
@@ -108,8 +109,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         if (isModeDigital()) {
             // PSP_CTRL_MODE_DIGITAL
             // moving the analog stick has no effect and always returns 128,128
-            this.Lx = (byte) 128;
-            this.Ly = (byte) 128;
+            this.Lx = Controller.analogCenter;
+            this.Ly = Controller.analogCenter;
         }
 
         int changed = oldButtons ^ Buttons;
@@ -184,8 +185,8 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         uiPress = 0;
         uiRelease = ~uiPress;
 
-        Lx = (byte) 128;
-        Ly = (byte) 128;
+        Lx = Controller.analogCenter;
+        Ly = Controller.analogCenter;
         Buttons = 0;
 
         idlereset = -1;
@@ -310,6 +311,11 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         if (log.isDebugEnabled()) {
             log.debug("hleCtrlExecuteSampling");
         }
+
+        Controller controller = State.controller;
+        controller.hleControllerPoll();
+
+        setButtons(controller.getLx(), controller.getLy(), controller.getButtons());
 
         latchSamplingCount++;
 

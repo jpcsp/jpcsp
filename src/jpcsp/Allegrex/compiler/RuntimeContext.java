@@ -620,7 +620,6 @@ public class RuntimeContext {
 
         Modules.sceGe_userModule.step();
 		Modules.sceDisplayModule.step(immediately);
-        State.controller.checkControllerState();
     }
 
     private static void syncFast() {

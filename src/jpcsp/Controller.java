@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp;
 
-import static jpcsp.HLE.Modules.sceCtrlModule;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_CIRCLE;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_CROSS;
 import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_DOWN;
@@ -42,32 +41,41 @@ import jpcsp.HLE.Modules;
 
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.JOptionPane;
+
+import org.apache.log4j.Logger;
 
 import net.java.games.input.Component;
 import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Event;
 import net.java.games.input.EventQueue;
+import net.java.games.input.Component.Identifier;
 import net.java.games.input.Component.POV;
+import net.java.games.input.Component.Identifier.Axis;
+import net.java.games.input.Component.Identifier.Button;
 import net.java.games.input.Controller.Type;
 
 public class Controller {
+    public static Logger log = Logger.getLogger("controller");
     private static Controller instance;
-    private byte Lx = (byte)128;
-	private byte Ly = (byte)128;
+    public static final byte analogCenter = (byte) 128;
+    private byte Lx = analogCenter;
+	private byte Ly = analogCenter;
 	private int Buttons = 0;
     private keyCode lastKey = keyCode.RELEASED;
-    private long lastUpdate;
     private net.java.games.input.Controller inputController;
     private HashMap<Component.Identifier, Integer> buttonComponents;
-    private Component.Identifier XAxis = Component.Identifier.Axis.X;
-    private Component.Identifier YAxis = Component.Identifier.Axis.Y;
-    private Component.Identifier Arrows = Component.Identifier.Axis.POV;
+    private Component.Identifier analogXAxis = Component.Identifier.Axis.X;
+    private Component.Identifier analogYAxis = Component.Identifier.Axis.Y;
+    private Component.Identifier digitalXAxis = null;
+    private Component.Identifier digitalYAxis = null;
+    private Component.Identifier povArrows = Component.Identifier.Axis.POV;
+    private static final float minimumDeadZone = 0.1f;
 
-    private HashMap<String, keyCode> controllerComponents;
+    private HashMap<keyCode, String> controllerComponents;
     private HashMap<Integer, keyCode> keys;
 
     public enum keyCode {
@@ -78,16 +86,15 @@ public class Controller {
     protected Controller(net.java.games.input.Controller inputController) {
     	this.inputController = inputController;
         keys = new HashMap<Integer, keyCode>(22);
-        controllerComponents = new HashMap<String, keyCode>(22);
+        controllerComponents = new HashMap<keyCode, String>(22);
         loadKeyConfig();
         loadControllerConfig();
-        lastUpdate = System.currentTimeMillis();
     }
 
     public static Controller getInstance() {
     	if (instance == null) {
     		// Disable JInput messages sent to stdout...
-    		Logger.getLogger("net.java.games.input.DefaultControllerEnvironment").setLevel(Level.WARNING);
+    		java.util.logging.Logger.getLogger("net.java.games.input.DefaultControllerEnvironment").setLevel(Level.WARNING);
 
 			ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
 			net.java.games.input.Controller[] controllers = ce.getControllers();
@@ -115,12 +122,12 @@ public class Controller {
             }
 
             if (inputController == null) {
-            	Emulator.log.info(String.format("No KEYBOARD controller found"));
+            	log.info(String.format("No KEYBOARD controller found"));
 				for (int i = 0; controllers != null && i < controllers.length; i++) {
-					Emulator.log.info(String.format("    Controller: '%s'", controllers[i].getName()));
+					log.info(String.format("    Controller: '%s'", controllers[i].getName()));
 				}
             } else {
-            	Emulator.log.info(String.format("Using default controller '%s'", inputController.getName()));
+            	log.info(String.format("Using default controller '%s'", inputController.getName()));
             }
     		instance = new Controller(inputController);
     	}
@@ -130,7 +137,7 @@ public class Controller {
 
     public void setInputController(net.java.games.input.Controller inputController) {
     	if (inputController != null) {
-    		Emulator.log.info(String.format("Using controller '%s'", inputController.getName()));
+    		log.info(String.format("Using controller '%s'", inputController.getName()));
     	}
     	this.inputController = inputController;
     	onInputControllerChanged();
@@ -157,7 +164,7 @@ public class Controller {
     	loadControllerConfig(Settings.getInstance().loadController());
     }
 
-    public void loadControllerConfig(HashMap<String, keyCode> newLayout) {
+    public void loadControllerConfig(HashMap<keyCode, String> newLayout) {
         controllerComponents.clear();
         controllerComponents.putAll(newLayout);
 
@@ -166,49 +173,64 @@ public class Controller {
 
     private void onInputControllerChanged() {
 		buttonComponents = new HashMap<Component.Identifier, Integer>();
-		for (String controllerName : controllerComponents.keySet()) {
+		for (Map.Entry<keyCode, String> entry : controllerComponents.entrySet()) {
+			keyCode key = entry.getKey();
+			String controllerName = entry.getValue();
 			Component component = getControllerComponentByName(controllerName);
 			if (component != null) {
-				int keyCode = -1;
-				switch (controllerComponents.get(controllerName)) {
-		            case DOWN:     keyCode = PSP_CTRL_DOWN; break;
-		            case UP:       keyCode = PSP_CTRL_UP; break;
-		            case LEFT:     keyCode = PSP_CTRL_LEFT; break;
-		            case RIGHT:    keyCode = PSP_CTRL_RIGHT; break;
-		            case TRIANGLE: keyCode = PSP_CTRL_TRIANGLE; break;
-		            case SQUARE:   keyCode = PSP_CTRL_SQUARE; break;
-		            case CIRCLE:   keyCode = PSP_CTRL_CIRCLE; break;
-		            case CROSS:    keyCode = PSP_CTRL_CROSS; break;
-		            case L1:       keyCode = PSP_CTRL_LTRIGGER; break;
-		            case R1:       keyCode = PSP_CTRL_RTRIGGER; break;
-		            case START:    keyCode = PSP_CTRL_START; break;
-		            case SELECT:   keyCode = PSP_CTRL_SELECT; break;
-		            case HOME:     keyCode = PSP_CTRL_HOME; break;
-		            case HOLD:     keyCode = PSP_CTRL_HOLD; break;
-		            case VOLMIN:   keyCode = PSP_CTRL_VOLDOWN; break;
-		            case VOLPLUS:  keyCode = PSP_CTRL_VOLUP; break;
-		            case SCREEN:   keyCode = PSP_CTRL_SCREEN; break;
-		            case MUSIC:    keyCode = PSP_CTRL_NOTE; break;
-				}
-				if (keyCode != -1) {
-					buttonComponents.put(component.getIdentifier(), keyCode);
+				Identifier identifier = component.getIdentifier();
+				boolean isButton = identifier instanceof Button;
+				boolean isAxis = identifier instanceof Axis;
+
+				if (isButton) {
+					int keyCode = -1;
+					switch (key) {
+			            case DOWN:     keyCode = PSP_CTRL_DOWN; break;
+			            case UP:       keyCode = PSP_CTRL_UP; break;
+			            case LEFT:     keyCode = PSP_CTRL_LEFT; break;
+			            case RIGHT:    keyCode = PSP_CTRL_RIGHT; break;
+			            case TRIANGLE: keyCode = PSP_CTRL_TRIANGLE; break;
+			            case SQUARE:   keyCode = PSP_CTRL_SQUARE; break;
+			            case CIRCLE:   keyCode = PSP_CTRL_CIRCLE; break;
+			            case CROSS:    keyCode = PSP_CTRL_CROSS; break;
+			            case L1:       keyCode = PSP_CTRL_LTRIGGER; break;
+			            case R1:       keyCode = PSP_CTRL_RTRIGGER; break;
+			            case START:    keyCode = PSP_CTRL_START; break;
+			            case SELECT:   keyCode = PSP_CTRL_SELECT; break;
+			            case HOME:     keyCode = PSP_CTRL_HOME; break;
+			            case HOLD:     keyCode = PSP_CTRL_HOLD; break;
+			            case VOLMIN:   keyCode = PSP_CTRL_VOLDOWN; break;
+			            case VOLPLUS:  keyCode = PSP_CTRL_VOLUP; break;
+			            case SCREEN:   keyCode = PSP_CTRL_SCREEN; break;
+			            case MUSIC:    keyCode = PSP_CTRL_NOTE; break;
+					}
+					if (keyCode != -1) {
+						buttonComponents.put(component.getIdentifier(), keyCode);
+					}
+				} else if (isAxis && identifier == Axis.POV) {
+					povArrows = identifier;
+				} else if (isAxis) {
+					switch (key) {
+						case DOWN:
+						case UP:       digitalYAxis = identifier; break;
+						case LEFT:
+						case RIGHT:    digitalXAxis = identifier; break;
+						case ANDOWN:
+						case ANUP:     analogYAxis = identifier; break;
+						case ANLEFT:
+						case ANRIGHT:  analogXAxis = identifier; break;
+					}
 				}
 			}
 		}
     }
 
-    public void checkControllerState(){
-        // checkControllerState is called every cpu step,
-        // so we need to delay that a bit
-        long now = System.currentTimeMillis();
-        if (now - lastUpdate < 1000 / 30) {
-            return;
-        }
-
+    /**
+     * Called by sceCtrl at every VBLANK interrupt.
+     */
+    public void hleControllerPoll() {
         processSpecialKeys();
         pollController();
-        sceCtrlModule.setButtons(Lx, Ly, Buttons);
-        lastUpdate = now;
     }
 
     private void pollController() {
@@ -270,10 +292,10 @@ public class Controller {
             case UP:        Buttons &= ~PSP_CTRL_UP; break;
             case LEFT:      Buttons &= ~PSP_CTRL_LEFT; break;
             case RIGHT:     Buttons &= ~PSP_CTRL_RIGHT; break;
-            case ANDOWN:    Ly = (byte)128; break;
-            case ANUP:      Ly = (byte)128; break;
-            case ANLEFT:    Lx = (byte)128; break;
-            case ANRIGHT:   Lx = (byte)128; break;
+            case ANDOWN:    Ly = analogCenter; break;
+            case ANUP:      Ly = analogCenter; break;
+            case ANLEFT:    Lx = analogCenter; break;
+            case ANRIGHT:   Lx = analogCenter; break;
 
             case TRIANGLE:  Buttons &= ~PSP_CTRL_TRIANGLE; break;
             case SQUARE:    Buttons &= ~PSP_CTRL_SQUARE; break;
@@ -348,11 +370,19 @@ public class Controller {
         return res;
     }
 
-    protected Component getControllerComponentByName(String name) {
+    private Component getControllerComponentByName(String name) {
 		Component[] components = inputController.getComponents();
 		if (components != null) {
+			// First search for the component name
 			for (int i = 0; i < components.length; i++) {
 				if (name.equals(components[i].getName())) {
+					return components[i];
+				}
+			}
+
+			// Second search for the identifier name
+			for (int i = 0; i < components.length; i++) {
+				if (name.equals(components[i].getIdentifier().getName())) {
 					return components[i];
 				}
 			}
@@ -361,12 +391,25 @@ public class Controller {
 		return null;
 	}
 
-	protected void processControllerEvent(Component component, float value) {
-		if (Modules.log.isDebugEnabled()) {
-			Modules.log.debug(String.format("JInput Event on %s: %f", component.getName(), value));
+    public static float getDeadZone(Component component) {
+    	float deadZone = component.getDeadZone();
+    	if (deadZone < minimumDeadZone) {
+    		deadZone = minimumDeadZone;
+    	}
+
+    	return deadZone;
+    }
+
+    public static boolean isInDeadZone(Component component, float value) {
+    	return Math.abs(value) <= getDeadZone(component);
+    }
+
+    private void processControllerEvent(Component component, float value) {
+		Component.Identifier id = component.getIdentifier();
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("Controller Event on %s(%s): %f", component.getName(), id.getName(), value));
 		}
 
-		Component.Identifier id = component.getIdentifier();
 		Integer button = buttonComponents.get(id);
 		if (button != null) {
 			if (value == 0.f) {
@@ -374,13 +417,37 @@ public class Controller {
 			} else if (value == 1.f) {
 				Buttons |= button;
 			} else {
-				Modules.log.warn(String.format("Unknown Controller Button Event on %s(%s): %f", component.getName(), id.getName(), value));
+				log.warn(String.format("Unknown Controller Button Event on %s(%s): %f", component.getName(), id.getName(), value));
 			}
-		} else if (id == XAxis) {
-			Lx = (byte) (value * 127.f + 128.f);
-		} else if (id == YAxis) {
-			Ly = (byte) (value * 127.f + 128.f);
-		} else if (id == Arrows) {
+		} else if (id == analogXAxis) {
+			if (isInDeadZone(component, value)) {
+				Lx = analogCenter;
+			} else {
+				Lx = (byte) (value * 127.f + 128.f);
+			}
+		} else if (id == analogYAxis) {
+			if (isInDeadZone(component, value)) {
+				Ly = analogCenter;
+			} else {
+				Ly = (byte) (value * 127.f + 128.f);
+			}
+		} else if (id == digitalXAxis) {
+			if (isInDeadZone(component, value)) {
+				Buttons &= ~(PSP_CTRL_LEFT | PSP_CTRL_RIGHT);
+			} else if (value < 0.f) {
+				Buttons |= PSP_CTRL_LEFT;
+			} else {
+				Buttons |= PSP_CTRL_RIGHT;
+			}
+		} else if (id == digitalYAxis) {
+			if (isInDeadZone(component, value)) {
+				Buttons &= ~(PSP_CTRL_DOWN | PSP_CTRL_UP);
+			} else if (value < 0.f) {
+				Buttons |= PSP_CTRL_UP;
+			} else {
+				Buttons |= PSP_CTRL_DOWN;
+			}
+		} else if (id == povArrows) {
 			if (value == POV.CENTER) {
 				Buttons &= ~(PSP_CTRL_RIGHT | PSP_CTRL_LEFT | PSP_CTRL_DOWN | PSP_CTRL_UP);
 			} else if (value == POV.UP) {
@@ -400,10 +467,32 @@ public class Controller {
 			} else if (value == POV.UP_RIGHT) {
 				Buttons |= PSP_CTRL_UP | PSP_CTRL_RIGHT;
 			} else {
-				Modules.log.warn(String.format("Unknown Controller Arrows Event on %s(%s): %f", component.getName(), id.getName(), value));
+				log.warn(String.format("Unknown Controller Arrows Event on %s(%s): %f", component.getName(), id.getName(), value));
 			}
 		} else {
-			Modules.log.warn(String.format("Unknown Controller Event on %s(%s): %f", component.getName(), id.getName(), value));
+			// Unknown Axis components are allowed to move inside their dead zone
+			// (e.g. due to small vibrations)
+			if (id instanceof Axis && isInDeadZone(component, value)) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Unknown Controller Event in DeadZone on %s(%s): %f", component.getName(), id.getName(), value));
+				}
+			} else {
+				if (log.isInfoEnabled()) {
+					log.warn(String.format("Unknown Controller Event on %s(%s): %f", component.getName(), id.getName(), value));
+				}
+			}
 		}
 	}
+
+    public byte getLx() {
+    	return Lx;
+    }
+
+    public byte getLy() {
+    	return Ly;
+    }
+
+    public int getButtons() {
+    	return Buttons;
+    }
 }
