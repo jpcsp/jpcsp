@@ -41,6 +41,7 @@ import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Event;
 import net.java.games.input.EventQueue;
 import net.java.games.input.Component.Identifier;
+import net.java.games.input.Component.Identifier.Axis;
 import net.java.games.input.Component.Identifier.Button;
 import net.java.games.input.Controller.Type;
 
@@ -51,9 +52,9 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     private keyCode targetKey;
     private HashMap<Integer, keyCode> currentKeys;
     private HashMap<keyCode, Integer> revertKeys;
-    private HashMap<String, keyCode> currentController;
-    private HashMap<keyCode, String> revertController;
+    private HashMap<keyCode, String> currentController;
     private ControllerPollThread controllerPollThread;
+    private static final int maxControllerFieldValueLength = 8;
 
     private class ControllerPollThread extends Thread {
     	volatile protected boolean exit = false;
@@ -165,11 +166,6 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         }
 
         currentController = Settings.getInstance().loadController();
-        revertController = new HashMap<keyCode, String>(22);
-
-        for (Map.Entry<String, keyCode> entry : currentController.entrySet()) {
-            revertController.put(entry.getValue(), entry.getKey());
-        }
 	}
 
 	private void setFieldValue(keyCode key, String value) {
@@ -213,8 +209,8 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 	            setFieldValue(entry.getValue(), KeyEvent.getKeyText(entry.getKey()));
 	        }
 		} else {
-	        for (Map.Entry<String, keyCode> entry : currentController.entrySet()) {
-	        	setFieldValue(entry.getValue(), entry.getKey());
+	        for (Map.Entry<keyCode, String> entry : currentController.entrySet()) {
+	        	setFieldValue(entry.getKey(), entry.getValue());
 	        }
 		}
 	}
@@ -263,7 +259,23 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         this.targetKey = targetKey;
     }
 
-    protected void onControllerEvent(Event event) {
+    private void setControllerMapping(keyCode targetKey, String componentName, String identifierName, JTextField field) {
+    	String name = componentName;
+    	if (name == null) {
+    		// Use the Identifier name if the component has no name
+    		name = identifierName;
+    	} else if (name.length() > maxControllerFieldValueLength && identifierName.length() < name.length()) {
+    		// Use the Identifier name if the component name is too long to fit
+    		// into the display field
+    		name = identifierName;
+    	}
+
+    	currentController.put(targetKey, name);
+        field.setText(name);
+        getKey = false;
+    }
+
+    private void onControllerEvent(Event event) {
     	if (!getKey) {
     		return;
     	}
@@ -271,20 +283,58 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     	Component component = event.getComponent();
 		float value = event.getValue();
 		Identifier identifier = component.getIdentifier();
+		String componentName = component.getName();
+		String identifierName = identifier.getName();
 
 		if (identifier instanceof Button && value == 1.f) {
-			String oldMapping = revertController.get(targetKey);
-			revertController.remove(targetKey);
-			currentController.remove(oldMapping);
-
-			String controllerName = component.getName();
-			currentController.put(controllerName, targetKey);
-	        revertController.put(targetKey, controllerName);
-	        sender.setText(controllerName);
-
-	        getKey = false;
+			setControllerMapping(targetKey, componentName, identifierName, sender);
+		} else if (identifier == Axis.POV) {
+			switch (targetKey) {
+				case DOWN:
+				case UP:
+				case LEFT:
+				case RIGHT:
+					setControllerMapping(keyCode.DOWN, componentName, identifierName, fieldDown);
+					setControllerMapping(keyCode.UP, componentName, identifierName, fieldUp);
+					setControllerMapping(keyCode.LEFT, componentName, identifierName, fieldLeft);
+					setControllerMapping(keyCode.RIGHT, componentName, identifierName, fieldRight);
+					break;
+				default:
+					jpcsp.Controller.log.warn(String.format("Unknown Controller POV Event on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
+					break;
+			}
+		} else if (identifier instanceof Axis && !jpcsp.Controller.isInDeadZone(component, value)) {
+			switch (targetKey) {
+				case DOWN:
+				case UP:
+					setControllerMapping(keyCode.DOWN, componentName, identifierName, fieldDown);
+					setControllerMapping(keyCode.UP, componentName, identifierName, fieldUp);
+					break;
+				case LEFT:
+				case RIGHT:
+					setControllerMapping(keyCode.LEFT, componentName, identifierName, fieldLeft);
+					setControllerMapping(keyCode.RIGHT, componentName, identifierName, fieldRight);
+					break;
+				case ANDOWN:
+				case ANUP:
+					setControllerMapping(keyCode.ANDOWN, componentName, identifierName, fieldAnalogDown);
+					setControllerMapping(keyCode.ANUP, componentName, identifierName, fieldAnalogUp);
+					break;
+				case ANLEFT:
+				case ANRIGHT:
+					setControllerMapping(keyCode.ANLEFT, componentName, identifierName, fieldAnalogLeft);
+					setControllerMapping(keyCode.ANRIGHT, componentName, identifierName, fieldAnalogRight);
+					break;
+				default:
+					setControllerMapping(targetKey, componentName, identifierName, sender);
+					break;
+			}
 		} else {
-			Emulator.log.warn(String.format("Unknown Controller Event on %s(%s): %f", component.getName(), identifier.getName(), value));
+			if (identifier instanceof Axis && jpcsp.Controller.isInDeadZone(component, value)) {
+				jpcsp.Controller.log.debug(String.format("Unknown Controller Event in DeadZone on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
+			} else {
+				jpcsp.Controller.log.warn(String.format("Unknown Controller Event on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
+			}
 		}
     }
 

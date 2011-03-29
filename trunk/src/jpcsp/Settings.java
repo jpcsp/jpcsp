@@ -204,34 +204,38 @@ public class Settings {
 		return m;
 	}
 
-	public HashMap<String, keyCode> loadController() {
-		HashMap<String, keyCode> m = new HashMap<String, keyCode>(22);
+	public HashMap<keyCode, String> loadController() {
+		HashMap<keyCode, String> m = new HashMap<keyCode, String>(22);
 
-		m.put(readController("up"), keyCode.UP);
-		m.put(readController("down"), keyCode.DOWN);
-		m.put(readController("left"), keyCode.LEFT);
-		m.put(readController("right"), keyCode.RIGHT);
-		m.put(readController("analogUp"), keyCode.ANUP);
-		m.put(readController("analogDown"), keyCode.ANDOWN);
-		m.put(readController("analogLeft"), keyCode.ANLEFT);
-		m.put(readController("analogRight"), keyCode.ANRIGHT);
-		m.put(readController("start"), keyCode.START);
-		m.put(readController("select"), keyCode.SELECT);
-		m.put(readController("triangle"), keyCode.TRIANGLE);
-		m.put(readController("square"), keyCode.SQUARE);
-		m.put(readController("circle"), keyCode.CIRCLE);
-		m.put(readController("cross"), keyCode.CROSS);
-		m.put(readController("lTrigger"), keyCode.L1);
-		m.put(readController("rTrigger"), keyCode.R1);
-		m.put(readController("home"), keyCode.HOME);
-		m.put(readController("hold"), keyCode.HOLD);
-		m.put(readController("volPlus"), keyCode.VOLPLUS);
-		m.put(readController("volMin"), keyCode.VOLMIN);
-		m.put(readController("screen"), keyCode.SCREEN);
-		m.put(readController("music"), keyCode.MUSIC);
+		m.put(keyCode.UP, readController("up"));
+		m.put(keyCode.DOWN, readController("down"));
+		m.put(keyCode.LEFT, readController("left"));
+		m.put(keyCode.RIGHT, readController("right"));
+		m.put(keyCode.ANUP, readController("analogUp"));
+		m.put(keyCode.ANDOWN, readController("analogDown"));
+		m.put(keyCode.ANLEFT, readController("analogLeft"));
+		m.put(keyCode.ANRIGHT, readController("analogRight"));
+		m.put(keyCode.START, readController("start"));
+		m.put(keyCode.SELECT, readController("select"));
+		m.put(keyCode.TRIANGLE, readController("triangle"));
+		m.put(keyCode.SQUARE, readController("square"));
+		m.put(keyCode.CIRCLE, readController("circle"));
+		m.put(keyCode.CROSS, readController("cross"));
+		m.put(keyCode.L1, readController("lTrigger"));
+		m.put(keyCode.R1, readController("rTrigger"));
+		m.put(keyCode.HOME, readController("home"));
+		m.put(keyCode.HOLD, readController("hold"));
+		m.put(keyCode.VOLPLUS, readController("volPlus"));
+		m.put(keyCode.VOLMIN, readController("volMin"));
+		m.put(keyCode.SCREEN, readController("screen"));
+		m.put(keyCode.MUSIC, readController("music"));
 
-		// Remove the non-provided entries
-		m.remove(null);
+		// Removed unset entries
+		for (keyCode key : keyCode.values()) {
+			if (m.get(key) == null) {
+				m.remove(key);
+			}
+		}
 
 		return m;
 	}
@@ -269,10 +273,10 @@ public class Settings {
 		writeSettings();
 	}
 
-	public void writeController(HashMap<String, keyCode> keys) {
-		for (Map.Entry<String, keyCode> entry : keys.entrySet()) {
-			keyCode key = entry.getValue();
-			String value = entry.getKey();
+	public void writeController(HashMap<keyCode, String> keys) {
+		for (Map.Entry<keyCode, String> entry : keys.entrySet()) {
+			keyCode key = entry.getKey();
+			String value = entry.getValue();
 
 			switch (key) {
 				case DOWN:	   writeController("down", value); break;
