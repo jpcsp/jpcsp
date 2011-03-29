@@ -297,7 +297,9 @@ public class VideoEngine {
 
     /** Called from pspge module */
     public void pushDrawList(PspGeList list) {
-        drawListQueue.add(list);
+    	synchronized (drawListQueue) {
+            drawListQueue.add(list);
+		}
     }
 
     /** Called from pspge module */
@@ -308,68 +310,94 @@ public class VideoEngine {
         // This function creates a new array using the given list as it's head
         // and constructs a new ConcurrentLinkedQueue based on it.
         // The actual drawListQueue is then replaced by this new one.
-        int arraySize = drawListQueue.size();
+    	synchronized (drawListQueue) {
+            int arraySize = drawListQueue.size();
 
-        if (arraySize > 0) {
-            PspGeList[] array = drawListQueue.toArray(new PspGeList[arraySize]);
+            if (arraySize > 0) {
+                PspGeList[] array = drawListQueue.toArray(new PspGeList[arraySize]);
 
-            ConcurrentLinkedQueue<PspGeList> newQueue = new ConcurrentLinkedQueue<PspGeList>();
-            PspGeList[] newArray = new PspGeList[arraySize + 1];
+                ConcurrentLinkedQueue<PspGeList> newQueue = new ConcurrentLinkedQueue<PspGeList>();
+                PspGeList[] newArray = new PspGeList[arraySize + 1];
 
-            newArray[0] = list;
-            for (int i = 0; i < arraySize; i++) {
-                newArray[i + 1] = array[i];
-                newQueue.add(newArray[i]);
+                newArray[0] = list;
+                for (int i = 0; i < arraySize; i++) {
+                    newArray[i + 1] = array[i];
+                    newQueue.add(newArray[i]);
+                }
+
+                drawListQueue = newQueue;
+            } else {    // If the queue is empty.
+                drawListQueue.add(list);
             }
-
-            drawListQueue = newQueue;
-        } else {    // If the queue is empty.
-            drawListQueue.add(list);
-        }
+		}
     }
 
     public int numberDrawLists() {
-    	return drawListQueue.size();
+    	int size;
+
+    	synchronized (drawListQueue) {
+        	size = drawListQueue.size();
+		}
+
+    	return size;
     }
 
     public boolean hasDrawLists() {
-        return !drawListQueue.isEmpty();
+    	boolean isEmpty;
+
+    	synchronized (drawListQueue) {
+			isEmpty = drawListQueue.isEmpty();
+		}
+
+    	return !isEmpty;
     }
 
     public boolean hasDrawList(int listAddr) {
-        if (currentList != null && currentList.list_addr == listAddr) {
-            return true;
-        }
+    	boolean result = false;
 
-        for (PspGeList list : drawListQueue) {
-            if (list != null && list.list_addr == listAddr) {
-                return true;
+    	synchronized (drawListQueue) {
+            if (currentList != null && currentList.list_addr == listAddr) {
+                result = true;
+            } else {
+	            for (PspGeList list : drawListQueue) {
+	                if (list != null && list.list_addr == listAddr) {
+	                    result = true;
+	                    break;
+	                }
+	            }
             }
-        }
+		}
 
-        return false;
+        return result;
     }
 
     public PspGeList getFirstDrawList() {
-    	PspGeList firstList = currentList;
-    	if (firstList == null) {
-    		firstList = drawListQueue.peek();
-    	}
+    	PspGeList firstList;
+
+    	synchronized (drawListQueue) {
+    		firstList = currentList;
+        	if (firstList == null) {
+        		firstList = drawListQueue.peek();
+        	}
+		}
 
     	return firstList;
     }
 
     public PspGeList getLastDrawList() {
         PspGeList lastList = null;
-        for (PspGeList list : drawListQueue) {
-            if (list != null) {
-                lastList = list;
-            }
-        }
 
-        if (lastList == null) {
-            lastList = currentList;
-        }
+        synchronized (drawListQueue) {
+            for (PspGeList list : drawListQueue) {
+                if (list != null) {
+                    lastList = list;
+                }
+            }
+
+            if (lastList == null) {
+                lastList = currentList;
+            }
+		}
 
         return lastList;
     }
@@ -446,16 +474,19 @@ public class VideoEngine {
      * @return true if an update was made
      */
     public boolean update() {
-        int listCount = drawListQueue.size();
-        PspGeList list = drawListQueue.poll();
-        if (list == null) {
+    	int listCount;
+    	synchronized (drawListQueue) {
+            listCount = drawListQueue.size();
+            currentList = drawListQueue.poll();
+		}
+        if (currentList == null) {
             return false;
         }
 
         startUpdate();
 
         if (State.captureGeNextFrame) {
-            CaptureManager.startCapture("capture.bin", list);
+            CaptureManager.startCapture("capture.bin", currentList);
         }
 
         if (State.replayGeNextFrame) {
@@ -465,23 +496,28 @@ public class VideoEngine {
             // Hijack the current list with the replay list
             // TODO this is assuming there is only 1 list in drawListQueue at this point, only the last list is the replay list
             PspGeList replayList = drawListQueue.poll();
-            replayList.id = list.id;
+            replayList.id = currentList.id;
             replayList.blockedThreadIds.clear();
-            replayList.blockedThreadIds.addAll(list.blockedThreadIds);
-            list = replayList;
+            replayList.blockedThreadIds.addAll(currentList.blockedThreadIds);
+            currentList = replayList;
         }
 
         // Draw only as many lists as currently available in the drawListQueue.
         // Some game add automatically a new list to the queue when the current
         // list is finishing.
         do {
-            executeList(list);
+            executeList();
             listCount--;
             if (listCount <= 0) {
                 break;
             }
-            list = drawListQueue.poll();
-        } while (list != null);
+
+            synchronized (drawListQueue) {
+                currentList = drawListQueue.poll();
+			}
+        } while (currentList != null);
+
+        currentList = null;
 
         if (State.captureGeNextFrame) {
             // Can't end capture until we get a sceDisplaySetFrameBuf after the list has executed
@@ -686,7 +722,7 @@ public class VideoEngine {
     private boolean executeListPaused() {
 		waitSignalStatistics.start();
 		if (isLogDebugEnabled) {
-		    log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync"));
+		    log.debug(String.format("FINISH / SIGNAL / END reached, waiting for Sync (%s)", currentList.toString()));
 		}
 		currentList.status = PSP_GE_LIST_END_REACHED;
 		long startWaitClockMillis = Emulator.getClock().milliTime();
@@ -732,13 +768,12 @@ public class VideoEngine {
     // - But user may also press pause button
     //   - Either continue drawing to the end of the list (bad if the list contains an infinite loop)
     //   - Or we want to be able to restart drawing when the user presses the run button
-    private void executeList(PspGeList list) {
-        currentList = list;
+    private void executeList() {
         listHasEnded = false;
         currentList.status = PSP_GE_LIST_DRAWING;
 
         if (isLogDebugEnabled) {
-            log("executeList " + list);
+            log("executeList " + currentList);
         }
 
         executeHleAction();
@@ -789,13 +824,11 @@ public class VideoEngine {
             }
         }
 
-        if (list.isDone()) {
-        	Modules.sceGe_userModule.hleGeListSyncDone(list);
+        if (currentList.isDone()) {
+        	Modules.sceGe_userModule.hleGeListSyncDone(currentList);
         }
 
         executeHleAction();
-
-        currentList = null;
     }
 
     public PspGeList getCurrentList() {
