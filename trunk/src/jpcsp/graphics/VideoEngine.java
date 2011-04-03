@@ -5006,26 +5006,26 @@ public class VideoEngine {
                 loadOrtho2D = true;
             } else {
                 if (context.viewport_cx == 0 && context.viewport_cy == 0 && context.viewport_height == 0 && context.viewport_width == 0) {
-                	context.viewport_cx = 2048;
-                	context.viewport_cy = 2048;
-                	context.viewport_width = viewportResWidth;
-                	context.viewport_height = viewportResHeigth;
+                    context.viewport_cx = 2048;
+                    context.viewport_cy = 2048;
+                    context.viewport_width = viewportResWidth;
+                    context.viewport_height = viewportResHeigth;
                 }
 
                 int halfHeight = Math.abs(context.viewport_height);
                 int halfWidth = Math.abs(context.viewport_width);
-                int viewportX = context.viewport_cx - halfWidth - context.offset_x;
-                int viewportY = context.viewport_cy - halfHeight - context.offset_y;
-                int viewportWidth = 2 * halfWidth;
-                int viewportHeight = 2 * halfHeight;
+                int viewportX = (int) ((context.viewport_cx - halfWidth - context.offset_x) * viewportResScale);
+                int viewportY = (int) ((context.viewport_cy - halfHeight - context.offset_y) * viewportResScale);
+                int viewportWidth = (int) (2 * halfWidth * viewportResScale);
+                int viewportHeight = (int) (2 * halfHeight * viewportResScale);
 
                 // Align the viewport to the top of the window
-                if (viewportHeight < 272) {
-                    viewportY += 272 - viewportHeight;
-            	}
+                if (viewportHeight < viewportResHeigth) {
+                    viewportY += viewportResHeigth - viewportHeight;
+                }
 
-                if (viewportHeight <= 272) {
-                	re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
+                if (viewportHeight <= viewportResHeigth) {
+                    re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
                 }
             }
             viewportChanged = false;
