@@ -188,9 +188,20 @@ public class CryptoEngine {
     int[] key_2D90 = {0x55, 0x19, 0x35, 0x10, 0x48, 0xD8, 0x2E, 0x46, 0xA8, 0xB1, 0x47, 0x77, 0xDC, 0x49, 0x6A, 0x6F};
     int[] key_2DA8 = {0x80, 0x02, 0xC0, 0xBF, 0x00, 0x0A, 0xC0, 0xBF, 0x40, 0x03, 0xC0, 0xBF, 0x40, 0x00, 0x00, 0x00};
     int[] key_2DB8 = {0x4C, 0x2D, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xB8, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    int[] key_4c9484f0 = {0x36, 0xB0, 0xDC, 0xFC, 0x59, 0x2A, 0x95, 0x1D, 0x80, 0x2D, 0x80, 0x3F, 0xCD, 0x30, 0xA0, 0x1B};
-    int[] key_457b80f0 = {0xd4, 0x35, 0x18, 0x02, 0x29, 0x68, 0xfb, 0xa0, 0x6a, 0xa9, 0xa5, 0xed, 0x78, 0xfd, 0x2e, 0x9d};
+    int[] keys630_k1 = {0x36, 0xB0, 0xDC, 0xFC, 0x59, 0x2A, 0x95, 0x1D, 0x80, 0x2D, 0x80, 0x3F, 0xCD, 0x30, 0xA0, 0x1B};
+    int[] keys630_k2 = {0xd4, 0x35, 0x18, 0x02, 0x29, 0x68, 0xfb, 0xa0, 0x6a, 0xa9, 0xa5, 0xed, 0x78, 0xfd, 0x2e, 0x9d};
     int[] key_380280f0 = {0x97, 0x09, 0x12, 0xD3, 0xDB, 0x02, 0xBD, 0xD8, 0xE7, 0x74, 0x51, 0xFE, 0xF0, 0xEA, 0x6C, 0x5C};
+    int[] keys630_k3 = {0x23, 0x8D, 0x3D, 0xAE, 0x41, 0x50, 0xA0, 0xFA, 0xF3, 0x2F, 0x32, 0xCE, 0xC7, 0x27, 0xCD, 0x50};
+    int[] keys630_k4 = {0xAA, 0xA1, 0xB5, 0x7C, 0x93, 0x5A, 0x95, 0xBD, 0xEF, 0x69, 0x16, 0xFC, 0x2B, 0x92, 0x31, 0xDD};
+    int[] keys630_k5 = {0x87, 0x37, 0x21, 0xCC, 0x65, 0xAE, 0xAA, 0x5F, 0x40, 0xF6, 0x6F, 0x2A, 0x86, 0xC7, 0xA1, 0xC8};
+    int[] keys630_k6 = {0x8D, 0xDB, 0xDC, 0x5C, 0xF2, 0x70, 0x2B, 0x40, 0xB2, 0x3D, 0x00, 0x09, 0x61, 0x7C, 0x10, 0x60};
+    int[] keys630_k7 = {0x77, 0x1C, 0x06, 0x5F, 0x53, 0xEC, 0x3F, 0xFC, 0x22, 0xCE, 0x5A, 0x27, 0xFF, 0x78, 0xA8, 0x48};
+    int[] keys630_k8 = {0x81, 0xD1, 0x12, 0x89, 0x35, 0xC8, 0xEA, 0x8B, 0xE0, 0x02, 0x2D, 0x2D, 0x6A, 0x18, 0x67, 0xB8};
+    int[] keys636_k1 = {0x07, 0xE3, 0x08, 0x64, 0x7F, 0x60, 0xA3, 0x36, 0x6A, 0x76, 0x21, 0x44, 0xC9, 0xD7, 0x06, 0x83};
+    int[] keys636_k2 = {0x91, 0xF2, 0x02, 0x9E, 0x63, 0x32, 0x30, 0xA9, 0x1D, 0xDA, 0x0B, 0xA8, 0xB7, 0x41, 0xA3, 0xCC};
+    int[] keys600_1 = {0xE3, 0x52, 0x39, 0x97, 0x3B, 0x84, 0x41, 0x1C, 0xC3, 0x23, 0xF1, 0xB8, 0xA9, 0x09, 0x4B, 0xF0};
+    int[] keys600_2 = {0xE1, 0x45, 0x93, 0x2C, 0x53, 0xE2, 0xAB, 0x06, 0x6F, 0xB6, 0x8F, 0x0B, 0x66, 0x91, 0xE7, 0x1E};
+    int[] key_380283F0 = {0x34, 0x20, 0x0C, 0x8E, 0xA1, 0x86, 0x79, 0x84, 0xAF, 0x13, 0xAE, 0x34, 0x77, 0x6F, 0xEA, 0x89};
     int[] drmkeys_6XX_1 = {0x36, 0xEF, 0x82, 0x4E, 0x74, 0xFB, 0x17, 0x5B, 0x14, 0x14, 0x05, 0xF3, 0xB3, 0x8A, 0x76, 0x18};
     int[] drmkeys_6XX_2 = {0x21, 0x52, 0x5D, 0x76, 0xF6, 0x81, 0x0F, 0x15, 0x2F, 0x4A, 0x40, 0x89, 0x63, 0xA0, 0x10, 0x55};
 
@@ -357,8 +368,8 @@ public class CryptoEngine {
 
     private TAG_INFO g_tagInfo[] = {
         new TAG_INFO(0x380280f0, key_380280f0, 0x5A),
-        new TAG_INFO(0x4C9484F0, key_4c9484f0, 0x43),
-        new TAG_INFO(0x457b80f0, key_457b80f0, 0x5B),
+        new TAG_INFO(0x4C9484F0, keys630_k1, 0x43),
+        new TAG_INFO(0x457b80f0, keys630_k2, 0x5B),
         new TAG_INFO(0x4C940FF0, key_2DA8, 0x43),
         new TAG_INFO(0x4467415D, key_22E0, 0x59),
         new TAG_INFO(0x00000000, key_21C0, 0x42),
@@ -2081,6 +2092,219 @@ public class CryptoEngine {
 
         for (int k = 0; k < 0x30; k++) {
             outbuf[k + 0x80] = 0;
+        }
+
+        // Set mode field to 1.
+        outbuf[0xA0] = 0x0;
+        outbuf[0xA1] = 0x0;
+        outbuf[0xA2] = 0x0;
+        outbuf[0xA3] = 0x1;
+
+        System.arraycopy(outbuf, 0xC0, outbuf, 0xB0, 0x10);
+        for (int k = 0; k < 0x10; k++) {
+            outbuf[k + 0xC0] = 0;
+        }
+
+        // Call KIRK CMD1 for final decryption.
+        ByteBuffer bDataOut = ByteBuffer.wrap(outbuf);
+        ByteBuffer bHeaderIn = bDataOut.duplicate();
+        bHeaderIn.position(0x40);
+        hleUtilsBufferCopyWithRange(bDataOut, size, bHeaderIn, size, 0x01);
+
+        // Restore first line of ELF data (for JPCSP only).
+        PatchELFTag(outbuf);
+
+        if (retsize < 0x150) {
+            for (int k = 0; k < (0x150 - retsize); k++) {
+                outbuf[k + retsize] = 0;
+            }
+        }
+
+        return retsize;
+    }
+
+    public int DecryptPRX3(byte[] inbuf, byte[] outbuf, int size, int tag) {
+        int keyType = 0;
+
+        // Read the .PRX user tag and find it in the list.
+        TAG_INFO pti = GetTagInfo(Integer.reverseBytes(tag));
+        if (pti == null) {
+            return -1;
+        }
+
+        // Check the final ELF size.
+        int retsize = ((inbuf[0xB3] & 0xFF) << 24) | ((inbuf[0xB2] & 0xFF) << 16) |
+                ((inbuf[0xB1] & 0xFF) << 8) | ((inbuf[0xB0] & 0xFF));
+
+        // Setup all buffers.
+        byte[] header = new byte[0x150];
+        byte[] key = new byte[0x90 + 0x14];
+        byte[] sig = new byte[0x60 + 0x14];
+
+        // Fully copy the contents of the encrypted file.
+        System.arraycopy(inbuf, 0, outbuf, 0, size);
+
+        // Copy the ~PSP header to header.
+        System.arraycopy(outbuf, 0, header, 0, 0x150);
+
+        // Set keyType based on blacklisted tags.
+        if (tag == 0x380280f0) {
+            keyType = 3;
+        } else if (tag == 0x4C9484F0) {
+            keyType = 3;
+        } else if (tag == 0x457b80f0) {
+            keyType = 3;
+        } else if (tag == 0x4C941DF0) {
+            keyType = 2;
+        } else if (tag == 0x4C940FF0) {
+            keyType = 2;
+        } else if (tag == 0x4C941CF0) {
+            keyType = 2;
+        } else if (tag == 0x4C940AF0) {
+            keyType = 2;
+        } else if (tag == 0xCFEF08F0) {
+            keyType = 2;
+        } else if (tag == 0xCFEF06F0) {
+            keyType = 2;
+        } else if (tag == 0xCFEF05F0) {
+            keyType = 2;
+        } else if (tag == 0x16D59E03) {
+            keyType = 2;
+        } else if (tag == 0x4467415D) {
+            keyType = 1;
+        } else if (tag == 0x00000000) {
+            keyType = 0;
+        } else if (tag == 0x01000000) {
+            keyType = 0;
+        }
+
+        if (keyType == 2 || keyType == 3) {
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 0x10; j++) {
+                    key[0x14 + ((i << 4) + j)] = (byte) pti.key[j];
+                }
+                key[0x14 + ((i << 4))] = (byte) i;
+            }
+
+        } else {
+            System.arraycopy(key, 0x14, pti.key, 0, 0x90);
+        }
+        ScramblePRX(key, 0x90, (byte) (pti.code & 0xFF));
+
+        // Regenerate sig check.
+        if (keyType == 2 || keyType == 3) {
+            System.arraycopy(header, 0xD0, outbuf, 0, 0x5C);
+            System.arraycopy(header, 0x140, outbuf, 0x5C, 0x10);
+            System.arraycopy(header, 0x12C, outbuf, 0x6C, 0x14);
+            System.arraycopy(header, 0x80, outbuf, 0x80, 0x30);
+            System.arraycopy(header, 0xC0, outbuf, 0xB0, 0x10);
+            System.arraycopy(header, 0xB0, outbuf, 0xC0, 0x10);
+            System.arraycopy(header, 0, outbuf, 0xD0, 0x80);
+        } else {
+            System.arraycopy(header, 0xD0, outbuf, 0, 0x80);
+            System.arraycopy(header, 0x80, outbuf, 0x80, 0x50);
+            System.arraycopy(header, 0, outbuf, 0xD0, 0x80);
+        }
+
+        if (keyType == 1) {
+            // Copy sig check.
+            System.arraycopy(outbuf, 0x10, sig, 0x14, 0xA0);
+            // Scramble the sig.
+            ScramblePRX(sig, 0xA0, (byte) (pti.code & 0xFF));
+        } else if (keyType == 2 || keyType == 3) {
+            // Copy sig check.
+            System.arraycopy(outbuf, 0x5C, sig, 0x14, 0x60);
+            // Scramble the sig.
+            ScramblePRX(sig, 0x60, (byte) (pti.code & 0xFF));
+        }
+
+        if (keyType == 2 || keyType == 3) {
+            // Copy the sig again.
+            System.arraycopy(sig, 0, outbuf, 0x5C, 0x60);
+            System.arraycopy(outbuf, 0x6C, sig, 0, 0x14);
+            System.arraycopy(outbuf, 0x5C, outbuf, 0x70, 0x10);
+            if (keyType == 3) {
+                System.arraycopy(outbuf, 0x60, outbuf, 0x80, 0x20);
+                for (int k = 0; k < 0x38; k++) {
+                    outbuf[k + 0x18] = 0;
+                }
+            } else {
+                for (int k = 0; k < 0x58; k++) {
+                    outbuf[k + 0x18] = 0;
+                }
+            }
+            System.arraycopy(outbuf, 0, outbuf, 0x4, 0x4);
+            // Set the SHA1 block size to digest.
+            outbuf[0] = 0x00;
+            outbuf[1] = 0x00;
+            outbuf[2] = 0x01;
+            outbuf[3] = 0x4C;
+            System.arraycopy(key, 0, outbuf, 0x8, 0x10);
+        } else {
+            // Set the SHA1 block size to digest.
+            outbuf[0] = 0x00;
+            outbuf[1] = 0x00;
+            outbuf[2] = 0x01;
+            outbuf[3] = 0x4C;
+            System.arraycopy(key, 0, outbuf, 0x4, 0x14);
+        }
+
+        // Generate SHA1 hash.
+        ByteBuffer bSHA1Out = ByteBuffer.wrap(outbuf);
+        hleUtilsBufferCopyWithRange(bSHA1Out, size, bSHA1Out, size, 0x0B);
+
+        if (keyType == 2 || keyType == 3) {
+            // Apply XOR calculation on sig.
+            for (int iXOR = 0; iXOR < 0x40; iXOR++) {
+                sig[iXOR + 0x14] = (byte) (outbuf[iXOR + 0x80] ^ key[iXOR + 0x10]);
+            }
+            ScramblePRX(sig, 0x40, (byte) (pti.code & 0xFF));
+            for (int iXOR = 0x3F; iXOR >= 0; iXOR--) {
+                outbuf[iXOR + 0x40] = (byte) (sig[iXOR] ^ key[iXOR + 0x50]);
+            }
+            for (int k = 0; k < 0x30; k++) {
+                outbuf[k + 0x80] = 0;
+            }
+            // Set mode field to 1.
+            outbuf[0xA0] = 0x0;
+            outbuf[0xA1] = 0x0;
+            outbuf[0xA2] = 0x0;
+            outbuf[0xA3] = 0x1;
+            if (keyType == 3) {
+                for (int k = 0; k < 0x10; k++) {
+                    outbuf[k + 0xA0] = 0;
+                }
+                // Set mode field to 1.
+                outbuf[0xA0] = 0x0;
+                outbuf[0xA1] = 0x0;
+                outbuf[0xA2] = 0x0;
+                outbuf[0xA3] = 0x1;
+                outbuf[0xA4] = 0x0;
+                outbuf[0xA5] = 0x0;
+                outbuf[0xA6] = 0x0;
+                outbuf[0xA7] = 0x1;
+            } else {
+                for (int k = 0; k < 0x30; k++) {
+                    outbuf[k + 0x80] = 0;
+                }
+                // Set mode field to 1.
+                outbuf[0xA0] = 0x0;
+                outbuf[0xA1] = 0x0;
+                outbuf[0xA2] = 0x0;
+                outbuf[0xA3] = 0x1;
+            }
+
+        } else {
+            // Apply XOR calculation on sig.
+            for (int iXOR = 0; iXOR < 0x70; iXOR++) {
+                sig[iXOR + 0x14] = (byte) (outbuf[iXOR + 0x40] ^ key[iXOR + 0x14]);
+            }
+            ScramblePRX(sig, 0x70, (byte) (pti.code & 0xFF));
+            for (int iXOR = 0x6F; iXOR >= 0; iXOR--) {
+                outbuf[iXOR + 0x2C] = (byte) (sig[iXOR] ^ key[iXOR + 0x20]);
+            }
+            System.arraycopy(key, 0xB0, outbuf, 0xB0, 0xA0);
+
         }
 
         // Set mode field to 1.
