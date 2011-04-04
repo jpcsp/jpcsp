@@ -104,10 +104,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.addFunction(0x9790B33C, sceUtilitySavedataShutdownStartFunction);
             mm.addFunction(0xD4B95FFB, sceUtilitySavedataUpdateFunction);
             mm.addFunction(0x8874DBE0, sceUtilitySavedataGetStatusFunction);
-            mm.addFunction(0x2995D020, sceUtility_2995D020Function);
-            mm.addFunction(0xB62A4061, sceUtility_B62A4061Function);
-            mm.addFunction(0xED0FAD38, sceUtility_ED0FAD38Function);
-            mm.addFunction(0x88BC7406, sceUtility_88BC7406Function);
+            mm.addFunction(0x2995D020, sceUtilitySavedataErrInitStartFunction);
+            mm.addFunction(0xB62A4061, sceUtilitySavedataErrShutdownStartFunction);
+            mm.addFunction(0xED0FAD38, sceUtilitySavedataErrUpdateFunction);
+            mm.addFunction(0x88BC7406, sceUtilitySavedataErrGetStatusFunction);
             mm.addFunction(0x2AD8E239, sceUtilityMsgDialogInitStartFunction);
             mm.addFunction(0x67AF3428, sceUtilityMsgDialogShutdownStartFunction);
             mm.addFunction(0x95FC253B, sceUtilityMsgDialogUpdateFunction);
@@ -148,6 +148,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.addFunction(0xF5CE1134, sceUtilityHtmlViewerShutdownStartFunction);
             mm.addFunction(0x05AFB9E4, sceUtilityHtmlViewerUpdateFunction);
             mm.addFunction(0xBDA7D894, sceUtilityHtmlViewerGetStatusFunction);
+            mm.addFunction(0x24AC31EB, sceUtilityGamedataInstallInitStartFunction);
+            mm.addFunction(0x32E32DCB, sceUtilityGamedataInstallShutdownStartFunction);
+            mm.addFunction(0x4AECD179, sceUtilityGamedataInstallUpdateFunction);
+            mm.addFunction(0xB57E95D9, sceUtilityGamedataInstallGetStatusFunction);
 
         }
     }
@@ -172,10 +176,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.removeFunction(sceUtilitySavedataShutdownStartFunction);
             mm.removeFunction(sceUtilitySavedataUpdateFunction);
             mm.removeFunction(sceUtilitySavedataGetStatusFunction);
-            mm.removeFunction(sceUtility_2995D020Function);
-            mm.removeFunction(sceUtility_B62A4061Function);
-            mm.removeFunction(sceUtility_ED0FAD38Function);
-            mm.removeFunction(sceUtility_88BC7406Function);
+            mm.removeFunction(sceUtilitySavedataErrInitStartFunction);
+            mm.removeFunction(sceUtilitySavedataErrShutdownStartFunction);
+            mm.removeFunction(sceUtilitySavedataErrUpdateFunction);
+            mm.removeFunction(sceUtilitySavedataErrGetStatusFunction);
             mm.removeFunction(sceUtilityMsgDialogInitStartFunction);
             mm.removeFunction(sceUtilityMsgDialogShutdownStartFunction);
             mm.removeFunction(sceUtilityMsgDialogUpdateFunction);
@@ -216,6 +220,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.removeFunction(sceUtilityHtmlViewerShutdownStartFunction);
             mm.removeFunction(sceUtilityHtmlViewerUpdateFunction);
             mm.removeFunction(sceUtilityHtmlViewerGetStatusFunction);
+            mm.removeFunction(sceUtilityGamedataInstallInitStartFunction);
+            mm.removeFunction(sceUtilityGamedataInstallShutdownStartFunction);
+            mm.removeFunction(sceUtilityGamedataInstallUpdateFunction);
+            mm.removeFunction(sceUtilityGamedataInstallGetStatusFunction);
 
         }
     }
@@ -234,6 +242,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
         rssSubscriberState = new NotImplementedUtilityDialogState("sceUtilityRssSubscriber");
         screenshotState = new NotImplementedUtilityDialogState("sceUtilityScreenshot");
         htmlViewerState = new NotImplementedUtilityDialogState("sceUtilityHtmlViewer");
+        savedataErrState = new NotImplementedUtilityDialogState("sceUtilitySavedataErr");
+        gamedataInstallState = new NotImplementedUtilityDialogState("sceUtilityGamedataInstall");
 
         systemParam_nickname = Settings.getInstance().readString("emu.sysparam.nickname");
         systemParam_adhocChannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel", 0);
@@ -314,6 +324,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected UtilityDialogState rssSubscriberState;
     protected UtilityDialogState screenshotState;
     protected UtilityDialogState htmlViewerState;
+    protected UtilityDialogState savedataErrState;
+    protected UtilityDialogState gamedataInstallState;
 
     protected String systemParam_nickname;
     protected int systemParam_adhocChannel;
@@ -1422,36 +1434,22 @@ public class sceUtility implements HLEModule, HLEStartModule {
         savedataState.executeGetStatus(processor);
     }
 
-    public void sceUtility_2995D020(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public void sceUtilitySavedataErrInitStart(Processor processor) {
+        savedataErrState.executeInitStart(processor, null);
     }
 
-    public void sceUtility_B62A4061(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceUtility_B62A4061 [0xB62A4061]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public void sceUtilitySavedataErrShutdownStart(Processor processor) {
+        savedataErrState.executeShutdownStart(processor);
     }
 
-    public void sceUtility_ED0FAD38(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceUtility_ED0FAD38 [0xED0FAD38]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public void sceUtilitySavedataErrUpdate(Processor processor) {
+        if (savedataErrState.tryUpdate(processor)) {
+            savedataErrState.endUpdate(processor);
+        }
     }
 
-    public void sceUtility_88BC7406(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented NID function sceUtility_88BC7406 [0x88BC7406]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
+    public void sceUtilitySavedataErrGetStatus(Processor processor) {
+        savedataErrState.executeGetStatus(processor);
     }
 
     protected void hleUtilityMsgDialogDisplay() {
@@ -1842,6 +1840,24 @@ public class sceUtility implements HLEModule, HLEStartModule {
         htmlViewerState.executeGetStatus(processor);
     }
 
+    public void sceUtilityGamedataInstallInitStart(Processor processor) {
+        gamedataInstallState.executeInitStart(processor, null);
+    }
+
+    public void sceUtilityGamedataInstallShutdownStart(Processor processor) {
+        gamedataInstallState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityGamedataInstallUpdate(Processor processor) {
+        if (gamedataInstallState.tryUpdate(processor)) {
+            gamedataInstallState.endUpdate(processor);
+        }
+    }
+
+    public void sceUtilityGamedataInstallGetStatus(Processor processor) {
+        gamedataInstallState.executeGetStatus(processor);
+    }
+
     public final HLEModuleFunction sceUtilityGameSharingInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingInitStart") {
 
         @Override
@@ -2034,52 +2050,52 @@ public class sceUtility implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataGetStatus(processor);";
         }
     };
-    public final HLEModuleFunction sceUtility_2995D020Function = new HLEModuleFunction("sceUtility", "sceUtility_2995D020") {
+    public final HLEModuleFunction sceUtilitySavedataErrInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrInitStart") {
 
         @Override
         public final void execute(Processor processor) {
-            sceUtility_2995D020(processor);
+            sceUtilitySavedataErrInitStart(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_2995D020(processor);";
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrInitStart(processor);";
         }
     };
-    public final HLEModuleFunction sceUtility_B62A4061Function = new HLEModuleFunction("sceUtility", "sceUtility_B62A4061") {
+    public final HLEModuleFunction sceUtilitySavedataErrShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrShutdownStart") {
 
         @Override
         public final void execute(Processor processor) {
-            sceUtility_B62A4061(processor);
+            sceUtilitySavedataErrShutdownStart(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_B62A4061(processor);";
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrShutdownStart(processor);";
         }
     };
-    public final HLEModuleFunction sceUtility_ED0FAD38Function = new HLEModuleFunction("sceUtility", "sceUtility_ED0FAD38") {
+    public final HLEModuleFunction sceUtilitySavedataErrUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrUpdate") {
 
         @Override
         public final void execute(Processor processor) {
-            sceUtility_ED0FAD38(processor);
+            sceUtilitySavedataErrUpdate(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_ED0FAD38(processor);";
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrUpdate(processor);";
         }
     };
-    public final HLEModuleFunction sceUtility_88BC7406Function = new HLEModuleFunction("sceUtility", "sceUtility_88BC7406") {
+    public final HLEModuleFunction sceUtilitySavedataErrGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilitySavedataErrGetStatus") {
 
         @Override
         public final void execute(Processor processor) {
-            sceUtility_88BC7406(processor);
+            sceUtilitySavedataErrGetStatus(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_88BC7406(processor);";
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataErrGetStatus(processor);";
         }
     };
     public final HLEModuleFunction sceUtilityMsgDialogInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogInitStart") {
@@ -2560,6 +2576,54 @@ public class sceUtility implements HLEModule, HLEStartModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityHtmlViewerGetStatus(processor);";
+        }
+    };
+    public final HLEModuleFunction sceUtilityGamedataInstallInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallInitStart") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceUtilityGamedataInstallInitStart(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallInitStart(processor);";
+        }
+    };
+    public final HLEModuleFunction sceUtilityGamedataInstallShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallShutdownStart") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceUtilityGamedataInstallShutdownStart(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallShutdownStart(processor);";
+        }
+    };
+    public final HLEModuleFunction sceUtilityGamedataInstallUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallUpdate") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceUtilityGamedataInstallUpdate(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallUpdate(processor);";
+        }
+    };
+    public final HLEModuleFunction sceUtilityGamedataInstallGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallGetStatus") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceUtilityGamedataInstallGetStatus(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallGetStatus(processor);";
         }
     };
 }
