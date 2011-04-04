@@ -693,7 +693,10 @@ public class GeContext extends pspAbstractMemoryMappedStructure {
         }
 
         public int save(int bits) {
-            return bits | (1 << contextBit);
+        	if (enabled) {
+        		bits |= (1 << contextBit);
+        	}
+        	return bits;
         }
 
         public void restore(int bits) {
