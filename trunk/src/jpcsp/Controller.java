@@ -91,6 +91,10 @@ public class Controller {
         loadControllerConfig();
     }
 
+    public static boolean isKeyboardController(net.java.games.input.Controller inputController) {
+    	return inputController == null || inputController.getType() == Type.KEYBOARD;
+    }
+
     public static Controller getInstance() {
     	if (instance == null) {
     		// Disable JInput messages sent to stdout...
@@ -114,7 +118,7 @@ public class Controller {
             if (inputController == null) {
 	            // Use the first KEYBOARD controller
 				for (int i = 0; controllers != null && i < controllers.length; i++) {
-					if (controllers[i].getType() == Type.KEYBOARD) {
+					if (isKeyboardController(controllers[i])) {
             			inputController = controllers[i];
 						break;
 					}
@@ -472,9 +476,13 @@ public class Controller {
 		} else {
 			// Unknown Axis components are allowed to move inside their dead zone
 			// (e.g. due to small vibrations)
-			if (id instanceof Axis && isInDeadZone(component, value)) {
+			if (id instanceof Axis && (isInDeadZone(component, value) || id == Axis.Z || id == Axis.RZ)) {
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("Unknown Controller Event in DeadZone on %s(%s): %f", component.getName(), id.getName(), value));
+				}
+			} else if (isKeyboardController(inputController)) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("Unknown Keyboard Controller Event on %s(%s): %f", component.getName(), id.getName(), value));
 				}
 			} else {
 				if (log.isInfoEnabled()) {

@@ -43,7 +43,6 @@ import net.java.games.input.EventQueue;
 import net.java.games.input.Component.Identifier;
 import net.java.games.input.Component.Identifier.Axis;
 import net.java.games.input.Component.Identifier.Button;
-import net.java.games.input.Controller.Type;
 
 public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 	private static final long serialVersionUID = -732715495873159718L;
@@ -54,7 +53,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     private HashMap<keyCode, Integer> revertKeys;
     private HashMap<keyCode, String> currentController;
     private ControllerPollThread controllerPollThread;
-    private static final int maxControllerFieldValueLength = 8;
+    private static final int maxControllerFieldValueLength = 9;
 
     private class ControllerPollThread extends Thread {
     	volatile protected boolean exit = false;
@@ -197,14 +196,8 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         }
 	}
 
-	private boolean isKeyboardController() {
-		Controller controller = getSelectedController();
-
-		return controller == null || controller.getType() == Type.KEYBOARD;
-	}
-
 	private void setFields() {
-		if (isKeyboardController()) {
+		if (jpcsp.Controller.isKeyboardController(getSelectedController())) {
 			for (Map.Entry<Integer, keyCode> entry : currentKeys.entrySet()) {
 	            setFieldValue(entry.getValue(), KeyEvent.getKeyText(entry.getKey()));
 	        }
