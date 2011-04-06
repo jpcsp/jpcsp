@@ -17,8 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -27,17 +31,24 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
@@ -45,7 +56,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 
-import jpcsp.Emulator;
+import jpcsp.Controller;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Resource;
@@ -54,6 +65,7 @@ import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.GUI.CancelButton;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
@@ -63,13 +75,14 @@ import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
+import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
-import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
@@ -230,12 +243,12 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
     @Override
     public void start() {
-        gameSharingState = new UtilityDialogState("sceUtilityGameSharing");
+        gameSharingState = new GameSharingUtilityDialogState("sceUtilityGameSharing");
         netplayDialogState = new NotImplementedUtilityDialogState("sceNetplayDialog");
-        netconfState = new UtilityDialogState("sceUtilityNetconf");
-        savedataState = new UtilityDialogState("sceUtilitySavedata");
-        msgDialogState = new UtilityDialogState("sceUtilityMsgDialog");
-        oskState = new UtilityDialogState("sceUtilityOsk");
+        netconfState = new NetconfUtilityDialogState("sceUtilityNetconf");
+        savedataState = new SavedataUtilityDialogState("sceUtilitySavedata");
+        msgDialogState = new MsgDialogUtilityDialogState("sceUtilityMsgDialog");
+        oskState = new OskUtilityDialogState("sceUtilityOsk");
         npSigninState = new NotImplementedUtilityDialogState("sceUtilityNpSignin");
         PS3ScanState = new NotImplementedUtilityDialogState("sceUtilityPS3Scan");
         rssReaderState = new NotImplementedUtilityDialogState("sceUtilityRssReader");
@@ -305,19 +318,13 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
     protected static final int maxLineLengthForDialog = 80;
     protected static final int[] fontHeightSavedataList = new int[]{12, 12, 12, 12, 12, 12, 9, 8, 7, 6};
-    private static final String windowNameForSettings = "savedata";
 
-    protected UtilityDialogState gameSharingState;
-    protected SceUtilityGameSharingParams gameSharingParams;
+    protected GameSharingUtilityDialogState gameSharingState;
     protected UtilityDialogState netplayDialogState;
-    protected UtilityDialogState netconfState;
-    protected SceUtilityNetconfParams netconfParams;
-    protected UtilityDialogState savedataState;
-    protected SceUtilitySavedataParam savedataParams;
-    protected UtilityDialogState msgDialogState;
-    protected SceUtilityMsgDialogParams msgDialogParams;
-    protected UtilityDialogState oskState;
-    protected SceUtilityOskParams oskParams;
+    protected NetconfUtilityDialogState netconfState;
+    protected SavedataUtilityDialogState savedataState;
+    protected MsgDialogUtilityDialogState msgDialogState;
+    protected OskUtilityDialogState oskState;
     protected UtilityDialogState npSigninState;
     protected UtilityDialogState PS3ScanState;
     protected UtilityDialogState rssReaderState;
@@ -337,40 +344,67 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected int systemParam_language;
     protected int systemParam_buttonPreference;
 
-    // Save list vars.
-    volatile protected Object saveListSelection;
-
-    protected static class UtilityDialogState {
-
+    protected abstract static class UtilityDialogState {
         protected String name;
         protected pspAbstractMemoryMappedStructure params;
         protected int paramsAddr;
         protected int status;
         protected int result;
-        protected boolean displayLocked;
+        protected UtilityDialog dialog;
+        protected int drawSpeed;
 
         public UtilityDialogState(String name) {
             this.name = name;
             status = PSP_UTILITY_DIALOG_STATUS_NONE;
             result = PSP_UTILITY_DIALOG_RESULT_OK;
-            displayLocked = false;
         }
 
-        public void executeInitStart(Processor processor, pspAbstractMemoryMappedStructure params) {
+        protected void openDialog(UtilityDialog dialog) {
+    		status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
+        	this.dialog = dialog;
+        	dialog.setVisible(true);
+        }
+
+        protected boolean isDialogOpen() {
+        	return dialog != null;
+        }
+
+        protected void updateDialog() {
+        	int delayMicros = 1000000 / 60;
+        	if (drawSpeed > 0) {
+        		delayMicros /= drawSpeed;
+        	}
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(delayMicros, false);
+        }
+
+        protected boolean isDialogActive() {
+        	return isDialogOpen() && dialog.isVisible();
+        }
+
+        protected void finishDialog() {
+        	if (dialog != null) {
+	        	Settings.getInstance().writeWindowPos(name, dialog.getLocation());
+	            Settings.getInstance().writeWindowSize(name, dialog.getSize());
+	            dialog = null;
+        	}
+            status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+        }
+
+        public void executeInitStart(Processor processor) {
             CpuState cpu = processor.cpu;
             Memory mem = Memory.getInstance();
 
             paramsAddr = cpu.gpr[4];
             if (!Memory.isAddressGood(paramsAddr)) {
-                log.error(name + "InitStart bad address " + String.format("0x%08X", paramsAddr));
+                log.error(String.format("%sInitStart bad address 0x%08X", name, paramsAddr));
                 cpu.gpr[2] = -1;
             } else {
-                this.params = params;
+                this.params = createParams();
 
                 params.read(mem, paramsAddr);
 
                 if (log.isInfoEnabled()) {
-                    log.info(name + "InitStart " + params.toString());
+                    log.info(String.format("%sInitStart %s", name, params.toString()));
                 }
 
                 // Start with INIT
@@ -378,6 +412,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
                 cpu.gpr[2] = 0;
             }
+        }
+
+        private boolean isReadyForVisible() {
+        	// Wait for all the buttons to be released
+        	if (State.controller.getButtons() != 0) {
+        		return false;
+        	}
+
+        	return true;
         }
 
         public void executeGetStatus(Processor processor) {
@@ -392,7 +435,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             // after returning FINISHED once, return NONE on following calls
             if (status == PSP_UTILITY_DIALOG_STATUS_FINISHED) {
                 status = PSP_UTILITY_DIALOG_STATUS_NONE;
-            } else if (status == PSP_UTILITY_DIALOG_STATUS_INIT) {
+            } else if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
             }
@@ -410,72 +453,35 @@ public class sceUtility implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0;
         }
 
-        public boolean tryUpdate(Processor processor) {
+        public void executeUpdate(Processor processor) {
             CpuState cpu = processor.cpu;
 
-            int drawSpeed = cpu.gpr[4]; // FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS).
+            drawSpeed = cpu.gpr[4]; // FPS used for internal animation sync (1 = 60 FPS; 2 = 30 FPS; 3 = 15 FPS).
             if (log.isDebugEnabled()) {
                 log.debug(name + "Update drawSpeed=" + drawSpeed);
             }
 
-            boolean canDisplay = false;
+            cpu.gpr[2] = 0;
 
-            if (status == PSP_UTILITY_DIALOG_STATUS_INIT) {
+            if (status == PSP_UTILITY_DIALOG_STATUS_INIT && isReadyForVisible()) {
                 // Move from INIT to VISIBLE
                 status = PSP_UTILITY_DIALOG_STATUS_VISIBLE;
             } else if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
-                // A call to the GUI (JOptionPane) is only possible when the VideoEngine is not
-                // busy waiting on a sync: call JOptionPane only when the display is not locked.
-                while (true) {
-                    canDisplay = Modules.sceDisplayModule.tryLockDisplay();
-                    if (canDisplay) {
-                        displayLocked = true;
-                        break;
-                    } else if (VideoEngine.getInstance().getCurrentList() == null) {
-                        // Check if the VideoEngine is not processing a list: in that case,
-                        // this could mean the display will be soon available for locking
-                        // (e.g. list processing is done, but still copying the graphics
-                        //  to PSP memory in sceDisplay.display()).
-                        // Wait a little bit and try again to lock the display.
-                        if (log.isDebugEnabled()) {
-                            log.debug(name + "Update : could not lock the display but VideoEngine not displayed, waiting a while...");
-                        }
-
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            // Ignore exception
-                        }
-                    } else {
-                        if (log.isDebugEnabled()) {
-                            log.debug(name + "Update : could not lock the display");
-                        }
-                        break;
-                    }
-                }
-            }
-
-            if (canDisplay) {
                 // Some games reach sceUtilitySavedataInitStart with empty params which only
-                // get filled with a subsquent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
+                // get filled with a subsequent call to sceUtilitySavedataUpdate (eg.: To Love-Ru).
                 // This is why we have to re-read the params here.
                 params.read(Memory.getInstance(), paramsAddr);
-            }
 
-            cpu.gpr[2] = 0;
+                executeUpdateVisible(processor);
 
-            return canDisplay;
-        }
+                if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && isDialogOpen()) {
+                	dialog.checkController();
+                }
 
-        public void endUpdate(Processor processor) {
-            if (displayLocked) {
-                Modules.sceDisplayModule.unlockDisplay();
-                displayLocked = false;
-            }
-
-            if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE) {
-                // Dialog has completed
-                status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+                if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !isDialogOpen()) {
+                    // There was no dialog or it has completed
+                    status = PSP_UTILITY_DIALOG_STATUS_QUIT;
+                }
             }
         }
 
@@ -488,16 +494,19 @@ public class sceUtility implements HLEModule, HLEStartModule {
             status = PSP_UTILITY_DIALOG_STATUS_FINISHED;
             result = PSP_UTILITY_DIALOG_RESULT_CANCELED;
         }
+
+        protected abstract void executeUpdateVisible(Processor processor);
+
+        protected abstract pspAbstractMemoryMappedStructure createParams();
     }
 
     protected static class NotImplementedUtilityDialogState extends UtilityDialogState {
-
         public NotImplementedUtilityDialogState(String name) {
             super(name);
         }
 
         @Override
-        public void executeInitStart(Processor processor, pspAbstractMemoryMappedStructure params) {
+        public void executeInitStart(Processor processor) {
             CpuState cpu = processor.cpu;
 
             log.warn("Unimplemented: " + name + "InitStart");
@@ -523,29 +532,1219 @@ public class sceUtility implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
 
-        @Override
-        public boolean tryUpdate(Processor processor) {
+		@Override
+		protected void executeUpdateVisible(Processor processor) {
             CpuState cpu = processor.cpu;
 
             log.warn("Unimplemented: " + name + "Update");
 
             cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+		}
 
-            return false;
-        }
-
-        @Override
-        public void endUpdate(Processor processor) {
-            // Do nothing
-        }
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			return null;
+		}
     }
 
-    protected String formatMessageForDialog(String message) {
+    protected static class SavedataUtilityDialogState extends UtilityDialogState {
+    	protected SceUtilitySavedataParam savedataParams;
+        protected volatile String saveListSelection;
+
+    	public SavedataUtilityDialogState(String name) {
+			super(name);
+		}
+
+        private boolean deleteSavedataDir(String saveName) {
+            File saveDir = new File(saveName);
+            if (saveDir.exists()) {
+                File[] subFiles = saveDir.listFiles();
+                for (int i = 0; i < subFiles.length; i++) {
+                    subFiles[i].delete();
+                }
+            }
+            return saveDir.delete();
+        }
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			savedataParams = new SceUtilitySavedataParam();
+			return savedataParams;
+		}
+
+        @Override
+		protected void executeUpdateVisible(Processor processor) {
+	        Memory mem = Processor.memory;
+
+	        switch (savedataParams.mode) {
+	            case SceUtilitySavedataParam.MODE_AUTOLOAD:
+	            case SceUtilitySavedataParam.MODE_LOAD: {
+	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+	                        savedataParams.saveName = savedataParams.saveNameList[0];
+	                    } else {
+	                        savedataParams.saveName = "-000";
+	                    }
+	                }
+
+	                try {
+	                    savedataParams.load(mem);
+	                    savedataParams.base.result = 0;
+	                    savedataParams.write(mem);
+	                } catch (IOException e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+	                } catch (Exception e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
+	                    log.error(e);
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_LISTLOAD: {
+	                if (!isDialogOpen()) {
+	                    // Search for valid saves.
+	                    ArrayList<String> validNames = new ArrayList<String>();
+
+	                    for (int i = 0; i < savedataParams.saveNameList.length; i++) {
+	                        savedataParams.saveName = savedataParams.saveNameList[i];
+
+	                        if (savedataParams.isPresent()) {
+	                            validNames.add(savedataParams.saveName);
+	                        }
+	                    }
+
+	                    SavedataDialog savedataDialog = new SavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+	                    openDialog(savedataDialog);
+	                } else if (!isDialogActive()) {
+	                	if (dialog.buttonPressed != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+	                		// Dialog cancelled
+	                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+	                	} else if (saveListSelection == null) {
+		                    log.warn("Savedata MODE_LISTLOAD no save selected");
+		                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
+		                } else {
+		                    savedataParams.saveName = saveListSelection;
+		                    try {
+		                        savedataParams.load(mem);
+		                        savedataParams.base.result = 0;
+		                        savedataParams.write(mem);
+		                    } catch (IOException e) {
+		                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
+		                    } catch (Exception e) {
+		                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
+		                        log.error(e);
+		                    }
+		                }
+		                finishDialog();
+	                } else {
+	                	updateDialog();
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_AUTOSAVE:
+	            case SceUtilitySavedataParam.MODE_SAVE: {
+	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+	                        savedataParams.saveName = savedataParams.saveNameList[0];
+	                    } else {
+	                        savedataParams.saveName = "-000";
+	                    }
+	                }
+
+	                try {
+	                    savedataParams.save(mem);
+	                    savedataParams.base.result = 0;
+	                } catch (IOException e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+	                } catch (Exception e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                        log.error(e);
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_LISTSAVE: {
+	            	if (!isDialogOpen()) {
+	            		SavedataDialog savedataDialog = new SavedataDialog(savedataParams, this, savedataParams.saveNameList);
+	            		openDialog(savedataDialog);
+	            	} else if (!isDialogActive()) {
+	                	if (dialog.buttonPressed != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+	                		// Dialog cancelled
+	                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
+	                	} else if (saveListSelection == null) {
+		                    log.warn("Savedata MODE_LISTSAVE no save selected");
+		                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
+		                } else {
+		                    savedataParams.saveName = saveListSelection;
+		                    try {
+		                        savedataParams.save(mem);
+		                        savedataParams.base.result = 0;
+		                    } catch (IOException e) {
+		                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+		                    } catch (Exception e) {
+		                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+		                        log.error(e);
+		                    }
+		                }
+		                finishDialog();
+	            	} else {
+	                	updateDialog();
+	            	}
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_DELETE: {
+	                if (savedataParams.saveNameList != null) {
+	                    for (int i = 0; i < savedataParams.saveNameList.length; i++) {
+	                        String save = SceUtilitySavedataParam.savedataFilePath + savedataParams.gameName +
+	                                (savedataParams.saveNameList[i]);
+	                        if (deleteSavedataDir(save)) {
+	                            log.debug("Savedata MODE_DELETE deleting " + save);
+	                        }
+	                    }
+	                    savedataParams.base.result = 0;
+	                } else {
+		                if (!isDialogOpen()) {
+		                    // Search for valid saves.
+		                    String pattern = savedataParams.gameName + ".*";
+
+		                    String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
+		                    ArrayList<String> validNames = new ArrayList<String>();
+	                    	for (int i = 0; entries != null && i < entries.length; i++) {
+	                    		String saveName = entries[i].substring(savedataParams.gameName.length());
+		                        if (savedataParams.isPresent(savedataParams.gameName, saveName)) {
+		                            validNames.add(saveName);
+		                        }
+	                    	}
+
+		                    SavedataDialog savedataDialog = new SavedataDialog(savedataParams, this, validNames.toArray(new String[validNames.size()]));
+		                    openDialog(savedataDialog);
+		                } else if (!isDialogActive()) {
+		                	if (dialog.buttonPressed != SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+		                		// Dialog cancelled
+		                		savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+		                	} else if (saveListSelection == null) {
+			                    log.warn("Savedata MODE_DELETE no save selected");
+			                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
+			                } else {
+			                	String dirName = SceUtilitySavedataParam.savedataFilePath + savedataParams.gameName + saveListSelection;
+			                	if (deleteSavedataDir(dirName)) {
+		                            log.debug("Savedata MODE_DELETE deleting " + dirName);
+			                        savedataParams.base.result = 0;
+			                	} else {
+			                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_ACCESS_ERROR;
+			                	}
+			                }
+			                finishDialog();
+		                } else {
+		                	updateDialog();
+		                }
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_SIZES: {
+	                // "METAL SLUG XX" outputs the following on stdout after calling mode 8:
+	                //
+	                // ------ SIZES ------
+	                // ---------- savedata result ----------
+	                // result = 0x801103c7
+	                //
+	                // bind : un used(0x0).
+	                //
+	                // -- dir name --
+	                // title id : ULUS10495
+	                // user  id : METALSLUGXX
+	                //
+	                // ms free size
+	                //   cluster size(byte) : 32768 byte
+	                //   free cluster num   : 32768
+	                //   free size(KB)      : 1048576 KB
+	                //   free size(string)  : "1 GB"
+	                //
+	                // ms data size(titleId=ULUS10495, userId=METALSLUGXX)
+	                //   cluster num        : 0
+	                //   size (KB)          : 0 KB
+	                //   size (string)      : "0 KB"
+	                //   size (32KB)        : 0 KB
+	                //   size (32KB string) : "0 KB"
+	                //
+	                // utility data size
+	                //   cluster num        : 13
+	                //   size (KB)          : 416 KB
+	                //   size (string)      : "416 KB"
+	                //   size (32KB)        : 416 KB
+	                //   size (32KB string) : "416 KB"
+	                // error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
+	                //
+	                String gameName = savedataParams.gameName;
+	                String saveName = savedataParams.saveName;
+
+	                // MS free size.
+	                int buffer1Addr = savedataParams.msFreeAddr;
+	                if (Memory.isAddressGood(buffer1Addr)) {
+	                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
+
+	                    mem.write32(buffer1Addr + 0, MemoryStick.getSectorSize());
+	                    mem.write32(buffer1Addr + 4, MemoryStick.getFreeSizeKb() / MemoryStick.getSectorSizeKb());
+	                    mem.write32(buffer1Addr + 8, MemoryStick.getFreeSizeKb());
+	                    Utilities.writeStringNZ(mem, buffer1Addr + 12, 8, memoryStickFreeSpaceString);
+
+	                    log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
+	                }
+
+	                // MS data size.
+	                int buffer2Addr = savedataParams.msDataAddr;
+	                if (Memory.isAddressGood(buffer2Addr)) {
+	                    gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
+	                    saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
+	                    int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
+	                    int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
+
+	                    mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors.
+	                    mem.write32(buffer2Addr + 40, savedataSizeKb); // Size in Kb.
+	                    Utilities.writeStringNZ(mem, buffer2Addr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
+	                    mem.write32(buffer2Addr + 52, savedataSize32Kb);
+	                    Utilities.writeStringNZ(mem, buffer2Addr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
+
+	                    log.debug("Memory Stick Full Space = " +  MemoryStick.getSizeKbString(savedataSizeKb));
+	                }
+
+	                // Utility data size.
+	                int buffer3Addr = savedataParams.utilityDataAddr;
+	                if (Memory.isAddressGood(buffer3Addr)) {
+	                    int memoryStickRequiredSpaceKb = 0;
+	                    memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
+	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize);
+	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon0FileData.size);
+	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon1FileData.size);
+	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
+	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
+	                    String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
+	                    int memoryStickRequiredSpace32Kb = MemoryStick.getSize32Kb(memoryStickRequiredSpaceKb);
+	                    String memoryStickRequiredSpace32KbString = MemoryStick.getSizeKbString(memoryStickRequiredSpace32Kb);
+
+	                    mem.write32(buffer3Addr + 0, memoryStickRequiredSpaceKb / MemoryStick.getSectorSizeKb());
+	                    mem.write32(buffer3Addr + 4, memoryStickRequiredSpaceKb);
+	                    Utilities.writeStringNZ(mem, buffer3Addr + 8, 8, memoryStickRequiredSpaceString);
+	                    mem.write32(buffer3Addr + 16, memoryStickRequiredSpace32Kb);
+	                    Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpace32KbString);
+
+	                    log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
+	                }
+
+	                // More tests on a PSP revealed that the output depends on the
+	                // overwrite mode. When the overwrite mode is on (1), ERROR_SAVEDATA_SIZES_NO_DATA
+	                // is output when there're no data to overwrite, but no error is output if
+	                // overwrite mode is off.
+	                // Note: When msDataAddr is set to NULL, this condition is discarded, as the data
+	                // in the Memory Stick is ignored on purpose.
+	                if(savedataParams.overwrite && (savedataParams.msDataAddr != 0)) {
+	                    if (savedataParams.isPresent(gameName, saveName)) {
+	                        savedataParams.base.result = 0;
+	                    } else {
+	                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
+	                    }
+	                } else {
+	                    savedataParams.base.result = 0;
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
+	                String saveDir = "ms0/PSP/SAVEDATA/" + savedataParams.gameName + savedataParams.saveName;
+	                if (deleteSavedataDir(saveDir)) {
+	                    savedataParams.base.result = 0;
+	                } else {
+	                    log.warn("Savedata MODE_SINGLEDELETE directory not found!");
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_LIST: {
+	                int buffer4Addr = savedataParams.idListAddr;
+	                if (Memory.isAddressGood(buffer4Addr)) {
+	                    int maxEntries = mem.read32(buffer4Addr + 0);
+	                    int entriesAddr = mem.read32(buffer4Addr + 8);
+	                    String saveName = savedataParams.saveName;
+	                    // PSP file name pattern:
+	                    //   '?' matches one character
+	                    //   '*' matches any character sequence
+	                    // To convert to regular expressions:
+	                    //   replace '?' with '.'
+	                    //   replace '*' with '.*'
+	                    String pattern = saveName.replace('?', '.');
+	                    pattern = pattern.replace("*", ".*");
+	                    pattern = savedataParams.gameName + pattern;
+
+	                    String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
+	                    log.debug("Entries: " + entries);
+	                    int numEntries = entries == null ? 0 : entries.length;
+	                    numEntries = Math.min(numEntries, maxEntries);
+	                    for (int i = 0; i < numEntries; i++) {
+	                        String filePath = SceUtilitySavedataParam.savedataPath + "/" + entries[i];
+	                        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
+	                        int entryAddr = entriesAddr + i * 72;
+	                        if (stat != null) {
+	                            mem.write32(entryAddr + 0, stat.mode);
+	                            stat.ctime.write(mem, entryAddr + 4);
+	                            stat.atime.write(mem, entryAddr + 20);
+	                            stat.mtime.write(mem, entryAddr + 36);
+	                        }
+	                        String entryName = entries[i].substring(savedataParams.gameName.length());
+	                        Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
+	                    }
+	                    mem.write32(buffer4Addr + 4, numEntries);
+	                }
+	                savedataParams.base.result = 0;
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_FILES: {
+	                int buffer5Addr = savedataParams.fileListAddr;
+	                if (Memory.isAddressGood(buffer5Addr)) {
+	                    int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
+	                    int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
+	                    int systemEntriesAddr = mem.read32(buffer5Addr + 32);
+
+	                    String path = savedataParams.getBasePath(savedataParams.saveName);
+	                    String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
+
+	                    int maxNumEntries = (entries == null) ? 0 : entries.length;
+	                    int saveFileSecureNumEntries = 0;
+	                    int saveFileNumEntries = 0;
+	                    int systemFileNumEntries = 0;
+
+	                    // List all files in the savedata (normal and/or encrypted).
+	                    for (int i = 0; i < maxNumEntries; i++) {
+	                        String filePath = path + "/" + entries[i];
+	                        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
+
+	                        // System files.
+	                        if (filePath.contains(".SFO") || filePath.contains("ICON") || filePath.contains("PIC") || filePath.contains("SND")) {
+	                            if (Memory.isAddressGood(systemEntriesAddr)) {
+	                                int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
+	                                if (stat != null) {
+	                                    mem.write32(entryAddr + 0, stat.mode);
+	                                    mem.write64(entryAddr + 8, stat.size);
+	                                    stat.ctime.write(mem, entryAddr + 16);
+	                                    stat.atime.write(mem, entryAddr + 32);
+	                                    stat.mtime.write(mem, entryAddr + 48);
+	                                }
+	                                String entryName = entries[i];
+	                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+	                            }
+	                            systemFileNumEntries++;
+	                        } else { // Write to secure and normal.
+	                            if (Memory.isAddressGood(saveFileSecureEntriesAddr)) {
+	                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
+	                                if (stat != null) {
+	                                    mem.write32(entryAddr + 0, stat.mode);
+	                                    mem.write64(entryAddr + 8, stat.size);
+	                                    stat.ctime.write(mem, entryAddr + 16);
+	                                    stat.atime.write(mem, entryAddr + 32);
+	                                    stat.mtime.write(mem, entryAddr + 48);
+	                                }
+	                                String entryName = entries[i];
+	                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+	                            }
+	                            saveFileSecureNumEntries++;
+
+	                            if (Memory.isAddressGood(saveFileEntriesAddr)) {
+	                                int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
+	                                if (stat != null) {
+	                                    mem.write32(entryAddr + 0, stat.mode);
+	                                    mem.write64(entryAddr + 8, stat.size);
+	                                    stat.ctime.write(mem, entryAddr + 16);
+	                                    stat.atime.write(mem, entryAddr + 32);
+	                                    stat.mtime.write(mem, entryAddr + 48);
+	                                }
+	                                String entryName = entries[i];
+	                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
+	                            }
+	                            saveFileNumEntries++;
+	                        }
+	                    }
+	                    mem.write32(buffer5Addr + 12, saveFileSecureNumEntries);
+	                    mem.write32(buffer5Addr + 16, saveFileNumEntries);
+	                    mem.write32(buffer5Addr + 20, systemFileNumEntries);
+
+	                    if(entries == null) {
+	                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+	                    } else {
+	                        savedataParams.base.result = 0;
+	                    }
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_MAKEDATA:
+	            case SceUtilitySavedataParam.MODE_MAKEDATASECURE: {
+	                // Split saving version.
+	                // Write system data files (encrypted or not).
+	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+	                        savedataParams.saveName = savedataParams.saveNameList[0];
+	                    } else {
+	                        savedataParams.saveName = "-000";
+	                    }
+	                }
+
+	                try {
+	                    savedataParams.save(mem);
+	                    savedataParams.base.result = 0;
+	                } catch (IOException e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+	                } catch (Exception e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                        log.error(e);
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_READ:
+	            case SceUtilitySavedataParam.MODE_READSECURE: {
+	                // Sub-types of mode LOAD.
+	                // Read the contents of only one specified file (encrypted or not).
+	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+	                        savedataParams.saveName = savedataParams.saveNameList[0];
+	                    } else {
+	                        savedataParams.saveName = "-000";
+	                    }
+	                }
+
+	                try {
+	                    savedataParams.singleRead(mem);
+	                    savedataParams.base.result = 0;
+	                    savedataParams.write(mem);
+	                } catch (IOException e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+	                } catch (Exception e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                        log.error(e);
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_WRITE:
+	            case SceUtilitySavedataParam.MODE_WRITESECURE: {
+	                // Sub-types of mode SAVE.
+	                // Writes the contents of only one specified file (encrypted or not).
+	                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
+	                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
+	                        savedataParams.saveName = savedataParams.saveNameList[0];
+	                    } else {
+	                        savedataParams.saveName = "-000";
+	                    }
+	                }
+
+	                try {
+	                    savedataParams.singleWrite(mem);
+	                    savedataParams.base.result = 0;
+	                } catch (IOException e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+	                } catch (Exception e) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
+                        log.error(e);
+	                }
+	                break;
+	            }
+
+	            case SceUtilitySavedataParam.MODE_DELETEDATA:
+	                // Sub-type of mode DELETE.
+	                // Deletes the contents of only one specified file.
+	                if (savedataParams.fileName != null) {
+	                    String save = "ms0/PSP/SAVEDATA/" + State.discId + savedataParams.saveName + "/" + savedataParams.fileName;
+	                    File f = new File(save);
+
+	                    if (f != null) {
+	                        log.debug("Savedata MODE_DELETEDATA deleting " + save);
+	                        f = new File(save);
+	                        f.delete();
+	                    }
+	                    savedataParams.base.result = 0;
+	                } else {
+	                    log.warn("Savedata MODE_DELETEDATA no data found!");
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+	                }
+	                break;
+
+	            case SceUtilitySavedataParam.MODE_GETSIZE:
+	                int buffer6Addr = savedataParams.sizeAddr;
+	                if (Memory.isAddressGood(buffer6Addr)) {
+	                    int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
+	                    int saveFileNumEntries = mem.read32(buffer6Addr + 4);
+	                    int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
+	                    int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
+
+	                    int totalSizeKb = 0;
+	                    int neededSizeKb = 0;
+	                    int freeSizeKb = MemoryStick.getFreeSizeKb();
+
+	                    for (int i = 0; i < saveFileSecureNumEntries; i++) {
+	                        int entryAddr = saveFileSecureEntriesAddr + i * 24;
+	                        long size = mem.read64(entryAddr);
+	                        String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
+	                        int sizeKb = Utilities.getSizeKb(size);
+	                        if (log.isDebugEnabled()) {
+	                        	log.debug(String.format("   Secure File '%s', size %d (%d KB)", fileName, size, sizeKb));
+	                        }
+
+	                        totalSizeKb += sizeKb;
+	                    }
+	                    for (int i = 0; i < saveFileNumEntries; i++) {
+	                        int entryAddr = saveFileEntriesAddr + i * 24;
+	                        long size = mem.read64(entryAddr);
+	                        String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
+	                        int sizeKb = Utilities.getSizeKb(size);
+	                        if (log.isDebugEnabled()) {
+	                        	log.debug(String.format("   File '%s', size %d (%d KB)", fileName, size, sizeKb));
+	                        }
+
+	                        totalSizeKb += sizeKb;
+	                    }
+
+	                    // If there's not enough size, we have to write how much size we need.
+	                    // With enough size, our needed size is always 0.
+	                    if (totalSizeKb > freeSizeKb) {
+	                        neededSizeKb = totalSizeKb;
+	                    }
+
+	                    // Free MS size.
+	                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSizeKb);
+	                    mem.write32(buffer6Addr + 16, MemoryStick.getSectorSize());
+	                    mem.write32(buffer6Addr + 20, freeSizeKb / MemoryStick.getSectorSizeKb());
+	                    mem.write32(buffer6Addr + 24, freeSizeKb);
+	                    Utilities.writeStringNZ(mem, buffer6Addr + 28, 8, memoryStickFreeSpaceString);
+
+	                    // Size needed to write savedata.
+	                    mem.write32(buffer6Addr + 36, neededSizeKb);
+	                    Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, MemoryStick.getSizeKbString(neededSizeKb));
+
+	                    // Size needed to overwrite savedata.
+	                    mem.write32(buffer6Addr + 48, neededSizeKb);
+	                    Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, MemoryStick.getSizeKbString(neededSizeKb));
+	                }
+
+	                // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
+	                if (MemoryStick.getStateMs() != MemoryStick.PSP_MEMORYSTICK_STATE_DRIVER_READY) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
+	                } else if (!savedataParams.isPresent()) {
+	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
+	                } else {
+	                    savedataParams.base.result = 0;
+	                }
+	                break;
+
+	            default:
+	                log.warn("Savedata - Unsupported mode " + savedataParams.mode);
+	                savedataParams.base.result = -1;
+	                break;
+	        }
+
+	        savedataParams.base.writeResult(mem);
+	        if (log.isDebugEnabled()) {
+	            log.debug(String.format("hleUtilitySavedataDisplay result: 0x%08X", savedataParams.base.result));
+	        }
+		}
+    }
+
+    protected static class MsgDialogUtilityDialogState extends UtilityDialogState {
+		protected SceUtilityMsgDialogParams msgDialogParams;
+		protected MsgDialog msgDialog;
+
+    	public MsgDialogUtilityDialogState(String name) {
+			super(name);
+		}
+
+		@Override
+		protected void executeUpdateVisible(Processor processor) {
+	        Memory mem = Processor.memory;
+
+	        if (!isDialogOpen()) {
+	        	msgDialog = new MsgDialog(msgDialogParams, this);
+	        	openDialog(msgDialog);
+	        } else if (!isDialogActive()) {
+	        	msgDialogParams.buttonPressed = msgDialog.buttonPressed;
+	            msgDialogParams.base.result = 0;
+	            msgDialogParams.write(mem);
+	        	finishDialog();
+	        } else {
+	        	msgDialog.checkController();
+	        	updateDialog();
+	        }
+		}
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			msgDialogParams = new SceUtilityMsgDialogParams();
+			return msgDialogParams;
+		}
+    }
+
+    protected static class OskUtilityDialogState extends UtilityDialogState {
+		protected SceUtilityOskParams oskParams;
+		protected OskDialog oskDialog;
+
+    	public OskUtilityDialogState(String name) {
+			super(name);
+		}
+
+		@Override
+		protected void executeUpdateVisible(Processor processor) {
+	        Memory mem = Processor.memory;
+
+	        if (!isDialogOpen()) {
+	        	oskDialog = new OskDialog(oskParams, this);
+	        	openDialog(oskDialog);
+	        } else if (!isDialogActive()) {
+	        	if (oskDialog.buttonPressed == SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK) {
+	                oskParams.oskData.result = SceUtilityOskData.PSP_UTILITY_OSK_DATA_CHANGED;
+	        		oskParams.oskData.outText = oskDialog.textField.getText();
+	                log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
+	        	} else {
+	                oskParams.oskData.result = SceUtilityOskData.PSP_UTILITY_OSK_DATA_CANCELED;
+	        		oskParams.oskData.outText = oskDialog.textField.getText();
+	                log.info("hleUtilityOskDisplay cancelled");
+	        	}
+	        	oskParams.base.result = 0;
+	        	oskParams.write(mem);
+	            finishDialog();
+	        } else {
+	        	oskDialog.checkController();
+	        	updateDialog();
+	        }
+		}
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			oskParams = new SceUtilityOskParams();
+			return oskParams;
+		}
+    }
+
+    protected static class GameSharingUtilityDialogState extends UtilityDialogState {
+		protected SceUtilityGameSharingParams gameSharingParams;
+
+    	public GameSharingUtilityDialogState(String name) {
+			super(name);
+		}
+
+		@Override
+		protected void executeUpdateVisible(Processor processor) {
+			// TODO to be implemented
+		}
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			gameSharingParams = new SceUtilityGameSharingParams();
+			return gameSharingParams;
+		}
+    }
+
+    protected static class NetconfUtilityDialogState extends UtilityDialogState {
+		protected SceUtilityNetconfParams netconfParams;
+
+    	public NetconfUtilityDialogState(String name) {
+			super(name);
+		}
+
+		@Override
+		protected void executeUpdateVisible(Processor processor) {
+			// TODO to be implemented
+		}
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			netconfParams = new SceUtilityNetconfParams();
+			return netconfParams;
+		}
+    }
+
+    protected static abstract class UtilityDialog extends JComponent {
+		private static final long serialVersionUID = -993546461292372048L;
+		protected JDialog dialog;
+		protected int buttonPressed;
+		protected JPanel messagePane;
+		protected JPanel buttonPane;
+		protected ActionListener closeActionListener;
+		protected static final String actionCommandOK = "OK";
+		protected static final String actionCommandYES = "YES";
+		protected static final String actionCommandNO = "NO";
+		protected static final String actionCommandESC = "ESC";
+		protected UtilityDialogState utilityDialogState;
+		protected String confirmButtonActionCommand = actionCommandOK;
+		protected String cancelButtonActionCommand = actionCommandESC;
+		protected long pressedTimestamp;
+		protected static final int repeatDelay = 200000;
+		protected boolean downPressedButton;
+		protected boolean downPressedAnalog;
+		protected boolean upPressedButton;
+		protected boolean upPressedAnalog;
+
+		protected void createDialog(final UtilityDialogState utilityDialogState, String message) {
+			this.utilityDialogState = utilityDialogState;
+
+			String title = String.format("Message from %s", State.title);
+	        dialog = new JDialog((Frame) null, title, false);
+
+	        dialog.setSize(Settings.getInstance().readWindowSize(utilityDialogState.name, 200, 100));
+	        dialog.setLocation(Settings.getInstance().readWindowPos(utilityDialogState.name));
+	        dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+			messagePane = new JPanel();
+    		messagePane.setBorder(new EmptyBorder(5, 10, 5, 10));
+    		messagePane.setLayout(new BoxLayout(messagePane, BoxLayout.Y_AXIS));
+
+    		if (message != null) {
+	    		message = formatMessageForDialog(message);
+	    		// Split the message according to the new lines
+				while (message.length() > 0) {
+					int newLinePosition = message.indexOf("\n");
+					JLabel label = new JLabel();
+					label.setHorizontalAlignment(JLabel.CENTER);
+					label.setAlignmentX(CENTER_ALIGNMENT);
+					if (newLinePosition < 0) {
+						label.setText(message);
+						message = "";
+					} else {
+						String messagePart = message.substring(0, newLinePosition);
+						label.setText(messagePart);
+						message = message.substring(newLinePosition + 1);
+					}
+					messagePane.add(label);
+				}
+    		}
+
+    		if (JDialog.isDefaultLookAndFeelDecorated()) {
+    			if (UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
+    				dialog.setUndecorated(true);
+    				getRootPane().setWindowDecorationStyle(JRootPane.INFORMATION_DIALOG);
+    			}
+    		}
+
+    		buttonPane = new JPanel();
+    		buttonPane.setBorder(new EmptyBorder(5, 10, 5, 10));
+    		buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.X_AXIS));
+
+    		closeActionListener = new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					processActionCommand(event.getActionCommand());
+					dialog.dispose();
+				}
+    		};
+		}
+
+		protected void processActionCommand(String actionCommand) {
+			if (actionCommandYES.equals(actionCommand)) {
+				buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_YES;
+			} else if (actionCommandNO.equals(actionCommand)) {
+				buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_NO;
+			} else if (actionCommandOK.equals(actionCommand)) {
+				buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_OK;
+			} else if (actionCommandESC.equals(actionCommand)) {
+				buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_ESC;
+			} else {
+				buttonPressed = SceUtilityMsgDialogParams.PSP_UTILITY_BUTTON_PRESSED_INVALID;
+			}
+		}
+
+		protected void endDialog() {
+	        Container contentPane = dialog.getContentPane();
+    		contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
+    		contentPane.add(messagePane);
+    		contentPane.add(buttonPane);
+
+			dialog.pack();
+		}
+
+		protected void setDefaultButton(JButton button) {
+			dialog.getRootPane().setDefaultButton(button);
+		}
+
+		@Override
+		public void setVisible(boolean flag) {
+			dialog.setVisible(flag);
+		}
+
+		@Override
+		public boolean isVisible() {
+			return dialog.isVisible();
+		}
+
+		@Override
+		public Point getLocation() {
+			return dialog.getLocation();
+		}
+
+		@Override
+		public Dimension getSize() {
+			return dialog.getSize();
+		}
+
+        protected boolean isButtonPressed(int button) {
+        	Controller controller = State.controller;
+        	if ((controller.getButtons() & button) == button) {
+        		return true;
+        	}
+
+        	return false;
+        }
+
+        protected boolean isConfirmButtonPressed() {
+        	return isButtonPressed(Modules.sceUtilityModule.systemParam_buttonPreference == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CIRCLE : sceCtrl.PSP_CTRL_CROSS);
+        }
+
+        protected boolean isCancelButtonPressed() {
+        	return isButtonPressed(Modules.sceUtilityModule.systemParam_buttonPreference == PSP_SYSTEMPARAM_BUTTON_CIRCLE ? sceCtrl.PSP_CTRL_CROSS : sceCtrl.PSP_CTRL_CIRCLE);
+        }
+
+        private int getControllerLy() {
+        	return State.controller.getLy() & 0xFF;
+        }
+
+        private int getControllerAnalogCenter() {
+        	return Controller.analogCenter & 0xFF;
+        }
+
+        private void checkRepeat() {
+        	if (pressedTimestamp != 0 && SystemTimeManager.getSystemTime() - pressedTimestamp > repeatDelay) {
+        		upPressedAnalog = false;
+        		upPressedButton = false;
+        		downPressedAnalog = false;
+        		downPressedButton = false;
+        		pressedTimestamp = 0;
+        	}
+        }
+
+        protected boolean isUpPressed() {
+        	checkRepeat();
+        	if (upPressedButton || upPressedAnalog) {
+            	if (!isButtonPressed(sceCtrl.PSP_CTRL_UP)) {
+            		upPressedButton = false;
+            	}
+
+            	if (getControllerLy() >= getControllerAnalogCenter()) {
+            		upPressedAnalog = false;
+            	}
+
+            	return false;
+        	}
+
+        	if (isButtonPressed(sceCtrl.PSP_CTRL_UP)) {
+        		upPressedButton = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	if (getControllerLy() < getControllerAnalogCenter()) {
+        		upPressedAnalog = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	return false;
+        }
+
+        protected boolean isDownPressed() {
+        	checkRepeat();
+        	if (downPressedButton || downPressedAnalog) {
+            	if (!isButtonPressed(sceCtrl.PSP_CTRL_DOWN)) {
+            		downPressedButton = false;
+            	}
+
+            	if (getControllerLy() <= getControllerAnalogCenter()) {
+            		downPressedAnalog = false;
+            	}
+
+            	return false;
+        	}
+
+        	if (isButtonPressed(sceCtrl.PSP_CTRL_DOWN)) {
+        		downPressedButton = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	if (getControllerLy() > getControllerAnalogCenter()) {
+        		downPressedAnalog = true;
+        		pressedTimestamp = SystemTimeManager.getSystemTime();
+        		return true;
+        	}
+
+        	return false;
+        }
+
+        public void checkController() {
+			if (isConfirmButtonPressed()) {
+				processActionCommand(confirmButtonActionCommand);
+				dialog.dispose();
+			} else if (isCancelButtonPressed()) {
+				processActionCommand(cancelButtonActionCommand);
+				dialog.dispose();
+			}
+		}
+    }
+
+    protected static class SavedataDialog extends UtilityDialog {
+		private static final long serialVersionUID = 3753863112417187248L;
+		private final JTable table;
+		private SavedataUtilityDialogState savedataDialogState;
+		private SceUtilitySavedataParam savedataParams;
+		private final String[] saveNames;
+
+		public SavedataDialog(final SceUtilitySavedataParam savedataParams, final SavedataUtilityDialogState savedataDialogState, final String[] saveNames) {
+			this.savedataDialogState = savedataDialogState;
+			this.savedataParams = savedataParams;
+			this.saveNames = saveNames;
+
+			createDialog(savedataDialogState, null);
+
+			dialog.setTitle("Savedata List");
+            dialog.setSize(Settings.getInstance().readWindowSize(savedataDialogState.name, 400, 401));
+
+            final JButton selectButton = new JButton("Select");
+            selectButton.setActionCommand(actionCommandOK);
+            setDefaultButton(selectButton);
+
+            final JButton cancelButton = new CancelButton(dialog);
+            cancelButton.setActionCommand(actionCommandESC);
+            cancelButton.addActionListener(closeActionListener);
+
+            SavedataListTableModel savedataListTableModel = new SavedataListTableModel(saveNames, savedataParams);
+            SavedataListTableColumnModel savedataListTableColumnModel = new SavedataListTableColumnModel();
+            savedataListTableColumnModel.setFontHeight(savedataListTableModel.getFontHeight());
+
+            table = new JTable(savedataListTableModel, savedataListTableColumnModel);
+            table.setRowHeight(80);
+            table.setRowSelectionAllowed(true);
+            table.setColumnSelectionAllowed(false);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent event) {
+                    selectButton.setEnabled(!((ListSelectionModel) event.getSource()).isSelectionEmpty());
+                }
+            });
+            table.setFont(new Font("SansSerif", Font.PLAIN, fontHeightSavedataList[0]));
+            JScrollPane listScroll = new JScrollPane(table);
+
+            GroupLayout layout = new GroupLayout(dialog.getRootPane());
+            layout.setAutoCreateGaps(true);
+            layout.setAutoCreateContainerGaps(true);
+
+            layout.setHorizontalGroup(layout.createParallelGroup(
+                    GroupLayout.Alignment.TRAILING).addComponent(listScroll).addGroup(
+                    layout.createSequentialGroup().addComponent(selectButton).addComponent(cancelButton)));
+
+            layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
+                    listScroll).addGroup(
+                    layout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(selectButton).addComponent(cancelButton)));
+
+            dialog.getRootPane().setLayout(layout);
+
+            selectButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent event) {
+                    if (updateSelection()) {
+    					processActionCommand(event.getActionCommand());
+                        dialog.dispose();
+                    }
+                }
+            });
+
+            // Define the selected row according to the focus field
+            int selectedRow = -1;
+            switch (savedataParams.focus) {
+            	case SceUtilitySavedataParam.FOCUS_FIRSTLIST: {
+            		selectedRow = 0;
+            		break;
+            	}
+            	case SceUtilitySavedataParam.FOCUS_LASTLIST: {
+            		selectedRow = table.getRowCount() - 1;
+            		break;
+            	}
+            	case SceUtilitySavedataParam.FOCUS_LATEST: {
+            		long latestTimestamp = Long.MIN_VALUE;
+            		for (int i = 0; i < saveNames.length; i++) {
+            			long timestamp = getTimestamp(saveNames[i]);
+            			if (timestamp > latestTimestamp) {
+            				latestTimestamp = timestamp;
+            				selectedRow = i;
+            			}
+            		}
+            		break;
+            	}
+            	case SceUtilitySavedataParam.FOCUS_OLDEST: {
+            		long oldestTimestamp = Long.MAX_VALUE;
+            		for (int i = 0; i < saveNames.length; i++) {
+            			long timestamp = getTimestamp(saveNames[i]);
+            			if (timestamp < oldestTimestamp) {
+            				oldestTimestamp = timestamp;
+            				selectedRow = i;
+            			}
+            		}
+            		break;
+            	}
+            	case SceUtilitySavedataParam.FOCUS_FIRSTEMPTY: {
+            		for (int i = 0; i < saveNames.length; i++) {
+            			if (isEmpty(saveNames[i])) {
+            				selectedRow = i;
+            				break;
+            			}
+            		}
+            		break;
+            	}
+            	case SceUtilitySavedataParam.FOCUS_LASTEMPTY: {
+            		for (int i = saveNames.length - 1; i >= 0; i--) {
+            			if (isEmpty(saveNames[i])) {
+            				selectedRow = i;
+            				break;
+            			}
+            		}
+            		break;
+            	}
+            }
+
+            if (selectedRow >= 0) {
+				table.changeSelection(selectedRow, table.getSelectedColumn(), false, false);
+            }
+
+            endDialog();
+		}
+
+		private boolean isEmpty(String saveName) {
+            return !savedataParams.isPresent(savedataParams.gameName, saveName);
+		}
+
+		private long getTimestamp(String saveName) {
+			return savedataParams.getTimestamp(savedataParams.gameName, saveName);
+		}
+
+		private boolean updateSelection() {
+			int selectedRow = table.getSelectedRow();
+            if (selectedRow >= 0 && selectedRow < saveNames.length) {
+                savedataDialogState.saveListSelection = saveNames[selectedRow];
+                return true;
+            }
+
+            return false;
+		}
+
+		@Override
+		public void checkController() {
+			int selectedRow = table.getSelectedRow();
+			if (isDownPressed()) {
+				// One row down
+				selectedRow++;
+			} else if (isUpPressed()) {
+				// One row up
+				selectedRow--;
+			} else if (isButtonPressed(sceCtrl.PSP_CTRL_LTRIGGER)) {
+				// First row
+				selectedRow = 0;
+			} else if (isButtonPressed(sceCtrl.PSP_CTRL_RTRIGGER)) {
+				// Last row
+				selectedRow = table.getRowCount() - 1;
+			}
+
+			// Update selected row if changed
+			if (selectedRow != table.getSelectedRow()) {
+				selectedRow = Math.min(selectedRow, table.getRowCount() - 1);
+				selectedRow = Math.max(selectedRow, 0);
+				table.changeSelection(selectedRow, table.getSelectedColumn(), false, false);
+			}
+
+			if (updateSelection() || isCancelButtonPressed()) {
+				super.checkController();
+			}
+		}
+    }
+
+    protected static class MsgDialog extends UtilityDialog {
+		private static final long serialVersionUID = 3823899730551154698L;
+		protected SceUtilityMsgDialogParams msgDialogParams;
+
+		public MsgDialog(final SceUtilityMsgDialogParams msgDialogParams, MsgDialogUtilityDialogState msgDialogState) {
+			this.msgDialogParams = msgDialogParams;
+			createDialog(msgDialogState, msgDialogParams.message);
+
+    		if (msgDialogParams.isOptionYesNo()) {
+    			JButton yesButton = new JButton("Yes");
+    			JButton noButton = new JButton("No");
+    			yesButton.addActionListener(closeActionListener);
+    			yesButton.setActionCommand(actionCommandYES);
+    			noButton.addActionListener(closeActionListener);
+    			noButton.setActionCommand(actionCommandNO);
+    			confirmButtonActionCommand = actionCommandYES;
+    			cancelButtonActionCommand = actionCommandNO;
+    			buttonPane.add(yesButton);
+    			buttonPane.add(noButton);
+    			if (msgDialogParams.isOptionYesNoDefaultYes()) {
+    				setDefaultButton(yesButton);
+    			} else if (msgDialogParams.isOptionYesNoDefaultNo()) {
+    				setDefaultButton(noButton);
+    			}
+    		} else if (msgDialogParams.isOptionOk()) {
+    			JButton okButton = new JButton("Ok");
+    			okButton.addActionListener(closeActionListener);
+    			okButton.setActionCommand(actionCommandOK);
+    			buttonPane.add(okButton);
+    			setDefaultButton(okButton);
+    		} else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
+    			JButton okButton = new JButton("Ok");
+    			okButton.addActionListener(closeActionListener);
+    			buttonPane.add(okButton);
+    			setDefaultButton(okButton);
+    		} else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_ERROR) {
+    			String errorMessage = String.format("Error 0x%08X", msgDialogParams.errorValue);
+    			JLabel errorMessageLabel = new JLabel(errorMessage);
+    			messagePane.add(errorMessageLabel);
+
+    			JButton okButton = new JButton("Ok");
+    			okButton.addActionListener(closeActionListener);
+    			buttonPane.add(okButton);
+    			setDefaultButton(okButton);
+    		}
+
+    		endDialog();
+    	}
+    }
+
+    protected static class OskDialog extends UtilityDialog {
+		private static final long serialVersionUID = 1155047781007677923L;
+		protected JTextField textField;
+
+		public OskDialog(final SceUtilityOskParams oskParams, OskUtilityDialogState oskState) {
+			createDialog(oskState, oskParams.oskData.desc);
+
+			textField = new JTextField(oskParams.oskData.inText);
+			messagePane.add(textField);
+
+			JButton okButton = new JButton("Ok");
+			okButton.addActionListener(closeActionListener);
+			okButton.setActionCommand(actionCommandOK);
+			buttonPane.add(okButton);
+			setDefaultButton(okButton);
+
+	        endDialog();
+    	}
+    }
+
+    protected static String formatMessageForDialog(String message) {
         StringBuilder formattedMessage = new StringBuilder();
 
         for (int i = 0; i < message.length();) {
             String rest = message.substring(i);
-            if (rest.length() > maxLineLengthForDialog) {
+            int newLineIndex = rest.indexOf("\n");
+            if (newLineIndex >= 0 && newLineIndex < maxLineLengthForDialog) {
+            	formattedMessage.append(rest.substring(0, newLineIndex + 1));
+            	i += newLineIndex + 1;
+            } else if (rest.length() > maxLineLengthForDialog) {
                 int lastSpace = rest.lastIndexOf(' ', maxLineLengthForDialog);
                 rest = rest.substring(0, (lastSpace >= 0 ? lastSpace : maxLineLengthForDialog));
                 formattedMessage.append(rest);
@@ -560,8 +1759,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         return formattedMessage.toString();
     }
 
-    protected final class SavedataListTableColumnModel extends DefaultTableColumnModel {
-
+    protected static class SavedataListTableColumnModel extends DefaultTableColumnModel {
         private static final long serialVersionUID = -2460343777558549264L;
         private int fontHeight = 12;
 
@@ -627,15 +1825,22 @@ public class sceUtility implements HLEModule, HLEStartModule {
         return count;
     }
 
-    protected final class SavedataListTableModel extends AbstractTableModel {
+    private static int computeMemoryStickRequiredSpaceKb(int sizeByte) {
+        int sizeKb = Utilities.getSizeKb(sizeByte);
+        int sectorSizeKb = MemoryStick.getSectorSizeKb();
+        int numberSectors = (sizeKb + sectorSizeKb - 1) / sectorSizeKb;
 
+        return numberSectors * sectorSizeKb;
+    }
+
+    protected static class SavedataListTableModel extends AbstractTableModel {
         private static final long serialVersionUID = -8867168909834783380L;
         private int numberRows;
         private ImageIcon[] icons;
         private String[] descriptions;
         private int fontHeight = 12;
 
-        public SavedataListTableModel(String[] saveNames) {
+        public SavedataListTableModel(String[] saveNames, SceUtilitySavedataParam savedataParams) {
             numberRows = saveNames == null ? 0 : saveNames.length;
             icons = new ImageIcon[numberRows];
             descriptions = new String[numberRows];
@@ -738,84 +1943,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
     }
 
-    protected void showSavedataList(final String[] saveNames) {
-    	// Pause the PSP clock when displaying the dialog window
-    	Emulator.getClock().pause();
-
-    	final JDialog mainDisplay = new JDialog();
-        mainDisplay.setTitle("Savedata List");
-        mainDisplay.setSize(Settings.getInstance().readWindowSize(windowNameForSettings, 400, 401));
-        mainDisplay.setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
-        mainDisplay.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-        final JButton selectButton = new JButton("Select");
-        mainDisplay.getRootPane().setDefaultButton(selectButton);
-
-        final JButton cancelButton = new CancelButton(mainDisplay);
-
-        SavedataListTableModel savedataListTableModel = new SavedataListTableModel(saveNames);
-        SavedataListTableColumnModel savedataListTableColumnModel = new SavedataListTableColumnModel();
-        savedataListTableColumnModel.setFontHeight(savedataListTableModel.getFontHeight());
-        final JTable table = new JTable(savedataListTableModel, savedataListTableColumnModel);
-        table.setRowHeight(80);
-        table.setRowSelectionAllowed(true);
-        table.setColumnSelectionAllowed(false);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                selectButton.setEnabled(!((ListSelectionModel) e.getSource()).isSelectionEmpty());
-            }
-        });
-        table.setFont(new Font("SansSerif", Font.PLAIN, fontHeightSavedataList[0]));
-        JScrollPane listScroll = new JScrollPane(table);
-
-        GroupLayout layout = new GroupLayout(mainDisplay.getRootPane());
-        layout.setAutoCreateGaps(true);
-        layout.setAutoCreateContainerGaps(true);
-
-        layout.setHorizontalGroup(layout.createParallelGroup(
-                GroupLayout.Alignment.TRAILING).addComponent(listScroll).addGroup(
-                layout.createSequentialGroup().addComponent(selectButton).addComponent(cancelButton)));
-
-        layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
-                listScroll).addGroup(
-                layout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(selectButton).addComponent(cancelButton)));
-
-        mainDisplay.getRootPane().setLayout(layout);
-        mainDisplay.setVisible(true);
-
-        selectButton.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent evt) {
-                if (table.getSelectedRow() != -1) {
-                    saveListSelection = saveNames[table.getSelectedRow()];
-                    mainDisplay.dispose();
-                }
-            }
-        });
-
-        // Wait for user selection.
-        while (mainDisplay.isVisible()) {
-        	try {
-        		// Sleep a while...
-				Thread.sleep(10);
-			} catch (InterruptedException e1) {
-				// Ignore Exception
-			}
-        }
-
-        Settings.getInstance().writeWindowPos(windowNameForSettings, mainDisplay.getLocation());
-        Settings.getInstance().writeWindowSize(windowNameForSettings, mainDisplay.getSize());
-
-        Emulator.getClock().resume();
-    }
-
     public void sceUtilityGameSharingInitStart(Processor processor) {
-        gameSharingParams = new SceUtilityGameSharingParams();
-        gameSharingState.executeInitStart(processor, gameSharingParams);
+        gameSharingState.executeInitStart(processor);
     }
 
     public void sceUtilityGameSharingShutdownStart(Processor processor) {
@@ -823,9 +1952,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityGameSharingUpdate(Processor processor) {
-        if (gameSharingState.tryUpdate(processor)) {
-            gameSharingState.endUpdate(processor);
-        }
+    	gameSharingState.executeUpdate(processor);
     }
 
     public void sceUtilityGameSharingGetStatus(Processor processor) {
@@ -833,7 +1960,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceNetplayDialogInitStart(Processor processor) {
-        netplayDialogState.executeInitStart(processor, null);
+        netplayDialogState.executeInitStart(processor);
     }
 
     public void sceNetplayDialogShutdownStart(Processor processor) {
@@ -841,9 +1968,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceNetplayDialogUpdate(Processor processor) {
-        if (netplayDialogState.tryUpdate(processor)) {
-            netplayDialogState.endUpdate(processor);
-        }
+    	netplayDialogState.executeUpdate(processor);
     }
 
     public void sceNetplayDialogGetStatus(Processor processor) {
@@ -851,8 +1976,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityNetconfInitStart(Processor processor) {
-        netconfParams = new SceUtilityNetconfParams();
-        netconfState.executeInitStart(processor, netconfParams);
+        netconfState.executeInitStart(processor);
     }
 
     public void sceUtilityNetconfShutdownStart(Processor processor) {
@@ -860,562 +1984,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityNetconfUpdate(Processor processor) {
-        if (netconfState.tryUpdate(processor)) {
-            netconfState.endUpdate(processor);
-        }
+    	netconfState.executeUpdate(processor);
     }
 
     public void sceUtilityNetconfGetStatus(Processor processor) {
         netconfState.executeGetStatus(processor);
     }
 
-    private int computeMemoryStickRequiredSpaceKb(int sizeByte) {
-        int sizeKb = Utilities.getSizeKb(sizeByte);
-        int sectorSizeKb = MemoryStick.getSectorSizeKb();
-        int numberSectors = (sizeKb + sectorSizeKb - 1) / sectorSizeKb;
-
-        return numberSectors * sectorSizeKb;
-    }
-
-    private boolean deleteSavedataDir(String saveName) {
-        File saveDir = new File(saveName);
-        if (saveDir.exists()) {
-            File[] subFiles = saveDir.listFiles();
-            for (int i = 0; i < subFiles.length; i++) {
-                subFiles[i].delete();
-            }
-        }
-        return (saveDir.delete());
-    }
-
-	private void hleUtilitySavedataDisplay() {
-        Memory mem = Processor.memory;
-
-        switch (savedataParams.mode) {
-            case SceUtilitySavedataParam.MODE_AUTOLOAD:
-            case SceUtilitySavedataParam.MODE_LOAD: {
-                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                        savedataParams.saveName = savedataParams.saveNameList[0];
-                    } else {
-                        savedataParams.saveName = "-000";
-                    }
-                }
-
-                try {
-                    savedataParams.load(mem);
-                    savedataParams.base.result = 0;
-                    savedataParams.write(mem);
-                } catch (IOException e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
-                } catch (Exception e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
-                    e.printStackTrace();
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_LISTLOAD: {
-                // Search for valid saves.
-                ArrayList<String> validNames = new ArrayList<String>();
-
-                for (int i = 0; i < savedataParams.saveNameList.length; i++) {
-                    savedataParams.saveName = savedataParams.saveNameList[i];
-
-                    if (savedataParams.isPresent()) {
-                        validNames.add(savedataParams.saveName);
-                    }
-                }
-
-                showSavedataList(validNames.toArray(new String[validNames.size()]));
-                if (saveListSelection == null) {
-                    log.warn("Savedata MODE_LISTLOAD no save selected");
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_BAD_PARAMS;
-                } else {
-                    savedataParams.saveName = saveListSelection.toString();
-                    try {
-                        savedataParams.load(mem);
-                        savedataParams.base.result = 0;
-                        savedataParams.write(mem);
-                    } catch (IOException e) {
-                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_NO_DATA;
-                    } catch (Exception e) {
-                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_LOAD_ACCESS_ERROR;
-                        e.printStackTrace();
-                    }
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_AUTOSAVE:
-            case SceUtilitySavedataParam.MODE_SAVE: {
-                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                        savedataParams.saveName = savedataParams.saveNameList[0];
-                    } else {
-                        savedataParams.saveName = "-000";
-                    }
-                }
-
-                try {
-                    savedataParams.save(mem);
-                    savedataParams.base.result = 0;
-                } catch (IOException e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-                } catch (Exception e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-                    e.printStackTrace();
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_LISTSAVE: {
-                showSavedataList(savedataParams.saveNameList);
-                if (saveListSelection == null) {
-                    log.warn("Savedata MODE_LISTSAVE no save selected");
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_BAD_PARAMS;
-                } else {
-                    savedataParams.saveName = saveListSelection.toString();
-                    try {
-                        savedataParams.save(mem);
-                        savedataParams.base.result = 0;
-                    } catch (IOException e) {
-                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-                    } catch (Exception e) {
-                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
-                        e.printStackTrace();
-                    }
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_DELETE: {
-                if (savedataParams.saveNameList != null) {
-                    for (int i = 0; i < savedataParams.saveNameList.length; i++) {
-                        String save = "ms0/PSP/SAVEDATA/" + (State.discId) +
-                                (savedataParams.saveNameList[i]);
-                        if (deleteSavedataDir(save)) {
-                            log.debug("Savedata MODE_DELETE deleting " + save);
-                        }
-                    }
-                    savedataParams.base.result = 0;
-                } else {
-                    log.warn("Savedata MODE_DELETE no saves found!");
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_SIZES: {
-                // "METAL SLUG XX" outputs the following on stdout after calling mode 8:
-                //
-                // ------ SIZES ------
-                // ---------- savedata result ----------
-                // result = 0x801103c7
-                //
-                // bind : un used(0x0).
-                //
-                // -- dir name --
-                // title id : ULUS10495
-                // user  id : METALSLUGXX
-                //
-                // ms free size
-                //   cluster size(byte) : 32768 byte
-                //   free cluster num   : 32768
-                //   free size(KB)      : 1048576 KB
-                //   free size(string)  : "1 GB"
-                //
-                // ms data size(titleId=ULUS10495, userId=METALSLUGXX)
-                //   cluster num        : 0
-                //   size (KB)          : 0 KB
-                //   size (string)      : "0 KB"
-                //   size (32KB)        : 0 KB
-                //   size (32KB string) : "0 KB"
-                //
-                // utility data size
-                //   cluster num        : 13
-                //   size (KB)          : 416 KB
-                //   size (string)      : "416 KB"
-                //   size (32KB)        : 416 KB
-                //   size (32KB string) : "416 KB"
-                // error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
-                //
-                String gameName = savedataParams.gameName;
-                String saveName = savedataParams.saveName;
-
-                // MS free size.
-                int buffer1Addr = savedataParams.msFreeAddr;
-                if (Memory.isAddressGood(buffer1Addr)) {
-                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
-
-                    mem.write32(buffer1Addr + 0, MemoryStick.getSectorSize());
-                    mem.write32(buffer1Addr + 4, MemoryStick.getFreeSizeKb() / MemoryStick.getSectorSizeKb());
-                    mem.write32(buffer1Addr + 8, MemoryStick.getFreeSizeKb());
-                    Utilities.writeStringNZ(mem, buffer1Addr + 12, 8, memoryStickFreeSpaceString);
-
-                    log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
-                }
-
-                // MS data size.
-                int buffer2Addr = savedataParams.msDataAddr;
-                if (Memory.isAddressGood(buffer2Addr)) {
-                    gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
-                    saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
-                    int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
-                    int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
-
-                    mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors.
-                    mem.write32(buffer2Addr + 40, savedataSizeKb); // Size in Kb.
-                    Utilities.writeStringNZ(mem, buffer2Addr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
-                    mem.write32(buffer2Addr + 52, savedataSize32Kb);
-                    Utilities.writeStringNZ(mem, buffer2Addr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
-
-                    log.debug("Memory Stick Full Space = " +  MemoryStick.getSizeKbString(savedataSizeKb));
-                }
-
-                // Utility data size.
-                int buffer3Addr = savedataParams.utilityDataAddr;
-                if (Memory.isAddressGood(buffer3Addr)) {
-                    int memoryStickRequiredSpaceKb = 0;
-                    memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon0FileData.size);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon1FileData.size);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
-                    String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
-                    int memoryStickRequiredSpace32Kb = MemoryStick.getSize32Kb(memoryStickRequiredSpaceKb);
-                    String memoryStickRequiredSpace32KbString = MemoryStick.getSizeKbString(memoryStickRequiredSpace32Kb);
-
-                    mem.write32(buffer3Addr + 0, memoryStickRequiredSpaceKb / MemoryStick.getSectorSizeKb());
-                    mem.write32(buffer3Addr + 4, memoryStickRequiredSpaceKb);
-                    Utilities.writeStringNZ(mem, buffer3Addr + 8, 8, memoryStickRequiredSpaceString);
-                    mem.write32(buffer3Addr + 16, memoryStickRequiredSpace32Kb);
-                    Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpace32KbString);
-
-                    log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
-                }
-
-                // More tests on a PSP revealed that the output depends on the
-                // overwrite mode. When the overwrite mode is on (1), ERROR_SAVEDATA_SIZES_NO_DATA
-                // is output when there're no data to overwrite, but no error is output if
-                // overwrite mode is off.
-                // Note: When msDataAddr is set to NULL, this condition is discarded, as the data
-                // in the Memory Stick is ignored on purpose.
-                if(savedataParams.overwrite && (savedataParams.msDataAddr != 0)) {
-                    if (savedataParams.isPresent(gameName, saveName)) {
-                        savedataParams.base.result = 0;
-                    } else {
-                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
-                    }
-                } else {
-                    savedataParams.base.result = 0;
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
-                String saveDir = "ms0/PSP/SAVEDATA/" + savedataParams.gameName + savedataParams.saveName;
-                if (deleteSavedataDir(saveDir)) {
-                    savedataParams.base.result = 0;
-                } else {
-                    log.warn("Savedata MODE_SINGLEDELETE directory not found!");
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_NO_DATA;
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_LIST: {
-                int buffer4Addr = savedataParams.idListAddr;
-                if (Memory.isAddressGood(buffer4Addr)) {
-                    int maxEntries = mem.read32(buffer4Addr + 0);
-                    int entriesAddr = mem.read32(buffer4Addr + 8);
-                    String saveName = savedataParams.saveName;
-                    // PSP file name pattern:
-                    //   '?' matches one character
-                    //   '*' matches any character sequence
-                    // To convert to regular expressions:
-                    //   replace '?' with '.'
-                    //   replace '*' with '.*'
-                    String pattern = saveName.replace('?', '.');
-                    pattern = pattern.replace("*", ".*");
-                    pattern = savedataParams.gameName + pattern;
-
-                    String[] entries = Modules.IoFileMgrForUserModule.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
-                    log.debug("Entries: " + entries);
-                    int numEntries = entries == null ? 0 : entries.length;
-                    numEntries = Math.min(numEntries, maxEntries);
-                    for (int i = 0; i < numEntries; i++) {
-                        String filePath = SceUtilitySavedataParam.savedataPath + "/" + entries[i];
-                        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
-                        int entryAddr = entriesAddr + i * 72;
-                        if (stat != null) {
-                            mem.write32(entryAddr + 0, stat.mode);
-                            stat.ctime.write(mem, entryAddr + 4);
-                            stat.atime.write(mem, entryAddr + 20);
-                            stat.mtime.write(mem, entryAddr + 36);
-                        }
-                        String entryName = entries[i].substring(savedataParams.gameName.length());
-                        Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
-                    }
-                    mem.write32(buffer4Addr + 4, numEntries);
-                }
-                savedataParams.base.result = 0;
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_FILES: {
-                int buffer5Addr = savedataParams.fileListAddr;
-                if (Memory.isAddressGood(buffer5Addr)) {
-                    int saveFileSecureEntriesAddr = mem.read32(buffer5Addr + 24);
-                    int saveFileEntriesAddr = mem.read32(buffer5Addr + 28);
-                    int systemEntriesAddr = mem.read32(buffer5Addr + 32);
-
-                    String path = savedataParams.getBasePath(savedataParams.saveName);
-                    String[] entries = Modules.IoFileMgrForUserModule.listFiles(path, null);
-
-                    int maxNumEntries = (entries == null) ? 0 : entries.length;
-                    int saveFileSecureNumEntries = 0;
-                    int saveFileNumEntries = 0;
-                    int systemFileNumEntries = 0;
-
-                    // List all files in the savedata (normal and/or encrypted).
-                    for (int i = 0; i < maxNumEntries; i++) {
-                        String filePath = path + "/" + entries[i];
-                        SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(filePath);
-
-                        // System files.
-                        if (filePath.contains(".SFO") || filePath.contains("ICON") || filePath.contains("PIC") || filePath.contains("SND")) {
-                            if (Memory.isAddressGood(systemEntriesAddr)) {
-                                int entryAddr = systemEntriesAddr + systemFileNumEntries * 80;
-                                if (stat != null) {
-                                    mem.write32(entryAddr + 0, stat.mode);
-                                    mem.write64(entryAddr + 8, stat.size);
-                                    stat.ctime.write(mem, entryAddr + 16);
-                                    stat.atime.write(mem, entryAddr + 32);
-                                    stat.mtime.write(mem, entryAddr + 48);
-                                }
-                                String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                            }
-                            systemFileNumEntries++;
-                        } else { // Write to secure and normal.
-                            if (Memory.isAddressGood(saveFileSecureEntriesAddr)) {
-                                int entryAddr = saveFileSecureEntriesAddr + saveFileSecureNumEntries * 80;
-                                if (stat != null) {
-                                    mem.write32(entryAddr + 0, stat.mode);
-                                    mem.write64(entryAddr + 8, stat.size);
-                                    stat.ctime.write(mem, entryAddr + 16);
-                                    stat.atime.write(mem, entryAddr + 32);
-                                    stat.mtime.write(mem, entryAddr + 48);
-                                }
-                                String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                            }
-                            saveFileSecureNumEntries++;
-
-                            if (Memory.isAddressGood(saveFileEntriesAddr)) {
-                                int entryAddr = saveFileEntriesAddr + saveFileNumEntries * 80;
-                                if (stat != null) {
-                                    mem.write32(entryAddr + 0, stat.mode);
-                                    mem.write64(entryAddr + 8, stat.size);
-                                    stat.ctime.write(mem, entryAddr + 16);
-                                    stat.atime.write(mem, entryAddr + 32);
-                                    stat.mtime.write(mem, entryAddr + 48);
-                                }
-                                String entryName = entries[i];
-                                Utilities.writeStringNZ(mem, entryAddr + 64, 16, entryName);
-                            }
-                            saveFileNumEntries++;
-                        }
-                    }
-                    mem.write32(buffer5Addr + 12, saveFileSecureNumEntries);
-                    mem.write32(buffer5Addr + 16, saveFileNumEntries);
-                    mem.write32(buffer5Addr + 20, systemFileNumEntries);
-
-                    if(entries == null) {
-                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                    } else {
-                        savedataParams.base.result = 0;
-                    }
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_MAKEDATA:
-            case SceUtilitySavedataParam.MODE_MAKEDATASECURE: {
-                // Split saving version.
-                // Write system data files (encrypted or not).
-                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                        savedataParams.saveName = savedataParams.saveNameList[0];
-                    } else {
-                        savedataParams.saveName = "-000";
-                    }
-                }
-
-                try {
-                    savedataParams.save(mem);
-                    savedataParams.base.result = 0;
-                } catch (IOException e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                } catch (Exception e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                    e.printStackTrace();
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_READ:
-            case SceUtilitySavedataParam.MODE_READSECURE: {
-                // Sub-types of mode LOAD.
-                // Read the contents of only one specified file (encrypted or not).
-                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                        savedataParams.saveName = savedataParams.saveNameList[0];
-                    } else {
-                        savedataParams.saveName = "-000";
-                    }
-                }
-
-                try {
-                    savedataParams.singleRead(mem);
-                    savedataParams.base.result = 0;
-                    savedataParams.write(mem);
-                } catch (IOException e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                } catch (Exception e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                    e.printStackTrace();
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_WRITE:
-            case SceUtilitySavedataParam.MODE_WRITESECURE: {
-                // Sub-types of mode SAVE.
-                // Writes the contents of only one specified file (encrypted or not).
-                if (savedataParams.saveName == null || savedataParams.saveName.length() == 0) {
-                    if (savedataParams.saveNameList != null && savedataParams.saveNameList.length > 0) {
-                        savedataParams.saveName = savedataParams.saveNameList[0];
-                    } else {
-                        savedataParams.saveName = "-000";
-                    }
-                }
-
-                try {
-                    savedataParams.singleWrite(mem);
-                    savedataParams.base.result = 0;
-                } catch (IOException e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                } catch (Exception e) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_ACCESS_ERROR;
-                    e.printStackTrace();
-                }
-                break;
-            }
-
-            case SceUtilitySavedataParam.MODE_DELETEDATA:
-                // Sub-type of mode DELETE.
-                // Deletes the contents of only one specified file.
-                if (savedataParams.fileName != null) {
-                    String save = "ms0/PSP/SAVEDATA/" + State.discId + savedataParams.saveName + "/" + savedataParams.fileName;
-                    File f = new File(save);
-
-                    if (f != null) {
-                        log.debug("Savedata MODE_DELETEDATA deleting " + save);
-                        f = new File(save);
-                        f.delete();
-                    }
-                    savedataParams.base.result = 0;
-                } else {
-                    log.warn("Savedata MODE_DELETEDATA no data found!");
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                }
-                break;
-
-            case SceUtilitySavedataParam.MODE_GETSIZE:
-                int buffer6Addr = savedataParams.sizeAddr;
-                if (Memory.isAddressGood(buffer6Addr)) {
-                    int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
-                    int saveFileNumEntries = mem.read32(buffer6Addr + 4);
-                    int saveFileSecureEntriesAddr = mem.read32(buffer6Addr + 8);
-                    int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
-
-                    int totalSizeKb = 0;
-                    int neededSizeKb = 0;
-                    int freeSizeKb = MemoryStick.getFreeSizeKb();
-
-                    for (int i = 0; i < saveFileSecureNumEntries; i++) {
-                        int entryAddr = saveFileSecureEntriesAddr + i * 24;
-                        long size = mem.read64(entryAddr);
-                        String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
-                        int sizeKb = Utilities.getSizeKb(size);
-                        if (log.isDebugEnabled()) {
-                        	log.debug(String.format("   Secure File '%s', size %d (%d KB)", fileName, size, sizeKb));
-                        }
-
-                        totalSizeKb += sizeKb;
-                    }
-                    for (int i = 0; i < saveFileNumEntries; i++) {
-                        int entryAddr = saveFileEntriesAddr + i * 24;
-                        long size = mem.read64(entryAddr);
-                        String fileName = Utilities.readStringNZ(entryAddr + 8, 16);
-                        int sizeKb = Utilities.getSizeKb(size);
-                        if (log.isDebugEnabled()) {
-                        	log.debug(String.format("   File '%s', size %d (%d KB)", fileName, size, sizeKb));
-                        }
-
-                        totalSizeKb += sizeKb;
-                    }
-
-                    // If there's not enough size, we have to write how much size we need.
-                    // With enough size, our needed size is always 0.
-                    if (totalSizeKb > freeSizeKb) {
-                        neededSizeKb = totalSizeKb;
-                    }
-
-                    // Free MS size.
-                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSizeKb);
-                    mem.write32(buffer6Addr + 16, MemoryStick.getSectorSize());
-                    mem.write32(buffer6Addr + 20, freeSizeKb / MemoryStick.getSectorSizeKb());
-                    mem.write32(buffer6Addr + 24, freeSizeKb);
-                    Utilities.writeStringNZ(mem, buffer6Addr + 28, 8, memoryStickFreeSpaceString);
-
-                    // Size needed to write savedata.
-                    mem.write32(buffer6Addr + 36, neededSizeKb);
-                    Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, MemoryStick.getSizeKbString(neededSizeKb));
-
-                    // Size needed to overwrite savedata.
-                    mem.write32(buffer6Addr + 48, neededSizeKb);
-                    Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, MemoryStick.getSizeKbString(neededSizeKb));
-                }
-
-                // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
-                if (MemoryStick.getStateMs() != MemoryStick.PSP_MEMORYSTICK_STATE_DRIVER_READY) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
-                } else if (!savedataParams.isPresent()) {
-                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
-                } else {
-                    savedataParams.base.result = 0;
-                }
-                break;
-
-            default:
-                log.warn("Savedata - Unsupported mode " + savedataParams.mode);
-                savedataParams.base.result = -1;
-                break;
-        }
-
-        savedataParams.base.writeResult(mem);
-        if (log.isDebugEnabled()) {
-            log.debug("hleUtilitySavedataDisplay savedResult:0x" + Integer.toHexString(savedataParams.base.result));
-        }
-    }
-
     public void sceUtilitySavedataInitStart(Processor processor) {
-        savedataParams = new SceUtilitySavedataParam();
-        savedataState.executeInitStart(processor, savedataParams);
+        savedataState.executeInitStart(processor);
     }
 
     public void sceUtilitySavedataShutdownStart(Processor processor) {
@@ -1423,11 +2000,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilitySavedataUpdate(Processor processor) {
-        if (savedataState.tryUpdate(processor)) {
-            hleUtilitySavedataDisplay();
-
-            savedataState.endUpdate(processor);
-        }
+    	savedataState.executeUpdate(processor);
     }
 
     public void sceUtilitySavedataGetStatus(Processor processor) {
@@ -1435,7 +2008,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilitySavedataErrInitStart(Processor processor) {
-        savedataErrState.executeInitStart(processor, null);
+        savedataErrState.executeInitStart(processor);
     }
 
     public void sceUtilitySavedataErrShutdownStart(Processor processor) {
@@ -1443,46 +2016,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilitySavedataErrUpdate(Processor processor) {
-        if (savedataErrState.tryUpdate(processor)) {
-            savedataErrState.endUpdate(processor);
-        }
+    	savedataErrState.executeUpdate(processor);
     }
 
     public void sceUtilitySavedataErrGetStatus(Processor processor) {
         savedataErrState.executeGetStatus(processor);
     }
 
-    protected void hleUtilityMsgDialogDisplay() {
-        Memory mem = Processor.memory;
-
-        String title = String.format("Message from %s", State.title);
-        if (msgDialogParams.isOptionYesNo()) {
-            int result = JOptionPane.showConfirmDialog(null, formatMessageForDialog(msgDialogParams.message), null, JOptionPane.YES_NO_OPTION);
-            if (result == JOptionPane.YES_OPTION) {
-                msgDialogParams.buttonPressed = 1;
-            } else if (result == JOptionPane.NO_OPTION) {
-                msgDialogParams.buttonPressed = 2;
-            } else if (result == JOptionPane.CANCEL_OPTION) {
-                msgDialogParams.buttonPressed = 3;
-            }
-        } else if (msgDialogParams.isOptionOk()) {
-            int result = JOptionPane.showConfirmDialog(null, formatMessageForDialog(msgDialogParams.message), null, JOptionPane.DEFAULT_OPTION);
-            if (result == JOptionPane.OK_OPTION) {
-                msgDialogParams.buttonPressed = 1;
-            }
-        } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
-            JOptionPane.showMessageDialog(null, formatMessageForDialog(msgDialogParams.message), title, JOptionPane.INFORMATION_MESSAGE);
-        } else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_ERROR) {
-        	String message = String.format("Error 0x%08X", msgDialogParams.errorValue);
-            JOptionPane.showMessageDialog(null, formatMessageForDialog(message), title, JOptionPane.INFORMATION_MESSAGE);
-        }
-        msgDialogParams.base.result = 0;
-        msgDialogParams.write(mem);
-    }
-
     public void sceUtilityMsgDialogInitStart(Processor processor) {
-        msgDialogParams = new SceUtilityMsgDialogParams();
-        msgDialogState.executeInitStart(processor, msgDialogParams);
+        msgDialogState.executeInitStart(processor);
     }
 
     public void sceUtilityMsgDialogShutdownStart(Processor processor) {
@@ -1490,29 +2032,15 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityMsgDialogUpdate(Processor processor) {
-        if (msgDialogState.tryUpdate(processor)) {
-            hleUtilityMsgDialogDisplay();
-            msgDialogState.endUpdate(processor);
-        }
+    	msgDialogState.executeUpdate(processor);
     }
 
     public void sceUtilityMsgDialogGetStatus(Processor processor) {
         msgDialogState.executeGetStatus(processor);
     }
 
-    protected void hleUtilityOskDisplay() {
-        Memory mem = Processor.memory;
-
-        oskParams.oskData.outText = JOptionPane.showInputDialog(oskParams.oskData.desc, oskParams.oskData.inText);
-        oskParams.base.result = 0;
-        oskParams.oskData.result = SceUtilityOskParams.PSP_UTILITY_OSK_STATE_INITIALIZED;
-        oskParams.write(mem);
-        log.info("hleUtilityOskDisplay returning '" + oskParams.oskData.outText + "'");
-    }
-
     public void sceUtilityOskInitStart(Processor processor) {
-        oskParams = new SceUtilityOskParams();
-        oskState.executeInitStart(processor, oskParams);
+        oskState.executeInitStart(processor);
     }
 
     public void sceUtilityOskShutdownStart(Processor processor) {
@@ -1520,10 +2048,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityOskUpdate(Processor processor) {
-        if (oskState.tryUpdate(processor)) {
-            hleUtilityOskDisplay();
-            oskState.endUpdate(processor);
-        }
+    	oskState.executeUpdate(processor);
     }
 
     public void sceUtilityOskGetStatus(Processor processor) {
@@ -1717,7 +2242,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityNpSigninInitStart(Processor processor) {
-        npSigninState.executeInitStart(processor, null);
+        npSigninState.executeInitStart(processor);
     }
 
     public void sceUtilityNpSigninShutdownStart(Processor processor) {
@@ -1725,9 +2250,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityNpSigninUpdate(Processor processor) {
-        if (npSigninState.tryUpdate(processor)) {
-            npSigninState.endUpdate(processor);
-        }
+    	npSigninState.executeUpdate(processor);
     }
 
     public void sceUtilityNpSigninGetStatus(Processor processor) {
@@ -1735,7 +2258,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityPS3ScanInitStart(Processor processor) {
-        PS3ScanState.executeInitStart(processor, null);
+        PS3ScanState.executeInitStart(processor);
     }
 
     public void sceUtilityPS3ScanShutdownStart(Processor processor) {
@@ -1743,9 +2266,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityPS3ScanUpdate(Processor processor) {
-        if (PS3ScanState.tryUpdate(processor)) {
-            PS3ScanState.endUpdate(processor);
-        }
+    	PS3ScanState.executeUpdate(processor);
     }
 
     public void sceUtilityPS3ScanGetStatus(Processor processor) {
@@ -1753,7 +2274,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityRssReaderInitStart(Processor processor) {
-        rssReaderState.executeInitStart(processor, null);
+        rssReaderState.executeInitStart(processor);
     }
 
     public void sceUtilityRssReaderContStart(Processor processor) {
@@ -1769,9 +2290,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityRssReaderUpdate(Processor processor) {
-        if (rssReaderState.tryUpdate(processor)) {
-            rssReaderState.endUpdate(processor);
-        }
+    	rssReaderState.executeUpdate(processor);
     }
 
     public void sceUtilityRssReaderGetStatus(Processor processor) {
@@ -1779,7 +2298,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityRssSubscriberInitStart(Processor processor) {
-        rssSubscriberState.executeInitStart(processor, null);
+        rssSubscriberState.executeInitStart(processor);
     }
 
     public void sceUtilityRssSubscriberShutdownStart(Processor processor) {
@@ -1787,9 +2306,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityRssSubscriberUpdate(Processor processor) {
-        if (rssSubscriberState.tryUpdate(processor)) {
-            rssSubscriberState.endUpdate(processor);
-        }
+    	rssSubscriberState.executeUpdate(processor);
     }
 
     public void sceUtilityRssSubscriberGetStatus(Processor processor) {
@@ -1797,7 +2314,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityScreenshotInitStart(Processor processor) {
-        screenshotState.executeInitStart(processor, null);
+        screenshotState.executeInitStart(processor);
     }
 
     public void sceUtilityScreenshotContStart(Processor processor) {
@@ -1813,9 +2330,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityScreenshotUpdate(Processor processor) {
-        if (screenshotState.tryUpdate(processor)) {
-            screenshotState.endUpdate(processor);
-        }
+    	screenshotState.executeUpdate(processor);
     }
 
     public void sceUtilityScreenshotGetStatus(Processor processor) {
@@ -1823,7 +2338,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityHtmlViewerInitStart(Processor processor) {
-        htmlViewerState.executeInitStart(processor, null);
+        htmlViewerState.executeInitStart(processor);
     }
 
     public void sceUtilityHtmlViewerShutdownStart(Processor processor) {
@@ -1831,9 +2346,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityHtmlViewerUpdate(Processor processor) {
-        if (htmlViewerState.tryUpdate(processor)) {
-            htmlViewerState.endUpdate(processor);
-        }
+    	htmlViewerState.executeUpdate(processor);
     }
 
     public void sceUtilityHtmlViewerGetStatus(Processor processor) {
@@ -1841,7 +2354,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityGamedataInstallInitStart(Processor processor) {
-        gamedataInstallState.executeInitStart(processor, null);
+        gamedataInstallState.executeInitStart(processor);
     }
 
     public void sceUtilityGamedataInstallShutdownStart(Processor processor) {
@@ -1849,9 +2362,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityGamedataInstallUpdate(Processor processor) {
-        if (gamedataInstallState.tryUpdate(processor)) {
-            gamedataInstallState.endUpdate(processor);
-        }
+    	gamedataInstallState.executeUpdate(processor);
     }
 
     public void sceUtilityGamedataInstallGetStatus(Processor processor) {

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import jpcsp.Memory;
@@ -400,6 +401,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         safeLoad(mem, snd0FileName, snd0FileData);
 		loadPsf(mem, path, paramSfoFileName, sfoParam);
         bind = BIND_IS_OK;
+        abortStatus = 0;
 	}
 
     private void safeLoad(Memory mem, String filename, PspUtilitySavedataFileData fileData) throws IOException {
@@ -593,7 +595,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
 	public boolean isPresent(String gameName, String saveName) {
-	    String path = getBasePath();
         // NULL can also be sent in saveName (seen in MODE_SIZES).
         // It means any save from the current game, since all saves share a common
         // save data file.
@@ -603,13 +604,12 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             if(entries == null) {
                 return false;
             }
-            for(int i = 0; i < f.list().length; i++) {
+            for (int i = 0; i < f.list().length; i++) {
                 if(entries[i].startsWith(gameName)) {
                     saveName = entries[i].replace(gameName, "");
                     break;
                 }
             }
-            path = getBasePath(saveName);
         }
         // When NULL is sent in fileName, it means any file inside the savedata folder.
         if (fileName == null || fileName.length() <= 0) {
@@ -619,6 +619,8 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             }
             return true;
 	    }
+
+        String path = getBasePath(saveName);
 	    try {
             SeekableDataInput fileInput = getDataInput(path, fileName);
             if (fileInput != null) {
@@ -635,14 +637,40 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return isPresent(gameName, saveName);
 	}
 
-    @Override
+	public long getTimestamp(String gameName, String saveName) {
+        String sfoFileName = getFileName(saveName, paramSfoFileName);
+        SceIoStat sfoStat = Modules.IoFileMgrForUserModule.statFile(sfoFileName);
+        if (sfoStat != null) {
+            Calendar cal = Calendar.getInstance();
+            ScePspDateTime pspTime = sfoStat.mtime;
+            cal.set(pspTime.year, pspTime.month, pspTime.day, pspTime.hour, pspTime.minute, pspTime.second);
+            return cal.getTimeInMillis();
+        }
+
+        return 0;
+	}
+
+	@Override
 	public int sizeof() {
         return base.size;
     }
 
 	@Override
 	public String toString() {
-		return String.format("Address 0x%08X, mode=%d, gameName=%s, saveName=%s, fileName=%s",
-				getBaseAddress(), mode, gameName, saveName, fileName);
+		StringBuilder s = new StringBuilder();
+		s.append(String.format("Address 0x%08X, mode=%d, gameName=%s, saveName=%s, fileName=%s", getBaseAddress(), mode, gameName, saveName, fileName));
+		for (int i = 0; saveNameList != null && i < saveNameList.length; i++) {
+			if (i == 0) {
+				s.append(", saveNameList=[");
+			} else {
+				s.append(", ");
+			}
+			s.append(saveNameList[i]);
+			if (i == saveNameList.length - 1) {
+				s.append("]");
+			}
+		}
+
+		return s.toString();
 	}
 }
