@@ -176,9 +176,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     // Async Display
     private AsyncDisplayThread asyncDisplayThread;
-    private Semaphore displayLock;
-    private boolean tryLockDisplay;
-    private long tryLockTimestamp;
 
     // VBLANK Multi.
     private List<WaitVblankInfo> waitingOnVblank;
@@ -206,22 +203,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		public void run() {
 			jpcsp.HLE.modules.sceDisplay display = Modules.sceDisplayModule;
 			while (run) {
-				// If someone is trying to lock the display, leave it to him.
-				if (display.isTryLockActive()) {
-					try {
-						// Sleep for 10 ms
-						Thread.sleep(10);
-					} catch (InterruptedException e) {
-						// Ignore Interrupt
-					}
-				} else {
-					waitForDisplay();
-					if (run) {
-			        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
-			        		display.lockDisplay();
-			        		display.repaint();
-			        		display.unlockDisplay();
-			        	}
+				waitForDisplay();
+				if (run) {
+		        	if (!display.isOnlyGEGraphics() || VideoEngine.getInstance().hasDrawLists()) {
+		        		display.repaint();
 					}
 				}
 			}
@@ -391,7 +376,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
         vcount = 0;
 
-        displayLock = new Semaphore(1);
     	if (asyncDisplayThread == null) {
     		asyncDisplayThread = new AsyncDisplayThread();
     		asyncDisplayThread.setDaemon(true);
@@ -836,47 +820,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
         // Capture the image
         CaptureManager.captureImage(address, 0, temp, width, height, bufferWidth, pixelFormat, false, 0, true, false);
-    }
-
-    public boolean tryLockDisplay() {
-    	boolean locked = displayLock.tryAcquire();
-    	if (!locked) {
-    		// Could not lock the display...
-    		// Remember for 1 second that someone tried to lock the display
-    		tryLockDisplay = true;
-    		tryLockTimestamp = Emulator.getClock().milliTime();
-    	} else {
-    		tryLockDisplay = false;
-    	}
-
-    	return locked;
-    }
-
-    public void lockDisplay() {
-    	while (true) {
-	    	try {
-				displayLock.acquire();
-				break;
-			} catch (InterruptedException e) {
-				// Try again
-			}
-    	}
-    }
-
-    public void unlockDisplay() {
-    	displayLock.release();
-    }
-
-    public boolean isTryLockActive() {
-    	if (tryLockDisplay) {
-    		long now = Emulator.getClock().milliTime();
-    		// tryLockDisplay is only active for 1 second, then release it
-    		if (now - tryLockTimestamp > 1000) {
-    			tryLockDisplay = false;
-    		}
-    	}
-
-    	return tryLockDisplay;
     }
 
     private void reportFPSStats() {
