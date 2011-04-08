@@ -29,7 +29,7 @@ import java.util.HashSet;
 import jpcsp.Memory;
 import jpcsp.State;
 import jpcsp.HLE.Modules;
-import jpcsp.HLE.modules150.sceAtrac3plus;
+import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.media.ExternalDecoder;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
@@ -55,9 +55,9 @@ public class AtracCodec {
     protected RandomAccessFile decodedStream;
     protected OutputStream atracStream;
     protected int atracEnd;
-    protected int atracRemainFrames;
     protected int atracEndSample;
     protected int atracMaxSamples;
+    protected int atracFileSize;
     protected int bytesPerFrame;
     protected byte[] atracDecodeBuffer;
     protected static boolean instructionsDisplayed = false;
@@ -166,10 +166,10 @@ public class AtracCodec {
     }
 
     public void atracSetData(int atracID, int codecType, int address, int length, int atracFileSize) {
+    	this.atracFileSize = atracFileSize;
         id = generateID(address, length, atracFileSize);
         closeStreams();
         atracEndSample = -1;
-        atracRemainFrames = 1;
 
         int memoryCodecType = sceAtrac3plus.getCodecType(address);
         if (memoryCodecType != codecType && memoryCodecType != 0) {
@@ -183,7 +183,8 @@ public class AtracCodec {
                 me.finish();
                 atracChannel = new PacketChannel();
                 atracChannel.write(address, length);
-                me.init(atracChannel, false, true);
+                // Defer the initialization of the MediaEngine until atracDecodeData()
+                // to ensure we have enough data into the channel.
                 atracEndSample = 0;
                 return;
             }
@@ -193,6 +194,7 @@ public class AtracCodec {
         		if (decodedFile != null) {
         			Modules.log.info("AT3+ data decoded by the external decoder.");
         			me.finish();
+        			atracChannel = null;
         			me.init(new FileProtocolHandler(decodedFile), false, true);
                     atracEndSample = -1;
         			return;
@@ -277,7 +279,9 @@ public class AtracCodec {
 
     public void atracAddStreamData(int address, int length) {
         if (checkMediaEngineState()) {
-            atracChannel.write(address, length);
+        	if (atracChannel != null) {
+        		atracChannel.write(address, length);
+        	}
             return;
         }
 
@@ -299,15 +303,26 @@ public class AtracCodec {
         int samples = 0;
         boolean isEnded = false;
 
-        if (checkMediaEngineState() && me.getContainer() != null) {
-            me.stepAudio(atracMaxSamples * 4);
-        	samples = copySamplesToMem(address);
+        if (checkMediaEngineState()) {
+        	if (me.getContainer() == null && atracChannel != null) {
+        		// The MediaEngine requires at least 3 * 0x8000 data bytes available
+        		// during initialization. Otherwise, it will assume to have reached
+        		// the end of the channel and will not further read.
+        		// The readRetryCount of the container does not help.
+    			if (atracChannel.length() >= 0x8000 * 3 || atracChannel.length() >= atracFileSize) {
+    				me.init(atracChannel, false, true);
+    			} else {
+    				// Fake returning 1 sample with remainFrames == 0
+    				// to force a call to sceAtracAddStreamData.
+    				samples = 1;
+    				Memory.getInstance().memset(address, (byte) 0, samples * 4); 
+    			}
+        	}
+            if (me.stepAudio(atracMaxSamples * 4)) {
+            	samples = copySamplesToMem(address);
+            }
         	if (samples == 0) {
         		isEnded = true;
-        	} else if (samples < atracMaxSamples) {
-        		atracRemainFrames = 0;
-        	} else {
-        		atracRemainFrames = atracChannel.length() / Modules.sceAtrac3plusModule.getBytesPerFrame(atracID);
         	}
         } else if (decodedStream != null) {
             try {
@@ -318,8 +333,6 @@ public class AtracCodec {
                     long restLength = decodedStream.length() - decodedStream.getFilePointer();
                     if (restLength <= 0) {
                     	isEnded = true;
-                    } else {
-                    	atracRemainFrames = (int) (restLength / atracDecodeBuffer.length);
                     }
                 } else {
                 	isEnded = true;
@@ -334,7 +347,6 @@ public class AtracCodec {
 
         if (isEnded) {
         	atracEnd = 1;
-        	atracRemainFrames = -1;
         } else {
         	atracEnd = 0;
         }
@@ -356,12 +368,16 @@ public class AtracCodec {
         }
     }
 
-    public int getAtracEnd() {
-        return atracEnd;
+    public int getChannelLength() {
+    	if (atracChannel == null) {
+    		// External audio
+    		return atracFileSize;
+    	}
+    	return atracChannel.length();
     }
 
-    public int getAtracRemainFrames() {
-        return atracRemainFrames;
+    public int getAtracEnd() {
+        return atracEnd;
     }
 
     public int getAtracEndSample() {
@@ -386,6 +402,10 @@ public class AtracCodec {
 
     public void finish() {
         closeStreams();
+    }
+
+    public boolean isExternalAudio() {
+    	return atracChannel == null;
     }
 
     protected void displayInstructions() {
