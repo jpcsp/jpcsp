@@ -377,16 +377,16 @@ public class Controller {
     private Component getControllerComponentByName(String name) {
 		Component[] components = inputController.getComponents();
 		if (components != null) {
-			// First search for the component name
+			// First search for the identifier name
 			for (int i = 0; i < components.length; i++) {
-				if (name.equals(components[i].getName())) {
+				if (name.equals(components[i].getIdentifier().getName())) {
 					return components[i];
 				}
 			}
 
-			// Second search for the identifier name
+			// Second search for the component name
 			for (int i = 0; i < components.length; i++) {
-				if (name.equals(components[i].getIdentifier().getName())) {
+				if (name.equals(components[i].getName())) {
 					return components[i];
 				}
 			}

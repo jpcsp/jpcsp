@@ -203,7 +203,8 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 	        }
 		} else {
 	        for (Map.Entry<keyCode, String> entry : currentController.entrySet()) {
-	        	setFieldValue(entry.getKey(), entry.getValue());
+	        	String identifierName = entry.getValue();
+	        	setFieldValue(entry.getKey(), getControllerFieldText(identifierName));
 	        }
 		}
 	}
@@ -252,8 +253,39 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
         this.targetKey = targetKey;
     }
 
-    private void setControllerMapping(keyCode targetKey, String componentName, String identifierName, JTextField field) {
-    	String name = componentName;
+    private void setControllerMapping(keyCode targetKey, String identifierName, JTextField field) {
+    	currentController.put(targetKey, identifierName);
+        field.setText(getControllerFieldText(identifierName));
+        getKey = false;
+    }
+
+    private Component getControllerComponent(String identifierName) {
+    	Controller controller = getSelectedController();
+    	if (controller == null) {
+    		return null;
+    	}
+
+    	Component[] components = controller.getComponents();
+    	if (components == null) {
+    		return null;
+    	}
+
+    	for (int i = 0; i < components.length; i++) {
+    		if (identifierName.equals(components[i].getIdentifier().getName())) {
+    			return components[i];
+    		}
+    	}
+
+    	return null;
+    }
+
+    private String getControllerFieldText(String identifierName) {
+    	Component component = getControllerComponent(identifierName);
+    	if (component == null) {
+    		return identifierName;
+    	}
+
+    	String name = component.getName();
     	if (name == null) {
     		// Use the Identifier name if the component has no name
     		name = identifierName;
@@ -263,9 +295,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     		name = identifierName;
     	}
 
-    	currentController.put(targetKey, name);
-        field.setText(name);
-        getKey = false;
+    	return name;
     }
 
     private void onControllerEvent(Event event) {
@@ -276,21 +306,20 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
     	Component component = event.getComponent();
 		float value = event.getValue();
 		Identifier identifier = component.getIdentifier();
-		String componentName = component.getName();
 		String identifierName = identifier.getName();
 
 		if (identifier instanceof Button && value == 1.f) {
-			setControllerMapping(targetKey, componentName, identifierName, sender);
+			setControllerMapping(targetKey, identifierName, sender);
 		} else if (identifier == Axis.POV) {
 			switch (targetKey) {
 				case DOWN:
 				case UP:
 				case LEFT:
 				case RIGHT:
-					setControllerMapping(keyCode.DOWN, componentName, identifierName, fieldDown);
-					setControllerMapping(keyCode.UP, componentName, identifierName, fieldUp);
-					setControllerMapping(keyCode.LEFT, componentName, identifierName, fieldLeft);
-					setControllerMapping(keyCode.RIGHT, componentName, identifierName, fieldRight);
+					setControllerMapping(keyCode.DOWN, identifierName, fieldDown);
+					setControllerMapping(keyCode.UP, identifierName, fieldUp);
+					setControllerMapping(keyCode.LEFT, identifierName, fieldLeft);
+					setControllerMapping(keyCode.RIGHT, identifierName, fieldRight);
 					break;
 				default:
 					jpcsp.Controller.log.warn(String.format("Unknown Controller POV Event on %s(%s): %f for %s", component.getName(), identifier.getName(), value, targetKey.toString()));
@@ -300,26 +329,26 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 			switch (targetKey) {
 				case DOWN:
 				case UP:
-					setControllerMapping(keyCode.DOWN, componentName, identifierName, fieldDown);
-					setControllerMapping(keyCode.UP, componentName, identifierName, fieldUp);
+					setControllerMapping(keyCode.DOWN, identifierName, fieldDown);
+					setControllerMapping(keyCode.UP, identifierName, fieldUp);
 					break;
 				case LEFT:
 				case RIGHT:
-					setControllerMapping(keyCode.LEFT, componentName, identifierName, fieldLeft);
-					setControllerMapping(keyCode.RIGHT, componentName, identifierName, fieldRight);
+					setControllerMapping(keyCode.LEFT, identifierName, fieldLeft);
+					setControllerMapping(keyCode.RIGHT, identifierName, fieldRight);
 					break;
 				case ANDOWN:
 				case ANUP:
-					setControllerMapping(keyCode.ANDOWN, componentName, identifierName, fieldAnalogDown);
-					setControllerMapping(keyCode.ANUP, componentName, identifierName, fieldAnalogUp);
+					setControllerMapping(keyCode.ANDOWN, identifierName, fieldAnalogDown);
+					setControllerMapping(keyCode.ANUP, identifierName, fieldAnalogUp);
 					break;
 				case ANLEFT:
 				case ANRIGHT:
-					setControllerMapping(keyCode.ANLEFT, componentName, identifierName, fieldAnalogLeft);
-					setControllerMapping(keyCode.ANRIGHT, componentName, identifierName, fieldAnalogRight);
+					setControllerMapping(keyCode.ANLEFT, identifierName, fieldAnalogLeft);
+					setControllerMapping(keyCode.ANRIGHT, identifierName, fieldAnalogRight);
 					break;
 				default:
-					setControllerMapping(targetKey, componentName, identifierName, sender);
+					setControllerMapping(targetKey, identifierName, sender);
 					break;
 			}
 		} else {
