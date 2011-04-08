@@ -1641,7 +1641,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public void hleKernelWakeupThread(SceKernelThreadInfo thread) {
-        if (thread.status != PSP_THREAD_WAITING) {
+        if (thread.status != PSP_THREAD_WAITING || thread.waitType != PSP_WAIT_SLEEP) {
             log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount");
             thread.wakeupCount++;
         } else if (isBannedThread(thread)) {
