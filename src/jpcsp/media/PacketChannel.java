@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 
 import com.xuggle.xuggler.io.IURLProtocolHandler;
 
+import jpcsp.HLE.Modules;
 import jpcsp.util.FIFOByteBuffer;
 
 /*
@@ -76,6 +77,11 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 			size = readByteBuffer(ByteBuffer.wrap(buf, 0, size));
 			if (size > 0) {
 				readLength += size;
+				if (Modules.log.isTraceEnabled()) {
+					Modules.log.trace(String.format("PacketChannel: read %d bytes", size));
+				}
+			} else {
+				Modules.log.debug("PacketChannel: End of data");
 			}
 		}
 

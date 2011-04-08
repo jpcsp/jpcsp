@@ -126,7 +126,7 @@ public class scePsmfPlayer implements HLEModule {
     protected static final int psmfPlayerVideoTimestampStep = sceMpeg.videoTimestampStep;
     protected static final int psmfPlayerAudioTimestampStep = sceMpeg.audioTimestampStep;
     protected static final int psmfTimestampPerSecond = sceMpeg.mpegTimestampPerSecond;
-    protected static final int psmfMaxAheadTimestamp = sceMpeg.maxAheadTimestamp;
+    protected static final int psmfMaxAheadTimestamp = 40000;
 
     // PSMF Player timestamp vars.
     protected Date psmfPlayerLastDate;
