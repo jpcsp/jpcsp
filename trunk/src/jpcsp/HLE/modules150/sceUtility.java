@@ -1558,7 +1558,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             });
 
             // Define the selected row according to the focus field
-            int selectedRow = -1;
+            int selectedRow = 0;
             switch (savedataParams.focus) {
             	case SceUtilitySavedataParam.FOCUS_FIRSTLIST: {
             		selectedRow = 0;
@@ -1610,7 +1610,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             	}
             }
 
-            if (selectedRow >= 0) {
+            if (selectedRow >= 0 && selectedRow < table.getRowCount()) {
 				table.changeSelection(selectedRow, table.getSelectedColumn(), false, false);
             }
 
