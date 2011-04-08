@@ -410,6 +410,7 @@ public class REShader extends BaseRenderingEngineFunction {
 				infoLog = infoLog.replace("Fragment shader was successfully compiled to run on hardware.\n", "");
 				infoLog = infoLog.replace("Fragment shader(s) linked, vertex shader(s) linked. \n", "");
 				infoLog = infoLog.replace("Vertex shader(s) linked, fragment shader(s) linked. \n", "");
+				infoLog = infoLog.replace("Vertex shader(s) linked, fragment shader(s) linked.\n", "");
 				infoLog = infoLog.replace("Validation successful.\n", "");
 
 				if (infoLog.length() > 0) {

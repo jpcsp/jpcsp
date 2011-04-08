@@ -255,6 +255,14 @@ public class DebugProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
+	public void drawArraysBurstMode(int type, int first, int count) {
+		if (isLogDebugEnabled) {
+			log.debug(String.format("drawArraysBurstMode type=%d, first=%d, count=%d", type, first, count));
+		}
+		super.drawArraysBurstMode(type, first, count);
+	}
+
+	@Override
 	public void setDepthFunc(int func) {
 		if (isLogDebugEnabled) {
 			log.debug(String.format("setDepthFunc %d", func));

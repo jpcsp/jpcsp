@@ -1460,6 +1460,7 @@ public class VideoEngine {
     	bufferFirst.clear();
     	bufferCount.clear();
     	int currentPtrVertex = vinfo.ptr_vertex + vinfo.vertexSize * currentNumberOfVertex;
+    	boolean frontFaceCw = context.frontFaceCw;
 
     	// Leave at least one entry free to put the last item
     	while (bufferFirst.remaining() > 1) {
@@ -1467,8 +1468,17 @@ public class VideoEngine {
     		pc += 4;
     		int cmd = command(instruction);
     		if (cmd == PRIM) {
+    			if (context.frontFaceCw != frontFaceCw) {
+    				if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%06X non matching FFACE has stopped integration in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+    				}
+    				break;
+    			}
     	        int type = ((instruction >> 16) & 0x7);
     	        if (type != currentType) {
+    				if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%06X non matching vertex type has stopped integration in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+    				}
     	        	break;
     	        }
     	        int numberOfVertex = instruction & 0xFFFF;
@@ -1511,19 +1521,41 @@ public class VideoEngine {
         	        	log.debug(String.format("%s 0x%06X integrated in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
     				}
     			} else {
+    				if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%06X has stopped integration in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+    				}
     				break;
     			}
     		} else if (GeCommands.pureStateCommands[cmd]) {
-    			if (currentListCMDValues[cmd] == instruction) {
+    			if (cmd == FFACE) {
+    				// Some applications generate the following sequence:
+    				//   FFACE 0
+    				//   PRIM xxx
+    				//   FFACE 1
+    				//   FFACE 0
+    				//   PRIM xxx
+    				// Detect such sequences (changing the FFACE with no effect)
+    				// and integrate them in multiDraw.
+    				frontFaceCw = intArgument(instruction) != 0;
+    				if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%06X trying to integrate in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+    				}
+    			} else if (currentListCMDValues[cmd] == instruction) {
     				// The command has been repeated with the same parameters,
     				// it can be ignored.
     				if (isLogDebugEnabled) {
         	        	log.debug(String.format("%s 0x%06X pure state cmd integrated in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
     				}
     			} else {
+    				if (isLogDebugEnabled) {
+        	        	log.debug(String.format("%s 0x%06X pure state cmd has stopped integration in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+    				}
     				break;
     			}
     		} else {
+				if (isLogDebugEnabled) {
+    	        	log.debug(String.format("%s 0x%06X has stopped integration in MultiDrawArrays", helper.getCommandString(cmd), intArgument(instruction)));
+				}
     			break;
     		}
     	}
@@ -1532,7 +1564,7 @@ public class VideoEngine {
     		return -1;
     	}
 
-		bufferFirst.put(currentFirst);
+    	bufferFirst.put(currentFirst);
 		bufferCount.put(currentNumberOfVertex);
 
 		bufferFirst.limit(bufferFirst.position());
