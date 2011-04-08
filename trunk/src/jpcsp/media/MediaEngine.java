@@ -165,7 +165,8 @@ public class MediaEngine {
     	return IPacket.make();
     }
 
-    private void readAu(StreamState state, SceMpegAu au) {
+    private boolean readAu(StreamState state, SceMpegAu au) {
+    	boolean successful = true;
     	if (state == null) {
     		au.dts = 0;
     		au.pts = 0;
@@ -177,6 +178,7 @@ public class MediaEngine {
     				} else if (state == audioStreamState) {
     					state.incrementTimestamps(sceMpeg.audioTimestampStep);
     				}
+    				successful = false;
     				break;
     			}
 
@@ -189,22 +191,28 @@ public class MediaEngine {
     		}
     		state.getTimestamps(au);
     	}
+
+    	return successful;
     }
 
-    public void readVideoAu(SceMpegAu au) {
-    	readAu(videoStreamState, au);
+    public boolean readVideoAu(SceMpegAu au) {
+    	boolean successful = readAu(videoStreamState, au);
 
     	// On PSP, video DTS is always 1 frame behind PTS
     	if (au.pts >= sceMpeg.videoTimestampStep) {
     		au.dts = au.pts - sceMpeg.videoTimestampStep;
     	}
+
+    	return successful;
     }
 
-    public void readAudioAu(SceMpegAu au) {
-    	readAu(audioStreamState, au);
+    public boolean readAudioAu(SceMpegAu au) {
+    	boolean successful = readAu(audioStreamState, au);
 
     	// On PSP, audio DTS is always set to -1
     	au.dts = sceMpeg.UNKNOWN_TIMESTAMP;
+
+    	return successful;
     }
 
     public void getCurrentAudioAu(SceMpegAu au) {
@@ -491,7 +499,12 @@ public class MediaEngine {
     }
 
     public boolean stepAudio(int requiredAudioBytes) {
-    	return step(audioStreamState, requiredAudioBytes);
+    	boolean success = step(audioStreamState, requiredAudioBytes);
+    	if (decodedAudioSamples != null && decodedAudioSamples.length() > 0) {
+    		success = true;
+    	}
+
+    	return success;
     }
 
     private boolean step(StreamState state, int requiredAudioBytes) {
@@ -529,7 +542,9 @@ public class MediaEngine {
     	if (extAudioFile == null && ExternalDecoder.isEnabled()) {
     		// Try to decode the audio using the external decoder
     		if (bufferAddress == 0) {
-    			externalDecoder.decodeExtAudio(bufferData, bufferSize, bufferMpegOffset);
+    			if (bufferData != null) {
+    				externalDecoder.decodeExtAudio(bufferData, bufferSize, bufferMpegOffset);
+    			}
     		} else {
     			externalDecoder.decodeExtAudio(bufferAddress, bufferSize, bufferMpegOffset, bufferData);
     		}
