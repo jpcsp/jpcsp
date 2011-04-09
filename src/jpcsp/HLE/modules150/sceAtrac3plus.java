@@ -560,7 +560,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         			loopStartBytesWrittenSecondBuf = secondInputFileOffset;
         			currentLoopNum = i;
         			break;
-        		} else if (currentSample <= loop.endSample && loop.endSample < nextCurrentSample && currentLoopNum == i) {
+        		} else if (currentSample <= loop.endSample && loop.endSample <= nextCurrentSample && currentLoopNum == i) {
         			// We are just ending the current loop
         			if (loopNum == 0) {
         				// No more loop playback
