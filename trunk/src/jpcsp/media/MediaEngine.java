@@ -101,6 +101,13 @@ public class MediaEngine {
         return container;
     }
 
+    public IContainer getAudioContainer() {
+    	if (audioStreamState == null) {
+    		return null;
+    	}
+        return audioStreamState.getContainer();
+    }
+
     public IContainer getExtContainer() {
         return extContainer;
     }
