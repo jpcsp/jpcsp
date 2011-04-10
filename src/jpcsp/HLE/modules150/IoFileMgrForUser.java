@@ -1000,7 +1000,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         } else {
             if (info.closePending) {
                 log.debug("hleIoWaitAsync - file marked with closePending, calling sceIoClose, not waiting");
-                hleIoClose(uid);
+                hleIoClose(uid, false);
                 wait = false;
             }
 
@@ -1224,19 +1224,18 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
-    private void hleIoClose(int uid) {
+    private void hleIoClose(int uid, boolean async) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoClose - uid " + Integer.toHexString(uid));
+            log.debug("hleIoClose - uid " + Integer.toHexString(uid));
         }
 
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
+        IoInfo info = filelist.remove(uid);
         try {
-            SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-            IoInfo info = filelist.remove(uid);
             if (info == null) {
-                if (uid != 1 && uid != 2) // ignore stdout and stderr
-                {
+                if (uid != 1 && uid != 2) { // Ignore stdout and stderr.
                     log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
                 }
                 cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
@@ -1259,6 +1258,20 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         for (IIoListener ioListener : ioListeners) {
             ioListener.sceIoClose(cpu.gpr[2], uid);
+        }
+
+        if(async) {
+            if (info != null) {
+                if (info.asyncPending) {
+                    log.warn("sceIoCloseAsync - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                    cpu.gpr[2] = ERROR_KERNEL_ASYNC_BUSY;
+                } else {
+                    info.closePending = true;
+                    updateResult(cpu, info, 0, true, false, IoOperation.close);
+                }
+            } else {
+                cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+            }
         }
     }
 
@@ -1699,16 +1712,21 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         } else {
                             // Try to decrypt this PGD file with the Crypto Engine.
                             try {
-                                // Generate the necessary directories.
+                                // Generate the necessary directories and files.
                                 String pgdPath = pgdFileConnector.getBaseDirectory(pgdFileConnector.id);
                                 new File(pgdPath).mkdirs();
                                 String decFileName = pgdFileConnector.getCompleteFileName(PGDFileConnector.decryptedFileName);
+                                SeekableRandomFile decFile = new SeekableRandomFile(decFileName, "rw");
+
+                                // Maximum 16-byte aligned block size to use during stream read/write.
+                                int maxAlignedChunkSize = 0x4EF0;
+
+                                // PGD hash header size.
+                                int pgdHeaderSize = 0xA0;
 
                                 // Setup the buffers.
-                                SeekableRandomFile decFile = new SeekableRandomFile(decFileName, "rw");
-                                int fileLength = (int) info.readOnlyFile.length();
-                                byte[] inBuf = new byte[fileLength];
-                                byte[] outBuf = new byte[fileLength];
+                                byte[] inBuf = new byte[pgdHeaderSize + maxAlignedChunkSize];
+                                byte[] outBuf = new byte[pgdHeaderSize + maxAlignedChunkSize];
                                 byte[] headerBuf = new byte[0x30 + 0x10];
                                 byte[] hashBuf = new byte[0x10];
 
@@ -1736,9 +1754,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                                 // locate the data hash at hashOffset and start decrypting until
                                 // dataSize is reached.
 
-                                // Maximum 16-byte aligned block size to use during stream read/write.
-                                int maxAlignedChunkSize = 0x4EF0;
-
                                 // If the data is smaller than maxAlignedChunkSize, decrypt it right away.
                                 if (dataSize <= maxAlignedChunkSize) {
                                     info.readOnlyFile.readFully(inBuf, 0xA0, dataSize);
@@ -1756,10 +1771,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
                                     // Keep reading and decrypting data by updating the PGD cipher.
                                     for (int i = 0; i < dataSize; i += maxAlignedChunkSize) {
-                                        info.readOnlyFile.readFully(inBuf, 0xA0 + i, maxAlignedChunkSize);
+                                        info.readOnlyFile.readFully(inBuf, 0xA0, maxAlignedChunkSize);
 
                                         System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
-                                        System.arraycopy(inBuf, hashOffset + i, outBuf, 0x10, maxAlignedChunkSize);
+                                        System.arraycopy(inBuf, hashOffset, outBuf, 0x10, maxAlignedChunkSize);
                                         decFile.write(crypto.UpdatePGDCipher(outBuf, maxAlignedChunkSize + 0x10));
                                     }
                                 }
@@ -1962,11 +1977,15 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         int uid = cpu.gpr[4];
 
+        if (log.isDebugEnabled()) {
+            log.debug("sceIoClose redirecting to hleIoClose");
+        }
+
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoClose(uid);
+        hleIoClose(uid, false);
         delayIoOperation(IoOperation.close);
     }
 
@@ -1976,26 +1995,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoCloseAsync - uid " + Integer.toHexString(uid));
+            log.debug("sceIoCloseAsync redirecting to hleIoClose");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.get(uid);
-        if (info != null) {
-            if (info.asyncPending) {
-                log.warn("sceIoCloseAsync - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
-                cpu.gpr[2] = ERROR_KERNEL_ASYNC_BUSY;
-            } else {
-                info.closePending = true;
-                updateResult(cpu, info, 0, true, false, IoOperation.close);
-            }
-        } else {
-            cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-        }
+        hleIoClose(uid, true);
     }
 
     public void sceIoOpen(Processor processor) {

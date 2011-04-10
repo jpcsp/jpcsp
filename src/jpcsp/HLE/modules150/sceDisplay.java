@@ -1393,25 +1393,42 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     public int hleDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int syncType) {
 		topaddr &= Memory.addressMask;
 
-        if (bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
-            pixelformat < 0 || pixelformat > 3 ||
-            syncType < 0 || syncType > 1) {
+        if ((bufferwidth < 0 || (bufferwidth & (bufferwidth - 1)) != 0) ||
+                ((bufferwidth == 0) && (topaddr != 0))) {
             log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                ",bufferwidth=" + bufferwidth +
-                ",pixelformat=" + pixelformat +
-                ",syncType=" + syncType + ") bad params");
+                ", bufferwidth=" + bufferwidth +
+                ", pixelformat=" + pixelformat +
+                ", syncType=" + syncType + ") bad bufferwidth");
+            isFbShowing = false;
+            gotBadFbBufParams = true;
+            return SceKernelErrors.ERROR_INVALID_SIZE;
+        }else if (pixelformat < 0 || pixelformat > 3) {
+            log.warn(
+                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
+                ", bufferwidth=" + bufferwidth +
+                ", pixelformat=" + pixelformat +
+                ", syncType=" + syncType + ") bad pixelformat");
             isFbShowing = false;
             gotBadFbBufParams = true;
             return -1;
-        } else if (topaddr == 0) {
-            // Got 0 as topaddr, but it's ok, it will be correctly set on the
-            // next call (tested and checked).
+        } else if (syncType < 0 || syncType > 1) {
             log.warn(
                 "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                ",bufferwidth=" + bufferwidth +
-                ",pixelformat=" + pixelformat +
-                ",syncType=" + syncType + ") bad params (topaddr==0)");
+                ", bufferwidth=" + bufferwidth +
+                ", pixelformat=" + pixelformat +
+                ", syncType=" + syncType + ") bad syncType");
+            isFbShowing = false;
+            gotBadFbBufParams = true;
+            return SceKernelErrors.ERROR_INVALID_MODE;
+        } else if ((topaddr == 0)) {
+            // If topaddr is NULL, the PSP's screen will be displayed as fully black
+            // as the output is blocked. Under these circumstances, bufferwidth can be 0.
+            log.warn(
+                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
+                ", bufferwidth=" + bufferwidth +
+                ", pixelformat=" + pixelformat +
+                ", syncType=" + syncType + ") (blocking display output)");
             isFbShowing = false;
             gotBadFbBufParams = true;
             return 0;
@@ -1425,9 +1442,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
                 gotBadFbBufParams = false;
                 log.info(
                     "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
-                    ",bufferwidth=" + bufferwidth +
-                    ",pixelformat=" + pixelformat +
-                    ",syncType=" + syncType + ") ok");
+                    ", bufferwidth=" + bufferwidth +
+                    ", pixelformat=" + pixelformat +
+                    ", syncType=" + syncType + ") ok");
             }
 
             if (pixelformat != pixelformatFb ||
@@ -1463,7 +1480,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
             return 0;
         }
-        return -1;
+        return SceKernelErrors.ERROR_INVALID_POINTER;
 	}
 
     public void sceDisplayGetFrameBuf(Processor processor) {
@@ -1480,7 +1497,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
                     topaddrAddr, bufferwidthAddr, pixelformatAddr, syncType));
         }
 
-        if (!Memory.isAddressGood(topaddrAddr    ) ||
+        if (syncType < 0 || syncType > 1) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
+        } else if (!Memory.isAddressGood(topaddrAddr    ) ||
             !Memory.isAddressGood(bufferwidthAddr) ||
             !Memory.isAddressGood(pixelformatAddr)) {
             cpu.gpr[2] = -1;
