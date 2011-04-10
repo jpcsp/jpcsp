@@ -1202,7 +1202,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     		me.init(meChannel, true, true);
                     	}
                     	if (!me.readAudioAu(mpegAtracAu)) {
-                            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+                    		// If the audio could not be decoded, simulate a successful return
+                    		if (me.getAudioContainer() != null) {
+                    			cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+                    		}
                     	}
                     	Emulator.getClock().resume();
                     } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
@@ -1210,7 +1213,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 	}
                 	mpegAtracAu.write(mem, au_addr);
                 	if (log.isDebugEnabled()) {
-                		log.debug(String.format("sceMpegGetAtracAu returning AtracAu=%s", mpegAtracAu.toString()));
+                		log.debug(String.format("sceMpegGetAtracAu returning 0x%08X, AtracAu=%s", cpu.gpr[2], mpegAtracAu.toString()));
                 	}
                 }
                 // Bitfield used to store data attributes.
