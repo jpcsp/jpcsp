@@ -61,7 +61,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
+		if (version >= 150) {
             mm.addFunction(0x21FF80E4, sceMpegQueryStreamOffsetFunction);
             mm.addFunction(0x611E9E11, sceMpegQueryStreamSizeFunction);
             mm.addFunction(0x682A619B, sceMpegInitFunction);
@@ -1063,7 +1063,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     }
                 	mpegAvcAu.write(mem, au_addr);
                 	if (log.isDebugEnabled()) {
-                		log.debug(String.format("sceMpegGetAvcAu returning AvcAu=%s", mpegAvcAu.toString()));
+                		log.debug(String.format("sceMpegGetAvcAu returning 0x%08X, AvcAu=%s", cpu.gpr[2], mpegAvcAu.toString()));
                 	}
                 }
                 // Bitfield used to store data attributes.
@@ -1957,6 +1957,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegAtracDecode bad address " + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
             cpu.gpr[2] = -1;
         }
+    }
+
+    protected int getPacketsFromSize(int size) {
+    	int packets = size / (2048 + 104);
+
+    	return packets;
     }
 
     private int getSizeFromPackets(int packets) {
