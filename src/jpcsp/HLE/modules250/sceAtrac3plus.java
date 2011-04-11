@@ -204,11 +204,27 @@ public class sceAtrac3plus extends jpcsp.HLE.modules150.sceAtrac3plus {
     public void sceAtracSetMOutHalfwayBufferAndGetID(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("Unimplemented function sceAtracSetMOutHalfwayBufferAndGetID "
-    			+ String.format("%08x %08x %08x %08x %08x %08x",
-    					cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        int MOutHalfBuffer = cpu.gpr[4];
+        int readSize = cpu.gpr[5];
+        int MOutHalfBufferSize = cpu.gpr[6];
 
-        cpu.gpr[2] = 0;
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceAtracSetMOutHalfwayBufferAndGetID buffer = 0x%08X, readSize = 0x%08X, bufferSize = 0x%08X", MOutHalfBuffer, readSize, MOutHalfBufferSize));
+        }
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        int atID = 0;
+        if (Memory.isAddressGood(MOutHalfBuffer)) {
+        	int codecType = getCodecType(MOutHalfBuffer);
+            atID = hleCreateAtracID(codecType);
+            if (atracIDs.containsKey(atID)) {
+                atracIDs.get(atID).setData(MOutHalfBuffer, readSize, MOutHalfBufferSize, false);
+            }
+        }
+        cpu.gpr[2] = atID;
     }
 
     public void sceAtracSetAA3DataAndGetID(Processor processor) {
