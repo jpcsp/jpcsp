@@ -132,7 +132,6 @@ public enum SyscallIgnore {
 	sceMpegBasePESpacketCopy(0xBEA18F91),
 	sceMpegGetUserdataAu(0x01977054),
 	sceMpegQueryUserdataEsSize(0xC45C99CC),
-	sceMpegRingbufferQueryPackNum(0x769BEBB6),
 	sceNetAdhocMatchingAbortSendData(0xEC19337D),
 	sceNetAdhocMatchingCancelTarget(0xEA3C6108),
 	sceNetAdhocMatchingCancelTargetWithOpt(0x8f58bedf),
