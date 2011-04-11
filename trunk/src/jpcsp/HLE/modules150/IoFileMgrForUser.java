@@ -914,6 +914,11 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     private boolean doStepAsync(IoInfo info) {
         boolean done = true;
+        if (info != null && info.closePending) {
+            // Let the async thread close the file.
+            info.closePending = false;
+            hleIoClose(info.uid, false);
+        }
         if (info != null && info.asyncPending) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (info.getAsyncRestMillis() > 0) {
@@ -921,10 +926,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             } else {
                 info.asyncPending = false;
                 if (info.cbid >= 0) {
-                    // Trigger Async callback
+                    // Trigger Async callback.
                     threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, info.cbid, info.notifyArg);
                 }
-                // Find threads waiting on this uid and wake them up
+                // Find threads waiting on this uid and wake them up.
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.wait.waitingOnIo && thread.wait.Io_id == info.uid) {
@@ -998,12 +1003,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             log.debug("hleIoWaitAsync - poll return = 1(busy), not waiting");
             Emulator.getProcessor().cpu.gpr[2] = 1;
         } else {
-            if (info.closePending) {
-                log.debug("hleIoWaitAsync - file marked with closePending, calling sceIoClose, not waiting");
-                hleIoClose(uid, false);
-                wait = false;
-            }
-
             // Deferred error reporting from sceIoOpenAsync(filenotfound)
             if (info.result == (ERROR_ERRNO_FILE_NOT_FOUND & 0xffffffffL)) {
                 log.debug("hleIoWaitAsync - file not found, not waiting");
@@ -1232,35 +1231,8 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
 
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.remove(uid);
-        try {
-            if (info == null) {
-                if (uid != 1 && uid != 2) { // Ignore stdout and stderr.
-                    log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
-                }
-                cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
-            } else {
-                if (info.readOnlyFile != null) {
-                    // Can be just closing an empty handle, because hleIoOpen(async==true)
-                    // generates a dummy IoInfo when the file could not be opened.
-                    info.readOnlyFile.close();
-                }
-                SceUidManager.releaseUid(info.uid, "IOFileManager-File");
-                triggerAsyncThread(info);
-                info.result = 0;
-                cpu.gpr[2] = 0;
-            }
-        } catch (IOException e) {
-            log.error("pspiofilemgr - error closing file: " + e.getMessage());
-            e.printStackTrace();
-            cpu.gpr[2] = -1;
-        }
-
-        for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoClose(cpu.gpr[2], uid);
-        }
-
-        if(async) {
+        if (async) {
+            IoInfo info = filelist.get(uid);
             if (info != null) {
                 if (info.asyncPending) {
                     log.warn("sceIoCloseAsync - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
@@ -1271,6 +1243,33 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
             } else {
                 cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+            }
+        } else {
+            IoInfo info = filelist.remove(uid);
+            try {
+                if (info == null) {
+                    if (uid != 1 && uid != 2) { // Ignore stdout and stderr.
+                        log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
+                    }
+                    cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
+                } else {
+                    if (info.readOnlyFile != null) {
+                        // Can be just closing an empty handle, because hleIoOpen(async==true)
+                        // generates a dummy IoInfo when the file could not be opened.
+                        info.readOnlyFile.close();
+                    }
+                    SceUidManager.releaseUid(info.uid, "IOFileManager-File");
+                    triggerAsyncThread(info);
+                    info.result = 0;
+                    cpu.gpr[2] = 0;
+                }
+            } catch (IOException e) {
+                log.error("pspiofilemgr - error closing file: " + e.getMessage());
+                e.printStackTrace();
+                cpu.gpr[2] = -1;
+            }
+            for (IIoListener ioListener : ioListeners) {
+                ioListener.sceIoClose(cpu.gpr[2], uid);
             }
         }
     }
@@ -1725,13 +1724,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                                 int pgdHeaderSize = 0xA0;
 
                                 // Setup the buffers.
-                                byte[] inBuf = new byte[pgdHeaderSize + maxAlignedChunkSize];
-                                byte[] outBuf = new byte[pgdHeaderSize + maxAlignedChunkSize];
+                                byte[] inBuf = new byte[maxAlignedChunkSize + pgdHeaderSize];
+                                byte[] outBuf = new byte[maxAlignedChunkSize + 0x10];
                                 byte[] headerBuf = new byte[0x30 + 0x10];
                                 byte[] hashBuf = new byte[0x10];
 
                                 // Read the encrypted PGD header.
-                                info.readOnlyFile.readFully(inBuf, 0, 0xA0);
+                                info.readOnlyFile.readFully(inBuf, 0, pgdHeaderSize);
 
                                 // Decrypt 0x30 bytes at offset 0x30 to expose the first header.
                                 System.arraycopy(inBuf, 0x10, headerBuf, 0, 0x10);
@@ -1756,17 +1755,19 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
                                 // If the data is smaller than maxAlignedChunkSize, decrypt it right away.
                                 if (dataSize <= maxAlignedChunkSize) {
+                                    info.readOnlyFile.seek(hashOffset);
                                     info.readOnlyFile.readFully(inBuf, 0xA0, dataSize);
 
                                     System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
-                                    System.arraycopy(inBuf, hashOffset, outBuf, 0x10, dataSize);
+                                    System.arraycopy(inBuf, 0xA0, outBuf, 0x10, dataSize);
                                     decFile.write(crypto.DecryptPGD(outBuf, dataSize + 0x10, keyBuf));
                                 } else {
                                     // Read and decrypt the first chunk of data.
+                                    info.readOnlyFile.seek(hashOffset);
                                     info.readOnlyFile.readFully(inBuf, 0xA0, maxAlignedChunkSize);
 
                                     System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
-                                    System.arraycopy(inBuf, hashOffset, outBuf, 0x10, maxAlignedChunkSize);
+                                    System.arraycopy(inBuf, 0xA0, outBuf, 0x10, maxAlignedChunkSize);
                                     decFile.write(crypto.DecryptPGD(outBuf, maxAlignedChunkSize + 0x10, keyBuf));
 
                                     // Keep reading and decrypting data by updating the PGD cipher.
@@ -1774,7 +1775,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                                         info.readOnlyFile.readFully(inBuf, 0xA0, maxAlignedChunkSize);
 
                                         System.arraycopy(hashBuf, 0, outBuf, 0, 0x10);
-                                        System.arraycopy(inBuf, hashOffset, outBuf, 0x10, maxAlignedChunkSize);
+                                        System.arraycopy(inBuf, 0xA0, outBuf, 0x10, maxAlignedChunkSize);
                                         decFile.write(crypto.UpdatePGDCipher(outBuf, maxAlignedChunkSize + 0x10));
                                     }
                                 }
