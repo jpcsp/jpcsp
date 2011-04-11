@@ -923,6 +923,10 @@ public class Loader {
                 }
                 stubHeader.setModuleNamez(moduleName);
 
+                if (Emulator.log.isDebugEnabled()) {
+                	Emulator.log.debug(String.format("Processing Import #%d: %s", i, stubHeader.toString()));
+                }
+
                 if (stubHeader.getSize() > 5) {
                     stubHeadersAddress += stubHeader.getSize() * 4;
                     Emulator.log.warn("'" + stubHeader.getModuleNamez() + "' has size " + stubHeader.getSize());
@@ -930,18 +934,23 @@ public class Loader {
                     stubHeadersAddress += Elf32StubHeader.sizeof();
                 }
 
-                // n stubs per module to import
-                for (int j = 0; j < stubHeader.getImports(); j++) {
-                    int nid = mem.read32((int) (stubHeader.getOffsetNid() + j * 4));
-                    int importAddress = (int) (stubHeader.getOffsetText() + j * 8);
-                    DeferredStub deferredStub = new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid);
-                    module.unresolvedImports.add(deferredStub);
+                if (!Memory.isAddressGood((int) stubHeader.getOffsetNid()) || !Memory.isAddressGood((int) stubHeader.getOffsetText())) {
+                	Emulator.log.warn(String.format("Incorrect s_nid or s_text address in StubHeader #%d: %s", i, stubHeader.toString()));
+                } else {
+	                // n stubs per module to import
+	                IMemoryReader nidReader = MemoryReader.getMemoryReader((int) stubHeader.getOffsetNid(), stubHeader.getImports() * 4, 4);
+	                for (int j = 0; j < stubHeader.getImports(); j++) {
+	                	int nid = nidReader.readNext();
+	                	int importAddress = (int) (stubHeader.getOffsetText() + j * 8);
+	                    DeferredStub deferredStub = new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid);
+	                    module.unresolvedImports.add(deferredStub);
 
-                    // Add a 0xfffff syscall so we can detect if an unresolved import is called
-                    int instruction = // syscall <code>
-                            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f) | ((0xfffff & 0x000fffff) << 6);
+	                    // Add a 0xfffff syscall so we can detect if an unresolved import is called
+	                    int instruction = // syscall <code>
+	                            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f) | ((0xfffff & 0x000fffff) << 6);
 
-                    mem.write32(importAddress + 4, instruction);
+	                    mem.write32(importAddress + 4, instruction);
+	                }
                 }
             }
         }
@@ -962,8 +971,8 @@ public class Loader {
         for (int i = 0; i < entHeadersCount; i++) {
             Elf32EntHeader entHeader = new Elf32EntHeader(mem, entHeadersAddress);
 
-            // Skip 0 sized entries.
             if ((entHeader.getSize() <= 0)) {
+                // Skip 0 sized entries.
                 Emulator.log.warn("Skipping dummy entry with size " + entHeader.getSize());
                 entHeadersAddress += Elf32EntHeader.sizeof() / 2;
             } else {
@@ -974,6 +983,10 @@ public class Loader {
                     moduleName = module.modname;
                 }
                 entHeader.setModuleNamez(moduleName);
+
+                if (Emulator.log.isDebugEnabled()) {
+                	Emulator.log.debug(String.format("Processing header #%d: %s", i, entHeader.toString()));
+                }
 
                 if (entHeader.getSize() > 4) {
                     entHeadersAddress += entHeader.getSize() * 4;
@@ -995,102 +1008,117 @@ public class Loader {
                 IMemoryReader nidReader = MemoryReader.getMemoryReader(nidAddr, 4);
                 int exportAddr = nidAddr + (functionCount + variableCount) * 4;
                 IMemoryReader exportReader = MemoryReader.getMemoryReader(exportAddr, 4);
-                for (int j = 0; j < functionCount; j++) {
-                    int nid = nidReader.readNext();
-                    int exportAddress = exportReader.readNext();
+                if ((entHeader.getAttr() & 0x8000) == 0) {
+	                for (int j = 0; j < functionCount; j++) {
+	                    int nid = nidReader.readNext();
+	                    int exportAddress = exportReader.readNext();
+                        // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
+                        if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
+                            nidMapper.addModuleNid(moduleName, nid, exportAddress);
+                            entCount++;
+                            if (Emulator.log.isDebugEnabled()) {
+                                Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
+                            }
+                        }
+	                }
+                } else {
+	                for (int j = 0; j < functionCount; j++) {
+	                    int nid = nidReader.readNext();
+	                    int exportAddress = exportReader.readNext();
 
-                    switch (nid) {
-                        case 0xD632ACDB: // module_start
-                            module.module_start_func = exportAddress;
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_start found: nid=0x%08X, function=0x%08X", nid, exportAddress));
-                            }
-                            break;
-                        case 0xCEE8593C: // module_stop
-                            module.module_stop_func = exportAddress;
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_stop found: nid=0x%08X, function=0x%08X", nid, exportAddress));
-                            }
-                            break;
-                        case 0x2F064FA6: // module_reboot_before
-                            module.module_reboot_before_func = exportAddress;
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_reboot_before found: nid=0x%08X, function=0x%08X", nid, exportAddress));
-                            }
-                            break;
-                        case 0xADF12745: // module_reboot_phase
-                            module.module_reboot_phase_func = exportAddress;
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_reboot_phase found: nid=0x%08X, function=0x%08X", nid, exportAddress));
-                            }
-                            break;
-                        case 0xD3744BE0: // module_bootstart
-                            module.module_bootstart_func = exportAddress;
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_bootstart found: nid=0x%08X, function=0x%08X", nid, exportAddress));
-                            }
-                            break;
-                        default:
-                            // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
-                            if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
-                                nidMapper.addModuleNid(moduleName, nid, exportAddress);
-                                entCount++;
-                                if (Emulator.log.isDebugEnabled()) {
-                                    Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
-                                }
-                            }
-                            break;
-                    }
-                }
+	                    switch (nid) {
+	                        case 0xD632ACDB: // module_start
+	                            module.module_start_func = exportAddress;
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_start found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            }
+	                            break;
+	                        case 0xCEE8593C: // module_stop
+	                            module.module_stop_func = exportAddress;
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_stop found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            }
+	                            break;
+	                        case 0x2F064FA6: // module_reboot_before
+	                            module.module_reboot_before_func = exportAddress;
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_reboot_before found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            }
+	                            break;
+	                        case 0xADF12745: // module_reboot_phase
+	                            module.module_reboot_phase_func = exportAddress;
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_reboot_phase found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            }
+	                            break;
+	                        case 0xD3744BE0: // module_bootstart
+	                            module.module_bootstart_func = exportAddress;
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_bootstart found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            }
+	                            break;
+	                        default:
+	                            // Only accept exports from custom modules (attr != 0x4000) and with valid export addresses.
+	                            if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
+	                                nidMapper.addModuleNid(moduleName, nid, exportAddress);
+	                                entCount++;
+	                                if (Emulator.log.isDebugEnabled()) {
+	                                    Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
+	                                }
+	                            }
+	                            break;
+	                    }
+	                }
 
-                int variableTableAddr = exportAddr + functionCount * 4;
-                IMemoryReader variableReader = MemoryReader.getMemoryReader(variableTableAddr, 4);
-                for (int j = 0; j < variableCount; j++) {
-                    int nid = nidReader.readNext();
-                    int variableAddr = variableReader.readNext();
+	                int variableTableAddr = exportAddr + functionCount * 4;
+	                IMemoryReader variableReader = MemoryReader.getMemoryReader(variableTableAddr, 4);
+	                for (int j = 0; j < variableCount; j++) {
+	                    int nid = nidReader.readNext();
+	                    int variableAddr = variableReader.readNext();
 
-                    switch (nid) {
-                        case 0xF01D73A7: // module_info
-                            // Seems to be ignored by the PSP
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_info found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
-                            }
-                            break;
-                        case 0x0F7C276C: // module_start_thread_parameter
-                            module.module_start_thread_priority = mem.read32(variableAddr + 4);
-                            module.module_start_thread_stacksize = mem.read32(variableAddr + 8);
-                            module.module_start_thread_attr = mem.read32(variableAddr + 12);
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_start_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_start_thread_priority, module.module_start_thread_stacksize, module.module_start_thread_attr));
-                            }
-                            break;
-                        case 0xCF0CC697: // module_stop_thread_parameter
-                            module.module_stop_thread_priority = mem.read32(variableAddr + 4);
-                            module.module_stop_thread_stacksize = mem.read32(variableAddr + 8);
-                            module.module_stop_thread_attr = mem.read32(variableAddr + 12);
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_stop_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_stop_thread_priority, module.module_stop_thread_stacksize, module.module_stop_thread_attr));
-                            }
-                            break;
-                        case 0xF4F4299D: // module_reboot_before_thread_parameter
-                            module.module_reboot_before_thread_priority = mem.read32(variableAddr + 4);
-                            module.module_reboot_before_thread_stacksize = mem.read32(variableAddr + 8);
-                            module.module_reboot_before_thread_attr = mem.read32(variableAddr + 12);
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("module_reboot_before_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_reboot_before_thread_priority, module.module_reboot_before_thread_stacksize, module.module_reboot_before_thread_attr));
-                            }
-                            break;
-                        case 0x11B97506: // module_sdk_version
-                            // Currently ignored
-                            int sdk_version = mem.read32(variableAddr);
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.warn(String.format("module_sdk_version found: nid=0x%08X, sdk_version=0x%08X", nid, sdk_version));
-                            }
-                            break;
-                        default:
-                            Emulator.log.warn(String.format("Unknown variable entry found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
-                            break;
-                    }
+	                    switch (nid) {
+	                        case 0xF01D73A7: // module_info
+	                            // Seems to be ignored by the PSP
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_info found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
+	                            }
+	                            break;
+	                        case 0x0F7C276C: // module_start_thread_parameter
+	                            module.module_start_thread_priority = mem.read32(variableAddr + 4);
+	                            module.module_start_thread_stacksize = mem.read32(variableAddr + 8);
+	                            module.module_start_thread_attr = mem.read32(variableAddr + 12);
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_start_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_start_thread_priority, module.module_start_thread_stacksize, module.module_start_thread_attr));
+	                            }
+	                            break;
+	                        case 0xCF0CC697: // module_stop_thread_parameter
+	                            module.module_stop_thread_priority = mem.read32(variableAddr + 4);
+	                            module.module_stop_thread_stacksize = mem.read32(variableAddr + 8);
+	                            module.module_stop_thread_attr = mem.read32(variableAddr + 12);
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_stop_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_stop_thread_priority, module.module_stop_thread_stacksize, module.module_stop_thread_attr));
+	                            }
+	                            break;
+	                        case 0xF4F4299D: // module_reboot_before_thread_parameter
+	                            module.module_reboot_before_thread_priority = mem.read32(variableAddr + 4);
+	                            module.module_reboot_before_thread_stacksize = mem.read32(variableAddr + 8);
+	                            module.module_reboot_before_thread_attr = mem.read32(variableAddr + 12);
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.debug(String.format("module_reboot_before_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_reboot_before_thread_priority, module.module_reboot_before_thread_stacksize, module.module_reboot_before_thread_attr));
+	                            }
+	                            break;
+	                        case 0x11B97506: // module_sdk_version
+	                            // Currently ignored
+	                            int sdk_version = mem.read32(variableAddr);
+	                            if (Emulator.log.isDebugEnabled()) {
+	                                Emulator.log.warn(String.format("module_sdk_version found: nid=0x%08X, sdk_version=0x%08X", nid, sdk_version));
+	                            }
+	                            break;
+	                        default:
+	                            Emulator.log.warn(String.format("Unknown variable entry found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
+	                            break;
+	                    }
+	                }
                 }
             }
         }
