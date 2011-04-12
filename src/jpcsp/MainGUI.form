@@ -770,6 +770,9 @@
                   <Connection code="Resource.get(&quot;chineseTW&quot;)" type="code"/>
                 </Property>
               </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ChineseTWActionPerformed"/>
+              </Events>
             </MenuItem>
           </SubComponents>
         </Menu>
