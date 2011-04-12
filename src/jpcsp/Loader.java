@@ -903,11 +903,11 @@ public class Loader {
     private void LoadELFImports(SceModule module) throws IOException {
         Memory mem = Memory.getInstance();
         int stubHeadersAddress = module.stub_top;
-        int stubHeadersCount = module.stub_size / Elf32StubHeader.sizeof();
+        int stubHeadersEndAddress = module.stub_top + module.stub_size;
 
         // n modules to import, 1 stub header per module to import.
         String moduleName;
-        for (int i = 0; i < stubHeadersCount; i++) {
+        for (int i = 0; stubHeadersAddress < stubHeadersEndAddress; i++) {
             Elf32StubHeader stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
 
             // Skip 0 sized entries.
@@ -929,7 +929,9 @@ public class Loader {
 
                 if (stubHeader.getSize() > 5) {
                     stubHeadersAddress += stubHeader.getSize() * 4;
-                    Emulator.log.warn("'" + stubHeader.getModuleNamez() + "' has size " + stubHeader.getSize());
+                    if (Emulator.log.isDebugEnabled()) {
+                    	Emulator.log.debug(String.format("'%s' has size %d", stubHeader.getModuleNamez(), stubHeader.getSize()));
+                    }
                 } else {
                     stubHeadersAddress += Elf32StubHeader.sizeof();
                 }
@@ -955,7 +957,11 @@ public class Loader {
             }
         }
 
-        Emulator.log.info("Found " + module.unresolvedImports.size() + " imports from " + stubHeadersCount + " modules");
+        if (module.unresolvedImports.size() > 0) {
+        	if (Emulator.log.isInfoEnabled()) {
+        		Emulator.log.info(String.format("Found %d unresolved imports", module.unresolvedImports.size()));
+        	}
+        }
     }
 
     /* Loads from memory */
@@ -963,12 +969,12 @@ public class Loader {
         NIDMapper nidMapper = NIDMapper.getInstance();
         Memory mem = Memory.getInstance();
         int entHeadersAddress = module.ent_top;
-        int entHeadersCount = module.ent_size / Elf32EntHeader.sizeof();
+        int entHeadersEndAddress = module.ent_top + module.ent_size;
         int entCount = 0;
 
         // n modules to export, 1 ent header per module to export.
         String moduleName;
-        for (int i = 0; i < entHeadersCount; i++) {
+        for (int i = 0; entHeadersAddress < entHeadersEndAddress; i++) {
             Elf32EntHeader entHeader = new Elf32EntHeader(mem, entHeadersAddress);
 
             if ((entHeader.getSize() <= 0)) {
@@ -985,12 +991,14 @@ public class Loader {
                 entHeader.setModuleNamez(moduleName);
 
                 if (Emulator.log.isDebugEnabled()) {
-                	Emulator.log.debug(String.format("Processing header #%d: %s", i, entHeader.toString()));
+                	Emulator.log.debug(String.format("Processing header #%d at 0x%08X: %s", i, entHeadersAddress, entHeader.toString()));
                 }
 
                 if (entHeader.getSize() > 4) {
                     entHeadersAddress += entHeader.getSize() * 4;
-                    Emulator.log.warn("'" + entHeader.getModuleNamez() + "' has size " + entHeader.getSize());
+                    if (Emulator.log.isDebugEnabled()) {
+                    	Emulator.log.debug(String.format("'%s' has size %d", entHeader.getModuleNamez(), entHeader.getSize()));
+                    }
                 } else {
                     entHeadersAddress += Elf32EntHeader.sizeof();
                 }
@@ -1124,7 +1132,9 @@ public class Loader {
         }
 
         if (entCount > 0) {
-            Emulator.log.info("Found " + entCount + " exports");
+        	if (Emulator.log.isInfoEnabled()) {
+        		Emulator.log.info(String.format("Found %d exports", entCount));
+        	}
         }
     }
 
