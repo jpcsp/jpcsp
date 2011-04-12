@@ -1521,16 +1521,15 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         Memory mem = Memory.getInstance();
 
         if (log.isDebugEnabled()) {
-            log.debug("hleIoIoctl(uid=" + Integer.toHexString(uid) + ",cmd=0x" + Integer.toHexString(cmd) + ",indata=0x" + Integer.toHexString(indata_addr) + ",inlen=" + inlen + ",outdata=0x" + Integer.toHexString(outdata_addr) + ",outlen=" + outlen + ",async=" + async + ")");
-
+            log.debug(String.format("hleIoIoctl(uid=%x, cmd=0x%08X, indata=0x%08X, inlen=%d, outdata=0x%08X, outlen=%d, async=%b", uid, cmd, indata_addr, inlen, outdata_addr, outlen, async));
             if (Memory.isAddressGood(indata_addr)) {
                 for (int i = 0; i < inlen; i += 4) {
-                    log.debug("hleIoIoctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
+                    log.debug(String.format("hleIoIoctl indata[%d]=0x%08X", i / 4, mem.read32(indata_addr + i)));
                 }
             }
             if (Memory.isAddressGood(outdata_addr)) {
-                for (int i = 0; i < outlen; i += 4) {
-                    log.debug("hleIoIoctl outdata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(outdata_addr + i)));
+                for (int i = 0; i < Math.min(outlen, 256); i += 4) {
+                    log.debug(String.format("hleIoIoctl outdata[%d]=0x%08X", i / 4, mem.read32(outdata_addr + i)));
                 }
             }
         }
@@ -1628,6 +1627,31 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         }
                     } else {
                         log.warn("hleIoIoctl cmd=0x01020007 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+                        result = ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
+                // Read UMD file.
+                case 0x01030008: {
+                    if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
+                    	int length = mem.read32(indata_addr);
+                    	if (length > 0) {
+                    		if (Memory.isAddressGood(outdata_addr) && outlen >= length) {
+                                try {
+									Utilities.readFully(info.readOnlyFile, outdata_addr, length);
+	                                info.position += length;
+	                                result = length;
+								} catch (IOException e) {
+									log.error(e);
+									result = ERROR_KERNEL_FILE_READ_ERROR;
+								}
+                    		} else {
+                                log.warn(String.format("hleIoIoctl cmd=0x%08X inlen=%d unsupported output parameters 0x%08X %d", cmd, inlen, outdata_addr, outlen));
+                                result = ERROR_INVALID_ARGUMENT;
+                    		}
+                    	}
+                    } else {
+                        log.warn(String.format("hleIoIoctl cmd=0x%08X unsupported input parameters 0x%08X %d", cmd, indata_addr, inlen));
                         result = ERROR_INVALID_ARGUMENT;
                     }
                     break;
@@ -1828,7 +1852,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         }
                     }
                     if (Memory.isAddressGood(outdata_addr)) {
-                        for (int i = 0; i < outlen; i += 4) {
+                        for (int i = 0; i < Math.min(outlen, 256); i += 4) {
                             log.warn(String.format("hleIoIoctl outdata[%d]=0x%08X", i / 4, mem.read32(outdata_addr + i)));
                         }
                     }
