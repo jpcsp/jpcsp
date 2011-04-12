@@ -134,7 +134,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public final static int PSP_DEV_TYPE_MOUNT = 0x40;
 
     protected static enum IoOperation {
-        open(5), close, read(5), write(5), seek, ioctl(2), remove, rename, mkdir;
+        open(5), close(1), read(5), write(5), seek, ioctl(2), remove, rename, mkdir;
 
         int delayMillis;
         int asyncDelayMillis;
@@ -914,11 +914,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     private boolean doStepAsync(IoInfo info) {
         boolean done = true;
-        if (info != null && info.closePending) {
-            // Let the async thread close the file.
-            info.closePending = false;
-            hleIoClose(info.uid, false);
-        }
         if (info != null && info.asyncPending) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (info.getAsyncRestMillis() > 0) {
@@ -1003,6 +998,12 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             log.debug("hleIoWaitAsync - poll return = 1(busy), not waiting");
             Emulator.getProcessor().cpu.gpr[2] = 1;
         } else {
+            if (info.closePending) {
+            	log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
+                hleIoClose(info.uid, false);
+                wait = false;
+            }
+
             // Deferred error reporting from sceIoOpenAsync(filenotfound)
             if (info.result == (ERROR_ERRNO_FILE_NOT_FOUND & 0xffffffffL)) {
                 log.debug("hleIoWaitAsync - file not found, not waiting");
