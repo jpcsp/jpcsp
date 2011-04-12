@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -36,6 +37,7 @@ import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.Hash;
+import jpcsp.util.Utilities;
 
 /**
  * @author gid15
@@ -240,7 +242,17 @@ public class ExternalDecoder {
 			return decodedFileName;
 		}
 
-		byte[] atracData = ioListener.readFileData(address, length, atracFileSize, null);
+		byte[] atracData;
+		if (length >= atracFileSize) {
+			// We have the complete atrac data available, no need to use the ioListener
+			atracData = new byte[atracFileSize];
+			// Copy the memory to the atracData
+			Utilities.putBuffer(ByteBuffer.wrap(atracData), Memory.getInstance().getBuffer(address, length), ByteOrder.LITTLE_ENDIAN);
+		} else {
+			// We do not have the complete atrac data in memory, try to read
+			// the complete data from the UMD.
+			atracData = ioListener.readFileData(address, length, atracFileSize, null);
+		}
     	if (atracData == null) {
     		// Atrac data cannot be retrieved...
     		return null;
