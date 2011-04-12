@@ -270,15 +270,18 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
+            @Override
+			public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
         addComponentListener(new java.awt.event.ComponentAdapter() {
-            public void componentMoved(java.awt.event.ComponentEvent evt) {
+            @Override
+			public void componentMoved(java.awt.event.ComponentEvent evt) {
                 formComponentMoved(evt);
             }
-            public void componentResized(java.awt.event.ComponentEvent evt) {
+            @Override
+			public void componentResized(java.awt.event.ComponentEvent evt) {
                 formComponentResized(evt);
             }
         });
@@ -852,6 +855,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         ChineseTW.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/tw_TW_Icon.png"))); // NOI18N
         ChineseTW.setText(Resource.get("chineseTW"));
+        ChineseTW.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ChineseTWActionPerformed(evt);
+            }
+        });
         LanguageMenu.add(ChineseTW);
 
         MenuBar.add(LanguageMenu);
@@ -1811,6 +1819,10 @@ private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChinesePRCActionPerformed
     changeLanguage("cn_CN");
+}//GEN-LAST:event_ChinesePRCActionPerformed
+
+private void ChineseTWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChinesePRCActionPerformed
+    changeLanguage("tw_TW");
 }//GEN-LAST:event_ChinesePRCActionPerformed
 
 private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentMoved
