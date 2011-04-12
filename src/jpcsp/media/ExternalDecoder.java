@@ -247,7 +247,7 @@ public class ExternalDecoder {
 			// We have the complete atrac data available, no need to use the ioListener
 			atracData = new byte[atracFileSize];
 			// Copy the memory to the atracData
-			Utilities.putBuffer(ByteBuffer.wrap(atracData), Memory.getInstance().getBuffer(address, length), ByteOrder.LITTLE_ENDIAN);
+			Utilities.putBuffer(ByteBuffer.wrap(atracData), Memory.getInstance().getBuffer(address, length), ByteOrder.LITTLE_ENDIAN, atracData.length);
 		} else {
 			// We do not have the complete atrac data in memory, try to read
 			// the complete data from the UMD.
