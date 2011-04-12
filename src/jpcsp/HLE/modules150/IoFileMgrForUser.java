@@ -899,8 +899,17 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             if (asyncPriority < 0) {
                 asyncPriority = threadMan.getCurrentThread().currentPriority;
             }
+
+            int stackSize = 0x2000;
+            // On FW 1.50, the stack size for the async thread is 0x2000,
+            // on FW 5.00, the stack size is 0x800.
+            // When did it change?
+            if (Emulator.getInstance().getFirmwareVersion() > 150) {
+            	stackSize = 0x800;
+            }
+
             info.asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
-                    ThreadManForUser.ASYNC_LOOP_ADDRESS, asyncPriority, 0x2000,
+                    ThreadManForUser.ASYNC_LOOP_ADDRESS, asyncPriority, stackSize,
                     threadMan.getCurrentThread().attr, 0);
             // Copy uid to Async Thread argument register
             info.asyncThread.cpuContext.gpr[asyncThreadRegisterArgument] = info.uid;
