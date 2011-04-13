@@ -161,20 +161,50 @@ public class SettingsGUI extends javax.swing.JFrame {
 
     private ComboBoxModel makeLanguageComboBoxModel() {
         MutableComboBoxModel comboBox = new DefaultComboBoxModel();
-        comboBox.addElement(Resource.get("japanese"));
-        comboBox.addElement(Resource.get("english"));
-        comboBox.addElement(Resource.get("french"));
-        comboBox.addElement(Resource.get("spanish"));
-        comboBox.addElement(Resource.get("german"));
-        comboBox.addElement(Resource.get("italian"));
-        comboBox.addElement(Resource.get("dutch"));
-        comboBox.addElement(Resource.get("portuguese"));
-        comboBox.addElement(Resource.get("russian"));
-        comboBox.addElement(Resource.get("korean"));
-        comboBox.addElement(Resource.get("traditionalChinese"));
-        comboBox.addElement(Resource.get("simplifiedChinese"));
+        for (String language : getImposeLanguages()) {
+        	comboBox.addElement(language);
+        }
 
         return comboBox;
+    }
+
+    public static String[] getImposeLanguages() {
+    	return new String[] { Resource.getEnglish("japanese"),
+    	                      Resource.getEnglish("english"),
+    	                      Resource.getEnglish("french"),
+    	                      Resource.getEnglish("spanish"),
+    	                      Resource.getEnglish("german"),
+    	                      Resource.getEnglish("italian"),
+    	                      Resource.getEnglish("dutch"),
+    	                      Resource.getEnglish("portuguese"),
+    	                      Resource.getEnglish("russian"),
+    	                      Resource.getEnglish("korean"),
+    	                      Resource.getEnglish("traditionalChinese"),
+    	                      Resource.getEnglish("simplifiedChinese") };
+    }
+
+    public static String[] getImposeButtons() {
+    	return new String[] { "\"O\" for \"Enter\"", "\"X\" for \"Enter\"" };
+    }
+
+    public static String[] getSysparamDaylightSavings() {
+    	return new String[] { "Off", "On" };
+    }
+
+    public static String[] getSysparamTimeFormats() {
+    	return new String[] { "24H", "12H" };
+    }
+
+    public static String[] getSysparamDateFormats() {
+    	return new String[] { "YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY" };
+    }
+
+    public static String[] getSysparamWlanPowerSaves() {
+    	return new String[] { "Off", "On" };
+    }
+
+    public static String[] getSysparamAdhocChannels() {
+    	return new String[] { "Auto", "1", "2", "3", "4" };
     }
 
     private ComboBoxModel makeMethodMaxInstructions() {
@@ -386,27 +416,27 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         buttonLabel.setText(Resource.get("buttonpref"));
 
-        buttonBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "\"O\" for \"Enter\"", "\"X\" for \"Enter\"" }));
+        buttonBox.setModel(new javax.swing.DefaultComboBoxModel(getImposeButtons()));
 
         daylightLabel.setText(Resource.get("daylightSavings"));
 
-        daylightBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
+        daylightBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamDaylightSavings()));
 
         timeFormatLabel.setText(Resource.get("timeformat"));
 
-        timeFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "24H", "12H" }));
+        timeFormatBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamTimeFormats()));
 
         dateFormatLabel.setText(Resource.get("dateformat"));
 
-        dateFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY" }));
+        dateFormatBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamDateFormats()));
 
         wlanPowerLabel.setText(Resource.get("wlanpowersaving"));
 
-        wlanPowerBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
+        wlanPowerBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamWlanPowerSaves()));
 
         adhocChannelLabel.setText(Resource.get("adhocChannel"));
 
-        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Auto", "1", "2", "3", "4" }));
+        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamAdhocChannels()));
 
         timezoneLabel.setText(Resource.get("timezone"));
 

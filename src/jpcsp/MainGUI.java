@@ -126,6 +126,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         "ms0/PSP/GAME",
         "tmp"
     };
+    private static final String logConfigurationSettingLeft = "    %1$-40s [%2$s]";
+    private static final String logConfigurationSettingRight = "    [%2$s] %1$s";
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -1435,8 +1437,94 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         }
     }
 
+    private void logConfigurationSetting(String resourceKey, String value, boolean textLeft) {
+    	String format = textLeft ? logConfigurationSettingLeft : logConfigurationSettingRight;
+    	String text = Resource.getEnglish(resourceKey);
+    	if (text == null) {
+    		text = resourceKey;
+    	}
+    	Emulator.log.info(String.format(format, text, value));
+    }
+
+    private void logConfigurationSettingBool(String resourceKey, String settingKey, boolean textLeft) {
+    	boolean value = Settings.getInstance().readBool(settingKey);
+    	logConfigurationSetting(resourceKey, value ? "X" : " ", textLeft);
+    }
+
+    private void logConfigurationSettingInt(String resourceKey, String settingKey, boolean textLeft) {
+    	int value = Settings.getInstance().readInt(settingKey);
+    	logConfigurationSetting(resourceKey, Integer.toString(value), textLeft);
+    }
+
+    private void logConfigurationSettingString(String resourceKey, String settingKey, boolean textLeft) {
+    	String value = Settings.getInstance().readString(settingKey);
+    	logConfigurationSetting(resourceKey, value, textLeft);
+    }
+
+    private void logConfigurationSettingList(String resourceKey, String settingKey, String[] values, boolean textLeft) {
+    	int valueIndex = Settings.getInstance().readInt(settingKey);
+    	String value = Integer.toString(valueIndex);
+    	if (values != null && valueIndex >= 0 && valueIndex < values.length) {
+    		value = values[valueIndex];
+    	}
+    	logConfigurationSetting(resourceKey, value, textLeft);
+    }
+
+    private void logConfigurationPanel(String resourceKey) {
+    	Emulator.log.info(String.format("%s / %s", Resource.getEnglish("settings"), Resource.getEnglish(resourceKey)));
+    }
+
     private void installCompatibilitySettings() {
-        Emulator.log.info("Loading global compatibility settings");
+        Emulator.log.info("Loading global compatibility settings:");
+
+        // Log the configuration settings
+        logConfigurationPanel("region");
+        logConfigurationSettingList("language", "emu.impose.language", SettingsGUI.getImposeLanguages(), true);
+        logConfigurationSettingList("buttonpref", "emu.impose.button", SettingsGUI.getImposeButtons(), true);
+        logConfigurationSettingList("daylightSavings", "emu.sysparam.daylightsavings", SettingsGUI.getSysparamDaylightSavings(), true);
+        logConfigurationSettingInt("timezone", "emu.sysparam.timezone", true);
+        logConfigurationSettingList("timeformat", "emu.sysparam.timeformat", SettingsGUI.getSysparamTimeFormats(), true);
+        logConfigurationSettingList("dateformat", "emu.sysparam.dateformat", SettingsGUI.getSysparamDateFormats(), true);
+        logConfigurationSettingList("wlanpowersaving", "emu.sysparam.wlanpowersave", SettingsGUI.getSysparamWlanPowerSaves(), true);
+        logConfigurationSettingList("adhocChannel", "emu.sysparam.adhocchannel", SettingsGUI.getSysparamAdhocChannels(), true);
+        logConfigurationSettingString("nickname", "emu.sysparam.nickname", true);
+
+        logConfigurationPanel("video");
+        logConfigurationSettingBool("disablevbo", "emu.disablevbo", false);
+        logConfigurationSettingBool("onlyGeGraphics", "emu.onlyGEGraphics", false);
+        logConfigurationSettingBool("usevertex", "emu.useVertexCache", false);
+        logConfigurationSettingBool("useshader", "emu.useshaders", false);
+        logConfigurationSettingBool("useGeometryShader", "emu.useGeometryShader", false);
+        logConfigurationSettingBool("disableubo", "emu.disableubo", false);
+        logConfigurationSettingBool("enablevao", "emu.enablevao", false);
+        logConfigurationSettingBool("enablegetexture", "emu.enablegetexture", false);
+        logConfigurationSettingBool("enablenativeclut", "emu.enablenativeclut", false);
+        logConfigurationSettingBool("enabledynamicshaders", "emu.enabledynamicshaders", false);
+
+        logConfigurationPanel("audio");
+        logConfigurationSettingBool("disableaudiothreads", "emu.ignoreaudiothreads", false);
+        logConfigurationSettingBool("disableaudiotchannels", "emu.disablesceAudio", false);
+        logConfigurationSettingBool("disableaudiotblocking", "emu.disableblockingaudio", false);
+
+        logConfigurationPanel("memory");
+        logConfigurationSettingBool("ignoreinvalidmemory", "emu.ignoreInvalidMemoryAccess", false);
+        logConfigurationSettingBool("ignoreUnmaped", "emu.ignoreUnmappedImports", false);
+
+        logConfigurationPanel("misc");
+        logConfigurationSettingBool("useMediaEngine", "emu.useMediaEngine", false);
+        logConfigurationSettingBool("useConnector", "emu.useConnector", false);
+        logConfigurationSettingBool("useExternalDecoder", "emu.useExternalDecoder", false);
+        logConfigurationSettingBool("useFlashFonts", "emu.useFlashFonts", false);
+
+        logConfigurationPanel("compiler");
+        logConfigurationSettingBool("useCompiler", "emu.compiler", false);
+        logConfigurationSettingBool("outputprofiler", "emu.profiler", false);
+        logConfigurationSettingInt("methodMaxInstructions", "emu.compiler.methodMaxInstructions", false);
+
+        logConfigurationPanel("crypto");
+        logConfigurationSettingBool("extractEboot", "emu.extractEboot", false);
+        logConfigurationSettingBool("cryptoSavedata", "emu.cryptoSavedata", false);
+        logConfigurationSettingBool("extractPGD", "emu.extractPGD", false);
 
         boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
         Modules.sceDisplayModule.setOnlyGEGraphics(onlyGEGraphics);

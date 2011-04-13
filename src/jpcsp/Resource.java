@@ -18,6 +18,7 @@ package jpcsp;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
@@ -26,6 +27,7 @@ public class Resource {
 	 * Ordered list of the inserted resource bundles.
 	 */
 	protected static LinkedList<ResourceBundle> bundles = new LinkedList<ResourceBundle>();
+	protected static LinkedList<ResourceBundle> bundlesEnglish = new LinkedList<ResourceBundle>();
 
 	/**
 	 * Returns the bundles.
@@ -42,7 +44,7 @@ public class Resource {
 	 * @param basename
 	 *            The basename of the resource bundle to add.
 	 */
-	private static void add(String basename) {
+	private static void add(List<ResourceBundle> bundles, String basename) {
 		bundles.add(ResourceBundle.getBundle(basename));
 	}
 
@@ -56,10 +58,15 @@ public class Resource {
 		bundles.clear();
 
 		// Add language dependent resources
-		add("jpcsp.languages." + language);
+		add(bundles, "jpcsp.languages." + language);
 
 		// Add language independent resources
-		add("jpcsp.languages.common");
+		add(bundles, "jpcsp.languages.common");
+
+		// Bundles always in English
+		bundlesEnglish.clear();
+		add(bundlesEnglish, "jpcsp.languages.en_EN");
+		add(bundlesEnglish, "jpcsp.languages.common");
 	}
 
 	/**
@@ -70,43 +77,18 @@ public class Resource {
      * @return The matching string.
 	 */
 	public static String get(String key) {
-		return get(key, null);
+		return getResource(bundles, key);
 	}
 
 	/**
-	 * Returns the value for the specified resource key.
+	 * Gets a string from from the English resource bundle.
+	 *
+	 * @param key
+	 *            The key string to locate.
+     * @return The matching string, always in English.
 	 */
-	public static String get(String key, String[] params)
-	{
-		String value = getResource(key);
-
-		// Replaces the placeholders with the values in the array
-		if (value != null && params != null)
-		{
-			StringBuffer result = new StringBuffer();
-			String index = null;
-
-			for (int i = 0; i < value.length(); i++)
-			{
-				char c = value.charAt(i);
-
-				if (c == '{') index = "";
-				else if (index != null && c == '}')
-				{
-					int tmp = Integer.parseInt(index) - 1;
-
-					if (tmp >= 0 && tmp < params.length) result.append(params[tmp]);
-
-					index = null;
-				}
-				else if (index != null) index += c;
-				else result.append(c);
-			}
-
-			value = result.toString();
-		}
-
-		return value;
+	public static String getEnglish(String key) {
+		return getResource(bundlesEnglish, key);
 	}
 
 	/**
@@ -114,7 +96,7 @@ public class Resource {
 	 * bundles in inverse order or <code>null</code> if no value can be found
 	 * for <code>key</code>.
 	 */
-	protected static String getResource(String key)
+	protected static String getResource(List<ResourceBundle> bundles, String key)
 	{
 		Iterator<ResourceBundle> it = bundles.iterator();
 
