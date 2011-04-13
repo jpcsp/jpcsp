@@ -19,9 +19,10 @@ package jpcsp.media;
 
 import java.nio.ByteBuffer;
 
+import org.apache.log4j.Logger;
+
 import com.xuggle.xuggler.io.IURLProtocolHandler;
 
-import jpcsp.HLE.Modules;
 import jpcsp.util.FIFOByteBuffer;
 
 /*
@@ -29,14 +30,20 @@ import jpcsp.util.FIFOByteBuffer;
  *
  */
 public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler {
+	private static Logger log = Logger.getLogger("PacketChannel");
 	private int readLength;
+	private int totalStreamSize;
+	private long position;
+	private boolean farRewindAllowed;
 
     public PacketChannel() {
 		super();
+		totalStreamSize = -1;
 	}
 
 	public PacketChannel(byte[] buffer) {
 		super(buffer);
+		totalStreamSize = buffer.length;
 	}
 
     @Override
@@ -73,30 +80,104 @@ public class PacketChannel extends FIFOByteBuffer implements IURLProtocolHandler
 
 	@Override
 	public int read(byte[] buf, int size) {
+		int readSize = 0;
+
 		if (size > 0) {
-			size = readByteBuffer(ByteBuffer.wrap(buf, 0, size));
-			if (size > 0) {
-				readLength += size;
-				if (Modules.log.isTraceEnabled()) {
-					Modules.log.trace(String.format("PacketChannel: read %d bytes", size));
+			readSize = readByteBuffer(ByteBuffer.wrap(buf, 0, size));
+			if (readSize > 0) {
+				readLength += readSize;
+				position += readSize;
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("PacketChannel: read %d bytes", size));
 				}
 			} else {
-				Modules.log.debug("PacketChannel: End of data");
+				log.debug("PacketChannel: End of data");
 			}
 		}
 
-		return size;
+		return readSize;
 	}
 
 	@Override
 	public long seek(long offset, int whence) {
-		// Seek not supported
-		return -1;
+		long result = offset;
+
+		if (totalStreamSize < 0) {
+			result = -1;
+		} else {
+			switch (whence) {
+				case IURLProtocolHandler.SEEK_CUR:
+					if (!setPosition(position + offset)) {
+						result = -1;
+					}
+					break;
+				case IURLProtocolHandler.SEEK_SET:
+					if (!setPosition(offset)) {
+						result = -1;
+					}
+					break;
+				case IURLProtocolHandler.SEEK_END:
+					if (!setPosition(totalStreamSize + offset)) {
+						result = -1;
+					}
+					break;
+				case IURLProtocolHandler.SEEK_SIZE:
+					result = totalStreamSize;
+					break;
+				default:
+					result = -1;
+					break;
+			}
+		}
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("PacketChannel: seek offset=%d, whence=%d, result=%d, new position=%d", offset, whence, result, getPosition()));
+		}
+
+		return result;
 	}
 
 	@Override
 	public int write(byte[] buf, int size) {
+		log.warn(String.format("PacketChannel: unsupported write size=%d", size));
+
 		// Write not supported
 		return -1;
+	}
+
+	public int getTotalStreamSize() {
+		return totalStreamSize;
+	}
+
+	public void setTotalStreamSize(int totalStreamSize) {
+		this.totalStreamSize = totalStreamSize;
+	}
+
+	public long getPosition() {
+		return position;
+	}
+
+	public boolean setPosition(long position) {
+		if (position > this.position) {
+			int forwardLength = (int) (position - this.position);
+			if (!forward(forwardLength)) {
+				return false;
+			}
+		} else if (position < this.position) {
+			int rewindLength = (int) (this.position - position);
+			if (!rewind(rewindLength) && !farRewindAllowed) {
+				return false;
+			}
+		}
+
+		this.position = position;
+		return true;
+	}
+
+	public boolean isFarRewindAllowed() {
+		return farRewindAllowed;
+	}
+
+	public void setFarRewindAllowed(boolean farRewindAllowed) {
+		this.farRewindAllowed = farRewindAllowed;
 	}
 }
