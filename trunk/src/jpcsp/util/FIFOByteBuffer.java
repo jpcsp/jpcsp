@@ -42,8 +42,11 @@ public class FIFOByteBuffer {
 
     private int incrementOffset(int offset, int n) {
     	offset += n;
+
     	if (offset >= buffer.length) {
     		offset -= buffer.length;
+    	} else if (offset < 0) {
+    		offset += buffer.length;
     	}
 
     	return offset;
@@ -72,6 +75,11 @@ public class FIFOByteBuffer {
     	}
     }
 
+    private void copyToBuffer(int offset, int length, Buffer src) {
+    	ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, offset, length);
+    	Utilities.putBuffer(byteBuffer, src, ByteOrder.LITTLE_ENDIAN, length);
+    }
+
     public void write(Buffer src, int length) {
     	if (buffer == null) {
     		return; // FIFOByteBuffer has been deleted
@@ -82,15 +90,12 @@ public class FIFOByteBuffer {
     	// Copy the src content to the buffer at offset bufferWriteOffset
     	if (bufferWriteOffset + length <= buffer.length) {
     		// No buffer wrap, only 1 copy operation necessary
-    		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, bufferWriteOffset, length);
-    		Utilities.putBuffer(byteBuffer, src, ByteOrder.LITTLE_ENDIAN, length);
+    		copyToBuffer(bufferWriteOffset, length, src);
     	} else {
     		// The buffer wraps at the end, 2 copy operations necessary
     		int lengthEndBuffer = buffer.length - bufferWriteOffset;
-    		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, bufferWriteOffset, lengthEndBuffer);
-    		Utilities.putBuffer(byteBuffer, src, ByteOrder.LITTLE_ENDIAN, lengthEndBuffer);
-    		byteBuffer = ByteBuffer.wrap(buffer, 0, length - lengthEndBuffer);
-    		Utilities.putBuffer(byteBuffer, src, ByteOrder.LITTLE_ENDIAN, length - lengthEndBuffer);
+    		copyToBuffer(bufferWriteOffset, lengthEndBuffer, src);
+    		copyToBuffer(0, length - lengthEndBuffer, src);
     	}
     	bufferWriteOffset = incrementOffset(bufferWriteOffset, length);
         bufferLength += length;
@@ -138,7 +143,46 @@ public class FIFOByteBuffer {
     	return length;
 	}
 
-	public int length() {
+    public boolean forward(int length) {
+    	if (buffer == null || length < 0) {
+    		return false;
+    	}
+
+    	if (length == 0) {
+    		return true;
+    	}
+
+    	if (length > bufferLength) {
+    		return false;
+    	}
+
+    	bufferLength -= length;
+    	bufferReadOffset = incrementOffset(bufferReadOffset, length);
+
+    	return true;
+    }
+
+    public boolean rewind(int length) {
+    	if (buffer == null || length < 0) {
+    		return false;
+    	}
+
+    	if (length == 0) {
+    		return true;
+    	}
+
+    	int maxRewindLength = buffer.length - bufferLength;
+    	if (length > maxRewindLength) {
+    		return false;
+    	}
+
+    	bufferLength += length;
+    	bufferReadOffset = incrementOffset(bufferReadOffset, -length);
+
+    	return true;
+    }
+
+    public int length() {
     	return bufferLength;
     }
 

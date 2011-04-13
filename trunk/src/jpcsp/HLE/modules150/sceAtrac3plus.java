@@ -371,6 +371,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
 
         public int getLoopNum() {
+        	if (!hasLoop()) {
+        		return 0;
+        	}
             return loopNum;
         }
 
@@ -499,10 +502,14 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
 
         protected void addStreamData(int length) {
-            inputFileOffset += length;
-            inputBufferOffset -= length;
+        	if (length > 0) {
+	            inputFileOffset += length;
+	            inputBufferOffset -= length;
 
-            getAtracCodec().atracAddStreamData(inputBufferAddr, length);
+	            forceReloadOfData = false;
+
+	            getAtracCodec().atracAddStreamData(inputBufferAddr, length);
+        	}
         }
 
         public int getRemainFrames() {
@@ -512,7 +519,6 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
             if (forceReloadOfData) {
             	// The play position has just been reset, request more data
-            	forceReloadOfData = false;
             	return 0;
             }
 
@@ -552,6 +558,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         public void setDecodedSamples(int samples) {
         	int currentSample = getAtracCurrentSample();
         	int nextCurrentSample = currentSample + samples;
+
         	for (int i = 0; i < numLoops; i++) {
         		LoopInfo loop = loops[i];
         		if (currentSample <= loop.startSample && loop.startSample < nextCurrentSample) {
@@ -567,9 +574,9 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         				currentLoopNum = -1;
         			} else {
         				// Replay the loop
+        				log.info(String.format("Replaying atrac loop atracID=%d, loopStart=%d, loopEnd=%d", id, loop.startSample, loop.endSample));
         				setPlayPosition(loop.startSample, loopStartBytesWrittenFirstBuf, loopStartBytesWrittenSecondBuf);
         				nextCurrentSample = loop.startSample;
-        				log.info(String.format("Replaying atrac loop atracID=%d, loopStart=%d, loopEnd=%d", id, loop.startSample, loop.endSample));
         				// loopNum < 0: endless loop playback
         				// loopNum > 0: play the loop loopNum times
         				if (loopNum > 0) {
@@ -583,31 +590,43 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         }
 
         public void setPlayPosition(int sample, int bytesWrittenFirstBuf, int bytesWrittenSecondBuf) {
-            setInputBufferOffset(getInputBufferSize() - bytesWrittenFirstBuf);
-            setInputFileOffset(0);
-            setAtracCurrentSample(sample);
-            getAtracCodec().atracResetPlayPosition(sample);
-            if (!getAtracCodec().isExternalAudio()) {
-            	forceReloadOfData = true;
-            }
+        	if (sample != getAtracCurrentSample()) {
+	            setInputBufferOffset(getInputBufferSize() - bytesWrittenFirstBuf);
+	            setAtracCurrentSample(sample);
+	            getAtracCodec().atracResetPlayPosition(sample);
+	            int position = getAtracCodec().getChannelPosition();
+	            if (position >= 0) {
+	            	setInputFileOffset(position);
+	            } else {
+		            setInputFileOffset(0);
+	            }
+	            getAtracCodec().resetChannel();
+	            if (!getAtracCodec().isExternalAudio()) {
+	            	forceReloadOfData = true;
+	            }
+        	}
+        }
+
+        private boolean hasLoop() {
+        	return numLoops > 0;
         }
 
         public int getLoopStatus() {
-        	if (numLoops <= 0) {
+        	if (!hasLoop()) {
         		return PSP_ATRAC_STATUS_NONLOOP_STREAM_DATA;
         	}
         	return PSP_ATRAC_STATUS_LOOP_STREAM_DATA;
         }
 
         public int getLoopStartSample() {
-        	if (numLoops <= 0) {
+        	if (!hasLoop()) {
         		return -1;
         	}
         	return loops[0].startSample;
         }
 
         public int getLoopEndSample() {
-        	if (numLoops <= 0) {
+        	if (!hasLoop()) {
         		return -1;
         	}
 
@@ -625,7 +644,11 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             }
         }
 
-		@Override
+        public boolean isForceReloadOfData() {
+        	return forceReloadOfData;
+        }
+
+        @Override
 		public String toString() {
 			return String.format("AtracID[id=%d, inputBufferAddr=0x%08X, inputBufferSize=%d, inputBufferOffset=%d, inputBufferWritableBytes=%d, inputBufferNeededBytes=%d]", id, inputBufferAddr, inputBufferSize, inputBufferOffset, inputBufferWritableBytes, inputBufferNeededBytes);
 		}
@@ -898,8 +921,10 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             AtracCodec atracCodec = id.getAtracCodec();
             int samples = 0;
             int end = 1;
-            int remainFrames = -1;
-            if (atracCodec != null) {
+            if (id.isForceReloadOfData()) {
+            	result = SceKernelErrors.ERROR_ATRAC_BUFFER_IS_EMPTY;
+            	end = 0;
+            } else if (atracCodec != null) {
                 samples = atracCodec.atracDecodeData(atID, samplesAddr);
                 if (samples < 0) {
                     // Not using decoded data.
@@ -937,17 +962,18 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                 }
                 id.setInputBufferOffset(id.getInputBufferOffset() + consumedInputBytes);
             }
-            if (end == 1) {
-                remainFrames = -1;
-            } else {
-            	remainFrames = getRemainFrames(id, samples);
-            }
             if (samples > 0) {
                 id.setDecodedSamples(samples);
                 if (id.getAtracCurrentSample() >= id.getAtracEndSample()) {
                 	// The PSP is already setting the end flag when returning the last samples.
                 	end = 1;
                 }
+            }
+            int remainFrames;
+            if (end == 1) {
+                remainFrames = -1;
+            } else {
+            	remainFrames = getRemainFrames(id, samples);
             }
             if (Memory.isAddressGood(samplesNbrAddr)) {
                 mem.write32(samplesNbrAddr, samples);

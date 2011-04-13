@@ -182,6 +182,8 @@ public class AtracCodec {
             if (checkMediaEngineState()) {
                 me.finish();
                 atracChannel = new PacketChannel();
+                atracChannel.setTotalStreamSize(atracFileSize);
+                atracChannel.setFarRewindAllowed(true);
                 atracChannel.write(address, length);
                 // Defer the initialization of the MediaEngine until atracDecodeData()
                 // to ensure we have enough data into the channel.
@@ -374,6 +376,20 @@ public class AtracCodec {
     		return atracFileSize;
     	}
     	return atracChannel.length();
+    }
+
+    public int getChannelPosition() {
+    	if (atracChannel == null) {
+    		return -1;
+    	}
+    	return (int) atracChannel.getPosition();
+    }
+
+    public void resetChannel() {
+    	if (atracChannel == null) {
+    		return;
+    	}
+    	atracChannel.clear();
     }
 
     public int getAtracEnd() {
