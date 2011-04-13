@@ -19,14 +19,12 @@ package jpcsp.HLE.kernel.types;
 public class SceKernelFplOptParam extends pspAbstractMemoryMappedStructure {
 	public int size;
 	public int align;
-    public int unk;
 
 	@Override
 	protected void read() {
 		size = read32();
 		setMaxSize(size);
 		align = read32();
-        unk = read32();
 	}
 
 	@Override
@@ -34,7 +32,6 @@ public class SceKernelFplOptParam extends pspAbstractMemoryMappedStructure {
 		setMaxSize(size);
 		write32(size);
 		write32(align);
-        write32(unk);
 	}
 
     @Override

@@ -215,16 +215,18 @@ public class FplManager {
         int memAlign = 4;  // 4-bytes is default.
         if (Memory.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
-            // Up to firmware 6.20 only three FplOptParam fields exist, being the
+            // Up to firmware 6.20 only two FplOptParam fields exist, being the
             // first one the struct size, the second is the memory alignment (0 is default,
-            // which is 4-byte/32-bit), and the third is an unknown address.
-            if((optsize >= 0) && (optsize <= 8)) {
+            // which is 4-byte/32-bit).
+            if ((optsize >= 4) && (optsize <= 8)) {
                 SceKernelFplOptParam optParams = new SceKernelFplOptParam();
                 optParams.read(mem, opt_addr);
                 if(optParams.align > 0) {
                     memAlign = optParams.align;
                 }
-                log.info("sceKernelCreateFpl options: struct size=" + optParams.size + ", alignment=0x" + Integer.toHexString(optParams.align) + ", unk=0x" + Integer.toHexString(optParams.unk));
+                if (log.isDebugEnabled()) {
+                	log.debug("sceKernelCreateFpl options: struct size=" + optParams.size + ", alignment=0x" + Integer.toHexString(optParams.align));
+                }
             } else {
                 log.warn("sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
             }
