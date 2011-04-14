@@ -28,6 +28,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.sound.SoundVoice;
 import jpcsp.sound.SoundMixer;
 
@@ -900,9 +902,10 @@ public class sceSasCore implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
+        int heightsAddr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("__sceSasGetAllEnvelopeHeights(" + String.format("sasCore=0x%08x)", sasCore));
+            log.debug(String.format("__sceSasGetAllEnvelopeHeights(sasCore=0x%08X, heightsAddr=0x%08X)", sasCore, heightsAddr));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -910,11 +913,16 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             return;
         }
         if (isSasHandleGood(sasCore, "__sceSasGetAllEnvelopeHeights", cpu)) {
-            int res = 0;
-            for (int i = 0; i < voices.length; i++) {
-                res += voices[i].getEnvelope().height;
-            }
-            cpu.gpr[2] = res;
+        	if (Memory.isAddressGood(heightsAddr)) {
+        		IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(heightsAddr, voices.length * 4, 4);
+        		for (int i = 0; i < voices.length; i++) {
+        			memoryWriter.writeNext(voices[i].getEnvelope().height);
+        		}
+        		memoryWriter.flush();
+                cpu.gpr[2] = 0;
+        	} else {
+        		cpu.gpr[2] = -1;
+        	}
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_SAS_NOT_INIT;
         }
