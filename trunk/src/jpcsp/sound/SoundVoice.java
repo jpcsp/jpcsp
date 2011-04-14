@@ -120,6 +120,11 @@ public class SoundVoice {
 
 	public void setPlaying(boolean playing) {
 		playSample = 0;
+		if (playing) {
+			envelope.height = PSP_SAS_ENVELOPE_HEIGHT_MAX;
+		} else {
+			envelope.height = 0;
+		}
 		this.playing = playing;
 	}
 

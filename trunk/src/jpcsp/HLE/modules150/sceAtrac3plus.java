@@ -123,7 +123,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     protected static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
     public    static final int RIFF_MAGIC = 0x46464952; // "RIFF"
     protected static final int WAVE_MAGIC = 0x45564157; // "WAVE"
-    public    static final int FMT_CHUNK_MAGIC = 0x20746D66; // "FMT"
+    public    static final int FMT_CHUNK_MAGIC = 0x20746D66; // "FMT "
     protected static final int FACT_CHUNK_MAGIC = 0x74636166; // "FACT"
     protected static final int SMPL_CHUNK_MAGIC = 0x6C706D73; // "SMPL"
     public    static final int DATA_CHUNK_MAGIC = 0x61746164; // "DATA"
@@ -243,86 +243,110 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             Memory mem = Memory.getInstance();
 
             int currentAddr = inputBufferAddr;
+            int bufferSize = inputBufferSize;
             atracEndSample = -1;
             atracCurrentSample = 0;
-            int RIFFMagic = mem.read32(currentAddr);
-            if (RIFFMagic == RIFF_MAGIC && inputBufferSize >= 8) {
-                // RIFF file format:
-                // Offset 0: 'RIFF'
-                // Offset 4: file length - 8
-                // Offset 8: 'WAVE'
-                inputFileSize = mem.read32(currentAddr + 4) + 8;
+            isSecondBufferNeeded = false;
+            numLoops = 0;
+
+            if (bufferSize < 12) {
+            	log.error(String.format("Atrac buffer too small %d", bufferSize));
+            	return;
             }
-            // Check for a valid "WAVE" header.
+
+            // RIFF file format:
+            // Offset 0: 'RIFF'
+            // Offset 4: file length - 8
+            // Offset 8: 'WAVE'
+            int RIFFMagic = mem.read32(currentAddr);
             int WAVEMagic = mem.read32(currentAddr + 8);
-            if (WAVEMagic == WAVE_MAGIC && inputBufferSize >= 36) {
-            	currentAddr += 12;
-                // Parse the "fmt" chunk.
-                int fmtMagic = mem.read32(currentAddr);
-                int fmtChunkSize = mem.read32(currentAddr + 4);
-                int compressionCode = mem.read16(currentAddr + 8);
-                atracChannels = mem.read16(currentAddr + 10);
-                atracSampleRate = mem.read32(currentAddr + 12);
-                atracBitrate = mem.read32(currentAddr + 16);
-                atracBytesPerFrame = mem.read16(currentAddr + 20);
-                int hiBytesPerSample = mem.read16(currentAddr + 22);
-                if (log.isDebugEnabled()) {
-                    log.debug(String.format("WAVE format: magic=0x%08X ('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", fmtMagic, getStringFromInt32(fmtMagic), fmtChunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
-                    // Display rest of chunk as debug information
-                    StringBuilder restChunk = new StringBuilder();
-                    for (int i = 24; i < 8 + fmtChunkSize && i < inputBufferSize; i++) {
-                        int b = mem.read8(currentAddr + i);
-                        restChunk.append(String.format(" %02X", b));
-                    }
-                    if (restChunk.length() > 0) {
-                        log.debug(String.format("Additional chunk data:%s", restChunk));
-                    }
-                }
-                currentAddr += fmtChunkSize + 8;
+            if (RIFFMagic != RIFF_MAGIC || WAVEMagic != WAVE_MAGIC) {
+            	log.error(String.format("Not a RIFF/WAVE format! %08X %08X", RIFFMagic, WAVEMagic));
+            	return;
+            }
 
-                int factMagic = mem.read32(currentAddr);
-                if (factMagic == FACT_CHUNK_MAGIC) {
-                    int factChunkSize = mem.read32(currentAddr + 4);
-                    if (factChunkSize >= 4) {
-                        atracEndSample = mem.read32(currentAddr + 8);
-                        atracSampleOffset = mem.read32(currentAddr + 12); // The loop samples are offset by this value
-                    }
-                    currentAddr += factChunkSize + 8;
-                }
+            inputFileSize = mem.read32(currentAddr + 4) + 8;
+            currentAddr += 12;
+            bufferSize -= 12;
 
-                // Check if there is a "smpl" chunk.
-                // Based on PSP tests, files that contain a "smpl" chunk always
-                // have post loop process data and need a second buffer
-                // (e.g.: .at3 files from Gran Turismo).
-                isSecondBufferNeeded = false;
-                int smplMagic = mem.read32(currentAddr);
-                if (smplMagic == SMPL_CHUNK_MAGIC) {
-                	int smplChunkSize = mem.read32(currentAddr + 4);
+            boolean foundData = false;
+            while (bufferSize >= 8 && !foundData) {
+            	int chunkMagic = mem.read32(currentAddr);
+            	int chunkSize = mem.read32(currentAddr + 4);
+            	currentAddr += 8;
+            	bufferSize -= 8;
+            	if (chunkSize > bufferSize) {
+            		break;
+            	}
 
-                	if (smplChunkSize >= 44) {
-	                	numLoops = mem.read32(currentAddr + 36);
-	                	loops = new LoopInfo[numLoops];
-	                	int loopInfoAddr = currentAddr + 44;
-	                	for (int i = 0; i < numLoops; i++) {
-	                		LoopInfo loop = new LoopInfo();
-	                		loops[i] = loop;
-	                		loop.cuePointID = mem.read32(loopInfoAddr);
-	                		loop.type = mem.read32(loopInfoAddr + 4);
-	                		loop.startSample = mem.read32(loopInfoAddr + 8) - atracSampleOffset;
-	                		loop.endSample = mem.read32(loopInfoAddr + 12) - atracSampleOffset;
-	                		loop.fraction = mem.read32(loopInfoAddr + 16);
-	                		loop.playCount = mem.read32(loopInfoAddr + 20);
+            	switch (chunkMagic) {
+            		case FMT_CHUNK_MAGIC: {
+            			if (chunkSize >= 16) {
+                            int compressionCode = mem.read16(currentAddr);
+                            atracChannels = mem.read16(currentAddr + 2);
+                            atracSampleRate = mem.read32(currentAddr + 4);
+                            atracBitrate = mem.read32(currentAddr + 8);
+                            atracBytesPerFrame = mem.read16(currentAddr + 12);
+                            int hiBytesPerSample = mem.read16(currentAddr + 14);
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("WAVE format: magic=0x%08X ('%s'), chunkSize=%d, compressionCode=0x%04X, channels=%d, sampleRate=%d, bitrate=%d, chunkAlign=%d, hiBytesPerSample=%d", chunkMagic, getStringFromInt32(chunkMagic), chunkSize, compressionCode, atracChannels, atracSampleRate, atracBitrate, atracBytesPerFrame, hiBytesPerSample));
+                                // Display rest of chunk as debug information
+                                StringBuilder restChunk = new StringBuilder();
+                                for (int i = 16; i < chunkSize; i++) {
+                                    int b = mem.read8(currentAddr + i);
+                                    restChunk.append(String.format(" %02X", b));
+                                }
+                                if (restChunk.length() > 0) {
+                                    log.debug(String.format("Additional chunk data:%s", restChunk));
+                                }
+                            }
 
-	                		if (log.isDebugEnabled()) {
-	                			log.debug(String.format("Loop #%d: %s", i, loop.toString()));
-	                		}
-	                		loopInfoAddr += 24;
-	                	}
-	                	// TODO Second buffer processing disabled because still incomplete
-	                    //isSecondBufferNeeded = true;
-	                	currentAddr += smplChunkSize + 8;
-                	}
-                }
+            			}
+            			break;
+            		}
+            		case FACT_CHUNK_MAGIC: {
+            			if (chunkSize >= 8) {
+                            atracEndSample = mem.read32(currentAddr);
+                            atracSampleOffset = mem.read32(currentAddr + 4); // The loop samples are offset by this value
+            			}
+            			break;
+            		}
+            		case SMPL_CHUNK_MAGIC: {
+            			if (chunkSize >= 36) {
+            				int checkNumLoops = mem.read32(currentAddr + 28);
+    	                	if (chunkSize >= 36 + checkNumLoops * 24) {
+        	                	numLoops = checkNumLoops;
+	    	                	loops = new LoopInfo[numLoops];
+	    	                	int loopInfoAddr = currentAddr + 36;
+	    	                	for (int i = 0; i < numLoops; i++) {
+	    	                		LoopInfo loop = new LoopInfo();
+	    	                		loops[i] = loop;
+	    	                		loop.cuePointID = mem.read32(loopInfoAddr);
+	    	                		loop.type = mem.read32(loopInfoAddr + 4);
+	    	                		loop.startSample = mem.read32(loopInfoAddr + 8) - atracSampleOffset;
+	    	                		loop.endSample = mem.read32(loopInfoAddr + 12) - atracSampleOffset;
+	    	                		loop.fraction = mem.read32(loopInfoAddr + 16);
+	    	                		loop.playCount = mem.read32(loopInfoAddr + 20);
+
+	    	                		if (log.isDebugEnabled()) {
+	    	                			log.debug(String.format("Loop #%d: %s", i, loop.toString()));
+	    	                		}
+	    	                		loopInfoAddr += 24;
+	    	                	}
+	    	                	// TODO Second buffer processing disabled because still incomplete
+	    	                    //isSecondBufferNeeded = true;
+    	                	}
+            			}
+            			break;
+            		}
+            		case DATA_CHUNK_MAGIC: {
+            			foundData = true;
+            			break;
+            		}
+            	}
+
+            	currentAddr += chunkSize;
+            	bufferSize -= chunkSize;
             }
         }
 
@@ -469,7 +493,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             return internalErrorInfo;
         }
 
-        public void setData(int buffer, int bufferSize, int minSize, boolean isSecondBuf) {
+        public void setData(int buffer, int readSize, int bufferSize, boolean isSecondBuf) {
         	Emulator.getClock().pause();
             if (isSecondBuf) {
                 // Set the second buffer, but don't handle it.
@@ -478,16 +502,16 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                 // data handling.
                 secondInputBufferAddr = buffer;
                 secondInputBufferSize = bufferSize;
-                secondInputBufferOffset = 0;
-                secondInputBufferWritableBytes = 0;
+                secondInputBufferOffset = bufferSize - readSize;
+                secondInputBufferWritableBytes = bufferSize - readSize;
                 isSecondBufferSet = true;
             } else {
                 inputBufferAddr = buffer;
                 inputBufferSize = bufferSize;
-                inputBufferOffset = 0;
-                inputBufferWritableBytes = 0;
-                inputFileSize = inputBufferSize;
-                inputFileOffset = inputBufferSize;
+                inputBufferOffset = bufferSize - readSize;
+                inputBufferWritableBytes = bufferSize - readSize;
+                inputFileSize = readSize;
+                inputFileOffset = readSize;
                 secondInputFileSize = 0x100;
                 secondInputFileOffset = inputFileSize - 0x100;
                 analyzeAtracHeader();
@@ -496,7 +520,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                     log.warn(String.format("hleAtracSetData atracID=%d is invalid", getAtracId()));
                     return;
                 }
-                getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, bufferSize, inputFileSize);
+                getAtracCodec().atracSetData(getAtracId(), getAtracCodecType(), buffer, readSize, inputFileSize);
             }
         	Emulator.getClock().resume();
         }
