@@ -264,6 +264,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Polish = new javax.swing.JMenuItem();
         ChinesePRC = new javax.swing.JMenuItem();
         ChineseTW = new javax.swing.JMenuItem();
+        Italian = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -863,6 +864,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         LanguageMenu.add(ChineseTW);
+
+        Italian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/it_IT_Icon.png")));
+        Italian.setText(Resource.get("italian"));
+        Italian.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ItalianActionPerformed(evt);
+            }
+        });
+        LanguageMenu.add(Italian);
 
         MenuBar.add(LanguageMenu);
 
@@ -1847,6 +1857,10 @@ private void PolishActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:
     changeLanguage("pl_PL");
 }//GEN-LAST:event_PolishActionPerformed
 
+private void ItalianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ItalianActionPerformed
+    changeLanguage("it_IT");
+}//GEN-LAST:event_ItalianActionPerformed
+
 private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ControlsConfActionPerformed
     if (ctrlgui == null) {
         ctrlgui = new ControlsGUI();
@@ -2194,6 +2208,7 @@ private void FullItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JMenuItem German;
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuItem InstructionCounter;
+    private javax.swing.JMenuItem Italian;
     private javax.swing.JMenuItem Japanese;
     private javax.swing.JMenu LanguageMenu;
     private javax.swing.JMenuItem Lithuanian;
