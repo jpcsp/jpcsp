@@ -74,6 +74,31 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         public final static int MODE_ERASE = 20;
         public final static int MODE_DELETEDATA = 21;
         public final static int MODE_GETSIZE = 22;
+        public final static String[] modeNames = new String[] {
+        	"AUTOLOAD",
+        	"AUTOSAVE",
+        	"LOAD",
+        	"SAVE",
+        	"LISTLOAD",
+        	"LISTSAVE",
+        	"LISTDELETE",
+        	"DELETE",
+        	"SIZES",
+        	"AUTODELETE",
+        	"SINGLEDELETE",
+        	"LIST",
+        	"FILES",
+        	"MAKEDATASECURE",
+        	"MAKEDATA",
+        	"READSECURE",
+        	"READ",
+        	"WRITESECURE",
+        	"WRITE",
+        	"ERASESECURE",
+        	"ERASE",
+        	"DELETEDATA",
+        	"GETSIZE"
+        };
     public int bind;   // Used by certain applications to detect if this save data was created on a different PSP.
         public final static int BIND_NOT_USED = 0;
         public final static int BIND_IS_OK = 1;
@@ -655,10 +680,17 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         return base.size;
     }
 
+	public String getModeName() {
+		if (mode < 0 || mode >= modeNames.length) {
+			return String.format("UNKNOWN_MODE%d", mode);
+		}
+		return modeNames[mode];
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
-		s.append(String.format("Address 0x%08X, mode=%d, gameName=%s, saveName=%s, fileName=%s", getBaseAddress(), mode, gameName, saveName, fileName));
+		s.append(String.format("Address 0x%08X, mode=%d(%s), gameName=%s, saveName=%s, fileName=%s", getBaseAddress(), mode, getModeName(), gameName, saveName, fileName));
 		for (int i = 0; saveNameList != null && i < saveNameList.length; i++) {
 			if (i == 0) {
 				s.append(", saveNameList=[");

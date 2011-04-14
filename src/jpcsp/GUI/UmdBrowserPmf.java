@@ -35,6 +35,7 @@ import jpcsp.Emulator;
 import jpcsp.Settings;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.media.MediaEngine;
 
 import com.xuggle.xuggler.Global;
 import com.xuggle.xuggler.IAudioSamples;
@@ -86,6 +87,7 @@ public class UmdBrowserPmf {
 		done = false;
 		threadExit = false;
 
+		MediaEngine.initXuggler();
 		isoFile = null;
 		try {
 			isoFile = iso.getFile(fileName);

@@ -31,6 +31,7 @@ import jpcsp.State;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.media.ExternalDecoder;
+import jpcsp.media.FileProtocolHandler;
 import jpcsp.media.MediaEngine;
 import jpcsp.media.PacketChannel;
 import jpcsp.memory.IMemoryReader;
@@ -39,8 +40,6 @@ import jpcsp.util.Hash;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
-
-import com.xuggle.xuggler.io.FileProtocolHandler;
 
 /**
  * @author gid15
