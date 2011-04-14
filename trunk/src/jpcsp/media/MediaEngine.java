@@ -52,7 +52,7 @@ import com.xuggle.xuggler.video.ConverterFactory;
 import com.xuggle.xuggler.video.IConverter;
 
 public class MediaEngine {
-	private static org.apache.log4j.Logger log = Modules.log;
+	public static org.apache.log4j.Logger log = Modules.log;
     protected static final int AVSEEK_FLAG_BACKWARD = 1; // seek backward
     protected static final int AVSEEK_FLAG_BYTE     = 2; // seeking based on position in bytes
     protected static final int AVSEEK_FLAG_ANY      = 4; // seek to any frame, even non-keyframes
@@ -86,6 +86,10 @@ public class MediaEngine {
     private IContainer extContainer;
 
     public MediaEngine() {
+    	initXuggler();
+    }
+
+    public static void initXuggler() {
     	if (!initialized) {
 	        // Disable Xuggler's logging, since we do our own.
 	        Logger.setGlobalIsLogging(Logger.Level.LEVEL_DEBUG, false);
@@ -573,7 +577,8 @@ public class MediaEngine {
         	log.debug(String.format("initExtAudio %s", file));
         }
 
-        if (extContainer.open(file, IContainer.Type.READ, null) < 0) {
+        IURLProtocolHandler fileProtocolHandler = new FileProtocolHandler(file);
+        if (extContainer.open(fileProtocolHandler, IContainer.Type.READ, null) < 0) {
             log.error("MediaEngine: Invalid file or container format: " + file);
             extContainer.close();
             extContainer = null;

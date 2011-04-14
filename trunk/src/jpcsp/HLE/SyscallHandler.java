@@ -20,7 +20,10 @@ import java.util.Arrays;
 
 import jpcsp.Emulator;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.format.DeferredStub;
 import jpcsp.util.CpuDurationStatistics;
 import jpcsp.util.DurationStatistics;
 
@@ -28,6 +31,7 @@ public class SyscallHandler {
 	public static CpuDurationStatistics durationStatistics = new CpuDurationStatistics("Syscall");
     public static boolean ignoreUnmappedImports = false;
     private static CpuDurationStatistics[] syscallStatistics;
+    public static final int syscallUnmappedImport = 0xFFFFF;
 
 	public static void reset() {
 		durationStatistics.reset();
@@ -71,12 +75,24 @@ public class SyscallHandler {
     }
 
     public static void syscall(int code) {
-        if (code == 0xfffff) { // special code for unmapped imports
+        if (code == syscallUnmappedImport) { // special code for unmapped imports
             CpuState cpu = Emulator.getProcessor().cpu;
-	        if (isEnableIgnoreUnmappedImports()) {
-	            Modules.log.warn(String.format("IGNORING: Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+
+            String description = String.format("0x%08X", cpu.pc);
+            // Search for the module & NID to provide a better description
+            for (SceModule module : Managers.modules.values()) {
+            	for (DeferredStub deferredStub : module.unresolvedImports) {
+            		if (deferredStub.getImportAddress() == cpu.pc || deferredStub.getImportAddress() == cpu.pc - 4) {
+            			description = deferredStub.toString();
+            			break;
+            		}
+            	}
+            }
+
+            if (isEnableIgnoreUnmappedImports()) {
+	            Modules.log.warn(String.format("IGNORING: Unmapped import at %s - %08x %08x %08x", description, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 	        } else {
-		        Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x", cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+		        Modules.log.error(String.format("Unmapped import at %s - %08x %08x %08x", description, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 		        Emulator.PauseEmu();
 	        }
             cpu.gpr[2] = 0;

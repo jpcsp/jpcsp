@@ -37,6 +37,7 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeInstruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 import jpcsp.Allegrex.compiler.nativeCode.Nop;
+import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.memory.SafeFastMemory;
@@ -589,6 +590,12 @@ public class CompilerContext implements ICompilerContext {
     	mv.visitFieldInsn(Opcodes.GETSTATIC, classInternalName, insn.name().replace('.', '_').replace(' ', '_'), instructionDescriptor);
     }
 
+    private void storePc() {
+    	loadCpu();
+    	loadImm(codeInstruction.getAddress());
+        mv.visitFieldInsn(Opcodes.PUTFIELD, Type.getInternalName(CpuState.class), "pc", Type.getDescriptor(int.class));
+    }
+
     public void visitJump() {
     	flushInstructionCount(true, false);
     	checkSync();
@@ -709,7 +716,7 @@ public class CompilerContext implements ICompilerContext {
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, instructionInternalName, "interpret", "(" + processorDescriptor + "I)V");
     }
 
-	private boolean isFastSyscall(int code) {
+    private boolean isFastSyscall(int code) {
 		return fastSyscalls.contains(code);
 	}
 
@@ -717,6 +724,11 @@ public class CompilerContext implements ICompilerContext {
     	flushInstructionCount(false, false);
 
     	int code = (opcode >> 6) & 0x000FFFFF;
+
+    	if (code == SyscallHandler.syscallUnmappedImport) {
+    		storePc();
+    	}
+
     	loadImm(code);
     	if (isFastSyscall(code)) {
     		mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "syscallFast", "(I)V");

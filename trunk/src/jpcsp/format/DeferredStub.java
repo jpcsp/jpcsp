@@ -38,4 +38,9 @@ public class DeferredStub {
     public int getNid() {
         return nid;
     }
+
+	@Override
+	public String toString() {
+		return String.format("0x%08X [0x%08X] Module '%s'", getImportAddress(), getNid(), getModuleName());
+	}
 }
