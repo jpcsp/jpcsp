@@ -243,7 +243,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		readUnknown(3);
 		saveName    = readStringNZ(20);
 		saveNameListAddr = read32();
-		if (saveNameListAddr != 0) {
+		if (Memory.isAddressGood(saveNameListAddr)) {
 			List<String> newSaveNameList = new ArrayList<String>();
 			boolean endOfList = false;
 			for (int i = 0; !endOfList; i += 20) {
