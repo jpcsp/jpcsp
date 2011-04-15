@@ -231,25 +231,50 @@ public class SoundChannel {
     	return getWaitingBuffers() >= numberBlockingBuffers;
     }
 
-    public int getUnblockOutputDelayMicros() {
+    public boolean isDrained() {
+    	if (isEnded()) {
+    		return true;
+    	}
+
+    	if (getWaitingBuffers() > 1) {
+    		return false;
+    	}
+
+    	return true;
+    }
+
+    public int getUnblockOutputDelayMicros(boolean waitForCompleteDrain) {
     	// Return the delay required for the processing of the playing buffer
     	if (isExit || isEnded()) {
     		return 0;
     	}
-    	float delaySecs = (getSampleLength() - getSourceSampleOffset()) / (float) getSampleRate();
+
+    	int samples;
+    	if (waitForCompleteDrain) {
+    		samples = getDrainLength();
+    	} else {
+    		samples = getSampleLength() - getSourceSampleOffset();
+    	}
+    	float delaySecs = samples / (float) getSampleRate();
     	int delayMicros = (int) (delaySecs * 1000000);
 
     	return delayMicros;
     }
 
-    public int getRestLength() {
+    public int getDrainLength() {
     	int waitingBuffers = getWaitingBuffers();
     	if (waitingBuffers > 0) {
     		// getWaitingBuffers also returns the currently playing buffer,
-    		// do not count i
+    		// do not count it
     		waitingBuffers--;
     	}
     	int restLength = waitingBuffers * getSampleLength();
+
+    	return restLength;
+    }
+
+    public int getRestLength() {
+    	int restLength = getDrainLength();
     	if (!isEnded()) {
     		restLength += getSampleLength() - getSourceSampleOffset();
     	}

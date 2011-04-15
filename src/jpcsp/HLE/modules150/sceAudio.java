@@ -217,7 +217,7 @@ public class sceAudio implements HLEModule, HLEStartModule {
 
     protected void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
     	IAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
-    	int delayMicros = channel.getUnblockOutputDelayMicros();
+    	int delayMicros = channel.getUnblockOutputDelayMicros(addr == 0);
     	long schedule = Emulator.getClock().microTime() + delayMicros;
     	Emulator.getScheduler().addAction(schedule, action);
     }
@@ -227,15 +227,25 @@ public class sceAudio implements HLEModule, HLEStartModule {
     		log.debug(String.format("hleAudioBlockingOutput %s", channel.toString()));
     	}
 
-    	if (addr == 0 || !channel.isOutputBlocking()) {
+    	if (addr == 0) {
+    		// Waiting for complete audio drain
+    		if (!channel.isDrained()) {
+            	blockThreadOutput(threadId, channel, addr, leftVolume, rightVolume);
+    		} else {
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
+                if (thread != null) {
+                	thread.cpuContext.gpr[2] = 0;
+                    threadMan.hleUnblockThread(threadId);
+                }
+    		}
+    	} else if (!channel.isOutputBlocking()) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo thread = threadMan.getThreadById(threadId);
             if (thread != null) {
-                if (addr != 0) {
-                    changeChannelVolume(channel, leftVolume, rightVolume);
-                    int ret = doAudioOutput(channel, addr);
-                    thread.cpuContext.gpr[2] = ret;
-                }
+                changeChannelVolume(channel, leftVolume, rightVolume);
+                int ret = doAudioOutput(channel, addr);
+                thread.cpuContext.gpr[2] = ret;
                 threadMan.hleUnblockThread(threadId);
             }
         } else {
@@ -370,13 +380,15 @@ public class sceAudio implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+
         if (pvoid_buf == 0) {
-            if (hleAudioGetChannelRestLen(pspPCMChannels[channel]) != 0) {
-                log.warn("sceAudioOutputBlocking (pvoid_buf==0): delaying current thread");
-                Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+            if (!pspPCMChannels[channel].isDrained()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceAudioOutputBlocking[pvoid_buf==0] blocking " + pspPCMChannels[channel].toString());
+                }
+                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, vol, vol);
             } else {
-                log.warn("sceAudioOutputBlocking (pvoid_buf==0): not delaying current thread");
-                cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
+                cpu.gpr[2] = 0;
             }
         } else if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
@@ -439,21 +451,19 @@ public class sceAudio implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+
         if (pvoid_buf == 0) {
             // Tested on PSP:
             // An output adress of 0 is actually a special code for the PSP.
-            // It means that we must stall processing until all the previous unplayed samples' data
-            // is output. The safest way to mimic this, is to delay the current thread (which will be
-            // an audio processing one) if there are still samples to play.
-        	int restSamples = hleAudioGetChannelRestLen(pspPCMChannels[channel]);
-            if (restSamples > 0) {
-                log.warn("sceAudioOutputPannedBlocking (pvoid_buf==0): delaying current thread");
-                float restSeconds = restSamples / (float) pspPCMChannels[channel].getSampleRate();
-                int restMicros = (int) (restSeconds * 1000000);
-                Modules.ThreadManForUserModule.hleKernelDelayThread(restMicros, false);
+            // It means that we must stall processing until all the previous
+        	// unplayed samples' data is output.
+            if (!pspPCMChannels[channel].isDrained()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceAudioOutputPannedBlocking[pvoid_buf==0] blocking " + pspPCMChannels[channel].toString());
+                }
+                blockThreadOutput(pspPCMChannels[channel], pvoid_buf, leftvol, rightvol);
             } else {
-                log.warn("sceAudioOutputPannedBlocking (pvoid_buf==0): not delaying current thread");
-                cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
+                cpu.gpr[2] = 0;
             }
         } else if (!Memory.isAddressGood(pvoid_buf)) {
             log.warn("sceAudioOutputPannedBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
@@ -693,12 +703,13 @@ public class sceAudio implements HLEModule, HLEStartModule {
             // Tested on PSP:
             // SRC audio also delays when buf == 0, in order to drain all
             // audio samples from the audio driver.
-            if (hleAudioGetChannelRestLen(pspSRCChannel) != 0) {
-                log.warn("sceAudioSRCOutputBlocking (buf==0): delaying current thread");
-                Modules.ThreadManForUserModule.hleKernelDelayThread(100000, false);
+            if (!pspSRCChannel.isDrained()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceAudioSRCOutputBlocking[pvoid_buf==0] blocking " + pspSRCChannel);
+                }
+                blockThreadOutput(pspSRCChannel, buf, vol, vol);
             } else {
-                log.warn("sceAudioSRCOutputBlocking (buf==0): not delaying current thread");
-                cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_PRIV_REQUIRED;
+                cpu.gpr[2] = 0;
             }
         } else if (!Memory.isAddressGood(buf)) {
             log.warn("sceAudioSRCOutputBlocking bad pointer " + String.format("0x%08X", buf));
