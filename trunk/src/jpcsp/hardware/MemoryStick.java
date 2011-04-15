@@ -32,7 +32,7 @@ public class MemoryStick {
     private static int fatMsState = PSP_FAT_MEMORYSTICK_STATE_ASSIGNED;
 
     // available size on memory stick, in bytes.
-    private static long freeSize = 1 * 1024 * 1024 * 1024;	// 1GB
+    private static long freeSize = 1L * 1024 * 1024 * 1024;	// 1GB
     private static int sectorSize = 32 * 1024; // 32KB
 
 	public static int getStateMs() {
@@ -76,11 +76,11 @@ public class MemoryStick {
 	}
 
 	public static String getSizeKbString(int sizeKb) {
-		if (sizeKb < 1024) {
+		if (sizeKb < 3 * 1024) {
 			return String.format("%d KB", sizeKb);
 		}
 		sizeKb /= 1024;
-		if (sizeKb < 1024) {
+		if (sizeKb < 3 * 1024) {
 			return String.format("%d MB", sizeKb);
 		}
 		sizeKb /= 1024;

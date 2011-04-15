@@ -763,8 +763,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
 
             voices[voice].getEnvelope().ReleaseRate = (env2Bitfield & 0x1F);
             voices[voice].getEnvelope().ReleaseCurveType = (env2Bitfield >> 5) & 0x1;
-            voices[voice].getEnvelope().SustainRate = (env2Bitfield >> 6) & 0xFF;
-            voices[voice].getEnvelope().SustainCurveType = (env2Bitfield >> 14);
+            voices[voice].getEnvelope().SustainRate = (env2Bitfield >> 6) & 0x7F;
+            voices[voice].getEnvelope().SustainCurveType = (env2Bitfield >> 13);
 
             cpu.gpr[2] = 0;
         } else {

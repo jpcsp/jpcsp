@@ -41,6 +41,8 @@ unsigned char buffer6[40];
 unsigned char buffer7[184];
 unsigned char buffer8[100000];
 unsigned char buffer9[100000];
+unsigned char buffer10[100000];
+unsigned char buffer11[100000];
 
 char* g_gameName;
 char* g_saveName;
@@ -206,6 +208,12 @@ void initSavedata(SceUtilitySavedataParamNew* savedata, int mode) {
 	memset(buffer3, 0, sizeof(buffer3));
 	memset(buffer4, 0, sizeof(buffer4));
 	memset(buffer5, 0, sizeof(buffer5));
+	memset(buffer6, 0, sizeof(buffer6));
+	memset(buffer7, 0, sizeof(buffer7));
+	memset(buffer8, 0, sizeof(buffer8));
+	memset(buffer9, 0, sizeof(buffer9));
+	memset(buffer10, 0, sizeof(buffer10));
+	memset(buffer11, 0, sizeof(buffer11));
 	savedata->ptr1 = buffer1;
 	savedata->ptr2 = buffer2;
 	strcpy((char *) buffer2, g_gameName);
@@ -215,9 +223,23 @@ void initSavedata(SceUtilitySavedataParamNew* savedata, int mode) {
 	*((int *) (buffer4 + 0)) = sizeof(buffer5) / 72;
 	*((int *) (buffer4 + 8)) = (int) &buffer5;
 	savedata->ptr5 = buffer6;
-	savedata->ptr6 = buffer7;
 	*((int *) (buffer6 + 24)) = (int) &buffer8;
+	*((int *) (buffer6 + 28)) = (int) &buffer10;
 	*((int *) (buffer6 + 32)) = (int) &buffer9;
+	savedata->ptr6 = buffer7;
+	memset(buffer7, 0x12, sizeof(buffer7));
+	*((int *) (buffer7 + 0)) = 1;
+	*((int *) (buffer7 + 4)) = 1;
+	*((int *) (buffer7 + 8)) = (int) &buffer10;
+	*((int *) (buffer7 + 12)) = (int) &buffer11;
+	int *entry = (int *) buffer10;
+	entry[0] = 0x70000000;
+	entry[1] = 0;
+	strcpy((char *) (entry + 2), "FILE1");
+	entry = (int *) buffer11;
+	entry[0] = 0x70000000;
+	entry[1] = 0;
+	strcpy((char *) (entry + 2), "FILE2");
 	strncpy(savedata->key, "1234567890123456", 16);
 #endif
 	savedata->overwrite = 1;
@@ -246,18 +268,22 @@ void mainImpl()
 	file[len] = 0;
 	
 	// extract first 3 lines
-	g_gameName = file;
-	g_saveName = g_gameName;
-	while (*g_saveName >= 32) g_saveName++;
-	*g_saveName = 0;
-	while (*g_saveName < 32) g_saveName++;
-	g_dataName = g_saveName;
-	while (*g_dataName >= 32) g_dataName++;
-	*g_dataName = 0;
-	while (*g_dataName < 32) g_dataName++;
-	char* tmp = g_dataName;
-	while (*tmp >= 32) tmp++;
-	*tmp = 0;
+	char *ptr = file;
+
+	g_gameName = ptr;
+	while (*ptr != 10 && *ptr != 13 && *ptr != 0) ptr++;
+	if (*ptr == 13) *ptr++ = 0;
+	if (*ptr == 10) *ptr++ = 0;
+
+	g_saveName = ptr;
+	while (*ptr != 10 && *ptr != 13 && *ptr != 0) ptr++;
+	if (*ptr == 13) *ptr++ = 0;
+	if (*ptr == 10) *ptr++ = 0;
+
+	g_dataName = ptr;
+	while (*ptr != 10 && *ptr != 13 && *ptr != 0) ptr++;
+	if (*ptr == 13) *ptr++ = 0;
+	if (*ptr == 10) *ptr++ = 0;
 
 	// ask for load or update
 	pgPrint2(0, 0, 0xffff, "Shine's SavedataTool");
@@ -273,6 +299,7 @@ void mainImpl()
 	print("press triangle for savedata mode 8");
 	print("press square for savedata mode 11");
 	print("press up for savedata mode 15");
+	print("press down for savedata mode 22 (GETSIZE)");
 	y++;
 
 	sceCtrlSetSamplingCycle(0); 
@@ -295,6 +322,9 @@ void mainImpl()
 			break;
 		} else if (ctrl.Buttons & CTRL_UP) {
 			update = 4;
+			break;
+		} else if (ctrl.Buttons & CTRL_DOWN) {
+			update = 22; // Mode 22 (GETSIZE)
 			break;
 		}
 		sceDisplayWaitVblankStart();
@@ -598,6 +628,95 @@ void mainImpl()
 			return;
 		}
 		sceIoWrite(fd, &savedata, sizeof(savedata));
+		sceIoClose(fd);
+	} else if (update == 22) {
+		// Test savedata mode 22
+		print("loading savedata with mode 22...");
+		initSavedata(&savedata, 22);
+
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
+		if (result) {
+			print("sceUtilitySavedataInitStart failed");
+			printHex(result);
+			return;
+		}
+		previousResult = -1;
+		while (1) {
+			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
+			if (result == 3) break;
+			sceUtilitySavedataUpdate(1);
+			sceDisplayWaitVblankStart();
+		}
+
+		// write data	
+		print("writing extracted savedata...");
+		fd = sceIoOpen("ms0:/params.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/params.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata.paramsSfoTitle, PARAMS_LEN);
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/data.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/data.bin");
+			return;
+		}
+		sceIoWrite(fd, g_dataBuf, savedata.sizeOfData);	
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/savedata.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata, sizeof(savedata));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer7.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer7.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer7, sizeof(buffer7));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer8.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer8.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer8, sizeof(buffer8));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer9.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer9.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer9, sizeof(buffer9));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer10.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer10.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer10, sizeof(buffer10));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer11.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer11.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer11, sizeof(buffer11));
 		sceIoClose(fd);
 	}
 

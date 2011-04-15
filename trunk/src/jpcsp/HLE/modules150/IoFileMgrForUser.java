@@ -694,7 +694,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     mode |= attr << 8;
                     // Java can't see file create/access time
                     stat = new SceIoStat(mode, attr, size,
-                            ScePspDateTime.fromUnixTime(0),
+                            ScePspDateTime.fromUnixTime(mtime),
                             ScePspDateTime.fromUnixTime(0),
                             ScePspDateTime.fromUnixTime(mtime));
                 }

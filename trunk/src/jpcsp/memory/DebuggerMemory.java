@@ -24,9 +24,6 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.util.Utilities;

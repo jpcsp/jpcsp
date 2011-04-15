@@ -1074,6 +1074,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 	            case SceUtilitySavedataParam.MODE_GETSIZE:
 	                int buffer6Addr = savedataParams.sizeAddr;
+                    boolean isPresent = savedataParams.isPresent();
+
 	                if (Memory.isAddressGood(buffer6Addr)) {
 	                    int saveFileSecureNumEntries = mem.read32(buffer6Addr + 0);
 	                    int saveFileNumEntries = mem.read32(buffer6Addr + 4);
@@ -1081,8 +1083,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	                    int saveFileEntriesAddr = mem.read32(buffer6Addr + 12);
 
 	                    int totalSizeKb = 0;
-	                    int neededSizeKb = 0;
-	                    int freeSizeKb = MemoryStick.getFreeSizeKb();
 
 	                    for (int i = 0; i < saveFileSecureNumEntries; i++) {
 	                        int entryAddr = saveFileSecureEntriesAddr + i * 24;
@@ -1107,32 +1107,40 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	                        totalSizeKb += sizeKb;
 	                    }
 
-	                    // If there's not enough size, we have to write how much size we need.
-	                    // With enough size, our needed size is always 0.
-	                    if (totalSizeKb > freeSizeKb) {
-	                        neededSizeKb = totalSizeKb;
-	                    }
-
 	                    // Free MS size.
+	                    int freeSizeKb = MemoryStick.getFreeSizeKb();
 	                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(freeSizeKb);
 	                    mem.write32(buffer6Addr + 16, MemoryStick.getSectorSize());
 	                    mem.write32(buffer6Addr + 20, freeSizeKb / MemoryStick.getSectorSizeKb());
 	                    mem.write32(buffer6Addr + 24, freeSizeKb);
 	                    Utilities.writeStringNZ(mem, buffer6Addr + 28, 8, memoryStickFreeSpaceString);
 
-	                    // Size needed to write savedata.
-	                    mem.write32(buffer6Addr + 36, neededSizeKb);
-	                    Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, MemoryStick.getSizeKbString(neededSizeKb));
+	                    // If there's not enough size, we have to write how much size we need.
+	                    // With enough size, our needed size is always 0.
+	                    if (totalSizeKb > freeSizeKb) {
+		                    int neededSizeKb = totalSizeKb - freeSizeKb;
 
-	                    // Size needed to overwrite savedata.
-	                    mem.write32(buffer6Addr + 48, neededSizeKb);
-	                    Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, MemoryStick.getSizeKbString(neededSizeKb));
+		                    // Additional size needed to write savedata.
+		                    mem.write32(buffer6Addr + 36, neededSizeKb);
+		                    Utilities.writeStringNZ(mem, buffer6Addr + 40, 8, MemoryStick.getSizeKbString(neededSizeKb));
+
+		                    if (isPresent) {
+		                    	// Additional size needed to overwrite savedata.
+		                    	mem.write32(buffer6Addr + 48, neededSizeKb);
+		                    	Utilities.writeStringNZ(mem, buffer6Addr + 52, 8, MemoryStick.getSizeKbString(neededSizeKb));
+		                    }
+	                    } else {
+		                    mem.write32(buffer6Addr + 36, 0);
+		                    if (isPresent) {
+		                    	mem.write32(buffer6Addr + 48, 0);
+		                    }
+	                    }
 	                }
 
 	                // MODE_GETSIZE also checks if a MemoryStick is inserted and if there're no previous data.
 	                if (MemoryStick.getStateMs() != MemoryStick.PSP_MEMORYSTICK_STATE_DRIVER_READY) {
 	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_MEMSTICK;
-	                } else if (!savedataParams.isPresent()) {
+	                } else if (!isPresent) {
 	                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_RW_NO_DATA;
 	                } else {
 	                    savedataParams.base.result = 0;
