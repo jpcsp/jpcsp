@@ -150,7 +150,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
 
     protected void blockThreadOutput(int threadId, SoundChannel channel, int addr, int leftVolume, int rightVolume) {
     	IAction action = new AudioBlockingOutputAction(threadId, channel, addr, leftVolume, rightVolume);
-    	int delayMicros = channel.getUnblockOutputDelayMicros();
+    	int delayMicros = channel.getUnblockOutputDelayMicros(addr == 0);
     	long schedule = Emulator.getClock().microTime() + delayMicros;
     	Emulator.getScheduler().addAction(schedule, action);
     }
