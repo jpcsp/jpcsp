@@ -155,4 +155,11 @@ public class OMAFormat {
 
 		return oma;
 	}
+
+	public static int getOMANumberAudioChannels(ByteBuffer oma) {
+		int headerParameters = oma.getInt(0x30);
+		int channels = (headerParameters >> 10) & 0x7;
+
+		return channels;
+	}
 }

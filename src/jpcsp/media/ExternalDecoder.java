@@ -230,7 +230,66 @@ public class ExternalDecoder {
     	return String.format("%sAtrac-%08X-%08X.%s", AtracCodec.getBaseDirectory(), atracFileSize, address, suffix);
     }
 
-    public String decodeAtrac(int address, int length, int atracFileSize) {
+    private String decodeAtrac(byte[] atracData, int address, int atracFileSize, String decodedFileName) {
+    	try {
+	    	ByteBuffer riffBuffer = ByteBuffer.wrap(atracData);
+	    	if (dumpEncodedFile) {
+	    		// For debugging purpose, optionally dump the original atrac file in RIFF format
+				new File(AtracCodec.getBaseDirectory()).mkdirs();
+	    		FileOutputStream encodedOut = new FileOutputStream(getAtracAudioPath(address, atracFileSize, "encoded"));
+	    		encodedOut.getChannel().write(riffBuffer);
+	    		encodedOut.close();
+	    		riffBuffer.rewind();
+	    	}
+	    	ByteBuffer omaBuffer = OMAFormat.convertRIFFtoOMA(riffBuffer);
+	    	if (omaBuffer == null) {
+				Modules.log.info("AT3+ data could not be decoded by the external decoder (error while converting to OMA)");
+	    		return null;
+	    	}
+
+			new File(AtracCodec.getBaseDirectory()).mkdirs();
+			String encodedFileName = getAtracAudioPath(address, atracFileSize, "oma");
+			FileOutputStream os = new FileOutputStream(encodedFileName);
+			os.getChannel().write(omaBuffer);
+			os.close();
+
+			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
+				int channels = OMAFormat.getOMANumberAudioChannels(omaBuffer);
+				if (channels == 1) {
+					// It seems that SonicStage has problems decoding mono AT3+ data
+					// or we might generate an incorrect OMA file for monaural audio.
+					Modules.log.info("Mono AT3+ data could not be decoded by the external decoder");
+				} else if (channels == 2) {
+					Modules.log.info("Stereo AT3+ data could not be decoded by the external decoder");
+				} else {
+					Modules.log.info("AT3+ data could not be decoded by the external decoder (channels=" + channels + ")");
+				}
+				return null;
+			}
+    	} catch (IOException e) {
+			// Ignore Exception
+			log.error(e);
+		}
+
+		return decodedFileName;
+    }
+
+    public String decodeAtrac(PacketChannel packetChannel, int address, int atracFileSize) {
+    	if (!isEnabled()) {
+    		return null;
+    	}
+
+    	byte[] atracData = new byte[atracFileSize];
+    	int readLength = packetChannel.read(atracData, atracData.length);
+    	if (readLength != atracData.length) {
+    		return null;
+    	}
+
+		String decodedFileName = getAtracAudioPath(address, atracFileSize, "wav");
+    	return decodeAtrac(atracData, address, atracFileSize, decodedFileName);
+    }
+
+    public String decodeAtrac(int address, int length, int atracFileSize, AtracCodec atracCodec) {
     	if (!isEnabled()) {
     		return null;
     	}
@@ -255,39 +314,12 @@ public class ExternalDecoder {
 		}
     	if (atracData == null) {
     		// Atrac data cannot be retrieved...
+			Modules.log.debug("AT3+ data could not be decoded by the external decoder (complete atrac data need to be retrieved)");
+			atracCodec.setRequireAllAtracData();
     		return null;
     	}
 
-    	try {
-	    	ByteBuffer riffBuffer = ByteBuffer.wrap(atracData);
-	    	if (dumpEncodedFile) {
-	    		// For debugging purpose, optionally dump the original atrac file in RIFF format
-				new File(AtracCodec.getBaseDirectory()).mkdirs();
-	    		FileOutputStream encodedOut = new FileOutputStream(getAtracAudioPath(address, atracFileSize, "encoded"));
-	    		encodedOut.getChannel().write(riffBuffer);
-	    		encodedOut.close();
-	    		riffBuffer.rewind();
-	    	}
-	    	ByteBuffer omaBuffer = OMAFormat.convertRIFFtoOMA(riffBuffer);
-	    	if (omaBuffer == null) {
-	    		return null;
-	    	}
-
-			new File(AtracCodec.getBaseDirectory()).mkdirs();
-			String encodedFileName = getAtracAudioPath(address, atracFileSize, "oma");
-			FileOutputStream os = new FileOutputStream(encodedFileName);
-			os.getChannel().write(omaBuffer);
-			os.close();
-
-			if (!executeExternalDecoder(encodedFileName, decodedFileName, keepOmaFile)) {
-				return null;
-			}
-    	} catch (IOException e) {
-			// Ignore Exception
-			log.error(e);
-		}
-
-		return decodedFileName;
+    	return decodeAtrac(atracData, address, atracFileSize, decodedFileName);
     }
 
     private static class IoListener implements IIoListener {

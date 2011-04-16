@@ -57,6 +57,7 @@ public class AtracCodec {
     protected int atracEndSample;
     protected int atracMaxSamples;
     protected int atracFileSize;
+    protected int atracBufferAddress;
     protected int bytesPerFrame;
     protected byte[] atracDecodeBuffer;
     protected static boolean instructionsDisplayed = false;
@@ -70,6 +71,7 @@ public class AtracCodec {
     protected static boolean useMediaEngine = false;
     protected byte[] samplesBuffer;
     protected ExternalDecoder externalDecoder;
+    protected boolean requireAllAtracData;
 
     public boolean checkMediaEngineState() {
         return useMediaEngine && me != null;
@@ -162,13 +164,20 @@ public class AtracCodec {
         Utilities.close(decodedStream, atracStream);
         decodedStream = null;
         atracStream = null;
+        requireAllAtracData = false;
+    }
+
+    public void setRequireAllAtracData() {
+    	requireAllAtracData = true;
     }
 
     public void atracSetData(int atracID, int codecType, int address, int length, int atracFileSize) {
     	this.atracFileSize = atracFileSize;
+    	this.atracBufferAddress = address;
         id = generateID(address, length, atracFileSize);
         closeStreams();
         atracEndSample = -1;
+        requireAllAtracData = false;
 
         int memoryCodecType = sceAtrac3plus.getCodecType(address);
         if (memoryCodecType != codecType && memoryCodecType != 0) {
@@ -191,13 +200,21 @@ public class AtracCodec {
             }
         } else if (codecType == 0x00001000) {
         	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
-        		String decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize);
+        		String decodedFile = externalDecoder.decodeAtrac(address, length, atracFileSize, this);
         		if (decodedFile != null) {
         			Modules.log.info("AT3+ data decoded by the external decoder.");
         			me.finish();
         			atracChannel = null;
         			me.init(new FileProtocolHandler(decodedFile), false, true);
                     atracEndSample = -1;
+        			return;
+        		} else if (requireAllAtracData) {
+        			// The external decoder requires all the atrac data
+        			// before it can try to decode the atrac.
+        			me.finish();
+        			atracChannel = new PacketChannel();
+        			atracChannel.setTotalStreamSize(atracFileSize);
+        			atracChannel.write(address, length);
         			return;
         		}
     			Modules.log.info("AT3+ data could not be decoded by the external decoder.");
@@ -306,11 +323,39 @@ public class AtracCodec {
 
         if (checkMediaEngineState()) {
         	if (me.getContainer() == null && atracChannel != null) {
-        		// The MediaEngine requires at least 3 * 0x8000 data bytes available
-        		// during initialization. Otherwise, it will assume to have reached
-        		// the end of the channel and will not further read.
-        		// The readRetryCount of the container does not help.
-    			if (atracChannel.length() >= 0x8000 * 3 || atracChannel.length() >= atracFileSize) {
+        		if (requireAllAtracData) {
+        			if (atracChannel.length() >= atracFileSize) {
+        				requireAllAtracData = false;
+        	        	if (checkMediaEngineState() && ExternalDecoder.isEnabled()) {
+        	        		String decodedFile = externalDecoder.decodeAtrac(atracChannel, atracBufferAddress, atracFileSize);
+        	        		if (decodedFile != null) {
+        	        			Modules.log.info("AT3+ data decoded by the external decoder (all AT3+ data retrieved).");
+        	        			me.finish();
+        	        			atracChannel = null;
+        	        			me.init(new FileProtocolHandler(decodedFile), false, true);
+        	                    atracEndSample = -1;
+        	        		} else {
+        	        			Modules.log.info("AT3+ data could not be decoded by the external decoder, even after retrieving all AT3+ data.");
+        	        			me = null;
+        	        		}
+        	        	} else {
+    	        			Modules.log.info("AT3+ data could not be decoded by the external decoder, even after retrieving all AT3+ data.");
+        	        		me = null;
+        	        	}
+        	        	if (me == null) {
+        	        		return atracDecodeData(atracID, address);
+        	        	}
+        			} else {
+        				// Fake returning 1 sample with remainFrames == 0
+        				// to force a call to sceAtracAddStreamData.
+        				samples = 1;
+        				Memory.getInstance().memset(address, (byte) 0, samples * 4); 
+        			}
+        		} else if (atracChannel.length() >= 0x8000 * 3 || atracChannel.length() >= atracFileSize) {
+            		// The MediaEngine requires at least 3 * 0x8000 data bytes available
+            		// during initialization. Otherwise, it will assume to have reached
+            		// the end of the channel and will not further read.
+            		// The readRetryCount of the container does not help.
     				me.init(atracChannel, false, true);
     			} else {
     				// Fake returning 1 sample with remainFrames == 0
