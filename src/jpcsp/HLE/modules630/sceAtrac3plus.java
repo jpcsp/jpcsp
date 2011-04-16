@@ -33,6 +33,8 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 
     	if (version >= 630) {
             mm.addFunction(0x231FC6B7, _sceAtracGetContextAddressFunction);
+            mm.addFunction(0x0C116E1B, sceAtracLowLevelDecodeFunction);
+            mm.addFunction(0x1575D64B, sceAtracLowLevelInitDecoderFunction);
         }
     }
 
@@ -42,6 +44,8 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 
     	if (version >= 630) {
             mm.removeFunction(_sceAtracGetContextAddressFunction);
+            mm.removeFunction(sceAtracLowLevelDecodeFunction);
+            mm.removeFunction(sceAtracLowLevelInitDecoderFunction);
         }
     }
 
@@ -60,6 +64,22 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
         cpu.gpr[2] = 0;
     }
 
+    public void sceAtracLowLevelDecode(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("UNIMPLEMENTED: sceAtracLowLevelDecode");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+
+    public void sceAtracLowLevelInitDecoder(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("UNIMPLEMENTED: sceAtracLowLevelInitDecoder");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+
     public final HLEModuleFunction _sceAtracGetContextAddressFunction = new HLEModuleFunction("sceAtrac3plus", "_sceAtracGetContextAddress") {
         @Override
         public final void execute(Processor processor) {
@@ -68,6 +88,28 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceAtrac3plusModule._sceAtracGetContextAddress(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceAtracLowLevelDecodeFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracLowLevelDecode") {
+        @Override
+        public final void execute(Processor processor) {
+        	sceAtracLowLevelDecode(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracLowLevelDecode(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceAtracLowLevelInitDecoderFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracLowLevelInitDecoder") {
+        @Override
+        public final void execute(Processor processor) {
+        	sceAtracLowLevelInitDecoder(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracLowLevelInitDecoder(processor);";
         }
     };
 }

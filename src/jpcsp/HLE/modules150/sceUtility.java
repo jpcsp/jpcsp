@@ -74,6 +74,7 @@ import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
+import jpcsp.HLE.kernel.types.SceUtilityScreenshotParams;
 import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams.SceUtilityOskData;
 import jpcsp.HLE.modules.HLEModule;
@@ -253,7 +254,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         PS3ScanState = new NotImplementedUtilityDialogState("sceUtilityPS3Scan");
         rssReaderState = new NotImplementedUtilityDialogState("sceUtilityRssReader");
         rssSubscriberState = new NotImplementedUtilityDialogState("sceUtilityRssSubscriber");
-        screenshotState = new NotImplementedUtilityDialogState("sceUtilityScreenshot");
+        screenshotState = new ScreenshotUtilityDialogState("sceUtilityScreenshot");
         htmlViewerState = new NotImplementedUtilityDialogState("sceUtilityHtmlViewer");
         savedataErrState = new NotImplementedUtilityDialogState("sceUtilitySavedataErr");
         gamedataInstallState = new NotImplementedUtilityDialogState("sceUtilityGamedataInstall");
@@ -329,7 +330,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected UtilityDialogState PS3ScanState;
     protected UtilityDialogState rssReaderState;
     protected UtilityDialogState rssSubscriberState;
-    protected UtilityDialogState screenshotState;
+    protected ScreenshotUtilityDialogState screenshotState;
     protected UtilityDialogState htmlViewerState;
     protected UtilityDialogState savedataErrState;
     protected UtilityDialogState gamedataInstallState;
@@ -1257,6 +1258,57 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		protected pspAbstractMemoryMappedStructure createParams() {
 			netconfParams = new SceUtilityNetconfParams();
 			return netconfParams;
+		}
+    }
+
+    protected static class ScreenshotUtilityDialogState extends UtilityDialogState {
+		protected SceUtilityScreenshotParams screenshotParams;
+
+    	public ScreenshotUtilityDialogState(String name) {
+			super(name);
+		}
+
+		@Override
+		protected void executeUpdateVisible(Processor processor) {
+			// TODO to be implemented
+		}
+
+        protected void executeContStart(Processor processor) {
+			// Continuous mode which takes several screenshots
+            // on regular intervals set by an internal counter.
+
+            // To execute the cont mode, the screenshot utility must
+            // be initialized with sceUtilityScreenshotInitStart and the startupType
+            // parameter has to be PSP_UTILITY_SCREENSHOT_TYPE_CONT_AUTO, otherwise, an
+            // error is returned.
+
+            CpuState cpu = processor.cpu;
+            Memory mem = Memory.getInstance();
+
+            paramsAddr = cpu.gpr[4];
+            if (!Memory.isAddressGood(paramsAddr)) {
+                log.error(String.format("%sContStart bad address 0x%08X", name, paramsAddr));
+                cpu.gpr[2] = -1;
+            } else {
+                this.params = createParams();
+                params.read(mem, paramsAddr);
+                if (log.isInfoEnabled()) {
+                    log.info(String.format("%sContStart %s", name, params.toString()));
+                }
+                if (screenshotParams.isContModeOn()) {
+                    // Start with INIT
+                    status = PSP_UTILITY_DIALOG_STATUS_INIT;
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = SceKernelErrors.ERROR_SCREENSHOT_CONT_MODE_NOT_INIT;
+                }
+            }
+		}
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			screenshotParams = new SceUtilityScreenshotParams();
+			return screenshotParams;
 		}
     }
 
@@ -2314,11 +2366,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     public void sceUtilityScreenshotContStart(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("Unimplemented: sceUtilityScreenshotContStart");
-
-        cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+        screenshotState.executeContStart(processor);
     }
 
     public void sceUtilityScreenshotShutdownStart(Processor processor) {

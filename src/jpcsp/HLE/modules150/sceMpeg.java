@@ -216,7 +216,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final long UNKNOWN_TIMESTAMP = -1;
 
     // At least 2048 bytes of MPEG data is provided when analysing the MPEG header
-    public static final int MPEG_HEADER_BUFFER_MINIMUM_SIZE = 2048; 
+    public static final int MPEG_HEADER_BUFFER_MINIMUM_SIZE = 2048;
 
     // MPEG processing vars.
     protected int mpegHandle;
@@ -2061,7 +2061,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
 
         if (packetsAdded > 0) {
-            if (checkMediaEngineState()) {
+            if (checkMediaEngineState() && (meChannel != null)) {
                 meChannel.write(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             } else if (isEnableConnector()) {
                 mpegCodec.writeVideo(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);

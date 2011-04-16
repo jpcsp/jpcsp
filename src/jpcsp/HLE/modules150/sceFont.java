@@ -98,6 +98,11 @@ public class sceFont implements HLEModule, HLEStartModule {
             mm.addFunction(0x3C4B7E82, sceFontPointToPixelVFunction);
             mm.addFunction(0x74B21701, sceFontPixelToPointHFunction);
             mm.addFunction(0xF8F0752E, sceFontPixelToPointVFunction);
+            mm.addFunction(0x2F67356A, sceFontCalcMemorySizeFunction);
+            mm.addFunction(0x48B06520, sceFontGetShadowImageRectFunction);
+            mm.addFunction(0x568BE516, sceFontGetShadowGlyphImageFunction);
+            mm.addFunction(0x5DCF6858, sceFontGetShadowGlyphImage_ClipFunction);
+            mm.addFunction(0xAA3DE7B5, sceFontGetShadowInfoFunction);
 
         }
     }
@@ -129,6 +134,11 @@ public class sceFont implements HLEModule, HLEStartModule {
             mm.removeFunction(sceFontPointToPixelVFunction);
             mm.removeFunction(sceFontPixelToPointHFunction);
             mm.removeFunction(sceFontPixelToPointVFunction);
+            mm.removeFunction(sceFontCalcMemorySizeFunction);
+            mm.removeFunction(sceFontGetShadowImageRectFunction);
+            mm.removeFunction(sceFontGetShadowGlyphImageFunction);
+            mm.removeFunction(sceFontGetShadowGlyphImage_ClipFunction);
+            mm.removeFunction(sceFontGetShadowInfoFunction);
 
         }
     }
@@ -299,7 +309,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     /**
      * Dump a font as a .BMP image in the tmp directory for debugging purpose.
-     * 
+     *
      * @param font the font to be dumped
      */
     protected void dumpFont(Font font) {
@@ -866,9 +876,9 @@ public class sceFont implements HLEModule, HLEStartModule {
                     // the proper values for the Debug font.
                     yPosI -= font.pgf.getMaxBaseYAdjust() >> 6;
                     yPosI += font.pgf.getMaxTopYAdjust() >> 6;
-                }
-                Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
+                    Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
                         xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
+                }
             }
         }
         cpu.gpr[2] = 0;
@@ -1053,9 +1063,9 @@ public class sceFont implements HLEModule, HLEStartModule {
                     if (yPosI < 0) {
                         yPosI = 0;
                     }
-                }
-                Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
+                    Debug.printFontbuffer(buffer, bytesPerLine, bufWidth, bufHeight,
                         xPosI, yPosI, pixelFormat, charCode, font.fontLib.getAltCharCode());
+                }
             }
         }
         cpu.gpr[2] = 0;
@@ -1449,6 +1459,46 @@ public class sceFont implements HLEModule, HLEStartModule {
         mem.write32(errorCodeAddr, errorCode);
     }
 
+    public void sceFontCalcMemorySize(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("UNIMPLEMENTED: sceFontCalcMemorySize");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
+    public void sceFontGetShadowImageRect(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("UNIMPLEMENTED: sceFontGetShadowImageRect");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
+    public void sceFontGetShadowGlyphImage(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("UNIMPLEMENTED: sceFontGetShadowGlyphImage");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
+    public void sceFontGetShadowGlyphImage_Clip(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("UNIMPLEMENTED: sceFontGetShadowGlyphImage_Clip");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
+    public void sceFontGetShadowInfo(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.warn("UNIMPLEMENTED: sceFontGetShadowInfo");
+
+		cpu.gpr[2] = 0xDEADC0DE;
+	}
+
     public final HLEModuleFunction sceFontFindOptimumFontFunction = new HLEModuleFunction("sceFont", "sceFontFindOptimumFont") {
 
         @Override
@@ -1723,6 +1773,66 @@ public class sceFont implements HLEModule, HLEStartModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceFontModule.sceFontPixelToPointV(Processor);";
+        }
+    };
+    public final HLEModuleFunction sceFontCalcMemorySizeFunction = new HLEModuleFunction("sceFont", "sceFontCalcMemorySize") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceFontCalcMemorySize(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceFontModule.sceFontCalcMemorySize(Processor);";
+        }
+    };
+    public final HLEModuleFunction sceFontGetShadowImageRectFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowImageRect") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceFontGetShadowImageRect(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowImageRect(Processor);";
+        }
+    };
+    public final HLEModuleFunction sceFontGetShadowGlyphImageFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowGlyphImage") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceFontGetShadowGlyphImage(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowGlyphImage(Processor);";
+        }
+    };
+    public final HLEModuleFunction sceFontGetShadowGlyphImage_ClipFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowGlyphImage_Clip") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceFontGetShadowGlyphImage_Clip(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowGlyphImage_Clip(Processor);";
+        }
+    };
+    public final HLEModuleFunction sceFontGetShadowInfoFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowInfo") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceFontGetShadowInfo(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowInfo(Processor);";
         }
     };
 }

@@ -48,6 +48,8 @@ public class sceImpose implements HLEModule, HLEStartModule {
 			mm.addFunction(0x36AA6E91, sceImposeSetLanguageModeFunction);
 			mm.addFunction(0x24FD7BCF, sceImposeGetLanguageModeFunction);
 			mm.addFunction(0x8C943191, sceImposeGetBatteryIconStatusFunction);
+            mm.addFunction(0x8F6E3518, sceImposeGetBacklightOffTimeFunction);
+            mm.addFunction(0x967F6D4A, sceImposeSetBacklightOffTimeFunction);
 
 		}
 	}
@@ -64,6 +66,8 @@ public class sceImpose implements HLEModule, HLEStartModule {
 			mm.removeFunction(sceImposeSetLanguageModeFunction);
 			mm.removeFunction(sceImposeGetLanguageModeFunction);
 			mm.removeFunction(sceImposeGetBatteryIconStatusFunction);
+            mm.removeFunction(sceImposeGetBacklightOffTimeFunction);
+            mm.removeFunction(sceImposeSetBacklightOffTimeFunction);
 
 		}
 	}
@@ -99,6 +103,8 @@ public class sceImpose implements HLEModule, HLEStartModule {
     public final static int PSP_UMD_POPUP_DISABLE = 0;
     public final static int PSP_UMD_POPUP_ENABLE = 1;
     private int umdPopupStatus;
+
+    private int backlightOffTime;
 
 	public void sceImposeHomeButton(Processor processor) {
 	    CpuState cpu = processor.cpu;
@@ -210,6 +216,26 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		cpu.gpr[2] = 0;
 	}
 
+    public void sceImposeGetBacklightOffTime(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+		log.debug("sceImposeGetBacklightOffTime");
+
+		cpu.gpr[2] = backlightOffTime;
+	}
+
+    public void sceImposeSetBacklightOffTime(Processor processor) {
+		CpuState cpu = processor.cpu;
+
+        int time = cpu.gpr[4];
+
+		log.debug("sceImposeSetBacklightOffTime (time=" + time + ")");
+
+        backlightOffTime = time;
+
+		cpu.gpr[2] = 0;
+	}
+
 	public final HLEModuleFunction sceImposeHomeButtonFunction = new HLEModuleFunction("sceImpose", "sceImposeHomeButton") {
 		@Override
 		public final void execute(Processor processor) {
@@ -295,6 +321,28 @@ public class sceImpose implements HLEModule, HLEStartModule {
 		@Override
 		public final String compiledString() {
 			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeGetBatteryIconStatus(processor);";
+		}
+	};
+
+    public final HLEModuleFunction sceImposeGetBacklightOffTimeFunction = new HLEModuleFunction("sceImpose", "sceImposeGetBacklightOffTime") {
+		@Override
+		public final void execute(Processor processor) {
+			sceImposeGetBacklightOffTime(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeGetBacklightOffTime(processor);";
+		}
+	};
+
+    public final HLEModuleFunction sceImposeSetBacklightOffTimeFunction = new HLEModuleFunction("sceImpose", "sceImposeSetBacklightOffTime") {
+		@Override
+		public final void execute(Processor processor) {
+			sceImposeSetBacklightOffTime(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeSetBacklightOffTime(processor);";
 		}
 	};
 }

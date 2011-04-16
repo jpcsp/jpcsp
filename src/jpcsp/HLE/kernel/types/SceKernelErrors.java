@@ -310,6 +310,8 @@ public class SceKernelErrors {
     public static final int ERROR_NETPARAM_BAD_NETCONF                          = 0x80110601;
     public static final int ERROR_NETPARAM_BAD_PARAM                            = 0x80110604;
 
+    public static final int ERROR_SCREENSHOT_CONT_MODE_NOT_INIT                 = 0x80111229;
+
     public final static int ERROR_UMD_NOT_READY                                 = 0x80210001;
 
     public final static int ERROR_MEMSTICK_DEVCTL_BAD_PARAMS                    = 0x80220081;
