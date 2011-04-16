@@ -555,17 +555,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
 			super(name);
 		}
 
-        private boolean deleteSavedataDir(String saveName) {
-            File saveDir = new File(saveName);
-            if (saveDir.exists()) {
-                File[] subFiles = saveDir.listFiles();
-                for (int i = 0; i < subFiles.length; i++) {
-                    subFiles[i].delete();
-                }
-            }
-            return saveDir.delete();
-        }
-
 		@Override
 		protected pspAbstractMemoryMappedStructure createParams() {
 			savedataParams = new SceUtilitySavedataParam();
@@ -697,9 +686,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	            case SceUtilitySavedataParam.MODE_DELETE: {
 	                if (savedataParams.saveNameList != null) {
 	                    for (int i = 0; i < savedataParams.saveNameList.length; i++) {
-	                        String save = SceUtilitySavedataParam.savedataFilePath + savedataParams.gameName +
-	                                (savedataParams.saveNameList[i]);
-	                        if (deleteSavedataDir(save)) {
+	                        String save = savedataParams.getBasePath(savedataParams.saveNameList[i]);
+	                        if (Modules.IoFileMgrForUserModule.rmdir(save, true)) {
 	                            log.debug("Savedata MODE_DELETE deleting " + save);
 	                        }
 	                    }
@@ -728,8 +716,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 			                    log.warn("Savedata MODE_DELETE no save selected");
 			                    savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_DELETE_BAD_PARAMS;
 			                } else {
-			                	String dirName = SceUtilitySavedataParam.savedataFilePath + savedataParams.gameName + saveListSelection;
-			                	if (deleteSavedataDir(dirName)) {
+			                	String dirName = savedataParams.getBasePath(saveListSelection);
+			                	if (Modules.IoFileMgrForUserModule.rmdir(dirName, true)) {
 		                            log.debug("Savedata MODE_DELETE deleting " + dirName);
 			                        savedataParams.base.result = 0;
 			                	} else {
@@ -853,8 +841,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	            }
 
 	            case SceUtilitySavedataParam.MODE_SINGLEDELETE: {
-	                String saveDir = "ms0/PSP/SAVEDATA/" + savedataParams.gameName + savedataParams.saveName;
-	                if (deleteSavedataDir(saveDir)) {
+	            	String saveDir = savedataParams.getBasePath();
+	                if (Modules.IoFileMgrForUserModule.rmdir(saveDir, true)) {
 	                    savedataParams.base.result = 0;
 	                } else {
 	                    log.warn("Savedata MODE_SINGLEDELETE directory not found!");

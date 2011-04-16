@@ -334,7 +334,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         write32(sizeAddr);
 	}
 
-    private String getBasePath() {
+    public String getBasePath() {
         return getBasePath(saveName);
     }
 
