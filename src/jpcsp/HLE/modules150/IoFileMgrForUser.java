@@ -606,6 +606,30 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    private boolean rmdir(File f, boolean recursive) {
+    	boolean subDirResult = true;
+    	if (recursive && f.isDirectory()) {
+			File[] subFiles = f.listFiles();
+			for (int i = 0; subFiles != null && i < subFiles.length; i++) {
+				if (!rmdir(subFiles[i], recursive)) {
+					subDirResult = false;
+				}
+			}
+    	}
+
+    	return f.delete() && subDirResult;
+    }
+
+    public boolean rmdir(String dir, boolean recursive) {
+    	String pcfilename = getDeviceFilePath(dir);
+    	if (pcfilename == null) {
+    		return false;
+    	}
+
+    	File f = new File(pcfilename);
+    	return rmdir(f, recursive);
+    }
+
     public String[] listFiles(String dir, String pattern) {
         String pcfilename = getDeviceFilePath(dir);
         if (pcfilename == null) {
