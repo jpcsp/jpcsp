@@ -624,8 +624,11 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 	            } else {
 		            setInputFileOffset(0);
 	            }
-	            getAtracCodec().resetChannel();
-	            if (!getAtracCodec().isExternalAudio()) {
+
+	            // No need to retrieve new atrac data if the buffer contains
+	            // the whole atrac file or if we are using an external audio.
+	            if (getInputBufferSize() < getInputFileSize() && !getAtracCodec().isExternalAudio()) {
+	            	getAtracCodec().resetChannel();
 	            	forceReloadOfData = true;
 	            }
         	}
