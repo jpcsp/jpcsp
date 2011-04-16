@@ -1023,7 +1023,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     private void deleteAllThreads() {
     	// Copy the list of threads into a new list to avoid ConcurrentListModificationException
     	List<SceKernelThreadInfo> threadsToBeDeleted = new LinkedList<SceKernelThreadInfo>(threadMap.values());
- 
+
     	for (SceKernelThreadInfo thread : threadsToBeDeleted) {
     		hleDeleteThread(thread);
     	}
@@ -1141,7 +1141,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * This function must be used when changing the state of a thread as
      * it updates the ThreadMan internal data structures and implements
      * the PSP behavior on status change.
-     * 
+     *
      * @param thread    the thread to be updated
      * @param newStatus the new thread status
      */
@@ -1758,13 +1758,19 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         return removed;
     }
 
-    private int getThreadCurrentStackSize() {
+    protected int getThreadCurrentStackSize() {
         int size = currentThread.stackSize - (Emulator.getProcessor().cpu.gpr[29] - currentThread.stack_addr) - 0x130;
         if (size < 0) {
             size = 0;
         }
 
         return size;
+    }
+
+    protected void setThreadCurrentStackSize(int size) {
+        if(size > 0) {
+            currentThread.stackSize += size;
+        }
     }
 
     private boolean threadCanNotCallback(SceKernelThreadInfo thread, int callbackType, int cbid, SceKernelCallbackInfo cb) {
