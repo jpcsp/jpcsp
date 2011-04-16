@@ -28,6 +28,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.hardware.Screen;
 
 import org.apache.log4j.Logger;
 
@@ -122,6 +123,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         }
         switch (flag) {
             case KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY:
+            	Screen.hleKernelPowerTick();
                 if (log.isTraceEnabled()) {
                     log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_SUSPEND_AND_DISPLAY)");
                 }
@@ -132,6 +134,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
                 }
                 break;
             case KERNEL_POWER_TICK_DISPLAY:
+            	Screen.hleKernelPowerTick();
                 if (log.isTraceEnabled()) {
                     log.trace("IGNORING:sceKernelPowerTick(KERNEL_POWER_TICK_DISPLAY)");
                 }

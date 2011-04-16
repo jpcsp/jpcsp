@@ -64,6 +64,7 @@ import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
+import jpcsp.hardware.Screen;
 import jpcsp.scheduler.UnblockThreadAction;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
@@ -86,8 +87,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 
     // Screen default resolution
-    public int screenWidth = 480;
-    public int screenHeight = 272;
+    public int screenWidth = Screen.width;
+    public int screenHeight = Screen.height;
 
     // sceDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
@@ -339,8 +340,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         statisticsCopyMemoryToGe = new DurationStatistics("Copy Memory to GE");
 
         mode          = 0;
-        width         = 480;
-        height        = 272;
+        width         = Screen.width;
+        height        = Screen.height;
         topaddrFb     = MemoryMap.START_VRAM;
         bufferwidthFb = 512;
         pixelformatFb = PSP_DISPLAY_PIXEL_FORMAT_8888;
@@ -355,8 +356,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
         pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
-        widthGe       = 480;
-        heightGe      = 272;
+        widthGe       = Screen.width;
+        heightGe      = Screen.height;
         topaddrGe     = topaddrFb;
         bufferwidthGe = bufferwidthFb;
         pixelformatGe = pixelformatFb;

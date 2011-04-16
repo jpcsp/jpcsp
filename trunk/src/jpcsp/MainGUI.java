@@ -85,6 +85,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.hardware.Audio;
+import jpcsp.hardware.Screen;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
 import jpcsp.media.ExternalDecoder;
@@ -144,6 +145,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         }
 
         emulator = new Emulator(this);
+        Screen.start();
 
         Resource.setLanguage(Settings.getInstance().readString("emu.language"));
 
@@ -2050,6 +2052,7 @@ private void FullItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         Modules.ThreadManForUserModule.exit();
         Modules.sceDisplayModule.exit();
         VideoEngine.exit();
+        Screen.exit();
         Emulator.exit();
 
         System.exit(0);
