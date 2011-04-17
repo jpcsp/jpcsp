@@ -515,7 +515,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                 secondInputFileSize = 0x100;
                 secondInputFileOffset = inputFileSize - 0x100;
                 analyzeAtracHeader();
-                log.info(String.format("hleAtracSetData atracID=%d, bufferSize=0x%x, fileSize=0x%x", getAtracId(), inputBufferSize, inputFileSize));
+                log.info(String.format("hleAtracSetData atracID=%d, buffer=0x%08X, bufferSize=0x%X, fileSize=0x%X", getAtracId(), buffer, inputBufferSize, inputFileSize));
                 if (getAtracCodec() == null) {
                     log.warn(String.format("hleAtracSetData atracID=%d is invalid", getAtracId()));
                     return;
