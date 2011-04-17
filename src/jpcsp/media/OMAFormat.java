@@ -26,7 +26,7 @@ public class OMAFormat {
 	private static final byte OMA_CODECID_ATRAC3P = 1;
 
 	private static ByteBuffer getOmaHeader(byte codecId, byte headerCode1, byte headerCode2) {
-		ByteBuffer header = ByteBuffer.allocate(96);
+		ByteBuffer header = ByteBuffer.allocate(96).order(ByteOrder.BIG_ENDIAN);
 		header.putInt(OMA_EA3_MAGIC);
 		header.putShort((short) header.capacity());
 		header.putShort((short) -1);
@@ -147,7 +147,7 @@ public class OMAFormat {
 		dataBuffer.position(dataChunkOffset + 8);
 		dataBuffer.limit(dataBuffer.position() + dataSize);
 
-		ByteBuffer oma = ByteBuffer.allocate(header.remaining() + dataBuffer.remaining());
+		ByteBuffer oma = ByteBuffer.allocate(header.remaining() + dataBuffer.remaining()).order(ByteOrder.LITTLE_ENDIAN);
 		oma.put(header);
 		oma.put(dataBuffer);
 
@@ -157,8 +157,8 @@ public class OMAFormat {
 	}
 
 	public static int getOMANumberAudioChannels(ByteBuffer oma) {
-		int headerParameters = oma.getInt(0x30);
-		int channels = (headerParameters >> 10) & 0x7;
+		int headerParameters = oma.getInt(0x20);
+		int channels = (headerParameters >> 18) & 0x7;
 
 		return channels;
 	}
