@@ -58,8 +58,7 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        setThreadCurrentStackSize(size);
-        cpu.gpr[2] = 0;
+        cpu.gpr[2] = setThreadCurrentStackSize(size);
 	}
 
 	public final HLEModuleFunction sceKernelExtendThreadStackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExtendThreadStack") {

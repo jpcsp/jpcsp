@@ -697,12 +697,9 @@ public class sceFont implements HLEModule, HLEStartModule {
             int fontHandle = 0;
             if (fLib != null) {
                 fLib.triggerAllocCallback(memoryFontLength);
-
-                if (getAllowInternalFonts()) {
-                	Font font = openFontFile(memoryFontAddr, memoryFontLength);
-                	if (font != null) {
-                		fontHandle = fLib.openFont(font);
-                	}
+                Font font = openFontFile(memoryFontAddr, memoryFontLength);
+                if (font != null) {
+                    fontHandle = fLib.openFont(font);
                 }
             }
             if (Memory.isAddressGood(errorCodeAddr)) {

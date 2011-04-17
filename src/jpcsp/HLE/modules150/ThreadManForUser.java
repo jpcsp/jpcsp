@@ -1767,10 +1767,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         return size;
     }
 
-    protected void setThreadCurrentStackSize(int size) {
+    protected int setThreadCurrentStackSize(int size) {
         if(size > 0) {
             currentThread.stackSize += size;
         }
+        return getThreadCurrentStackSize();
     }
 
     private boolean threadCanNotCallback(SceKernelThreadInfo thread, int callbackType, int cbid, SceKernelCallbackInfo cb) {
