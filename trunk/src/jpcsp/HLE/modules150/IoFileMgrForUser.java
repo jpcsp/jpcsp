@@ -186,6 +186,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
+        public long cachePosition; // Simulate an out of cache position for asynchronous ioctl read/seek operations.
         public boolean sectorBlockMode;
         public final int uid;
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
@@ -1020,77 +1021,79 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
-            log.warn("hleIoWaitAsync - unknown uid " + Integer.toHexString(uid) + ", not waiting");
+            log.warn("hleIoWaitAsync - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else if (info.result == ERROR_KERNEL_NO_ASYNC_OP) {
-            log.debug("hleIoWaitAsync - PSP_ERROR_NO_ASYNC_OP, not waiting");
-            wait = false;
+            log.debug("hleIoWaitAsync - PSP_ERROR_NO_ASYNC_OP");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NO_ASYNC_OP;
         } else if (info.asyncPending && !wait) {
-            // Need to wait for context switch before we can allow the good result through
-            log.debug("hleIoWaitAsync - poll return = 1(busy), not waiting");
+            // Polling returns 1 when async is busy.
+            log.debug("hleIoWaitAsync - poll return = 1(busy)");
             Emulator.getProcessor().cpu.gpr[2] = 1;
         } else {
-            if (info.closePending) {
-            	log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
-                hleIoClose(info.uid, false);
-                wait = false;
+            boolean waitForAsync = false;
+            // Check for invalid waiting conditions first.
+            if (wait) {
+                // Allow waiting for the async thread.
+                waitForAsync = true;
+                // The file was marked as closePending, so close it right away to avoid delays.
+                if (info.closePending) {
+                    log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
+                    hleIoClose(info.uid, false);
+                    waitForAsync = false;
+                }
+                // This case happens when the game switches thread before calling waitAsync,
+                // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
+                // Technically we should wait at least some time, since tests show
+                // a load of sceKernelDelayThread before sceIoWaitAsync won't make
+                // the async io complete (maybe something to do with thread priorities).
+                if (!info.asyncPending) {
+                    log.debug("hleIoWaitAsync - already context switched, not waiting");
+                    waitForAsync = false;
+                }
+                // The file was not found at sceIoOpenAsync.
+                if (info.result == (ERROR_ERRNO_FILE_NOT_FOUND & 0xffffffffL)) {
+                    log.debug("hleIoWaitAsync - file not found, not waiting");
+                    filelist.remove(info.uid);
+                    SceUidManager.releaseUid(info.uid, "IOFileManager-File");
+                    waitForAsync = false;
+                }
             }
-
-            // Deferred error reporting from sceIoOpenAsync(filenotfound)
-            if (info.result == (ERROR_ERRNO_FILE_NOT_FOUND & 0xffffffffL)) {
-                log.debug("hleIoWaitAsync - file not found, not waiting");
-                filelist.remove(info.uid);
-                SceUidManager.releaseUid(info.uid, "IOFileManager-File");
-                wait = false;
-            }
-
-            // This case happens when the game switches thread before calling waitAsync,
-            // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
-            // Technically we should wait at least some time, since tests show
-            // a load of sceKernelDelayThread before sceIoWaitAsync won't make
-            // the async io complete (maybe something to do with thread priorities).
-            if (!info.asyncPending && wait) {
-                log.debug("hleIoWaitAsync - already context switched, not waiting");
-                wait = false;
-            }
-
+            // Always store the result.
             Memory mem = Memory.getInstance();
             if (Memory.isAddressGood(res_addr)) {
                 log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
                 mem.write32(res_addr, (int) (info.result & 0xffffffffL));
                 mem.write32(res_addr + 4, (int) ((info.result >> 32) & 0xffffffffL));
-                // flush out result after writing it once
-                info.result = ERROR_KERNEL_NO_ASYNC_OP;
             }
             Emulator.getProcessor().cpu.gpr[2] = 0;
-        }
-
-        if (wait) {
-            for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
+            if (info != null) {
+                if (waitForAsync) {
+                    // Only flush the result on sceIoWaitAsync and sceIoWaitAsyncCB calls.
+                    info.result = ERROR_KERNEL_NO_ASYNC_OP;
+                    // Setup the ioListeners.
+                    for (IIoListener ioListener : ioListeners) {
+                        ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
+                    }
+                    // Start the waiting mode.
+                    ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                    SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                    currentThread.waitType = PSP_WAIT_EVENTFLAG;
+                    int timeout = 0;
+                    boolean forever = true;
+                    threadMan.hleKernelThreadWait(currentThread, timeout, forever);
+                    currentThread.wait.waitingOnIo = true;
+                    currentThread.wait.Io_id = info.uid;
+                    currentThread.wait.waitStateChecker = ioWaitStateChecker;
+                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
+                    threadMan.hleRescheduleCurrentThread(callbacks);
+                } else {
+                    // For sceIoPollAsync, only setup the ioListeners.
+                    for (IIoListener ioListener : ioListeners) {
+                        ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
+                    }
+                }
             }
-        } else {
-            for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
-            }
-        }
-
-        if (info != null && wait) {
-            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-            // wait type
-            currentThread.waitType = PSP_WAIT_EVENTFLAG;
-            // Go to wait state
-            int timeout = 0;
-            boolean forever = true;
-            threadMan.hleKernelThreadWait(currentThread, timeout, forever);
-            // Wait on a specific file uid
-            currentThread.wait.waitingOnIo = true;
-            currentThread.wait.Io_id = info.uid;
-            currentThread.wait.waitStateChecker = ioWaitStateChecker;
-            threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-            threadMan.hleRescheduleCurrentThread(callbacks);
         }
     }
 
@@ -1683,7 +1686,16 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 // UMD forced disc read operation.
                 case 0x01F30003: {
                     if (Memory.isAddressGood(outdata_addr) && inlen >= 4) {
-                        mem.write8(outdata_addr, (byte) 1); // Number of sectors read (return atleast one).
+                        if (log.isDebugEnabled()) {
+                            log.debug("hleIoIoctl UMD forced file read");
+                        }
+                        int sectors = 0;
+                        if (info.cachePosition < info.position) {
+                            // Approximate to a dummy sector value and restore the cachePosition.
+                            sectors = (info.cachePosition == 0) ? 1 : (int) (info.position / info.cachePosition);
+                            info.cachePosition = info.position;
+                        }
+                        mem.write8(outdata_addr, (byte) sectors); // Number of sectors read.
                         result = 0;
                     } else {
                         log.warn(String.format("hleIoIoctl cmd=0x%08X in=0x%08X(%d) out=0x%08X(%d) unsupported parameters", cmd, indata_addr, inlen, outdata_addr, outlen));
@@ -1699,7 +1711,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                                 long offset = mem.read64(indata_addr);
                                 int whence = mem.read32(indata_addr + 12);
                                 if (log.isDebugEnabled()) {
-                                    log.debug("hleIoIoctl umd file seek offset " + offset + ", whence " + whence);
+                                    log.debug("hleIoIoctl UMD file seek offset " + offset + ", whence " + whence);
                                 }
                                 switch (whence) {
                                     case PSP_SEEK_SET: {
