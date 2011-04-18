@@ -12,6 +12,8 @@
 
 *******************************************************************************
 [VERSION HISTORY]:
+v.07:
+release date open
 v0.6:
 September 18, 2010 - Added new emulation changes and improved the FAQ.
 v0.5:
@@ -53,6 +55,30 @@ Please keep in mind that JPCSP does not support or endorse piracy.
 			   [What's new (changelog)]
 ...............................................................................
 ...............................................................................
+JPCSP v0.7 (????????):
+
+-> Added Game Pad support;
+
+-> Major performance improvements in the graphic processing (see new Video options);
+
+-> Automatic decoding of stereo ATRAC3+ audio using SonicStage;
+
+-> Rendering of fonts using "sceFont". OpenSource fonts are provided as a replacement
+   for the PSP fonts. But the PSP original fonts can be used for maximal compatibility;
+
+-> Automatic decryption of encrypted EBOOT.BIN and PGD files.
+   Savedata files can also be loaded/saved in an encrypted form, like on a real PSP;
+
+-> Added the configuration of regional settings
+   under "Options" > "Configuration" > "Region";
+
+-> Draft implementation for the support of Video UMDs;
+
+-> A lot of compatibility improvements in almost of the PSP modules.
+
+
+
+
 JPCSP v0.6 (September 18, 2010):
 
 -> Included compilation of several "Allegrex" instructions in dynarec for a
@@ -244,8 +270,12 @@ Please note if a font does not work it is a limitation of Java, not JPCSP.
 
 
 - Game Pads:
-We don't support game pads in JPCSP yet, but you may use 3rd party software 
-that maps your pad's buttons to the keyboard.
+Game Pads are supported by Jpcsp. They can be configured under "Options -> Controls".
+The keyboard support is always active, even when using a Game Pad. I.e. you can use
+both the game pad and keyboard controls.
+The list of save games can also be controlled using the Game Pad: Up/Down to move
+the selection, [X] for select and [O] for Cancel (or the opposite depending on the
+region button preference).
 
 
 - Patch files:
@@ -260,12 +290,16 @@ the user interface will be overridden regardless of their state.
 
 - Media Engine:
 NOTE: Currently, only supported in 32-bit Windows.
-The "Media Engine" can be enabled under "Options" > "Configuration" > "Misc".
-You also need to unpack a folder called ffmpeg-natives.7z located under lib >
-windows-x86.
+The "Media Engine" can be enabled under "Options" > "Configuration" > "Media".
 This allows JPCSP to use the FFMPEG's wrapper Xuggler to decode and playback
-ingame videos (instead of faked MPEG data) and audio (ATRAC3 only, ATRAC3+ is
-not supported yet).
+ingame videos (instead of faked MPEG data) and audio (ATRAC3 only).
+The playback of ATRAC3+ audio is only available when the configuration option
+"Decode audio files with SonicStage" is enabled
+(under "Options" > "Configuration" > "Media") and when SonicStage is installed
+on your computer. SonicStage (http://en.wikipedia.org/wiki/Sonicstage)
+is not provided by Jpcsp and must be installed separately. The playback of monaural
+ATRAC3+ audio has been reported to not work. Mono ATRAC3+ cannot be decoded by
+SonicStage, this is a restriction of this product.
 
 
 - Debug Tools (under "Debug" > "Tools"):
@@ -344,6 +378,93 @@ Use "Reset Profiler Information" under "Debug" to clear the saved data.
 - ISO contents:
 You can dump the current ISO/CSO image's contents into an illustrative .txt
 file. In order to do this, go to "Debug">"Dump ISO to ISO-index.txt".
+
+
+6. Explanation of the advanced Video options:
+
+I must also admit that the Video configuration options
+(under "Options" > "Configuration" > "Video") are not always self-explanatory.
+This is because they are related on how to map the low-level PSP graphic functions
+to the OpenGL functions.
+OpenGL provides some optimization techniques for application developers when they
+follow some basic principles (e.g. grouping the display of similar graphics together,
+reusing the same data at each frame...). The PSP does not use the same optimization
+techniques, e.g. there is no real advantage in grouping similar graphics together,
+or reusing the same data at each frame. So, the PSP programmers are optimizing for
+the PSP, which is not the same as optimizing for OpenGL.
+The Video configuration options allow the activation/deactivation of OpenGL techniques:
+they might improve some games if their programmers by chance more or less followed
+the OpenGL principles, but they also might decrease the performance if the game
+programmers did something completely different (which is also legitimate on a PSP).
+
+So, to the different options:
+- Disable VBO:
+    using OpenGL VBO (http://www.opengl.org/wiki/Vertex_Buffer_Object) should always
+    bring a win. This option is probably useless.
+- Only GE graphics:
+    the PSP allows drawing using GE commands or by writing directly to the PSP
+    framebuffer memory. With OpenGL, supporting both methods is cost expensive.
+    When this option is activated, only the drawing using GE commands is supported.
+    If the application writes directly to the PSP framebuffer memory, this is ignored.
+    As a side effect, a more accurate FPS is displayed when enabling this option.
+    When disabled, the displayed FPS is over-optimistic. This is why a lower FPS but
+    a smoother/faster play is often reported. Trust the faster play, not the FPS ;-).
+- Use Vertex Cache:
+    when enabled, parts of the graphics (positions, colors, bones...) are loaded on
+    the graphic card and reused from frame to frame when their data is not changing.
+    This has however a negative impact if the game programmers are changing their data
+    (e.g. the positions) very often.
+    By the way, a texture cache is always used and cannot be disabled.
+- Use shaders:
+    use vertex and fragment shaders to implement most of the PSP functions. Some of
+    the PSP functions cannot be implemented without the use of shaders, so this option
+    should provide the most accurate rendering. Unfortunately, some shader
+    implementations are somewhat buggy, depending on the graphic card used
+    (e.g. AMD/ATI or Intel).
+- Use a Geometry shader for 2D rendering:
+    when using shaders, this option might bring a slight performance improvement for 2D
+    applications.
+- Disable UBO:
+    when using shaders, OpenGL UBO's (http://www.opengl.org/wiki/Uniform_Buffer_Object)
+    should bring a better performance. But again, some graphic card drivers have
+    sometimes buggy implementations. This is why this option is enabled by default,
+    and only a "Disable" option is available.
+- Enable VAO:
+    an OpenGL optimization (http://www.opengl.org/wiki/Vertex_Array_Object) when
+    similar graphics are grouped together. This is just available as an option as most
+    PSP programmers do not following this approach.
+- Enable saving GE screen to Textures:
+    the content of the PSP framebuffer is kept in an OpenGL texture instead of the PSP
+    memory: This allows faster load/save from OpenGL, but breaks compatibility if the
+    application is manipulating directly the framebuffer memory.
+- Enable decoding of indexed textures (using CLUT) in shader:
+    this option brings a performance boost when combined with
+    "Enable saving GE screen to Textures" and when the application is doing
+    manipulations on the Red/Green/Blue color channels of the framebuffer
+    (e.g. to implement some graphic effects, blurs or shadows). Available only as an
+    option as it might break the compatibility for other applications...
+- Enable dynamic shader generation:
+    we have a single shader implementing all the PSP functions. This shader contains
+    of lot of condition tests ("if (mode==0) then xxx", "if (mode==1) then yyy") to
+    support all the combinations. This option enables the generation of a separate
+    shader for each combination. E.g., when mode==0, we create one shader containing
+    only "xxx" and when mode==1, we create another shader containing only "yyy".
+    Each of these shaders will then execute faster because it can avoid the condition
+    test. Due to the large number of possible combinations, this could result in the
+    generation of several hundred different shaders. As this might overload the graphic
+    card driver, this feature is only available as an option. As a side effect, some
+    graphic card drivers (e.g. AMD/ATI) are reported to be less buggy when using this
+    option.
+
+
+7. PSP fonts
+
+When enabling the option "Use non-native fonts from flash0 folder"
+(under "Options" > "Configuration" > "Media"), OpenSource fonts are used as a
+replacement for the PSP native fonts. The fonts do not match 100% the PSP but
+provide a quite good approximation. For 100% compatibility, the original fonts
+from your PSP can be used. Copy the files under "flash0:/fonts" on your PSP to
+Jpcsp "flash0/fonts" directory.
 
 ...............................................................................
 
