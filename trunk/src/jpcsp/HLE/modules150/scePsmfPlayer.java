@@ -608,6 +608,11 @@ public class scePsmfPlayer implements HLEModule {
 	            displayBuffer = videoDataDisplayBuffer;
 	        } else {
 	            mem.write32(videoDataAddr + 4, displayBuffer);
+	            // Valid frame width?
+	            if (videoDataFrameWidth <= 0 || videoDataFrameWidth > 512) {
+	            	videoDataFrameWidth = 512;
+	            	mem.write32(videoDataAddr, videoDataFrameWidth);
+	            }
 	        }
 
             // Do not cache the video image as a texture in the VideoEngine to allow fluid rendering
