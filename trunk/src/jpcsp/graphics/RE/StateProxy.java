@@ -103,9 +103,9 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected float[] materialDiffuseColor;
 	protected float[] materialSpecularColor;
 	protected float[] materialEmissiveColor;
-	protected boolean colorMaterialAmbient;
-	protected boolean colorMaterialDiffuse;
-	protected boolean colorMaterialSpecular;
+	protected StateBoolean colorMaterialAmbient;
+	protected StateBoolean colorMaterialDiffuse;
+	protected StateBoolean colorMaterialSpecular;
 	protected int bindVertexArray;
 	protected int activeTextureUnit;
 	protected boolean useTextureAnisotropicFilter;
@@ -129,6 +129,18 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		public void setValue(boolean value) {
 			this.value = value;
 			undefined = false;
+		}
+
+		public boolean isTrue() {
+			return !undefined && value;
+		}
+
+		public boolean isFalse() {
+			return !undefined && !value;
+		}
+
+		public boolean isValue(boolean value) {
+			return !undefined && this.value == value;
 		}
 
 		@Override
@@ -196,6 +208,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		materialDiffuseColor = new float[4];
 		materialEmissiveColor = new float[4];
 		bindTexture = new int[2]; // assume max 2 active texture units
+
+		colorMaterialAmbient = new StateBoolean();
+		colorMaterialDiffuse = new StateBoolean();
+		colorMaterialSpecular = new StateBoolean();
 	}
 
 	@Override
@@ -284,9 +300,9 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		materialDiffuseColor[0] = -1.f;
 		materialSpecularColor[0] = -1.f;
 		materialEmissiveColor[0] = -1.f;
-		colorMaterialAmbient = false;
-		colorMaterialDiffuse = false;
-		colorMaterialSpecular = false;
+		colorMaterialAmbient.setUndefined();
+		colorMaterialDiffuse.setUndefined();
+		colorMaterialSpecular.setUndefined();
 		bindVertexArray = 0;
 
 		if (VideoEngine.getInstance().isUseTextureAnisotropicFilter() != useTextureAnisotropicFilter) {
@@ -498,7 +514,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	@Override
 	public void disableClientState(int type) {
 		StateBoolean state = clientState[type];
-		if (state.getValue() || state.isUndefined()) {
+		if (!state.isFalse()) {
 			super.disableClientState(type);
 			state.setValue(false);
 		}
@@ -509,7 +525,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		// enableClientState(RE_VERTEX) cannot be cached: it is required each time
 		// by OpenGL and seems to trigger the correct Vertex generation.
 		StateBoolean state = clientState[type];
-		if (type == RE_VERTEX || !state.getValue() || state.isUndefined()) {
+		if (type == RE_VERTEX || !state.isTrue()) {
 			super.enableClientState(type);
 			state.setValue(true);
 		}
@@ -519,7 +535,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void disableVertexAttribArray(int id) {
 		if (id >= 0 && id <= maxUniformId) {
 			StateBoolean state = vertexAttribArray[id];
-			if (state.getValue() || state.isUndefined()) {
+			if (!state.isFalse()) {
 				super.disableVertexAttribArray(id);
 				state.setValue(false);
 			}
@@ -530,7 +546,7 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void enableVertexAttribArray(int id) {
 		if (id >= 0 && id <= maxUniformId) {
 			StateBoolean state = vertexAttribArray[id];
-			if (!state.getValue() || state.isUndefined()) {
+			if (!state.isTrue()) {
 				super.enableVertexAttribArray(id);
 				state.setValue(true);
 			}
@@ -708,7 +724,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setViewport(int x, int y, int width, int height) {
-		if (x >= 0 && y >= 0 && width >= 0 && height >= 0) {
+		// Negative x and y values are valid values
+		if (width >= 0 && height >= 0) {
 			if (x != viewportX || y != viewportY || width != viewportWidth || height != viewportHeight) {
 				super.setViewport(x, y, width, height);
 				viewportX = x;
@@ -996,24 +1013,24 @@ public class StateProxy extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setColorMaterial(boolean ambient, boolean diffuse, boolean specular) {
-		if (colorMaterialAmbient != ambient || colorMaterialDiffuse != diffuse || colorMaterialSpecular != specular) {
+		if (!colorMaterialAmbient.isValue(ambient) || !colorMaterialDiffuse.isValue(diffuse) || !colorMaterialSpecular.isValue(specular)) {
 			super.setColorMaterial(ambient, diffuse, specular);
-			colorMaterialAmbient = ambient;
-			colorMaterialDiffuse = diffuse;
-			colorMaterialSpecular = specular;
+			colorMaterialAmbient.setValue(ambient);
+			colorMaterialDiffuse.setValue(diffuse);
+			colorMaterialSpecular.setValue(specular);
 		}
 	}
 
 	private void invalidateMaterialColors() {
 		// Drawing with "color material" enabled overwrites the material colors
 		if (flags[IRenderingEngine.RE_COLOR_MATERIAL]) {
-			if (colorMaterialAmbient) {
+			if (colorMaterialAmbient.isTrue()) {
 				materialAmbientColor[0] = -1.f;
 			}
-			if (colorMaterialDiffuse) {
+			if (colorMaterialDiffuse.isTrue()) {
 				materialDiffuseColor[0] = -1.f;
 			}
-			if (colorMaterialSpecular) {
+			if (colorMaterialSpecular.isTrue()) {
 				materialSpecularColor[0] = -1.f;
 			}
 		}
