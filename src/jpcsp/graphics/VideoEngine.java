@@ -1946,7 +1946,7 @@ public class VideoEngine {
                 		mvpMatrix = new float[4 * 4];
                 		// pre-Compute the MVP (Model-View-Projection) matrix
                 		matrixMult(mvpMatrix, context.model_uploaded_matrix, context.view_uploaded_matrix);
-                		matrixMult(mvpMatrix, mvpMatrix, context.proj_uploaded_matrix);
+                		matrixMult(mvpMatrix, mvpMatrix, getProjectionMatrix());
                 	}
 
                 	if (cachedVertexInfo == null) {
@@ -2844,6 +2844,11 @@ public class VideoEngine {
         context.viewport_width = (int) floatArgument(normalArgument);
         if (old_viewport_width != context.viewport_width) {
             viewportChanged = true;
+            if ((old_viewport_width < 0 && context.viewport_width > 0) ||
+                (old_viewport_width > 0 && context.viewport_width < 0)) {
+            	// Projection matrix has to be reloaded when X-axis flipped
+            	projectionMatrixUpload.setChanged(true);
+            }
         }
     }
 
@@ -2852,6 +2857,15 @@ public class VideoEngine {
         context.viewport_height = (int) floatArgument(normalArgument);
         if (old_viewport_height != context.viewport_height) {
             viewportChanged = true;
+            if ((old_viewport_height < 0 && context.viewport_height > 0) ||
+                (old_viewport_height > 0 && context.viewport_height < 0)) {
+            	// Projection matrix has to be reloaded when Y-axis flipped
+            	projectionMatrixUpload.setChanged(true);
+            }
+        }
+
+        if (isLogDebugEnabled) {
+            log.debug("sceGuViewport(cx=" + context.viewport_cx + ", cy=" + context.viewport_cy + ", w=" + context.viewport_width + ", h=" + context.viewport_height + ")");
         }
     }
 
@@ -2883,9 +2897,8 @@ public class VideoEngine {
             viewportChanged = true;
         }
 
-        // Log only on the last called command (always XSCALE -> YSCALE -> XPOS -> YPOS).
         if (isLogDebugEnabled) {
-            log.debug("sceGuViewport(cx=" + context.viewport_cx + ", cy=" + context.viewport_cy + ", w=" + context.viewport_width + " h=" + context.viewport_height + ")");
+            log.debug("sceGuViewport(cx=" + context.viewport_cx + ", cy=" + context.viewport_cy + ", w=" + context.viewport_width + ", h=" + context.viewport_height + ")");
         }
     }
 
@@ -4977,6 +4990,33 @@ public class VideoEngine {
         }
     }
 
+    private float[] getProjectionMatrix() {
+    	if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+    		// 2D
+    		return null;
+    	}
+
+    	if (context.viewport_height <= 0 && context.viewport_width >= 0) {
+    		// Non-flipped 3D
+    		return context.proj_uploaded_matrix;
+    	}
+
+    	float[] flippedMatrix = new float[16];
+		System.arraycopy(context.proj_uploaded_matrix, 0, flippedMatrix, 0, flippedMatrix.length);
+		if (context.viewport_height > 0) {
+    		// Flip upside-down
+			flippedMatrix[5] = -flippedMatrix[5];
+			flippedMatrix[13] = -flippedMatrix[13];
+		}
+		if (context.viewport_width < 0) {
+			// Flip right-to-left
+			flippedMatrix[0] = -flippedMatrix[0];
+			flippedMatrix[12] = -flippedMatrix[12];
+		}
+
+		return flippedMatrix;
+    }
+
     private boolean initRendering() {
         /*
          * Defer transformations until primitive rendering
@@ -5002,25 +5042,7 @@ public class VideoEngine {
          * Apply projection matrix
          */
         if (projectionMatrixUpload.isChanged()) {
-            if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            	if (context.viewport_height <= 0 && context.viewport_width >= 0) {
-            		re.setProjectionMatrix(context.proj_uploaded_matrix);
-            	} else {
-            		float[] flippedMatrix = new float[16];
-            		System.arraycopy(context.proj_uploaded_matrix, 0, flippedMatrix, 0, flippedMatrix.length);
-            		if (context.viewport_height > 0) {
-                		// Flip upside-down
-            			flippedMatrix[5] = -flippedMatrix[5];
-            		}
-            		if (context.viewport_width < 0) {
-            			// Flip right-to-left
-            			flippedMatrix[0] = -flippedMatrix[0];
-            		}
-            		re.setProjectionMatrix(flippedMatrix);
-            	}
-            } else {
-            	re.setProjectionMatrix(null);
-            }
+        	re.setProjectionMatrix(getProjectionMatrix());
             projectionMatrixUpload.setChanged(false);
 
             // The viewport has to be reloaded when the projection matrix has changed
@@ -5056,9 +5078,7 @@ public class VideoEngine {
                     viewportY += viewportResHeigth - viewportHeight;
                 }
 
-                if (viewportHeight <= viewportResHeigth) {
-                    re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
-                }
+                re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
             }
             viewportChanged = false;
         }
