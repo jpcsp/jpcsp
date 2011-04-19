@@ -253,11 +253,10 @@ public class MutexManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Memory.getInstance();
 
-        String message = "hleKernelLockMutex(uid=" + Integer.toHexString(uid) + ",count=" + count + ",timeout_addr=0x" + Integer.toHexString(timeout_addr) + ") wait=" + wait + ",cb=" + doCallbacks;
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
-            log.warn(message + " - unknown UID");
+            log.warn(String.format("hleKernelLockMutex uid=%d, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeout_addr, wait, doCallbacks));
             cpu.gpr[2] = ERROR_KERNEL_MUTEX_NOT_FOUND;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -265,7 +264,7 @@ public class MutexManager {
 
             if (!tryLockMutex(info, count, currentThread)) {
                 if (log.isDebugEnabled()) {
-                    log.debug(message + " - '" + info.name + "' fast check failed");
+                    log.debug(String.format("hleKernelLockMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - fast check failed", info.toString(), count, timeout_addr, wait, doCallbacks));
                 }
                 if (wait) {
                     // Failed, but it's ok, just wait a little
@@ -280,7 +279,7 @@ public class MutexManager {
                         if (Memory.isAddressGood(timeout_addr)) {
                             timeout = mem.read32(timeout_addr);
                         } else {
-                            log.warn(message + " - bad timeout address");
+                            log.warn(String.format("hleKernelLockMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - bad timeout address", info.toString(), count, timeout_addr, wait, doCallbacks));
                         }
                     }
                     threadMan.hleKernelThreadWait(currentThread, timeout, forever);
@@ -301,7 +300,7 @@ public class MutexManager {
             } else {
                 // Success, do not reschedule the current thread.
                 if (log.isDebugEnabled()) {
-                    log.debug(message + " - '" + info.name + "' fast check succeeded");
+                    log.debug(String.format("hleKernelLockMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - fast check succeeded", info.toString(), count, timeout_addr, wait, doCallbacks));
                 }
                 cpu.gpr[2] = 0;
             }

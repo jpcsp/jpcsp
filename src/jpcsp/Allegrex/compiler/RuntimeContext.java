@@ -253,6 +253,7 @@ public class RuntimeContext {
 
     public static void debugCodeInstruction(int address, int opcode) {
     	if (log.isTraceEnabled()) {
+    		cpu.pc = address;
     		Instruction insn = Decoder.instruction(opcode);
     		char compileFlag = insn.hasFlags(Instruction.FLAG_INTERPRETED) ? 'I' : 'C';
     		log.trace(String.format("Executing 0x%08X %c - %s", address, compileFlag, insn.disasm(address, opcode)));
