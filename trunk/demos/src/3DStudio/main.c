@@ -19,6 +19,8 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 #define BUF_WIDTH	512
 #define SCR_WIDTH	480
 #define SCR_HEIGHT	272
+#define SCR_TEXTURE_WIDTH  512
+#define SCR_TEXTURE_HEIGHT 512
 #define FONT_HEIGHT	8
 #define TEXTURE_WIDTH	128
 #define TEXTURE_HEIGHT	128
@@ -44,6 +46,14 @@ int numberRows = SCR_HEIGHT / FONT_HEIGHT;
 
 
 static unsigned int __attribute__((aligned(16))) list[262144];
+static unsigned int __attribute__((aligned(16))) debugPrintBuffer[SCR_HEIGHT * BUF_WIDTH];
+
+struct DebugPrintVertex
+{
+	u16 u, v;
+	s16 x, y, z;
+};
+struct DebugPrintVertex __attribute__((aligned(16))) debugPrintVertices[2];
 
 static unsigned int staticOffset = 0;
 
@@ -198,7 +208,10 @@ void drawAttributes()
 {
 	int i;
 
-	pspDebugScreenSetOffset((int)fbp0);
+	pspDebugScreenSetBase(debugPrintBuffer);
+	pspDebugScreenSetOffset(0);
+	pspDebugScreenSetBackColor(0x00000000);
+	pspDebugScreenClear();
 	for (i = 0; i < nattributes; i++)
 	{
 		pspDebugScreenSetTextColor(selectedAttribute == i ? selectedTextColor : textColor);
@@ -1178,6 +1191,45 @@ void drawRectangles()
 }
 
 
+void drawDebugPrintBuffer()
+{
+	sceGuDisable(GU_ALPHA_TEST);
+	sceGuDisable(GU_DEPTH_TEST);
+	sceGuDisable(GU_SCISSOR_TEST);
+	sceGuDisable(GU_STENCIL_TEST);
+	sceGuDisable(GU_BLEND);
+	sceGuDisable(GU_CULL_FACE);
+	sceGuDisable(GU_DITHER);
+	sceGuDisable(GU_FOG);
+	sceGuDisable(GU_CLIP_PLANES);
+	sceGuDisable(GU_LIGHTING);
+	sceGuDisable(GU_LINE_SMOOTH);
+	sceGuDisable(GU_PATCH_CULL_FACE);
+	sceGuDisable(GU_COLOR_TEST);
+	sceGuDisable(GU_COLOR_LOGIC_OP);
+	sceGuDisable(GU_FACE_NORMAL_REVERSE);
+	sceGuDisable(GU_PATCH_FACE);
+	sceGuDisable(GU_FRAGMENT_2X);
+
+	sceGuEnable(GU_TEXTURE_2D);
+	sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
+	sceGuEnable(GU_ALPHA_TEST);
+	sceGuAlphaFunc(GU_GREATER, 0x00, 0xFF);
+	sceGuTexImage(0, SCR_TEXTURE_WIDTH, SCR_TEXTURE_HEIGHT, BUF_WIDTH, debugPrintBuffer);
+	debugPrintVertices[0].u = 0;
+	debugPrintVertices[0].v = 0;
+	debugPrintVertices[0].x = 0;
+	debugPrintVertices[0].y = 0;
+	debugPrintVertices[0].z = 0;
+	debugPrintVertices[1].u = SCR_WIDTH;
+	debugPrintVertices[1].v = SCR_HEIGHT;
+	debugPrintVertices[1].x = SCR_WIDTH;
+	debugPrintVertices[1].y = SCR_HEIGHT;
+	debugPrintVertices[1].z = 0;
+	sceGuDrawArray(GU_SPRITES, GU_TEXTURE_16BIT | GU_VERTEX_16BIT | GU_TRANSFORM_2D, 2, NULL, debugPrintVertices);
+}
+
+
 void draw()
 {
 	sceDisplaySetMode(displayMode, displayWidth, displayHeight);
@@ -1185,10 +1237,6 @@ void draw()
 
 	drawRectangles();
 
-	sceGuFinish();
-	sceGuSync(0, 0);
-
-	pspDebugScreenSetBackColor(getColor(&backgroundColor));
 	drawAttributes();
 
 	u16 *zTestPixelAddress = (u16 *) (zbp + 0x04000000 + (zTestPixelY * BUF_WIDTH + zTestPixelX) * 2);
@@ -1200,6 +1248,11 @@ void draw()
 	u32 geTestPixelValue = *geTestPixelAddress;
 	pspDebugScreenSetXY(35, 1);
 	pspDebugScreenPrintf("GE (%d,%d)=0x%08X", geTestPixelX, geTestPixelY, geTestPixelValue);
+
+	drawDebugPrintBuffer();
+
+	sceGuFinish();
+	sceGuSync(0, 0);
 
 	sceDisplayWaitVblank();
 	fbp0 = sceGuSwapBuffers();
