@@ -4292,11 +4292,22 @@ public class VideoEngine {
 			if (pixelFormat == TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
 				geTexture = GETextureManager.getInstance().checkGETexture(tex_addr, bufferWidth, widthGe, heightGe, TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888);
 			} else {
+				// We only know that the texture is 16-bit indexed, but we don't
+				// know its exact pixel format (5650, 5551 or 4444)
 				geTexture = null;
-				for (int i = TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650; i <= TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444; i++) {
-					geTexture = GETextureManager.getInstance().checkGETexture(tex_addr, bufferWidth, widthGe, heightGe, i);
-					if (geTexture != null) {
-						break;
+
+				if (context.tex_clut_mode >= TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650 && context.tex_clut_mode <= TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444) {
+					// First try with the same pixel format as the texture clut
+					geTexture = GETextureManager.getInstance().checkGETexture(tex_addr, bufferWidth, widthGe, heightGe, context.tex_clut_mode);
+				}
+
+				if (geTexture == null) {
+					// As a last chance, try all the pixel formats: 5650, 5551, 4444
+					for (int i = TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650; i <= TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444; i++) {
+						geTexture = GETextureManager.getInstance().checkGETexture(tex_addr, bufferWidth, widthGe, heightGe, i);
+						if (geTexture != null) {
+							break;
+						}
 					}
 				}
 			}
@@ -5445,6 +5456,10 @@ public class VideoEngine {
             log.warn("Unsupported spline parameters uc=" + ucount + " vc=" + vcount);
             return;
         }
+        if (context.patch_div_s <= 0 || context.patch_div_t <= 0) {
+            log.warn("Unsupported spline patches patch_div_s=" + context.patch_div_s + " patch_div_t=" + context.patch_div_t);
+            return;
+        }
 
         boolean useVertexColor = initRendering();
         boolean useTexture = vinfo.texture != 0 || context.textureFlag.isEnabled();
@@ -5524,6 +5539,10 @@ public class VideoEngine {
     private void drawBezier(int ucount, int vcount) {
         if ((ucount - 1) % 3 != 0 || (vcount - 1) % 3 != 0) {
             log.warn("Unsupported bezier parameters ucount=" + ucount + " vcount=" + vcount);
+            return;
+        }
+        if (context.patch_div_s <= 0 || context.patch_div_t <= 0) {
+            log.warn("Unsupported bezier patches patch_div_s=" + context.patch_div_s + " patch_div_t=" + context.patch_div_t);
             return;
         }
 

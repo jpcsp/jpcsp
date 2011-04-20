@@ -314,7 +314,7 @@ public class VplManager {
             } else {
                 // Success, do not reschedule the current thread.
                 if (log.isDebugEnabled()) {
-                    log.debug("hleKernelAllocateVpl - '" + vpl.name + "' fast check succeeded");
+                    log.debug(String.format("hleKernelAllocateVpl - '%s' fast check succeeded, allocated addr=0x%08X", vpl.name, addr));
                 }
                 mem.write32(data_addr, addr);
                 cpu.gpr[2] = 0;

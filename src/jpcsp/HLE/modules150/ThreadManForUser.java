@@ -1016,6 +1016,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } //Vpl
         else if (thread.wait.waitingOnVpl) {
             Managers.vpl.onThreadWaitReleased(thread);
+        } // Block
+        else if (thread.wait.waitingBlocked) {
+        	thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
         }
         // IO has no timeout, it's always forever.
     }
