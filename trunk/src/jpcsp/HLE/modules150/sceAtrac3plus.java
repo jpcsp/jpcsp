@@ -208,6 +208,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         protected int loopStartBytesWrittenSecondBuf;
         protected int currentLoopNum = -1;
         protected boolean forceReloadOfData;
+        protected boolean forceAllDataIsOnMemory;
 
         public AtracID(int id, int uid, int codecType, AtracCodec atracCodec) {
             this.codecType = codecType;
@@ -514,6 +515,8 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
                 inputFileOffset = readSize;
                 secondInputFileSize = 0x100;
                 secondInputFileOffset = inputFileSize - 0x100;
+                forceAllDataIsOnMemory = false;
+                forceReloadOfData = false;
                 analyzeAtracHeader();
                 log.info(String.format("hleAtracSetData atracID=%d, buffer=0x%08X, bufferSize=0x%X, fileSize=0x%X", getAtracId(), buffer, inputBufferSize, inputFileSize));
                 if (getAtracCodec() == null) {
@@ -546,8 +549,11 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             	return 0;
             }
 
-            if (getAtracCodec().isExternalAudio()) {
-                // External audio has already all the data available
+            // When playing an external audio, do not return directly
+            //   PSP_ATRAC_ALLDATA_IS_ON_MEMORY
+            // Some games expect to add some atrac data.
+
+            if (forceAllDataIsOnMemory) {
             	return PSP_ATRAC_ALLDATA_IS_ON_MEMORY;
             }
 
@@ -630,6 +636,8 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 	            if (getInputBufferSize() < getInputFileSize() && !getAtracCodec().isExternalAudio()) {
 	            	getAtracCodec().resetChannel();
 	            	forceReloadOfData = true;
+	            } else {
+	            	forceAllDataIsOnMemory = true;
 	            }
         	}
         }

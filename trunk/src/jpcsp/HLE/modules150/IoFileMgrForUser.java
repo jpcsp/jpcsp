@@ -1696,7 +1696,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                             info.cachePosition = info.position;
                         }
                         mem.write8(outdata_addr, (byte) sectors); // Number of sectors read.
-                        result = 0;
+                        result = 1;
                     } else {
                         log.warn(String.format("hleIoIoctl cmd=0x%08X in=0x%08X(%d) out=0x%08X(%d) unsupported parameters", cmd, indata_addr, inlen, outdata_addr, outlen));
                         result = ERROR_INVALID_ARGUMENT;
