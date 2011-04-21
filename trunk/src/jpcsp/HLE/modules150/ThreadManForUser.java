@@ -2255,13 +2255,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (log.isDebugEnabled()) {
             log.debug("sceKernelGetCallbackCount uid=0x" + Integer.toHexString(uid));
         }
-        int count = 0;
         SceKernelCallbackInfo callback = callbackMap.get(uid);
         if (callback != null) {
-            if(count > 0) {
-                count = callback.notifyCount;
-            }
-            cpu.gpr[2] = count;
+            cpu.gpr[2] = callback.notifyCount;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_NOT_FOUND_CALLBACK;
         }

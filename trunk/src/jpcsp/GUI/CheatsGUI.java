@@ -27,10 +27,12 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 
 public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
-	private static final long serialVersionUID = 6791588139795694296L;
 
-	private static class CheatsThread extends Thread {
-        public CheatsThread () {
+    private static final long serialVersionUID = 6791588139795694296L;
+
+    private static class CheatsThread extends Thread {
+
+        public CheatsThread() {
         }
 
         @Override
@@ -38,49 +40,164 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             Memory mem = Memory.getInstance();
             CheatsGUI cheats = CheatsGUI.getInstance();
 
-            while(cheats.isON()) {
-                if(cheats.getCodeType().equals("CWCheat")) {
-                    // Currently only supporting jokers 0, 1 and 2 (byte, short and int).
+            while (cheats.isON()) {
+                if (cheats.getCodeType().equals("CWCheat")) {
                     String[] codes = cheats.getCodesList();
-                    int addr = 0;
-                    int data = 0;
-                    int joker = 0;
+                    int command = 0;
+                    for (int i = 0; i < codes.length; i++) {
+                        command = Integer.parseInt(codes[i].split(" ")[0].substring(2), 16);
+                        if ((command >> 28) == 0) { // 8-bit write.
+                            int addr = MemoryMap.START_USERSPACE + command;
+                            int data = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            if (Memory.isAddressGood(addr)) {
+                                mem.write8(addr, (byte) data);
+                            }
+                        } else if ((command >> 28) == 0x1) { // 16-bit write.
+                            int addr = MemoryMap.START_USERSPACE + (command - 0x10000000);
+                            int data = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            if (Memory.isAddressGood(addr)) {
+                                mem.write16(addr, (short) data);
+                            }
+                        } else if ((command >> 28) == 0x2) { // 32-bit write.
+                            int addr = MemoryMap.START_USERSPACE + (command - 0x20000000);
+                            int data = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            if (Memory.isAddressGood(addr)) {
+                                mem.write32(addr, data);
+                            }
+                        } else if ((command >> 8) == 0x301000) { // 8-bit increment.
+                            int addr = MemoryMap.START_USERSPACE + Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = (command & 0xFF);
+                            if (Memory.isAddressGood(addr)) {
+                                byte tmp = (byte) (mem.read8(addr) + data);
+                                mem.write8(addr, tmp);
+                            }
+                        } else if ((command >> 8) == 0x302000) { // 8-bit decrement.
+                            int addr = MemoryMap.START_USERSPACE + Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = (command & 0xFF);
+                            if (Memory.isAddressGood(addr)) {
+                                byte tmp = (byte) (mem.read8(addr) - data);
+                                mem.write8(addr, tmp);
+                            }
+                        } else if ((command >> 16) == 0x3030) { // 16-bit increment.
+                            int addr = MemoryMap.START_USERSPACE + Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = (command & 0xFFFF);
+                            if (Memory.isAddressGood(addr)) {
+                                short tmp = (short) (mem.read16(addr) + data);
+                                mem.write16(addr, tmp);
+                            }
+                        } else if ((command >> 16) == 0x3040) { // 16-bit decrement.
+                            int addr = MemoryMap.START_USERSPACE + Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = (command & 0xFFFF);
+                            if (Memory.isAddressGood(addr)) {
+                                short tmp = (short) (mem.read16(addr) - data);
+                                mem.write16(addr, tmp);
+                            }
+                        } else if (command == 0x30500000) { // 32-bit increment.
+                            int addr = MemoryMap.START_USERSPACE + Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = Integer.parseInt(codes[i].split(" ")[2].substring(2), 16);
+                            if (Memory.isAddressGood(addr)) {
+                                int tmp = (mem.read32(addr) + data);
+                                mem.write32(addr, tmp);
+                            }
+                        } else if (command == 0x30600000) { // 32-bit decrement.
+                            int addr = MemoryMap.START_USERSPACE + Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = Integer.parseInt(codes[2].split(" ")[2].substring(2), 16);
+                            if (Memory.isAddressGood(addr)) {
+                                int tmp = (mem.read32(addr) - data);
+                                mem.write32(addr, tmp);
+                            }
+                        } else if ((command >> 28) == 0x7) { // Boolean commands.
+                            int addr = MemoryMap.START_USERSPACE + (command - 0x70000000);
+                            int data = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            if ((data >> 16) == 0x0) { // 8-bit OR.
+                                if (Memory.isAddressGood(addr)) {
+                                    byte val1 = (byte) (data & 0xFF);
+                                    byte val2 = (byte) mem.read8(addr);
+                                    mem.write8(addr, (byte) (val1 | val2));
+                                }
+                            } else if ((data >> 16) == 0x2) { // 8-bit AND.
+                                if (Memory.isAddressGood(addr)) {
+                                    byte val1 = (byte) (data & 0xFF);
+                                    byte val2 = (byte) mem.read8(addr);
+                                    mem.write8(addr, (byte) (val1 & val2));
+                                }
+                            } else if ((data >> 16) == 0x4) { // 8-bit XOR.
+                                if (Memory.isAddressGood(addr)) {
+                                    byte val1 = (byte) (data & 0xFF);
+                                    byte val2 = (byte) mem.read8(addr);
+                                    mem.write8(addr, (byte) (val1 ^ val2));
+                                }
+                            } else if ((data >> 16) == 0x1) { // 16-bit OR.
+                                if (Memory.isAddressGood(addr)) {
+                                    short val1 = (short) (data & 0xFFFF);
+                                    short val2 = (short) mem.read16(addr);
+                                    mem.write16(addr, (short) (val1 | val2));
+                                }
+                            } else if ((data >> 16) == 0x3) { // 16-bit AND.
+                                if (Memory.isAddressGood(addr)) {
+                                    short val1 = (short) (data & 0xFFFF);
+                                    short val2 = (short) mem.read16(addr);
+                                    mem.write16(addr, (short) (val1 & val2));
+                                }
+                            } else if ((data >> 16) == 0x5) { // 16-bit XOR.
+                                if (Memory.isAddressGood(addr)) {
+                                    short val1 = (short) (data & 0xFFFF);
+                                    short val2 = (short) mem.read16(addr);
+                                    mem.write16(addr, (short) (val1 ^ val2));
+                                }
+                            }
+                        } else if ((command >> 28) == 0x5) { // Memcpy command.
+                            int srcAddr = MemoryMap.START_USERSPACE + (command - 0x50000000);
+                            int length = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int destAddr = Integer.parseInt(codes[i].split(" ")[2].substring(2), 16);
+                            if (Memory.isAddressGood(srcAddr) && Memory.isAddressGood(destAddr)) {
+                                mem.memcpy(destAddr, srcAddr, length);
+                            }
+                        } else if ((command >> 28) == 0x4) { // 32-bit patch code.
+                            int addr = MemoryMap.START_USERSPACE + (command - 0x40000000);
+                            int addrNum = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = Integer.parseInt(codes[i].split(" ")[2].substring(2), 16);
+                            int dataAdd = Integer.parseInt(codes[i].split(" ")[3].substring(2), 16);
 
-                    for(int i = 0; i < codes.length; i++) {
-                        addr = Integer.parseInt(codes[i].split(" ")[0].substring(2), 16);
-                        joker = (addr >> 28);
-                        addr -= (joker << 28);
-                        addr += MemoryMap.START_USERSPACE;
-
-                        data = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
-
-                        switch(joker) {
-                            case 0:
-                                if(Memory.isAddressGood(addr))
-                                    mem.write8(addr, (byte)data);
-                                break;
-                            case 1:
-                                if(Memory.isAddressGood(addr))
-                                    mem.write16(addr, (short)data);
-                                break;
-                            case 2:
-                                if(Memory.isAddressGood(addr))
+                            int maxAddr = (addrNum >> 16) & 0xFFFF;
+                            int stepAddr = (addrNum & 0xFFFF) * 4;
+                            for (int a = 0; a < maxAddr; a++) {
+                                if (Memory.isAddressGood(addr)) {
                                     mem.write32(addr, data);
-                                break;
-                            default: break;
+                                }
+                                addr += stepAddr;
+                                data += dataAdd;
+                            }
+                        } else if ((command >> 28) == 0x8) { // 8-bit and 16-bit patch code.
+                            int addr = MemoryMap.START_USERSPACE + (command - 0x40000000);
+                            int addrNum = Integer.parseInt(codes[i].split(" ")[1].substring(2), 16);
+                            int data = Integer.parseInt(codes[i].split(" ")[2].substring(2), 16);
+                            int dataAdd = Integer.parseInt(codes[i].split(" ")[3].substring(2), 16);
+
+                            int maxAddr = (addrNum >> 16) & 0xFFFF;
+                            int stepAddr = (addrNum & 0xFFFF) * 4;
+                            for (int a = 0; a < maxAddr; a++) {
+                                if (Memory.isAddressGood(addr)) {
+                                    if ((data >> 16) == 0x1000) {
+                                        mem.write16(addr, (short) (data & 0xFFFF));
+                                    } else {
+                                        mem.write8(addr, (byte) (data & 0xFF));
+                                    }
+                                }
+                                addr += stepAddr;
+                                data += dataAdd;
+                            }
                         }
                     }
                 }
             }
         }
     }
-
     private javax.swing.JButton jButtonInsert;
     private javax.swing.JButton jButtonRemove;
     private javax.swing.JRadioButton jRadioONOFF;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextArea jTextArea1;
-
     private String code = "";
     private String codeType = "";
     private boolean toggle = false;
@@ -95,10 +212,12 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }
 
     @Override
-    public void keyTyped(KeyEvent arg0) { }
+    public void keyTyped(KeyEvent arg0) {
+    }
 
     @Override
-    public void keyReleased(KeyEvent arg0) { }
+    public void keyReleased(KeyEvent arg0) {
+    }
 
     @Override
     public void keyPressed(KeyEvent arg0) {
@@ -116,6 +235,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 
         jButtonInsert.setText("Insert");
         jButtonInsert.addActionListener(new java.awt.event.ActionListener() {
+
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonInsertActionPerformed(evt);
             }
@@ -123,6 +244,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 
         jButtonRemove.setText("Remove");
         jButtonRemove.addActionListener(new java.awt.event.ActionListener() {
+
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonRemoveActionPerformed(evt);
             }
@@ -133,8 +256,9 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         jTextArea1.setFont(new java.awt.Font("Monospaced", 1, 14));
         jTextArea1.setRows(5);
         jTextArea1.addMouseListener(new java.awt.event.MouseAdapter() {
+
             @Override
-			public void mouseClicked(java.awt.event.MouseEvent evt) {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jTextArea1MouseClicked(evt);
             }
         });
@@ -143,6 +267,8 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
 
         jRadioONOFF.setText("On/Off");
         jRadioONOFF.addActionListener(new java.awt.event.ActionListener() {
+
+            @Override
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioONOFFActionPerformed(evt);
             }
@@ -151,35 +277,9 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jRadioONOFF)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 63, Short.MAX_VALUE)
-                        .addComponent(jButtonInsert, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButtonRemove, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 314, Short.MAX_VALUE))
-                .addContainerGap())
-        );
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addContainerGap().addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addComponent(jRadioONOFF).addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 63, Short.MAX_VALUE).addComponent(jButtonInsert, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE).addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED).addComponent(jButtonRemove, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)).addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 314, Short.MAX_VALUE)).addContainerGap()));
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jButtonRemove)
-                            .addComponent(jButtonInsert)))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(6, 6, 6)
-                        .addComponent(jRadioONOFF)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addContainerGap().addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE).addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING).addGroup(layout.createSequentialGroup().addGap(18, 18, 18).addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE).addComponent(jButtonRemove).addComponent(jButtonInsert))).addGroup(layout.createSequentialGroup().addGap(6, 6, 6).addComponent(jRadioONOFF))).addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
 
         pack();
     }
@@ -197,7 +297,7 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }
 
     public boolean checkCWCheatFormat(String text) {
-        return(text.charAt(0) == '0' && text.charAt(1) == 'x' &&
+        return (text.charAt(0) == '0' && text.charAt(1) == 'x' &&
                 text.charAt(11) == '0' && text.charAt(12) == 'x' &&
                 text.length() == 21);
     }
@@ -210,34 +310,36 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     }
 
     private void jButtonRemoveActionPerformed(java.awt.event.ActionEvent evt) {
-        if(jTextArea1.getSelectedText() != null) {
-            if(!jTextArea1.getSelectedText().equals(""))
+        if (jTextArea1.getSelectedText() != null) {
+            if (!jTextArea1.getSelectedText().equals("")) {
                 jTextArea1.replaceRange(null, jTextArea1.getSelectionStart(), jTextArea1.getSelectionEnd());
+            }
         }
     }
 
     private void jButtonInsertActionPerformed(java.awt.event.ActionEvent evt) {
         code = JOptionPane.showInputDialog(this, "Input your code: ");
-        if(code != null) {
-            if(checkCWCheatFormat(code)) {
-                if(jTextArea1.getText().equals(""))
+        if (code != null) {
+            if (checkCWCheatFormat(code)) {
+                if (jTextArea1.getText().equals("")) {
                     jTextArea1.append(code);
-                else
+                } else {
                     jTextArea1.append("\n" + code);
-            }
-            else
+                }
+            } else {
                 JOptionPane.showMessageDialog(this, "Invalid input! CWCheat format is: '0x12345678 0x12345678'", "Input error", JOptionPane.ERROR_MESSAGE, null);
+            }
         }
     }
 
     private void jRadioONOFFActionPerformed(java.awt.event.ActionEvent evt) {
-        if(cheatsThread == null && !jTextArea1.getText().equals("")) {
+        if (cheatsThread == null && !jTextArea1.getText().equals("")) {
             cheatsThread = new CheatsThread();
             cheatsThread.setPriority(Thread.MIN_PRIORITY);
             cheatsThread.setName("HLECheatThread");
             cheatsThread.start();
         }
-        if(!toggle) {
+        if (!toggle) {
             cheatsThread.run();
             toggle = true;
         } else {
@@ -249,13 +351,13 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
     private void jTextArea1MouseClicked(java.awt.event.MouseEvent evt) {
         try {
             Point pos = jTextArea1.getMousePosition();
-            int posY = (int)pos.getY();
+            int posY = (int) pos.getY();
             int lineTop = 0;
             int lineBottom = 18;
             int line = 0;
 
-            for(int i = 0; i < jTextArea1.getLineCount(); i++) {
-                if(posY > lineTop && posY <= lineBottom) {
+            for (int i = 0; i < jTextArea1.getLineCount(); i++) {
+                if (posY > lineTop && posY <= lineBottom) {
                     line = i;
                     break;
                 }

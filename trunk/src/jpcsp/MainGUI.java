@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.awt.Dimension;
+import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
@@ -117,6 +118,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     InstructionCounter instructioncounter;
     File loadedFile;
     boolean umdLoaded;
+    boolean fullscreen;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
@@ -153,19 +155,22 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         //end of
-
+        
         initComponents();
         populateRecentMenu();
-
+        
         setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
         State.fileLogger.setLocation(getLocation().x + 488, getLocation().y + 18);
         setTitle(MetaInformation.FULL_NAME);
-
+       
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(Modules.sceDisplayModule, java.awt.BorderLayout.CENTER);
         Modules.sceDisplayModule.addKeyListener(this);
         addComponentListener(this);
         pack();
+
+        fullscreen = Settings.getInstance().readBool("gui.fullscreen");
+        toggleFullscreenMode();
 
         Insets insets = getInsets();
         Dimension minSize = new Dimension(
@@ -216,7 +221,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         TwoItem = new javax.swing.JMenuItem();
         TwoHalfItem = new javax.swing.JMenuItem();
         ThreeItem = new javax.swing.JMenuItem();
-        FullItem = new javax.swing.JMenuItem();
         FiltersMenu = new javax.swing.JMenu();
         noneCheck = new javax.swing.JCheckBoxMenuItem();
         bilinearCheck = new javax.swing.JCheckBoxMenuItem();
@@ -275,18 +279,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-			public void windowClosing(java.awt.event.WindowEvent evt) {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
         addComponentListener(new java.awt.event.ComponentAdapter() {
-            @Override
-			public void componentMoved(java.awt.event.ComponentEvent evt) {
+            public void componentMoved(java.awt.event.ComponentEvent evt) {
                 formComponentMoved(evt);
             }
-            @Override
-			public void componentResized(java.awt.event.ComponentEvent evt) {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
                 formComponentResized(evt);
             }
         });
@@ -450,15 +451,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         ResizeMenu.add(ThreeItem);
-
-        FullItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, 0));
-        FullItem.setText("Full Screen");
-        FullItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                FullItemActionPerformed(evt);
-            }
-        });
-        ResizeMenu.add(FullItem);
 
         VideoOpt.add(ResizeMenu);
 
@@ -750,7 +742,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         LanguageMenu.setText(Resource.get("language"));
 
-        English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN_Icon.png"))); // NOI18N
+        English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN.png"))); // NOI18N
         English.setText(Resource.get("english"));
         English.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -759,7 +751,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(English);
 
-        French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR_Icon.png"))); // NOI18N
+        French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR.png"))); // NOI18N
         French.setText(Resource.get("french"));
         French.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -768,7 +760,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(French);
 
-        German.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/de_DE_Icon.png"))); // NOI18N
+        German.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/de_DE.png"))); // NOI18N
         German.setText(Resource.get("german"));
         German.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -777,7 +769,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(German);
 
-        Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT_Icon.png"))); // NOI18N
+        Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT.png"))); // NOI18N
         Lithuanian.setText(Resource.get("lithuanian"));
         Lithuanian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -786,7 +778,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Lithuanian);
 
-        Spanish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_ES_Icon.png"))); // NOI18N
+        Spanish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_ES.png"))); // NOI18N
         Spanish.setText(Resource.get("spanish"));
         Spanish.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -795,7 +787,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Spanish);
 
-        Catalan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_CA_Icon.png"))); // NOI18N
+        Catalan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_CA.png"))); // NOI18N
         Catalan.setText(Resource.get("catalan"));
         Catalan.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -804,7 +796,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Catalan);
 
-        PortugueseBR.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_BR_Icon.png"))); // NOI18N
+        PortugueseBR.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_BR.png"))); // NOI18N
         PortugueseBR.setText(Resource.get("portuguesebr"));
         PortugueseBR.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -813,7 +805,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(PortugueseBR);
 
-        Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT_Icon.png"))); // NOI18N
+        Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT.png"))); // NOI18N
         Portuguese.setText(Resource.get("portuguese"));
         Portuguese.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -822,7 +814,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Portuguese);
 
-        Japanese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/jp_JP_Icon.png"))); // NOI18N
+        Japanese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/jp_JP.png"))); // NOI18N
         Japanese.setText(Resource.get("japanese"));
         Japanese.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -831,7 +823,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Japanese);
 
-        Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU_Icon.png"))); // NOI18N
+        Russian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/ru_RU.png"))); // NOI18N
         Russian.setText(Resource.get("russian"));
         Russian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -840,7 +832,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Russian);
 
-        Polish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pl_PL_Icon.png"))); // NOI18N
+        Polish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pl_PL.png"))); // NOI18N
         Polish.setText(Resource.get("polish"));
         Polish.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -849,7 +841,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(Polish);
 
-        ChinesePRC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/cn_CN_Icon.png"))); // NOI18N
+        ChinesePRC.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/cn_CN.png"))); // NOI18N
         ChinesePRC.setText(Resource.get("chinesePRC"));
         ChinesePRC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -858,7 +850,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(ChinesePRC);
 
-        ChineseTW.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/tw_TW_Icon.png"))); // NOI18N
+        ChineseTW.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/tw_TW.png"))); // NOI18N
         ChineseTW.setText(Resource.get("chineseTW"));
         ChineseTW.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -867,7 +859,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         LanguageMenu.add(ChineseTW);
 
-        Italian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/it_IT_Icon.png")));
+        Italian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/it_IT.png"))); // NOI18N
         Italian.setText(Resource.get("italian"));
         Italian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -901,6 +893,41 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Resource.setLanguage(language);
         Settings.getInstance().writeString("emu.language", language);
         initComponents();
+    }
+
+    private void toggleFullscreenMode() {
+        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode newDisplayMode = new DisplayMode(800, 600, 32, 60);
+        if (localDevice.isFullScreenSupported()) {
+            if (fullscreen) {
+                dispose();
+                setUndecorated(true);
+                MenuBar.setVisible(false);
+                jToolBar1.setVisible(false);
+                localDevice.setFullScreenWindow(this);
+                localDevice.setDisplayMode(newDisplayMode);
+                setVisible(true);
+            }
+        }
+    }
+
+    private void swapDisplayMode() {
+        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode oldDisplayMode = localDevice.getDisplayMode();
+        DisplayMode newDisplayMode = new DisplayMode(800, 600, 32, 60);
+        if (localDevice.isFullScreenSupported()) {
+            if (localDevice.getFullScreenWindow() == null) {
+                MenuBar.setVisible(false);
+                jToolBar1.setVisible(false);
+                localDevice.setFullScreenWindow(this);
+                localDevice.setDisplayMode(newDisplayMode);
+            } else {
+                MenuBar.setVisible(true);
+                jToolBar1.setVisible(true);
+                localDevice.setDisplayMode(oldDisplayMode);
+                localDevice.setFullScreenWindow(null);
+            }
+        }
     }
 
     public LogWindow getConsoleWindow() {
@@ -1921,9 +1948,9 @@ private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     setSize(new Dimension(480, 352));
 }//GEN-LAST:event_OneItemActionPerformed
 
-private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChinesePRCActionPerformed
+private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {                                           
     changeLanguage("cn_CN");
-}//GEN-LAST:event_ChinesePRCActionPerformed
+}                                          
 
 private void ChineseTWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ChinesePRCActionPerformed
     changeLanguage("tw_TW");
@@ -2019,31 +2046,6 @@ private void resCheck9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     Settings.getInstance().writeBool("emu.graphics.filters.res9", resCheck9.isSelected());
 }//GEN-LAST:event_resCheck9ActionPerformed
 
-private void FullItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FullItemActionPerformed
-    GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-    if(localDevice.isFullScreenSupported()) {
-        consolewin.setVisible(false);
-        if(localDevice.getFullScreenWindow() == null) {
-            this.setVisible(false);
-            jToolBar1.setVisible(false);
-            this.dispose();
-            this.setUndecorated(true);
-            this.resetEmu();
-            localDevice.setFullScreenWindow(this);
-            this.RunEmu();
-            this.setVisible(true);
-        } else {
-            this.setVisible(false);
-            jToolBar1.setVisible(true);
-            this.dispose();
-            this.setUndecorated(false);
-            this.resetEmu();
-            localDevice.setFullScreenWindow(null);
-            this.RunEmu();
-            this.setVisible(true);
-        }
-    }
-}//GEN-LAST:event_FullItemActionPerformed
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
             Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -2207,7 +2209,6 @@ private void FullItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu FiltersMenu;
     private javax.swing.JMenuItem French;
-    private javax.swing.JMenuItem FullItem;
     private javax.swing.JMenuItem German;
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuItem InstructionCounter;
@@ -2278,6 +2279,11 @@ private void FullItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     @Override
     public void keyPressed(KeyEvent arg0) {
         State.controller.keyPressed(arg0);
+        if (arg0.getKeyCode() == KeyEvent.VK_F4) {
+            if(fullscreen) {
+                swapDisplayMode();
+            }
+        }
     }
 
     @Override

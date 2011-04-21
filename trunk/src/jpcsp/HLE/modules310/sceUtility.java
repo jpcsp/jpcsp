@@ -18,7 +18,7 @@ package jpcsp.HLE.modules310;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -102,12 +102,11 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         String moduleName = hleUtilityLoadModuleName(module);
         if (loadModule(module, moduleName)) {
             log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+            cpu.gpr[2] = 0;
         } else {
-            log.info(String.format("IGNORING:sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
+            log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
+            cpu.gpr[2] = SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
         }
-
-        cpu.gpr[2] = 0;
-        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     }
 
     public void sceUtilityUnloadModule(Processor processor) {
@@ -119,11 +118,10 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         if (loadModule(module, moduleName)) {
             log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
         } else {
-            log.info(String.format("IGNORING:sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
+            log.info(String.format("IGNORING: sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
         }
-
+        // Fake result.
         cpu.gpr[2] = 0;
-        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
     }
 
     public final HLEModuleFunction sceUtilityLoadModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadModule") {
