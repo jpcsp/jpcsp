@@ -42,6 +42,9 @@ public class SettingsGUI extends javax.swing.JFrame {
         
         enabled = Settings.getInstance().readBool("gui.saveWindowPos");
         saveWindowPosCheck.setSelected(enabled);
+
+        enabled = Settings.getInstance().readBool("gui.fullscreen");
+        fullscreenCheck.setSelected(enabled);
                 
         enabled = Settings.getInstance().readBool("emu.compiler");
         useCompiler.setSelected(enabled);
@@ -242,6 +245,7 @@ public class SettingsGUI extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         tmppath = new javax.swing.JTextField();
         jButton2 = new javax.swing.JButton();
+        fullscreenCheck = new javax.swing.JCheckBox();
         RegionPanel = new javax.swing.JPanel();
         languageLabel = new javax.swing.JLabel();
         languageBox = new javax.swing.JComboBox();
@@ -354,6 +358,8 @@ public class SettingsGUI extends javax.swing.JFrame {
             }
         });
 
+        fullscreenCheck.setText(Resource.get("fullscreenMode"));
+
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
         generalPanel.setLayout(generalPanelLayout);
         generalPanelLayout.setHorizontalGroup(
@@ -379,7 +385,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(filelogCheck)
                     .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                         .addComponent(pbpunpackcheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(fullscreenCheck))
                 .addContainerGap(246, Short.MAX_VALUE))
         );
         generalPanelLayout.setVerticalGroup(
@@ -391,6 +398,8 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(saveWindowPosCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(filelogCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(fullscreenCheck)
                 .addGap(18, 18, 18)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -405,7 +414,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(jLabel2)
                     .addComponent(tmppath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButton2))
-                .addContainerGap(97, Short.MAX_VALUE))
+                .addContainerGap(74, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("general"), generalPanel);
@@ -416,27 +425,27 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         buttonLabel.setText(Resource.get("buttonpref"));
 
-        buttonBox.setModel(new javax.swing.DefaultComboBoxModel(getImposeButtons()));
+        buttonBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "\"O\" for \"Enter\"", "\"X\" for \"Enter\"" }));
 
         daylightLabel.setText(Resource.get("daylightSavings"));
 
-        daylightBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamDaylightSavings()));
+        daylightBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
 
         timeFormatLabel.setText(Resource.get("timeformat"));
 
-        timeFormatBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamTimeFormats()));
+        timeFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "24H", "12H" }));
 
         dateFormatLabel.setText(Resource.get("dateformat"));
 
-        dateFormatBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamDateFormats()));
+        dateFormatBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "YYYY-MM-DD", "MM-DD-YYYY", "DD-MM-YYYY" }));
 
         wlanPowerLabel.setText(Resource.get("wlanpowersaving"));
 
-        wlanPowerBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamWlanPowerSaves()));
+        wlanPowerBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Off", "On" }));
 
         adhocChannelLabel.setText(Resource.get("adhocChannel"));
 
-        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(getSysparamAdhocChannels()));
+        adhocChannelBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Auto", "1", "2", "3", "4" }));
 
         timezoneLabel.setText(Resource.get("timezone"));
 
@@ -894,6 +903,9 @@ public void RefreshWindow() {
 	
 	enabled = Settings.getInstance().readBool("gui.saveWindowPos");
 	saveWindowPosCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("gui.fullscreen");
+    fullscreenCheck.setSelected(enabled);
 	
 	enabled = Settings.getInstance().readBool("emu.compiler");
 	useCompiler.setSelected(enabled);
@@ -1014,6 +1026,7 @@ public void RefreshWindow() {
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
    Settings.getInstance().writeBool("emu.pbpunpack", pbpunpackcheck.isSelected());
    Settings.getInstance().writeBool("gui.saveWindowPos", saveWindowPosCheck.isSelected());
+   Settings.getInstance().writeBool("gui.fullscreen", fullscreenCheck.isSelected());
    Settings.getInstance().writeBool("emu.compiler", useCompiler.isSelected());
    Settings.getInstance().writeBool("emu.profiler", profilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
@@ -1114,6 +1127,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox extractPGD;
     private javax.swing.JCheckBox filelogCheck;
+    private javax.swing.JCheckBox fullscreenCheck;
     private javax.swing.JPanel generalPanel;
     private javax.swing.JCheckBox geometryShaderCheck;
     private javax.swing.JCheckBox ignoreUnmappedImports;

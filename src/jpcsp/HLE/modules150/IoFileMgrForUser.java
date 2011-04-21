@@ -1689,14 +1689,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         if (log.isDebugEnabled()) {
                             log.debug("hleIoIoctl UMD forced file read");
                         }
-                        int sectors = 0;
+                        int sectorsNum = 0;
                         if (info.cachePosition < info.position) {
-                            // Approximate to a dummy sector value and restore the cachePosition.
-                            sectors = (info.cachePosition == 0) ? 1 : (int) (info.position / info.cachePosition);
+                            // Always read atleast one sector if the current position has changed.
+                            sectorsNum = 1;
                             info.cachePosition = info.position;
                         }
-                        mem.write8(outdata_addr, (byte) sectors); // Number of sectors read.
-                        result = 1;
+                        mem.write8(outdata_addr, (byte) sectorsNum);
+                        result = sectorsNum;
                     } else {
                         log.warn(String.format("hleIoIoctl cmd=0x%08X in=0x%08X(%d) out=0x%08X(%d) unsupported parameters", cmd, indata_addr, inlen, outdata_addr, outlen));
                         result = ERROR_INVALID_ARGUMENT;

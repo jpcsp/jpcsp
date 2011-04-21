@@ -123,6 +123,7 @@
                               <Component id="pbpunpackcheck" alignment="0" max="32767" attributes="1"/>
                               <Component id="saveWindowPosCheck" alignment="0" max="32767" attributes="1"/>
                           </Group>
+                          <Component id="fullscreenCheck" alignment="0" min="-2" max="-2" attributes="1"/>
                       </Group>
                       <EmptySpace pref="246" max="32767" attributes="0"/>
                   </Group>
@@ -137,6 +138,8 @@
                       <Component id="saveWindowPosCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="filelogCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="fullscreenCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Component id="umdBrowser" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
@@ -153,7 +156,7 @@
                           <Component id="tmppath" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="jButton2" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="97" max="32767" attributes="0"/>
+                      <EmptySpace pref="74" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -239,6 +242,13 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButton2ActionPerformed"/>
               </Events>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="fullscreenCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection code="Resource.get(&quot;fullscreenMode&quot;)" type="code"/>
+                </Property>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>
