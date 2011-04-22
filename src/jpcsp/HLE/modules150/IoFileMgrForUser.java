@@ -2944,7 +2944,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             // Check if the device is write protected (fatms0).
             case 0x02425824: {
                 log.debug("sceIoDevctl check write protection (fatms0)");
-                if (!device.equals("fatms0:")) {
+                if (!device.equals("fatms0:") && !device.equals("ms0:")) { // For this command the alias "ms0:" is also supported.
                     cpu.gpr[2] = ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
                 } else if (Memory.isAddressGood(outdata_addr)) {
                     // 0 - Device is not protected.

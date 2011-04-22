@@ -14,11 +14,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package jpcsp.HLE.modules271;
+
+import java.util.HashMap;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -28,14 +34,14 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
-        // HACK using 270 instead of 271 because some 270 games use it...
-        // TODO move to a 270 directory if it becomes a problem
         if (version >= 270) {
 
             mm.addFunction(0xC629AF26, sceUtilityLoadAvModuleFunction);
             mm.addFunction(0xF7D8D092, sceUtilityUnloadAvModuleFunction);
             mm.addFunction(0x4928BD96, sceUtilityMsgDialogAbortFunction);
 
+            loadedAvModules = new HashMap<Integer, SceModule>();
+            waitingAvModules = new HashMap<Integer, String>();
         }
     }
 
@@ -72,29 +78,65 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     public static final int PSP_AV_MODULE_AAC = 6;
     public static final int PSP_AV_MODULE_G729 = 7;
 
-    private String hleUtilityLoadAvModuleName(int module) {
+    protected HashMap<Integer, SceModule> loadedAvModules;
+    protected HashMap<Integer, String> waitingAvModules;
+
+    private String getAvModuleName(int module) {
     	if (module < 0 || module >= utilityAvModuleNames.length) {
     		return "PSP_AV_MODULE_UNKNOWN_" + module;
     	}
-
     	return utilityAvModuleNames[module];
     }
 
+    protected int hleUtilityLoadAvModule(int module, String moduleName) {
+        HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+        waitingAvModules.put(module, moduleName); // Always save a load attempt.
+
+    	if (waitingAvModules.containsKey(module) || loadedAvModules.containsKey(module)) { // Module already loaded.
+    		return SceKernelErrors.ERROR_AV_MODULE_ALREADY_LOADED;
+    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Invalid flash0 module.
+            return SceKernelErrors.ERROR_AV_MODULE_BAD_ID;
+    	} else {
+            // Load and save it in loadedAvModules.
+            int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
+            SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
+            waitingAvModules.remove(module);
+            loadedAvModules.put(module, sceModule);
+            return 0;
+        }
+    }
+
+    protected int hleUtilityUnloadAvModule(int module) {
+    	SceModule sceModule = loadedAvModules.remove(module);
+    	if (sceModule == null) { // Module was not loaded.
+    		return SceKernelErrors.ERROR_AV_MODULE_NOT_LOADED;
+    	} else {
+            // Unload the module.
+            HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+            moduleManager.UnloadFlash0Module(sceModule);
+            return 0;
+        }
+    }
 
     public void sceUtilityLoadAvModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int module = cpu.gpr[4];
 
-        String moduleName = hleUtilityLoadAvModuleName(module);
-        if (loadModule(module, moduleName)) {
-            log.info(String.format("sceUtilityLoadAvModule(module=0x%04X) %s loaded", module, moduleName));
-        } else {
-            log.info(String.format("IGNORING:sceUtilityLoadAvModule(module=0x%04X) %s", module, moduleName));
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
 
-        cpu.gpr[2] = 0;
-        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+        String moduleName = getAvModuleName(module);
+        int result = hleUtilityLoadAvModule(module, moduleName);
+        if(result == SceKernelErrors.ERROR_AV_MODULE_BAD_ID) {
+            log.info(String.format("IGNORING: sceUtilityLoadAvModule(module=0x%04X) %s", module, moduleName));
+            result = 0;
+        } else {
+            log.info(String.format("sceUtilityLoadAvModule(module=0x%04X) %s loaded", module, moduleName));
+        }
+        cpu.gpr[2] = result;
     }
 
     public void sceUtilityUnloadAvModule(Processor processor) {
@@ -102,15 +144,20 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String moduleName = hleUtilityLoadAvModuleName(module);
-        if (loadModule(module, moduleName)) {
-            log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s unloaded", module, moduleName));
-        } else {
-            log.info(String.format("IGNORING:sceUtilityUnloadAvModule(module=0x%04X) %s", module, moduleName));
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
 
-        cpu.gpr[2] = 0;
-        Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
+        String moduleName = getAvModuleName(module);
+        int result = hleUtilityUnloadAvModule(module);
+        if(result == SceKernelErrors.ERROR_AV_MODULE_NOT_LOADED) {
+            log.info(String.format("IGNORING: sceUtilityUnloadAvModule(module=0x%04X) %s", module, moduleName));
+            result = 0;
+        } else {
+            log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s loaded", module, moduleName));
+        }
+        cpu.gpr[2] = result;
     }
 
     public void sceUtilityMsgDialogAbort(Processor processor) {
