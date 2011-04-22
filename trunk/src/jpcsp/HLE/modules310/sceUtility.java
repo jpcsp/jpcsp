@@ -14,11 +14,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package jpcsp.HLE.modules310;
+
+import java.util.HashMap;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
@@ -33,6 +39,8 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
             mm.addFunction(0x2A2B3DE0, sceUtilityLoadModuleFunction);
             mm.addFunction(0xE49BFE92, sceUtilityUnloadModuleFunction);
 
+            loadedModules = new HashMap<Integer, SceModule>();
+            waitingModules = new HashMap<Integer, String>();
         }
     }
 
@@ -85,7 +93,10 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         }
     }
 
-    protected String hleUtilityLoadModuleName(int module) {
+    protected HashMap<Integer, SceModule> loadedModules;
+    protected HashMap<Integer, String> waitingModules;
+
+    protected String getModuleName(int module) {
         for (UtilityModule m : UtilityModule.values()) {
             if (m.getID() == module) {
                 return m.toString();
@@ -94,19 +105,55 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         return "PSP_MODULE_UNKNOWN_" + Integer.toHexString(module);
     }
 
+    protected int hleUtilityLoadModule(int module, String moduleName) {
+        HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+        waitingModules.put(module, moduleName); // Always save a load attempt.
+
+    	if (waitingModules.containsKey(module) || loadedModules.containsKey(module)) { // Module already loaded.
+    		return SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
+    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Invalid flash0 module.
+            return SceKernelErrors.ERROR_MODULE_BAD_ID;
+    	} else {
+            // Load and save it in loadedModules.
+            int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
+            SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
+            waitingModules.remove(module);
+            loadedModules.put(module, sceModule);
+            return 0;
+        }
+    }
+
+    protected int hleUtilityUnloadModule(int module) {
+        SceModule sceModule = loadedModules.remove(module);
+    	if (sceModule == null) { // Module was not loaded.
+    		return SceKernelErrors.ERROR_MODULE_NOT_LOADED;
+    	} else {
+            // Unload the module.
+            HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+            moduleManager.UnloadFlash0Module(sceModule);
+            return 0;
+        }
+    }
+
     public void sceUtilityLoadModule(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int module = cpu.gpr[4];
 
-        String moduleName = hleUtilityLoadModuleName(module);
-        if (loadModule(module, moduleName)) {
-            log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
-            cpu.gpr[2] = 0;
-        } else {
-            log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
-            cpu.gpr[2] = SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
+
+        String moduleName = getModuleName(module);
+        int result = hleUtilityLoadModule(module, moduleName);
+        if (result == SceKernelErrors.ERROR_MODULE_BAD_ID) {
+            log.info(String.format("IGNORING: sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
+            result = 0;
+        } else {
+            log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+        }
+        cpu.gpr[2] = result;
     }
 
     public void sceUtilityUnloadModule(Processor processor) {
@@ -114,14 +161,21 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String moduleName = hleUtilityLoadModuleName(module);
-        if (loadModule(module, moduleName)) {
-            log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
-        } else {
-            log.info(String.format("IGNORING: sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
+        String moduleName = getModuleName(module);
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
         }
-        // Fake result.
-        cpu.gpr[2] = 0;
+
+        int result = hleUtilityUnloadModule(module);
+        if (result == SceKernelErrors.ERROR_MODULE_NOT_LOADED) {
+            log.info(String.format("IGNORING: sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
+            result = 0;
+        } else {
+            log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s loaded", module, moduleName));
+        }
+        cpu.gpr[2] = result;
     }
 
     public final HLEModuleFunction sceUtilityLoadModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadModule") {

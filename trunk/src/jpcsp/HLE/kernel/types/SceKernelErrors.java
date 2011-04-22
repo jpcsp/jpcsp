@@ -310,6 +310,14 @@ public class SceKernelErrors {
     public static final int ERROR_NETPARAM_BAD_NETCONF                          = 0x80110601;
     public static final int ERROR_NETPARAM_BAD_PARAM                            = 0x80110604;
 
+    public static final int ERROR_NET_MODULE_BAD_ID                             = 0x80110801;
+    public static final int ERROR_NET_MODULE_ALREADY_LOADED                     = 0x80110802;
+    public static final int ERROR_NET_MODULE_NOT_LOADED                         = 0x80110803;
+
+    public static final int ERROR_AV_MODULE_BAD_ID                              = 0x80110901;
+    public static final int ERROR_AV_MODULE_ALREADY_LOADED                      = 0x80110902;
+    public static final int ERROR_AV_MODULE_NOT_LOADED                          = 0x80110903;
+
     public static final int ERROR_MODULE_BAD_ID                                 = 0x80111101;
     public static final int ERROR_MODULE_ALREADY_LOADED                         = 0x80111102;
     public static final int ERROR_MODULE_NOT_LOADED                             = 0x80111103;

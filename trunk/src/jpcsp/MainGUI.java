@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.awt.Dimension;
-import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
@@ -897,7 +896,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     private void toggleFullscreenMode() {
         GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        DisplayMode newDisplayMode = new DisplayMode(800, 600, 32, 60);
         if (localDevice.isFullScreenSupported()) {
             if (fullscreen) {
                 dispose();
@@ -905,7 +903,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 MenuBar.setVisible(false);
                 jToolBar1.setVisible(false);
                 localDevice.setFullScreenWindow(this);
-                localDevice.setDisplayMode(newDisplayMode);
                 setVisible(true);
             }
         }
@@ -913,18 +910,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     private void swapDisplayMode() {
         GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        DisplayMode oldDisplayMode = localDevice.getDisplayMode();
-        DisplayMode newDisplayMode = new DisplayMode(800, 600, 32, 60);
         if (localDevice.isFullScreenSupported()) {
             if (localDevice.getFullScreenWindow() == null) {
                 MenuBar.setVisible(false);
                 jToolBar1.setVisible(false);
                 localDevice.setFullScreenWindow(this);
-                localDevice.setDisplayMode(newDisplayMode);
             } else {
                 MenuBar.setVisible(true);
                 jToolBar1.setVisible(true);
-                localDevice.setDisplayMode(oldDisplayMode);
                 localDevice.setFullScreenWindow(null);
             }
         }
