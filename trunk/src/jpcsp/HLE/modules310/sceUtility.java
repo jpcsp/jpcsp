@@ -107,31 +107,33 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
     protected int hleUtilityLoadModule(int module, String moduleName) {
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-        waitingModules.put(module, moduleName); // Always save a load attempt.
-
-    	if (waitingModules.containsKey(module) || loadedModules.containsKey(module)) { // Module already loaded.
+    	if (loadedModules.containsKey(module) || waitingModules.containsKey(module)) { // Module already loaded.
     		return SceKernelErrors.ERROR_MODULE_ALREADY_LOADED;
-    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Invalid flash0 module.
+    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Can't load flash0 module.
+            waitingModules.put(module, moduleName); // Always save a load attempt.
             return SceKernelErrors.ERROR_MODULE_BAD_ID;
     	} else {
-            // Load and save it in loadedModules.
+            // Load and save it in loadedNetModules.
             int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
             SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
-            waitingModules.remove(module);
             loadedModules.put(module, sceModule);
             return 0;
         }
     }
 
     protected int hleUtilityUnloadModule(int module) {
-        SceModule sceModule = loadedModules.remove(module);
-    	if (sceModule == null) { // Module was not loaded.
-    		return SceKernelErrors.ERROR_MODULE_NOT_LOADED;
-    	} else {
+        if (loadedModules.containsKey(module)) {
             // Unload the module.
             HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+            SceModule sceModule = loadedModules.remove(module);
             moduleManager.UnloadFlash0Module(sceModule);
             return 0;
+        } else if (waitingModules.containsKey(module)) {
+            // Simulate a successful unload.
+            waitingModules.remove(module);
+            return 0;
+        } else {
+            return SceKernelErrors.ERROR_MODULE_NOT_LOADED;
         }
     }
 
@@ -161,21 +163,16 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String moduleName = getModuleName(module);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 
-        int result = hleUtilityUnloadModule(module);
-        if (result == SceKernelErrors.ERROR_MODULE_NOT_LOADED) {
-            log.info(String.format("IGNORING: sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
-        } else {
-            log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s loaded", module, moduleName));
-        }
-        cpu.gpr[2] = result;
+        String moduleName = getModuleName(module);
+        log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s loaded", module, moduleName));
+
+        cpu.gpr[2] = hleUtilityUnloadModule(module);
     }
 
     public final HLEModuleFunction sceUtilityLoadModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadModule") {

@@ -17,8 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.awt.Dimension;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -27,6 +25,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.Toolkit;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -117,7 +116,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     InstructionCounter instructioncounter;
     File loadedFile;
     boolean umdLoaded;
-    boolean fullscreen;
+    boolean useFullscreen;
+    boolean resizeFullscreen;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
@@ -154,21 +154,21 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         //end of
-        
+
         initComponents();
         populateRecentMenu();
-        
+
         setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
         State.fileLogger.setLocation(getLocation().x + 488, getLocation().y + 18);
         setTitle(MetaInformation.FULL_NAME);
-       
+
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(Modules.sceDisplayModule, java.awt.BorderLayout.CENTER);
         Modules.sceDisplayModule.addKeyListener(this);
         addComponentListener(this);
         pack();
 
-        fullscreen = Settings.getInstance().readBool("gui.fullscreen");
+        useFullscreen = Settings.getInstance().readBool("gui.fullscreen");
         toggleFullscreenMode();
 
         Insets insets = getInsets();
@@ -895,31 +895,28 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }
 
     private void toggleFullscreenMode() {
-        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        if (localDevice.isFullScreenSupported()) {
-            if (fullscreen) {
-                dispose();
-                setUndecorated(true);
-                MenuBar.setVisible(false);
-                jToolBar1.setVisible(false);
-                localDevice.setFullScreenWindow(this);
-                setVisible(true);
-            }
+        if (useFullscreen) {
+            dispose();
+            setUndecorated(true);
+            MenuBar.setVisible(false);
+            jToolBar1.setVisible(false);
+            setLocation(0, 0);
+            setSize(Toolkit.getDefaultToolkit().getScreenSize());
+            setVisible(true);
         }
     }
 
     private void swapDisplayMode() {
-        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        if (localDevice.isFullScreenSupported()) {
-            if (localDevice.getFullScreenWindow() == null) {
-                MenuBar.setVisible(false);
-                jToolBar1.setVisible(false);
-                localDevice.setFullScreenWindow(this);
-            } else {
-                MenuBar.setVisible(true);
-                jToolBar1.setVisible(true);
-                localDevice.setFullScreenWindow(null);
-            }
+        if (resizeFullscreen) {
+            MenuBar.setVisible(false);
+            jToolBar1.setVisible(false);
+            setSize(Toolkit.getDefaultToolkit().getScreenSize());
+            resizeFullscreen = false;
+        } else {
+            MenuBar.setVisible(true);
+            jToolBar1.setVisible(true);
+            setSize(new Dimension(480, 352));
+            resizeFullscreen = true;
         }
     }
 
@@ -2273,7 +2270,7 @@ private void resCheck9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     public void keyPressed(KeyEvent arg0) {
         State.controller.keyPressed(arg0);
         if (arg0.getKeyCode() == KeyEvent.VK_F4) {
-            if(fullscreen) {
+            if(useFullscreen) {
                 swapDisplayMode();
             }
         }
