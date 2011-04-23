@@ -87,31 +87,33 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
     protected int hleUtilityLoadNetModule(int module, String moduleName) {
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-        waitingNetModules.put(module, moduleName); // Always save a load attempt.
-
-    	if (waitingNetModules.containsKey(module) || loadedNetModules.containsKey(module)) { // Module already loaded.
+    	if (loadedNetModules.containsKey(module) || waitingNetModules.containsKey(module)) { // Module already loaded.
     		return SceKernelErrors.ERROR_NET_MODULE_ALREADY_LOADED;
-    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Invalid flash0 module.
+    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Can't load flash0 module.
+            waitingNetModules.put(module, moduleName); // Always save a load attempt.
             return SceKernelErrors.ERROR_NET_MODULE_BAD_ID;
     	} else {
             // Load and save it in loadedNetModules.
             int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
             SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
-            waitingNetModules.remove(module);
             loadedNetModules.put(module, sceModule);
             return 0;
         }
     }
 
     protected int hleUtilityUnloadNetModule(int module) {
-    	SceModule sceModule = loadedNetModules.remove(module);
-    	if (sceModule == null) { // Module was not loaded.
-    		return SceKernelErrors.ERROR_NET_MODULE_NOT_LOADED;
-    	} else {
+        if (loadedNetModules.containsKey(module)) {
             // Unload the module.
             HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+            SceModule sceModule = loadedNetModules.remove(module);
             moduleManager.UnloadFlash0Module(sceModule);
             return 0;
+        } else if (waitingNetModules.containsKey(module)) {
+            // Simulate a successful unload.
+            waitingNetModules.remove(module);
+            return 0;
+        } else {
+            return SceKernelErrors.ERROR_NET_MODULE_NOT_LOADED;
         }
     }
 
@@ -147,14 +149,9 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         }
 
         String moduleName = getNetModuleName(module);
-        int result = hleUtilityUnloadNetModule(module);
-        if (result == SceKernelErrors.ERROR_NET_MODULE_NOT_LOADED) {
-            log.info(String.format("IGNORING: sceUtilityUnloadNetModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
-        } else {
-            log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
-        }
-        cpu.gpr[2] = result;
+        log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
+
+        cpu.gpr[2] = hleUtilityUnloadNetModule(module);
     }
 
     public final HLEModuleFunction sceUtilityLoadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadNetModule") {

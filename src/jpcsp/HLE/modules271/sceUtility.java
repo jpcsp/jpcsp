@@ -90,31 +90,33 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
     protected int hleUtilityLoadAvModule(int module, String moduleName) {
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-        waitingAvModules.put(module, moduleName); // Always save a load attempt.
-
-    	if (waitingAvModules.containsKey(module) || loadedAvModules.containsKey(module)) { // Module already loaded.
+    	if (loadedAvModules.containsKey(module) || waitingAvModules.containsKey(module)) { // Module already loaded.
     		return SceKernelErrors.ERROR_AV_MODULE_ALREADY_LOADED;
-    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Invalid flash0 module.
+    	} else if (!moduleManager.hasFlash0Module(moduleName)) { // Can't load flash0 module.
+            waitingAvModules.put(module, moduleName); // Always save a load attempt.
             return SceKernelErrors.ERROR_AV_MODULE_BAD_ID;
     	} else {
-            // Load and save it in loadedAvModules.
+            // Load and save it in loadedNetModules.
             int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
             SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
-            waitingAvModules.remove(module);
             loadedAvModules.put(module, sceModule);
             return 0;
         }
     }
 
     protected int hleUtilityUnloadAvModule(int module) {
-    	SceModule sceModule = loadedAvModules.remove(module);
-    	if (sceModule == null) { // Module was not loaded.
-    		return SceKernelErrors.ERROR_AV_MODULE_NOT_LOADED;
-    	} else {
+        if (loadedAvModules.containsKey(module)) {
             // Unload the module.
             HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+            SceModule sceModule = loadedAvModules.remove(module);
             moduleManager.UnloadFlash0Module(sceModule);
             return 0;
+        } else if (waitingAvModules.containsKey(module)) {
+            // Simulate a successful unload.
+            waitingAvModules.remove(module);
+            return 0;
+        } else {
+            return SceKernelErrors.ERROR_AV_MODULE_NOT_LOADED;
         }
     }
 
@@ -150,14 +152,9 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
 
         String moduleName = getAvModuleName(module);
-        int result = hleUtilityUnloadAvModule(module);
-        if(result == SceKernelErrors.ERROR_AV_MODULE_NOT_LOADED) {
-            log.info(String.format("IGNORING: sceUtilityUnloadAvModule(module=0x%04X) %s", module, moduleName));
-            result = 0;
-        } else {
-            log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s loaded", module, moduleName));
-        }
-        cpu.gpr[2] = result;
+        log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s loaded", module, moduleName));
+
+        cpu.gpr[2] = hleUtilityUnloadAvModule(module);
     }
 
     public void sceUtilityMsgDialogAbort(Processor processor) {
