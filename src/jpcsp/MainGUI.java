@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.awt.Dimension;
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -222,17 +225,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ThreeItem = new javax.swing.JMenuItem();
         FiltersMenu = new javax.swing.JMenu();
         noneCheck = new javax.swing.JCheckBoxMenuItem();
-        bilinearCheck = new javax.swing.JCheckBoxMenuItem();
-        ResolutionMenu = new javax.swing.JMenu();
-        resCheck1 = new javax.swing.JCheckBoxMenuItem();
-        resCheck2 = new javax.swing.JCheckBoxMenuItem();
-        resCheck3 = new javax.swing.JCheckBoxMenuItem();
-        resCheck4 = new javax.swing.JCheckBoxMenuItem();
-        resCheck5 = new javax.swing.JCheckBoxMenuItem();
-        resCheck6 = new javax.swing.JCheckBoxMenuItem();
-        resCheck7 = new javax.swing.JCheckBoxMenuItem();
-        resCheck8 = new javax.swing.JCheckBoxMenuItem();
-        resCheck9 = new javax.swing.JCheckBoxMenuItem();
+        anisotropicCheck = new javax.swing.JCheckBoxMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
         AudioOpt = new javax.swing.JMenu();
@@ -465,111 +458,17 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         FiltersMenu.add(noneCheck);
 
-        filtersGroup.add(bilinearCheck);
-        bilinearCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.bilinear"));
-        bilinearCheck.setText("Bilinear");
-        bilinearCheck.addActionListener(new java.awt.event.ActionListener() {
+        filtersGroup.add(anisotropicCheck);
+        anisotropicCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.bilinear"));
+        anisotropicCheck.setText("Anisotropic");
+        anisotropicCheck.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bilinearCheckActionPerformed(evt);
+                anisotropicCheckActionPerformed(evt);
             }
         });
-        FiltersMenu.add(bilinearCheck);
+        FiltersMenu.add(anisotropicCheck);
 
         VideoOpt.add(FiltersMenu);
-
-        ResolutionMenu.setText("Resolution");
-
-        resGroup.add(resCheck1);
-        resCheck1.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res1"));
-        resCheck1.setText("480x272");
-        resCheck1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck1ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck1);
-
-        resGroup.add(resCheck2);
-        resCheck2.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res2"));
-        resCheck2.setText("800x600");
-        resCheck2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck2ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck2);
-
-        resGroup.add(resCheck3);
-        resCheck3.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res3"));
-        resCheck3.setText("960x544");
-        resCheck3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck3ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck3);
-
-        resGroup.add(resCheck4);
-        resCheck4.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res4"));
-        resCheck4.setText("1240x768");
-        resCheck4.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck4ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck4);
-
-        resGroup.add(resCheck5);
-        resCheck5.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res5"));
-        resCheck5.setText("1152x768");
-        resCheck5.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck5ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck5);
-
-        resGroup.add(resCheck6);
-        resCheck6.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res6"));
-        resCheck6.setText("1280x720");
-        resCheck6.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck6ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck6);
-
-        resGroup.add(resCheck7);
-        resCheck7.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res7"));
-        resCheck7.setText("1280x768");
-        resCheck7.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck7ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck7);
-
-        resGroup.add(resCheck8);
-        resCheck8.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res8"));
-        resCheck8.setText("1366x768");
-        resCheck8.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck8ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck8);
-
-        resGroup.add(resCheck9);
-        resCheck9.setSelected(Settings.getInstance().readBool("emu.graphics.filters.res9"));
-        resCheck9.setText("1440x816");
-        resCheck9.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resCheck9ActionPerformed(evt);
-            }
-        });
-        ResolutionMenu.add(resCheck9);
-
-        VideoOpt.add(ResolutionMenu);
 
         ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
         ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
@@ -918,6 +817,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             setSize(new Dimension(480, 352));
             resizeFullscreen = true;
         }
+    }
+
+    private void changeScreenResolution(int width, int heigth, int depth, int ratio) {
+        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode newDisplayMode = new DisplayMode(width, heigth, depth, ratio);
+        if(localDevice.isFullScreenSupported()) {
+            localDevice.setFullScreenWindow(this);
+            localDevice.setDisplayMode(newDisplayMode);
+        }
+        
     }
 
     public LogWindow getConsoleWindow() {
@@ -1604,6 +1513,24 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         boolean extractPGD = Settings.getInstance().readBool("emu.extractPGD");
         Modules.IoFileMgrForUserModule.setAllowExtractPGDStatus(extractPGD);
+
+        String antialias = Settings.getInstance().readString("emu.graphics.antialias");
+        int samples = 0;
+        if (antialias.equals("x4")) {
+            samples = 4;
+        } else if (antialias.equals("x8")) {
+            samples = 8;
+        } else if (antialias.equals("x16")) {
+            samples = 16;
+        }
+        sceDisplay.setAntiAliasSamplesNum(samples);
+
+        String resolution = Settings.getInstance().readString("emu.graphics.resolution");
+        if (!resolution.equals("Native")) {
+            int width = Integer.parseInt(resolution.split("x")[0]);
+            int heigth = Integer.parseInt(resolution.split("x")[1]);
+            changeScreenResolution(width, heigth, 32, 60);
+        }
     }
 
     /** @return true if a patch file was found */
@@ -1689,6 +1616,28 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             String extractPGD = patchSettings.getProperty("emu.extractPGD");
             if (extractPGD != null) {
                 Modules.IoFileMgrForUserModule.setAllowExtractPGDStatus(Integer.parseInt(extractPGD) != 0);
+            }
+
+            String antialias = patchSettings.getProperty("emu.graphics.antialias");
+            if(antialias != null) {
+                int samples = 0;
+                if (antialias.equals("x4")) {
+                    samples = 4;
+                } else if (antialias.equals("x8")) {
+                    samples = 8;
+                } else if (antialias.equals("x16")) {
+                    samples = 16;
+                }
+                sceDisplay.setAntiAliasSamplesNum(samples);
+            }
+
+            String resolution = patchSettings.getProperty("emu.graphics.resolution");
+            if (resolution != null) {
+                if (!resolution.equals("Native")) {
+                    int width = Integer.parseInt(resolution.split("x")[0]);
+                    int heigth = Integer.parseInt(resolution.split("x")[1]);
+                    changeScreenResolution(width, heigth, 32, 60);
+                }
             }
 
         } catch (IOException e) {
@@ -1959,82 +1908,10 @@ private void noneCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     Settings.getInstance().writeBool("emu.graphics.filters.none", noneCheck.isSelected());
 }//GEN-LAST:event_noneCheckActionPerformed
 
-private void bilinearCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bilinearCheckActionPerformed
+private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_anisotropicCheckActionPerformed
 	VideoEngine.getInstance().setUseTextureAnisotropicFilter(true);
-    Settings.getInstance().writeBool("emu.graphics.filters.bilinear", bilinearCheck.isSelected());
-}//GEN-LAST:event_bilinearCheckActionPerformed
-
-private void resCheck1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck1ActionPerformed
-    int width = 480;
-    int heigth = 272;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res1", resCheck1.isSelected());
-}//GEN-LAST:event_resCheck1ActionPerformed
-
-private void resCheck2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck2ActionPerformed
-    int width = 800;
-    int heigth = 600;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res2", resCheck2.isSelected());
-}//GEN-LAST:event_resCheck2ActionPerformed
-
-private void resCheck3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck3ActionPerformed
-    int width = 960;
-    int heigth = 544;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res3", resCheck3.isSelected());
-}//GEN-LAST:event_resCheck3ActionPerformed
-
-private void resCheck4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck4ActionPerformed
-    int width = 1240;
-    int heigth = 768;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res4", resCheck4.isSelected());
-}//GEN-LAST:event_resCheck4ActionPerformed
-
-private void resCheck5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck5ActionPerformed
-    int width = 1152;
-    int heigth = 768;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res5", resCheck5.isSelected());
-}//GEN-LAST:event_resCheck5ActionPerformed
-
-private void resCheck6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck6ActionPerformed
-    int width = 1280;
-    int heigth = 720;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res6", resCheck6.isSelected());
-}//GEN-LAST:event_resCheck6ActionPerformed
-
-private void resCheck7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck7ActionPerformed
-    int width = 1280;
-    int heigth = 768;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res7", resCheck7.isSelected());
-}//GEN-LAST:event_resCheck7ActionPerformed
-
-private void resCheck8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck8ActionPerformed
-    int width = 1366;
-    int heigth = 768;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res8", resCheck8.isSelected());
-}//GEN-LAST:event_resCheck8ActionPerformed
-
-private void resCheck9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resCheck9ActionPerformed
-    int width = 1440;
-    int heigth = 816;
-    Modules.sceDisplayModule.setScreenResolution(width, heigth);
-    VideoEngine.setViewportResolution(width, heigth);
-    Settings.getInstance().writeBool("emu.graphics.filters.res9", resCheck9.isSelected());
-}//GEN-LAST:event_resCheck9ActionPerformed
+    Settings.getInstance().writeBool("emu.graphics.filters.anisotropic", anisotropicCheck.isSelected());
+}//GEN-LAST:event_anisotropicCheckActionPerformed
 
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
@@ -2223,7 +2100,6 @@ private void resCheck9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenu ResizeMenu;
-    private javax.swing.JMenu ResolutionMenu;
     private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
@@ -2238,7 +2114,7 @@ private void resCheck9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     private javax.swing.JMenuItem TwoItem;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JMenu VideoOpt;
-    private javax.swing.JCheckBoxMenuItem bilinearCheck;
+    private javax.swing.JCheckBoxMenuItem anisotropicCheck;
     private javax.swing.JMenuItem cwcheat;
     private javax.swing.ButtonGroup filtersGroup;
     private javax.swing.JSeparator jSeparator1;
@@ -2246,15 +2122,6 @@ private void resCheck9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JCheckBoxMenuItem noneCheck;
     private javax.swing.JMenuItem openUmd;
-    private javax.swing.JCheckBoxMenuItem resCheck1;
-    private javax.swing.JCheckBoxMenuItem resCheck2;
-    private javax.swing.JCheckBoxMenuItem resCheck3;
-    private javax.swing.JCheckBoxMenuItem resCheck4;
-    private javax.swing.JCheckBoxMenuItem resCheck5;
-    private javax.swing.JCheckBoxMenuItem resCheck6;
-    private javax.swing.JCheckBoxMenuItem resCheck7;
-    private javax.swing.JCheckBoxMenuItem resCheck8;
-    private javax.swing.JCheckBoxMenuItem resCheck9;
     private javax.swing.ButtonGroup resGroup;
     // End of variables declaration//GEN-END:variables
 

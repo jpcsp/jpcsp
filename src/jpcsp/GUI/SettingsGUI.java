@@ -151,6 +151,12 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.extractPGD");
         extractPGD.setSelected(enabled);
 
+        String antialias = Settings.getInstance().readString("emu.graphics.antialias");
+        antiAliasingBox.setSelectedItem(antialias);
+
+        String resolution = Settings.getInstance().readString("emu.graphics.resolution");
+        resolutionBox.setSelectedItem(resolution);
+
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled) {
             umdBrowser.setSelected(true);
@@ -280,6 +286,10 @@ public class SettingsGUI extends javax.swing.JFrame {
         enableGETextureCheck = new javax.swing.JCheckBox();
         enableNativeCLUTCheck = new javax.swing.JCheckBox();
         enableDynamicShadersCheck = new javax.swing.JCheckBox();
+        antiAliasingBox = new javax.swing.JComboBox();
+        resolutionBox = new javax.swing.JComboBox();
+        antiAliasLabel = new javax.swing.JLabel();
+        resolutionLabel = new javax.swing.JLabel();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -608,8 +618,16 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(enableNativeCLUTCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(enableDynamicShadersCheck)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(30, Short.MAX_VALUE))
         );
+
+        antiAliasingBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "OFF", "x4", "x8", "x16" }));
+
+        resolutionBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Native", "640x480", "800x600", "1152x768", "1280x720", "1280x768", "1366x768" }));
+
+        antiAliasLabel.setText("Anti-aliasing:");
+
+        resolutionLabel.setText("Resolution:");
 
         javax.swing.GroupLayout VideoPanelLayout = new javax.swing.GroupLayout(VideoPanel);
         VideoPanel.setLayout(VideoPanelLayout);
@@ -617,15 +635,31 @@ public class SettingsGUI extends javax.swing.JFrame {
             VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(423, Short.MAX_VALUE))
+                .addGroup(VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(VideoPanelLayout.createSequentialGroup()
+                        .addGap(8, 8, 8)
+                        .addComponent(antiAliasLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(61, 61, 61)
+                        .addComponent(resolutionLabel)
+                        .addGap(10, 10, 10)
+                        .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(194, Short.MAX_VALUE))
         );
         VideoPanelLayout.setVerticalGroup(
             VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(85, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addGroup(VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(resolutionLabel)
+                    .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(antiAliasLabel)
+                    .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(24, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("video"), VideoPanel);
@@ -1012,6 +1046,12 @@ public void RefreshWindow() {
     enabled = Settings.getInstance().readBool("emu.extractPGD");
     extractPGD.setSelected(enabled);
 
+    String antialias = Settings.getInstance().readString("emu.graphics.antialias");
+    antiAliasingBox.setSelectedItem(antialias);
+
+    String resolution = Settings.getInstance().readString("emu.graphics.resolution");
+    resolutionBox.setSelectedItem(resolution);
+
     enabled = Settings.getInstance().readBool("emu.umdbrowser");
     if (enabled) {
         umdBrowser.setSelected(true);
@@ -1062,6 +1102,8 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.extractEboot",extractEboot.isSelected());
    Settings.getInstance().writeBool("emu.cryptoSavedata",cryptoSavedata.isSelected());
    Settings.getInstance().writeBool("emu.extractPGD",extractPGD.isSelected());
+   Settings.getInstance().writeString("emu.graphics.antialias", (String) antiAliasingBox.getSelectedItem());
+   Settings.getInstance().writeString("emu.graphics.resolution", (String) resolutionBox.getSelectedItem());
 
    if(umdBrowser.isSelected()) {
        Settings.getInstance().writeBool("emu.umdbrowser", true);
@@ -1109,6 +1151,8 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JPanel VideoPanel;
     private javax.swing.JComboBox adhocChannelBox;
     private javax.swing.JLabel adhocChannelLabel;
+    private javax.swing.JLabel antiAliasLabel;
+    private javax.swing.JComboBox antiAliasingBox;
     private javax.swing.JComboBox buttonBox;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JLabel buttonLabel;
@@ -1157,6 +1201,8 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox onlyGEGraphicsCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox profilerCheck;
+    private javax.swing.JComboBox resolutionBox;
+    private javax.swing.JLabel resolutionLabel;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox shadersCheck;
     private javax.swing.JComboBox timeFormatBox;
