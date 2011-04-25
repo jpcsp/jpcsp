@@ -76,6 +76,9 @@ public class SceModule {
     public static final int size = 196;
     public final int address;
     public final boolean isFlashModule;
+    public boolean isLoaded;
+    public boolean isStarted;
+    public boolean isStopped;
     private static SceModule previousModule; // The last module to be loaded, should be fixed up if that module gets unloaded
 
     // loader stuff
@@ -124,6 +127,35 @@ public class SceModule {
         unresolvedImports = new LinkedList<DeferredStub>();
         importFixupAttempts = 0;
         allocatedMemory = new LinkedList<SysMemInfo>();
+    }
+
+    // State control methods.
+    public void load() {
+        isLoaded = true;
+    }
+
+    public void unload() {
+        isLoaded = false;
+    }
+
+    public void start() {
+        isStarted = true;
+    }
+
+    public void stop() {
+        isStopped = true;
+    }
+
+    public boolean isModuleLoaded() {
+        return isLoaded;
+    }
+
+    public boolean isModuleStarted() {
+        return isStarted;
+    }
+
+    public boolean isModuleStopped() {
+        return isStopped;
     }
 
     /** For use when unloading modules. */

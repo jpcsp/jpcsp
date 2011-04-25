@@ -207,7 +207,7 @@
                         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="noneCheckActionPerformed"/>
                       </Events>
                     </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="bilinearCheck">
+                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="anisotropicCheck">
                       <Properties>
                         <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                           <ComponentRef name="filtersGroup"/>
@@ -215,143 +215,10 @@
                         <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                           <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.bilinear&quot;)" type="code"/>
                         </Property>
-                        <Property name="text" type="java.lang.String" value="Bilinear"/>
+                        <Property name="text" type="java.lang.String" value="Anisotropic"/>
                       </Properties>
                       <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="bilinearCheckActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                  </SubComponents>
-                </Menu>
-                <Menu class="javax.swing.JMenu" name="ResolutionMenu">
-                  <Properties>
-                    <Property name="text" type="java.lang.String" value="Resolution"/>
-                  </Properties>
-                  <SubComponents>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck1">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res1&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="480x272"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck1ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck2">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res2&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="800x600"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck2ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck3">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res3&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="960x544"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck3ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck4">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res4&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="1240x768"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck4ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck5">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res5&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="1152x768"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck5ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck6">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res6&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="1280x720"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck6ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck7">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res7&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="1280x768"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck7ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck8">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res8&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="1366x768"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck8ActionPerformed"/>
-                      </Events>
-                    </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resCheck9">
-                      <Properties>
-                        <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
-                          <ComponentRef name="resGroup"/>
-                        </Property>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.res9&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="1440x816"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resCheck9ActionPerformed"/>
+                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="anisotropicCheckActionPerformed"/>
                       </Events>
                     </MenuItem>
                   </SubComponents>

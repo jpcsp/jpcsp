@@ -133,7 +133,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
             log.info(String.format("IGNORING: sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
             result = 0;
         } else {
-            log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
+            log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
         }
         cpu.gpr[2] = result;
     }

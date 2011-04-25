@@ -276,6 +276,7 @@ public class ModuleMgrForUser implements HLEModule {
 
                 // Load the module
                 SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize);
+                module.load();
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
                         (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
@@ -410,6 +411,7 @@ public class ModuleMgrForUser implements HLEModule {
             } else {
                 log.warn("IGNORING:sceKernelStartModule flash module '" + sceModule.modname + "'");
             }
+            sceModule.start();
             cpu.gpr[2] = sceModule.modid; // return the module id
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -448,9 +450,11 @@ public class ModuleMgrForUser implements HLEModule {
                 // override inherited module id with the new module we are starting
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = sceModule.modid; // return the module id
+                sceModule.start();
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
             } else if (entryAddr == 0) {
                 Modules.log.info("sceKernelStartModule - no entry address");
+                sceModule.start();
                 cpu.gpr[2] = sceModule.modid; // return the module id
             } else {
                 Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(entryAddr));
@@ -487,6 +491,7 @@ public class ModuleMgrForUser implements HLEModule {
             } else {
                 log.warn("IGNORING:sceKernelStopModule flash module '" + sceModule.modname + "'");
             }
+            sceModule.stop();
             cpu.gpr[2] = 0; // Fake success.
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -499,13 +504,16 @@ public class ModuleMgrForUser implements HLEModule {
                         sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, option_addr);
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = 0;
+                sceModule.stop();
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
             } else if (sceModule.module_stop_func == 0) {
                 log.info("sceKernelStopModule - module has no stop function");
-                cpu.gpr[2] = 0;
+                sceModule.stop();
+                cpu.gpr[2] = sceModule.modid;
+            } else if (sceModule.isModuleStopped()) {
+                log.warn("sceKernelStopModule - module already stopped");
+                cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_MODULE_ALREADY_STOPPED;
             } else {
-                // TODO: 0x80020135 module already stopped.
-                // May be related to the SceModule status or with the thread exit status.
                 log.warn(String.format("sceKernelStopModule - invalid stop function 0x%08X", sceModule.module_stop_func));
                 cpu.gpr[2] = -1;
             }
@@ -517,7 +525,7 @@ public class ModuleMgrForUser implements HLEModule {
 
         int uid = cpu.gpr[4];
 
-        log.warn("PARTIAL: sceKernelUnloadModule(uid=" + Integer.toHexString(uid) + ")");
+        log.info("sceKernelUnloadModule(uid=" + Integer.toHexString(uid) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -527,9 +535,12 @@ public class ModuleMgrForUser implements HLEModule {
         if (sceModule == null) {
             log.warn("sceKernelUnloadModule unknown module UID 0x" + Integer.toHexString(uid));
             cpu.gpr[2] = -1;
+        } else if (sceModule.isModuleStarted() && !sceModule.isModuleStopped()) {
+            log.warn("sceKernelUnloadModule module 0x" + Integer.toHexString(uid) + " is still running!");
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_MODULE_CANNOT_REMOVE;
         } else {
             HLEModuleManager.getInstance().UnloadFlash0Module(sceModule);
-            cpu.gpr[2] = 0;
+            cpu.gpr[2] = sceModule.modid; // Returns the module ID.
         }
     }
 
@@ -565,6 +576,8 @@ public class ModuleMgrForUser implements HLEModule {
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
             cpu.gpr[2] = 0;
+            sceModule.stop();
+            sceModule.unload();
             threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
             threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         } else {
@@ -607,6 +620,8 @@ public class ModuleMgrForUser implements HLEModule {
             thread.moduleid = sceModule.modid;
             cpu.gpr[2] = 0;
             threadMan.getCurrentThread().exitStatus = exitcode; // Set the current thread's exit status.
+            sceModule.stop();
+            sceModule.unload();
             threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
             threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         } else {
@@ -646,6 +661,8 @@ public class ModuleMgrForUser implements HLEModule {
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
             cpu.gpr[2] = 0;
+            sceModule.stop();
+            sceModule.unload();
             threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
             threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         } else {

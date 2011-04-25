@@ -96,7 +96,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
             waitingAvModules.put(module, moduleName); // Always save a load attempt.
             return SceKernelErrors.ERROR_AV_MODULE_BAD_ID;
     	} else {
-            // Load and save it in loadedNetModules.
+            // Load and save it in loadedAvModules.
             int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
             SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
             loadedAvModules.put(module, sceModule);
@@ -152,7 +152,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
 
         String moduleName = getAvModuleName(module);
-        log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s loaded", module, moduleName));
+        log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s unloaded", module, moduleName));
 
         cpu.gpr[2] = hleUtilityUnloadAvModule(module);
     }

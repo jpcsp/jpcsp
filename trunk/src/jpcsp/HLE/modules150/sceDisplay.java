@@ -181,6 +181,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     // VBLANK Multi.
     private List<WaitVblankInfo> waitingOnVblank;
 
+    // Anti-alias samples.
+    private static int antiAliasSamplesNum;
+
     private static class WaitVblankInfo {
     	public int threadId;
     	public int unblockVcount;
@@ -318,9 +321,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     }
 
     public sceDisplay() throws LWJGLException {
-    	// A PixelFormat defining "withSamples(16)" is not working for most video
-    	// drivers (KO on AMD and Intel, OK on NVIDIA): only a black screen is displayed
-    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8), null, new ContextAttribs().withDebug(useDebugGL));
+    	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
         setSize(screenWidth, screenHeight);
 
         texFb = -1;
@@ -331,6 +332,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     public void setScreenResolution(int width, int height) {
         screenWidth = width;
         screenHeight = height;
+    }
+
+    public static void setAntiAliasSamplesNum(int samples) {
+        antiAliasSamplesNum = samples;
     }
 
     @Override
