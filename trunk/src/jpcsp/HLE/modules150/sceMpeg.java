@@ -2100,7 +2100,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else {
             int numberPackets = Math.min(available, numPackets);
             mpegRingbuffer.read(mem, mpegRingbufferAddr);
-            Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
+            Modules.ThreadManForUserModule.executeCallback(null, mpegRingbuffer.callback_addr, afterRingbufferPutCallback, false, mpegRingbuffer.data, numberPackets, mpegRingbuffer.callback_args);
         }
     }
 

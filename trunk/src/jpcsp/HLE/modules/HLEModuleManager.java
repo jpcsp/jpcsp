@@ -97,21 +97,24 @@ public class HLEModuleManager {
         sceFont(Modules.sceFontModule, new String[] { "libfont" }),
         scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer" }),
         scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
-        sceMp3(Modules.sceMp3Module),
+        sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3" }),
         sceDeflt(Modules.sceDefltModule),
         sceWlan(Modules.sceWlanModule),
-        sceNet(Modules.sceNetModule),
-        sceNetAdhoc(Modules.sceNetAdhocModule),
-        sceNetAdhocctl(Modules.sceNetAdhocctlModule),
+        sceNet(Modules.sceNetModule, new String[] { "pspnet" }),
+        sceNetAdhoc(Modules.sceNetAdhocModule, new String[] { "pspnet_adhoc", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
+        sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl" }),
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule),
         sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule),
-        sceNetIfhandle(Modules.sceNetIfhandleModule),
+        sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle" }),
+        sceNetApctl(Modules.sceNetApctl, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
+        sceNetInet(Modules.sceNetInet, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET" }),
+        sceNetResolver(Modules.sceNetResolver, new String[] { "pspnet_resolver", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
         sceOpenPSID(Modules.sceOpenPSIDModule),
-        sceNp(Modules.sceNpModule),
-        sceNpAuth(Modules.sceNpAuthModule),
-        sceNpService(Modules.sceNpServiceModule),
-        scePspNpDrm_user(Modules.scePspNpDrm_userModule),
-        sceVaudio(Modules.sceVaudioModule),
+        sceNp(Modules.sceNpModule, new String[] { "PSP_MODULE_NP_COMMON" }),
+        sceNpAuth(Modules.sceNpAuthModule, new String[] { "PSP_MODULE_NP_COMMON" }),
+        sceNpService(Modules.sceNpServiceModule, new String[] { "PSP_MODULE_NP_SERVICE" }),
+        scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
+        sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module);
 
     	private HLEModule module;
@@ -289,6 +292,10 @@ public class HLEModuleManager {
     		syscallCodeToFunction = extendedArray;
     	}
     	syscallCodeToFunction[code] = func;
+    }
+
+    public void addFunction(HLEModuleFunction func, int nid) {
+    	addFunction(nid, func);
     }
 
     public void addFunction(int nid, HLEModuleFunction func) {

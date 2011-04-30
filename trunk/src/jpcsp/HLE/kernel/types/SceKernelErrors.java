@@ -354,6 +354,8 @@ public class SceKernelErrors {
     public final static int ERROR_WAVE_INVALID_SAMPLE_COUNT                     = 0x80440011;
 
     public final static int ERROR_FONT_INVALID_LIBID                            = 0x80460002;
+    public final static int ERROR_FONT_INVALID_PARAMETER                        = 0x80460003;
+    public final static int ERROR_FONT_TOO_MANY_OPEN_FONTS                      = 0x80460009;
 
     public final static int ERROR_MPEG_BAD_VERSION                              = 0x80610002;
     public final static int ERROR_MPEG_NO_MEMORY                                = 0x80610022;

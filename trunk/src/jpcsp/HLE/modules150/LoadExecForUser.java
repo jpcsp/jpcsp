@@ -79,7 +79,7 @@ public class LoadExecForUser implements HLEModule {
     public void triggerExitCallback() {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (exitCbThread != null) {
-            threadMan.executeCallback(exitCbThread, exitCbThread.callbackInfo[SceKernelThreadInfo.THREAD_CALLBACK_EXIT].callback_addr, null, 0);
+            threadMan.executeCallback(exitCbThread, exitCbThread.callbackInfo[SceKernelThreadInfo.THREAD_CALLBACK_EXIT].callback_addr, null, true, 0);
         } else {
             log.warn("No EXIT callback has been registered!");
         }

@@ -503,8 +503,11 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         public int openFont(Font font) {
-        	if (font == null || fonts.size() >= numFonts) {
-        		return -1;
+        	if (font == null) {
+        		return SceKernelErrors.ERROR_FONT_INVALID_PARAMETER;
+        	}
+        	if (fonts.size() >= numFonts) {
+        		return SceKernelErrors.ERROR_FONT_TOO_MANY_OPEN_FONTS;
         	}
 
         	int uid = SceUidManager.getNewUid(uidPurpose);
@@ -535,22 +538,22 @@ public class sceFont implements HLEModule, HLEStartModule {
         }
 
         private void triggerAllocCallback(int size) {
-            Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterAllocCallback(), userDataAddr, size);
+            Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterAllocCallback(), true, userDataAddr, size);
         }
 
         private void triggerFreeCallback() {
             if (Memory.isAddressGood(memFontAddr)) {
-                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, userDataAddr, memFontAddr);
+                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, memFontAddr);
             }
         }
 
         private void triggerOpenCallback(int fileNameAddr, int errorCodeAddr) {
-            Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterOpenCallback(), userDataAddr, fileNameAddr, errorCodeAddr);
+            Modules.ThreadManForUserModule.executeCallback(null, allocFuncAddr, new AfterOpenCallback(), true, userDataAddr, fileNameAddr, errorCodeAddr);
         }
 
         private void triggerCloseCallback() {
             if (fileFontHandle != 0) {
-                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, userDataAddr, fileFontHandle);
+                Modules.ThreadManForUserModule.executeCallback(null, freeFuncAddr, null, true, userDataAddr, fileFontHandle);
             }
         }
 

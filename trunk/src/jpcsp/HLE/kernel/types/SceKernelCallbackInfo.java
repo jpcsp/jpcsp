@@ -71,7 +71,7 @@ public class SceKernelCallbackInfo {
         notifyCount = 0;
         notifyArg = 0;
 
-        Modules.ThreadManForUserModule.executeCallback(thread, callback_addr, afterAction, registerA0, registerA1, registerA2);
+        Modules.ThreadManForUserModule.executeCallback(thread, callback_addr, afterAction, true, registerA0, registerA1, registerA2);
     }
 
 	@Override

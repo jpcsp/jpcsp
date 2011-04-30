@@ -102,6 +102,11 @@ public class sceNetAdhoc implements HLEModule {
         }
     }
 
+    /**
+     * Initialise the adhoc library.
+     *
+     * @return 0 on success, < 0 on error
+     */
     public void sceNetAdhocInit(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -114,6 +119,11 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /**
+     * Terminate the adhoc library
+     *
+     * @return 0 on success, < 0 on error
+     */
     public void sceNetAdhocTerm(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -150,14 +160,37 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Create a PDP object.
+     *
+     * @param mac - Your MAC address (from sceWlanGetEtherAddr)
+     * @param port - Port to use, lumines uses 0x309
+     * @param unk2 - Unknown, lumines sets to 0x400
+     * @param unk3 - Unknown, lumines sets to 0
+     *
+     * @return The ID of the PDP object (< 0 on error)
+     */
     public void sceNetAdhocPdpCreate(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.warn("UNIMPLEMENTED: sceNetAdhocPdpCreate");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 1;
     }
 
+    /**
+     * Send a PDP packet to a destination
+     *
+     * @param id - The ID as returned by ::sceNetAdhocPdpCreate
+     * @param destMacAddr - The destination MAC address, can be set to all 0xFF for broadcast
+     * @param port - The port to send to
+     * @param data - The data to send
+     * @param len - The length of the data.
+     * @param timeout - Timeout in microseconds.
+     * @param nonblock - Set to 0 to block, 1 for non-blocking.
+     *
+     * @return Bytes sent, < 0 on error
+     */
     public void sceNetAdhocPdpSend(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -166,14 +199,35 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Receive a PDP packet
+     *
+     * @param id - The ID of the PDP object, as returned by ::sceNetAdhocPdpCreate
+     * @param srcMacAddr - Buffer to hold the source mac address of the sender
+     * @param port - Buffer to hold the port number of the received data
+     * @param data - Data buffer
+     * @param dataLength - The length of the data buffer
+     * @param timeout - Timeout in microseconds.
+     * @param nonblock - Set to 0 to block, 1 for non-blocking.
+     *
+     * @return Number of bytes received, < 0 on error.
+     */
     public void sceNetAdhocPdpRecv(Processor processor) {
         CpuState cpu = processor.cpu;
 
         log.warn("UNIMPLEMENTED: sceNetAdhocPdpRecv");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
+    /**
+     * Delete a PDP object.
+     *
+     * @param id - The ID returned from ::sceNetAdhocPdpCreate
+     * @param unk1 - Unknown, set to 0
+     *
+     * @return 0 on success, < 0 on error
+     */
     public void sceNetAdhocPdpDelete(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -182,6 +236,23 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get the status of all PDP objects
+     *
+     * @param size - Pointer to the size of the stat array (e.g 20 for one structure)
+     * @param stat - Pointer to a list of ::pspStatStruct structures.
+     *
+     * typedef struct pdpStatStruct
+     * {
+     *    struct pdpStatStruct *next; // Pointer to next PDP structure in list
+     *    int pdpId;                  // pdp ID
+     *    unsigned char mac[6];       // MAC address
+     *    unsigned short port;        // Port
+     *    unsigned int rcvdData;      // Bytes received
+     * } pdpStatStruct
+     *
+     * @return 0 on success, < 0 on error
+     */
     public void sceNetAdhocGetPdpStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -190,6 +261,20 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Open a PTP connection
+     *
+     * @param srcmac - Local mac address.
+     * @param srcport - Local port.
+     * @param destmac - Destination mac.
+     * @param destport - Destination port
+     * @param bufsize - Socket buffer size
+     * @param delay - Interval between retrying (microseconds).
+     * @param count - Number of retries.
+     * @param unk1 - Pass 0.
+     *
+     * @return A socket ID on success, < 0 on error.
+     */
     public void sceNetAdhocPtpOpen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -198,6 +283,15 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Wait for connection created by sceNetAdhocPtpOpen()
+     *
+     * @param id - A socket ID.
+     * @param timeout - Timeout in microseconds.
+     * @param nonblock - Set to 0 to block, 1 for non-blocking.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocPtpConnect(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -206,6 +300,19 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Wait for an incoming PTP connection
+     *
+     * @param srcmac - Local mac address.
+     * @param srcport - Local port.
+     * @param bufsize - Socket buffer size
+     * @param delay - Interval between retrying (microseconds).
+     * @param count - Number of retries.
+     * @param queue - Connection queue length.
+     * @param unk1 - Pass 0.
+     *
+     * @return A socket ID on success, < 0 on error.
+     */
     public void sceNetAdhocPtpListen(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -214,6 +321,17 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Accept an incoming PTP connection
+     *
+     * @param id - A socket ID.
+     * @param mac - Connecting peers mac.
+     * @param port - Connecting peers port.
+     * @param timeout - Timeout in microseconds.
+     * @param nonblock - Set to 0 to block, 1 for non-blocking.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocPtpAccept(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -222,6 +340,17 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Send data
+     *
+     * @param id - A socket ID.
+     * @param data - Data to send.
+     * @param datasize - Size of the data.
+     * @param timeout - Timeout in microseconds.
+     * @param nonblock - Set to 0 to block, 1 for non-blocking.
+     *
+     * @return 0 success, < 0 on error.
+     */
     public void sceNetAdhocPtpSend(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -230,6 +359,17 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Receive data
+     *
+     * @param id - A socket ID.
+     * @param data - Buffer for the received data.
+     * @param datasize - Size of the data received.
+     * @param timeout - Timeout in microseconds.
+     * @param nonblock - Set to 0 to block, 1 for non-blocking.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocPtpRecv(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -238,6 +378,15 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Wait for data in the buffer to be sent
+     *
+     * @param id - A socket ID.
+     * @param timeout - Timeout in microseconds.
+     * @param nonblock - Set to 0 to block, 1 for non-blocking.
+     *
+     * @return A socket ID on success, < 0 on error.
+     */
     public void sceNetAdhocPtpFlush(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -246,6 +395,14 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Close a socket
+     *
+     * @param id - A socket ID.
+     * @param unk1 - Pass 0.
+     *
+     * @return A socket ID on success, < 0 on error.
+     */
     public void sceNetAdhocPtpClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -254,6 +411,27 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Get the status of all PTP objects
+     *
+     * @param size - Pointer to the size of the stat array (e.g 20 for one structure)
+     * @param stat - Pointer to a list of ::ptpStatStruct structures.
+     *
+     * typedef struct ptpStatStruct
+     * {
+     *    struct ptpStatStruct *next; // Pointer to next PTP structure in list
+     *    int ptpId;                  // ptp ID
+     *    unsigned char mac[6];       // MAC address
+     *    unsigned char peermac[6];   // Peer MAC address
+     *    unsigned short port;        // Port
+     *    unsigned short peerport;    // Peer Port
+     *    unsigned int sentData;      // Bytes sent
+     *    unsigned int rcvdData;      // Bytes received
+     *    int unk1;                   // Unknown
+     * } ptpStatStruct;
+     *
+     * @return 0 on success, < 0 on error
+     */
     public void sceNetAdhocGetPtpStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -262,6 +440,14 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Create own game object type data.
+     *
+     * @param data - A pointer to the game object data.
+     * @param size - Size of the game data.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocGameModeCreateMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -270,6 +456,15 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Create peer game object type data.
+     *
+     * @param mac - The mac address of the peer.
+     * @param data - A pointer to the game object data.
+     * @param size - Size of the game data.
+     *
+     * @return The id of the replica on success, < 0 on error.
+     */
     public void sceNetAdhocGameModeCreateReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -278,6 +473,11 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Update own game object type data.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocGameModeUpdateMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -286,6 +486,14 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Update peer game object type data.
+     *
+     * @param id - The id of the replica returned by sceNetAdhocGameModeCreateReplica.
+     * @param unk1 - Pass 0.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocGameModeUpdateReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -294,6 +502,11 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Delete own game object type data.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocGameModeDeleteMaster(Processor processor) {
         CpuState cpu = processor.cpu;
 
@@ -302,6 +515,13 @@ public class sceNetAdhoc implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    /**
+     * Delete peer game object type data.
+     *
+     * @param id - The id of the replica.
+     *
+     * @return 0 on success, < 0 on error.
+     */
     public void sceNetAdhocGameModeDeleteReplica(Processor processor) {
         CpuState cpu = processor.cpu;
 
