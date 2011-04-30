@@ -242,7 +242,7 @@ public class IntrManager {
 						log.debug("Calling InterruptHandler " + allegrexInterruptHandler.toString());
 					}
 					allegrexInterruptHandler.copyArgumentsToCpu(Emulator.getProcessor().cpu);
-					Modules.ThreadManForUserModule.callAddress(allegrexInterruptHandler.getAddress(), continueAction);
+					Modules.ThreadManForUserModule.callAddress(allegrexInterruptHandler.getAddress(), continueAction, true);
 					somethingExecuted = true;
 				}
 			} else {

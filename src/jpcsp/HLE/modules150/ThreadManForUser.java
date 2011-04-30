@@ -1302,8 +1302,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (afterAction != null) {
                 afterAction.execute();
             }
+
+            // Do we need to restore $v0/$v1?
+            if (callback.isReturnVoid()) {
+            	cpu.gpr[2] = callback.getSavedV0();
+            	cpu.gpr[3] = callback.getSavedV1();
+            }
         }
     }
+
     public final HLEModuleFunction hleKernelExitCallbackFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitCallback") {
 
         @Override
@@ -1328,12 +1335,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      *
      * @param address     the address to be called
      * @param afterAction the action to be executed after the completion of the code
+     * @param returnVoid  the code has a void return value, i.e. $v0/$v1 have to be restored
      */
-    public void callAddress(int address, IAction afterAction) {
-        callAddress(null, address, afterAction, null);
+    public void callAddress(int address, IAction afterAction, boolean returnVoid) {
+        callAddress(null, address, afterAction, returnVoid, null);
     }
 
-    private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, int[] parameters) {
+    private void callAddress(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int[] parameters) {
         if (thread != null) {
             // Save the wait state of the thread to restore it after the call
             int status = thread.status;
@@ -1358,7 +1366,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         int callbackId = callbackManager.getNewCallbackId();
-        Callback callback = new Callback(callbackId, cpu.gpr[CALLBACKID_REGISTER], cpu.gpr[31], cpu.pc, afterAction);
+        Callback callback = new Callback(callbackId, cpu.gpr[CALLBACKID_REGISTER], cpu.gpr[31], cpu.pc, cpu.gpr[2], cpu.gpr[3], afterAction, returnVoid);
         cpu.gpr[CALLBACKID_REGISTER] = callbackId;
         cpu.gpr[31] = CALLBACK_EXIT_HANDLER_ADDRESS;
         cpu.pc = address;
@@ -1386,13 +1394,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * @param thread      the callback has to be executed by this thread (null means the currentThread)
      * @param address     address of the callback
      * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
      */
-    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction) {
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("Execute callback 0x%08X, afterAction=%s", address, afterAction));
+            log.debug(String.format("Execute callback 0x%08X, afterAction=%s, returnVoid=%b", address, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, null);
+        callAddress(thread, address, afterAction, returnVoid, null);
     }
 
     /**
@@ -1404,14 +1413,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * @param thread      the callback has to be executed by this thread (null means the currentThread)
      * @param address     address of the callback
      * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
      * @param registerA0  first parameter of the callback ($a0)
      */
-    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0) {
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int registerA0) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X), afterAction=%s", address, registerA0, afterAction));
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, new int[]{registerA0});
+        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0});
     }
 
     /**
@@ -1423,15 +1433,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * @param thread      the callback has to be executed by this thread (null means the currentThread)
      * @param address     address of the callback
      * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
      * @param registerA0  first parameter of the callback ($a0)
      * @param registerA1  second parameter of the callback ($a1)
      */
-    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0, int registerA1) {
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int registerA0, int registerA1) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X), afterAction=%s", address, registerA0, registerA1, afterAction));
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, new int[]{registerA0, registerA1});
+        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1});
     }
 
     /**
@@ -1443,16 +1454,63 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
      * @param thread      the callback has to be executed by this thread (null means the currentThread)
      * @param address     address of the callback
      * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
      * @param registerA0  first parameter of the callback ($a0)
      * @param registerA1  second parameter of the callback ($a1)
      * @param registerA2  third parameter of the callback ($a2)
      */
-    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, int registerA0, int registerA1, int registerA2) {
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int registerA0, int registerA1, int registerA2) {
         if (log.isDebugEnabled()) {
-            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X), afterAction=%s", address, registerA0, registerA1, registerA2, afterAction));
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, registerA2, afterAction, returnVoid));
         }
 
-        callAddress(thread, address, afterAction, new int[]{registerA0, registerA1, registerA2});
+        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2});
+    }
+
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     * @param registerA2  third parameter of the callback ($a2)
+     * @param registerA3  fourth parameter of the callback ($a3)
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int registerA0, int registerA1, int registerA2, int registerA3) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, registerA2, registerA3, afterAction, returnVoid));
+        }
+
+        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2, registerA3});
+    }
+
+    /**
+     * Trigger a call to a callback in the context of a thread.
+     * This call can return before the completion of the callback. Use the
+     * "afterAction" parameter to trigger some actions that need to be executed
+     * after the callback (e.g. to evaluate a return value in cpu.gpr[2]).
+     *
+     * @param thread      the callback has to be executed by this thread (null means the currentThread)
+     * @param address     address of the callback
+     * @param afterAction action to be executed after the completion of the callback
+     * @param returnVoid  the callback has a void return value, i.e. $v0/$v1 have to be restored
+     * @param registerA0  first parameter of the callback ($a0)
+     * @param registerA1  second parameter of the callback ($a1)
+     * @param registerA2  third parameter of the callback ($a2)
+     * @param registerT0  fifth parameter of the callback ($t0)
+     */
+    public void executeCallback(SceKernelThreadInfo thread, int address, IAction afterAction, boolean returnVoid, int registerA0, int registerA1, int registerA2, int registerA3, int registerT0) {
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Execute callback 0x%08X($a0=0x%08X, $a1=0x%08X, $a2=0x%08X, $a3=0x%08X, $t0=0x%08X), afterAction=%s, returnVoid=%b", address, registerA0, registerA1, registerA2, registerA3, registerT0, afterAction, returnVoid));
+        }
+
+        callAddress(thread, address, afterAction, returnVoid, new int[]{registerA0, registerA1, registerA2, registerA3, registerT0});
     }
 
     public void hleKernelExitThread(Processor processor) {
@@ -1462,6 +1520,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         sceKernelExitThread(processor);
     }
+
     public final HLEModuleFunction hleKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelExitThread") {
 
         @Override
@@ -1645,8 +1704,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public void hleKernelWakeupThread(SceKernelThreadInfo thread) {
         if (thread.status != PSP_THREAD_WAITING || thread.waitType != PSP_WAIT_SLEEP) {
-            log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount");
             thread.wakeupCount++;
+            if (log.isDebugEnabled()) {
+            	log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount to " + thread.wakeupCount);
+            }
         } else if (isBannedThread(thread)) {
             log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not waking up");
         } else {
@@ -4356,14 +4417,20 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         private int savedIdRegister;
         private int savedRa;
         private int savedPc;
+        private int savedV0;
+        private int savedV1;
         private IAction afterAction;
+        private boolean returnVoid;
 
-        public Callback(int id, int savedIdRegister, int savedRa, int savedPc, IAction afterAction) {
+        public Callback(int id, int savedIdRegister, int savedRa, int savedPc, int savedV0, int savedV1, IAction afterAction, boolean returnVoid) {
             this.id = id;
             this.savedIdRegister = savedIdRegister;
             this.savedRa = savedRa;
             this.savedPc = savedPc;
+            this.savedV0 = savedV0;
+            this.savedV1 = savedV1;
             this.afterAction = afterAction;
+            this.returnVoid = returnVoid;
         }
 
         public IAction getAfterAction() {
@@ -4386,9 +4453,21 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             return savedPc;
         }
 
+		public int getSavedV0() {
+			return savedV0;
+		}
+
+		public int getSavedV1() {
+			return savedV1;
+		}
+
+		public boolean isReturnVoid() {
+			return returnVoid;
+		}
+
         @Override
         public String toString() {
-            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X", getId(), getSavedIdRegister(), getSavedPc());
+            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X,savedV0=0x%08X,savedV1=0x%08X", getId(), getSavedIdRegister(), getSavedPc(), getSavedV0(), getSavedV1());
         }
     }
 

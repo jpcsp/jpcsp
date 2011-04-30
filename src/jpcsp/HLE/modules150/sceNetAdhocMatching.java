@@ -105,7 +105,7 @@ public class sceNetAdhocMatching implements HLEModule {
 
         log.warn("UNIMPLEMENTED: sceNetAdhocMatchingCreate");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 1;
     }
 
     public void sceNetAdhocMatchingStart(Processor processor) {
@@ -113,7 +113,7 @@ public class sceNetAdhocMatching implements HLEModule {
 
         log.warn("UNIMPLEMENTED: sceNetAdhocMatchingStart");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
     public void sceNetAdhocMatchingStop(Processor processor) {
@@ -121,7 +121,7 @@ public class sceNetAdhocMatching implements HLEModule {
 
         log.warn("UNIMPLEMENTED: sceNetAdhocMatchingStop");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
     public void sceNetAdhocMatchingDelete(Processor processor) {

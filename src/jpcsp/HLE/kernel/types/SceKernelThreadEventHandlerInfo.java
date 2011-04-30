@@ -77,8 +77,8 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
         // Uses the current thread's (caller) context and uid.
         SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
 
-        if(thread != null) {
-            Modules.ThreadManForUserModule.executeCallback(thread, handler, new AfterEventHandler(), evt, thread.uid, common);
+        if (thread != null) {
+            Modules.ThreadManForUserModule.executeCallback(thread, handler, new AfterEventHandler(), true, evt, thread.uid, common);
         }
     }
 

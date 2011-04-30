@@ -48,6 +48,11 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
 		public int sizeof() {
 			return 3 * 4;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("title=%s, timeout=%d", confTitle, timeout);
+		}
 	}
 
     @Override
@@ -91,6 +96,6 @@ public class SceUtilityNetconfParams extends pspAbstractMemoryMappedStructure {
 
     @Override
     public String toString() {
-        return String.format("title=%s, timeout=%d", netconfData.confTitle, netconfData.timeout);
+        return String.format("SceUtilityNetconf[address=0x%08X, netAction=%d, %s]", getBaseAddress(), netAction, netconfData);
     }
 }

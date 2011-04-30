@@ -510,7 +510,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         public void executeInitStart(Processor processor) {
             CpuState cpu = processor.cpu;
 
-            log.warn("Unimplemented: " + name + "InitStart");
+            log.warn(String.format("Unimplemented: %sInitStart params=0x%08X", name, cpu.gpr[4]));
 
             cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
         }
@@ -1252,6 +1252,12 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		@Override
 		protected void executeUpdateVisible(Processor processor) {
 			// TODO to be implemented
+
+			if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET) {
+				// When connecting with infrastructure, simulate a connection
+				// using the first network configuration entry.
+				Modules.sceNetApctl.hleNetApctlConnect(1);
+			}
 		}
 
 		@Override

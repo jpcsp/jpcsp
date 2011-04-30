@@ -470,14 +470,39 @@ public class Utilities {
     	return (int) ((sizeByte + 1023) / 1024);
     }
 
+    private static void addAsciiDump(StringBuilder dump, IMemoryReader charReader, int bytesPerLine) {
+		dump.append("  >");
+		for (int i = 0; i < bytesPerLine; i++) {
+			char c = (char) charReader.readNext();
+			if (c < ' ' || c > '~') {
+				c = '.';
+			}
+			dump.append(c);
+		}
+		dump.append("<");
+    }
+
     public static String getMemoryDump(int address, int length, int step, int bytesPerLine) {
+    	if (!Memory.isAddressGood(address) || length <= 0 || bytesPerLine <= 0 || step <= 0) {
+    		return "";
+    	}
+
     	StringBuilder dump = new StringBuilder();
 
+    	if (length < bytesPerLine) {
+    		bytesPerLine = length;
+    	}
+
     	IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, step);
+    	IMemoryReader charReader = MemoryReader.getMemoryReader(address, length, 1);
     	String format = String.format(" %%0%dX", step * 2);
     	boolean startOfLine = true;
     	for (int i = 0; i < length; i += step) {
     		if ((i % bytesPerLine) < step) {
+    			if (i > 0) {
+    				// Add an ASCII representation at the end of the line
+    				addAsciiDump(dump, charReader, bytesPerLine);
+    			}
     			dump.append("\n");
     			startOfLine = true;
     		}
@@ -487,7 +512,34 @@ public class Utilities {
     		}
 
     		int value = memoryReader.readNext();
-    		dump.append(String.format(format, value));
+    		if (length - i >= step) {
+    			dump.append(String.format(format, value));
+    		} else {
+    			switch (length - i) {
+    				case 3:
+    	    			dump.append(String.format(" %06X", value & 0x00FFFFFF));
+    	    			break;
+    				case 2:
+    	    			dump.append(String.format(" %04X", value & 0x0000FFFF));
+    	    			break;
+    				case 1:
+    	    			dump.append(String.format(" %02X", value & 0x000000FF));
+    	    			break;
+    			}
+    		}
+    	}
+
+		int lengthLastLine = length % bytesPerLine;
+    	if (lengthLastLine > 0) {
+    		for (int i = lengthLastLine; i < bytesPerLine; i++) {
+    			dump.append("  ");
+    			if ((i % step) == 0) {
+    				dump.append(" ");
+    			}
+    		}
+    		addAsciiDump(dump, charReader, bytesPerLine - lengthLastLine);
+    	} else {
+    		addAsciiDump(dump, charReader, bytesPerLine);
     	}
 
     	return dump.toString();

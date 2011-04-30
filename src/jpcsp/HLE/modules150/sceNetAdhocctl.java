@@ -44,7 +44,6 @@ public class sceNetAdhocctl implements HLEModule {
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-
             mm.addFunction(0xE26F226E, sceNetAdhocctlInitFunction);
             mm.addFunction(0x9D689E13, sceNetAdhocctlTermFunction);
             mm.addFunction(0x0AD043ED, sceNetAdhocctlConnectFunction);
@@ -67,15 +66,12 @@ public class sceNetAdhocctl implements HLEModule {
             mm.addFunction(0x1FF89745, sceNetAdhocctlJoinEnterGameModeFunction);
             mm.addFunction(0xCF8E084D, sceNetAdhocctlExitGameModeFunction);
             mm.addFunction(0x5A014CE0, sceNetAdhocctlGetGameModeInfoFunction);
-
-
         }
     }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-
             mm.removeFunction(sceNetAdhocctlInitFunction);
             mm.removeFunction(sceNetAdhocctlTermFunction);
             mm.removeFunction(sceNetAdhocctlConnectFunction);
@@ -98,9 +94,9 @@ public class sceNetAdhocctl implements HLEModule {
             mm.removeFunction(sceNetAdhocctlJoinEnterGameModeFunction);
             mm.removeFunction(sceNetAdhocctlExitGameModeFunction);
             mm.removeFunction(sceNetAdhocctlGetGameModeInfoFunction);
-
         }
     }
+
     public static final int PSP_ADHOCCTL_EVENT_ERROR = 0;
     public static final int PSP_ADHOCCTL_EVENT_CONNECTED = 1;
     public static final int PSP_ADHOCCTL_EVENT_DISCONNECTED = 2;
@@ -140,7 +136,7 @@ public class sceNetAdhocctl implements HLEModule {
         protected void triggerAdhocctlHandler() {
             SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
             if (thread != null) {
-                Modules.ThreadManForUserModule.executeCallback(thread, entryAddr, null, currentEvent, currentError, currentArg);
+                Modules.ThreadManForUserModule.executeCallback(thread, entryAddr, null, true, currentEvent, currentError, currentArg);
             }
         }
 

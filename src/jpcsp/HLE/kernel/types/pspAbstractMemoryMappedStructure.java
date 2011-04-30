@@ -362,4 +362,28 @@ public abstract class pspAbstractMemoryMappedStructure {
     public int getBaseAddress() {
     	return baseAddress;
     }
+
+    protected int readEndianSwap16() {
+    	return endianSwap16((short) read16()) & 0xFFFF;
+    }
+
+    protected void writeEndianSwap16(short data) {
+    	write16(endianSwap16(data));
+    }
+
+    protected int readEndianSwap32() {
+    	return endianSwap32(read32());
+    }
+
+    protected void writeEndianSwap32(int data) {
+    	write32(endianSwap32(data));
+    }
+
+    protected short endianSwap16(short data) {
+    	return Short.reverseBytes(data);
+    }
+
+    protected int endianSwap32(int data) {
+    	return Integer.reverseBytes(data);
+    }
 }
