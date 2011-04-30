@@ -1526,10 +1526,12 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         sceDisplay.setAntiAliasSamplesNum(samples);
 
         String resolution = Settings.getInstance().readString("emu.graphics.resolution");
-        if (!resolution.equals("Native")) {
-            int width = Integer.parseInt(resolution.split("x")[0]);
-            int heigth = Integer.parseInt(resolution.split("x")[1]);
-            changeScreenResolution(width, heigth, 32, 60);
+        if (resolution != null && !resolution.equals("Native")) {
+        	if (resolution.contains("x")) {
+	            int width = Integer.parseInt(resolution.split("x")[0]);
+	            int heigth = Integer.parseInt(resolution.split("x")[1]);
+	            changeScreenResolution(width, heigth, 32, 60);
+        	}
         }
     }
 
