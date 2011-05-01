@@ -187,7 +187,7 @@ public class sceNetApctl implements HLEModule {
     	state = newState;
     }
 
-    protected String getSSID() {
+    public static String getSSID() {
 		String ssid = null;
 		try {
 			ssid = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getDisplayName();
@@ -200,19 +200,19 @@ public class sceNetApctl implements HLEModule {
 		return ssid;
 	}
 
-	protected String getPrimaryDNS() {
+    public static String getPrimaryDNS() {
 		return dummyPrimaryDNS;
 	}
 
-	protected String getSecondaryDNS() {
+    public static String getSecondaryDNS() {
 		return dummySecondaryDNS;
 	}
 
-	protected String getGateway() {
+    public static String getGateway() {
 		return dummyGateway;
 	}
 
-	protected String getSubnetMask() {
+    public static String getSubnetMask() {
 		return dummySubnetMask;
 	}
 

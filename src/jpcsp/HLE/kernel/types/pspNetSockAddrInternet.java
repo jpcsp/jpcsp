@@ -28,22 +28,24 @@ public class pspNetSockAddrInternet extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
+		// start address is not 32-bit aligned
 		sin_len = read8();
 		sin_family = read8();
-		sin_port = readEndianSwap16();
-		sin_addr = read32();
-		sin_zero1 = read32();
-		sin_zero2 = read32();
+		sin_port = endianSwap16((short) readUnaligned16());
+		sin_addr = readUnaligned32();
+		sin_zero1 = readUnaligned32();
+		sin_zero2 = readUnaligned32();
 	}
 
 	@Override
 	protected void write() {
+		// start address is not 32-bit aligned
 		write8((byte) sin_len);
 		write8((byte) sin_family);
-		writeEndianSwap16((short) sin_port);
-		write32(sin_addr);
-		write32(sin_zero1);
-		write32(sin_zero2);
+		writeUnaligned16((short) endianSwap16((short) sin_port));
+		writeUnaligned32(sin_addr);
+		writeUnaligned32(sin_zero1);
+		writeUnaligned32(sin_zero2);
 	}
 
 	@Override

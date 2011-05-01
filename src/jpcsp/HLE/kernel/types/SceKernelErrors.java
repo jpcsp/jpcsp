@@ -92,6 +92,7 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_FILE_IS_TOO_BIG                         = 0x8001001B;
     public final static int ERROR_ERRNO_DEVICE_NO_FREE_SPACE                    = 0x8001001C;
     public final static int ERROR_ERRNO_READ_ONLY                               = 0x8001001E;
+    public final static int ERROR_ERRNO_CLOSED                                  = 0x80010020;
     public final static int ERROR_ERRNO_FILE_PATH_TOO_LONG                      = 0x80010024;
     public final static int ERROR_ERRNO_FILE_PROTOCOL                           = 0x80010047;
     public final static int ERROR_ERRNO_DIRECTORY_IS_NOT_EMPTY                  = 0x8001005A;
@@ -101,8 +102,10 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_CONNECTION_RESET                        = 0x80010068;
     public final static int ERROR_ERRNO_NO_FREE_BUF_SPACE                       = 0x80010069;
     public final static int ERROR_ERRNO_FILE_TIMEOUT                            = 0x8001006E;
+    public final static int ERROR_ERRNO_IN_PROGRESS                             = 0x80010077;
     public final static int ERROR_ERRNO_NO_MEDIA                                = 0x8001007B;
     public final static int ERROR_ERRNO_INVALID_MEDIUM                          = 0x8001007C;
+    public final static int ERROR_ERRNO_NOT_CONNECTED                           = 0x80010080;
     public final static int ERROR_ERRNO_FILE_QUOTA_EXCEEDED                     = 0x80010084;
 
     public final static int ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT        = 0x80020064;
