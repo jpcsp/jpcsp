@@ -11,6 +11,7 @@
 #include <pspnet_inet.h>
 #include <pspnet_apctl.h>
 #include <pspnet_resolver.h>
+#include <psputility_netparam.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
@@ -77,7 +78,7 @@ void testBlockingStream()
 	ret = sceNetInetConnect(sock, (struct sockaddr *) &name, sizeof(name));
 	if (ret < 0)
 	{
-		printf("Cannot sceNetInetConnect 0x%08X errno=%d", ret, sceNetInetGetErrno());
+		printf("Cannot sceNetInetConnect 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
 		return;
 	}
 	printf("Connected\n");
@@ -93,6 +94,91 @@ void testBlockingStream()
 	sceNetInetClose(sock);
 }
 
+void testNonBlockingStream()
+{
+	int sock;
+	int ret;
+	struct sockaddr_in name;
+	char *hostname = "www.google.com";
+	char *cmd = "GET /\n\n";
+	char buffer[4096];
+	int flag;
+
+	printf("Starting Test Non-Blocking Stream...\n");
+
+	sock = sceNetInetSocket(PF_INET, SOCK_STREAM, 0);
+	if (sock < 0)
+	{
+		printf("Cannot create socket 0x%08X errno=%d\n", sock, sceNetInetGetErrno());
+		return;
+	}
+
+	name.sin_family = AF_INET;
+	name.sin_port = htons(80);
+	resolve(hostname, &name.sin_addr);
+	printf("Address of %s = 0x%08X\n", hostname, name.sin_addr.s_addr);
+
+	flag = 1;
+	ret = sceNetInetSetsockopt(sock, 0xFFFF, SO_NONBLOCK, &flag, sizeof(flag));
+	if (ret < 0)
+	{
+		printf("Cannot sceNetInetSetsockopt 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+		return;
+	}
+
+	ret = sceNetInetConnect(sock, (struct sockaddr *) &name, sizeof(name));
+	if (ret < 0)
+	{
+		if (sceNetInetGetErrno() == 119)
+		{
+			printf("sceNetInetConnect returned 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+		}
+		else
+		{
+			printf("Cannot sceNetInetConnect 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+			return;
+		}
+	}
+	printf("Connected\n");
+
+	while (1)
+	{
+		int length = sceNetInetSend(sock, cmd, strlen(cmd), 0);
+		printf("sceNetInetSend %d (errno=%d)\n", length, sceNetInetGetErrno());
+		if (length < 0 && sceNetInetGetErrno() == 128)
+		{
+			// wait a little before polling again
+			sceKernelDelayThread(500*1000); // 500ms
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	while (1)
+	{
+		int length = sceNetInetRecv(sock, buffer, sizeof(buffer), 0);
+		printf("sceNetInetRecv %d (errno=%d)\n", length, sceNetInetGetErrno());
+		if (length < 0 && sceNetInetGetErrno() == 11)
+		{
+			// wait a little before polling again
+			sceKernelDelayThread(100*1000); // 100ms
+		}
+		else
+		{
+			if (length >= 0)
+			{
+				buffer[length] = '\0';
+			}
+			break;
+		}
+	}
+	printf("%s\n", buffer);
+
+	sceNetInetClose(sock);
+}
+
 void apctlHandler(int oldState, int newState, int event, int error, void *pArg)
 {
 	printf("ApctlHandler oldState=%d, newState=%d, event=%d, error=%d, pArg=0x%X\n", oldState, newState, event, error, (int) pArg);
@@ -103,8 +189,19 @@ int connect_to_apctl(int config)
 {
 	int err;
 	int stateLast = -1;
+	netData name;
 
 	int handlerId = sceNetApctlAddHandler(apctlHandler, 0x12345);
+
+	err = sceUtilityGetNetParam(config, PSP_NETPARAM_NAME, &name);
+	if (err != 0)
+	{
+		printf("sceUtilityGetNetParam returns %08X\n", err);
+	}
+	else
+	{
+		printf("sceUtilityGetNetParam name='%s'\n", name.asString);
+	}
 
 	/* Connect using the first profile */
 	err = sceNetApctlConnect(config);
@@ -179,6 +276,7 @@ int net_thread(SceSize args, void *argp)
 	}
 
 	pspDebugScreenPrintf("Press Cross to start test blocking stream\n");
+	pspDebugScreenPrintf("Press Circle to start test non-blocking stream\n");
 	pspDebugScreenPrintf("Press Triangle to exit\n");
 
 	while(!done)
@@ -235,6 +333,7 @@ int net_thread(SceSize args, void *argp)
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
 		{
+			testNonBlockingStream();
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
