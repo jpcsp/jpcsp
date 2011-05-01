@@ -195,6 +195,7 @@ public class Utilities {
     }
 
      public static void writeStringZ(Memory mem, int address, String s) {
+    	 // add 1 to the length to write the final '\0'
          writeStringNZ(mem, address, s.length() + 1, s);
      }
      public static void writeStringZ(ByteBuffer buf, String s) {

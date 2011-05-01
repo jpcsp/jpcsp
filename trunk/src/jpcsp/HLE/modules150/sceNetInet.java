@@ -350,7 +350,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			if (address == INADDR_ANY) {
 				socketAddress = new InetSocketAddress(port);
 			} else if (address == INADDR_BROADCAST && !isOnesBroadcast()) {
-				// WHen SO_ONESBCAST is not enabled, map the broadcast address
+				// When SO_ONESBCAST is not enabled, map the broadcast address
 				// to the broadcast address from the network of the local IP address.
 				// E.g.
 				//  - localHostIP: A.B.C.D
@@ -1350,18 +1350,22 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 	}
 
+	// int sceNetInetInit(void);
 	public void sceNetInetInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
 		// This function has no parameter
+		log.debug("sceNetInetInit");
 
 		cpu.gpr[2] = 0;
 	}
-    
+
+	// int sceNetInetTerm(void);
 	public void sceNetInetTerm(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceNetInetTerm [0xA9ED66B9]");
+		// This function has no parameter
+		log.debug("sceNetInetTerm");
 
 		cpu.gpr[2] = 0;
 	}

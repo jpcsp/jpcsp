@@ -717,14 +717,14 @@ public class sceAudio implements HLEModule, HLEStartModule {
         } else {
             if (!pspSRCChannel.isOutputBlocking() || disableBlockingAudio) {
                 if (log.isDebugEnabled()) {
-                    log.debug("sceAudioSRCOutputBlocking[not blocking] " + pspSRCChannel.toString());
+                    log.debug(String.format("sceAudioSRCOutputBlocking[not blocking] 0x%08X to %s", buf, pspSRCChannel.toString()));
                 }
                 changeChannelVolume(pspSRCChannel, vol, vol);
                 cpu.gpr[2] = doAudioOutput(pspSRCChannel, buf);
                 Modules.ThreadManForUserModule.hleRescheduleCurrentThread();
             } else {
                 if (log.isDebugEnabled()) {
-                    log.debug("sceAudioSRCOutputBlocking[blocking] " + pspSRCChannel.toString());
+                    log.debug(String.format("sceAudioSRCOutputBlocking[blocking] 0x%08X to %s", buf, pspSRCChannel.toString()));
                 }
                 blockThreadOutput(pspSRCChannel, buf, vol, vol);
             }
