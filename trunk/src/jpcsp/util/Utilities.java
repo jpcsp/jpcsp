@@ -195,7 +195,7 @@ public class Utilities {
     }
 
      public static void writeStringZ(Memory mem, int address, String s) {
-         writeStringNZ(mem, address, s.length(), s);
+         writeStringNZ(mem, address, s.length() + 1, s);
      }
      public static void writeStringZ(ByteBuffer buf, String s) {
          buf.put(s.getBytes());

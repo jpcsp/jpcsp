@@ -110,6 +110,13 @@ public abstract class pspAbstractMemoryMappedStructure {
         return value;
     }
 
+    protected int readUnaligned16() {
+    	int n0 = read8();
+    	int n1 = read8();
+
+    	return (n1 << 8) | n0;
+    }
+
     protected int read32() {
     	align32();
 
@@ -122,6 +129,13 @@ public abstract class pspAbstractMemoryMappedStructure {
         offset += 4;
 
         return value;
+    }
+
+    protected int readUnaligned32() {
+    	int n01 = readUnaligned16();
+    	int n23 = readUnaligned16();
+
+    	return (n23 << 16) | n01;
     }
 
     protected long read64() {
@@ -277,12 +291,22 @@ public abstract class pspAbstractMemoryMappedStructure {
         offset += 2;
     }
 
+    protected void writeUnaligned16(short data) {
+    	write8((byte) data);
+    	write8((byte) (data >>> 8));
+    }
+
     protected void write32(int data) {
     	align32();
         if (offset < maxSize) {
             mem.write32(baseAddress + offset, data);
         }
         offset += 4;
+    }
+
+    protected void writeUnaligned32(int data) {
+    	writeUnaligned16((short) data);
+    	writeUnaligned16((short) (data >>> 16));
     }
 
     protected void write64(long data) {
@@ -363,24 +387,8 @@ public abstract class pspAbstractMemoryMappedStructure {
     	return baseAddress;
     }
 
-    protected int readEndianSwap16() {
-    	return endianSwap16((short) read16()) & 0xFFFF;
-    }
-
-    protected void writeEndianSwap16(short data) {
-    	write16(endianSwap16(data));
-    }
-
-    protected int readEndianSwap32() {
-    	return endianSwap32(read32());
-    }
-
-    protected void writeEndianSwap32(int data) {
-    	write32(endianSwap32(data));
-    }
-
-    protected short endianSwap16(short data) {
-    	return Short.reverseBytes(data);
+    protected int endianSwap16(short data) {
+    	return Short.reverseBytes(data) & 0xFFFF;
     }
 
     protected int endianSwap32(int data) {

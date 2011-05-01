@@ -82,6 +82,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules.sceCtrl;
+import jpcsp.HLE.modules.sceNetApctl;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PSF;
 import jpcsp.hardware.MemoryStick;
@@ -317,6 +318,25 @@ public class sceUtility implements HLEModule, HLEStartModule {
     public static final int PSP_UTILITY_DIALOG_RESULT_CANCELED = 1;
     public static final int PSP_UTILITY_DIALOG_RESULT_ABORTED = 2;
 
+    public static final int PSP_NETPARAM_NAME         =  0; // string
+    public static final int PSP_NETPARAM_SSID         =  1; // string
+    public static final int PSP_NETPARAM_SECURE       =  2; // int
+    public static final int PSP_NETPARAM_WEPKEY       =  3; // string
+    public static final int PSP_NETPARAM_IS_STATIC_IP =  4; // int
+    public static final int PSP_NETPARAM_IP           =  5; // string
+    public static final int PSP_NETPARAM_NETMASK      =  6; // string
+    public static final int PSP_NETPARAM_ROUTE        =  7; // string
+    public static final int PSP_NETPARAM_MANUAL_DNS   =  8; // int
+    public static final int PSP_NETPARAM_PRIMARYDNS   =  9; // string
+    public static final int PSP_NETPARAM_SECONDARYDNS = 10; // string
+    public static final int PSP_NETPARAM_PROXY_USER   = 11; // string
+    public static final int PSP_NETPARAM_PROXY_PASS   = 12; // string
+    public static final int PSP_NETPARAM_USE_PROXY    = 13; // int
+    public static final int PSP_NETPARAM_PROXY_SERVER = 14; // string
+    public static final int PSP_NETPARAM_PROXY_PORT   = 15; // int
+    public static final int PSP_NETPARAM_UNKNOWN1     = 16; // int
+    public static final int PSP_NETPARAM_UNKNOWN2     = 17; // int
+
     protected static final int maxLineLengthForDialog = 80;
     protected static final int[] fontHeightSavedataList = new int[]{12, 12, 12, 12, 12, 12, 9, 8, 7, 6};
 
@@ -344,6 +364,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected int systemParam_daylightSavingTime;
     protected int systemParam_language;
     protected int systemParam_buttonPreference;
+
+    private static final String dummyNetParamName = "NetConf #1";
 
     protected abstract static class UtilityDialogState {
         protected String name;
@@ -1789,6 +1811,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
     	}
     }
 
+    protected static String getNetParamName(int id) {
+    	return dummyNetParamName;
+    }
+
     protected static String formatMessageForDialog(String message) {
         StringBuilder formattedMessage = new StringBuilder();
 
@@ -2273,26 +2299,107 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
     }
 
+    /**
+     * Check existance of a Net Configuration
+     *
+     * @param id - id of net Configuration (1 to n)
+     * @return 0 on success,
+     */
     public void sceUtilityCheckNetParam(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int id = cpu.gpr[4];
 
-        log.warn("IGNORING: sceUtilityCheckNetParam(id=" + id + ")");
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceUtilityCheckNetParam(id=%d)", id));
+        }
 
-        cpu.gpr[2] = 0;
+        // We simulate only 1 net configuration
+        boolean available = (id == 1);
+
+        cpu.gpr[2] = available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
     }
 
+    /**
+     * Get Net Configuration Parameter
+     *
+     * @param conf - Net Configuration number (1 to n)
+     * (0 returns valid but seems to be a copy of the last config requested)
+     * @param param - which parameter to get
+     * @param data - parameter data
+     * @return 0 on success,
+     */
     public void sceUtilityGetNetParam(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int id = cpu.gpr[4];
         int param = cpu.gpr[5];
-        int net_addr = cpu.gpr[6];
+        int data = cpu.gpr[6];
 
-        log.warn("IGNORING: sceUtilityGetNetParam(id=" + id + ", param=" + param + ", net_addr=" + Integer.toHexString(net_addr) + ")");
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceUtilityGetNetParam(id=%d, param=%d, data=0x%08X)", id, param, data));
+        }
 
-        cpu.gpr[2] = 0;
+        if (id <0 || id > 1) {
+        	log.warn(String.format("sceUtilityGetNetParam invalid id=%d", id));
+        	cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
+        } else if (!Memory.isAddressGood(data)) {
+        	log.warn(String.format("sceUtilityGetNetParam invalid data address 0x%08X", data));
+        	cpu.gpr[2] = -1;
+        } else {
+	        cpu.gpr[2] = 0;
+	        switch (param) {
+		        case PSP_NETPARAM_NAME: {
+		        	Utilities.writeStringZ(mem, data, getNetParamName(id));
+		        	break;
+		        }
+		        case PSP_NETPARAM_SSID: {
+		        	Utilities.writeStringZ(mem, data, sceNetApctl.getSSID());
+		        	break;
+		        }
+		        case PSP_NETPARAM_SECURE: {
+		        	mem.write32(data, 1);
+		        	break;
+		        }
+		        case PSP_NETPARAM_WEPKEY: {
+		        	Utilities.writeStringZ(mem, data, "XXXXXXXXXXXXXXXXX");
+		        	break;
+		        }
+		        case PSP_NETPARAM_IS_STATIC_IP: {
+		        	mem.write32(data, 0);
+		        	break;
+		        }
+		        case PSP_NETPARAM_IP: {
+		        	Utilities.writeStringZ(mem, data, sceNetApctl.getLocalHostIP());
+		        	break;
+		        }
+		        case PSP_NETPARAM_NETMASK: {
+		        	Utilities.writeStringZ(mem, data, sceNetApctl.getSubnetMask());
+		        	break;
+		        }
+		        case PSP_NETPARAM_ROUTE: {
+		        	Utilities.writeStringZ(mem, data, sceNetApctl.getGateway());
+		        	break;
+		        }
+		        case PSP_NETPARAM_MANUAL_DNS: {
+		        	mem.write32(data, 0);
+		        	break;
+		        }
+		        case PSP_NETPARAM_PRIMARYDNS: {
+		        	Utilities.writeStringZ(mem, data, sceNetApctl.getPrimaryDNS());
+		        	break;
+		        }
+		        case PSP_NETPARAM_SECONDARYDNS: {
+		        	Utilities.writeStringZ(mem, data, sceNetApctl.getSecondaryDNS());
+		        	break;
+		        }
+		        default: {
+		        	log.warn(String.format("sceUtilityGetNetParam invalid data address 0x%08X", data));
+		        	cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
+		        }
+	        }
+        }
     }
 
     public void sceUtilityNpSigninInitStart(Processor processor) {
