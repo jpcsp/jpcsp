@@ -39,6 +39,8 @@ import jpcsp.HLE.modules.sceDmac;
 import jpcsp.HLE.modules.sceFont;
 import jpcsp.HLE.modules.sceGe_user;
 import jpcsp.HLE.modules.sceHprm;
+import jpcsp.HLE.modules.sceHttp;
+import jpcsp.HLE.modules.sceHttps;
 import jpcsp.HLE.modules.sceImpose;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMp4;
@@ -62,6 +64,7 @@ import jpcsp.HLE.modules.scePsmfPlayer;
 import jpcsp.HLE.modules.scePspNpDrm_user;
 import jpcsp.HLE.modules.sceRtc;
 import jpcsp.HLE.modules.sceSasCore;
+import jpcsp.HLE.modules.sceSsl;
 import jpcsp.HLE.modules.sceSuspendForUser;
 import jpcsp.HLE.modules.sceUmdUser;
 import jpcsp.HLE.modules.sceUtility;
@@ -121,6 +124,9 @@ public class Modules {
     public static scePspNpDrm_user scePspNpDrm_userModule = new scePspNpDrm_user();
     public static sceVaudio sceVaudioModule = new sceVaudio();
     public static sceMp4 sceMp4Module = new sceMp4();
+    public static sceHttp sceHttpModule = new sceHttp();
+    public static sceHttps sceHttpsModule = new sceHttps();
+    public static sceSsl sceSslModule = new sceSsl();
 
     public static Logger log = Logger.getLogger("hle");
 

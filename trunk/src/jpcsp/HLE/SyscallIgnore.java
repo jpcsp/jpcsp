@@ -38,7 +38,6 @@ public enum SyscallIgnore {
 	ReleaseContextHooks(0x55242A8B),
 	ReturnToThread(0x43CD40EF),
 	SaveThreadContext(0x85F7766D),
-	sceAtracSetAA3DataAndGetID(0x5622B7C1),
 	sceAudiocodec_59176A0F(0x59176A0F),
 	sceAudiocodec_6CD2A861(0x6CD2A861),
 	sceAudiocodecDecode(0x70A703F8),
@@ -52,49 +51,6 @@ public enum SyscallIgnore {
 	sceDisplayEnable(0x432D133F),
 	sceDisplaySetBrightness(0x9E3C6DC6),
 	sceHprmEnd(0x588845DA),
-	sceHttpAbortRequest(0xc10b6bd9),
-	sceHttpAddExtraHeader(0x3eaba285),
-	sceHttpCreateConnectionWithURL(0xcdf8ecb9),
-	sceHttpCreateRequestWithURL(0xb509b09e),
-	sceHttpCreateTemplate(0x9b1f1f36),
-	sceHttpDeleteConnection(0x5152773b),
-	sceHttpDeleteHeader(0x15540184),
-	sceHttpDeleteRequest(0xa5512e01),
-	sceHttpDeleteTemplate(0xfcf8c055),
-	sceHttpDisableAuth(0xae948fee),
-	sceHttpDisableCache(0xccbd167a),
-	sceHttpDisableCookie(0x0b12abfb),
-	sceHttpDisableRedirect(0x1a0ebb69),
-	sceHttpEnableKeepAlive(0x78a0d3ec),
-	sceHttpEnd(0xd1c8945e),
-	sceHttpEndCache(0x78b54c09),
-	sceHttpGetAllHeader(0xdb266ccf),
-	sceHttpGetContentLength(0x0282A3BD),
-	sceHttpGetNetworkErrno(0xd081ec8f),
-	sceHttpGetNetworkPspError(0x2255551E),
-	sceHttpGetStatusCode(0x4cc7d78f),
-	sceHttpInit(0xab1abe07),
-	sceHttpInitCache(0xa6800c34),
-	sceHttpLoadSystemCookie(0xF1657B22),
-	sceHttpReadData(0xedeeb999),
-	sceHttpSaveSystemCookie(0x76D1363B),
-	sceHttpsDisableOption(0xB3FAF831),
-	sceHttpsEnd(0xf9d8eb63),
-	sceHttpSendRequest(0xbb70706f),
-	sceHttpSetAuthInfoCB(0x2a6c3296),
-	sceHttpSetConnectTimeOut(0x8ACD1F73),
-	sceHttpSetMallocFunction(0xF49934F6),
-	sceHttpSetRecvTimeOut(0x1F0FC3E3),
-	sceHttpSetRedirectCallback(0xA4496DE5),
-	sceHttpSetResolveRetry(0x03D9526F),
-	sceHttpSetResolveTimeOut(0x47940436),
-	sceHttpSetSendTimeOut(0x9988172D),
-    sceHttpEnableRedirect(0x0809c831),
-	sceHttpsGetSslError(0xAB1540D5),
-	sceHttpsInit(0xE4D21302),
-	sceHttpsInitWithPath(0x68ab0f86),
-	sceHttpsLoadDefaultCert(0x87797bdd),
-    sceHttpsEnableOption(0xbac31bf1),
 	sceImposeGetParam(0x531C9778),
 	sceImposeSetParam(0x810FB7FB),
 	sceKernelCallSubIntrHandler(0xCDC86B64),
@@ -132,71 +88,10 @@ public enum SyscallIgnore {
 	sceMpegBasePESpacketCopy(0xBEA18F91),
 	sceMpegGetUserdataAu(0x01977054),
 	sceMpegQueryUserdataEsSize(0xC45C99CC),
-	sceNetAdhocMatchingAbortSendData(0xEC19337D),
-	sceNetAdhocMatchingCancelTarget(0xEA3C6108),
-	sceNetAdhocMatchingCancelTargetWithOpt(0x8f58bedf),
-	sceNetAdhocMatchingCreate(0xCA5EDA6F),
-	sceNetAdhocMatchingDelete(0xF16EAF4F),
-	sceNetAdhocMatchingGetHelloOpt(0xB5D96C2A),
-	sceNetAdhocMatchingGetMembers(0xC58BCD9E),
-	sceNetAdhocMatchingGetPoolMaxAlloc(0x40F8F435),
-	sceNetAdhocMatchingInit(0x2A2A1E07),
-	sceNetAdhocMatchingSelectTarget(0x5E3D4B79),
-	sceNetAdhocMatchingSendData(0xF79472D7),
-	sceNetAdhocMatchingSetHelloOpt(0xB58E61B7),
-	sceNetAdhocMatchingStart(0x93EF3843),
-	sceNetAdhocMatchingStop(0x32B156B3),
-	sceNetAdhocMatchingTerm(0x7945ECDA),
-	sceNetApctlAddHandler(0x8abadd51),
-	sceNetApctlConnect(0xCFB957C6),
-	sceNetApctlDelHandler(0x5963991b),
-	sceNetApctlDisconnect(0x24fe91a1),
-	sceNetApctlGetInfo(0x2befdf23),
-	sceNetApctlGetState(0x5deac81b),
-	sceNetApctlInit(0xe2f91f9b),
-	sceNetApctlTerm(0xb3edd0ec),
 	sceNetApDialogDummyConnect(0x3811281E),
 	sceNetApDialogDummyGetState(0xCA9BE5BF),
 	sceNetApDialogDummyInit(0xBB73FF67),
 	sceNetApDialogDummyTerm(0xF213BE65),
-	sceNetInetAccept(0xDB094E1B),
-	sceNetInetBind(0x1A33F9AE),
-	sceNetInetClose(0x8D7284EA),
-	sceNetInetCloseWithRST(0x805502DD),
-	sceNetInetConnect(0x410B34AA),
-	sceNetInetGetErrno(0xFBABE411),
-	sceNetInetGetpeername(0xE247B6D6), // 1.00+
-	sceNetInetGetPspError(0x8CA3A97E), // 1.00+
-	sceNetInetGetsockname(0x162E6FD5), // 1.00+
-	sceNetInetGetsockopt(0x4A114C7C), // 1.00+
-	sceNetInetGetTcpcbstat(0xB3888AD4), // 1.00+
-	sceNetInetGetUdpcbstat(0x39B0C7D3), // 1.00+
-	sceNetInetInetAddr(0xB75D5B0A), // 1.00+
-	sceNetInetInetAton(0x1BDF5D13), // 1.00+
-	sceNetInetInetNtop(0xD0792666), // 1.00+
-	sceNetInetInetPton(0xE30B8C19), // 1.00+
-	sceNetInetInit(0x17943399), // 1.00+
-	sceNetInetListen(0xD10A1A7A), // 1.00+
-	sceNetInetPoll(0xFAABB1DD), // 1.00+
-	sceNetInetRecv(0xCDA85C99), // 1.00+
-	sceNetInetRecvfrom(0xC91142E4), // 1.00+
-	sceNetInetRecvmsg(0xEECE61D2), // fw 2.71 or less?
-	sceNetInetSelect(0x5BE8D595), //2.50+
-	sceNetInetSend(0x7AA671BC),//2.00 +
-	sceNetInetSendmsg(0x774E36F4),//2.00+
-	sceNetInetSendto(0x05038FC7),//1.00+
-	sceNetInetSetsockopt(0x2FE71FE7),//1.00+
-	sceNetInetShutdown(0x4CFE4E56),//1.00+
-	sceNetInetSocket(0x8B7B220F),//1.00+
-	sceNetInetSocketAbort(0x80A21ABD),//1.00+
-	sceNetInetTerm(0xA9ED66B9),//1.00+
-	sceNetResolverCreate(0x244172af),//1.00+
-	sceNetResolverDelete(0x94523e09),//1.00+
-	sceNetResolverInit(0xf3370e61),//1.00+
-	sceNetResolverStartAtoN(0x629E2FB7),//1.00+
-	sceNetResolverStartNtoA(0x224c5f44),//1.00+
-	sceNetResolverStop(0x808F6063),//1.00+
-	sceNetResolverTerm(0x6138194a),//1.00+
 	sceParseHttpResponseHeader(0xAD7BFDEF),//1.00+
 	sceParseHttpStatusLine(0x8077a433),//1.00+
 	sceRegCloseCategory(0x0cae832b),//1.00+
@@ -212,8 +107,6 @@ public enum SyscallIgnore {
 	sceRegRemoveCategory(0x4ca16893),//1.00+
 	sceRegRemoveKey(0x3615bc87),//1.00+
 	sceRegSetKeyValue(0x17768e14),//1.00+
-	sceSslEnd(0x191cdeff),//1.00+
-	sceSslInit(0x957ecbe2),//1.00+
 	sceSysconCtrlHRPower(0x44439604),//1.00+
 	sceSysregMeBusClockDisable(0x158AD4FC), //1.00+
 	sceSysregMeBusClockEnable(0x44F6CDA7),//1.00+
