@@ -42,6 +42,7 @@ public class SceKernelErrors {
      *      -> 0x02b - Power.
      *      -> 0x041 - Wlan.
      *      -> 0x042 - SAS.
+     *      -> 0x043 - HTTP(0x0431)/HTTPS/SSL(0x0435).
      *      -> 0x044 - WAVE.
      *      -> 0x046 - Font.
      *      -> 0x061 - MPEG(0x0618)/PSMF(0x0615)/PSMF Player(0x0616).
@@ -349,6 +350,22 @@ public class SceKernelErrors {
     public final static int ERROR_SAS_INVALID_PARAMETER                         = 0x80420014;
     public final static int ERROR_SAS_BUSY                                      = 0x80420030;
     public final static int ERROR_SAS_NOT_INIT                                  = 0x80420100;
+
+    public final static int ERROR_HTTP_NOT_INIT                                 = 0x80431001;
+    public final static int ERROR_HTTP_ALREADY_INIT                             = 0x80431020;
+    public final static int ERROR_HTTP_NO_MEMORY                                = 0x80431077;
+    public final static int ERROR_HTTP_SYSTEM_COOKIE_NOT_LOADED                 = 0x80431078;
+    public final static int ERROR_HTTP_INVALID_PARAMETER                        = 0x804311FE;
+
+    public final static int ERROR_SSL_NOT_INIT                                  = 0x80435001;
+    public final static int ERROR_SSL_ALREADY_INIT                              = 0x80435020;
+    public final static int ERROR_SSL_OUT_OF_MEMORY                             = 0x80435022;
+    public final static int ERROR_HTTPS_CERT_ERROR                              = 0x80435060;
+    public final static int ERROR_HTTPS_HANDSHAKE_ERROR                         = 0x80435061;
+    public final static int ERROR_HTTPS_IO_ERROR                                = 0x80435062;
+    public final static int ERROR_HTTPS_INTERNAL_ERROR                          = 0x80435063;
+    public final static int ERROR_HTTPS_PROXY_ERROR                             = 0x80435064;
+    public final static int ERROR_SSL_INVALID_PARAMETER                         = 0x804351FE;
 
     public final static int ERROR_WAVE_NOT_INIT                                 = 0x80440001;
     public final static int ERROR_WAVE_FAILED_EXIT                              = 0x80440002;

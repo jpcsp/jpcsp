@@ -1519,12 +1519,14 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         String antialias = Settings.getInstance().readString("emu.graphics.antialias");
         int samples = 0;
-        if (antialias.equals("x4")) {
-            samples = 4;
-        } else if (antialias.equals("x8")) {
-            samples = 8;
-        } else if (antialias.equals("x16")) {
-            samples = 16;
+        if (antialias != null) {
+            if (antialias.equals("x4")) {
+                samples = 4;
+            } else if (antialias.equals("x8")) {
+                samples = 8;
+            } else if (antialias.equals("x16")) {
+                samples = 16;
+            }
         }
         sceDisplay.setAntiAliasSamplesNum(samples);
 
@@ -1637,8 +1639,8 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             }
 
             String resolution = patchSettings.getProperty("emu.graphics.resolution");
-            if (resolution != null) {
-                if (!resolution.equals("Native")) {
+            if (resolution != null && !resolution.equals("Native")) {
+                if (resolution.contains("x")) {
                     int width = Integer.parseInt(resolution.split("x")[0]);
                     int heigth = Integer.parseInt(resolution.split("x")[1]);
                     changeScreenResolution(width, heigth, 32, 60);
