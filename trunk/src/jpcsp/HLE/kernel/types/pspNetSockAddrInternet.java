@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+
 import jpcsp.HLE.modules.sceNetInet;
 
 public class pspNetSockAddrInternet extends pspAbstractMemoryMappedStructure {
@@ -46,6 +49,18 @@ public class pspNetSockAddrInternet extends pspAbstractMemoryMappedStructure {
 		writeUnaligned32(sin_addr);
 		writeUnaligned32(sin_zero1);
 		writeUnaligned32(sin_zero2);
+	}
+
+	public void readFromInetAddress(InetAddress inetAddress) {
+		sin_family = sceNetInet.AF_INET;
+		sin_port = 0;
+		sin_addr = sceNetInet.bytesToInternetAddress(inetAddress.getAddress());
+	}
+
+	public void readFromInetSocketAddress(InetSocketAddress inetSocketAddress) {
+		sin_family = sceNetInet.AF_INET;
+		sin_port = inetSocketAddress.getPort();
+		sin_addr = sceNetInet.bytesToInternetAddress(inetSocketAddress.getAddress().getAddress());
 	}
 
 	@Override

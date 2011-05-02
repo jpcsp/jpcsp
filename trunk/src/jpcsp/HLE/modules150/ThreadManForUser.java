@@ -1169,13 +1169,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (thread.status == PSP_THREAD_WAITING && newStatus != PSP_THREAD_WAITING_SUSPEND) {
             if (thread.wait.waitTimeoutAction != null) {
                 Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
+                thread.wait.waitTimeoutAction = null;
             }
             if (thread.wait.waitingBlocked) {
+            	thread.wait.waitingBlocked = false;
             	if (thread.wait.onUnblockAction != null) {
             		thread.wait.onUnblockAction.execute();
             		thread.wait.onUnblockAction = null;
             	}
-            	thread.wait.waitingBlocked = false;
             }
             thread.doCallbacks = false;
         } else if (thread.status == PSP_THREAD_STOPPED) {
