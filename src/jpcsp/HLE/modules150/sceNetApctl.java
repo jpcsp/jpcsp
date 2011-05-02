@@ -261,6 +261,18 @@ public class sceNetApctl implements HLEModule {
 		changeState(PSP_NET_APCTL_STATE_JOINING);
 	}
 
+	public int hleNetApctlGetState() {
+		return state;
+	}
+
+	public void hleNetApctlSetState(int newState) {
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("hleNetApctlSetState oldState=%d, newState=%d", state, newState));
+		}
+
+		changeState(newState);
+	}
+
 	/**
 	 * Init the apctl.
 	 *

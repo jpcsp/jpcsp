@@ -94,6 +94,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int threadPreemptCount;
     public int releaseCount;
     public int notifyCallback;  // Used by sceKernelNotifyCallback to check if a callback has been called or not.
+    public int errno; // used by sceNetInet
 
     private SysMemInfo stackSysMemInfo;
     // internal variables

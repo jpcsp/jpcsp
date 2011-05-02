@@ -495,13 +495,13 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 // This is why we have to re-read the params here.
                 params.read(Memory.getInstance(), paramsAddr);
 
-                executeUpdateVisible(processor);
+                boolean keepVisible = executeUpdateVisible(processor);
 
                 if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && isDialogOpen()) {
                 	dialog.checkController();
                 }
 
-                if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !isDialogOpen()) {
+                if (status == PSP_UTILITY_DIALOG_STATUS_VISIBLE && !isDialogOpen() && !keepVisible) {
                     // There was no dialog or it has completed
                     status = PSP_UTILITY_DIALOG_STATUS_QUIT;
                 }
@@ -518,7 +518,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             result = PSP_UTILITY_DIALOG_RESULT_CANCELED;
         }
 
-        protected abstract void executeUpdateVisible(Processor processor);
+        protected abstract boolean executeUpdateVisible(Processor processor);
 
         protected abstract pspAbstractMemoryMappedStructure createParams();
     }
@@ -556,12 +556,14 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
 
 		@Override
-		protected void executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible(Processor processor) {
             CpuState cpu = processor.cpu;
 
             log.warn("Unimplemented: " + name + "Update");
 
             cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+
+            return false;
 		}
 
 		@Override
@@ -585,7 +587,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		}
 
         @Override
-		protected void executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible(Processor processor) {
 	        Memory mem = Processor.memory;
 
 	        switch (savedataParams.mode) {
@@ -1168,6 +1170,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	        if (log.isDebugEnabled()) {
 	            log.debug(String.format("hleUtilitySavedataDisplay result: 0x%08X", savedataParams.base.result));
 	        }
+
+	        return false;
 		}
     }
 
@@ -1180,7 +1184,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		protected void executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible(Processor processor) {
 	        Memory mem = Processor.memory;
 
 	        if (!isDialogOpen()) {
@@ -1195,6 +1199,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	        	msgDialog.checkController();
 	        	updateDialog();
 	        }
+
+	        return false;
 		}
 
 		@Override
@@ -1213,7 +1219,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		protected void executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible(Processor processor) {
 	        Memory mem = Processor.memory;
 
 	        if (!isDialogOpen()) {
@@ -1236,6 +1242,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	        	oskDialog.checkController();
 	        	updateDialog();
 	        }
+
+	        return false;
 		}
 
 		@Override
@@ -1253,8 +1261,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		protected void executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible(Processor processor) {
 			// TODO to be implemented
+			return false;
 		}
 
 		@Override
@@ -1272,14 +1281,36 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		protected void executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible(Processor processor) {
 			// TODO to be implemented
+			boolean keepVisible = false;
 
-			if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET) {
-				// When connecting with infrastructure, simulate a connection
-				// using the first network configuration entry.
-				Modules.sceNetApctl.hleNetApctlConnect(1);
+			if (netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET ||
+			    netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET_LASTUSED) {
+				int state = Modules.sceNetApctl.hleNetApctlGetState();
+
+				// Make a transition to the next state.
+				// The Netconf dialog stays visible until the network reaches
+				// the state PSP_NET_APCTL_STATE_GETTING_IP.
+		    	switch (state) {
+			    	case sceNetApctl.PSP_NET_APCTL_STATE_JOINING:
+			    		Modules.sceNetApctl.hleNetApctlSetState(sceNetApctl.PSP_NET_APCTL_STATE_GETTING_IP);
+			    		keepVisible = true;
+			    		break;
+			    	case sceNetApctl.PSP_NET_APCTL_STATE_GETTING_IP:
+			    		Modules.sceNetApctl.hleNetApctlSetState(sceNetApctl.PSP_NET_APCTL_STATE_GOT_IP);
+			    		keepVisible = false;
+			    		break;
+		    		default:
+						// When connecting with infrastructure, simulate a connection
+						// using the first network configuration entry.
+						Modules.sceNetApctl.hleNetApctlConnect(1);
+		    			keepVisible = true;
+		    			break;
+				}
 			}
+
+			return keepVisible;
 		}
 
 		@Override
@@ -1297,8 +1328,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		protected void executeUpdateVisible(Processor processor) {
+		protected boolean executeUpdateVisible(Processor processor) {
 			// TODO to be implemented
+			return false;
 		}
 
         protected void executeContStart(Processor processor) {
