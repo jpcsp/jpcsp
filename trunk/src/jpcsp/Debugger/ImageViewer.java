@@ -295,7 +295,7 @@ public class ImageViewer extends JFrame {
 		useAlpha = useAlphaField.isSelected();
 
 		try {
-			clutAddress = (int) Utilities.parseLong(clutAddressField.getText());
+			clutAddress = (int) Utilities.parseAddress(clutAddressField.getText());
 		} catch (NumberFormatException e) {
 	        JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
 	        return;

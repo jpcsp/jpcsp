@@ -77,21 +77,24 @@ public class MemoryReader {
 		if (mem instanceof FastMemory) {
 			return getFastMemoryReader((FastMemory) mem, address, step);
 		}
-		Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
-		if (buffer instanceof IntBuffer) {
-			IntBuffer intBuffer = (IntBuffer) buffer;
-			switch (step) {
-			case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
-			case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
-			case 4: return new MemoryReaderInt32(intBuffer);
-			}
-		} else if (buffer instanceof ByteBuffer) {
-			ByteBuffer byteBuffer = (ByteBuffer) buffer;
-			switch (step) {
-			case 1: return new MemoryReaderByte8(byteBuffer);
-			case 2: return new MemoryReaderByte16(byteBuffer);
-			case 4: return new MemoryReaderByte32(byteBuffer);
+		if (!(mem instanceof DebuggerMemory)) {
+			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+
+			if (buffer instanceof IntBuffer) {
+				IntBuffer intBuffer = (IntBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
+				case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
+				case 4: return new MemoryReaderInt32(intBuffer);
+				}
+			} else if (buffer instanceof ByteBuffer) {
+				ByteBuffer byteBuffer = (ByteBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryReaderByte8(byteBuffer);
+				case 2: return new MemoryReaderByte16(byteBuffer);
+				case 4: return new MemoryReaderByte32(byteBuffer);
+				}
 			}
 		}
 
