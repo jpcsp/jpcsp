@@ -131,6 +131,7 @@ public class DebuggerMemory extends Memory {
     }
 
 	public static void install() {
+		log.info("Using DebuggerMemory");
 		Memory mem = Memory.getInstance();
 		if (!(mem instanceof DebuggerMemory)) {
 			DebuggerMemory debuggerMemory = new DebuggerMemory(mem);
@@ -147,10 +148,12 @@ public class DebuggerMemory extends Memory {
 	}
 
 	public void addReadBreakpoint(int address) {
+		address &= Memory.addressMask;
 		memoryReadBreakpoint.add(address);
 	}
 
 	public void removeReadBreakpoint(int address) {
+		address &= Memory.addressMask;
 		memoryReadBreakpoint.remove(address);
 	}
 
@@ -167,10 +170,12 @@ public class DebuggerMemory extends Memory {
 	}
 
 	public void addWriteBreakpoint(int address) {
+		address &= Memory.addressMask;
 		memoryWriteBreakpoint.add(address);
 	}
 
 	public void removeWriteBreakpoint(int address) {
+		address &= Memory.addressMask;
 		memoryWriteBreakpoint.remove(address);
 	}
 
@@ -187,11 +192,13 @@ public class DebuggerMemory extends Memory {
 	}
 
 	public void addReadWriteBreakpoint(int address) {
+		address &= Memory.addressMask;
 		memoryReadBreakpoint.add(address);
 		memoryWriteBreakpoint.add(address);
 	}
 
 	public void removeReadWriteBreakpoint(int address) {
+		address &= Memory.addressMask;
 		memoryReadBreakpoint.remove(address);
 		memoryWriteBreakpoint.remove(address);
 	}
@@ -230,6 +237,7 @@ public class DebuggerMemory extends Memory {
 	}
 
 	protected void memoryRead(int address, int width, boolean trace) {
+		address &= Memory.addressMask;
 		if ((traceMemoryRead || trace) && log.isTraceEnabled()) {
     		log.trace(getMemoryReadMessage(address, width));
 		}
@@ -259,6 +267,7 @@ public class DebuggerMemory extends Memory {
 	}
 
 	protected void memoryWrite(int address, int value, int width, boolean trace) {
+		address &= Memory.addressMask;
 		if ((traceMemoryWrite || trace) && log.isTraceEnabled()) {
     		log.trace(getMemoryWriteMessage(address, value, width));
 		}

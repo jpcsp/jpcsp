@@ -1546,10 +1546,15 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		StringBuilder dump = new StringBuilder();
 		Memory mem = Processor.memory;
-		for (int i = 0; i < n; i++) {
-			int bit = 1 << (i % 8);
-			int value = mem.read8(addr + (i / 8));
-			dump.append((value & bit) != 0 ? '1' : '0');
+		for (int socket = 0; socket < n; socket++) {
+			int bit = 1 << (socket % 8);
+			int value = mem.read8(addr + (socket / 8));
+			if ((value & bit) != 0) {
+				if (dump.length() > 0) {
+					dump.append(", ");
+				}
+				dump.append(String.format("%d", socket));
+			}
 		}
 
 		return dump.toString();
@@ -1618,8 +1623,8 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 		}
 
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("checkInvalidSelectedSockets returns %d", countInvalidSocket));
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("checkInvalidSelectedSockets returns %d", countInvalidSocket));
 		}
 
 		return countInvalidSocket;
@@ -1682,10 +1687,16 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				// We do no longer need the selector, close it
 				blockingState.selector.close();
 
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSelect returning Read Sockets       : %s", dumpSelectBits(blockingState.readSocketsAddr, blockingState.numberSockets)));
-					log.debug(String.format("sceNetInetSelect returning Write Sockets      : %s", dumpSelectBits(blockingState.writeSocketsAddr, blockingState.numberSockets)));
-					log.debug(String.format("sceNetInetSelect returning Out-of-band Sockets: %s", dumpSelectBits(blockingState.outOfBandSocketsAddr, blockingState.numberSockets)));
+				if (log.isDebugEnabled() && count > 0) {
+					if (blockingState.readSocketsAddr != 0) {
+						log.debug(String.format("sceNetInetSelect returning Read Sockets       : %s", dumpSelectBits(blockingState.readSocketsAddr, blockingState.numberSockets)));
+					}
+					if (blockingState.writeSocketsAddr != 0) {
+						log.debug(String.format("sceNetInetSelect returning Write Sockets      : %s", dumpSelectBits(blockingState.writeSocketsAddr, blockingState.numberSockets)));
+					}
+					if (blockingState.outOfBandSocketsAddr != 0) {
+						log.debug(String.format("sceNetInetSelect returning Out-of-band Sockets: %s", dumpSelectBits(blockingState.outOfBandSocketsAddr, blockingState.numberSockets)));
+					}
 				}
 
 				// sceNetInetSelect can now return the count, unblock the thread
@@ -2157,9 +2168,15 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceNetInetSelect numberSockets=%d, readSocketsAddr=0x%08X, writeSocketsAddr=0x%08X, outOfBandSocketsAddr=0x%08X, timeoutAddr=0x%08X(%d us)", numberSockets, readSocketsAddr, writeSocketsAddr, outOfBandSocketsAddr, timeoutAddr, timeoutUsec));
-			log.debug(String.format("sceNetInetSelect Read Sockets       : %s", dumpSelectBits(readSocketsAddr, numberSockets)));
-			log.debug(String.format("sceNetInetSelect Write Sockets      : %s", dumpSelectBits(writeSocketsAddr, numberSockets)));
-			log.debug(String.format("sceNetInetSelect Out-of-band Sockets: %s", dumpSelectBits(outOfBandSocketsAddr, numberSockets)));
+			if (readSocketsAddr != 0) {
+				log.debug(String.format("sceNetInetSelect Read Sockets       : %s", dumpSelectBits(readSocketsAddr, numberSockets)));
+			}
+			if (writeSocketsAddr != 0) {
+				log.debug(String.format("sceNetInetSelect Write Sockets      : %s", dumpSelectBits(writeSocketsAddr, numberSockets)));
+			}
+			if (outOfBandSocketsAddr != 0) {
+				log.debug(String.format("sceNetInetSelect Out-of-band Sockets: %s", dumpSelectBits(outOfBandSocketsAddr, numberSockets)));
+			}
 		}
 
 		try {
@@ -2234,7 +2251,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		if (!sockets.containsKey(socket)) {
-			log.warn(String.format("sceNetInetSend invalid socket=%d", socket));
+			log.warn(String.format("sceNetInetSendto invalid socket=%d", socket));
 			cpu.gpr[2] = -1;
 		} else if (!Memory.isAddressGood(to)) {
 			log.warn(String.format("sceNetInetSendto invalid address to=0x%08X", to));

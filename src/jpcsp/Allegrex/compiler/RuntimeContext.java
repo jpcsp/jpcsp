@@ -40,6 +40,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.hardware.Interrupts;
+import jpcsp.memory.DebuggerMemory;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.CpuDurationStatistics;
@@ -279,10 +280,10 @@ public class RuntimeContext {
 		    memoryInt = null;
 		}
 
-        if (State.debugger == null) {
-        	enableDebugger = false;
-        } else {
+        if (State.debugger != null || (memory instanceof DebuggerMemory) || debugMemoryRead || debugMemoryWrite) {
         	enableDebugger = true;
+        } else {
+        	enableDebugger = false;
         }
 
         Profiler.initialise();
@@ -599,8 +600,8 @@ public class RuntimeContext {
     }
 
     public static void syncDebugger(int pc) throws StopThreadException {
+		processor.cpu.pc = pc;
     	if (State.debugger != null) {
-    		processor.cpu.pc = pc;
     		syncDebugger();
     		syncPause();
     	} else if (Emulator.pause) {

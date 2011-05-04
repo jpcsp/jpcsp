@@ -77,21 +77,24 @@ public class MemoryWriter {
 		if (mem instanceof FastMemory) {
 			return getFastMemoryWriter((FastMemory) mem, address, step);
 		}
-		Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
-		if (buffer instanceof IntBuffer) {
-			IntBuffer intBuffer = (IntBuffer) buffer;
-			switch (step) {
-			case 1: return new MemoryWriterInt8(intBuffer, address & 0x03);
-			case 2: return new MemoryWriterInt16(intBuffer, (address & 0x02) >> 1);
-			case 4: return new MemoryWriterInt32(intBuffer);
-			}
-		} else if (buffer instanceof ByteBuffer) {
-			ByteBuffer byteBuffer = (ByteBuffer) buffer;
-			switch (step) {
-			case 1: return new MemoryWriterByte8(byteBuffer);
-			case 2: return new MemoryWriterByte16(byteBuffer);
-			case 4: return new MemoryWriterByte32(byteBuffer);
+		if (!(mem instanceof DebuggerMemory)) {
+			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+
+			if (buffer instanceof IntBuffer) {
+				IntBuffer intBuffer = (IntBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryWriterInt8(intBuffer, address & 0x03);
+				case 2: return new MemoryWriterInt16(intBuffer, (address & 0x02) >> 1);
+				case 4: return new MemoryWriterInt32(intBuffer);
+				}
+			} else if (buffer instanceof ByteBuffer) {
+				ByteBuffer byteBuffer = (ByteBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryWriterByte8(byteBuffer);
+				case 2: return new MemoryWriterByte16(byteBuffer);
+				case 4: return new MemoryWriterByte32(byteBuffer);
+				}
 			}
 		}
 
