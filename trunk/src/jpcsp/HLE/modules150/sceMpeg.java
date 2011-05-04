@@ -230,6 +230,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected long lastAvcSystemTime;
     protected int avcAuAddr;
     protected int atracAuAddr;
+    protected boolean endOfAudioReached;
+    protected boolean endOfVideoReached;
     protected long mpegLastTimestamp;
     protected long mpegFirstTimestamp;
     protected Date mpegFirstDate;
@@ -409,6 +411,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         mpegAvcAu.pts = 0;
         videoFrameCount = 0;
         audioFrameCount = 0;
+        endOfAudioReached = false;
+        endOfVideoReached = false;
         if ((mpegStreamSize > 0) && !isCurrentMpegAnalyzed()) {
             if (checkMediaEngineState()) {
             	me.init(buffer_addr, mpegStreamSize, mpegOffset);
@@ -1051,7 +1055,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                             me.init(meChannel, true, true);
                         }
                     	if (!me.readVideoAu(mpegAvcAu)) {
+                    		endOfVideoReached = true;
                             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+                    	} else {
+                    		endOfVideoReached = false;
                     	}
                     	Emulator.getClock().resume();
                     } else if (isEnableConnector()) {
@@ -1184,8 +1191,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegGetAtracAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
         } else if (isFakeStreamHandle(stream_addr)) {
-            if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered) {
+        	if (endOfAudioReached && endOfVideoReached) {
+        		if (log.isDebugEnabled()) {
+        			log.debug("sceMpegGetAtracAu end of audio and video reached");
+        		}
+                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+        	} else if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && !endOfAudioReached) {
                 // Audio is ahead of video, deliver no audio data to wait for video.
+            	// This error is not returned when the end of audio has been reached (Patapon 3).
                 if (log.isDebugEnabled()) {
                     log.debug("sceMpegGetAtracAu audio ahead of video: " + mpegAtracAu.pts + " - " + mpegAvcAu.pts);
                 }
@@ -1202,10 +1215,12 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                     		me.init(meChannel, true, true);
                     	}
                     	if (!me.readAudioAu(mpegAtracAu)) {
-                    		// If the audio could not be decoded, simulate a successful return
-                    		if (me.getAudioContainer() != null) {
-                    			cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
-                    		}
+                    		endOfAudioReached = true;
+                    		// If the audio could not be decoded or the
+                    		// end of audio has been reached (Patapon 3),
+                    		// simulate a successful return
+                    	} else {
+                    		endOfAudioReached = false;
                     	}
                     	Emulator.getClock().resume();
                     } else if (isEnableConnector() && mpegCodec.readAudioAu(mpegAtracAu, audioFrameCount)) {
