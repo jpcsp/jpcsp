@@ -171,7 +171,6 @@ public enum SyscallIgnore {
 	WlanDevDetach(0xc9a8cab7), // 1.50+
 	WlanDevGetStateGPIO(0x05fe320c), // 1.00+
 	WlanDevIsGameMode(0x5e7c8d94), // 1.00+
-	WlanDevIsPowerOn(0x93440b11), // 1.00+
 	WlanDevSetGPIO(0x7ff54bd2), // 1.00+
 	WlanDrv_lib_19E51F54(0x19e51f54), // 1.00+
 	WlanDrv_lib_2D0FAE4E(0x2d0fae4e), // 2.71+

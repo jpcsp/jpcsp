@@ -41,23 +41,28 @@ public class sceWlan implements HLEModule {
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-
             mm.addFunction(0x0C622081, sceWlanGetEtherAddrFunction);
             mm.addFunction(0xD7763699, sceWlanGetSwitchStateFunction);
-
+            mm.addFunction(0x93440B11, sceWlanDevIsPowerOnFunction);
         }
     }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-
             mm.removeFunction(sceWlanGetEtherAddrFunction);
             mm.removeFunction(sceWlanGetSwitchStateFunction);
-
+            mm.removeFunction(sceWlanDevIsPowerOnFunction);
         }
     }
 
+    /**
+     * Get the Ethernet Address of the wlan controller
+     *
+     * @param etherAddr - pointer to a buffer of u8 (NOTE: it only writes to 6 bytes, but
+     * requests 8 so pass it 8 bytes just in case)
+     * @return 0 on success, < 0 on error
+     */
     public void sceWlanGetEtherAddr(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -83,11 +88,31 @@ public class sceWlan implements HLEModule {
         }
     }
 
+    /**
+     * Determine the state of the Wlan power switch
+     *
+     * @return 0 if off, 1 if on
+     */
     public void sceWlanGetSwitchState(Processor processor) {
         CpuState cpu = processor.cpu;
 
         if (log.isDebugEnabled()) {
             log.debug("sceWlanGetSwitchState");
+        }
+
+        cpu.gpr[2] = Wlan.getSwitchState();
+    }
+
+    /**
+     * Determine if the wlan device is currently powered on
+     *
+     * @return 0 if off, 1 if on
+     */
+    public void sceWlanDevIsPowerOn(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        if (log.isDebugEnabled()) {
+            log.debug("sceWlanDevIsPowerOn");
         }
 
         cpu.gpr[2] = Wlan.getSwitchState();
@@ -116,6 +141,19 @@ public class sceWlan implements HLEModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceWlanModule.sceWlanGetSwitchState(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceWlanDevIsPowerOnFunction = new HLEModuleFunction("sceWlan", "sceWlanDevIsPowerOn") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	sceWlanDevIsPowerOn(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceWlanModule.sceWlanDevIsPowerOn(processor);";
         }
     };
 }
