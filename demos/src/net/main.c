@@ -23,6 +23,9 @@
 #include <string.h>
 #include <assert.h>
 
+extern int sceNetApctlAddHandler(void *, int);
+extern int sceNetApctlDelHandler(int);
+
 #define printf pspDebugScreenPrintf
 
 PSP_MODULE_INFO("Network Test", 0x1000, 1, 1);
@@ -69,6 +72,10 @@ void testBlockingStream()
 		printf("Cannot create socket 0x%08X errno=%d\n", sock, sceNetInetGetErrno());
 		return;
 	}
+	else
+	{
+		printf("Socket id=%d\n", sock);
+	}
 
 	name.sin_family = AF_INET;
 	name.sin_port = htons(80);
@@ -89,6 +96,7 @@ void testBlockingStream()
 	length = sceNetInetRecv(sock, buffer, sizeof(buffer), 0);
 	printf("sceNetInetRecv %d (errno=%d)\n", length, sceNetInetGetErrno());
 	buffer[length] = '\0';
+	strcpy(buffer + 100, "...");
 	printf("%s\n", buffer);
 
 	sceNetInetClose(sock);
@@ -111,6 +119,10 @@ void testNonBlockingStream()
 	{
 		printf("Cannot create socket 0x%08X errno=%d\n", sock, sceNetInetGetErrno());
 		return;
+	}
+	else
+	{
+		printf("Socket id=%d\n", sock);
 	}
 
 	name.sin_family = AF_INET;
@@ -174,7 +186,84 @@ void testNonBlockingStream()
 			break;
 		}
 	}
+	strcpy(buffer + 100, "...");
 	printf("%s\n", buffer);
+
+	sceNetInetClose(sock);
+}
+
+void testConnect()
+{
+	int sock;
+	int ret;
+	struct sockaddr_in name;
+	char *hostname = "www.google.com";
+	int flag;
+	int soError;
+	unsigned int length;
+	int errno;
+
+	printf("Starting Test sceNetInetConnect...\n");
+
+	sock = sceNetInetSocket(PF_INET, SOCK_STREAM, 0);
+	if (sock < 0)
+	{
+		printf("Cannot create socket 0x%08X errno=%d\n", sock, sceNetInetGetErrno());
+		return;
+	}
+	else
+	{
+		printf("Socket id=%d\n", sock);
+	}
+
+	name.sin_family = AF_INET;
+	name.sin_port = htons(80);
+	resolve(hostname, &name.sin_addr);
+	printf("Address of %s = 0x%08X\n", hostname, name.sin_addr.s_addr);
+
+	flag = 1;
+	ret = sceNetInetSetsockopt(sock, 0xFFFF, SO_NONBLOCK, &flag, sizeof(flag));
+	if (ret < 0)
+	{
+		printf("Cannot sceNetInetSetsockopt 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+		return;
+	}
+
+	ret = sceNetInetConnect(sock, (struct sockaddr *) &name, sizeof(name));
+	if (ret < 0)
+	{
+		if (sceNetInetGetErrno() == 119)
+		{
+			errno = sceNetInetGetErrno();
+			length = sizeof(soError);
+			sceNetInetGetsockopt(sock, 0xFFFF, SO_ERROR, &soError, &length);
+			printf("sceNetInetConnect returned 0x%08X errno=%d, SO_ERROR=%d\n", ret, errno, soError);
+		}
+		else
+		{
+			printf("Cannot sceNetInetConnect 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+			return;
+		}
+	}
+
+	while (1)
+	{
+		ret = sceNetInetConnect(sock, (struct sockaddr *) &name, sizeof(name));
+		errno = sceNetInetGetErrno();
+		length = sizeof(soError);
+		sceNetInetGetsockopt(sock, 0xFFFF, SO_ERROR, &soError, &length);
+		printf("sceNetInetConnect again returned 0x%08X errno=%d, SO_ERROR=%d\n", ret, errno, soError);
+		if (errno == 127)
+		{
+			break;
+		}
+		else
+		{
+			sceKernelDelayThread(100*1000); // 100ms
+		}
+	}
+
+	printf("Connected\n");
 
 	sceNetInetClose(sock);
 }
@@ -277,6 +366,7 @@ int net_thread(SceSize args, void *argp)
 
 	pspDebugScreenPrintf("Press Cross to start test blocking stream\n");
 	pspDebugScreenPrintf("Press Circle to start test non-blocking stream\n");
+	pspDebugScreenPrintf("Press Square to start test connect\n");
 	pspDebugScreenPrintf("Press Triangle to exit\n");
 
 	while(!done)
@@ -334,6 +424,11 @@ int net_thread(SceSize args, void *argp)
 		if (buttonDown & PSP_CTRL_CIRCLE)
 		{
 			testNonBlockingStream();
+		}
+
+		if (buttonDown & PSP_CTRL_SQUARE)
+		{
+			testConnect();
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
