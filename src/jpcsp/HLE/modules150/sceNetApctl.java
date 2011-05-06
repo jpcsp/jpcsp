@@ -201,6 +201,18 @@ public class sceNetApctl implements HLEModule {
 	}
 
     public static String getPrimaryDNS() {
+    	String ip = getLocalHostIP();
+    	if (ip != null) {
+    		// Try to guess the primary DNS by replacing the last part of our
+    		// IP address with 1.
+    		// e.g.: ip=A.B.C.D -> primaryDNS=A.B.C.1
+    		int lastDot = ip.lastIndexOf(".");
+    		if (lastDot >= 0) {
+    			String primaryDNS = ip.substring(0, lastDot) + ".1";
+    			return primaryDNS;
+    		}
+    	}
+    	
 		return dummyPrimaryDNS;
 	}
 
