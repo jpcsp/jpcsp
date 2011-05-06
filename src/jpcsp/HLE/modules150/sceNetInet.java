@@ -77,6 +77,8 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     public static final int ENOTCONN = SceKernelErrors.ERROR_ERRNO_NOT_CONNECTED & 0x0000FFFF;
     public static final int ECLOSED = SceKernelErrors.ERROR_ERRNO_CLOSED & 0x0000FFFF;
     public static final int EIO = SceKernelErrors.ERROR_ERRNO_IO_ERROR & 0x0000FFFF;
+    public static final int EISCONN = SceKernelErrors.ERROR_ERRNO_IS_ALREADY_CONNECTED & 0x0000FFFF;
+    public static final int EALREADY = SceKernelErrors.ERROR_ERRNO_ALREADY & 0x0000FFFF;
 
     // Types of socket shutdown ("how" parameter)
     public static final int SHUT_RD = 0; // Disallow further receives
@@ -478,7 +480,8 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		public int getErrorAndClear() {
 			int value = error;
-			error = 0;
+			// clear error and errno
+			clearError();
 
 			return value;
 		}
@@ -608,10 +611,30 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 		}
 
+		private boolean finishConnect() throws IOException {
+			if (!isBlocking() && socketChannel.isConnectionPending()) {
+				// Try to finish the connection
+				return socketChannel.finishConnect();
+			}
+			return true;
+		}
+
 		@Override
 		public int connect(pspNetSockAddrInternet addr) {
 			try {
 				openChannel();
+				// On non-blocking, the connect might still be in progress
+				if (!finishConnect()) {
+					// Connect already in progress
+					setErrno(EALREADY);
+					return -1;
+				}
+				if (socketChannel.isConnected()) {
+					// Already connected
+					setErrno(EISCONN);
+					return -1;
+				}
+
 				boolean connected = socketChannel.connect(getSocketAddress(addr));
 
 				if (isBlocking()) {
@@ -664,7 +687,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		private int recv(int buffer, int bufferLength, int flags, BlockingReceiveState blockingState) {
 			try {
 				// On non-blocking, the connect might still be in progress
-				if (!isBlocking() && !socketChannel.finishConnect()) {
+				if (!finishConnect()) {
 					setErrno(EAGAIN);
 					return -1;
 				}
@@ -733,12 +756,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		private int send(int buffer, int bufferLength, int flags, BlockingSendState blockingState) {
 			try {
 				// On non-blocking, the connect might still be in progress
-				if (!isBlocking() && socketChannel.isConnectionPending()) {
-					// Try to finish the connection
-					if (!socketChannel.finishConnect()) {
-						setError(ENOTCONN);
-						return -1;
-					}
+				if (!finishConnect()) {
+					setError(ENOTCONN);
+					return -1;
 				}
 
 				ByteBuffer byteBuffer = getByteBuffer(buffer, bufferLength);
@@ -1439,10 +1459,11 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	public void start() {
 		sockets = new HashMap<Integer, pspInetSocket>();
 
-		// A socket ID has to be a number [0..255],
-		// because sceNetInetSelect can handle only 256 bits
+		// A socket ID has to be a number [1..255],
+		// because sceNetInetSelect can handle only 256 bits.
+		// 0 is considered by LuaPLayer as an invalid value as well.
 		freeSocketIds = new LinkedList<Integer>();
-		for (int i = 0; i < 256; i++) {
+		for (int i = 1; i < 256; i++) {
 			freeSocketIds.add(i);
 		}
 	}

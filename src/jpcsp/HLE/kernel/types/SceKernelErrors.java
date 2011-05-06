@@ -104,7 +104,9 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_NO_FREE_BUF_SPACE                       = 0x80010069;
     public final static int ERROR_ERRNO_FILE_TIMEOUT                            = 0x8001006E;
     public final static int ERROR_ERRNO_IN_PROGRESS                             = 0x80010077;
+    public final static int ERROR_ERRNO_ALREADY                                 = 0x80010078;
     public final static int ERROR_ERRNO_NO_MEDIA                                = 0x8001007B;
+    public final static int ERROR_ERRNO_IS_ALREADY_CONNECTED                    = 0x8001007F;
     public final static int ERROR_ERRNO_INVALID_MEDIUM                          = 0x8001007C;
     public final static int ERROR_ERRNO_NOT_CONNECTED                           = 0x80010080;
     public final static int ERROR_ERRNO_FILE_QUOTA_EXCEEDED                     = 0x80010084;
