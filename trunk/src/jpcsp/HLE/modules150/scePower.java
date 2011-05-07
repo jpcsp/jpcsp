@@ -20,6 +20,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALL
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
@@ -534,26 +535,39 @@ public class scePower implements HLEModule {
 
         log.info("scePowerRegisterCallback slot=" + slot + " SceUID=" + Integer.toHexString(uid));
 
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, uid)) {
-            // Start by notifying the POWER callback that we're using AC power.
-            threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, uid, PSP_POWER_CB_AC_POWER);
-        }
+        boolean notifyCallback = false;
 
         // Multiple power callbacks (up to 16) can be assigned for multiple threads.
-        if((slot & PSP_POWER_CB_SLOT_AUTO) == PSP_POWER_CB_SLOT_AUTO){
-            for(int i = 0; i < powerCBSlots.length; i++) {
-                if(powerCBSlots[i] == 0) {
+        if (slot == PSP_POWER_CB_SLOT_AUTO) {
+        	// Return ERROR_OUT_OF_MEMORY when no free slot found
+        	cpu.gpr[2] = SceKernelErrors.ERROR_OUT_OF_MEMORY;
+
+        	for (int i = 0; i < powerCBSlots.length; i++) {
+                if (powerCBSlots[i] == 0) {
                     powerCBSlots[i] = uid;
                     cpu.gpr[2] = i;
+                    notifyCallback = true;
                     break;
                 }
             }
-        } else if ((slot >= 0) && (slot <= 15)) {
-            powerCBSlots[slot] = uid;
-            cpu.gpr[2] = 0;
+        } else if (slot >= 0 && slot <= 15) {
+        	if (powerCBSlots[slot] == 0) {
+        		powerCBSlots[slot] = uid;
+        		cpu.gpr[2] = 0;
+        		notifyCallback = true;
+        	} else {
+        		cpu.gpr[2] = SceKernelErrors.ERROR_ALREADY;
+        	}
         } else {
             cpu.gpr[2] = -1;
+        }
+
+        if (notifyCallback) {
+	        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+	        if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, uid)) {
+	            // Start by notifying the POWER callback that we're using AC power.
+	            threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, uid, PSP_POWER_CB_AC_POWER);
+	        }
         }
     }
 
