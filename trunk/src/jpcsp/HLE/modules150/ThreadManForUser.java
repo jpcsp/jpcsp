@@ -267,6 +267,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             mm.addHLEFunction(hleKernelAsyncLoopFunction);
             mm.addHLEFunction(hleKernelExitCallbackFunction);
             mm.addHLEFunction(hleKernelExitThreadFunction);
+            mm.addHLEFunction(hleKernelNetApctlLoopFunction);
         }
     }
 
@@ -404,8 +405,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             mm.removeFunction(hleKernelAsyncLoopFunction);
             mm.removeFunction(hleKernelExitCallbackFunction);
             mm.removeFunction(hleKernelExitThreadFunction);
+            mm.removeFunction(hleKernelNetApctlLoopFunction);
         }
     }
+
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private HashMap<Integer, SceKernelThreadEventHandlerInfo> threadEventHandlerMap;
     private HashMap<Integer, Integer> threadEventMap;
@@ -426,6 +429,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public static final int THREAD_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x20;
     protected static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
     public static final int ASYNC_LOOP_ADDRESS = MemoryMap.START_RAM + 0x40;
+    public static final int NET_APCTL_LOOP_ADDRESS = MemoryMap.START_RAM + 0x60;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = true;
@@ -473,6 +477,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         install_thread_exit_handler();
         install_callback_exit_handler();
         install_async_loop_handler();
+        install_net_apctl_loop_handler();
 
         alarms = new HashMap<Integer, SceKernelAlarmInfo>();
         vtimers = new HashMap<Integer, SceKernelVTimerInfo>();
@@ -637,6 +642,26 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         mem.write32(ASYNC_LOOP_ADDRESS + 4, instruction_b);
         mem.write32(ASYNC_LOOP_ADDRESS + 8, instruction_nop);
         mem.write32(ASYNC_LOOP_ADDRESS + 12, instruction_jr);
+        mem.write32(ASYNC_LOOP_ADDRESS + 16, instruction_nop);
+    }
+
+    private void install_net_apctl_loop_handler() {
+        Memory mem = Memory.getInstance();
+
+        int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
+                ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((hleKernelNetApctlLoopFunction.getSyscallCode() & 0x000fffff) << 6);
+
+        int instruction_b = (AllegrexOpcodes.BEQ << 26) | 0xFFFE; // branch back to syscall
+        int instruction_nop = (AllegrexOpcodes.SLL << 26); // nop
+
+        // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
+        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+
+        mem.write32(NET_APCTL_LOOP_ADDRESS + 0, instruction_syscall);
+        mem.write32(NET_APCTL_LOOP_ADDRESS + 4, instruction_b);
+        mem.write32(NET_APCTL_LOOP_ADDRESS + 8, instruction_nop);
+        mem.write32(NET_APCTL_LOOP_ADDRESS + 12, instruction_jr);
+        mem.write32(NET_APCTL_LOOP_ADDRESS + 16, instruction_nop);
     }
 
     /** to be called when exiting the emulation */
@@ -1546,6 +1571,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     public void hleKernelAsyncLoop(Processor processor) {
         Modules.IoFileMgrForUserModule.hleAsyncThread(processor);
     }
+
     public final HLEModuleFunction hleKernelAsyncLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelAsyncLoop") {
 
         @Override
@@ -1556,6 +1582,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelAsyncLoop(processor);";
+        }
+    };
+
+    public void hleKernelNetApctlLoop(Processor processor) {
+    	Modules.sceNetApctl.hleNetApctlThread(processor);
+    }
+
+    public final HLEModuleFunction hleKernelNetApctlLoopFunction = new HLEModuleFunction("ThreadManForUser", "hleKernelNetApctlLoop") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	hleKernelNetApctlLoop(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.hleKernelNetApctlLoop(processor);";
         }
     };
 

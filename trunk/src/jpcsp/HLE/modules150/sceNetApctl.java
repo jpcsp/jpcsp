@@ -30,6 +30,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.util.Utilities;
 
 import jpcsp.Memory;
@@ -149,6 +150,9 @@ public class sceNetApctl implements HLEModule {
     protected int state = PSP_NET_APCTL_STATE_DISCONNECTED;
 	private static String localHostIP;
     private HashMap<Integer, ApctlHandler> apctlHandlers = new HashMap<Integer, ApctlHandler>();
+    protected static final int stateTransitionDelay = 100000; // 100ms
+    protected SceKernelThreadInfo sceNetApctlThread;
+    protected boolean sceNetApctlThreadTerminate;
 
     protected class ApctlHandler {
     	private int id;
@@ -214,6 +218,10 @@ public class sceNetApctl implements HLEModule {
     	state = newState;
 
     	notifyHandler(oldState, newState, event, error);
+
+    	if (newState == PSP_NET_APCTL_STATE_JOINING) {
+    		triggerNetApctlThread();
+    	}
     }
 
     protected static String getApctlInfoName(int code) {
@@ -314,12 +322,38 @@ public class sceNetApctl implements HLEModule {
 		return state;
 	}
 
-	public void hleNetApctlSetState(int newState) {
-		if (log.isDebugEnabled()) {
-			log.debug(String.format("hleNetApctlSetState oldState=%d, newState=%d", state, newState));
+	protected void triggerNetApctlThread() {
+		if (sceNetApctlThread != null) {
+			Modules.ThreadManForUserModule.hleKernelWakeupThread(sceNetApctlThread);
 		}
+	}
 
-		changeState(newState);
+	public void hleNetApctlThread(Processor processor) {
+		if (sceNetApctlThreadTerminate) {
+			processor.cpu.gpr[2] = 0; // Exit status
+			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
+		} else {
+			boolean stateTransitionCompleted = true;
+
+			// Make a transition to the next state
+	    	switch (state) {
+		    	case PSP_NET_APCTL_STATE_JOINING:
+		    		changeState(PSP_NET_APCTL_STATE_GETTING_IP);
+		    		stateTransitionCompleted = false;
+		    		break;
+		    	case PSP_NET_APCTL_STATE_GETTING_IP:
+		    		changeState(PSP_NET_APCTL_STATE_GOT_IP);
+		    		break;
+			}
+
+	    	if (stateTransitionCompleted) {
+	    		// Wait for a new state reset... wakeup is done by triggerNetApctlThread()
+	    		Modules.ThreadManForUserModule.hleKernelSleepThread(false);
+	    	} else {
+	    		// Wait a little bit before moving to the next state...
+	    		Modules.ThreadManForUserModule.hleKernelDelayThread(stateTransitionDelay, false);
+	    	}
+		}
 	}
 
 	/**
@@ -341,6 +375,15 @@ public class sceNetApctl implements HLEModule {
 			log.debug(String.format("sceNetApctlInit stackSize=%d, initPriority=%d", stackSize, initPriority));
 		}
 
+		if (sceNetApctlThread == null) {
+            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+			sceNetApctlThread = threadMan.hleKernelCreateThread("SceNetApctl",
+					ThreadManForUser.NET_APCTL_LOOP_ADDRESS, initPriority, stackSize,
+					threadMan.getCurrentThread().attr, 0);
+			sceNetApctlThreadTerminate = false;
+			threadMan.hleKernelStartThread(sceNetApctlThread, 0, 0, sceNetApctlThread.gpReg_addr);
+		}
+
 		cpu.gpr[2] = 0;
 	}
 
@@ -355,6 +398,9 @@ public class sceNetApctl implements HLEModule {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceNetApctlTerm"));
 		}
+
+		sceNetApctlThreadTerminate = true;
+		triggerNetApctlThread();
 
 		cpu.gpr[2] = 0;
 	}
@@ -586,16 +632,6 @@ public class sceNetApctl implements HLEModule {
 		} else {
 			mem.write32(pState, state);
 			cpu.gpr[2] = 0;
-		}
-
-		// Make a transition to the next state
-    	switch (state) {
-	    	case PSP_NET_APCTL_STATE_JOINING:
-	    		changeState(PSP_NET_APCTL_STATE_GETTING_IP);
-	    		break;
-	    	case PSP_NET_APCTL_STATE_GETTING_IP:
-	    		changeState(PSP_NET_APCTL_STATE_GOT_IP);
-	    		break;
 		}
 	}
 
