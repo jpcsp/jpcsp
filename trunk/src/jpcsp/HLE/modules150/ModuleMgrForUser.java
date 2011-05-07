@@ -306,6 +306,10 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
+    protected int getSelfModuleId() {
+        return Modules.ThreadManForUserModule.getCurrentThread().moduleid;
+    }
+
     public void sceKernelLoadModuleByID(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Memory.getInstance();
@@ -564,24 +568,28 @@ public class ModuleMgrForUser implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceModule sceModule = Managers.modules.getCurrentModule();  // Get the last loaded module.
+        SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        // Start the module stop thread function.
+        SceKernelThreadInfo thread = null;
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
+            // Start the module stop thread function.
             if (Memory.isAddressGood(status_addr)) {
                 mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
             }
-            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+            thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
             cpu.gpr[2] = 0;
             sceModule.stop();
             sceModule.unload();
-            threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
-            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         } else {
             cpu.gpr[2] = 0;
+        }
+
+        threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
+        if (thread != null) {
+        	threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         }
     }
 
@@ -607,14 +615,15 @@ public class ModuleMgrForUser implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceModule sceModule = Managers.modules.getCurrentModule();  // Get the last loaded module.
+        SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        // Start the module stop thread function.
+        SceKernelThreadInfo thread = null;
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
+            // Start the module stop thread function.
             if (Memory.isAddressGood(status_addr)) {
                 mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
             }
-            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+            thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
@@ -622,10 +631,13 @@ public class ModuleMgrForUser implements HLEModule {
             threadMan.getCurrentThread().exitStatus = exitcode; // Set the current thread's exit status.
             sceModule.stop();
             sceModule.unload();
-            threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
-            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         } else {
             cpu.gpr[2] = 0;
+        }
+
+        threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
+        if (thread != null) {
+        	threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         }
     }
 
@@ -649,24 +661,28 @@ public class ModuleMgrForUser implements HLEModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceModule sceModule = Managers.modules.getCurrentModule();   // Get the last loaded module.
+        SceModule sceModule = Managers.modules.getModuleByUID(getSelfModuleId());
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        // Start the module stop thread function.
+        SceKernelThreadInfo thread = null;
         if (Memory.isAddressGood(sceModule.module_stop_func)) {
+            // Start the module stop thread function.
             if (Memory.isAddressGood(status_addr)) {
                 mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
             }
-            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStop",
+            thread = threadMan.hleKernelCreateThread("SceModmgrStop",
                     sceModule.module_stop_func, sceModule.module_stop_thread_priority,
                     sceModule.module_stop_thread_stacksize, sceModule.module_stop_thread_attr, options_addr);
             thread.moduleid = sceModule.modid;
             cpu.gpr[2] = 0;
             sceModule.stop();
             sceModule.unload();
-            threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
-            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         } else {
             cpu.gpr[2] = 0;
+        }
+
+        threadMan.hleKernelExitDeleteThread();  // Delete the current thread.
+        if (thread != null) {
+        	threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
         }
     }
 
@@ -711,7 +727,7 @@ public class ModuleMgrForUser implements HLEModule {
     public void sceKernelGetModuleId(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int moduleid = Modules.ThreadManForUserModule.getCurrentThread().moduleid;
+        int moduleid = getSelfModuleId();
 
         if (log.isDebugEnabled()) {
             log.debug("sceKernelGetModuleId returning 0x" + Integer.toHexString(moduleid));
