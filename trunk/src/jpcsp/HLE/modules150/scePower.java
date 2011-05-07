@@ -533,7 +533,7 @@ public class scePower implements HLEModule {
         int slot = cpu.gpr[4];
         int uid = cpu.gpr[5];
 
-        log.info("scePowerRegisterCallback slot=" + slot + " SceUID=" + Integer.toHexString(uid));
+        log.info(String.format("scePowerRegisterCallback slot=%d, SceUID=0x%X", slot, uid));
 
         boolean notifyCallback = false;
 
@@ -550,7 +550,7 @@ public class scePower implements HLEModule {
                     break;
                 }
             }
-        } else if (slot >= 0 && slot <= 15) {
+        } else if (slot >= 0 && slot < powerCBSlots.length) {
         	if (powerCBSlots[slot] == 0) {
         		powerCBSlots[slot] = uid;
         		cpu.gpr[2] = 0;
@@ -576,13 +576,18 @@ public class scePower implements HLEModule {
 
         int slot = cpu.gpr[4];
 
-        log.info("scePowerUnregisterCallback slot=" + slot);
+        log.info(String.format("scePowerUnregisterCallback slot=%d", slot));
 
-        ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-        threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, powerCBSlots[slot]);
-
-        powerCBSlots[slot] = 0;
-        cpu.gpr[2] = 0;
+        if (slot >= 0 && slot < powerCBSlots.length) {
+        	if (powerCBSlots[slot] != 0) {
+	            ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+	            threadMan.hleKernelUnRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_POWER, powerCBSlots[slot]);
+	            powerCBSlots[slot] = 0;
+        	}
+            cpu.gpr[2] = 0;
+        } else {
+        	cpu.gpr[2] = -1;
+        }
     }
 
     public void scePowerUnregitserCallback(Processor processor) {
