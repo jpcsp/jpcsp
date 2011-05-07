@@ -289,18 +289,31 @@ int connect_to_apctl(int config)
 	int err;
 	int stateLast = -1;
 	netData name;
+	int i;
 
 	int handlerId = sceNetApctlAddHandler(apctlHandler, 0x12345);
 
-	err = sceUtilityGetNetParam(config, PSP_NETPARAM_NAME, &name);
-	if (err != 0)
+	printf("sceUtilityCheckNetParam: ");
+	int first = 1;
+	for (i = 0; i < 20; i++)
 	{
-		printf("sceUtilityGetNetParam returns %08X\n", err);
+		err = sceUtilityCheckNetParam(i);
+		if (err == 0)
+		{
+			if (!first)
+			{
+				printf(", ");
+			}
+			first = 0;
+			printf("%d", i);
+			err = sceUtilityGetNetParam(i, PSP_NETPARAM_NAME, &name);
+			if (err == 0)
+			{
+				printf("(%s)", name.asString);
+			}
+		}
 	}
-	else
-	{
-		printf("sceUtilityGetNetParam name='%s'\n", name.asString);
-	}
+	printf("\n");
 
 	/* Connect using the first profile */
 	err = sceNetApctlConnect(config);
