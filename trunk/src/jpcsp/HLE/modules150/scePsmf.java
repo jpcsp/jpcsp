@@ -622,7 +622,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
             return;
         }
         if (psmfMap.containsKey(psmf)) {
-            int endTime = psmfMap.get(psmf).getPresentationStartTime();
+            int endTime = psmfMap.get(psmf).getPresentationEndTime();
             mem.write32(endTimeAddr, endTime);
             cpu.gpr[2] = 0;
         } else {
