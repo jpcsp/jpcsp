@@ -1290,24 +1290,17 @@ public class sceUtility implements HLEModule, HLEStartModule {
 			    netconfParams.netAction == SceUtilityNetconfParams.PSP_UTILITY_NETCONF_CONNECT_APNET_LASTUSED) {
 				int state = Modules.sceNetApctl.hleNetApctlGetState();
 
-				// Make a transition to the next state.
 				// The Netconf dialog stays visible until the network reaches
-				// the state PSP_NET_APCTL_STATE_GETTING_IP.
-		    	switch (state) {
-			    	case sceNetApctl.PSP_NET_APCTL_STATE_JOINING:
-			    		Modules.sceNetApctl.hleNetApctlSetState(sceNetApctl.PSP_NET_APCTL_STATE_GETTING_IP);
-			    		keepVisible = true;
-			    		break;
-			    	case sceNetApctl.PSP_NET_APCTL_STATE_GETTING_IP:
-			    		Modules.sceNetApctl.hleNetApctlSetState(sceNetApctl.PSP_NET_APCTL_STATE_GOT_IP);
-			    		keepVisible = false;
-			    		break;
-		    		default:
+				// the state PSP_NET_APCTL_STATE_GOT_IP.
+				if (state == sceNetApctl.PSP_NET_APCTL_STATE_GOT_IP) {
+					keepVisible = false;
+				} else {
+					keepVisible = true;
+					if (state == sceNetApctl.PSP_NET_APCTL_STATE_DISCONNECTED) {
 						// When connecting with infrastructure, simulate a connection
 						// using the first network configuration entry.
 						Modules.sceNetApctl.hleNetApctlConnect(1);
-		    			keepVisible = true;
-		    			break;
+					}
 				}
 			}
 
