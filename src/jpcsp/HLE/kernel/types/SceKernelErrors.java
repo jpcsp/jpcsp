@@ -54,6 +54,7 @@ public class SceKernelErrors {
      *      -> E.g.: 0x80110001 - Error -> Utility -> Some unknown error.
      */
 
+    public static final int ERROR_ALREADY                                       = 0x80000020;
     public static final int ERROR_BUSY                                          = 0x80000021;
     public static final int ERROR_OUT_OF_MEMORY                                 = 0x80000022;
 

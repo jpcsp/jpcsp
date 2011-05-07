@@ -365,7 +365,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected int systemParam_language;
     protected int systemParam_buttonPreference;
 
-    private static final String dummyNetParamName = "NetConf #1";
+    private static final String dummyNetParamName = "NetConf #%d";
+    private static final int numberNetConfigurations = 1;
 
     protected abstract static class UtilityDialogState {
         protected String name;
@@ -1844,7 +1845,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
     }
 
     protected static String getNetParamName(int id) {
-    	return dummyNetParamName;
+    	if (id == 0) {
+    		return "";
+    	}
+    	return String.format(dummyNetParamName, id);
     }
 
     protected static String formatMessageForDialog(String message) {
@@ -2342,12 +2346,11 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
         int id = cpu.gpr[4];
 
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceUtilityCheckNetParam(id=%d)", id));
-        }
+        boolean available = (id >= 0 && id <= numberNetConfigurations);
 
-        // We simulate only 1 net configuration
-        boolean available = (id == 1);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceUtilityCheckNetParam(id=%d) available %b", id, available));
+        }
 
         cpu.gpr[2] = available ? 0 : SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
     }
@@ -2373,7 +2376,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         	log.debug(String.format("sceUtilityGetNetParam(id=%d, param=%d, data=0x%08X)", id, param, data));
         }
 
-        if (id <0 || id > 1) {
+        if (id < 0 || id > numberNetConfigurations) {
         	log.warn(String.format("sceUtilityGetNetParam invalid id=%d", id));
         	cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_NETCONF;
         } else if (!Memory.isAddressGood(data)) {

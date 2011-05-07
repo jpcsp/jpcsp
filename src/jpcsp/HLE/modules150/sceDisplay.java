@@ -1503,9 +1503,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
                     topaddrAddr, bufferwidthAddr, pixelformatAddr, syncType));
         }
 
-        if (syncType < 0 || syncType > 1) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_INVALID_MODE;
-        } else if (!Memory.isAddressGood(topaddrAddr    ) ||
+        // The PSP checks only if syncType == 1.
+        // Any other syncType value is interpreted as 0.
+        if (!Memory.isAddressGood(topaddrAddr    ) ||
             !Memory.isAddressGood(bufferwidthAddr) ||
             !Memory.isAddressGood(pixelformatAddr)) {
             cpu.gpr[2] = -1;
