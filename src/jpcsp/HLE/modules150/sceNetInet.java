@@ -44,6 +44,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.kernel.types.pspNetSockAddrInternet;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -66,9 +67,14 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     protected static Logger log = Modules.getLogger("sceNetInet");
 
     public static final int AF_INET = 2; // Address familiy internet
+
     public static final int SOCK_STREAM = 1; // Stream socket
     public static final int SOCK_DGRAM = 2; // Datagram socket
     public static final int SOCK_RAW = 3; // Raw socket
+    private static final String[] socketTypeNames = new String[] {
+    	"Unknown0", "SOCK_STREAM", "SOCK_DGRAM", "SOCK_RAW"
+    };
+
     public static final int SOL_SOCKET = 0xFFFF; // Socket level
     public static final int INADDR_ANY = 0x00000000; // wildcard/any IP address
     public static final int INADDR_BROADCAST = 0xFFFFFFFF; // Broadcast address
@@ -110,6 +116,17 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     public static final int SO_TYPE         = 0x1008; // get socket type
     public static final int SO_OVERFLOWED   = 0x1009; // datagrams: return packets dropped
     public static final int SO_NONBLOCK     = 0x1009; // non-blocking I/O
+
+    // Bitmasks for sceNetInetPoll()
+    public static final int POLLIN     = 0x0001;
+    public static final int POLLPRI    = 0x0002;
+    public static final int POLLOUT    = 0x0004;
+    public static final int POLLERR    = 0x0008;
+    public static final int POLLHUP    = 0x0010;
+    public static final int POLLNVAL   = 0x0020;
+    public static final int POLLRDNORM = 0x0040;
+    public static final int POLLRDBAND = 0x0080;
+    public static final int POLLWRBAND = 0x0100;
 
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
@@ -736,7 +753,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 					// If we have not yet read as much as the low water mark,
 					// block the thread and retry later.
-					if (blockingState.receivedLength < getReceiveLowWaterMark()) {
+					if (blockingState.receivedLength < getReceiveLowWaterMark() && length < bufferLength) {
 						blockThread(blockingState);
 						return -1;
 					}
@@ -847,7 +864,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				unblockThread(blockingState, blockingState.receivedLength);
 			} else {
 				int length = recv(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState);
-				if (length > 0) {
+				if (length >= 0) {
 					unblockThread(blockingState, blockingState.receivedLength);
 				}
 			}
@@ -1174,7 +1191,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 					// If we have not yet read as much as the low water mark,
 					// block the thread and retry later.
-					if (blockingState.receivedLength < getReceiveLowWaterMark()) {
+					if (blockingState.receivedLength < getReceiveLowWaterMark() && length < bufferLength) {
 						blockThread(blockingState);
 						return -1;
 					}
@@ -1328,7 +1345,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				unblockThread(blockingState, blockingState.receivedLength);
 			} else {
 				int length = recv(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState);
-				if (length > 0) {
+				if (length >= 0) {
 					unblockThread(blockingState, blockingState.receivedLength);
 				}
 			}
@@ -1344,7 +1361,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				unblockThread(blockingState, blockingState.receivedLength);
 			} else {
 				int length = recvfrom(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState.fromAddr, blockingState);
-				if (length > 0) {
+				if (length >= 0) {
 					unblockThread(blockingState, blockingState.receivedLength);
 				}
 			}
@@ -1455,6 +1472,36 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		public int shutdown(int how) {
 			log.error(String.format("Shutdown not supported on datagram socket: how=%d, %s", how, toString()));
 			return -1;
+		}
+	}
+
+	protected static class pspInetPollFd extends pspAbstractMemoryMappedStructure {
+		public int fd;
+		public int events;
+		public int revents;
+
+		@Override
+		protected void read() {
+			fd = read32();
+			events = read16();
+			revents = read16();
+		}
+
+		@Override
+		protected void write() {
+			write32(fd);
+			write16((short) events);
+			write16((short) revents);
+		}
+
+		@Override
+		public int sizeof() {
+			return 8;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("PollFd[fd=%d, events=0x%04X(%s), revents=0x%04X(%s)]", fd, events, getPollEventName(events), revents, getPollEventName(revents));
 		}
 	}
 
@@ -1599,6 +1646,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 	protected void blockThread(BlockingState blockingState) {
 		if (!blockingState.threadBlocked) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Blocking the current thread %s", Modules.ThreadManForUserModule.getCurrentThread().toString()));
+			}
 			Modules.ThreadManForUserModule.hleBlockCurrentThread(blockingState);
 			blockingState.threadBlocked = true;
 		}
@@ -1612,6 +1662,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			thread.cpuContext.gpr[2] = returnValue;
 		}
 		if (blockingState.threadBlocked) {
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("Unblocking the thread %s", thread.toString()));
+			}
 			Modules.ThreadManForUserModule.hleUnblockThread(blockingState.threadId);
 			blockingState.threadBlocked = false;
 		}
@@ -1769,6 +1822,52 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		bytes[0] = (byte) n1;
 
 		return bytes;
+	}
+
+	protected static String getSocketTypeNameString(int type) {
+		if (type < 0 || type >= socketTypeNames.length) {
+			return String.format("Unknown type %d", type);
+		}
+
+		return socketTypeNames[type];
+	}
+
+	protected static String getPollEventName(int event) {
+		StringBuilder name = new StringBuilder();
+
+		if ((event & POLLIN) != 0) {
+			name.append("|POLLIN");
+		}
+		if ((event & POLLPRI) != 0) {
+			name.append("|POLLPRI");
+		}
+		if ((event & POLLOUT) != 0) {
+			name.append("|POLLOUT");
+		}
+		if ((event & POLLERR) != 0) {
+			name.append("|POLLERR");
+		}
+		if ((event & POLLHUP) != 0) {
+			name.append("|POLLHUP");
+		}
+		if ((event & POLLNVAL) != 0) {
+			name.append("|POLLNVAL");
+		}
+		if ((event & POLLRDNORM) != 0) {
+			name.append("|POLLRDNORM");
+		}
+		if ((event & POLLRDBAND) != 0) {
+			name.append("|POLLRDBAND");
+		}
+		if ((event & POLLWRBAND) != 0) {
+			name.append("|POLLWRBAND");
+		}
+
+		if (name.length() > 0 && name.charAt(0) == '|') {
+			name.deleteCharAt(0);
+		}
+
+		return name.toString();
 	}
 
 	protected static String getOptionNameString(int optionName) {
@@ -2095,11 +2194,92 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = 0;
 	}
-    
+
+	/*
+	 * sceNetInetPoll seems to work in a similar way to the BSD socket poll() function:
+	 *
+	 * int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+	 * fds      Points to an array of pollfd structures, which are defined as:
+	 *            struct pollfd {
+	 *                int fd;
+	 *                short events;
+	 *                short revents;
+	 *            }
+	 *          The fd member is an open file descriptor. If fd is -1, the
+	 *          pollfd structure is considered unused, and revents will be
+	 *          cleared.
+	 *
+	 *          The events and revents members are bitmasks of conditions to
+	 *          monitor and conditions found, respectively.
+	 *
+	 * nfds     An unsigned integer specifying the number of pollfd structures
+	 *          in the array.
+	 *
+	 * timeout  Maximum interval to wait for the poll to complete, in milliseconds.
+	 *          If this value is 0, poll() will return immediately.
+	 *          If this value is INFTIM (-1), poll() will block indefinitely until
+	 *          a condition is found.
+	 *
+	 * The calling process sets the events bitmask and poll() sets the revents
+	 * bitmask. Each call to poll() resets the revents bitmask for accuracy. The
+	 * condition flags in the bitmasks are defined as:
+	 * 
+	 * POLLIN      Data other than high-priority data may be read without blocking.
+	 * POLLRDNORM  Normal data may be read without blocking.
+	 * POLLRDBAND  Priority data may be read without blocking.
+	 * POLLPRI     High-priority data may be read without blocking.
+	 * POLLOUT     Normal data may be written without blocking.
+	 * POLLWRBAND  Priority data may be written.
+	 * POLLERR     An error has occurred on the device or socket. This flag is
+	 *             only valid in the revents bitmask; it is ignored in the
+	 *             events member.
+	 * POLLHUP     The device or socket has been disconnected. This event and
+	 *             POLLOUT are mutually-exclusive; a descriptor can never be
+	 *             writable if a hangup has occurred. However, this event and
+	 *             POLLIN, POLLRDNORM, POLLRDBAND, or POLLPRI are not mutually-
+	 *             exclusive. This flag is only valid in the revents bitmask; it
+	 *             is ignored in the events member.
+	 * POLLNVAL    The corresponding file descriptor is invalid. This flag is
+	 *             only valid in the revents bitmask; it is ignored in the
+	 *             events member.
+	 *
+	 * Bitmask Values:
+	 *   POLLIN     0x0001
+	 *   POLLRDNORM 0x0040
+	 *   POLLRDBAND 0x0080
+	 *   POLLPRI    0x0002
+	 *   POLLOUT    0x0004
+	 *   POLLWRBAND 0x0100
+	 *   POLLERR    0x0008
+	 *   POLLHUP    0x0010
+	 *   POLLNVAL   0x0020
+	 *
+	 * Return values:
+	 *             Upon error, poll() returns -1 and sets the global variable errno
+	 *             to indicate the error. If the timeout interval was reached before
+	 *             any events occurred, poll() returns 0. Otherwise, poll() returns
+	 *             the number of file descriptors for which revents is non-zero.
+	 */
 	public void sceNetInetPoll(Processor processor) {
 		CpuState cpu = processor.cpu;
+		Memory mem = Processor.memory;
 
-		log.warn("Unimplemented NID function sceNetInetPoll [0xFAABB1DD]");
+		int fds = cpu.gpr[4];
+		int nfds = cpu.gpr[5];
+		int timeout = cpu.gpr[6];
+
+		log.warn(String.format("Unimplemented sceNetInetPoll fds=0x%08X, nfds=%d, timeout=%d", fds, nfds, timeout));
+
+		pspInetPollFd[] pollFds = new pspInetPollFd[nfds];
+		for (int i = 0; i < nfds; i++) {
+			pspInetPollFd pollFd = new pspInetPollFd();
+			pollFd.read(mem, fds + i * pollFd.sizeof());
+			pollFds[i] = pollFd;
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceNetInetPoll pollFd[%d]=%s", i, pollFd));
+			}
+		}
 
 		cpu.gpr[2] = 0;
 	}
@@ -2407,14 +2587,14 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		int protocol = cpu.gpr[6];
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetInetSocket domain=%d, type=%d, protocol=%d", domain, type, protocol));
+			log.debug(String.format("sceNetInetSocket domain=%d, type=%d(%s), protocol=%d", domain, type, getSocketTypeNameString(type), protocol));
 		}
 
 		if (domain != AF_INET) {
-			log.warn(String.format("sceNetInetSocket unsupported domain=%d, type=%d, protocol=%d", domain, type, protocol));
+			log.warn(String.format("sceNetInetSocket unsupported domain=%d, type=%d(%s), protocol=%d", domain, type, getSocketTypeNameString(type), protocol));
 			cpu.gpr[2] = -1;
 		} else if (type != SOCK_DGRAM && type != SOCK_STREAM) {
-			log.warn(String.format("sceNetInetSocket unsupported type=%d, domain=%d, protocol=%d", type, domain, protocol));
+			log.warn(String.format("sceNetInetSocket unsupported type=%d(%s), domain=%d, protocol=%d", type, getSocketTypeNameString(type), domain, protocol));
 			cpu.gpr[2] = -1;
 		} else {
 			int uid = createSocketId();

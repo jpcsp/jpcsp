@@ -80,6 +80,27 @@ public class sceNetApctl implements HLEModule {
 	public static final int PSP_NET_APCTL_INFO_8021_EAP_TYPE = 16;
 	public static final int PSP_NET_APCTL_INFO_START_BROWSER = 17;
 	public static final int PSP_NET_APCTL_INFO_WIFISP        = 18;
+	private static final String[] apctlInfoNames = new String[] {
+		"PROFILE_NAME",
+		"BSSID",
+		"SSID",
+		"SSID_LENGTH",
+		"SECURITY_TYPE",
+		"STRENGTH",
+		"CHANNEL",
+		"POWER_SAVE",
+		"IP",
+		"SUBNETMASK",
+		"GATEWAY",
+		"PRIMDNS",
+		"SECDNS",
+		"USE_PROXY",
+		"PROXY_URL",
+		"PROXY_PORT",
+		"8021_EAP_TYPE",
+		"START_BROWSER",
+		"WIFISP"
+	};
 
 	public static final int PSP_NET_APCTL_INFO_SECURITY_TYPE_NONE = 0;
 	public static final int PSP_NET_APCTL_INFO_SECURITY_TYPE_WEP  = 1;
@@ -164,6 +185,11 @@ public class sceNetApctl implements HLEModule {
     	int error = 0;
     	int event;
 
+    	if (newState == oldState) {
+    		// State not changed, no notification
+    		return;
+    	}
+
     	// The event is set to match tests done on a real PSP
     	switch (newState) {
 	    	case PSP_NET_APCTL_STATE_JOINING:
@@ -183,8 +209,19 @@ public class sceNetApctl implements HLEModule {
     			break;
     	}
 
-    	notifyHandler(oldState, newState, event, error);
+    	// Set the new state before calling the handler, in case
+    	// the handler is calling back sceNetApctl (e.g. sceNetApctlDisconnect()).
     	state = newState;
+
+    	notifyHandler(oldState, newState, event, error);
+    }
+
+    protected static String getApctlInfoName(int code) {
+    	if (code < 0 || code >= apctlInfoNames.length) {
+    		return String.format("Unknown Info %d", code);
+    	}
+
+    	return apctlInfoNames[code];
     }
 
     public static String getSSID() {
@@ -362,7 +399,7 @@ public class sceNetApctl implements HLEModule {
 		int pInfo = cpu.gpr[5];
 
 		if (log.isDebugEnabled()) {
-			log.debug(String.format("sceNetApctlGetInfo code=%d, pInfo=0x%08X", code, pInfo));
+			log.debug(String.format("sceNetApctlGetInfo code=%d(%s), pInfo=0x%08X", code, getApctlInfoName(code), pInfo));
 		}
 
 		if (!Memory.isAddressGood(pInfo)) {
@@ -427,7 +464,7 @@ public class sceNetApctl implements HLEModule {
 				}
 				default: {
 					cpu.gpr[2] = -1;
-					log.warn(String.format("sceNetApctlGetInfo unimplemented code=%d", code));
+					log.warn(String.format("sceNetApctlGetInfo unimplemented code=%d(%s)", code, getApctlInfoName(code)));
 					break;
 				}
 			}
