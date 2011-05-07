@@ -106,6 +106,7 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_IN_PROGRESS                             = 0x80010077;
     public final static int ERROR_ERRNO_ALREADY                                 = 0x80010078;
     public final static int ERROR_ERRNO_NO_MEDIA                                = 0x8001007B;
+    public final static int ERROR_ERRNO_ADDRESS_NOT_AVAILABLE                   = 0x8001007D;
     public final static int ERROR_ERRNO_IS_ALREADY_CONNECTED                    = 0x8001007F;
     public final static int ERROR_ERRNO_INVALID_MEDIUM                          = 0x8001007C;
     public final static int ERROR_ERRNO_NOT_CONNECTED                           = 0x80010080;
