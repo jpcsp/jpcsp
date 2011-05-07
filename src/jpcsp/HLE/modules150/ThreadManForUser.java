@@ -2337,11 +2337,16 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+
+        // Remember the currentThread, as it might have changed after
+        // the execution of a callback.
+        SceKernelThreadInfo thread = currentThread;
+
         // 0 - The calling thread has no reported callbacks.
         // 1 - The calling thread has reported callbacks which were executed sucessfully.
-        currentThread.doCallbacks = true;  // Callbacks are always allowed here.
-        cpu.gpr[2] = checkThreadCallbacks(currentThread) ? 1 : 0;
-        currentThread.doCallbacks = false; // Callbacks may not be allowed after this.
+        thread.doCallbacks = true;  // Callbacks are always allowed here.
+        cpu.gpr[2] = checkThreadCallbacks(thread) ? 1 : 0;
+        thread.doCallbacks = false; // Callbacks may not be allowed after this.
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {

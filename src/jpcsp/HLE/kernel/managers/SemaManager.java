@@ -42,6 +42,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.ThreadWaitInfo;
 import jpcsp.HLE.modules.ThreadManForUser;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 public class SemaManager {
@@ -280,7 +281,17 @@ public class SemaManager {
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
-            log.warn("hleKernelWaitSema - unknown uid 0x" + Integer.toHexString(semaid));
+        	// Some applications systematically try to wait on semaid=0.
+        	// Do not spam WARNings for this case.
+        	if (semaid == 0) {
+        		if (log.isDebugEnabled()) {
+                    log.debug(String.format("hleKernelWaitSema - unknown uid 0x%X", semaid));
+        		}
+        	} else {
+        		if (log.isEnabledFor(Level.WARN)) {
+                    log.warn(String.format("hleKernelWaitSema - unknown uid 0x%X", semaid));
+        		}
+        	}
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -339,7 +350,17 @@ public class SemaManager {
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
-            log.warn("sceKernelSignalSema - unknown uid 0x" + Integer.toHexString(semaid));
+        	// Some applications systematically try to signal a semaid=0.
+        	// Do not spam WARNings for this case.
+        	if (semaid == 0) {
+        		if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceKernelSignalSema - unknown uid 0x%X", semaid));
+        		}
+        	} else {
+        		if (log.isEnabledFor(Level.WARN)) {
+                    log.warn(String.format("sceKernelSignalSema - unknown uid 0x%X", semaid));
+        		}
+        	}
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             if (log.isDebugEnabled()) {

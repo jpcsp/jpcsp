@@ -55,10 +55,6 @@ public class ModuleManager {
         return moduleUidToModule.values();
     }
 
-    public SceModule getCurrentModule() {
-        return moduleNumToModule.get(moduleCount);
-    }
-
     public SceModule getModuleByUID(int uid) {
         return moduleUidToModule.get(uid);
     }
