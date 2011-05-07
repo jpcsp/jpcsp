@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -79,6 +80,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     public static final int EIO = SceKernelErrors.ERROR_ERRNO_IO_ERROR & 0x0000FFFF;
     public static final int EISCONN = SceKernelErrors.ERROR_ERRNO_IS_ALREADY_CONNECTED & 0x0000FFFF;
     public static final int EALREADY = SceKernelErrors.ERROR_ERRNO_ALREADY & 0x0000FFFF;
+    public static final int EADDRNOTAVAIL = SceKernelErrors.ERROR_ERRNO_ADDRESS_NOT_AVAILABLE & 0x0000FFFF;
 
     // Types of socket shutdown ("how" parameter)
     public static final int SHUT_RD = 0; // Disallow further receives
@@ -332,14 +334,16 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	protected abstract class pspInetSocket {
+		public static final long NO_TIMEOUT = Integer.MAX_VALUE * 1000000L;
+		public static final int NO_TIMEOUT_INT = Integer.MAX_VALUE;
 		private int uid;
 		protected boolean blocking = true;
 		protected boolean broadcast;
 		protected boolean onesBroadcast;
 		protected int receiveLowWaterMark = 1;
 		protected int sendLowWaterMark = 2048;
-		protected int receiveTimeout = 0;
-		protected int sendTimeout = 0;
+		protected int receiveTimeout = NO_TIMEOUT_INT;
+		protected int sendTimeout = NO_TIMEOUT_INT;
 		protected int receiveBufferSize = 0x4000;
 		protected int sendBufferSize = 0x4000;
 		protected int error;
@@ -499,6 +503,8 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				setSocketError(ECLOSED);
 			} else if (e instanceof ClosedByInterruptException) {
 				setSocketError(ECLOSED);
+			} else if (e instanceof BindException) {
+				setSocketError(EADDRNOTAVAIL);
 			} else if (e instanceof IOException) {
 				setSocketError(EIO);
 			} else {
@@ -2047,10 +2053,14 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				mem.write32(optionValue, inetSocket.getSendLowWaterMark());
 				mem.write32(optionLengthAddr, 4);
 			} else if (optionName == SO_RCVTIMEO && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.getReceiveTimeout());
+				int timeout = inetSocket.getReceiveTimeout();
+				// Returning 0 for "no timeout" value
+				mem.write32(optionValue, timeout == pspInetSocket.NO_TIMEOUT_INT ? 0 : timeout);
 				mem.write32(optionLengthAddr, 4);
 			} else if (optionName == SO_SNDTIMEO && optionLength >= 4) {
-				mem.write32(optionValue, inetSocket.getSendTimeout());
+				int timeout = inetSocket.getSendTimeout();
+				// Returning 0 for "no timeout" value
+				mem.write32(optionValue, timeout == pspInetSocket.NO_TIMEOUT_INT ? 0 : timeout);
 				mem.write32(optionLengthAddr, 4);
 			} else if (optionName == SO_RCVBUF && optionLength >= 4) {
 				mem.write32(optionValue, inetSocket.getReceiveBufferSize());
@@ -2184,7 +2194,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			timeoutUsec += mem.read32(timeoutAddr + 4);
 		} else {
 			// Take a very large value
-			timeoutUsec = Integer.MAX_VALUE * 1000000L;
+			timeoutUsec = pspInetSocket.NO_TIMEOUT;
 		}
 
 		if (log.isDebugEnabled()) {
@@ -2341,10 +2351,12 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				inetSocket.setSendLowWaterMark(optionValue);
 				cpu.gpr[2] = 0;
 			} else if (optionName == SO_RCVTIMEO && optionLength == 4) {
-				inetSocket.setReceiveTimeout(optionValue);
+				// 0 means "no timeout"
+				inetSocket.setReceiveTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
 				cpu.gpr[2] = 0;
 			} else if (optionName == SO_SNDTIMEO && optionLength == 4) {
-				inetSocket.setSendTimeout(optionValue);
+				// 0 means "no timeout"
+				inetSocket.setSendTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
 				cpu.gpr[2] = 0;
 			} else if (optionName == SO_RCVBUF && optionLength == 4) {
 				cpu.gpr[2] = inetSocket.setReceiveBufferSize(optionValue);
