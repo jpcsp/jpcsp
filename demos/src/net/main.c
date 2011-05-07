@@ -63,6 +63,7 @@ void testBlockingStream()
 	char *hostname = "www.google.com";
 	char *cmd = "GET /\n\n";
 	char buffer[4096];
+	int start, end;
 
 	printf("Starting Test Blocking Stream...\n");
 
@@ -93,8 +94,16 @@ void testBlockingStream()
 	int length = sceNetInetSend(sock, cmd, strlen(cmd), 0);
 	printf("sceNetInetSend %d (errno=%d)\n", length, sceNetInetGetErrno());
 
+	// Test with a buffer length 0
+	start = sceKernelGetSystemTimeLow();
+	length = sceNetInetRecv(sock, buffer, 0, 0);
+	end = sceKernelGetSystemTimeLow();
+	printf("sceNetInetRecv buffer length 0: %d (errno=%d), duration=%d\n", length, sceNetInetGetErrno(), end - start);
+
+	start = sceKernelGetSystemTimeLow();
 	length = sceNetInetRecv(sock, buffer, sizeof(buffer), 0);
-	printf("sceNetInetRecv %d (errno=%d)\n", length, sceNetInetGetErrno());
+	end = sceKernelGetSystemTimeLow();
+	printf("sceNetInetRecv %d (errno=%d), duration=%d\n", length, sceNetInetGetErrno(), end - start);
 	buffer[length] = '\0';
 	strcpy(buffer + 100, "...");
 	printf("%s\n", buffer);
