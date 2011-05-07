@@ -85,7 +85,7 @@ void testBlockingStream()
 	ret = sceNetInetConnect(sock, (struct sockaddr *) &name, sizeof(name));
 	if (ret < 0)
 	{
-		printf("Cannot sceNetInetConnect 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+		printf("Cannot sceNetInetConnect %d errno=%d\n", ret, sceNetInetGetErrno());
 		return;
 	}
 	printf("Connected\n");
@@ -134,7 +134,7 @@ void testNonBlockingStream()
 	ret = sceNetInetSetsockopt(sock, 0xFFFF, SO_NONBLOCK, &flag, sizeof(flag));
 	if (ret < 0)
 	{
-		printf("Cannot sceNetInetSetsockopt 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+		printf("Cannot sceNetInetSetsockopt %d errno=%d\n", ret, sceNetInetGetErrno());
 		return;
 	}
 
@@ -143,11 +143,11 @@ void testNonBlockingStream()
 	{
 		if (sceNetInetGetErrno() == 119)
 		{
-			printf("sceNetInetConnect returned 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+			printf("sceNetInetConnect returned %d errno=%d\n", ret, sceNetInetGetErrno());
 		}
 		else
 		{
-			printf("Cannot sceNetInetConnect 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+			printf("Cannot sceNetInetConnect %d errno=%d\n", ret, sceNetInetGetErrno());
 			return;
 		}
 	}
@@ -216,6 +216,16 @@ void testConnect()
 		printf("Socket id=%d\n", sock);
 	}
 
+	// Try to bind to any invalid address: should return errno=125
+	name.sin_family = AF_INET;
+	name.sin_port = htons(80);
+	name.sin_addr.s_addr = 0x08E52424;
+	ret = sceNetInetBind(sock, (struct sockaddr *) &name, sizeof(name));
+	errno = sceNetInetGetErrno();
+	length = sizeof(soError);
+	sceNetInetGetsockopt(sock, 0xFFFF, SO_ERROR, &soError, &length);
+	printf("sceNetInetBind to invalid addr returned %d errno=%d, SO_ERROR=%d\n", ret, errno, soError);
+
 	name.sin_family = AF_INET;
 	name.sin_port = htons(80);
 	resolve(hostname, &name.sin_addr);
@@ -225,7 +235,7 @@ void testConnect()
 	ret = sceNetInetSetsockopt(sock, 0xFFFF, SO_NONBLOCK, &flag, sizeof(flag));
 	if (ret < 0)
 	{
-		printf("Cannot sceNetInetSetsockopt 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+		printf("Cannot sceNetInetSetsockopt %d errno=%d\n", ret, sceNetInetGetErrno());
 		return;
 	}
 
@@ -237,11 +247,11 @@ void testConnect()
 			errno = sceNetInetGetErrno();
 			length = sizeof(soError);
 			sceNetInetGetsockopt(sock, 0xFFFF, SO_ERROR, &soError, &length);
-			printf("sceNetInetConnect returned 0x%08X errno=%d, SO_ERROR=%d\n", ret, errno, soError);
+			printf("sceNetInetConnect returned %d errno=%d, SO_ERROR=%d\n", ret, errno, soError);
 		}
 		else
 		{
-			printf("Cannot sceNetInetConnect 0x%08X errno=%d\n", ret, sceNetInetGetErrno());
+			printf("Cannot sceNetInetConnect %d errno=%d\n", ret, sceNetInetGetErrno());
 			return;
 		}
 	}
@@ -252,7 +262,7 @@ void testConnect()
 		errno = sceNetInetGetErrno();
 		length = sizeof(soError);
 		sceNetInetGetsockopt(sock, 0xFFFF, SO_ERROR, &soError, &length);
-		printf("sceNetInetConnect again returned 0x%08X errno=%d, SO_ERROR=%d\n", ret, errno, soError);
+		printf("sceNetInetConnect again returned %d errno=%d, SO_ERROR=%d\n", ret, errno, soError);
 		if (errno == 127)
 		{
 			break;
