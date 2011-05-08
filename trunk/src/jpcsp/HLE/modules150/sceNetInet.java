@@ -128,6 +128,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     public static final int POLLRDBAND = 0x0080;
     public static final int POLLWRBAND = 0x0100;
 
+    // Infinite timeout for scenetInetPoll()
+    public static final int POLL_INFTIM = -1;
+
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
 
@@ -242,7 +245,23 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		protected abstract void executeBlockingState();
 	}
 
-	protected  class BlockingSelectState extends BlockingState {
+	protected static class BlockingPollState extends BlockingState {
+		public Selector selector;
+		public pspInetPollFd[] pollFds;
+
+		public BlockingPollState(Selector selector, pspInetPollFd[] pollFds, long timeout) {
+			super(null, timeout);
+			this.selector = selector;
+			this.pollFds = pollFds;
+		}
+
+		@Override
+		protected void executeBlockingState() {
+			Modules.sceNetInet.blockedPoll(this);
+		}
+	}
+
+	protected static class BlockingSelectState extends BlockingState {
 		public Selector selector;
 		public int numberSockets;
 		public int readSocketsAddr;
@@ -394,6 +413,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		public abstract int getSockname(pspNetSockAddrInternet sockAddrInternet);
 		public abstract int getPeername(pspNetSockAddrInternet sockAddrInternet);
 		public abstract int shutdown(int how);
+		public abstract boolean finishConnect();
 
 		public int setBlocking(boolean blocking) {
 			this.blocking = blocking;
@@ -634,11 +654,19 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 		}
 
-		private boolean finishConnect() throws IOException {
+		@Override
+		public boolean finishConnect() {
 			if (!isBlocking() && socketChannel.isConnectionPending()) {
 				// Try to finish the connection
-				return socketChannel.finishConnect();
+				try {
+					return socketChannel.finishConnect();
+				} catch (IOException e) {
+					log.error(e);
+					setSocketError(e);
+					return false;
+				}
 			}
+
 			return true;
 		}
 
@@ -1473,6 +1501,12 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			log.error(String.format("Shutdown not supported on datagram socket: how=%d, %s", how, toString()));
 			return -1;
 		}
+
+		@Override
+		public boolean finishConnect() {
+			// Nothing to do for datagrams
+			return true;
+		}
 	}
 
 	protected static class pspInetPollFd extends pspAbstractMemoryMappedStructure {
@@ -1710,8 +1744,100 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		return countInvalidSocket;
 	}
 
+	protected void setPollResult(pspInetPollFd[] pollFds, int socket, int revents) {
+		for (int i = 0; i < pollFds.length; i++) {
+			if (pollFds[i].fd == socket) {
+				pollFds[i].revents |= revents;
+				break;
+			}
+		}
+	}
+
+	protected void blockedPoll(BlockingPollState blockingState) {
+		try {
+			// Try to finish all the pending connections
+			for (int i = 0; i < blockingState.pollFds.length; i++) {
+				pspInetSocket inetSocket = sockets.get(blockingState.pollFds[i].fd);
+				if (inetSocket != null) {
+					inetSocket.finishConnect();
+				}
+			}
+
+			// We do not want to block here on the selector, call selectNow
+			int count = blockingState.selector.selectNow();
+
+			boolean threadBlocked;
+			if (count <= 0) {
+				// Check for timeout
+				if (blockingState.isTimeout()) {
+					// Timeout, unblock the thread and return 0
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("sceNetInetPoll returns %d sockets (timeout)", count));
+					}
+					threadBlocked = false;
+				} else {
+					// No timeout, keep blocking the thread
+					threadBlocked = true;
+				}
+			} else {
+				// Some sockets are ready, unblock the thread and return the count
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetPoll returns %d sockets", count));
+				}
+
+				for (Iterator<SelectionKey> it = blockingState.selector.selectedKeys().iterator(); it.hasNext(); ) {
+					// Retrieve the next key and remove it from the set
+					SelectionKey selectionKey = it.next();
+					it.remove();
+
+					if (selectionKey.isReadable()) {
+						int socket = (Integer) selectionKey.attachment();
+						setPollResult(blockingState.pollFds, socket, POLLIN | POLLRDNORM);
+					}
+					if (selectionKey.isWritable()) {
+						int socket = (Integer) selectionKey.attachment();
+						setPollResult(blockingState.pollFds, socket, POLLOUT);
+					}
+				}
+
+				threadBlocked = false;
+			}
+
+			if (threadBlocked) {
+				blockThread(blockingState);
+			} else {
+				// We do no longer need the selector, close it
+				blockingState.selector.close();
+
+				// Write back the updated revents fields
+				Memory mem = Processor.memory;
+				for (int i = 0; i < blockingState.pollFds.length; i++) {
+					blockingState.pollFds[i].write(mem);
+					if (log.isDebugEnabled()) {
+						log.debug(String.format("sceNetInetSelect returning pollFd[%d]=%s", i, blockingState.pollFds[i].toString()));
+					}
+				}
+
+				// sceNetInetSelect can now return the count, unblock the thread
+				unblockThread(blockingState, count);
+			}
+		} catch (IOException e) {
+			log.error(e);
+		}
+	}
+
 	protected void blockedSelect(BlockingSelectState blockingState) {
 		try {
+			// Try to finish all the pending connections
+			for (Iterator<SelectionKey> it = blockingState.selector.keys().iterator(); it.hasNext(); ) {
+				SelectionKey selectionKey = it.next();
+				Integer socket = (Integer) selectionKey.attachment();
+				pspInetSocket inetSocket = sockets.get(socket);
+				if (inetSocket != null) {
+					inetSocket.finishConnect();
+				}
+			}
+
 			// Start with the count of closed channels
 			// (detected when registering the selector)
 			int count = blockingState.count;
@@ -1751,10 +1877,6 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 					if (selectionKey.isWritable()) {
 						int socket = (Integer) selectionKey.attachment();
 						setSelectBit(blockingState.writeSocketsAddr, socket);
-					}
-					if (selectionKey.isAcceptable() || selectionKey.isConnectable()) {
-						int socket = (Integer) selectionKey.attachment();
-						setSelectBit(blockingState.outOfBandSocketsAddr, socket);
 					}
 				}
 
@@ -2268,20 +2390,76 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		int nfds = cpu.gpr[5];
 		int timeout = cpu.gpr[6];
 
-		log.warn(String.format("Unimplemented sceNetInetPoll fds=0x%08X, nfds=%d, timeout=%d", fds, nfds, timeout));
-
-		pspInetPollFd[] pollFds = new pspInetPollFd[nfds];
-		for (int i = 0; i < nfds; i++) {
-			pspInetPollFd pollFd = new pspInetPollFd();
-			pollFd.read(mem, fds + i * pollFd.sizeof());
-			pollFds[i] = pollFd;
-
-			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceNetInetPoll pollFd[%d]=%s", i, pollFd));
-			}
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetInetPoll fds=0x%08X, nfds=%d, timeout=%d", fds, nfds, timeout));
 		}
 
-		cpu.gpr[2] = 0;
+		long timeoutUsec;
+		if (timeout == POLL_INFTIM) {
+			timeoutUsec = pspInetSocket.NO_TIMEOUT;
+		} else {
+			timeoutUsec = timeout * 1000L;
+		}
+
+		try {
+			Selector selector = Selector.open();
+
+			pspInetPollFd[] pollFds = new pspInetPollFd[nfds];
+			for (int i = 0; i < nfds; i++) {
+				pspInetPollFd pollFd = new pspInetPollFd();
+				pollFd.read(mem, fds + i * pollFd.sizeof());
+				pollFds[i] = pollFd;
+
+				if (pollFd.fd == -1) {
+					pollFd.revents = 0;
+				} else {
+					pspInetSocket inetSocket = sockets.get(pollFd.fd);
+					if (inetSocket == null) {
+						pollFd.revents = POLLNVAL;
+					} else {
+						SelectableChannel selectableChannel = inetSocket.getSelectableChannel();
+						if (selectableChannel == null) {
+							pollFd.revents = POLLHUP;
+						} else {
+							int registeredOperations = 0;
+							if ((pollFd.events & (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI)) != 0) {
+								registeredOperations |= SelectionKey.OP_READ;
+							}
+							if ((pollFd.events & (POLLOUT | POLLWRBAND)) != 0) {
+								registeredOperations |= SelectionKey.OP_WRITE;
+							}
+							registeredOperations &= selectableChannel.validOps();
+							if (selectableChannel.isRegistered()) {
+								log.warn(String.format("sceNetInetPoll channel already registered pollFd[%d]=%s", i, pollFd));
+							} else {
+								try {
+									selectableChannel.register(selector, registeredOperations, new Integer(pollFd.fd));
+									pollFd.revents = 0;
+								} catch (ClosedChannelException e) {
+									pollFd.revents = POLLHUP;
+								}
+							}
+						}
+					}
+				}
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetPoll pollFd[%d]=%s", i, pollFd));
+				}
+			}
+
+			BlockingPollState blockingState = new BlockingPollState(selector, pollFds, timeoutUsec);
+
+			setErrno(0);
+			cpu.gpr[2] = 0; // This will be overwritten by the execution of the blockingState
+
+			// Check if there are ready operations, otherwise, block the thread
+			blockingState.execute();
+		} catch (IOException e) {
+			log.error(e);
+			setErrno(-1);
+			cpu.gpr[2] = -1;
+		}
 	}
 
 	// size_t  sceNetInetRecv(int s, void *buf, size_t len, int flags);
