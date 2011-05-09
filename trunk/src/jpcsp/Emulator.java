@@ -28,6 +28,7 @@ import jpcsp.Debugger.StepLogger;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.graphics.VertexCache;
@@ -197,6 +198,7 @@ public class Emulator implements Runnable {
         Battery.initialize();
         Interrupts.initialize();
         jpcsp.HLE.kernel.types.SceModule.ResetAllocator();
+        SceUidManager.reset();
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();
