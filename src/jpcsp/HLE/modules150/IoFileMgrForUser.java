@@ -514,6 +514,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         String cwd = "";
         String filename = null;
 
+        if (pspfilename.startsWith("flash0:")) {
+        	if (pspfilename.startsWith("flash0:/")) {
+        		return pspfilename.replace("flash0:", "flash0");
+        	}
+        	return pspfilename.replace("flash0:", "flash0/");
+        }
+
         if (filepath == null) {
         	return pspfilename;
         }

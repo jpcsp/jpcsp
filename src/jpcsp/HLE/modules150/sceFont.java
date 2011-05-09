@@ -45,6 +45,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceFontInfo;
 import jpcsp.HLE.kernel.types.IAction;
@@ -243,7 +244,7 @@ public class sceFont implements HLEModule, HLEStartModule {
     }
 
     public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
-    public static final String fontDirPath = "flash0/font";
+    public static final String fontDirPath = "flash0:/font";
     public static final String customFontFile = "debug.jpft";
     public static final int PSP_FONT_PIXELFORMAT_4 = 0; // 2 pixels packed in 1 byte (natural order)
     public static final int PSP_FONT_PIXELFORMAT_4_REV = 1; // 2 pixels packed in 1 byte (reversed order)
@@ -448,9 +449,10 @@ public class sceFont implements HLEModule, HLEStartModule {
     	// Some applications are always using the first font returned by
     	// sceFontGetFontList.
     	for (FontRegistryEntry fontRegistryEntry : fontRegistry) {
-    		File fontFile = new File(fontDirPath + File.separator + fontRegistryEntry.file_name);
-    		if (fontFile.canRead()) {
-    			Font font = openFontFile(fontFile.getPath());
+    		String fontFileName = fontDirPath + "/" + fontRegistryEntry.file_name;
+    		SceIoStat stat = Modules.IoFileMgrForUserModule.statFile(fontFileName);
+    		if (stat != null) {
+    			Font font = openFontFile(fontFileName);
     			if (font != null) {
             		setFontAttributesFromRegistry(font, fontRegistryEntry);
             		allFonts.add(font);
