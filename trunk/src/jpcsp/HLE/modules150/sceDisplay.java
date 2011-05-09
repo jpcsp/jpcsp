@@ -86,10 +86,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private static final boolean useDebugGL = false;
     private static final int internalTextureFormat = GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
 
-    // Screen default resolution
-    public int screenWidth = Screen.width;
-    public int screenHeight = Screen.height;
-
     // sceDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
     public static final int PSP_DISPLAY_PIXEL_FORMAT_5551 = 1;
@@ -322,7 +318,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     public sceDisplay() throws LWJGLException {
     	super(null, new PixelFormat().withBitsPerPixel(8).withAlphaBits(8).withStencilBits(8).withSamples(antiAliasSamplesNum), null, new ContextAttribs().withDebug(useDebugGL));
-        setSize(screenWidth, screenHeight);
+        setScreenResolution(Screen.width, Screen.height);
 
         texFb = -1;
         startModules = false;
@@ -330,8 +326,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     }
 
     public void setScreenResolution(int width, int height) {
-        screenWidth = width;
-        screenHeight = height;
+        canvasWidth = width;
+        canvasHeight = height;
+        setSize(width, height);
     }
 
     public static void setAntiAliasSamplesNum(int samples) {

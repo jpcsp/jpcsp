@@ -18,6 +18,8 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -38,16 +40,26 @@ public class sceNp implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(0x98BEF739, sceNpInitFunction);
-            mm.addFunction(0x61850E3B, sceNpTermFunction);
-            mm.addFunction(0x9A688BB0, sceNpGetNpIdFunction);
-            mm.addFunction(0x212989E3, sceNpGetOnlineIdFunction);
-            mm.addFunction(0xD355FC0F, sceNpGetUserProfileFunction);
-            mm.addFunction(0xD416547F, sceNpGetMyLanguagesFunction);
-            mm.addFunction(0xDB46D1F1, sceNpGetAccountRegionFunction);
-            mm.addFunction(0x0D69A94B, sceNpGetContentRatingFlagFunction);
-            mm.addFunction(0xCF0483E5, sceNpGetChatRestrictionFlagFunction);
-
+            /*
+             * FIXME: The sceNp module uses a different
+             * NID resolve for it's functions' names.
+             * The public names reversed from several applications
+             * and modules are as follows:
+             *  - sceNpInit (sceNp_857B47D3)
+             *  - sceNpTerm
+             *  - sceNpGetNpId
+             *  - sceNpGetOnlineId
+             *  - sceNpGetUserProfile
+             *  - sceNpGetMyLanguages
+             *  - sceNpGetAccountRegion
+             *  - sceNpGetContentRatingFlag
+             *  - sceNpGetChatRestrictionFlag
+             * Since the generated NIDs do not match the names, it's necessary
+             * to find which nomencalture is being used for these functions
+             * (e.g.: _x_sceNpInit).
+             *
+             */
+            mm.addFunction(0x857B47D3, sceNp_857B47D3Function);
         }
     }
 
@@ -55,205 +67,33 @@ public class sceNp implements HLEModule {
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.removeFunction(sceNpInitFunction);
-            mm.removeFunction(sceNpTermFunction);
-            mm.removeFunction(sceNpGetNpIdFunction);
-            mm.removeFunction(sceNpGetOnlineIdFunction);
-            mm.removeFunction(sceNpGetUserProfileFunction);
-            mm.removeFunction(sceNpGetMyLanguagesFunction);
-            mm.removeFunction(sceNpGetAccountRegionFunction);
-            mm.removeFunction(sceNpGetContentRatingFlagFunction);
-            mm.removeFunction(sceNpGetChatRestrictionFlagFunction);
+            mm.removeFunction(sceNp_857B47D3Function);
 
         }
     }
 
-    public void sceNpInit(Processor processor) {
+    public void sceNp_857B47D3(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNpInit");
+        log.info("sceNp_857B47D3");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        cpu.gpr[2] = 0;
     }
 
-    public void sceNpTerm(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpTerm");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpGetNpId(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpGetNpId");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpGetOnlineId(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpGetOnlineId");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpGetUserProfile(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpGetUserProfile");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpGetMyLanguages(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpGetMyLanguages");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpGetAccountRegion(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpGetAccountRegion");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpGetContentRatingFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpGetContentRatingFlag");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpGetChatRestrictionFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpGetChatRestrictionFlag");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public final HLEModuleFunction sceNpInitFunction = new HLEModuleFunction("sceNp", "sceNpInit") {
+    public final HLEModuleFunction sceNp_857B47D3Function = new HLEModuleFunction("sceNp", "sceNp_857B47D3") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNpInit(processor);
+            sceNp_857B47D3(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpInit(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpTermFunction = new HLEModuleFunction("sceNp", "sceNpTerm") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpTerm(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpTerm(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpGetNpIdFunction = new HLEModuleFunction("sceNp", "sceNpGetNpId") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpGetNpId(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpGetNpId(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpGetOnlineIdFunction = new HLEModuleFunction("sceNp", "sceNpGetOnlineId") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpGetOnlineId(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpGetOnlineId(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpGetUserProfileFunction = new HLEModuleFunction("sceNp", "sceNpGetUserProfile") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpGetUserProfile(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpGetUserProfile(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpGetMyLanguagesFunction = new HLEModuleFunction("sceNp", "sceNpGetMyLanguages") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpGetMyLanguages(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpGetMyLanguages(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpGetAccountRegionFunction = new HLEModuleFunction("sceNp", "sceNpGetAccountRegion") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpGetAccountRegion(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpGetAccountRegion(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpGetContentRatingFlagFunction = new HLEModuleFunction("sceNp", "sceNpGetContentRatingFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpGetContentRatingFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpGetContentRatingFlag(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpGetChatRestrictionFlagFunction = new HLEModuleFunction("sceNp", "sceNpGetChatRestrictionFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpGetChatRestrictionFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpModule.sceNpGetChatRestrictionFlag(processor);";
+            return "jpcsp.HLE.Modules.sceNpModule.sceNp_857B47D3(processor);";
         }
     };
 }

@@ -17,5 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 public class sceNetInet extends jpcsp.HLE.modules150.sceNetInet {
+    @Override
+	public final String getName() { return "sceNetInet"; }
 
+	@Override
+	public void installModule(HLEModuleManager mm, int version) {
+		super.installModule(mm, version);
+	}
+
+	@Override
+	public void uninstallModule(HLEModuleManager mm, int version) {
+		super.uninstallModule(mm, version);
+	}
 }

@@ -348,6 +348,10 @@ public class SceKernelErrors {
 
     public final static int ERROR_POWER_VMEM_IN_USE                             = 0x802b0200;
 
+    public final static int ERROR_NET_RESOLVER_BAD_ID                           = 0x80410408;
+    public final static int ERROR_NET_RESOLVER_ALREADY_STOPPED                  = 0x8041040a;
+    public final static int ERROR_NET_RESOLVER_INVALID_HOST                     = 0x80410414;
+
     public final static int ERROR_WLAN_BAD_PARAMS                               = 0x80410d13;
 
     public final static int ERROR_SAS_INVALID_VOICE                             = 0x80420010;

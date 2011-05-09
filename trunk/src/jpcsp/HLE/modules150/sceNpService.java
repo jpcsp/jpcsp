@@ -18,10 +18,13 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.Memory;
 
 import org.apache.log4j.Logger;
 
@@ -38,13 +41,26 @@ public class sceNpService implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(0xDF3F0F63, sceNpServiceInitFunction);
-            mm.addFunction(0x0ABF56FB, sceNpServiceTermFunction);
-            mm.addFunction(0x6177F13B, sceNpManagerSigninUpdateInitStartFunction);
-            mm.addFunction(0x8303CF16, sceNpManagerSigninUpdateGetStatusFunction);
-            mm.addFunction(0xB5317629, sceNpManagerSigninUpdateAbortFunction);
-            mm.addFunction(0x88E1A727, sceNpManagerSigninUpdateShutdownStartFunction);
-            mm.addFunction(0x75409949, sceNpServiceGetMemoryStatFunction);
+            /*
+             * FIXME: The sceNpService module uses a different
+             * NID resolve for it's functions' names.
+             * The public names reversed from several applications
+             * and modules are as follows:
+             *  - sceNpServiceInit (sceNpService_0F8F5821)
+             *  - sceNpServiceTerm
+             *  - sceNpManagerSigninUpdateInitStart
+             *  - sceNpManagerSigninUpdateGetStatus
+             *  - sceNpManagerSigninUpdateAbort
+             *  - sceNpManagerSigninUpdateShutdownStart
+             *  - sceNpServiceGetMemoryStat (sceNpService_00ACFAC3)
+             * Since the generated NIDs do not match the names, it's necessary
+             * to find which nomencalture is being used for these functions
+             * (e.g.: _x_sceNpServiceInit).
+             *
+             */
+
+            mm.addFunction(0x0F8F5821, sceNpService_0F8F5821Function);
+            mm.addFunction(0x00ACFAC3, sceNpService_00ACFAC3Function);
 
         }
     }
@@ -53,161 +69,80 @@ public class sceNpService implements HLEModule {
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.removeFunction(sceNpServiceInitFunction);
-            mm.removeFunction(sceNpServiceTermFunction);
-            mm.removeFunction(sceNpManagerSigninUpdateInitStartFunction);
-            mm.removeFunction(sceNpManagerSigninUpdateGetStatusFunction);
-            mm.removeFunction(sceNpManagerSigninUpdateAbortFunction);
-            mm.removeFunction(sceNpManagerSigninUpdateShutdownStartFunction);
-            mm.removeFunction(sceNpServiceGetMemoryStatFunction);
+            mm.removeFunction(sceNpService_0F8F5821Function);
+            mm.removeFunction(sceNpService_00ACFAC3Function);
 
         }
     }
 
-    public void sceNpServiceInit(Processor processor) {
+    private int npManagerMemSize;            // Memory allocated by the NP Manager utility.
+    private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
+    private int npManagerFreeMemSize;        // Free memory available to use by the NP Manager utility.
+
+    public void sceNpService_0F8F5821(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNpServiceInit");
+        int poolSize = cpu.gpr[4];
+        int stackSize = cpu.gpr[5];
+        int threadPriority = cpu.gpr[6];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        log.warn("IGNORING: sceNpService_0F8F5821 (poolsize=0x" + Integer.toHexString(poolSize)
+                + ", stackSize=0x" + Integer.toHexString(stackSize)
+                + ", threadPriority=0x" + Integer.toHexString(threadPriority) + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        npManagerMemSize = poolSize;
+        npManagerMaxMemSize = poolSize / 2;    // Dummy
+        npManagerFreeMemSize = poolSize - 16;         // Dummy.
+        cpu.gpr[2] = 0;
     }
 
-    public void sceNpServiceTerm(Processor processor) {
+    public void sceNpService_00ACFAC3(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        log.warn("UNIMPLEMENTED: sceNpServiceTerm");
+        int memStatAddr = cpu.gpr[4];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        log.warn("PARTIAL: sceNpService_00ACFAC3 (memStatAddr=0x" + Integer.toHexString(memStatAddr) + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (Memory.isAddressGood(memStatAddr)) {
+            mem.write32(memStatAddr, npManagerMemSize);
+            mem.write32(memStatAddr + 4, npManagerMaxMemSize);
+            mem.write32(memStatAddr + 8, npManagerFreeMemSize);
+        }
+        cpu.gpr[2] = 0;
     }
 
-    public void sceNpManagerSigninUpdateInitStart(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpManagerSigninUpdateInitStart");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpManagerSigninUpdateGetStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpManagerSigninUpdateGetStatus");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpManagerSigninUpdateAbort(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpManagerSigninUpdateAbort");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpManagerSigninUpdateShutdownStart(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpManagerSigninUpdateShutdownStart");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpServiceGetMemoryStat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpServiceGetMemoryStat");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public final HLEModuleFunction sceNpServiceInitFunction = new HLEModuleFunction("sceNpService", "sceNpServiceInit") {
+    public final HLEModuleFunction sceNpService_0F8F5821Function = new HLEModuleFunction("sceNpService", "sceNpService_0F8F5821") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNpServiceInit(processor);
+            sceNpService_0F8F5821(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpServiceInit(processor);";
+            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpService_0F8F5821(processor);";
         }
     };
 
-    public final HLEModuleFunction sceNpServiceTermFunction = new HLEModuleFunction("sceNpService", "sceNpServiceTerm") {
+    public final HLEModuleFunction sceNpService_00ACFAC3Function = new HLEModuleFunction("sceNpService", "sceNpService_00ACFAC3") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNpServiceTerm(processor);
+            sceNpService_00ACFAC3(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpServiceTerm(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpManagerSigninUpdateInitStartFunction = new HLEModuleFunction("sceNpService", "sceNpManagerSigninUpdateInitStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpManagerSigninUpdateInitStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpManagerSigninUpdateInitStart(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpManagerSigninUpdateGetStatusFunction = new HLEModuleFunction("sceNpService", "sceNpManagerSigninUpdateGetStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpManagerSigninUpdateGetStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpManagerSigninUpdateGetStatus(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpManagerSigninUpdateAbortFunction = new HLEModuleFunction("sceNpService", "sceNpManagerSigninUpdateAbort") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpManagerSigninUpdateAbort(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpManagerSigninUpdateAbort(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpManagerSigninUpdateShutdownStartFunction = new HLEModuleFunction("sceNpService", "sceNpManagerSigninUpdateShutdownStart") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpManagerSigninUpdateShutdownStart(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpManagerSigninUpdateShutdownStart(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpServiceGetMemoryStatFunction = new HLEModuleFunction("sceNpService", "sceNpServiceGetMemoryStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpServiceGetMemoryStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpServiceGetMemoryStat(processor);";
+            return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpService_00ACFAC3(processor);";
         }
     };
 }
