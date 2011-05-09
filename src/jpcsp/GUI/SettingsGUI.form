@@ -123,7 +123,6 @@
                               <Component id="pbpunpackcheck" alignment="0" max="32767" attributes="1"/>
                               <Component id="saveWindowPosCheck" alignment="0" max="32767" attributes="1"/>
                           </Group>
-                          <Component id="fullscreenCheck" alignment="0" min="-2" max="-2" attributes="1"/>
                       </Group>
                       <EmptySpace pref="246" max="32767" attributes="0"/>
                   </Group>
@@ -138,9 +137,7 @@
                       <Component id="saveWindowPosCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="filelogCheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="fullscreenCheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="41" max="-2" attributes="0"/>
                       <Component id="umdBrowser" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Component id="ClassicOpenDialogumd" min="-2" max="-2" attributes="0"/>
@@ -242,13 +239,6 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButton2ActionPerformed"/>
               </Events>
-            </Component>
-            <Component class="javax.swing.JCheckBox" name="fullscreenCheck">
-              <Properties>
-                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                  <Connection code="Resource.get(&quot;fullscreenMode&quot;)" type="code"/>
-                </Property>
-              </Properties>
             </Component>
           </SubComponents>
         </Container>
@@ -546,20 +536,8 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="jPanel1" alignment="0" min="-2" max="-2" attributes="1"/>
-                          <Group type="102" alignment="0" attributes="0">
-                              <EmptySpace min="-2" pref="8" max="-2" attributes="0"/>
-                              <Component id="antiAliasLabel" min="-2" pref="65" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="antiAliasingBox" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace min="-2" pref="61" max="-2" attributes="0"/>
-                              <Component id="resolutionLabel" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace min="10" pref="10" max="-2" attributes="0"/>
-                              <Component id="resolutionBox" min="-2" max="-2" attributes="0"/>
-                          </Group>
-                      </Group>
-                      <EmptySpace pref="194" max="32767" attributes="0"/>
+                      <Component id="jPanel1" min="-2" max="-2" attributes="1"/>
+                      <EmptySpace pref="423" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -568,14 +546,7 @@
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jPanel1" min="-2" max="-2" attributes="1"/>
-                      <EmptySpace type="separate" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="resolutionLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="antiAliasingBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="antiAliasLabel" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="resolutionBox" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace pref="24" max="32767" attributes="0"/>
+                      <EmptySpace pref="62" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -703,43 +674,6 @@
                 </Component>
               </SubComponents>
             </Container>
-            <Component class="javax.swing.JComboBox" name="antiAliasingBox">
-              <Properties>
-                <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                  <StringArray count="4">
-                    <StringItem index="0" value="OFF"/>
-                    <StringItem index="1" value="x4"/>
-                    <StringItem index="2" value="x8"/>
-                    <StringItem index="3" value="x16"/>
-                  </StringArray>
-                </Property>
-              </Properties>
-            </Component>
-            <Component class="javax.swing.JComboBox" name="resolutionBox">
-              <Properties>
-                <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                  <StringArray count="7">
-                    <StringItem index="0" value="Native"/>
-                    <StringItem index="1" value="640x480"/>
-                    <StringItem index="2" value="800x600"/>
-                    <StringItem index="3" value="1152x768"/>
-                    <StringItem index="4" value="1280x720"/>
-                    <StringItem index="5" value="1280x768"/>
-                    <StringItem index="6" value="1366x768"/>
-                  </StringArray>
-                </Property>
-              </Properties>
-            </Component>
-            <Component class="javax.swing.JLabel" name="antiAliasLabel">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Anti-aliasing:"/>
-              </Properties>
-            </Component>
-            <Component class="javax.swing.JLabel" name="resolutionLabel">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Resolution:"/>
-              </Properties>
-            </Component>
           </SubComponents>
         </Container>
         <Container class="javax.swing.JPanel" name="AudioPanel">
@@ -1178,6 +1112,105 @@
                 </Component>
               </SubComponents>
             </Container>
+          </SubComponents>
+        </Container>
+        <Container class="javax.swing.JPanel" name="DisplayPanel">
+          <Constraints>
+            <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
+              <JTabbedPaneConstraints tabName="Display">
+                <Property name="tabTitle" type="java.lang.String" value="Display"/>
+              </JTabbedPaneConstraints>
+            </Constraint>
+          </Constraints>
+
+          <Layout>
+            <DimensionLayout dim="0">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="102" alignment="0" attributes="0">
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Component id="fullscreenCheck" alignment="0" min="-2" max="-2" attributes="1"/>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="antiAliasLabel" alignment="0" min="-2" pref="65" max="-2" attributes="0"/>
+                                  <Component id="resolutionLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="resolutionBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Component id="antiAliasingBox" alignment="0" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                          </Group>
+                      </Group>
+                      <EmptySpace pref="378" max="32767" attributes="0"/>
+                  </Group>
+              </Group>
+            </DimensionLayout>
+            <DimensionLayout dim="1">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Group type="102" alignment="0" attributes="0">
+                      <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="antiAliasLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="antiAliasingBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="resolutionLabel" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="resolutionBox" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace type="separate" max="-2" attributes="0"/>
+                      <Component id="fullscreenCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="228" max="32767" attributes="0"/>
+                  </Group>
+              </Group>
+            </DimensionLayout>
+          </Layout>
+          <SubComponents>
+            <Component class="javax.swing.JCheckBox" name="fullscreenCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection code="Resource.get(&quot;fullscreenMode&quot;)" type="code"/>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="antiAliasLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Anti-aliasing:"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JComboBox" name="antiAliasingBox">
+              <Properties>
+                <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+                  <StringArray count="4">
+                    <StringItem index="0" value="OFF"/>
+                    <StringItem index="1" value="x4"/>
+                    <StringItem index="2" value="x8"/>
+                    <StringItem index="3" value="x16"/>
+                  </StringArray>
+                </Property>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="resolutionLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Resolution:"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JComboBox" name="resolutionBox">
+              <Properties>
+                <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+                  <StringArray count="7">
+                    <StringItem index="0" value="Native"/>
+                    <StringItem index="1" value="640x480"/>
+                    <StringItem index="2" value="800x600"/>
+                    <StringItem index="3" value="1152x768"/>
+                    <StringItem index="4" value="1280x720"/>
+                    <StringItem index="5" value="1280x768"/>
+                    <StringItem index="6" value="1366x768"/>
+                  </StringArray>
+                </Property>
+              </Properties>
+            </Component>
           </SubComponents>
         </Container>
       </SubComponents>

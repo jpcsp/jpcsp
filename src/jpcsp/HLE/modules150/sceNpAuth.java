@@ -18,10 +18,13 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.Memory;
 
 import org.apache.log4j.Logger;
 
@@ -38,13 +41,26 @@ public class sceNpAuth implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.addFunction(0x58A7A48D, sceNpAuthInitFunction);
-            mm.addFunction(0x9C9502AB, sceNpAuthTermFunction);
-            mm.addFunction(0x3A48150F, sceNpAuthCreateStartRequestFunction);
-            mm.addFunction(0xE99C0F56, sceNpAuthDestroyRequestFunction);
-            mm.addFunction(0x8D07F54A, sceNpAuthAbortRequestFunction);
-            mm.addFunction(0x5B6700E9, sceNpAuthGetTicketFunction);
-            mm.addFunction(0x9E2B5B32, sceNpAuthGetMemoryStatFunction);
+            /*
+             * FIXME: The sceNpAuth module uses a different
+             * NID resolve for it's functions' names.
+             * The public names reversed from several applications
+             * and modules are as follows:
+             *  - sceNpAuthInit (sceNpAuth_A1DE86F8)
+             *  - sceNpAuthTerm
+             *  - sceNpAuthCreateStartRequest
+             *  - sceNpAuthDestroyRequest
+             *  - sceNpAuthAbortRequest
+             *  - sceNpAuthGetTicket
+             *  - sceNpAuthGetMemoryStat (sceNpAuth_CD86A656)
+             * Since the generated NIDs do not match the names, it's necessary
+             * to find which nomencalture is being used for these functions
+             * (e.g.: _x_sceNpAuthInit).
+             *
+             */
+
+            mm.addFunction(0xA1DE86F8, sceNpAuth_A1DE86F8Function);
+            mm.addFunction(0xCD86A656, sceNpAuth_CD86A656Function);
 
         }
     }
@@ -53,161 +69,80 @@ public class sceNpAuth implements HLEModule {
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
 
-            mm.removeFunction(sceNpAuthInitFunction);
-            mm.removeFunction(sceNpAuthTermFunction);
-            mm.removeFunction(sceNpAuthCreateStartRequestFunction);
-            mm.removeFunction(sceNpAuthDestroyRequestFunction);
-            mm.removeFunction(sceNpAuthAbortRequestFunction);
-            mm.removeFunction(sceNpAuthGetTicketFunction);
-            mm.removeFunction(sceNpAuthGetMemoryStatFunction);
+            mm.removeFunction(sceNpAuth_A1DE86F8Function);
+            mm.removeFunction(sceNpAuth_CD86A656Function);
 
         }
     }
 
-    public void sceNpAuthInit(Processor processor) {
+    private int npMemSize;     // Memory allocated by the NP utility.
+    private int npMaxMemSize;  // Maximum memory used by the NP utility.
+    private int npFreeMemSize; // Free memory available to use by the NP utility.
+
+    public void sceNpAuth_A1DE86F8(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceNpAuthInit");
+        int poolSize = cpu.gpr[4];
+        int stackSize = cpu.gpr[5];
+        int threadPriority = cpu.gpr[6];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        log.warn("IGNORING: sceNpAuth_A1DE86F8 (poolsize=0x" + Integer.toHexString(poolSize)
+                + ", stackSize=0x" + Integer.toHexString(stackSize)
+                + ", threadPriority=0x" + Integer.toHexString(threadPriority) + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        npMemSize = poolSize;
+        npMaxMemSize = poolSize / 2;    // Dummy
+        npFreeMemSize = poolSize - 16;  // Dummy.
+        cpu.gpr[2] = 0;
     }
 
-    public void sceNpAuthTerm(Processor processor) {
+    public void sceNpAuth_CD86A656(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        log.warn("UNIMPLEMENTED: sceNpAuthTerm");
+        int memStatAddr = cpu.gpr[4];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        log.warn("PARTIAL: sceNpAuth_CD86A656 (memStatAddr=0x" + Integer.toHexString(memStatAddr) + ")");
+
+        if (IntrManager.getInstance().isInsideInterrupt()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            return;
+        }
+        if (Memory.isAddressGood(memStatAddr)) {
+            mem.write32(memStatAddr, npMemSize);
+            mem.write32(memStatAddr + 4, npMaxMemSize);
+            mem.write32(memStatAddr + 8, npFreeMemSize);
+        }
+        cpu.gpr[2] = 0;
     }
 
-    public void sceNpAuthCreateStartRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpAuthCreateStartRequest");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpAuthDestroyRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpAuthDestroyRequest");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpAuthAbortRequest(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpAuthAbortRequest");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpAuthGetTicket(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpAuthGetTicket");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public void sceNpAuthGetMemoryStat(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        log.warn("UNIMPLEMENTED: sceNpAuthGetMemoryStat");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-    }
-
-    public final HLEModuleFunction sceNpAuthInitFunction = new HLEModuleFunction("sceNpAuth", "sceNpAuthInit") {
+    public final HLEModuleFunction sceNpAuth_A1DE86F8Function = new HLEModuleFunction("sceNpAuth", "sceNpAuth_A1DE86F8") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNpAuthInit(processor);
+            sceNpAuth_A1DE86F8(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuthInit(processor);";
+            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuth_A1DE86F8(processor);";
         }
     };
 
-    public final HLEModuleFunction sceNpAuthTermFunction = new HLEModuleFunction("sceNpAuth", "sceNpAuthTerm") {
+    public final HLEModuleFunction sceNpAuth_CD86A656Function = new HLEModuleFunction("sceNpAuth", "sceNpAuth_CD86A656") {
 
         @Override
         public final void execute(Processor processor) {
-            sceNpAuthTerm(processor);
+            sceNpAuth_CD86A656(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuthTerm(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpAuthCreateStartRequestFunction = new HLEModuleFunction("sceNpAuth", "sceNpAuthCreateStartRequest") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpAuthCreateStartRequest(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuthCreateStartRequest(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpAuthDestroyRequestFunction = new HLEModuleFunction("sceNpAuth", "sceNpAuthDestroyRequest") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpAuthDestroyRequest(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuthDestroyRequest(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpAuthAbortRequestFunction = new HLEModuleFunction("sceNpAuth", "sceNpAuthAbortRequest") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpAuthAbortRequest(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuthAbortRequest(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpAuthGetTicketFunction = new HLEModuleFunction("sceNpAuth", "sceNpAuthGetTicket") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpAuthGetTicket(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuthGetTicket(processor);";
-        }
-    };
-
-    public final HLEModuleFunction sceNpAuthGetMemoryStatFunction = new HLEModuleFunction("sceNpAuth", "sceNpAuthGetMemoryStat") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpAuthGetMemoryStat(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuthGetMemoryStat(processor);";
+            return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuth_CD86A656(processor);";
         }
     };
 }

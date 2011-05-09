@@ -251,7 +251,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         tmppath = new javax.swing.JTextField();
         jButton2 = new javax.swing.JButton();
-        fullscreenCheck = new javax.swing.JCheckBox();
         RegionPanel = new javax.swing.JPanel();
         languageLabel = new javax.swing.JLabel();
         languageBox = new javax.swing.JComboBox();
@@ -286,10 +285,6 @@ public class SettingsGUI extends javax.swing.JFrame {
         enableGETextureCheck = new javax.swing.JCheckBox();
         enableNativeCLUTCheck = new javax.swing.JCheckBox();
         enableDynamicShadersCheck = new javax.swing.JCheckBox();
-        antiAliasingBox = new javax.swing.JComboBox();
-        resolutionBox = new javax.swing.JComboBox();
-        antiAliasLabel = new javax.swing.JLabel();
-        resolutionLabel = new javax.swing.JLabel();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -316,6 +311,12 @@ public class SettingsGUI extends javax.swing.JFrame {
         extractEboot = new javax.swing.JCheckBox();
         cryptoSavedata = new javax.swing.JCheckBox();
         extractPGD = new javax.swing.JCheckBox();
+        DisplayPanel = new javax.swing.JPanel();
+        fullscreenCheck = new javax.swing.JCheckBox();
+        antiAliasLabel = new javax.swing.JLabel();
+        antiAliasingBox = new javax.swing.JComboBox();
+        resolutionLabel = new javax.swing.JLabel();
+        resolutionBox = new javax.swing.JComboBox();
 
         setTitle("Configuration");
         setResizable(false);
@@ -368,8 +369,6 @@ public class SettingsGUI extends javax.swing.JFrame {
             }
         });
 
-        fullscreenCheck.setText(Resource.get("fullscreenMode"));
-
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
         generalPanel.setLayout(generalPanelLayout);
         generalPanelLayout.setHorizontalGroup(
@@ -395,8 +394,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(filelogCheck)
                     .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                         .addComponent(pbpunpackcheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addComponent(fullscreenCheck))
+                        .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addContainerGap(246, Short.MAX_VALUE))
         );
         generalPanelLayout.setVerticalGroup(
@@ -408,9 +406,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(saveWindowPosCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(filelogCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(fullscreenCheck)
-                .addGap(18, 18, 18)
+                .addGap(41, 41, 41)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(ClassicOpenDialogumd)
@@ -621,45 +617,21 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addContainerGap(30, Short.MAX_VALUE))
         );
 
-        antiAliasingBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "OFF", "x4", "x8", "x16" }));
-
-        resolutionBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Native", "640x480", "800x600", "1152x768", "1280x720", "1280x768", "1366x768" }));
-
-        antiAliasLabel.setText("Anti-aliasing:");
-
-        resolutionLabel.setText("Resolution:");
-
         javax.swing.GroupLayout VideoPanelLayout = new javax.swing.GroupLayout(VideoPanel);
         VideoPanel.setLayout(VideoPanelLayout);
         VideoPanelLayout.setHorizontalGroup(
             VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(VideoPanelLayout.createSequentialGroup()
-                        .addGap(8, 8, 8)
-                        .addComponent(antiAliasLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(61, 61, 61)
-                        .addComponent(resolutionLabel)
-                        .addGap(10, 10, 10)
-                        .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(194, Short.MAX_VALUE))
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(423, Short.MAX_VALUE))
         );
         VideoPanelLayout.setVerticalGroup(
             VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(VideoPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(VideoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(resolutionLabel)
-                    .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(antiAliasLabel)
-                    .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(24, Short.MAX_VALUE))
+                .addContainerGap(62, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("video"), VideoPanel);
@@ -901,6 +873,52 @@ public class SettingsGUI extends javax.swing.JFrame {
         );
 
         jTabbedPane1.addTab(Resource.get("crypto"), CryptoPanel);
+
+        fullscreenCheck.setText(Resource.get("fullscreenMode"));
+
+        antiAliasLabel.setText("Anti-aliasing:");
+
+        antiAliasingBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "OFF", "x4", "x8", "x16" }));
+
+        resolutionLabel.setText("Resolution:");
+
+        resolutionBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Native", "640x480", "800x600", "1152x768", "1280x720", "1280x768", "1366x768" }));
+
+        javax.swing.GroupLayout DisplayPanelLayout = new javax.swing.GroupLayout(DisplayPanel);
+        DisplayPanel.setLayout(DisplayPanelLayout);
+        DisplayPanelLayout.setHorizontalGroup(
+            DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(DisplayPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(fullscreenCheck)
+                    .addGroup(DisplayPanelLayout.createSequentialGroup()
+                        .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(antiAliasLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(resolutionLabel))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(378, Short.MAX_VALUE))
+        );
+        DisplayPanelLayout.setVerticalGroup(
+            DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(DisplayPanelLayout.createSequentialGroup()
+                .addGap(12, 12, 12)
+                .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(antiAliasLabel)
+                    .addComponent(antiAliasingBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(12, 12, 12)
+                .addGroup(DisplayPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(resolutionLabel)
+                    .addComponent(resolutionBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addComponent(fullscreenCheck)
+                .addContainerGap(228, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Display", DisplayPanel);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -1144,6 +1162,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JPanel CompilerPanel;
     private javax.swing.JPanel CryptoPanel;
     private javax.swing.JCheckBox DisableSceAudioCheck;
+    private javax.swing.JPanel DisplayPanel;
     private javax.swing.JCheckBox IgnoreAudioThreadsCheck;
     private javax.swing.JPanel MemoryPanel;
     private javax.swing.JPanel MiscPanel;

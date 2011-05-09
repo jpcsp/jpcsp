@@ -18,9 +18,12 @@ package jpcsp.HLE.modules150;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -49,7 +52,11 @@ public class sceNetResolver implements HLEModule {
 			mm.addFunction(sceNetResolverCreateFunction, 0x244172AF);
 			mm.addFunction(sceNetResolverDeleteFunction, 0x94523E09);
 			mm.addFunction(sceNetResolverStartNtoAFunction, 0x224C5F44);
+            mm.addFunction(sceNetResolverStartNtoAAsyncFunction, 0x14C17EF9);
 			mm.addFunction(sceNetResolverStartAtoNFunction, 0x629E2FB7);
+            mm.addFunction(sceNetResolverStartAtoNAsyncFunction, 0xAAC09184);
+            mm.addFunction(sceNetResolverPollAsyncFunction, 0x4EE99358);
+            mm.addFunction(sceNetResolverWaitAsyncFunction, 0x12748EB9);
 			mm.addFunction(sceNetResolverStopFunction, 0x808F6063);
 		}
 	}
@@ -62,13 +69,38 @@ public class sceNetResolver implements HLEModule {
 			mm.removeFunction(sceNetResolverCreateFunction);
 			mm.removeFunction(sceNetResolverDeleteFunction);
 			mm.removeFunction(sceNetResolverStartNtoAFunction);
+            mm.removeFunction(sceNetResolverStartNtoAAsyncFunction);
 			mm.removeFunction(sceNetResolverStartAtoNFunction);
+            mm.removeFunction(sceNetResolverStartAtoNAsyncFunction);
+            mm.removeFunction(sceNetResolverPollAsyncFunction);
+            mm.removeFunction(sceNetResolverWaitAsyncFunction);
 			mm.removeFunction(sceNetResolverStopFunction);
 		}
 	}
 
-	// TODO Implement multiple RID instances
-	protected int dummyRid = 456;
+    protected static class ResolverID {
+        private int id;
+        private boolean isRunning;
+
+        public ResolverID (int id, boolean running) {
+            this.id = id;
+            this.isRunning = running;
+        }
+
+        public int getID() {
+            return id;
+        }
+
+        public boolean getIDStatus () {
+            return isRunning;
+        }
+
+        public void stop() {
+            isRunning = false;
+        }
+    }
+
+    protected HashMap<Integer, ResolverID> RIDs = new HashMap<Integer, ResolverID>();
 
 	/**
 	 * Inititalise the resolver library
@@ -121,7 +153,10 @@ public class sceNetResolver implements HLEModule {
 			log.debug(String.format("sceNetResolverCreate pRid=0x%08X, buffer=0x%08X, bufferLength=5d", pRid, buffer, bufferLength));
 		}
 
-		mem.write32(pRid, dummyRid);
+        int newID = SceUidManager.getNewUid("sceNetResolver-NetResolver");
+        ResolverID newRID = new ResolverID(newID, true);
+        RIDs.put(newID, newRID);
+		mem.write32(pRid, newRID.getID());
 
 		cpu.gpr[2] = 0;
 	}
@@ -183,7 +218,7 @@ public class sceNetResolver implements HLEModule {
 			}
 		} catch (UnknownHostException e) {
 			log.error(e);
-			cpu.gpr[2] = -1;
+			cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_INVALID_HOST;
 		}
 	}
 
@@ -225,7 +260,7 @@ public class sceNetResolver implements HLEModule {
 			}
 		} catch (UnknownHostException e) {
 			log.error(e);
-			cpu.gpr[2] = -1;
+			cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_INVALID_HOST;
 		}
 	}
 
@@ -239,10 +274,56 @@ public class sceNetResolver implements HLEModule {
 	public void sceNetResolverStop(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceNetResolverStop [0x808F6063]");
+		int rid = cpu.gpr[4];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetResolverStop rid=%d", rid));
+		}
+
+        if(RIDs.containsKey(rid)) {
+            ResolverID currentRID = RIDs.get(rid);
+            if(currentRID.getIDStatus()) {
+                currentRID.stop();
+                cpu.gpr[2] = 0;
+            } else {
+                cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_ALREADY_STOPPED;
+            }
+        } else {
+            cpu.gpr[2] = SceKernelErrors.ERROR_NET_RESOLVER_BAD_ID;
+        }
 	}
+
+    public void sceNetResolverStartNtoAAsync(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("UNIMPLEMENTED: sceNetResolverStartNtoAAsync");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+
+    public void sceNetResolverStartAtoNAsync(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("UNIMPLEMENTED: sceNetResolverStartAtoNAsync");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+
+    public void sceNetResolverPollAsync(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("UNIMPLEMENTED: sceNetResolverPollAsync");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
+
+    public void sceNetResolverWaitAsync(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("UNIMPLEMENTED: sceNetResolverWaitAsync");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
 
 	public final HLEModuleFunction sceNetResolverInitFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverInit") {
 		@Override
@@ -318,6 +399,50 @@ public class sceNetResolver implements HLEModule {
 		@Override
 		public final String compiledString() {
 			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStop(processor);";
+		}
+	};
+
+    public final HLEModuleFunction sceNetResolverStartNtoAAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartNtoAAsync") {
+		@Override
+		public final void execute(Processor processor) {
+			sceNetResolverStartNtoAAsync(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartNtoAAsync(processor);";
+		}
+	};
+
+    public final HLEModuleFunction sceNetResolverStartAtoNAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartAtoNAsync") {
+		@Override
+		public final void execute(Processor processor) {
+			sceNetResolverStartAtoNAsync(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartAtoNAsync(processor);";
+		}
+	};
+
+    public final HLEModuleFunction sceNetResolverPollAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverPollAsync") {
+		@Override
+		public final void execute(Processor processor) {
+			sceNetResolverPollAsync(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverPollAsync(processor);";
+		}
+	};
+
+    public final HLEModuleFunction sceNetResolverWaitAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverWaitAsync") {
+		@Override
+		public final void execute(Processor processor) {
+			sceNetResolverWaitAsync(processor);
+		}
+		@Override
+		public final String compiledString() {
+			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverWaitAsync(processor);";
 		}
 	};
 };

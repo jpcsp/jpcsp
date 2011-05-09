@@ -70,6 +70,7 @@ import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
 import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
+import jpcsp.HLE.kernel.types.SceUtilityHtmlViewerParams;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
@@ -137,6 +138,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.addFunction(0x34B78343, sceUtilityGetSystemParamStringFunction);
             mm.addFunction(0x5EEE6548, sceUtilityCheckNetParamFunction);
             mm.addFunction(0x434D4B3A, sceUtilityGetNetParamFunction);
+            mm.addFunction(0x4FED24D8, sceUtilityGetNetParamLatestIDFunction);
             mm.addFunction(0x16D02AF0, sceUtilityNpSigninInitStartFunction);
             mm.addFunction(0xE19C97D6, sceUtilityNpSigninShutdownStartFunction);
             mm.addFunction(0xF3FBC572, sceUtilityNpSigninUpdateFunction);
@@ -209,6 +211,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.removeFunction(sceUtilityGetSystemParamStringFunction);
             mm.removeFunction(sceUtilityCheckNetParamFunction);
             mm.removeFunction(sceUtilityGetNetParamFunction);
+            mm.removeFunction(sceUtilityGetNetParamLatestIDFunction);
             mm.removeFunction(sceUtilityNpSigninInitStartFunction);
             mm.removeFunction(sceUtilityNpSigninShutdownStartFunction);
             mm.removeFunction(sceUtilityNpSigninUpdateFunction);
@@ -256,7 +259,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         rssReaderState = new NotImplementedUtilityDialogState("sceUtilityRssReader");
         rssSubscriberState = new NotImplementedUtilityDialogState("sceUtilityRssSubscriber");
         screenshotState = new ScreenshotUtilityDialogState("sceUtilityScreenshot");
-        htmlViewerState = new NotImplementedUtilityDialogState("sceUtilityHtmlViewer");
+        htmlViewerState = new HtmlViewerUtilityDialogState("sceUtilityHtmlViewer");
         savedataErrState = new NotImplementedUtilityDialogState("sceUtilitySavedataErr");
         gamedataInstallState = new NotImplementedUtilityDialogState("sceUtilityGamedataInstall");
 
@@ -351,7 +354,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected UtilityDialogState rssReaderState;
     protected UtilityDialogState rssSubscriberState;
     protected ScreenshotUtilityDialogState screenshotState;
-    protected UtilityDialogState htmlViewerState;
+    protected HtmlViewerUtilityDialogState htmlViewerState;
     protected UtilityDialogState savedataErrState;
     protected UtilityDialogState gamedataInstallState;
 
@@ -1366,6 +1369,26 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		}
     }
 
+    protected static class HtmlViewerUtilityDialogState extends UtilityDialogState {
+		protected SceUtilityHtmlViewerParams htmlViewerParams;
+
+    	public HtmlViewerUtilityDialogState(String name) {
+			super(name);
+		}
+
+		@Override
+		protected boolean executeUpdateVisible(Processor processor) {
+			// TODO to be implemented
+			return false;
+		}
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			htmlViewerParams = new SceUtilityHtmlViewerParams();
+			return htmlViewerParams;
+		}
+    }
+
     protected static abstract class UtilityDialog extends JComponent {
 		private static final long serialVersionUID = -993546461292372048L;
 		protected JDialog dialog;
@@ -2164,6 +2187,130 @@ public class sceUtility implements HLEModule, HLEStartModule {
         oskState.executeGetStatus(processor);
     }
 
+    public void sceUtilityNpSigninInitStart(Processor processor) {
+        npSigninState.executeInitStart(processor);
+    }
+
+    public void sceUtilityNpSigninShutdownStart(Processor processor) {
+        npSigninState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityNpSigninUpdate(Processor processor) {
+    	npSigninState.executeUpdate(processor);
+    }
+
+    public void sceUtilityNpSigninGetStatus(Processor processor) {
+        npSigninState.executeGetStatus(processor);
+    }
+
+    public void sceUtilityPS3ScanInitStart(Processor processor) {
+        PS3ScanState.executeInitStart(processor);
+    }
+
+    public void sceUtilityPS3ScanShutdownStart(Processor processor) {
+        PS3ScanState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityPS3ScanUpdate(Processor processor) {
+    	PS3ScanState.executeUpdate(processor);
+    }
+
+    public void sceUtilityPS3ScanGetStatus(Processor processor) {
+        PS3ScanState.executeGetStatus(processor);
+    }
+
+    public void sceUtilityRssReaderInitStart(Processor processor) {
+        rssReaderState.executeInitStart(processor);
+    }
+
+    public void sceUtilityRssReaderContStart(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        log.warn("Unimplemented: sceUtilityRssReaderContStart");
+
+        cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
+    }
+
+    public void sceUtilityRssReaderShutdownStart(Processor processor) {
+        rssReaderState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityRssReaderUpdate(Processor processor) {
+    	rssReaderState.executeUpdate(processor);
+    }
+
+    public void sceUtilityRssReaderGetStatus(Processor processor) {
+        rssReaderState.executeGetStatus(processor);
+    }
+
+    public void sceUtilityRssSubscriberInitStart(Processor processor) {
+        rssSubscriberState.executeInitStart(processor);
+    }
+
+    public void sceUtilityRssSubscriberShutdownStart(Processor processor) {
+        rssSubscriberState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityRssSubscriberUpdate(Processor processor) {
+    	rssSubscriberState.executeUpdate(processor);
+    }
+
+    public void sceUtilityRssSubscriberGetStatus(Processor processor) {
+        rssSubscriberState.executeGetStatus(processor);
+    }
+
+    public void sceUtilityScreenshotInitStart(Processor processor) {
+        screenshotState.executeInitStart(processor);
+    }
+
+    public void sceUtilityScreenshotContStart(Processor processor) {
+        screenshotState.executeContStart(processor);
+    }
+
+    public void sceUtilityScreenshotShutdownStart(Processor processor) {
+        screenshotState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityScreenshotUpdate(Processor processor) {
+    	screenshotState.executeUpdate(processor);
+    }
+
+    public void sceUtilityScreenshotGetStatus(Processor processor) {
+        screenshotState.executeGetStatus(processor);
+    }
+
+    public void sceUtilityHtmlViewerInitStart(Processor processor) {
+        htmlViewerState.executeInitStart(processor);
+    }
+
+    public void sceUtilityHtmlViewerShutdownStart(Processor processor) {
+        htmlViewerState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityHtmlViewerUpdate(Processor processor) {
+    	htmlViewerState.executeUpdate(processor);
+    }
+
+    public void sceUtilityHtmlViewerGetStatus(Processor processor) {
+        htmlViewerState.executeGetStatus(processor);
+    }
+
+    public void sceUtilityGamedataInstallInitStart(Processor processor) {
+        gamedataInstallState.executeInitStart(processor);
+    }
+
+    public void sceUtilityGamedataInstallShutdownStart(Processor processor) {
+        gamedataInstallState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityGamedataInstallUpdate(Processor processor) {
+    	gamedataInstallState.executeUpdate(processor);
+    }
+
+    public void sceUtilityGamedataInstallGetStatus(Processor processor) {
+        gamedataInstallState.executeGetStatus(processor);
+    }
+
     public void sceUtilitySetSystemParamInt(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -2430,128 +2577,28 @@ public class sceUtility implements HLEModule, HLEStartModule {
         }
     }
 
-    public void sceUtilityNpSigninInitStart(Processor processor) {
-        npSigninState.executeInitStart(processor);
-    }
-
-    public void sceUtilityNpSigninShutdownStart(Processor processor) {
-        npSigninState.executeShutdownStart(processor);
-    }
-
-    public void sceUtilityNpSigninUpdate(Processor processor) {
-    	npSigninState.executeUpdate(processor);
-    }
-
-    public void sceUtilityNpSigninGetStatus(Processor processor) {
-        npSigninState.executeGetStatus(processor);
-    }
-
-    public void sceUtilityPS3ScanInitStart(Processor processor) {
-        PS3ScanState.executeInitStart(processor);
-    }
-
-    public void sceUtilityPS3ScanShutdownStart(Processor processor) {
-        PS3ScanState.executeShutdownStart(processor);
-    }
-
-    public void sceUtilityPS3ScanUpdate(Processor processor) {
-    	PS3ScanState.executeUpdate(processor);
-    }
-
-    public void sceUtilityPS3ScanGetStatus(Processor processor) {
-        PS3ScanState.executeGetStatus(processor);
-    }
-
-    public void sceUtilityRssReaderInitStart(Processor processor) {
-        rssReaderState.executeInitStart(processor);
-    }
-
-    public void sceUtilityRssReaderContStart(Processor processor) {
+    /**
+     * Get Current Net Configuration ID
+     *
+     * @param idAddr - Address to store the current net ID
+     * @return 0 on success,
+     */
+    public void sceUtilityGetNetParamLatestID(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-        log.warn("Unimplemented: sceUtilityRssReaderContStart");
+        int idAddr = cpu.gpr[4];
 
-        cpu.gpr[2] = SceKernelErrors.ERROR_UTILITY_IS_UNKNOWN;
-    }
+        if (log.isDebugEnabled()) {
+        	log.debug("sceUtilityGetNetParamLatestID: idAddr=0x" + idAddr);
+        }
 
-    public void sceUtilityRssReaderShutdownStart(Processor processor) {
-        rssReaderState.executeShutdownStart(processor);
-    }
-
-    public void sceUtilityRssReaderUpdate(Processor processor) {
-    	rssReaderState.executeUpdate(processor);
-    }
-
-    public void sceUtilityRssReaderGetStatus(Processor processor) {
-        rssReaderState.executeGetStatus(processor);
-    }
-
-    public void sceUtilityRssSubscriberInitStart(Processor processor) {
-        rssSubscriberState.executeInitStart(processor);
-    }
-
-    public void sceUtilityRssSubscriberShutdownStart(Processor processor) {
-        rssSubscriberState.executeShutdownStart(processor);
-    }
-
-    public void sceUtilityRssSubscriberUpdate(Processor processor) {
-    	rssSubscriberState.executeUpdate(processor);
-    }
-
-    public void sceUtilityRssSubscriberGetStatus(Processor processor) {
-        rssSubscriberState.executeGetStatus(processor);
-    }
-
-    public void sceUtilityScreenshotInitStart(Processor processor) {
-        screenshotState.executeInitStart(processor);
-    }
-
-    public void sceUtilityScreenshotContStart(Processor processor) {
-        screenshotState.executeContStart(processor);
-    }
-
-    public void sceUtilityScreenshotShutdownStart(Processor processor) {
-        screenshotState.executeShutdownStart(processor);
-    }
-
-    public void sceUtilityScreenshotUpdate(Processor processor) {
-    	screenshotState.executeUpdate(processor);
-    }
-
-    public void sceUtilityScreenshotGetStatus(Processor processor) {
-        screenshotState.executeGetStatus(processor);
-    }
-
-    public void sceUtilityHtmlViewerInitStart(Processor processor) {
-        htmlViewerState.executeInitStart(processor);
-    }
-
-    public void sceUtilityHtmlViewerShutdownStart(Processor processor) {
-        htmlViewerState.executeShutdownStart(processor);
-    }
-
-    public void sceUtilityHtmlViewerUpdate(Processor processor) {
-    	htmlViewerState.executeUpdate(processor);
-    }
-
-    public void sceUtilityHtmlViewerGetStatus(Processor processor) {
-        htmlViewerState.executeGetStatus(processor);
-    }
-
-    public void sceUtilityGamedataInstallInitStart(Processor processor) {
-        gamedataInstallState.executeInitStart(processor);
-    }
-
-    public void sceUtilityGamedataInstallShutdownStart(Processor processor) {
-        gamedataInstallState.executeShutdownStart(processor);
-    }
-
-    public void sceUtilityGamedataInstallUpdate(Processor processor) {
-    	gamedataInstallState.executeUpdate(processor);
-    }
-
-    public void sceUtilityGamedataInstallGetStatus(Processor processor) {
-        gamedataInstallState.executeGetStatus(processor);
+        if(Memory.isAddressGood(idAddr)) {
+            mem.write32(numberNetConfigurations, idAddr);
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;
+        }
     }
 
     public final HLEModuleFunction sceUtilityGameSharingInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingInitStart") {
@@ -3320,6 +3367,18 @@ public class sceUtility implements HLEModule, HLEStartModule {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGamedataInstallGetStatus(processor);";
+        }
+    };
+    public final HLEModuleFunction sceUtilityGetNetParamLatestIDFunction = new HLEModuleFunction("sceUtility", "sceUtilityGetNetParamLatestID") {
+
+        @Override
+        public final void execute(Processor processor) {
+            sceUtilityGetNetParamLatestID(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetNetParamLatestID(processor);";
         }
     };
 }

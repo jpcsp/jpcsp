@@ -28,6 +28,8 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.Toolkit;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -103,7 +105,7 @@ import org.apache.log4j.xml.DOMConfigurator;
  *
  * @author  shadow
  */
-public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
+public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener, MouseListener {
 
     private static final long serialVersionUID = -3647025845406693230L;
     public static final int MAX_RECENT = 10;
@@ -120,7 +122,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     File loadedFile;
     boolean umdLoaded;
     boolean useFullscreen;
-    boolean resizeFullscreen;
+    JPopupMenu fullscreenMenu;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
@@ -168,6 +170,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(Modules.sceDisplayModule, java.awt.BorderLayout.CENTER);
         Modules.sceDisplayModule.addKeyListener(this);
+        Modules.sceDisplayModule.addMouseListener(this);
         addComponentListener(this);
         pack();
 
@@ -231,7 +234,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         AudioOpt = new javax.swing.JMenu();
         MuteOpt = new javax.swing.JCheckBoxMenuItem();
         ControlsConf = new javax.swing.JMenuItem();
-        SetttingsMenu = new javax.swing.JMenuItem();
+        ConfigMenu = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
         ToolsSubMenu = new javax.swing.JMenu();
         LoggerMenu = new javax.swing.JMenu();
@@ -271,18 +274,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-			public void windowClosing(java.awt.event.WindowEvent evt) {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
         addComponentListener(new java.awt.event.ComponentAdapter() {
-            @Override
-			public void componentMoved(java.awt.event.ComponentEvent evt) {
+            public void componentMoved(java.awt.event.ComponentEvent evt) {
                 formComponentMoved(evt);
             }
-            @Override
-			public void componentResized(java.awt.event.ComponentEvent evt) {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
                 formComponentResized(evt);
             }
         });
@@ -462,7 +462,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FiltersMenu.add(noneCheck);
 
         filtersGroup.add(anisotropicCheck);
-        anisotropicCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.bilinear"));
+        anisotropicCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.anisotropic"));
         anisotropicCheck.setText("Anisotropic");
         anisotropicCheck.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -517,15 +517,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         OptionsMenu.add(ControlsConf);
 
-        SetttingsMenu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
-        SetttingsMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
-        SetttingsMenu.setText(Resource.get("settings"));
-        SetttingsMenu.addActionListener(new java.awt.event.ActionListener() {
+        ConfigMenu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
+        ConfigMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
+        ConfigMenu.setText(Resource.get("settings"));
+        ConfigMenu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SetttingsMenuActionPerformed(evt);
+                ConfigMenuActionPerformed(evt);
             }
         });
-        OptionsMenu.add(SetttingsMenu);
+        OptionsMenu.add(ConfigMenu);
 
         MenuBar.add(OptionsMenu);
 
@@ -796,29 +796,92 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         initComponents();
     }
 
+    private void makeFullscreenMenu() {
+        fullscreenMenu = new JPopupMenu();
+        JMenuItem popupMenuItemRun = new JMenuItem("Run");
+        popupMenuItemRun.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                RunButtonActionPerformed(e);
+            }
+        });
+        JMenuItem popupMenuItemPause = new JMenuItem("Pause");
+        popupMenuItemPause.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                PauseButtonActionPerformed(e);
+            }
+        });
+        JMenuItem popupMenuItemReset = new JMenuItem("Reset");
+        popupMenuItemReset.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ResetButtonActionPerformed(e);
+            }
+        });
+        JMenuItem popupMenuItemLoadUMD = new JMenuItem("Load UMD");
+        popupMenuItemLoadUMD.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                openUmdActionPerformed(e);
+            }
+        });
+        JMenuItem popupMenuItemLoadMemStick = new JMenuItem("Load MemStick");
+        popupMenuItemLoadMemStick.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                OpenMemStickActionPerformed(e);
+            }
+        });
+        JMenuItem popupMenuItemLoadFile = new JMenuItem("Load File");
+        popupMenuItemLoadFile.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                OpenFileActionPerformed(e);
+            }
+        });
+        JMenuItem popupMenuItemConfiguration = new JMenuItem("Configuration");
+        popupMenuItemConfiguration.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ConfigMenuActionPerformed(e);
+            }
+        });
+        JMenuItem popupMenuItemExit = new JMenuItem("Exit");
+        popupMenuItemExit.addActionListener(new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ExitEmuActionPerformed(e);
+            }
+        });
+
+        fullscreenMenu.add(popupMenuItemRun);
+        fullscreenMenu.add(popupMenuItemPause);
+        fullscreenMenu.add(popupMenuItemReset);
+        fullscreenMenu.addSeparator();
+        fullscreenMenu.add(popupMenuItemLoadUMD);
+        fullscreenMenu.add(popupMenuItemLoadMemStick);
+        fullscreenMenu.add(popupMenuItemLoadFile);
+        fullscreenMenu.addSeparator();
+        fullscreenMenu.add(popupMenuItemConfiguration);
+        fullscreenMenu.addSeparator();
+        fullscreenMenu.add(popupMenuItemExit);
+    }
+
     private void toggleFullscreenMode() {
+        Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
+        int w = (int) d.getWidth();
+        int h = (int) d.getHeight();
         if (useFullscreen) {
             dispose();
             setUndecorated(true);
             MenuBar.setVisible(false);
             jToolBar1.setVisible(false);
+            makeFullscreenMenu();
             setLocation(0, 0);
-            setSize(Toolkit.getDefaultToolkit().getScreenSize());
+            setSize(d);
+            Modules.sceDisplayModule.setScreenResolution(w, h);
             setVisible(true);
-        }
-    }
-
-    private void swapDisplayMode() {
-        if (resizeFullscreen) {
-            MenuBar.setVisible(false);
-            jToolBar1.setVisible(false);
-            setSize(Toolkit.getDefaultToolkit().getScreenSize());
-            resizeFullscreen = false;
-        } else {
-            MenuBar.setVisible(true);
-            jToolBar1.setVisible(true);
-            setSize(new Dimension(480, 352));
-            resizeFullscreen = true;
         }
     }
 
@@ -1086,7 +1149,7 @@ private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:e
     JOptionPane.showMessageDialog(this, message.toString(), MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
-private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetttingsMenuActionPerformed
+private void ConfigMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ConfigMenuActionPerformed
     if (setgui == null) {
         setgui = new SettingsGUI();
         Point mainwindow = this.getLocation();
@@ -1096,7 +1159,7 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         setgui.RefreshWindow();
         setgui.setVisible(true);
     }
-}//GEN-LAST:event_SetttingsMenuActionPerformed
+}//GEN-LAST:event_ConfigMenuActionPerformed
 
 private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitEmuActionPerformed
     exitEmu();
@@ -1517,6 +1580,9 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         boolean extractPGD = Settings.getInstance().readBool("emu.extractPGD");
         Modules.IoFileMgrForUserModule.setAllowExtractPGDStatus(extractPGD);
 
+        boolean filterAnisotropic = Settings.getInstance().readBool("emu.graphics.filters.anisotropic");
+        VideoEngine.getInstance().setUseTextureAnisotropicFilter(filterAnisotropic);
+
         String antialias = Settings.getInstance().readString("emu.graphics.antialias");
         int samples = 0;
         if (antialias != null) {
@@ -1623,6 +1689,11 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             String extractPGD = patchSettings.getProperty("emu.extractPGD");
             if (extractPGD != null) {
                 Modules.IoFileMgrForUserModule.setAllowExtractPGDStatus(Integer.parseInt(extractPGD) != 0);
+            }
+
+            String filterAnisotropic = patchSettings.getProperty("emu.graphics.filters.anisotropic");
+            if (filterAnisotropic != null) {
+                VideoEngine.getInstance().setUseTextureAnisotropicFilter(Integer.parseInt(filterAnisotropic) != 0);
             }
 
             String antialias = patchSettings.getProperty("emu.graphics.antialias");
@@ -1875,23 +1946,38 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_CustomLoggerActionPerformed
 
 private void TwoItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoItemActionPerformed
-    setSize(new Dimension(480 * 2, 352 * 2));
+    int w = 480 * 2;
+    int h = 352 * 2;
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(w, h);
 }//GEN-LAST:event_TwoItemActionPerformed
 
 private void ThreeItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ThreeItemActionPerformed
-    setSize(new Dimension(480 * 3, 352 * 3));
+    int w = 480 * 3;
+    int h = 352 * 3;
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(w, h);
 }//GEN-LAST:event_ThreeItemActionPerformed
 
 private void OneHalfItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneHalfItemActionPerformed
-    setSize(new Dimension((int)(480 * 1.5), (int)(352 * 1.5)));
+    int w = (int) (480 * 1.5);
+    int h = (int) (352 * 1.5);
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(w, h);
 }//GEN-LAST:event_OneHalfItemActionPerformed
 
 private void TwoHalfItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoHalfItemActionPerformed
-    setSize(new Dimension((int)(480 * 2.5), (int)(352 * 2.5)));
+    int w = (int) (480 * 2.5);
+    int h = (int) (352 * 2.5);
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(w, h);
 }//GEN-LAST:event_TwoHalfItemActionPerformed
 
 private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneItemActionPerformed
-    setSize(new Dimension(480, 352));
+    int w = 480;
+    int h = 352;
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(w, h);
 }//GEN-LAST:event_OneItemActionPerformed
 
 private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {                                           
@@ -1903,11 +1989,16 @@ private void ChineseTWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 }//GEN-LAST:event_ChinesePRCActionPerformed
 
 private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentMoved
-    Modules.sceDisplayModule.componentMoved(evt);
+    if (!useFullscreen) {
+        Modules.sceDisplayModule.componentMoved(evt); 
+    }
 }//GEN-LAST:event_formComponentMoved
 
 private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
-    Modules.sceDisplayModule.componentResized(evt);
+    if (!useFullscreen) {
+        Modules.sceDisplayModule.componentResized(evt);
+        Modules.sceDisplayModule.setScreenResolution(evt.getComponent().getWidth() - 8, evt.getComponent().getHeight() - 80);   
+    }
 }//GEN-LAST:event_formComponentResized
 
 private void noneCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noneCheckActionPerformed
@@ -2069,6 +2160,7 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenu CheatsMenu;
     private javax.swing.JMenuItem ChinesePRC;
     private javax.swing.JMenuItem ChineseTW;
+    private javax.swing.JMenuItem ConfigMenu;
     private javax.swing.JMenuItem ControlsConf;
     private javax.swing.JMenuItem CustomLogger;
     private javax.swing.JMenu DebugMenu;
@@ -2111,7 +2203,6 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem Russian;
     private javax.swing.JMenuItem SaveSnap;
-    private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem Spanish;
     private javax.swing.JMenuItem ThreeItem;
@@ -2137,17 +2228,38 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     @Override
+    public void mousePressed(MouseEvent arg0) {
+        if (useFullscreen && arg0.isPopupTrigger()) {
+            fullscreenMenu.show(arg0.getComponent(), arg0.getX(), arg0.getY());
+        }
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent arg0) {
+        if (useFullscreen && arg0.isPopupTrigger()) {
+            fullscreenMenu.show(arg0.getComponent(), arg0.getX(), arg0.getY());
+        }
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent arg0) {
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent arg0) {
+    }
+
+    @Override
+    public void mouseExited(MouseEvent arg0) {
+    }
+
+    @Override
     public void keyTyped(KeyEvent arg0) {
     }
 
     @Override
     public void keyPressed(KeyEvent arg0) {
         State.controller.keyPressed(arg0);
-        if (arg0.getKeyCode() == KeyEvent.VK_F4) {
-            if(useFullscreen) {
-                swapDisplayMode();
-            }
-        }
     }
 
     @Override

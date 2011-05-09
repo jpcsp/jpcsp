@@ -213,7 +213,7 @@
                           <ComponentRef name="filtersGroup"/>
                         </Property>
                         <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.bilinear&quot;)" type="code"/>
+                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.anisotropic&quot;)" type="code"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Anisotropic"/>
                       </Properties>
@@ -288,7 +288,7 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ControlsConfActionPerformed"/>
               </Events>
             </MenuItem>
-            <MenuItem class="javax.swing.JMenuItem" name="SetttingsMenu">
+            <MenuItem class="javax.swing.JMenuItem" name="ConfigMenu">
               <Properties>
                 <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
                   <KeyStroke key="F12"/>
@@ -301,7 +301,7 @@
                 </Property>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="SetttingsMenuActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ConfigMenuActionPerformed"/>
               </Events>
             </MenuItem>
           </SubComponents>
