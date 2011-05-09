@@ -2922,6 +2922,66 @@
 08A23160:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0880E488:[2CC20010]: sltiu      $v0, $a2, 16
+0880E48C:[1440001E]: bne        $v0, $zr, 0x0880E508
+0880E490:[00803821]: addu       $a3, $a0, $zr <=> move $a3, $a0
+0880E494:[30830003]: andi       $v1, $a0, 3
+0880E498:[5060000D]: beql       $v1, $zr, 0x0880E4D0
+0880E49C:[30A500FF]: andi       $a1, $a1, 255
+0880E4A0:[2C620004]: sltiu      $v0, $v1, 4
+0880E4A4:[7C054420]: seb        $t0, $a1
+0880E4A8:[10400008]: beq        $v0, $zr, 0x0880E4CC
+0880E4AC:[24630001]: addiu      $v1, $v1, 1
+0880E4B0:[24630001]: addiu      $v1, $v1, 1
+0880E4B4:[2462FFFF]: addiu      $v0, $v1, -1
+0880E4B8:[2C420004]: sltiu      $v0, $v0, 4
+0880E4BC:[A0E80000]: sb         $t0, 0($a3)
+0880E4C0:[24C6FFFF]: addiu      $a2, $a2, -1
+0880E4C4:[1440FFFA]: bne        $v0, $zr, 0x0880E4B0
+0880E4C8:[24E70001]: addiu      $a3, $a3, 1
+0880E4CC:[30A500FF]: andi       $a1, $a1, 255
+0880E4D0:[14A0001A]: bne        $a1, $zr, 0x0880E53C
+0880E4D4:[00A01821]: addu       $v1, $a1, $zr <=> move $v1, $a1
+0880E4D8:[000640C2]: srl        $t0, $a2, 0x0003
+0880E4DC:[11000007]: beq        $t0, $zr, 0x0880E4FC
+0880E4E0:[30C60007]: andi       $a2, $a2, 7
+0880E4E4:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+0880E4E8:[24420001]: addiu      $v0, $v0, 1
+0880E4EC:[ACE30000]: sw         $v1, 0($a3)
+0880E4F0:[ACE30004]: sw         $v1, 4($a3)
+0880E4F4:[1502FFFC]: bne        $t0, $v0, 0x0880E4E8
+0880E4F8:[24E70008]: addiu      $a3, $a3, 8
+0880E4FC:[2CC20004]: sltiu      $v0, $a2, 4
+0880E500:[5040000B]: beql       $v0, $zr, 0x0880E530
+0880E504:[ACE30000]: sw         $v1, 0($a3)
+0880E508:[10C00007]: beq        $a2, $zr, 0x0880E528
+0880E50C:[00E01821]: addu       $v1, $a3, $zr <=> move $v1, $a3
+0880E510:[7C052C20]: seb        $a1, $a1
+0880E514:[00C71021]: addu       $v0, $a2, $a3
+0880E518:[A0650000]: sb         $a1, 0($v1)
+0880E51C:[24630001]: addiu      $v1, $v1, 1
+0880E520:[5462FFFE]: bnel       $v1, $v0, 0x0880E51C
+0880E524:[A0650000]: sb         $a1, 0($v1)
+0880E528:[03E00008]: jr         $ra
+0880E52C:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+0880E530:[24C6FFFC]: addiu      $a2, $a2, -4
+0880E534:[0A203942]: j          0x0880E508
+0880E538:[24E70004]: addiu      $a3, $a3, 4
+0880E53C:[00051200]: sll        $v0, $a1, 0x0008
+0880E540:[00A21025]: or         $v0, $a1, $v0
+0880E544:[00021C00]: sll        $v1, $v0, 0x0010
+0880E548:[000640C2]: srl        $t0, $a2, 0x0003
+0880E54C:[00431825]: or         $v1, $v0, $v1
+0880E550:[1100FFEA]: beq        $t0, $zr, 0x0880E4FC
+0880E554:[30C60007]: andi       $a2, $a2, 7
+0880E558:[0A20393A]: j          0x0880E4E8
+0880E55C:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="bzero">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
@@ -2957,6 +3017,153 @@
 0890B51C:[24840001]: addiu      $a0, $a0, 1
 0890B520:[03E00008]: jr         $ra
 0890B524:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="bzeroSequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<Method>callWithStep</Method>
+		<Parameters>$a0,$zr,$a1,0,64</Parameters>
+		<CodeInstructions><![CDATA[
+08846314:[BC980000]: cache      0x18, 0($a0)
+08846318:[AC800000]: sw         $zr, 0($a0)
+0884631C:[24A5FFFF]: addiu      $a1, $a1, -1
+08846320:[AC800004]: sw         $zr, 4($a0)
+08846324:[AC800008]: sw         $zr, 8($a0)
+08846328:[AC80000C]: sw         $zr, 12($a0)
+0884632C:[AC800010]: sw         $zr, 16($a0)
+08846330:[AC800014]: sw         $zr, 20($a0)
+08846334:[AC800018]: sw         $zr, 24($a0)
+08846338:[AC80001C]: sw         $zr, 28($a0)
+0884633C:[AC800020]: sw         $zr, 32($a0)
+08846340:[AC800024]: sw         $zr, 36($a0)
+08846344:[AC800028]: sw         $zr, 40($a0)
+08846348:[AC80002C]: sw         $zr, 44($a0)
+0884634C:[AC800030]: sw         $zr, 48($a0)
+08846350:[AC800034]: sw         $zr, 52($a0)
+08846354:[AC800038]: sw         $zr, 56($a0)
+08846358:[AC80003C]: sw         $zr, 60($a0)
+0884635C:[24840040]: addiu      $a0, $a0, 64
+08846360:[BC980000]: cache      0x18, 0($a0)
+08846364:[24A5FFFF]: addiu      $a1, $a1, -1
+08846368:[AC800000]: sw         $zr, 0($a0)
+0884636C:[AC800004]: sw         $zr, 4($a0)
+08846370:[AC800008]: sw         $zr, 8($a0)
+08846374:[AC80000C]: sw         $zr, 12($a0)
+08846378:[AC800010]: sw         $zr, 16($a0)
+0884637C:[AC800014]: sw         $zr, 20($a0)
+08846380:[AC800018]: sw         $zr, 24($a0)
+08846384:[AC80001C]: sw         $zr, 28($a0)
+08846388:[AC800020]: sw         $zr, 32($a0)
+0884638C:[AC800024]: sw         $zr, 36($a0)
+08846390:[AC800028]: sw         $zr, 40($a0)
+08846394:[AC80002C]: sw         $zr, 44($a0)
+08846398:[AC800030]: sw         $zr, 48($a0)
+0884639C:[AC800034]: sw         $zr, 52($a0)
+088463A0:[AC800038]: sw         $zr, 56($a0)
+088463A4:[AC80003C]: sw         $zr, 60($a0)
+088463A8:[10A0004B]: beq        $a1, $zr, 0x088464D8
+088463AC:[24840040]: addiu      $a0, $a0, 64
+088463B0:[BC980000]: cache      0x18, 0($a0)
+088463B4:[AC800000]: sw         $zr, 0($a0)
+088463B8:[248C0040]: addiu      $t4, $a0, 64
+088463BC:[AC800004]: sw         $zr, 4($a0)
+088463C0:[AC800008]: sw         $zr, 8($a0)
+088463C4:[AC80000C]: sw         $zr, 12($a0)
+088463C8:[AC800010]: sw         $zr, 16($a0)
+088463CC:[AC800014]: sw         $zr, 20($a0)
+088463D0:[AC800018]: sw         $zr, 24($a0)
+088463D4:[AC80001C]: sw         $zr, 28($a0)
+088463D8:[AC800020]: sw         $zr, 32($a0)
+088463DC:[AC800024]: sw         $zr, 36($a0)
+088463E0:[AC800028]: sw         $zr, 40($a0)
+088463E4:[AC80002C]: sw         $zr, 44($a0)
+088463E8:[AC800030]: sw         $zr, 48($a0)
+088463EC:[AC800034]: sw         $zr, 52($a0)
+088463F0:[AC800038]: sw         $zr, 56($a0)
+088463F4:[AC80003C]: sw         $zr, 60($a0)
+088463F8:[BD980000]: cache      0x18, 0($t4)
+088463FC:[24860080]: addiu      $a2, $a0, 128
+08846400:[AD80003C]: sw         $zr, 60($t4)
+08846404:[AD800000]: sw         $zr, 0($t4)
+08846408:[AD800004]: sw         $zr, 4($t4)
+0884640C:[AD800008]: sw         $zr, 8($t4)
+08846410:[AD80000C]: sw         $zr, 12($t4)
+08846414:[AD800010]: sw         $zr, 16($t4)
+08846418:[AD800014]: sw         $zr, 20($t4)
+0884641C:[AD800018]: sw         $zr, 24($t4)
+08846420:[AD80001C]: sw         $zr, 28($t4)
+08846424:[AD800020]: sw         $zr, 32($t4)
+08846428:[AD800024]: sw         $zr, 36($t4)
+0884642C:[AD800028]: sw         $zr, 40($t4)
+08846430:[AD80002C]: sw         $zr, 44($t4)
+08846434:[AD800030]: sw         $zr, 48($t4)
+08846438:[AD800034]: sw         $zr, 52($t4)
+0884643C:[AD800038]: sw         $zr, 56($t4)
+08846440:[BCD80000]: cache      0x18, 0($a2)
+08846444:[248B00C0]: addiu      $t3, $a0, 192
+08846448:[ACC0003C]: sw         $zr, 60($a2)
+0884644C:[ACC00000]: sw         $zr, 0($a2)
+08846450:[ACC00004]: sw         $zr, 4($a2)
+08846454:[ACC00008]: sw         $zr, 8($a2)
+08846458:[ACC0000C]: sw         $zr, 12($a2)
+0884645C:[ACC00010]: sw         $zr, 16($a2)
+08846460:[ACC00014]: sw         $zr, 20($a2)
+08846464:[ACC00018]: sw         $zr, 24($a2)
+08846468:[ACC0001C]: sw         $zr, 28($a2)
+0884646C:[ACC00020]: sw         $zr, 32($a2)
+08846470:[ACC00024]: sw         $zr, 36($a2)
+08846474:[ACC00028]: sw         $zr, 40($a2)
+08846478:[ACC0002C]: sw         $zr, 44($a2)
+0884647C:[ACC00030]: sw         $zr, 48($a2)
+08846480:[ACC00034]: sw         $zr, 52($a2)
+08846484:[ACC00038]: sw         $zr, 56($a2)
+08846488:[BD780000]: cache      0x18, 0($t3)
+0884648C:[24A5FFFC]: addiu      $a1, $a1, -4
+08846490:[AD60003C]: sw         $zr, 60($t3)
+08846494:[24840100]: addiu      $a0, $a0, 256
+08846498:[AD600000]: sw         $zr, 0($t3)
+0884649C:[AD600004]: sw         $zr, 4($t3)
+088464A0:[AD600008]: sw         $zr, 8($t3)
+088464A4:[AD60000C]: sw         $zr, 12($t3)
+088464A8:[AD600010]: sw         $zr, 16($t3)
+088464AC:[AD600014]: sw         $zr, 20($t3)
+088464B0:[AD600018]: sw         $zr, 24($t3)
+088464B4:[AD60001C]: sw         $zr, 28($t3)
+088464B8:[AD600020]: sw         $zr, 32($t3)
+088464BC:[AD600024]: sw         $zr, 36($t3)
+088464C0:[AD600028]: sw         $zr, 40($t3)
+088464C4:[AD60002C]: sw         $zr, 44($t3)
+088464C8:[AD600030]: sw         $zr, 48($t3)
+088464CC:[AD600034]: sw         $zr, 52($t3)
+088464D0:[14A0FFB7]: bne        $a1, $zr, 0x088463B0
+088464D4:[AD600038]: sw         $zr, 56($t3)
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="bzeroSequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<Method>callWithStep</Method>
+		<Parameters>$a0,$zr,$v0,0,64</Parameters>
+		<CodeInstructions><![CDATA[
+08846724:[BC980000]: cache      0x18, 0($a0)
+08846728:[2442FFFF]: addiu      $v0, $v0, -1
+0884672C:[AC800000]: sw         $zr, 0($a0)
+08846730:[AC800004]: sw         $zr, 4($a0)
+08846734:[AC800008]: sw         $zr, 8($a0)
+08846738:[AC80000C]: sw         $zr, 12($a0)
+0884673C:[AC800010]: sw         $zr, 16($a0)
+08846740:[AC800014]: sw         $zr, 20($a0)
+08846744:[AC800018]: sw         $zr, 24($a0)
+08846748:[AC80001C]: sw         $zr, 28($a0)
+0884674C:[AC800020]: sw         $zr, 32($a0)
+08846750:[AC800024]: sw         $zr, 36($a0)
+08846754:[AC800028]: sw         $zr, 40($a0)
+08846758:[AC80002C]: sw         $zr, 44($a0)
+0884675C:[AC800030]: sw         $zr, 48($a0)
+08846760:[AC800034]: sw         $zr, 52($a0)
+08846764:[AC800038]: sw         $zr, 56($a0)
+08846768:[AC80003C]: sw         $zr, 60($a0)
+0884676C:[1440FFED]: bne        $v0, $zr, 0x08846724
+08846770:[24840040]: addiu      $a0, $a0, 64
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="strcat">
@@ -7097,4 +7304,156 @@
 08B1E3A0:[AE740060]: sw         $s4, 96($s3)
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="mixMonoToStereo">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.SoundMix</Class>
+		<Method>mixMonoToStereo</Method>
+		<Parameters>$a1,$a2,$a0,$a3,32</Parameters>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+088483E0:[BC980000]: cache      0x18, 0($a0)
+088483E4:[94A80000]: lhu        $t0, 0($a1)
+088483E8:[24E7FFFF]: addiu      $a3, $a3, -1
+088483EC:[94C90000]: lhu        $t1, 0($a2)
+088483F0:[A4880000]: sh         $t0, 0($a0)
+088483F4:[A4890002]: sh         $t1, 2($a0)
+088483F8:[94A80002]: lhu        $t0, 2($a1)
+088483FC:[94C90002]: lhu        $t1, 2($a2)
+08848400:[A4880004]: sh         $t0, 4($a0)
+08848404:[A4890006]: sh         $t1, 6($a0)
+08848408:[94A80004]: lhu        $t0, 4($a1)
+0884840C:[94C90004]: lhu        $t1, 4($a2)
+08848410:[A4880008]: sh         $t0, 8($a0)
+08848414:[A489000A]: sh         $t1, 10($a0)
+08848418:[94A80006]: lhu        $t0, 6($a1)
+0884841C:[94C90006]: lhu        $t1, 6($a2)
+08848420:[A488000C]: sh         $t0, 12($a0)
+08848424:[A489000E]: sh         $t1, 14($a0)
+08848428:[94A80008]: lhu        $t0, 8($a1)
+0884842C:[94C90008]: lhu        $t1, 8($a2)
+08848430:[A4880010]: sh         $t0, 16($a0)
+08848434:[A4890012]: sh         $t1, 18($a0)
+08848438:[94A8000A]: lhu        $t0, 10($a1)
+0884843C:[94C9000A]: lhu        $t1, 10($a2)
+08848440:[A4880014]: sh         $t0, 20($a0)
+08848444:[A4890016]: sh         $t1, 22($a0)
+08848448:[94A8000C]: lhu        $t0, 12($a1)
+0884844C:[94C9000C]: lhu        $t1, 12($a2)
+08848450:[A4880018]: sh         $t0, 24($a0)
+08848454:[A489001A]: sh         $t1, 26($a0)
+08848458:[94A8000E]: lhu        $t0, 14($a1)
+0884845C:[94C9000E]: lhu        $t1, 14($a2)
+08848460:[A488001C]: sh         $t0, 28($a0)
+08848464:[A489001E]: sh         $t1, 30($a0)
+08848468:[94A80010]: lhu        $t0, 16($a1)
+0884846C:[94C90010]: lhu        $t1, 16($a2)
+08848470:[A4880020]: sh         $t0, 32($a0)
+08848474:[A4890022]: sh         $t1, 34($a0)
+08848478:[94A80012]: lhu        $t0, 18($a1)
+0884847C:[94C90012]: lhu        $t1, 18($a2)
+08848480:[A4880024]: sh         $t0, 36($a0)
+08848484:[A4890026]: sh         $t1, 38($a0)
+08848488:[94A80014]: lhu        $t0, 20($a1)
+0884848C:[94C90014]: lhu        $t1, 20($a2)
+08848490:[A4880028]: sh         $t0, 40($a0)
+08848494:[A489002A]: sh         $t1, 42($a0)
+08848498:[94A80016]: lhu        $t0, 22($a1)
+0884849C:[94C90016]: lhu        $t1, 22($a2)
+088484A0:[A488002C]: sh         $t0, 44($a0)
+088484A4:[A489002E]: sh         $t1, 46($a0)
+088484A8:[94A80018]: lhu        $t0, 24($a1)
+088484AC:[94C90018]: lhu        $t1, 24($a2)
+088484B0:[A4880030]: sh         $t0, 48($a0)
+088484B4:[A4890032]: sh         $t1, 50($a0)
+088484B8:[94A8001A]: lhu        $t0, 26($a1)
+088484BC:[94C9001A]: lhu        $t1, 26($a2)
+088484C0:[A4880034]: sh         $t0, 52($a0)
+088484C4:[A4890036]: sh         $t1, 54($a0)
+088484C8:[94A8001C]: lhu        $t0, 28($a1)
+088484CC:[94C9001C]: lhu        $t1, 28($a2)
+088484D0:[A4880038]: sh         $t0, 56($a0)
+088484D4:[A489003A]: sh         $t1, 58($a0)
+088484D8:[94A8001E]: lhu        $t0, 30($a1)
+088484DC:[94C9001E]: lhu        $t1, 30($a2)
+088484E0:[A488003C]: sh         $t0, 60($a0)
+088484E4:[24A50020]: addiu      $a1, $a1, 32
+088484E8:[A489003E]: sh         $t1, 62($a0)
+088484EC:[24840040]: addiu      $a0, $a0, 64
+088484F0:[14E0FFBB]: bne        $a3, $zr, 0x088483E0
+088484F4:[24C60020]: addiu      $a2, $a2, 32
+088484F8:[03E00008]: jr         $ra
+088484FC:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="multMat4x4ByVec4">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MatrixOperation</Class>
+		<Method>multMat4x4ByVec4</Method>
+		<Parameters>$a1,0,$sp,32,$sp,16</Parameters>
+		<CodeInstructions><![CDATA[
+088A5920:[00003821]: addu       $a3, $zr, $zr <=> li $a3, 0
+088A5924:[00071880]: sll        $v1, $a3, 0x0002
+088A5928:[007D1021]: addu       $v0, $v1, $sp
+088A592C:[24440010]: addiu      $a0, $v0, 16
+088A5930:[00A31821]: addu       $v1, $a1, $v1
+088A5934:[AC800000]: sw         $zr, 0($a0)
+088A5938:[00003021]: addu       $a2, $zr, $zr <=> li $a2, 0
+088A593C:[00061080]: sll        $v0, $a2, 0x0002
+088A5940:[005D1021]: addu       $v0, $v0, $sp
+088A5944:[C4410020]: lwc1       $f1, 32($v0)
+088A5948:[C4800000]: lwc1       $f0, 0($a0)
+088A594C:[00061100]: sll        $v0, $a2, 0x0004
+088A5950:[00621021]: addu       $v0, $v1, $v0
+088A5954:[C4420000]: lwc1       $f2, 0($v0)
+088A5958:[24C60001]: addiu      $a2, $a2, 1
+088A595C:[46020842]: mul.s      $f1, $f1, $f2
+088A5960:[2CC20004]: sltiu      $v0, $a2, 4
+088A5964:[46010000]: add.s      $f0, $f0, $f1
+088A5968:[1440FFF4]: bne        $v0, $zr, 0x088A593C
+088A596C:[E4800000]: swc1       $f0, 0($a0)
+088A5970:[24E70001]: addiu      $a3, $a3, 1
+088A5974:[2CE20004]: sltiu      $v0, $a3, 4
+088A5978:[5440FFEB]: bnel       $v0, $zr, 0x088A5928
+088A597C:[00071880]: sll        $v1, $a3, 0x0002
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="multMat4x4ByVec4">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MatrixOperation</Class>
+		<Method>multMat4x4ByVec4</Method>
+		<Parameters>$a2,0,$sp,16,$sp,32</Parameters>
+		<CodeInstructions><![CDATA[
+088A5984:[00004021]: addu       $t0, $zr, $zr <=> li $t0, 0
+088A5988:[00081080]: sll        $v0, $t0, 0x0002
+088A598C:[005D1021]: addu       $v0, $v0, $sp
+088A5990:[24450020]: addiu      $a1, $v0, 32
+088A5994:[00081100]: sll        $v0, $t0, 0x0004
+088A5998:[ACA00000]: sw         $zr, 0($a1)
+088A599C:[00003821]: addu       $a3, $zr, $zr <=> li $a3, 0
+088A59A0:[00C22021]: addu       $a0, $a2, $v0
+088A59A4:[00071880]: sll        $v1, $a3, 0x0002
+088A59A8:[00831021]: addu       $v0, $a0, $v1
+088A59AC:[C4420000]: lwc1       $f2, 0($v0)
+088A59B0:[C4A00000]: lwc1       $f0, 0($a1)
+088A59B4:[24E70001]: addiu      $a3, $a3, 1
+088A59B8:[007D1021]: addu       $v0, $v1, $sp
+088A59BC:[C4410010]: lwc1       $f1, 16($v0)
+088A59C0:[46020842]: mul.s      $f1, $f1, $f2
+088A59C4:[2CE20004]: sltiu      $v0, $a3, 4
+088A59C8:[46010000]: add.s      $f0, $f0, $f1
+088A59CC:[1440FFF5]: bne        $v0, $zr, 0x088A59A4
+088A59D0:[E4A00000]: swc1       $f0, 0($a1)
+088A59D4:[25080001]: addiu      $t0, $t0, 1
+088A59D8:[2D020004]: sltiu      $v0, $t0, 4
+088A59DC:[5440FFEB]: bnel       $v0, $zr, 0x088A598C
+088A59E0:[00081080]: sll        $v0, $t0, 0x0002
+]]></CodeInstructions>
+	</NativeCodeSequence>
 </NativeCodeSequences>
+<!--
+	<NativeCodeSequence name="XXX">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
+		<Method>call</Method>
+		<IsReturning>true</IsReturning>
+		<Parameters>$a0,$a1,@01234567</Parameters>
+		<CodeInstructions><![CDATA[
+]]></CodeInstructions>
+	</NativeCodeSequence>
+-->
