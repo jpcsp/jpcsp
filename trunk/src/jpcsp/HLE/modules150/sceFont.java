@@ -54,6 +54,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.format.PGF;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.capture.CaptureImage;
@@ -381,9 +383,10 @@ public class sceFont implements HLEModule, HLEStartModule {
     	Font font = null;
 
     	try {
-	        RandomAccessFile fontFile = new RandomAccessFile(fileName, "r");
+    		SeekableDataInput fontFile = Modules.IoFileMgrForUserModule.getFile(fileName, IoFileMgrForUser.PSP_O_RDONLY);
 	        byte[] pgfBytes = new byte[(int) fontFile.length()];
-	        fontFile.read(pgfBytes);
+	        fontFile.readFully(pgfBytes);
+	        fontFile.close();
 	        ByteBuffer pgfBuffer = ByteBuffer.wrap(pgfBytes);
 
 	        font = openFontFile(pgfBuffer, new File(fileName).getName());
