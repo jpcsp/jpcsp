@@ -514,6 +514,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         String cwd = "";
         String filename = null;
 
+        if (filepath == null) {
+        	return pspfilename;
+        }
+
         int findcolon = pspfilename.indexOf(":");
         if (findcolon != -1) {
             device = pspfilename.substring(0, findcolon);
