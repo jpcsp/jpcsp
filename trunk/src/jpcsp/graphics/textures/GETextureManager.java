@@ -104,4 +104,12 @@ public class GETextureManager {
 
 		return geTexture;
 	}
+
+	public void reset(IRenderingEngine re) {
+		for (GETexture geTexture : geTextures.values()) {
+			geTexture.delete(re);
+		}
+
+		geTextures.clear();
+	}
 }

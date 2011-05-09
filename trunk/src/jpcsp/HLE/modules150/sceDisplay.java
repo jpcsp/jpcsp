@@ -1102,6 +1102,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	}
 
     	if (startModules) {
+    		if (saveGEToTexture) {
+    			GETextureManager.getInstance().reset(re);
+    		}
     		VideoEngine.getInstance().start();
         	drawBuffer = re.getBufferManager().genBuffer(IRenderingEngine.RE_FLOAT, 16, IRenderingEngine.RE_DYNAMIC_DRAW);
 	    	startModules = false;
