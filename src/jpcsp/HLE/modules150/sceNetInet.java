@@ -41,6 +41,7 @@ import java.util.LinkedList;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -1540,19 +1541,11 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	protected HashMap<Integer, pspInetSocket> sockets;
-	protected LinkedList<Integer> freeSocketIds;
+	protected static final String idPurpose = "sceNetInet-socket";
 
 	@Override
 	public void start() {
 		sockets = new HashMap<Integer, pspInetSocket>();
-
-		// A socket ID has to be a number [1..255],
-		// because sceNetInetSelect can handle only 256 bits.
-		// 0 is considered by LuaPLayer as an invalid value as well.
-		freeSocketIds = new LinkedList<Integer>();
-		for (int i = 1; i < 256; i++) {
-			freeSocketIds.add(i);
-		}
 	}
 
 	@Override
@@ -1581,11 +1574,14 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	}
 
 	protected int createSocketId() {
-		return freeSocketIds.pop();
+		// A socket ID has to be a number [1..255],
+		// because sceNetInetSelect can handle only 256 bits.
+		// 0 is considered by LuaPLayer as an invalid value as well.
+		return SceUidManager.getNewId(idPurpose, 1, 255);
 	}
 
 	protected void releaseSocketId(int id) {
-		freeSocketIds.add(id);
+		SceUidManager.releaseId(id, idPurpose);
 	}
 
 	protected int readSocketList(Selector selector, int address, int n, int selectorOperation, String comment) {

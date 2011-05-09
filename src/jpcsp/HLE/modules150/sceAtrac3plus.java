@@ -118,7 +118,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     public void stop() {
     }
 
-    protected static final String uidPurpose = "sceAtrac3plus";
+    protected static final String idPurpose = "sceAtrac3plus";
     protected static final int AT3_MAGIC      = 0x0270; // "AT3"
     protected static final int AT3_PLUS_MAGIC = 0xFFFE; // "AT3PLUS"
     public    static final int RIFF_MAGIC = 0x46464952; // "RIFF"
@@ -147,7 +147,7 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
     public static boolean useAtracCodec = false;
     protected HashMap<Integer, AtracID> atracIDs;
-    protected static final int atracIDMask = 0x000000FF; // "Patapon 2" expects the ID to be signed 8bit
+    protected static final int atracIDMask = 0x000000FF;
 
     protected static class LoopInfo {
     	protected int cuePointID;
@@ -166,7 +166,6 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     protected class AtracID {
         // Internal info.
     	protected int id;
-        protected int uid;
         protected int codecType;
         protected AtracCodec atracCodec;
         protected int atrac3Num;
@@ -210,9 +209,8 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
         protected boolean forceReloadOfData;
         protected boolean forceAllDataIsOnMemory;
 
-        public AtracID(int id, int uid, int codecType, AtracCodec atracCodec) {
+        public AtracID(int id, int codecType, AtracCodec atracCodec) {
             this.codecType = codecType;
-            this.uid = uid;
             this.id = id;
             this.atracCodec = atracCodec;
             if ((codecType == PSP_MODE_AT_3) && (atrac3Num < atrac3MaxIDsCount)) {
@@ -353,10 +351,6 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
 
         public int getAtracId() {
         	return id;
-        }
-
-        public int getAtracUid() {
-            return uid;
         }
 
         public int getAtracCodecType() {
@@ -739,21 +733,20 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     }
 
     protected int hleCreateAtracID(int codecType) {
-    	int uid = SceUidManager.getNewUid(uidPurpose);
-        int atracID = uid & atracIDMask;
+    	// "Patapon 2" expects the ID to be signed 8bit
+    	int atracID = SceUidManager.getNewId(idPurpose, 0, 255);
         AtracCodec atracCodec = new AtracCodec();
-        AtracID id = new AtracID(atracID, uid, codecType, atracCodec);
-        if(id.getAtracId() >= 0) {
+        AtracID id = new AtracID(atracID, codecType, atracCodec);
+        if (id.getAtracId() >= 0) {
             atracIDs.put(atracID, id);
             return atracID;
         }
         return SceKernelErrors.ERROR_ATRAC_NO_ID;
     }
 
-    protected void hleReleaseAtracID(int atID) {
-    	AtracID id = atracIDs.remove(atID);
-    	int uid = id.getAtracUid();
-        SceUidManager.releaseUid(uid, uidPurpose);
+    protected void hleReleaseAtracID(int atracID) {
+    	AtracID id = atracIDs.remove(atracID);
+    	SceUidManager.releaseId(atracID, idPurpose);
     	id.release();
     }
 
