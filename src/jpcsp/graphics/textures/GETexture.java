@@ -256,6 +256,17 @@ public class GETexture {
     	setChanged(false);
 	}
 
+	public void delete(IRenderingEngine re) {
+		if (drawBufferId != -1) {
+			re.getBufferManager().deleteBuffer(drawBufferId);
+			drawBufferId = -1;
+		}
+		if (textureId != -1) {
+			re.deleteTexture(textureId);
+			textureId = -1;
+		}
+	}
+
 	@Override
 	public String toString() {
 		return String.format("GETexture[0x%08X-0x%08X, %dx%d, bufferWidth=%d, pixelFormat=%d(%s)]", address, address + length, width, height, bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat));
