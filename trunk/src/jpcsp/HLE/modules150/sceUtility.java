@@ -73,6 +73,7 @@ import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.SceUtilityHtmlViewerParams;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityNetconfParams;
+import jpcsp.HLE.kernel.types.SceUtilityNpSigninParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.kernel.types.SceUtilityScreenshotParams;
@@ -103,7 +104,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-
             mm.addFunction(0xC492F751, sceUtilityGameSharingInitStartFunction);
             mm.addFunction(0xEFC6F80F, sceUtilityGameSharingShutdownStartFunction);
             mm.addFunction(0x7853182D, sceUtilityGameSharingUpdateFunction);
@@ -169,14 +169,12 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.addFunction(0x32E32DCB, sceUtilityGamedataInstallShutdownStartFunction);
             mm.addFunction(0x4AECD179, sceUtilityGamedataInstallUpdateFunction);
             mm.addFunction(0xB57E95D9, sceUtilityGamedataInstallGetStatusFunction);
-
         }
     }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-
             mm.removeFunction(sceUtilityGameSharingInitStartFunction);
             mm.removeFunction(sceUtilityGameSharingShutdownStartFunction);
             mm.removeFunction(sceUtilityGameSharingUpdateFunction);
@@ -242,7 +240,6 @@ public class sceUtility implements HLEModule, HLEStartModule {
             mm.removeFunction(sceUtilityGamedataInstallShutdownStartFunction);
             mm.removeFunction(sceUtilityGamedataInstallUpdateFunction);
             mm.removeFunction(sceUtilityGamedataInstallGetStatusFunction);
-
         }
     }
 
@@ -254,7 +251,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         savedataState = new SavedataUtilityDialogState("sceUtilitySavedata");
         msgDialogState = new MsgDialogUtilityDialogState("sceUtilityMsgDialog");
         oskState = new OskUtilityDialogState("sceUtilityOsk");
-        npSigninState = new NotImplementedUtilityDialogState("sceUtilityNpSignin");
+        npSigninState = new NpSigninUtilityDialogState("sceUtilityNpSignin");
         PS3ScanState = new NotImplementedUtilityDialogState("sceUtilityPS3Scan");
         rssReaderState = new NotImplementedUtilityDialogState("sceUtilityRssReader");
         rssSubscriberState = new NotImplementedUtilityDialogState("sceUtilityRssSubscriber");
@@ -1366,6 +1363,25 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		protected pspAbstractMemoryMappedStructure createParams() {
 			screenshotParams = new SceUtilityScreenshotParams();
 			return screenshotParams;
+		}
+    }
+
+    protected static class NpSigninUtilityDialogState extends UtilityDialogState {
+    	protected SceUtilityNpSigninParams npSigninParams;
+
+    	public NpSigninUtilityDialogState(String name) {
+            super(name);
+        }
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			npSigninParams = new SceUtilityNpSigninParams();
+			return npSigninParams;
+		}
+
+		@Override
+		protected boolean executeUpdateVisible(Processor processor) {
+			return false;
 		}
     }
 
@@ -2590,11 +2606,13 @@ public class sceUtility implements HLEModule, HLEStartModule {
         int idAddr = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-        	log.debug("sceUtilityGetNetParamLatestID: idAddr=0x" + idAddr);
+        	log.debug(String.format("sceUtilityGetNetParamLatestID: idAddr=0x%08X", idAddr));
         }
 
-        if(Memory.isAddressGood(idAddr)) {
-            mem.write32(numberNetConfigurations, idAddr);
+        if (Memory.isAddressGood(idAddr)) {
+        	// TODO Check if this function returns the number of net configurations
+        	// or the ID the latest selected net configuration
+            mem.write32(idAddr, numberNetConfigurations);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_NETPARAM_BAD_PARAM;

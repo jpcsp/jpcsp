@@ -340,7 +340,8 @@ public class MutexManager {
             log.warn("sceKernelUnlockMutex unknown uid");
             cpu.gpr[2] = ERROR_KERNEL_MUTEX_NOT_FOUND;
         } else if (info.lockedCount == 0) {
-            log.warn("sceKernelUnlockMutex not locked");
+        	// log only as debug to avoid warning spams on some games
+            log.debug("sceKernelUnlockMutex not locked");
             cpu.gpr[2] = ERROR_KERNEL_MUTEX_UNLOCKED;
         } else if ((info.lockedCount - count) < 0) {
             log.warn("sceKernelUnlockMutex underflow");
