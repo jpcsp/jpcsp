@@ -33,6 +33,7 @@ import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -81,6 +82,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     public static final int INADDR_BROADCAST = 0xFFFFFFFF; // Broadcast address
 
     public static final int EAGAIN = SceKernelErrors.ERROR_ERRNO_RESOURCE_UNAVAILABLE & 0x0000FFFF;
+    public static final int EWOULDBLOCK = EAGAIN; // EWOULDBLOCK == EAGAIN
     public static final int EINPROGRESS = SceKernelErrors.ERROR_ERRNO_IN_PROGRESS & 0x0000FFFF;
     public static final int ENOTCONN = SceKernelErrors.ERROR_ERRNO_NOT_CONNECTED & 0x0000FFFF;
     public static final int ECLOSED = SceKernelErrors.ERROR_ERRNO_CLOSED & 0x0000FFFF;
@@ -134,6 +136,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
     // Polling period (micro seconds) for blocking operations
     protected static final int BLOCKED_OPERATION_POLLING_MICROS = 10000;
+
+    protected static final int readSelectionKeyOperations = SelectionKey.OP_READ | SelectionKey.OP_ACCEPT;
+    protected static final int writeSelectionKeyOperations = SelectionKey.OP_WRITE;
 
     @Override
 	public String getName() { return "sceNetInet"; }
@@ -244,6 +249,20 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		protected abstract void executeBlockingState();
+	}
+
+	protected static class BlockingAcceptState extends BlockingState {
+		public pspNetSockAddrInternet acceptAddr;
+
+		public BlockingAcceptState(pspInetSocket inetSocket, pspNetSockAddrInternet acceptAddr) {
+			super(inetSocket, pspInetSocket.NO_TIMEOUT);
+			this.acceptAddr = acceptAddr;
+		}
+
+		@Override
+		protected void executeBlockingState() {
+			inetSocket.blockedAccept(this);
+		}
 	}
 
 	protected static class BlockingPollState extends BlockingState {
@@ -414,6 +433,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		public abstract int getSockname(pspNetSockAddrInternet sockAddrInternet);
 		public abstract int getPeername(pspNetSockAddrInternet sockAddrInternet);
 		public abstract int shutdown(int how);
+		public abstract int listen(int backlog);
+		public abstract int accept(pspNetSockAddrInternet sockAddrInternet);
+		public abstract void blockedAccept(BlockingAcceptState blockingState);
 		public abstract boolean finishConnect();
 
 		public int setBlocking(boolean blocking) {
@@ -449,6 +471,22 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 
 			return socketAddress;
+		}
+
+		protected void copySocketAttributes(pspInetSocket from) {
+			setBlocking(from.isBlocking());
+			setBroadcast(from.isBroadcast());
+			setOnesBroadcast(from.isOnesBroadcast());
+			setReceiveLowWaterMark(from.getReceiveLowWaterMark());
+			setSendLowWaterMark(from.getSendLowWaterMark());
+			setReceiveTimeout(from.getReceiveTimeout());
+			setSendTimeout(from.getSendTimeout());
+			setReceiveBufferSize(from.getReceiveBufferSize());
+			setSendBufferSize(from.getSendBufferSize());
+			setReuseAddress(from.isReuseAddress());
+			setKeepAlive(from.isKeepAlive());
+			setLinger(from.isLingerEnabled(), from.getLinger());
+			setTcpNoDelay(from.isTcpNoDelay());
 		}
 
 		protected SocketAddress getSocketAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
@@ -629,29 +667,68 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 	protected class pspInetStreamSocket extends pspInetSocket {
 		private SocketChannel socketChannel;
+		private ServerSocketChannel serverSocketChannel;
+		private boolean isServerSocket;
+		private SocketAddress pendingBindAddress;
+		private int backlog;
 
 		public pspInetStreamSocket(int uid) {
 			super(uid);
 		}
 
+		private void configureSocketChannel() throws IOException {
+			// We have to use non-blocking sockets at Java level
+			// to allow further PSP thread scheduling while the PSP is
+			// waiting for a blocking operation.
+			socketChannel.configureBlocking(false);
+
+			socketChannel.socket().setReceiveBufferSize(receiveBufferSize);
+			socketChannel.socket().setSendBufferSize(sendBufferSize);
+			socketChannel.socket().setKeepAlive(keepAlive);
+			socketChannel.socket().setReuseAddress(reuseAddress);
+			socketChannel.socket().setSoLinger(lingerEnabled, linger);
+			socketChannel.socket().setTcpNoDelay(tcpNoDelay);
+
+			// Connect has no timeout
+			socketChannel.socket().setSoTimeout(0);
+		}
+
 		private void openChannel() throws IOException {
-			if (socketChannel == null) {
-				socketChannel = SocketChannel.open();
+			if (isServerSocket) {
+				if (serverSocketChannel == null) {
+					serverSocketChannel = ServerSocketChannel.open();
 
-				// We have to use non-blocking sockets at Java level
-				// to allow further PSP thread scheduling while the PSP is
-				// waiting for a blocking operation.
-				socketChannel.configureBlocking(false);
+					// We have to use non-blocking sockets at Java level
+					// to allow further PSP thread scheduling while the PSP is
+					// waiting for a blocking operation.
+					serverSocketChannel.configureBlocking(false);
 
-				socketChannel.socket().setReceiveBufferSize(receiveBufferSize);
-				socketChannel.socket().setSendBufferSize(sendBufferSize);
-				socketChannel.socket().setKeepAlive(keepAlive);
-				socketChannel.socket().setReuseAddress(reuseAddress);
-				socketChannel.socket().setSoLinger(lingerEnabled, linger);
-				socketChannel.socket().setTcpNoDelay(tcpNoDelay);
+					if (socketChannel != null) {
+						// If the socket was already bound, remember the bind address.
+						// It will be rebound in bindChannel().
+						if (socketChannel.socket().getLocalSocketAddress() != null) {
+							pendingBindAddress = socketChannel.socket().getLocalSocketAddress();
+						}
+						socketChannel.close();
+						socketChannel = null;
+					}
+				}
+			} else {
+				if (socketChannel == null) {
+					socketChannel = SocketChannel.open();
+					configureSocketChannel();
+				}
+			}
+		}
 
-				// Connect has no timeout
-				socketChannel.socket().setSoTimeout(0);
+		private void bindChannel() throws IOException {
+			if (pendingBindAddress != null) {
+				if (isServerSocket) {
+					serverSocketChannel.socket().bind(pendingBindAddress, backlog);
+				} else {
+					socketChannel.socket().bind(pendingBindAddress);
+				}
+				pendingBindAddress = null;
 			}
 		}
 
@@ -673,8 +750,14 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		@Override
 		public int connect(pspNetSockAddrInternet addr) {
+			if (isServerSocket) {
+				log.error(String.format("connect not supported on server socket stream addr=%s, %s", addr.toString(), toString()));
+				return -1;
+			}
+
 			try {
 				openChannel();
+				bindChannel();
 				// On non-blocking, the connect might still be in progress
 				if (!finishConnect()) {
 					// Connect already in progress
@@ -717,7 +800,12 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		public int bind(pspNetSockAddrInternet addr) {
 			try {
 				openChannel();
-				socketChannel.socket().bind(getSocketAddress(addr));
+				if (isServerSocket) {
+					pendingBindAddress = getSocketAddress(addr);
+				} else {
+					pendingBindAddress = null;
+					socketChannel.socket().bind(getSocketAddress(addr));
+				}
 			} catch (IOException e) {
 				log.error(e);
 				setError(e);
@@ -865,6 +953,17 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 			}
 
+			if (serverSocketChannel != null) {
+				try {
+					serverSocketChannel.close();
+					serverSocketChannel = null;
+				} catch (IOException e) {
+					log.error(e);
+					setError(e);
+					return -1;
+				}
+			}
+
 			clearError();
 			return 0;
 		}
@@ -927,11 +1026,18 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		@Override
 		public SelectableChannel getSelectableChannel() {
+			if (isServerSocket) {
+				return serverSocketChannel;
+			}
 			return socketChannel;
 		}
 
 		@Override
 		public boolean isValid() {
+			if (isServerSocket) {
+				return serverSocketChannel != null;
+			}
+
 			if (socketChannel == null) {
 				return false;
 			}
@@ -1096,6 +1202,84 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 
 			return 0;
+		}
+
+		@Override
+		public int listen(int backlog) {
+			isServerSocket = true;
+			this.backlog = backlog;
+			try {
+				openChannel();
+				bindChannel();
+			} catch (IOException e) {
+				log.error(e);
+				setError(e);
+				return -1;
+			}
+
+			return 0;
+		}
+
+		@Override
+		public int accept(pspNetSockAddrInternet sockAddrInternet) {
+			if (!isServerSocket) {
+				log.error(String.format("sceNetInetAccept on non-server socket stream not allowed addr=%s, %s", sockAddrInternet.toString(), toString()));
+				return -1;
+			}
+			return accept(sockAddrInternet, null);
+		}
+
+		protected int accept(pspNetSockAddrInternet sockAddrInternet, BlockingAcceptState blockingState) {
+			SocketChannel socketChannel;
+			try {
+				openChannel();
+				bindChannel();
+				socketChannel = serverSocketChannel.accept();
+			} catch (IOException e) {
+				log.error(e);
+				setError(e);
+				return -1;
+			}
+
+			if (socketChannel == null) {
+				if (isBlocking()) {
+					if (blockingState == null) {
+						blockingState = new BlockingAcceptState(this, sockAddrInternet);
+					}
+					blockThread(blockingState);
+					return -1;
+				}
+
+				setErrno(EWOULDBLOCK);
+				return -1;
+			}
+
+			pspInetStreamSocket inetSocket = (pspInetStreamSocket) createSocket(SOCK_STREAM);
+			inetSocket.socketChannel = socketChannel;
+			inetSocket.copySocketAttributes(this);
+			try {
+				inetSocket.configureSocketChannel();
+			} catch (IOException e) {
+				log.error(e);
+			}
+			sockAddrInternet.readFromInetSocketAddress((InetSocketAddress) socketChannel.socket().getRemoteSocketAddress());
+			sockAddrInternet.write(Processor.memory);
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("sceNetInetAccept accepted connection from %s on socket %s", sockAddrInternet.toString(), inetSocket.toString()));
+			} else if (log.isInfoEnabled()) {
+				log.info(String.format("sceNetInetAccept accepted connection from %s", sockAddrInternet.toString()));
+			}
+
+			return inetSocket.getUid();
+		}
+
+		@Override
+		public void blockedAccept(BlockingAcceptState blockingState) {
+			int socketUid = accept(blockingState.acceptAddr, blockingState);
+			if (socketUid >= 0) {
+				unblockThread(blockingState, socketUid);
+			}
 		}
 	}
 
@@ -1286,6 +1470,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				if (socketAddress instanceof InetSocketAddress) {
 					InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
 					fromAddr.readFromInetSocketAddress(inetSocketAddress);
+					fromAddr.write(Processor.memory);
 				}
 
 				clearError();
@@ -1508,6 +1693,25 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			// Nothing to do for datagrams
 			return true;
 		}
+
+		@Override
+		public int listen(int backlog) {
+			log.error(String.format("Listen not supported on datagram socket: backlog=%d, %s", backlog, toString()));
+			return -1;
+		}
+
+		@Override
+		public int accept(pspNetSockAddrInternet sockAddrInternet) {
+			log.error(String.format("Accept not supported on datagram socket: sockAddrInternet=%s, %s", sockAddrInternet.toString(), toString()));
+			return -1;
+		}
+
+		@Override
+		public void blockedAccept(BlockingAcceptState blockingState) {
+			log.error(String.format("Accept not supported on datagram socket: sockAddrInternet=%s, %s", blockingState.acceptAddr.toString(), toString()));
+			setErrno(-1);
+			unblockThread(blockingState, -1);
+		}
 	}
 
 	protected static class pspInetPollFd extends pspAbstractMemoryMappedStructure {
@@ -1550,7 +1754,11 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 	@Override
 	public void stop() {
-		sockets = null;
+		// Close all the open sockets
+		for (pspInetSocket inetSocket : sockets.values()) {
+			inetSocket.close();
+		}
+		sockets.clear();
 	}
 
 	/**
@@ -1578,6 +1786,19 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		// because sceNetInetSelect can handle only 256 bits.
 		// 0 is considered by LuaPLayer as an invalid value as well.
 		return SceUidManager.getNewId(idPurpose, 1, 255);
+	}
+
+	protected pspInetSocket createSocket(int type) {
+		int uid = createSocketId();
+    	pspInetSocket inetSocket = null;
+    	if (type == SOCK_STREAM) {
+    		inetSocket = new pspInetStreamSocket(uid);
+    	} else if (type == SOCK_DGRAM) {
+    		inetSocket = new pspInetDatagramSocket(uid);
+    	}
+    	sockets.put(uid, inetSocket);
+
+    	return inetSocket;
 	}
 
 	protected void releaseSocketId(int id) {
@@ -1722,10 +1943,10 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 						interestOps = SelectionKey.OP_READ | SelectionKey.OP_WRITE | SelectionKey.OP_CONNECT | SelectionKey.OP_ACCEPT;
 					}
 
-					if ((interestOps & SelectionKey.OP_READ) != 0) {
+					if ((interestOps & readSelectionKeyOperations) != 0) {
 						setSelectBit(blockingState.readSocketsAddr, socket);
 					}
-					if ((interestOps & SelectionKey.OP_WRITE) != 0) {
+					if ((interestOps & writeSelectionKeyOperations) != 0) {
 						setSelectBit(blockingState.writeSocketsAddr, socket);
 					}
 					// Out-of-band data is not implemented (not supported by Java?)
@@ -1866,11 +2087,11 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 					SelectionKey selectionKey = it.next();
 					it.remove();
 
-					if (selectionKey.isReadable()) {
+					if ((selectionKey.readyOps() & readSelectionKeyOperations) != 0) {
 						int socket = (Integer) selectionKey.attachment();
 						setSelectBit(blockingState.readSocketsAddr, socket);
 					}
-					if (selectionKey.isWritable()) {
+					if ((selectionKey.readyOps() & writeSelectionKeyOperations) != 0) {
 						int socket = (Integer) selectionKey.attachment();
 						setSelectBit(blockingState.writeSocketsAddr, socket);
 					}
@@ -2042,14 +2263,38 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		int socket = cpu.gpr[4];
 		int address = cpu.gpr[5];
-		int addressLength = cpu.gpr[6];
+		int addressLengthAddr = cpu.gpr[6];
 
-		pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
-		sockAddrInternet.read(mem, address);
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetInetAccept socket=%d, address=0x%08X, addressLengthAddr=0x%08X", socket, address, addressLengthAddr));
+		}
 
-		log.warn(String.format("Unimplemented sceNetInetAccept socket=%d, address=0x%08X(%s), addressLength=%d", socket, address, sockAddrInternet.toString(), addressLength));
+		if (!Memory.isAddressGood(address)) {
+			log.warn(String.format("sceNetInetAccept invalid address=0x%08X", address));
+			cpu.gpr[2] = -1;
+		} else if (!Memory.isAddressGood(addressLengthAddr)) {
+			log.warn(String.format("sceNetInetAccept invalid addressLengthAddr=0x%08X", addressLengthAddr));
+			cpu.gpr[2] = -1;
+		} else if (!sockets.containsKey(socket)) {
+			log.warn(String.format("sceNetInetAccept invalid socket=%d", socket));
+			cpu.gpr[2] = -1;
+		} else {
+			pspInetSocket inetSocket = sockets.get(socket);
+			pspNetSockAddrInternet sockAddrInternet = new pspNetSockAddrInternet();
 
-		cpu.gpr[2] = 0;
+			int addressLength = mem.read32(addressLengthAddr);
+			// addressLength is unsigned int
+			if (addressLength < 0) {
+				addressLength = Integer.MAX_VALUE;
+			}
+			sockAddrInternet.setMaxSize(addressLength);
+			sockAddrInternet.write(mem, address);
+			if (sockAddrInternet.sizeof() < addressLength) {
+				mem.write32(addressLengthAddr, sockAddrInternet.sizeof());
+			}
+
+			cpu.gpr[2] = inetSocket.accept(sockAddrInternet);
+		}
 	}
 
 	// int     sceNetInetBind(int socket, const struct sockaddr *address, socklen_t address_len);
@@ -2070,6 +2315,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			cpu.gpr[2] = -1;
 		} else if (addressLength < 16) {
 			log.warn(String.format("sceNetInetBind invalid addressLength=%d", addressLength));
+			cpu.gpr[2] = -1;
+		} else if (!sockets.containsKey(socket)) {
+			log.warn(String.format("sceNetInetBind invalid socket=%d", socket));
 			cpu.gpr[2] = -1;
 		} else {
 			pspInetSocket inetSocket = sockets.get(socket);
@@ -2308,9 +2556,17 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		int socket = cpu.gpr[4];
 		int backlog = cpu.gpr[5];
 
-		log.warn(String.format("Unimplemented sceNetInetListen socket=%d, backlog=%d", socket, backlog));
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetInetListen socket=%d, backlog=%d", socket, backlog));
+		}
 
-		cpu.gpr[2] = 0;
+		if (!sockets.containsKey(socket)) {
+			log.warn(String.format("sceNetInetListen unknown socket=%d", socket));
+			cpu.gpr[2] = -1;
+		} else {
+			pspInetSocket inetSocket = sockets.get(socket);
+			cpu.gpr[2] = inetSocket.listen(backlog);
+		}
 	}
 
 	/*
@@ -2509,13 +2765,14 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		} else {
 			pspInetSocket inetSocket = sockets.get(socket);
 			pspNetSockAddrInternet fromAddrInternet = new pspNetSockAddrInternet();
-			cpu.gpr[2] = inetSocket.recvfrom(buffer, bufferLength, flags, fromAddrInternet);
 
 			fromAddrInternet.setMaxSize(fromLength);
 			fromAddrInternet.write(mem, from);
 			if (fromAddrInternet.sizeof() < fromLength) {
 				mem.write32(fromLengthAddr, fromAddrInternet.sizeof());
 			}
+
+			cpu.gpr[2] = inetSocket.recvfrom(buffer, bufferLength, flags, fromAddrInternet);
 		}
 	}
     
@@ -2570,10 +2827,10 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			int count = 0;
 
 			// Read the socket list for the read operation and register them with the selector
-			count += readSocketList(selector, readSocketsAddr, numberSockets, SelectionKey.OP_READ, "readSockets");
+			count += readSocketList(selector, readSocketsAddr, numberSockets, readSelectionKeyOperations, "readSockets");
 
 			// Read the socket list for the write operation and register them with the selector
-			count += readSocketList(selector, writeSocketsAddr, numberSockets, SelectionKey.OP_WRITE, "writeSockets");
+			count += readSocketList(selector, writeSocketsAddr, numberSockets, writeSelectionKeyOperations, "writeSockets");
 
 			// Read the socket list for the out-of-band data and register them with the selector.
 			// Out-of-band data is currently not implemented as I don't see any
@@ -2771,20 +3028,11 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			log.warn(String.format("sceNetInetSocket unsupported type=%d(%s), domain=%d, protocol=%d", type, getSocketTypeNameString(type), domain, protocol));
 			cpu.gpr[2] = -1;
 		} else {
-			int uid = createSocketId();
-	    	pspInetSocket inetSocket = null;
-	    	if (type == SOCK_STREAM) {
-	    		inetSocket = new pspInetStreamSocket(uid);
-	    	} else if (type == SOCK_DGRAM) {
-	    		inetSocket = new pspInetDatagramSocket(uid);
-	    	}
-	    	sockets.put(uid, inetSocket);
-
+	    	pspInetSocket inetSocket = createSocket(type);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceNetInetSocket created socket=%d", uid));
+				log.debug(String.format("sceNetInetSocket created socket=%d", inetSocket.getUid()));
 			}
-
-	    	cpu.gpr[2] = uid;
+	    	cpu.gpr[2] = inetSocket.getUid();
 		}
 	}
     
@@ -2890,11 +3138,10 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			log.warn(String.format("sceNetInetInetNtop unsupported family %d", familiy));
 			cpu.gpr[2] = 0;
 		} else {
-			pspNetSockAddrInternet addr = new pspNetSockAddrInternet();
-			addr.read(mem, srcAddr);
-			String ip = internetAddressToString(addr.sin_addr);
+			int addr = mem.read32(srcAddr);
+			String ip = internetAddressToString(addr);
 			if (log.isDebugEnabled()) {
-				log.debug(String.format("sceNetInetInetNtop returning %s for %s", ip, addr.toString()));
+				log.debug(String.format("sceNetInetInetNtop returning %s for 0x%08X", ip, addr));
 			}
 			Utilities.writeStringNZ(mem, buffer, bufferLength, ip);
 			cpu.gpr[2] = buffer;
@@ -2903,10 +3150,34 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     
 	public void sceNetInetInetPton(Processor processor) {
 		CpuState cpu = processor.cpu;
+		Memory mem = Processor.memory;
 
-		log.warn("Unimplemented NID function sceNetInetInetPton [0xE30B8C19]");
+		int familiy = cpu.gpr[4];
+		int srcAddr = cpu.gpr[5];
+		int buffer = cpu.gpr[6];
 
-		cpu.gpr[2] = 0;
+		if (log.isDebugEnabled()) {
+			log.debug(String.format("sceNetInetInetPton family=%d, srcAddr=0x%08X, buffer=0x%08X", familiy, srcAddr, buffer));
+		}
+
+		if (familiy != AF_INET) {
+			log.warn(String.format("sceNetInetInetPton unsupported family %d", familiy));
+			cpu.gpr[2] = -1;
+		} else {
+			String src = Utilities.readStringZ(srcAddr);
+			try {
+				byte[] inetAddressBytes = InetAddress.getByName(src).getAddress();
+				int inetAddress = bytesToInternetAddress(inetAddressBytes);
+				mem.write32(buffer, inetAddress);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetInetPton returning 0x%08X for '%s'", inetAddress, src));
+				}
+				cpu.gpr[2] = 1;
+			} catch (UnknownHostException e) {
+				log.warn(String.format("sceNetInetInetPton returned error '%s' for '%s'", e.toString(), src));
+				cpu.gpr[2] = 0;
+			}
+		}
 	}
     
 	public final HLEModuleFunction sceNetInetInitFunction = new HLEModuleFunction("sceNetInet", "sceNetInetInit") {
