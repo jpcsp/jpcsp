@@ -332,6 +332,7 @@ public class sceNetApctl implements HLEModule {
 		if (sceNetApctlThreadTerminate) {
 			processor.cpu.gpr[2] = 0; // Exit status
 			Modules.ThreadManForUserModule.hleKernelExitDeleteThread();
+			sceNetApctlThread = null;
 		} else {
 			boolean stateTransitionCompleted = true;
 
@@ -398,6 +399,8 @@ public class sceNetApctl implements HLEModule {
 		if (log.isDebugEnabled()) {
 			log.debug(String.format("sceNetApctlTerm"));
 		}
+
+		changeState(PSP_NET_APCTL_STATE_DISCONNECTED);
 
 		sceNetApctlThreadTerminate = true;
 		triggerNetApctlThread();
