@@ -196,9 +196,9 @@ public class VideoEngine {
     private IntBuffer multiDrawFirst;
     private IntBuffer multiDrawCount;
     private static final int maxMultiDrawElements = 1000;
-    private static int viewportResWidth = 480;
-    private static int viewportResHeigth = 272;
-    private static float viewportResScale = 1.0f;
+    public static final int VIEWPORT_BASE_WIDTH = 480;
+    public static final int VIEWPORT_BASE_HEIGHT  = 272;
+    private static int viewportScaleFactor = 1;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -422,10 +422,8 @@ public class VideoEngine {
         }
     }
 
-    public static void setViewportResolution(int width, int heigth) {
-        viewportResWidth = width;
-        viewportResHeigth = heigth;
-        viewportResScale = (float) (((width / 480) + (heigth / 272)) / 2);
+    public void setViewportResolution(int width, int height) {
+        viewportScaleFactor += Math.round(((width / VIEWPORT_BASE_WIDTH) + (height / VIEWPORT_BASE_HEIGHT)) / 2);
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -4985,15 +4983,17 @@ public class VideoEngine {
 
     private void setScissor() {
         if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0
-                && context.scissor_width <= context.region_width * viewportResScale
-                && context.scissor_height <= context.region_height * viewportResScale) {
-        	int scissorX = (int) (context.scissor_x1 * viewportResScale);
-        	int scissorY = (int) (context.scissor_y1 * viewportResScale);
-        	int scissorWidth = (int) (context.scissor_width * viewportResScale);
-        	int scissorHeight = (int) (context.scissor_height * viewportResScale);
-        	if (scissorHeight < viewportResHeigth) {
-        		scissorY = viewportResHeigth - scissorHeight - scissorY;
+                && (context.scissor_width * viewportScaleFactor) <= (context.region_width * viewportScaleFactor)
+                && (context.scissor_height * viewportScaleFactor) <= (context.region_height * viewportScaleFactor)) {
+        	int scissorX = context.scissor_x1 * viewportScaleFactor;
+        	int scissorY = context.scissor_y1 * viewportScaleFactor;
+        	int scissorWidth = context.scissor_width * viewportScaleFactor;
+        	int scissorHeight = context.scissor_height * viewportScaleFactor;
+
+        	if (scissorHeight < (VIEWPORT_BASE_HEIGHT * viewportScaleFactor)) {
+        		scissorY = VIEWPORT_BASE_HEIGHT * viewportScaleFactor - scissorHeight - scissorY;
         	}
+
             re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
         	context.scissorTestFlag.setEnabled(true);
         } else {
@@ -5066,27 +5066,27 @@ public class VideoEngine {
         boolean loadOrtho2D = false;
         if (viewportChanged) {
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-                re.setViewport(0, 0, viewportResWidth, viewportResHeigth);
+                re.setViewport(0, 0, VIEWPORT_BASE_WIDTH, VIEWPORT_BASE_HEIGHT);
                 // Load the ortho for 2D after the depth settings
                 loadOrtho2D = true;
             } else {
                 if (context.viewport_cx == 0 && context.viewport_cy == 0 && context.viewport_height == 0 && context.viewport_width == 0) {
                     context.viewport_cx = 2048;
                     context.viewport_cy = 2048;
-                    context.viewport_width = viewportResWidth;
-                    context.viewport_height = viewportResHeigth;
+                    context.viewport_width = VIEWPORT_BASE_WIDTH * viewportScaleFactor;
+                    context.viewport_height = VIEWPORT_BASE_HEIGHT * viewportScaleFactor;
                 }
 
                 int halfHeight = Math.abs(context.viewport_height);
                 int halfWidth = Math.abs(context.viewport_width);
-                int viewportX = (int) ((context.viewport_cx - halfWidth - context.offset_x) * viewportResScale);
-                int viewportY = (int) ((context.viewport_cy - halfHeight - context.offset_y) * viewportResScale);
-                int viewportWidth = (int) (2 * halfWidth * viewportResScale);
-                int viewportHeight = (int) (2 * halfHeight * viewportResScale);
+                int viewportX = ((context.viewport_cx - halfWidth - context.offset_x) * viewportScaleFactor);
+                int viewportY = ((context.viewport_cy - halfHeight - context.offset_y) * viewportScaleFactor);
+                int viewportWidth = (2 * halfWidth * viewportScaleFactor);
+                int viewportHeight = (2 * halfHeight * viewportScaleFactor);
 
                 // Align the viewport to the top of the window
-                if (viewportHeight < viewportResHeigth) {
-                    viewportY += viewportResHeigth - viewportHeight;
+                if (viewportHeight < (VIEWPORT_BASE_HEIGHT * viewportScaleFactor)) {
+                    viewportY += VIEWPORT_BASE_HEIGHT * viewportScaleFactor - viewportHeight;
                 }
 
                 re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);

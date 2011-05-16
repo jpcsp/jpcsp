@@ -460,7 +460,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
     private int loadFile(Memory mem, String path, String name, int address, int maxLength) throws IOException {
-		if (name == null || name.length() <= 0 || address == 0 || maxLength <= 0) {
+		if (name == null || name.length() <= 0 || address == 0) {
 			return 0;
 		}
 
@@ -469,8 +469,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
 		}
 
+        // Some applications set dataBufSize to -1 on purpose. The reason behind this
+        // is still unknown, but, for these cases, ignore maxLength.
 		int fileSize = (int) fileInput.length();
-		if (fileSize > maxLength) {
+		if ((fileSize > maxLength) && (maxLength > 0)) {
 			fileSize = maxLength;
 		}
 
@@ -505,7 +507,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
     private int loadEncryptedFile(Memory mem, String path, String name, int address, int maxLength, byte[] key, int mode) throws IOException {
-		if (name == null || name.length() <= 0 || address == 0 || maxLength <= 0) {
+		if (name == null || name.length() <= 0 || address == 0) {
 			return 0;
 		}
 
@@ -515,7 +517,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
 		}
 
-		int fileSize = (int) fileInput.length();        
+		int fileSize = (int) fileInput.length();
         byte[] inBuf = new byte[fileSize];
         fileInput.readFully(inBuf);
 

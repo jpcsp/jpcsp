@@ -1543,7 +1543,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (log.isDebugEnabled()) {
             log.debug(String.format("Thread exit detected SceUID=%x name='%s' return:0x%08X", currentThread.uid, currentThread.name, processor.cpu.gpr[2]));
         }
-
+        // NOTE: When a thread exits by itself (without calling sceKernelExitThread),
+        // it's exitStatus becomes it's return value.
+        // When this is detected, the $a0 register should be overwritten with the thread's $v0
+        // register contents BEFORE calling sceKernelExitThread.
+        processor.cpu.gpr[4] = processor.cpu.gpr[2];
         sceKernelExitThread(processor);
     }
 
@@ -3818,7 +3822,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if(exitStatus < 0) {
+        if (exitStatus < 0) {
             thread.exitStatus = ERROR_KERNEL_ILLEGAL_ARGUMENT;
         } else {
             thread.exitStatus = exitStatus;

@@ -140,9 +140,21 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     protected static final int readSelectionKeyOperations = SelectionKey.OP_READ | SelectionKey.OP_ACCEPT;
     protected static final int writeSelectionKeyOperations = SelectionKey.OP_WRITE;
 
+    // MSG flag options for sceNetInetRecvfrom and sceNetInetSendto
+    public static final int MSG_OOB = 0x1;       // Requests out-of-band data.
+    public static final int MSG_PEEK = 0x2;      // Peeks at an incoming message.
+    public static final int MSG_DONTROUTE = 0x4; // Sends data without routing tables.
+    public static final int MSG_EOR = 0x8;       // Terminates a record.
+    public static final int MSG_TRUNC = 0x10;    // Truncates data before receiving it.
+    public static final int MSG_CTRUNC = 0x20;   // Truncates control data before receiving it.
+    public static final int MSG_WAITALL = 0x40;  // Waits until all data can be returned (blocking).
+    public static final int MSG_DONTWAIT = 0x80; // Doesn't wait until all data can be returned (non-blocking).
+    public static final int MSG_BCAST = 0x100;   // Message received by link-level broadcast.
+    public static final int MSG_MCAST = 0x200;   // Message received by link-level multicast.
+
     @Override
 	public String getName() { return "sceNetInet"; }
-	
+
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
@@ -178,7 +190,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			mm.addFunction(sceNetInetInetPtonFunction, 0xE30B8C19);
 		}
 	}
-	
+
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
@@ -1764,7 +1776,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	/**
 	 * Set the errno to an error value.
 	 * Each thread has its own errno.
-	 * 
+	 *
 	 * @param errno
 	 */
 	public static void setErrno(int errno) {
@@ -1774,7 +1786,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	/**
 	 * Return the current value of the errno.
 	 * Each thread has its own errno.
-	 * 
+	 *
 	 * @return the errno of the current thread
 	 */
 	public static int getErrno() {
@@ -2357,7 +2369,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	        sockets.remove(socket);
 		}
 	}
-    
+
 	public void sceNetInetCloseWithRST(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2412,7 +2424,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 		}
 	}
-    
+
 	public void sceNetInetGetpeername(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2444,7 +2456,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			mem.write32(addressLengthAddr, sockAddrInternet.sizeof());
 		}
 	}
-    
+
 	public void sceNetInetGetsockname(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2476,7 +2488,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			mem.write32(addressLengthAddr, sockAddrInternet.sizeof());
 		}
 	}
-    
+
 	public void sceNetInetGetsockopt(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -2597,7 +2609,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	 * The calling process sets the events bitmask and poll() sets the revents
 	 * bitmask. Each call to poll() resets the revents bitmask for accuracy. The
 	 * condition flags in the bitmasks are defined as:
-	 * 
+	 *
 	 * POLLIN      Data other than high-priority data may be read without blocking.
 	 * POLLRDNORM  Normal data may be read without blocking.
 	 * POLLRDBAND  Priority data may be read without blocking.
@@ -2775,7 +2787,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			cpu.gpr[2] = inetSocket.recvfrom(buffer, bufferLength, flags, fromAddrInternet);
 		}
 	}
-    
+
 	public void sceNetInetRecvmsg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -2916,7 +2928,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 		}
 	}
-    
+
 	public void sceNetInetSendmsg(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3035,7 +3047,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 	    	cpu.gpr[2] = inetSocket.getUid();
 		}
 	}
-    
+
 	public void sceNetInetSocketAbort(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3043,7 +3055,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = 0;
 	}
-    
+
 	public void sceNetInetGetErrno(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3053,7 +3065,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = getErrno();
 	}
-    
+
 	public void sceNetInetGetTcpcbstat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3061,7 +3073,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = 0;
 	}
-    
+
 	public void sceNetInetGetUdpcbstat(Processor processor) {
 		CpuState cpu = processor.cpu;
 
@@ -3092,7 +3104,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			cpu.gpr[2] = -1;
 		}
 	}
-    
+
 	public void sceNetInetInetAton(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3120,7 +3132,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			cpu.gpr[2] = 0;
 		}
 	}
-    
+
 	public void sceNetInetInetNtop(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3147,7 +3159,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			cpu.gpr[2] = buffer;
 		}
 	}
-    
+
 	public void sceNetInetInetPton(Processor processor) {
 		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
@@ -3179,7 +3191,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 		}
 	}
-    
+
 	public final HLEModuleFunction sceNetInetInitFunction = new HLEModuleFunction("sceNetInet", "sceNetInetInit") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3190,7 +3202,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetInit(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetTermFunction = new HLEModuleFunction("sceNetInet", "sceNetInetTerm") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3201,7 +3213,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetTerm(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetAcceptFunction = new HLEModuleFunction("sceNetInet", "sceNetInetAccept") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3212,7 +3224,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetAccept(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetBindFunction = new HLEModuleFunction("sceNetInet", "sceNetInetBind") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3223,7 +3235,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetBind(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetCloseFunction = new HLEModuleFunction("sceNetInet", "sceNetInetClose") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3234,7 +3246,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetClose(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetCloseWithRSTFunction = new HLEModuleFunction("sceNetInet", "sceNetInetCloseWithRST") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3245,7 +3257,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetCloseWithRST(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetConnectFunction = new HLEModuleFunction("sceNetInet", "sceNetInetConnect") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3256,7 +3268,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetConnect(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetGetpeernameFunction = new HLEModuleFunction("sceNetInet", "sceNetInetGetpeername") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3267,7 +3279,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetGetpeername(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetGetsocknameFunction = new HLEModuleFunction("sceNetInet", "sceNetInetGetsockname") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3278,7 +3290,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetGetsockname(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetGetsockoptFunction = new HLEModuleFunction("sceNetInet", "sceNetInetGetsockopt") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3289,7 +3301,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetGetsockopt(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetListenFunction = new HLEModuleFunction("sceNetInet", "sceNetInetListen") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3300,7 +3312,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetListen(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetPollFunction = new HLEModuleFunction("sceNetInet", "sceNetInetPoll") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3311,7 +3323,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetPoll(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetRecvFunction = new HLEModuleFunction("sceNetInet", "sceNetInetRecv") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3322,7 +3334,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetRecv(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetRecvfromFunction = new HLEModuleFunction("sceNetInet", "sceNetInetRecvfrom") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3333,7 +3345,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetRecvfrom(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetRecvmsgFunction = new HLEModuleFunction("sceNetInet", "sceNetInetRecvmsg") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3344,7 +3356,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetRecvmsg(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetSelectFunction = new HLEModuleFunction("sceNetInet", "sceNetInetSelect") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3355,7 +3367,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetSelect(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetSendFunction = new HLEModuleFunction("sceNetInet", "sceNetInetSend") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3366,7 +3378,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetSend(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetSendtoFunction = new HLEModuleFunction("sceNetInet", "sceNetInetSendto") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3377,7 +3389,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetSendto(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetSendmsgFunction = new HLEModuleFunction("sceNetInet", "sceNetInetSendmsg") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3388,7 +3400,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetSendmsg(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetSetsockoptFunction = new HLEModuleFunction("sceNetInet", "sceNetInetSetsockopt") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3399,7 +3411,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetSetsockopt(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetShutdownFunction = new HLEModuleFunction("sceNetInet", "sceNetInetShutdown") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3410,7 +3422,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetShutdown(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetSocketFunction = new HLEModuleFunction("sceNetInet", "sceNetInetSocket") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3421,7 +3433,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetSocket(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetSocketAbortFunction = new HLEModuleFunction("sceNetInet", "sceNetInetSocketAbort") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3432,7 +3444,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetSocketAbort(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetGetErrnoFunction = new HLEModuleFunction("sceNetInet", "sceNetInetGetErrno") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3443,7 +3455,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetGetErrno(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetGetTcpcbstatFunction = new HLEModuleFunction("sceNetInet", "sceNetInetGetTcpcbstat") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3454,7 +3466,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetGetTcpcbstat(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetGetUdpcbstatFunction = new HLEModuleFunction("sceNetInet", "sceNetInetGetUdpcbstat") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3465,7 +3477,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetGetUdpcbstat(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetInetAddrFunction = new HLEModuleFunction("sceNetInet", "sceNetInetInetAddr") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3476,7 +3488,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetInetAddr(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetInetAtonFunction = new HLEModuleFunction("sceNetInet", "sceNetInetInetAton") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3487,7 +3499,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetInetAton(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetInetNtopFunction = new HLEModuleFunction("sceNetInet", "sceNetInetInetNtop") {
 		@Override
 		public final void execute(Processor processor) {
@@ -3498,7 +3510,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return "jpcsp.HLE.Modules.sceNetInetModule.sceNetInetInetNtop(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceNetInetInetPtonFunction = new HLEModuleFunction("sceNetInet", "sceNetInetInetPton") {
 		@Override
 		public final void execute(Processor processor) {

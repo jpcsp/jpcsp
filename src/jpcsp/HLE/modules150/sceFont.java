@@ -245,7 +245,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
     public static final String fontDirPath = "flash0:/font";
-    public static final String customFontFile = "debug.jpft";
+    public static final String customFontFilePath = "flash0/font/debug.jpft";
     public static final int PSP_FONT_PIXELFORMAT_4 = 0; // 2 pixels packed in 1 byte (natural order)
     public static final int PSP_FONT_PIXELFORMAT_4_REV = 1; // 2 pixels packed in 1 byte (reversed order)
     public static final int PSP_FONT_PIXELFORMAT_8 = 2; // 1 pixel in 1 byte
@@ -294,7 +294,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     protected void loadDefaultSystemFont() {
         try {
-            RandomAccessFile raf = new RandomAccessFile(fontDirPath + "/" + customFontFile, "r");
+            RandomAccessFile raf = new RandomAccessFile(customFontFilePath, "r");
             raf.skipBytes(32);  // Skip custom header.
             char[] c = new char[(int) raf.length() - 32];
             for (int i = 0; i < c.length; i++) {
