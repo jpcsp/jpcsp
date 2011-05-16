@@ -1,3 +1,2 @@
-#!/bin/sh
-
-java -Xmx512m -Djava.library.path=lib/linux-amd64 -jar bin/jpcsp.jar
+#!/bin/sh\n
+java -Xmx1024m -cp "bin/*;lib/*;lib/amd-64/*" -Djava.library.path=lib/amd-64 jpcsp.MainGUI

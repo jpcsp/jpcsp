@@ -792,10 +792,13 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	                //   size (32KB string) : "416 KB"
 	                // error: SCE_UTILITY_SAVEDATA_TYPE_SIZES return 801103c7
 	                //
+                    int baseResult = 0;
 	                String gameName = savedataParams.gameName;
 	                String saveName = savedataParams.saveName;
 
 	                // MS free size.
+                    // Gets the ammount of free space in the Memory Stick. If null,
+                    // the size is ignored and no error is returned.
 	                int buffer1Addr = savedataParams.msFreeAddr;
 	                if (Memory.isAddressGood(buffer1Addr)) {
 	                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
@@ -809,32 +812,48 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	                }
 
 	                // MS data size.
+                    // Gets the size of the data already saved in the Memory Stick.
+                    // If null, the size is ignored and no error is returned.
 	                int buffer2Addr = savedataParams.msDataAddr;
 	                if (Memory.isAddressGood(buffer2Addr)) {
 	                    gameName = Utilities.readStringNZ(mem, buffer2Addr, 13);
 	                    saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 20);
-	                    int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
-	                    int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
 
-	                    mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors.
-	                    mem.write32(buffer2Addr + 40, savedataSizeKb); // Size in Kb.
-	                    Utilities.writeStringNZ(mem, buffer2Addr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
-	                    mem.write32(buffer2Addr + 52, savedataSize32Kb);
-	                    Utilities.writeStringNZ(mem, buffer2Addr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
+                        if (savedataParams.isPresent(gameName, saveName)) {
+                            int savedataSizeKb = savedataParams.getSizeKb(gameName, saveName);
+                            int savedataSize32Kb = MemoryStick.getSize32Kb(savedataSizeKb);
 
-	                    log.debug("Memory Stick Full Space = " +  MemoryStick.getSizeKbString(savedataSizeKb));
+                            mem.write32(buffer2Addr + 36, savedataSizeKb / MemoryStick.getSectorSizeKb()); // Number of sectors.
+                            mem.write32(buffer2Addr + 40, savedataSizeKb); // Size in Kb.
+                            Utilities.writeStringNZ(mem, buffer2Addr + 44, 8, MemoryStick.getSizeKbString(savedataSizeKb));
+                            mem.write32(buffer2Addr + 52, savedataSize32Kb);
+                            Utilities.writeStringNZ(mem, buffer2Addr + 56, 8, MemoryStick.getSizeKbString(savedataSize32Kb));
+
+                            log.debug("Memory Stick Full Space = " +  MemoryStick.getSizeKbString(savedataSizeKb));
+	                    } else {
+                            log.warn("Memory Stick Full Space = no data found!");
+	                        baseResult = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
+	                    }
 	                }
 
 	                // Utility data size.
+                    // Gets the size of the data to be saved in the Memory Stick.
+                    // If null, the size is ignored and no error is returned.
 	                int buffer3Addr = savedataParams.utilityDataAddr;
 	                if (Memory.isAddressGood(buffer3Addr)) {
 	                    int memoryStickRequiredSpaceKb = 0;
 	                    memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
-	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize);
-	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon0FileData.size);
-	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon1FileData.size);
-	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
-	                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
+                        // In overwrite mode, the dataSize params are ignored.
+                        if (!savedataParams.overwrite) {
+                            // The main binary dataSize depends on the fileName existance.
+                            if (savedataParams.fileName != null) {
+                                memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.dataSize);
+                            }
+                            memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon0FileData.size);
+                            memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.icon1FileData.size);
+                            memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.pic1FileData.size);
+                            memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(savedataParams.snd0FileData.size);
+                        }
 	                    String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
 	                    int memoryStickRequiredSpace32Kb = MemoryStick.getSize32Kb(memoryStickRequiredSpaceKb);
 	                    String memoryStickRequiredSpace32KbString = MemoryStick.getSizeKbString(memoryStickRequiredSpace32Kb);
@@ -847,22 +866,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
 	                    log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
 	                }
-
-	                // More tests on a PSP revealed that the output depends on the
-	                // overwrite mode. When the overwrite mode is on (1), ERROR_SAVEDATA_SIZES_NO_DATA
-	                // is output when there're no data to overwrite, but no error is output if
-	                // overwrite mode is off.
-	                // Note: When msDataAddr is set to NULL, this condition is discarded, as the data
-	                // in the Memory Stick is ignored on purpose.
-	                if(savedataParams.overwrite && (savedataParams.msDataAddr != 0)) {
-	                    if (savedataParams.isPresent(gameName, saveName)) {
-	                        savedataParams.base.result = 0;
-	                    } else {
-	                        savedataParams.base.result = SceKernelErrors.ERROR_SAVEDATA_SIZES_NO_DATA;
-	                    }
-	                } else {
-	                    savedataParams.base.result = 0;
-	                }
+                    savedataParams.base.result = baseResult;
 	                break;
 	            }
 
