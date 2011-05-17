@@ -3547,8 +3547,9 @@ public class VideoEngine {
 
     private void executeCommandTBIAS() {
     	context.tex_mipmap_mode = normalArgument & 0x3;
-    	context.tex_mipmap_bias_int = (int) (byte) (normalArgument >> 16); // Signed 8-bit integer
-    	context.tex_mipmap_bias = context.tex_mipmap_bias_int / 16.0f;
+    	int biasValue = (int) (byte) (normalArgument >> 16); // Signed 8-bit 4.4 fixed point value
+    	context.tex_mipmap_bias_int = biasValue >> 4;
+    	context.tex_mipmap_bias = biasValue / 16.0f;
         if (isLogDebugEnabled) {
             log.debug("sceGuTexLevelMode(mode=" + context.tex_mipmap_mode + ", bias=" + context.tex_mipmap_bias + ")");
         }
