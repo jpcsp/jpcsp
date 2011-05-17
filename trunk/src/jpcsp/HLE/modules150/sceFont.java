@@ -29,7 +29,6 @@ import static jpcsp.HLE.kernel.types.pspFontStyle.FONT_STYLE_REGULAR;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -245,7 +244,7 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     public static final int PGF_MAGIC = 'P' << 24 | 'G' << 16 | 'F' << 8 | '0';
     public static final String fontDirPath = "flash0:/font";
-    public static final String customFontFilePath = "flash0/font/debug.jpft";
+    public static final String customFontFile = "debug.jpft";
     public static final int PSP_FONT_PIXELFORMAT_4 = 0; // 2 pixels packed in 1 byte (natural order)
     public static final int PSP_FONT_PIXELFORMAT_4_REV = 1; // 2 pixels packed in 1 byte (reversed order)
     public static final int PSP_FONT_PIXELFORMAT_8 = 2; // 1 pixel in 1 byte
@@ -294,11 +293,11 @@ public class sceFont implements HLEModule, HLEStartModule {
 
     protected void loadDefaultSystemFont() {
         try {
-            RandomAccessFile raf = new RandomAccessFile(customFontFilePath, "r");
-            raf.skipBytes(32);  // Skip custom header.
-            char[] c = new char[(int) raf.length() - 32];
+    		SeekableDataInput fontFile = Modules.IoFileMgrForUserModule.getFile(fontDirPath + "/" + customFontFile, IoFileMgrForUser.PSP_O_RDONLY);
+    		fontFile.skipBytes(32);  // Skip custom header.
+            char[] c = new char[(int) fontFile.length() - 32];
             for (int i = 0; i < c.length; i++) {
-                c[i] = (char) (raf.readByte() & 0xFF);
+                c[i] = (char) (fontFile.readByte() & 0xFF);
             }
             Debug.Font.setDebugFont(c); // Set the internal debug font.
             Debug.Font.setDebugCharSize(8);

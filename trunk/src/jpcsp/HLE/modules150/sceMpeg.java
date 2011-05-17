@@ -343,7 +343,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     	return Integer.reverseBytes(x);
     }
 
-    protected int readUnaligned32(Memory mem, int address) {
+    public static int readUnaligned32(Memory mem, int address) {
         switch (address & 3) {
             case 0: return mem.read32(address);
             case 2: return mem.read16(address) | (mem.read16(address + 2) << 16);
@@ -1055,8 +1055,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                             me.init(meChannel, true, true);
                         }
                     	if (!me.readVideoAu(mpegAvcAu)) {
-                    		endOfVideoReached = true;
-                            cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+                    		// Returning "ERROR_MPEG_NO_DATA" only last timestamp has been reached
+                    		if (mpegLastTimestamp <= 0 || mpegAvcAu.pts >= mpegLastTimestamp) {
+                    			endOfVideoReached = true;
+                    			cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+                    		}
                     	} else {
                     		endOfVideoReached = false;
                     	}
@@ -1379,6 +1382,20 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 if (me.stepVideo()) {
                 	me.writeVideoImage(buffer, frameWidth, videoPixelMode);
                 	packetsConsumed = meChannel.getReadLength() / mpegRingbuffer.packetSize;
+
+                	// The MediaEngine is already consuming all the remaining
+                	// packets when approaching the end of the video. The PSP
+                	// is only consuming the last packet when reaching the end,
+                	// not before.
+                	// Consuming all the remaining packets?
+                	if (mpegRingbuffer.packetsFree + packetsConsumed >= mpegRingbuffer.packets) {
+                		// Having not yet reached the last timestamp?
+                		if (mpegLastTimestamp > 0 && mpegAvcAu.pts < mpegLastTimestamp) {
+                			// Do not yet consume all the remaining packets.
+                			packetsConsumed = 0;
+                		}
+                	}
+
                 	meChannel.setReadLength(meChannel.getReadLength() - packetsConsumed * mpegRingbuffer.packetSize);
                 } else {
                 	// Consume all the remaining packets
