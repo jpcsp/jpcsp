@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
-import java.security.MessageDigest;;
+import java.security.MessageDigest;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Random;

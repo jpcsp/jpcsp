@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.modules150.sceMpeg.endianSwap32;
+import static jpcsp.HLE.modules150.sceMpeg.readUnaligned32;
+
 import java.util.HashMap;
 
 import jpcsp.Memory;
@@ -112,10 +115,6 @@ public class scePsmf implements HLEModule, HLEStartModule {
     }
     private HashMap<Integer, PSMFHeader> psmfMap;
 
-    protected int endianSwap32(int x) {
-        return (x << 24) | ((x << 8) & 0xFF0000) | ((x >> 8) & 0xFF00) | ((x >> 24) & 0xFF);
-    }
-
     protected int endianSwap16(int x) {
         return (x >> 8) | ((x << 8) & 0xFF00);
     }
@@ -210,12 +209,12 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
             headerOffset = addr;
 
-            version = mem.read32(addr + 4);
-            streamOffset = endianSwap32(mem.read32(addr + 8));
-            streamSize = endianSwap32(mem.read32(addr + 12));
+            version = mem.read32(addr + sceMpeg.PSMF_STREAM_VERSION_OFFSET);
+            streamOffset = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
+            streamSize = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_SIZE_OFFSET));
 
-            presentationStartTime = (endianSwap16(mem.read16(addr + 86)) << 16) | endianSwap16(mem.read16(addr + 88));  // First PTS in EPMap (90000).
-            presentationEndTime = (endianSwap16(mem.read16(addr + 92)) << 16) | endianSwap16(mem.read16(addr + 94));    // mpegLastTimestamp.
+            presentationStartTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_FIRST_TIMESTAMP_OFFSET));  // First PTS in EPMap (90000).
+            presentationEndTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));    // mpegLastTimestamp.
 
             streamStructSize = mem.read8(addr + 127);                      // 16 bytes per stream + 2 bytes for total stream number.
             streamNum = endianSwap16(mem.read16(addr + 128));              // Number of total registered streams.
@@ -599,6 +598,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
         if (psmfMap.containsKey(psmf)) {
             int startTime = psmfMap.get(psmf).getPresentationStartTime();
             mem.write32(startTimeAddr, startTime);
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("scePsmfGetPresentationStartTime startTime=%d", startTime));
+            }
             cpu.gpr[2] = 0;
         } else {
             mem.write32(startTimeAddr, 0);
@@ -624,6 +626,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
         if (psmfMap.containsKey(psmf)) {
             int endTime = psmfMap.get(psmf).getPresentationEndTime();
             mem.write32(endTimeAddr, endTime);
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("scePsmfGetPresentationEndTime endTime=%d", endTime));
+            }
             cpu.gpr[2] = 0;
         } else {
             mem.write32(endTimeAddr, 0);
