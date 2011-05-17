@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -41,6 +42,8 @@ import java.util.LinkedList;
 
 import org.apache.log4j.Logger;
 
+import com.savarese.rocksaw.net.RawSocket;
+
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
@@ -57,6 +60,8 @@ import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.IMemoryWriter;
 import jpcsp.memory.MemoryReader;
 import jpcsp.memory.MemoryWriter;
+import jpcsp.network.RawChannel;
+import jpcsp.network.RawSelector;
 import jpcsp.util.Utilities;
 
 import jpcsp.Emulator;
@@ -66,7 +71,7 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 
 public class sceNetInet implements HLEModule, HLEStartModule {
-    protected static Logger log = Modules.getLogger("sceNetInet");
+    public static Logger log = Modules.getLogger("sceNetInet");
 
     public static final int AF_INET = 2; // Address familiy internet
 
@@ -140,7 +145,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
     protected static final int readSelectionKeyOperations = SelectionKey.OP_READ | SelectionKey.OP_ACCEPT;
     protected static final int writeSelectionKeyOperations = SelectionKey.OP_WRITE;
 
-    // MSG flag options for sceNetInetRecvfrom and sceNetInetSendto
+    // MSG flag options for sceNetInetRecvfrom and sceNetInetSendto (from <sys/socket.h>)
     public static final int MSG_OOB = 0x1;       // Requests out-of-band data.
     public static final int MSG_PEEK = 0x2;      // Peeks at an incoming message.
     public static final int MSG_DONTROUTE = 0x4; // Sends data without routing tables.
@@ -295,15 +300,17 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 	protected static class BlockingSelectState extends BlockingState {
 		public Selector selector;
+		public RawSelector rawSelector;
 		public int numberSockets;
 		public int readSocketsAddr;
 		public int writeSocketsAddr;
 		public int outOfBandSocketsAddr;
 		public int count;
 
-		public BlockingSelectState(Selector selector, int numberSockets, int readSocketsAddr, int writeSocketsAddr, int outOfBandSocketsAddr, long timeout, int count) {
+		public BlockingSelectState(Selector selector, RawSelector rawSelector, int numberSockets, int readSocketsAddr, int writeSocketsAddr, int outOfBandSocketsAddr, long timeout, int count) {
 			super(null, timeout);
 			this.selector = selector;
+			this.rawSelector = rawSelector;
 			this.numberSockets = numberSockets;
 			this.readSocketsAddr = readSocketsAddr;
 			this.writeSocketsAddr = writeSocketsAddr;
@@ -431,23 +438,18 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		public abstract int connect(pspNetSockAddrInternet addr);
 		public abstract int bind(pspNetSockAddrInternet addr);
-		public abstract int recv(int buffer, int bufferLength, int flags);
-		public abstract int send(int buffer, int bufferLength, int flags);
-		public abstract int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr);
-		public abstract int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr);
+		public abstract int recv(int buffer, int bufferLength, int flags, BlockingReceiveState blockingState);
+		public abstract int send(int buffer, int bufferLength, int flags, BlockingSendState blockingState);
+		public abstract int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr, BlockingReceiveFromState blockingState);
+		public abstract int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr, BlockingSendToState blockingState);
 		public abstract int close();
-		public abstract void blockedRecv(BlockingReceiveState blockingState);
-		public abstract void blockedRecvfrom(BlockingReceiveFromState blockingState);
-		public abstract void blockedSend(BlockingSendState blockingState);
-		public abstract void blockedSendto(BlockingSendToState blockingState);
 		public abstract SelectableChannel getSelectableChannel();
 		public abstract boolean isValid();
 		public abstract int getSockname(pspNetSockAddrInternet sockAddrInternet);
 		public abstract int getPeername(pspNetSockAddrInternet sockAddrInternet);
 		public abstract int shutdown(int how);
 		public abstract int listen(int backlog);
-		public abstract int accept(pspNetSockAddrInternet sockAddrInternet);
-		public abstract void blockedAccept(BlockingAcceptState blockingState);
+		public abstract int accept(pspNetSockAddrInternet sockAddrInternet, BlockingAcceptState blockingState);
 		public abstract boolean finishConnect();
 
 		public int setBlocking(boolean blocking) {
@@ -458,6 +460,15 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		public boolean isBlocking() {
 			return blocking;
+		}
+
+		public boolean isBlocking(int flags) {
+			// Flag MSG_DONTWAIT set: the IO operation is non-blocking
+			if ((flags & MSG_DONTWAIT) != 0) {
+				return false;
+			}
+
+			return isBlocking();
 		}
 
 		protected SocketAddress getSocketAddress(int address, int port) throws UnknownHostException {
@@ -485,6 +496,21 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			return socketAddress;
 		}
 
+		protected SocketAddress getSocketAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
+			return getSocketAddress(addr.sin_addr, addr.sin_port);
+		}
+
+		protected InetAddress getInetAddress(int address) throws UnknownHostException {
+			InetAddress inetAddress;
+			inetAddress = InetAddress.getByAddress(internetAddressToBytes(address));
+
+			return inetAddress;
+		}
+
+		protected InetAddress getInetAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
+			return getInetAddress(addr.sin_addr);
+		}
+
 		protected void copySocketAttributes(pspInetSocket from) {
 			setBlocking(from.isBlocking());
 			setBroadcast(from.isBroadcast());
@@ -499,10 +525,6 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			setKeepAlive(from.isKeepAlive());
 			setLinger(from.isLingerEnabled(), from.getLinger());
 			setTcpNoDelay(from.isTcpNoDelay());
-		}
-
-		protected SocketAddress getSocketAddress(pspNetSockAddrInternet addr) throws UnknownHostException {
-			return getSocketAddress(addr.sin_addr, addr.sin_port);
 		}
 
 		public boolean isBroadcast() {
@@ -531,14 +553,18 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			this.sendLowWaterMark = sendLowWaterMark;
 		}
 
-		protected ByteBuffer getByteBuffer(int address, int length) {
+		protected byte[] getByteArray(int address, int length) {
 			byte[] bytes = new byte[length];
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(address, length, 1);
 			for (int i = 0; i < length; i++) {
 				bytes[i] = (byte) memoryReader.readNext();
 			}
 
-			return ByteBuffer.wrap(bytes);
+			return bytes;
+		}
+
+		protected ByteBuffer getByteBuffer(int address, int length) {
+			return ByteBuffer.wrap(getByteArray(address, length));
 		}
 
 		@Override
@@ -674,6 +700,119 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		public int setTcpNoDelay(boolean tcpNoDelay) {
 			this.tcpNoDelay = tcpNoDelay;
 			return 0;
+		}
+
+		protected void storeBytes(int address, int length, byte[] bytes) {
+			if (length > 0) {
+				IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, length, 1);
+				for (int i = 0; i < length; i++) {
+					memoryWriter.writeNext(bytes[i]);
+				}
+				memoryWriter.flush();
+			}
+		}
+
+		public Selector getSelector(Selector selector, RawSelector rawSelector) {
+			return selector;
+		}
+
+		public int recv(int buffer, int bufferLength, int flags) {
+			if ((flags & ~MSG_DONTWAIT) != 0) {
+				log.warn(String.format("sceNetInetRecv unsupported flag 0x%X on socket", flags));
+			}
+			return recv(buffer, bufferLength, flags, null);
+		}
+
+		public void blockedRecv(BlockingReceiveState blockingState) {
+			if (blockingState.isTimeout()) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetRecv socket=%d returning %d (timeout)", getUid(), blockingState.receivedLength));
+				}
+				setErrno(EAGAIN);
+				unblockThread(blockingState, blockingState.receivedLength);
+			} else {
+				int length = recv(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState);
+				if (length >= 0) {
+					unblockThread(blockingState, blockingState.receivedLength);
+				}
+			}
+		}
+
+		public int send(int buffer, int bufferLength, int flags) {
+			if ((flags & ~MSG_DONTWAIT) != 0) {
+				log.warn(String.format("sceNetInetSend unsupported flag 0x%X on socket", flags));
+			}
+			return send(buffer, bufferLength, flags, null);
+		}
+
+		public void blockedSend(BlockingSendState blockingState) {
+			if (blockingState.isTimeout()) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetSend socket=%d returning %d (timeout)", getUid(), blockingState.sentLength));
+				}
+				setErrno(EAGAIN);
+				unblockThread(blockingState, blockingState.sentLength);
+			} else {
+				int length = send(blockingState.buffer + blockingState.sentLength, blockingState.bufferLength - blockingState.sentLength, blockingState.flags, blockingState);
+				if (length > 0) {
+					unblockThread(blockingState, blockingState.sentLength);
+				}
+			}
+		}
+
+		public int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr) {
+			if ((flags & ~MSG_DONTWAIT) != 0) {
+				log.warn(String.format("sceNetInetSendto unsupported flag 0x%X on socket", flags));
+			}
+			return sendto(buffer, bufferLength, flags, toAddr, null);
+		}
+
+		public void blockedSendto(BlockingSendToState blockingState) {
+			if (blockingState.isTimeout()) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetSendto socket=%d returning %d (timeout)", getUid(), blockingState.sentLength));
+				}
+				setErrno(EAGAIN);
+				unblockThread(blockingState, blockingState.sentLength);
+			} else {
+				int length = sendto(blockingState.buffer + blockingState.sentLength, blockingState.bufferLength - blockingState.sentLength, blockingState.flags, blockingState.toAddr, blockingState);
+				if (length > 0) {
+					unblockThread(blockingState, blockingState.sentLength);
+				}
+			}
+		}
+
+		public int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr) {
+			if ((flags & ~MSG_DONTWAIT) != 0) {
+				log.warn(String.format("sceNetInetRecvfrom unsupported flag 0x%X on socket", flags));
+			}
+			return recvfrom(buffer, bufferLength, flags, fromAddr, null);
+		}
+
+		public void blockedRecvfrom(BlockingReceiveFromState blockingState) {
+			if (blockingState.isTimeout()) {
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetRecvfrom socket=%d returning %d (timeout)", getUid(), blockingState.receivedLength));
+				}
+				setErrno(EAGAIN);
+				unblockThread(blockingState, blockingState.receivedLength);
+			} else {
+				int length = recvfrom(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState.fromAddr, blockingState);
+				if (length >= 0) {
+					unblockThread(blockingState, blockingState.receivedLength);
+				}
+			}
+		}
+
+		public int accept(pspNetSockAddrInternet sockAddrInternet) {
+			return accept(sockAddrInternet, null);
+		}
+
+		public void blockedAccept(BlockingAcceptState blockingState) {
+			int socketUid = accept(blockingState.acceptAddr, blockingState);
+			if (socketUid >= 0) {
+				unblockThread(blockingState, socketUid);
+			}
 		}
 	}
 
@@ -829,14 +968,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		public int recv(int buffer, int bufferLength, int flags) {
-			if (flags != 0) {
-				log.warn(String.format("sceNetInetRecv unsupported flag 0x%X on stream socket", flags));
-			}
-			return recv(buffer, bufferLength, flags, null);
-		}
-
-		private int recv(int buffer, int bufferLength, int flags, BlockingReceiveState blockingState) {
+		public int recv(int buffer, int bufferLength, int flags, BlockingReceiveState blockingState) {
 			try {
 				// On non-blocking, the connect might still be in progress
 				if (!finishConnect()) {
@@ -846,13 +978,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 				byte[] bytes = new byte[bufferLength];
 				int length = socketChannel.read(ByteBuffer.wrap(bytes));
-				if (length > 0) {
-					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(buffer, length, 1);
-					for (int i = 0; i < length; i++) {
-						memoryWriter.writeNext(bytes[i]);
-					}
-					memoryWriter.flush();
-				}
+				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes: %s", getUid(), length, Utilities.getMemoryDump(buffer, length, 4, 16)));
@@ -865,7 +991,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// Nothing received on a non-blocking stream, return EAGAIN in errno
-				if (length == 0 && !isBlocking()) {
+				if (length == 0 && !isBlocking(flags)) {
 					setErrno(EAGAIN);
 					return -1;
 				}
@@ -875,7 +1001,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// With a blocking stream, at least the low water mark has to be read
-				if (isBlocking()) {
+				if (isBlocking(flags)) {
 					if (blockingState == null) {
 						blockingState = new BlockingReceiveState(this, buffer, bufferLength, flags, length);
 					}
@@ -898,14 +1024,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		public int send(int buffer, int bufferLength, int flags) {
-			if (flags != 0) {
-				log.warn(String.format("sceNetInetSend unsupported flag 0x%X on stream socket", flags));
-			}
-			return send(buffer, bufferLength, flags, null);
-		}
-
-		private int send(int buffer, int bufferLength, int flags, BlockingSendState blockingState) {
+		public int send(int buffer, int bufferLength, int flags, BlockingSendState blockingState) {
 			try {
 				// On non-blocking, the connect might still be in progress
 				if (!finishConnect()) {
@@ -920,7 +1039,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// Nothing sent on a non-blocking stream, return EAGAIN in errno
-				if (length == 0 && !isBlocking()) {
+				if (length == 0 && !isBlocking(flags)) {
 					setErrno(EAGAIN);
 					return -1;
 				}
@@ -930,7 +1049,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// With a blocking stream, we have to send all the bytes
-				if (isBlocking()) {
+				if (isBlocking(flags)) {
 					if (blockingState == null) {
 						blockingState = new BlockingSendState(this, buffer, bufferLength, flags, length);
 					}
@@ -981,59 +1100,17 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		public int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr) {
+		public int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr, BlockingReceiveFromState blockingState) {
 			log.warn("sceNetInetRecvfrom not supported on stream socket");
 			setError(-1);
 			return -1;
 		}
 
 		@Override
-		public int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr) {
+		public int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr, BlockingSendToState blockingState) {
 			log.warn("sceNetInetSendto not supported on stream socket");
 			setError(-1);
 			return -1;
-		}
-
-		@Override
-		public void blockedRecv(BlockingReceiveState blockingState) {
-			if (blockingState.isTimeout()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecv socket=%d returning %d (timeout)", getUid(), blockingState.receivedLength));
-				}
-				setErrno(EAGAIN);
-				unblockThread(blockingState, blockingState.receivedLength);
-			} else {
-				int length = recv(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState);
-				if (length >= 0) {
-					unblockThread(blockingState, blockingState.receivedLength);
-				}
-			}
-		}
-
-		@Override
-		public void blockedRecvfrom(BlockingReceiveFromState blockingState) {
-			log.error("blockedRecvfrom not supported on stream socket");
-		}
-
-		@Override
-		public void blockedSend(BlockingSendState blockingState) {
-			if (blockingState.isTimeout()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSend socket=%d returning %d (timeout)", getUid(), blockingState.sentLength));
-				}
-				setErrno(EAGAIN);
-				unblockThread(blockingState, blockingState.sentLength);
-			} else {
-				int length = send(blockingState.buffer + blockingState.sentLength, blockingState.bufferLength - blockingState.sentLength, blockingState.flags, blockingState);
-				if (length > 0) {
-					unblockThread(blockingState, blockingState.sentLength);
-				}
-			}
-		}
-
-		@Override
-		public void blockedSendto(BlockingSendToState blockingState) {
-			log.error("blockedRecvfrom not supported on stream socket");
 		}
 
 		@Override
@@ -1238,10 +1315,11 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				log.error(String.format("sceNetInetAccept on non-server socket stream not allowed addr=%s, %s", sockAddrInternet.toString(), toString()));
 				return -1;
 			}
-			return accept(sockAddrInternet, null);
+			return super.accept(sockAddrInternet);
 		}
 
-		protected int accept(pspNetSockAddrInternet sockAddrInternet, BlockingAcceptState blockingState) {
+		@Override
+		public int accept(pspNetSockAddrInternet sockAddrInternet, BlockingAcceptState blockingState) {
 			SocketChannel socketChannel;
 			try {
 				openChannel();
@@ -1266,7 +1344,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				return -1;
 			}
 
-			pspInetStreamSocket inetSocket = (pspInetStreamSocket) createSocket(SOCK_STREAM);
+			pspInetStreamSocket inetSocket = (pspInetStreamSocket) createSocket(SOCK_STREAM, 0);
 			inetSocket.socketChannel = socketChannel;
 			inetSocket.copySocketAttributes(this);
 			try {
@@ -1284,14 +1362,6 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			}
 
 			return inetSocket.getUid();
-		}
-
-		@Override
-		public void blockedAccept(BlockingAcceptState blockingState) {
-			int socketUid = accept(blockingState.acceptAddr, blockingState);
-			if (socketUid >= 0) {
-				unblockThread(blockingState, socketUid);
-			}
 		}
 	}
 
@@ -1367,26 +1437,13 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		public int recv(int buffer, int bufferLength, int flags) {
-			if (flags != 0) {
-				log.warn(String.format("sceNetInetRecv unsupported flag 0x%X on datagram socket", flags));
-			}
-			return recv(buffer, bufferLength, flags, null);
-		}
-
-		private int recv(int buffer, int bufferLength, int flags, BlockingReceiveState blockingState) {
+		public int recv(int buffer, int bufferLength, int flags, BlockingReceiveState blockingState) {
 			try {
 				byte[] bytes = new byte[bufferLength];
 				ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
 				SocketAddress socketAddress = datagramChannel.receive(byteBuffer);
 				int length = byteBuffer.position();
-				if (length > 0) {
-					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(buffer, length, 1);
-					for (int i = 0; i < length; i++) {
-						memoryWriter.writeNext(bytes[i]);
-					}
-					memoryWriter.flush();
-				}
+				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetRecv socket=%d received %d bytes from %s: %s", getUid(), length, socketAddress, Utilities.getMemoryDump(buffer, length, 4, 16)));
@@ -1399,7 +1456,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// Nothing received on a non-blocking stream, return EAGAIN in errno
-				if (length == 0 && !isBlocking()) {
+				if (length == 0 && !isBlocking(flags)) {
 					setErrno(EAGAIN);
 					return -1;
 				}
@@ -1409,7 +1466,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// With a blocking stream, at least the low water mark has to be read
-				if (isBlocking()) {
+				if (isBlocking(flags)) {
 					if (blockingState == null) {
 						blockingState = new BlockingReceiveState(this, buffer, bufferLength, flags, length);
 					}
@@ -1432,33 +1489,20 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		public int send(int buffer, int bufferLength, int flags) {
+		public int send(int buffer, int bufferLength, int flags, BlockingSendState blockingState) {
 			log.warn("sceNetInetSend not supported on datagram socket");
 			setError(-1);
 			return -1;
 		}
 
 		@Override
-		public int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr) {
-			if (flags != 0) {
-				log.warn(String.format("sceNetInetRecvfrom unsupported flag 0x%X on datagram socket", flags));
-			}
-			return recvfrom(buffer, bufferLength, flags, fromAddr, null);
-		}
-
-		private int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr, BlockingReceiveFromState blockingState) {
+		public int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr, BlockingReceiveFromState blockingState) {
 			try {
 				byte[] bytes = new byte[bufferLength];
 				ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
 				SocketAddress socketAddress = datagramChannel.receive(byteBuffer);
 				int length = byteBuffer.position();
-				if (length > 0) {
-					IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(buffer, length, 1);
-					for (int i = 0; i < length; i++) {
-						memoryWriter.writeNext(bytes[i]);
-					}
-					memoryWriter.flush();
-				}
+				storeBytes(buffer, length, bytes);
 
 				if (log.isDebugEnabled()) {
 					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s: %s", getUid(), length, socketAddress, Utilities.getMemoryDump(buffer, length, 4, 16)));
@@ -1466,7 +1510,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 				if (socketAddress == null) {
 					// Nothing received on a non-blocking datagram, return EAGAIN in errno
-					if (!isBlocking()) {
+					if (!isBlocking(flags)) {
 						setErrno(EAGAIN);
 						return -1;
 					}
@@ -1495,14 +1539,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		public int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr) {
-			if (flags != 0) {
-				log.warn(String.format("sceNetInetSendto unsupported flag 0x%X on datagram socket", flags));
-			}
-			return sendto(buffer, bufferLength, flags, toAddr, null);
-		}
-
-		private int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr, BlockingSendToState blockingState) {
+		public int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr, BlockingSendToState blockingState) {
 			try {
 				openChannel();
 				ByteBuffer byteBuffer = getByteBuffer(buffer, bufferLength);
@@ -1513,7 +1550,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// Nothing sent on a non-blocking stream, return EAGAIN in errno
-				if (length == 0 && !isBlocking()) {
+				if (length == 0 && !isBlocking(flags)) {
 					setErrno(EAGAIN);
 					return -1;
 				}
@@ -1523,7 +1560,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				}
 
 				// With a blocking stream, we have to send all the bytes
-				if (isBlocking()) {
+				if (isBlocking(flags)) {
 					if (blockingState == null) {
 						blockingState = new BlockingSendToState(this, buffer, bufferLength, flags, toAddr, length);
 					}
@@ -1559,59 +1596,6 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 			clearError();
 			return 0;
-		}
-
-		@Override
-		public void blockedRecv(BlockingReceiveState blockingState) {
-			if (blockingState.isTimeout()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecv socket=%d returning %d (timeout)", getUid(), blockingState.receivedLength));
-				}
-				setErrno(EAGAIN);
-				unblockThread(blockingState, blockingState.receivedLength);
-			} else {
-				int length = recv(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState);
-				if (length >= 0) {
-					unblockThread(blockingState, blockingState.receivedLength);
-				}
-			}
-		}
-
-		@Override
-		public void blockedRecvfrom(BlockingReceiveFromState blockingState) {
-			if (blockingState.isTimeout()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetRecvfrom socket=%d returning %d (timeout)", getUid(), blockingState.receivedLength));
-				}
-				setErrno(EAGAIN);
-				unblockThread(blockingState, blockingState.receivedLength);
-			} else {
-				int length = recvfrom(blockingState.buffer + blockingState.receivedLength, blockingState.bufferLength - blockingState.receivedLength, blockingState.flags, blockingState.fromAddr, blockingState);
-				if (length >= 0) {
-					unblockThread(blockingState, blockingState.receivedLength);
-				}
-			}
-		}
-
-		@Override
-		public void blockedSend(BlockingSendState blockingState) {
-			log.error("blockedSend not supported on datagram socket");
-		}
-
-		@Override
-		public void blockedSendto(BlockingSendToState blockingState) {
-			if (blockingState.isTimeout()) {
-				if (log.isDebugEnabled()) {
-					log.debug(String.format("sceNetInetSendto socket=%d returning %d (timeout)", getUid(), blockingState.sentLength));
-				}
-				setErrno(EAGAIN);
-				unblockThread(blockingState, blockingState.sentLength);
-			} else {
-				int length = sendto(blockingState.buffer + blockingState.sentLength, blockingState.bufferLength - blockingState.sentLength, blockingState.flags, blockingState.toAddr, blockingState);
-				if (length > 0) {
-					unblockThread(blockingState, blockingState.sentLength);
-				}
-			}
 		}
 
 		@Override
@@ -1713,16 +1697,262 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		}
 
 		@Override
-		public int accept(pspNetSockAddrInternet sockAddrInternet) {
+		public int accept(pspNetSockAddrInternet sockAddrInternet, BlockingAcceptState blockingState) {
 			log.error(String.format("Accept not supported on datagram socket: sockAddrInternet=%s, %s", sockAddrInternet.toString(), toString()));
+			return -1;
+		}
+	}
+
+	protected class pspInetRawSocket extends pspInetSocket {
+		private RawChannel rawChannel;
+		private int protocol;
+		private boolean isAvailable;
+
+		public pspInetRawSocket(int uid, int protocol) {
+			super(uid);
+			this.protocol = protocol;
+			isAvailable = true;
+		}
+
+		protected boolean openChannel() throws IllegalStateException {
+			if (!isAvailable) {
+				return false;
+			}
+
+			if (rawChannel == null) {
+				try {
+					rawChannel = new RawChannel();
+				} catch (UnsatisfiedLinkError e) {
+					log.error(String.format("The rocksaw library is not available on your system (%s). This library is required to implement RAW sockets. Disabling this feature.", e.toString()));
+					isAvailable = false;
+					return false;
+				}
+
+				try {
+					rawChannel.socket().open(RawSocket.PF_INET, protocol);
+
+					// Use non-blocking IO's
+					rawChannel.configureBlocking(false);
+				} catch (IOException e) {
+					log.error(String.format("You need to start Jpcsp with administator right to be able to open RAW sockets (%s). Disabling this feature.", e.toString()));
+					isAvailable = false;
+					return false;
+				}
+			}
+
+			return rawChannel.socket().isOpen();
+		}
+
+		@Override
+		public int bind(pspNetSockAddrInternet addr) {
+			if (!openChannel()) {
+				return -1;
+			}
+
+			try {
+				rawChannel.socket().bind(getInetAddress(addr));
+			} catch (IllegalStateException e) {
+				log.error(e);
+				return -1;
+			} catch (UnknownHostException e) {
+				log.error(e);
+				setError(e);
+				return -1;
+			} catch (IOException e) {
+				log.error(e);
+				setError(e);
+				return -1;
+			}
+
+			return 0;
+		}
+
+		@Override
+		public int close() {
+			if (rawChannel != null) {
+				try {
+					rawChannel.close();
+				} catch (IOException e) {
+					log.error(e);
+					setError(e);
+					return -1;
+				} finally {
+					rawChannel = null;
+				}
+			}
+
+			return 0;
+		}
+
+		@Override
+		public int connect(pspNetSockAddrInternet addr) {
+			log.error(String.format("sceNetInetConnect is not supported on Raw sockets: %s", toString()));
 			return -1;
 		}
 
 		@Override
-		public void blockedAccept(BlockingAcceptState blockingState) {
-			log.error(String.format("Accept not supported on datagram socket: sockAddrInternet=%s, %s", blockingState.acceptAddr.toString(), toString()));
-			setErrno(-1);
-			unblockThread(blockingState, -1);
+		public boolean finishConnect() {
+			return openChannel();
+		}
+
+		@Override
+		public int getPeername(pspNetSockAddrInternet sockAddrInternet) {
+			log.error(String.format("sceNetInetGetpeername is not supported on Raw sockets: %s", toString()));
+			return -1;
+		}
+
+		@Override
+		public SelectableChannel getSelectableChannel() {
+			if (!openChannel()) {
+				return null;
+			}
+			return rawChannel;
+		}
+
+		@Override
+		public int getSockname(pspNetSockAddrInternet sockAddrInternet) {
+			log.error(String.format("sceNetInetGetsockname is not supported on Raw sockets: %s", toString()));
+			return -1;
+		}
+
+		@Override
+		public boolean isValid() {
+			return openChannel();
+		}
+
+		@Override
+		public int listen(int backlog) {
+			log.error(String.format("sceNetInetListen is not supported on Raw sockets: %s", toString()));
+			return -1;
+		}
+
+		@Override
+		public int recv(int buffer, int bufferLength, int flags, BlockingReceiveState blockingState) {
+			log.error(String.format("sceNetInetRecv is not supported on Raw sockets: %s", toString()));
+			return -1;
+		}
+
+		@Override
+		public int recvfrom(int buffer, int bufferLength, int flags, pspNetSockAddrInternet fromAddr, BlockingReceiveFromState blockingState) {
+			try {
+				if (!openChannel()) {
+					return -1;
+				}
+
+				// Nothing available for read?
+				if (!rawChannel.socket().isSelectedForRead()) {
+					if (!isBlocking(flags)) {
+						// Nothing received on a non-blocking stream, return EAGAIN in errno
+						setErrno(EAGAIN);
+						return -1;
+					}
+
+					if (blockingState == null) {
+						blockingState = new BlockingReceiveFromState(this, buffer, bufferLength, flags, fromAddr, 0);
+					}
+
+					// Block the thread and retry later.
+					blockThread(blockingState);
+					return -1;
+				}
+
+				byte[] bytes = new byte[bufferLength];
+				byte[] address = new byte[4];
+				int length = rawChannel.socket().read(bytes, address);
+				storeBytes(buffer, length, bytes);
+
+				if (blockingState != null) {
+					blockingState.receivedLength += length;
+				}
+
+				fromAddr.sin_family = AF_INET;
+				fromAddr.sin_addr = bytesToInternetAddress(address);
+				fromAddr.write(Processor.memory);
+
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetRecvfrom socket=%d received %d bytes from %s: %s", getUid(), length, fromAddr, Utilities.getMemoryDump(buffer, length, 4, 16)));
+				}
+
+				return length;
+			} catch (InterruptedIOException e) {
+				log.error(e);
+				setError(e);
+				return -1;
+			} catch (IOException e) {
+				log.error(e);
+				setError(e);
+				return -1;
+			}
+		}
+
+		@Override
+		public int send(int buffer, int bufferLength, int flags, BlockingSendState blockignState) {
+			log.error(String.format("sceNetInetSend is not supported on Raw sockets: %s", toString()));
+			return -1;
+		}
+
+		@Override
+		public int sendto(int buffer, int bufferLength, int flags, pspNetSockAddrInternet toAddr, BlockingSendToState blockingState) {
+			try {
+				if (!openChannel()) {
+					return -1;
+				}
+
+				// Ready for write?
+				if (!rawChannel.socket().isSelectedForWrite()) {
+					if (!isBlocking(flags)) {
+						// Nothing sent on a non-blocking stream, return EAGAIN in errno
+						setErrno(EAGAIN);
+						return -1;
+					}
+
+					// With a blocking stream, we have to send all the bytes
+					if (blockingState == null) {
+						blockingState = new BlockingSendToState(this, buffer, bufferLength, flags, toAddr, 0);
+					}
+
+					// Block the thread and retry later
+					blockThread(blockingState);
+					return -1;
+				}
+
+				InetAddress inetAddress = getInetAddress(toAddr);
+				byte[] data = getByteArray(buffer, bufferLength);
+				int length = rawChannel.socket().write(inetAddress, data);
+				if (log.isDebugEnabled()) {
+					log.debug(String.format("sceNetInetSendto socket=%d successfully sent %d bytes", getUid(), length));
+				}
+
+				if (blockingState != null) {
+					blockingState.sentLength += length;
+				}
+
+				return length;
+			} catch (IllegalStateException e) {
+				log.error(e);
+				return -1;
+			} catch (IOException e) {
+				log.error(e);
+				setError(e);
+				return -1;
+			}
+		}
+
+		@Override
+		public int shutdown(int how) {
+			log.warn(String.format("sceNetInetShutdown is not supported on Raw sockets: %s", toString()));
+			return 0;
+		}
+
+		@Override
+		public Selector getSelector(Selector selector, RawSelector rawSelector) {
+			return rawSelector;
+		}
+
+		@Override
+		public int accept(pspNetSockAddrInternet sockAddrInternet, BlockingAcceptState blockingState) {
+			log.error(String.format("sceNetInetAccept is not supported on Raw sockets: %s", toString()));
+			return -1;
 		}
 	}
 
@@ -1800,13 +2030,15 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		return SceUidManager.getNewId(idPurpose, 1, 255);
 	}
 
-	protected pspInetSocket createSocket(int type) {
+	protected pspInetSocket createSocket(int type, int protocol) {
 		int uid = createSocketId();
     	pspInetSocket inetSocket = null;
     	if (type == SOCK_STREAM) {
     		inetSocket = new pspInetStreamSocket(uid);
     	} else if (type == SOCK_DGRAM) {
     		inetSocket = new pspInetDatagramSocket(uid);
+    	} else if (type == SOCK_RAW) {
+    		inetSocket = new pspInetRawSocket(uid, protocol);
     	}
     	sockets.put(uid, inetSocket);
 
@@ -1817,7 +2049,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		SceUidManager.releaseId(id, idPurpose);
 	}
 
-	protected int readSocketList(Selector selector, int address, int n, int selectorOperation, String comment) {
+	protected int readSocketList(Selector selector, RawSelector rawSelector, int address, int n, int selectorOperation, String comment) {
 		int closedSocketsCount = 0;
 
 		if (address != 0) {
@@ -1839,15 +2071,17 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 							if (selectableChannel != null) {
 								int registeredOperation = selectorOperation & selectableChannel.validOps();
 								if (registeredOperation != 0) {
+									Selector socketSelector = inetSocket.getSelector(selector, rawSelector);
+
 									// A channel may be registered at most once with any particular selector
 									if (selectableChannel.isRegistered()) {
 										// If the channel is already registered,
 										// add the new operation to the active registration
-										SelectionKey selectionKey = selectableChannel.keyFor(selector);
+										SelectionKey selectionKey = selectableChannel.keyFor(socketSelector);
 										selectionKey.interestOps(selectionKey.interestOps() | registeredOperation);
 									} else {
 										try {
-											selectableChannel.register(selector, registeredOperation, new Integer(socket));
+											selectableChannel.register(socketSelector, registeredOperation, new Integer(socket));
 										} catch (ClosedChannelException e) {
 											closedChannels.add(socket);
 											if (log.isDebugEnabled()) {
@@ -2043,15 +2277,32 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 				for (int i = 0; i < blockingState.pollFds.length; i++) {
 					blockingState.pollFds[i].write(mem);
 					if (log.isDebugEnabled()) {
-						log.debug(String.format("sceNetInetSelect returning pollFd[%d]=%s", i, blockingState.pollFds[i].toString()));
+						log.debug(String.format("sceNetInetPoll returning pollFd[%d]=%s", i, blockingState.pollFds[i].toString()));
 					}
 				}
 
-				// sceNetInetSelect can now return the count, unblock the thread
+				// sceNetInetPoll can now return the count, unblock the thread
 				unblockThread(blockingState, count);
 			}
 		} catch (IOException e) {
 			log.error(e);
+		}
+	}
+
+	protected void processSelectedKey(Selector selector, BlockingSelectState blockingState) {
+		for (Iterator<SelectionKey> it = selector.selectedKeys().iterator(); it.hasNext(); ) {
+			// Retrieve the next key and remove it from the set
+			SelectionKey selectionKey = it.next();
+			it.remove();
+
+			if ((selectionKey.readyOps() & readSelectionKeyOperations) != 0) {
+				int socket = (Integer) selectionKey.attachment();
+				setSelectBit(blockingState.readSocketsAddr, socket);
+			}
+			if ((selectionKey.readyOps() & writeSelectionKeyOperations) != 0) {
+				int socket = (Integer) selectionKey.attachment();
+				setSelectBit(blockingState.writeSocketsAddr, socket);
+			}
 		}
 	}
 
@@ -2072,6 +2323,7 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			int count = blockingState.count;
 			// We do not want to block here on the selector, call selectNow
 			count += blockingState.selector.selectNow();
+			count += blockingState.rawSelector.selectNow();
 			// add any socket becoming invalid (e.g. connect failed)
 			count += checkInvalidSelectedSockets(blockingState);
 
@@ -2094,20 +2346,8 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 					log.debug(String.format("sceNetInetSelect returns %d sockets", count));
 				}
 
-				for (Iterator<SelectionKey> it = blockingState.selector.selectedKeys().iterator(); it.hasNext(); ) {
-					// Retrieve the next key and remove it from the set
-					SelectionKey selectionKey = it.next();
-					it.remove();
-
-					if ((selectionKey.readyOps() & readSelectionKeyOperations) != 0) {
-						int socket = (Integer) selectionKey.attachment();
-						setSelectBit(blockingState.readSocketsAddr, socket);
-					}
-					if ((selectionKey.readyOps() & writeSelectionKeyOperations) != 0) {
-						int socket = (Integer) selectionKey.attachment();
-						setSelectBit(blockingState.writeSocketsAddr, socket);
-					}
-				}
+				processSelectedKey(blockingState.selector, blockingState);
+				processSelectedKey(blockingState.rawSelector, blockingState);
 
 				threadBlocked = false;
 			}
@@ -2115,8 +2355,9 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 			if (threadBlocked) {
 				blockThread(blockingState);
 			} else {
-				// We do no longer need the selector, close it
+				// We do no longer need the selectors, close them
 				blockingState.selector.close();
+				blockingState.rawSelector.close();
 
 				if (log.isDebugEnabled() && count > 0) {
 					if (blockingState.readSocketsAddr != 0) {
@@ -2835,21 +3076,22 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 
 		try {
 			Selector selector = Selector.open();
+			RawSelector rawSelector = RawSelector.open();
 
 			int count = 0;
 
 			// Read the socket list for the read operation and register them with the selector
-			count += readSocketList(selector, readSocketsAddr, numberSockets, readSelectionKeyOperations, "readSockets");
+			count += readSocketList(selector, rawSelector, readSocketsAddr, numberSockets, readSelectionKeyOperations, "readSockets");
 
 			// Read the socket list for the write operation and register them with the selector
-			count += readSocketList(selector, writeSocketsAddr, numberSockets, writeSelectionKeyOperations, "writeSockets");
+			count += readSocketList(selector, rawSelector, writeSocketsAddr, numberSockets, writeSelectionKeyOperations, "writeSockets");
 
 			// Read the socket list for the out-of-band data and register them with the selector.
 			// Out-of-band data is currently not implemented as I don't see any
 			// support in Java for this rarely used feature.
-			count += readSocketList(selector, outOfBandSocketsAddr, numberSockets, 0, "outOfBandSockets");
+			count += readSocketList(selector, rawSelector, outOfBandSocketsAddr, numberSockets, 0, "outOfBandSockets");
 
-			BlockingSelectState blockingState = new BlockingSelectState(selector, numberSockets, readSocketsAddr, writeSocketsAddr, outOfBandSocketsAddr, timeoutUsec, count);
+			BlockingSelectState blockingState = new BlockingSelectState(selector, rawSelector, numberSockets, readSocketsAddr, writeSocketsAddr, outOfBandSocketsAddr, timeoutUsec, count);
 
 			setErrno(0);
 			cpu.gpr[2] = 0; // This will be overwritten by the execution of the blockingState
@@ -2963,36 +3205,41 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		} else {
 			pspInetSocket inetSocket = sockets.get(socket);
 
-			if (optionName == SO_NONBLOCK && optionLength == 4) {
-				cpu.gpr[2] = inetSocket.setBlocking(optionValue == 0);
-			} else if (optionName == SO_BROADCAST && optionLength == 4) {
-				cpu.gpr[2] = inetSocket.setBroadcast(optionValue != 0);
-			} else if (optionName == SO_RCVLOWAT && optionLength == 4) {
-				inetSocket.setReceiveLowWaterMark(optionValue);
-				cpu.gpr[2] = 0;
-			} else if (optionName == SO_SNDLOWAT && optionLength == 4) {
-				inetSocket.setSendLowWaterMark(optionValue);
-				cpu.gpr[2] = 0;
-			} else if (optionName == SO_RCVTIMEO && optionLength == 4) {
-				// 0 means "no timeout"
-				inetSocket.setReceiveTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
-				cpu.gpr[2] = 0;
-			} else if (optionName == SO_SNDTIMEO && optionLength == 4) {
-				// 0 means "no timeout"
-				inetSocket.setSendTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
-				cpu.gpr[2] = 0;
-			} else if (optionName == SO_RCVBUF && optionLength == 4) {
-				cpu.gpr[2] = inetSocket.setReceiveBufferSize(optionValue);
-			} else if (optionName == SO_SNDBUF && optionLength == 4) {
-				cpu.gpr[2] = inetSocket.setSendBufferSize(optionValue);
-			} else if (optionName == SO_KEEPALIVE && optionLength == 4) {
-				cpu.gpr[2] = inetSocket.setKeepAlive(optionValue != 0);
-			} else if (optionName == SO_LINGER && optionLength == 8) {
-				cpu.gpr[2] = inetSocket.setLinger(optionValue != 0, mem.read32(optionValueAddr + 4));
-			} else if (optionName == SO_REUSEADDR && optionLength == 4) {
-				cpu.gpr[2] = inetSocket.setReuseAddress(optionValue != 0);
+			if (level == SOL_SOCKET) {
+				if (optionName == SO_NONBLOCK && optionLength == 4) {
+					cpu.gpr[2] = inetSocket.setBlocking(optionValue == 0);
+				} else if (optionName == SO_BROADCAST && optionLength == 4) {
+					cpu.gpr[2] = inetSocket.setBroadcast(optionValue != 0);
+				} else if (optionName == SO_RCVLOWAT && optionLength == 4) {
+					inetSocket.setReceiveLowWaterMark(optionValue);
+					cpu.gpr[2] = 0;
+				} else if (optionName == SO_SNDLOWAT && optionLength == 4) {
+					inetSocket.setSendLowWaterMark(optionValue);
+					cpu.gpr[2] = 0;
+				} else if (optionName == SO_RCVTIMEO && optionLength == 4) {
+					// 0 means "no timeout"
+					inetSocket.setReceiveTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
+					cpu.gpr[2] = 0;
+				} else if (optionName == SO_SNDTIMEO && optionLength == 4) {
+					// 0 means "no timeout"
+					inetSocket.setSendTimeout(optionValue == 0 ? pspInetSocket.NO_TIMEOUT_INT : optionValue);
+					cpu.gpr[2] = 0;
+				} else if (optionName == SO_RCVBUF && optionLength == 4) {
+					cpu.gpr[2] = inetSocket.setReceiveBufferSize(optionValue);
+				} else if (optionName == SO_SNDBUF && optionLength == 4) {
+					cpu.gpr[2] = inetSocket.setSendBufferSize(optionValue);
+				} else if (optionName == SO_KEEPALIVE && optionLength == 4) {
+					cpu.gpr[2] = inetSocket.setKeepAlive(optionValue != 0);
+				} else if (optionName == SO_LINGER && optionLength == 8) {
+					cpu.gpr[2] = inetSocket.setLinger(optionValue != 0, mem.read32(optionValueAddr + 4));
+				} else if (optionName == SO_REUSEADDR && optionLength == 4) {
+					cpu.gpr[2] = inetSocket.setReuseAddress(optionValue != 0);
+				} else {
+					log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength, 4, 16)));
+					cpu.gpr[2] = 0;
+				}
 			} else {
-				log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d, optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength, 4, 16)));
+				log.warn(String.format("Unimplemented sceNetInetSetsockopt socket=%d, level=%d (unknown level), optionName=%d(%s), optionValue=0x%08X, optionLength=%d, optionValue: %s", socket, level, optionName, getOptionNameString(optionName), optionValueAddr, optionLength, Utilities.getMemoryDump(optionValueAddr, optionLength, 4, 16)));
 				cpu.gpr[2] = 0;
 			}
 		}
@@ -3036,11 +3283,11 @@ public class sceNetInet implements HLEModule, HLEStartModule {
 		if (domain != AF_INET) {
 			log.warn(String.format("sceNetInetSocket unsupported domain=%d, type=%d(%s), protocol=%d", domain, type, getSocketTypeNameString(type), protocol));
 			cpu.gpr[2] = -1;
-		} else if (type != SOCK_DGRAM && type != SOCK_STREAM) {
+		} else if (type != SOCK_DGRAM && type != SOCK_STREAM && type != SOCK_RAW) {
 			log.warn(String.format("sceNetInetSocket unsupported type=%d(%s), domain=%d, protocol=%d", type, getSocketTypeNameString(type), domain, protocol));
 			cpu.gpr[2] = -1;
 		} else {
-	    	pspInetSocket inetSocket = createSocket(type);
+	    	pspInetSocket inetSocket = createSocket(type, protocol);
 			if (log.isDebugEnabled()) {
 				log.debug(String.format("sceNetInetSocket created socket=%d", inetSocket.getUid()));
 			}
