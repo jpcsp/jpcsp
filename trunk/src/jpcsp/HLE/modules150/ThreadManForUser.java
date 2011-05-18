@@ -458,6 +458,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     protected Map<Integer, SceKernelAlarmInfo> alarms;
     protected Map<Integer, SceKernelVTimerInfo> vtimers;
     protected boolean needThreadReschedule;
+    protected WaitThreadEndWaitStateChecker waitThreadEndWaitStateChecker;
 
     public ThreadManForUser() {
     }
@@ -489,6 +490,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 		if (threadMXBean.isThreadCpuTimeSupported()) {
 			threadMXBean.setThreadCpuTimeEnabled(true);
 		}
+
+		waitThreadEndWaitStateChecker = new WaitThreadEndWaitStateChecker();
     }
 
     @Override
@@ -1296,7 +1299,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         for (SceKernelThreadInfo thread : threadMap.values()) {
             // Wakeup threads that are in sceKernelWaitThreadEnd
             // We're assuming if waitingOnThreadEnd is set then thread.status = waiting
-            if (thread.wait.waitingOnThreadEnd &&
+            if (thread.status == PSP_THREAD_WAITING &&
+            		thread.wait.waitingOnThreadEnd &&
                     thread.wait.ThreadEnd_id == stoppedThread.uid) {
                 // Untrack
                 thread.wait.waitingOnThreadEnd = false;
@@ -1800,6 +1804,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // Wait on a specific thread end
             currentThread.wait.waitingOnThreadEnd = true;
             currentThread.wait.ThreadEnd_id = uid;
+            currentThread.wait.waitStateChecker = waitThreadEndWaitStateChecker;
             hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
             hleRescheduleCurrentThread(callbacks);
         }
@@ -4520,7 +4525,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         @Override
         public String toString() {
-            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X,savedV0=0x%08X,savedV1=0x%08X", getId(), getSavedIdRegister(), getSavedPc(), getSavedV0(), getSavedV1());
+            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X,returnVoide=%b,savedV0=0x%08X,savedV1=0x%08X", getId(), getSavedIdRegister(), getSavedPc(), isReturnVoid(), getSavedV0(), getSavedV1());
         }
     }
 
@@ -4617,6 +4622,29 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             hleDeleteThread(thread);
         }
     }
+
+    public class WaitThreadEndWaitStateChecker implements IWaitStateChecker {
+		@Override
+		public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
+            // Check if the thread has to continue its wait state or if the thread
+            // has exited during the callback execution.
+			SceKernelThreadInfo threadEnd = getThreadById(wait.ThreadEnd_id);
+			if (threadEnd == null) {
+				// The thread has completely disappeared during the callback execution...
+				thread.cpuContext.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
+				return false;
+			}
+
+			if (threadEnd.status == PSP_THREAD_STOPPED) {
+                // Return exit status of stopped thread
+                thread.cpuContext.gpr[2] = threadEnd.exitStatus;
+                return false;
+			}
+
+			return true;
+		}
+    }
+
     public final HLEModuleFunction _sceKernelReturnFromCallbackFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelReturnFromCallback") {
 
         @Override
