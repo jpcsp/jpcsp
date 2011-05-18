@@ -1721,6 +1721,7 @@ public class VideoEngine {
         // - the vertex address is invalid
         if ((!useVertexCache || re.canAllNativeVertexInfo()) &&
             vinfo.index == 0 &&
+            vinfo.morphingVertexCount == 1 &&
             (type != PRIM_SPRITES || re.canNativeSpritesPrimitive()) &&
             !useTextureFromNormalizedNormal &&
             !mustComputeWeights &&
