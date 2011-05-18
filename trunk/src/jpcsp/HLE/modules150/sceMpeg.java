@@ -1198,7 +1198,14 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         		if (log.isDebugEnabled()) {
         			log.debug("sceMpegGetAtracAu end of audio and video reached");
         		}
-                cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
+
+        		// Consume all the remaining packets, if any.
+        		if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+        			mpegRingbuffer.packetsFree = mpegRingbuffer.packets;
+        			mpegRingbuffer.write(mem, mpegRingbufferAddr);
+        		}
+
+        		cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
         	} else if ((mpegAtracAu.pts > mpegAvcAu.pts + maxAheadTimestamp) && isAvcRegistered && !endOfAudioReached) {
                 // Audio is ahead of video, deliver no audio data to wait for video.
             	// This error is not returned when the end of audio has been reached (Patapon 3).
