@@ -4525,7 +4525,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
         @Override
         public String toString() {
-            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X,returnVoide=%b,savedV0=0x%08X,savedV1=0x%08X", getId(), getSavedIdRegister(), getSavedPc(), isReturnVoid(), getSavedV0(), getSavedV1());
+            return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X,returnVoid=%b,savedV0=0x%08X,savedV1=0x%08X", getId(), getSavedIdRegister(), getSavedPc(), isReturnVoid(), getSavedV0(), getSavedV1());
         }
     }
 
