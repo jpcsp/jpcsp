@@ -272,8 +272,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
             EPMap = new HashMap<Integer, PSMFEntry>();
 
             for (int i = 0; i < EPMapEntriesNum; i++) {
-                int pts = endianSwap32(mem.read32(EPMapOffset + 2 + i * 10));
-                int offset = endianSwap32(mem.read32(EPMapOffset + 6 + i * 10));
+                int pts = endianSwap32(readUnaligned32(mem, EPMapOffset + 2 + i * 10));
+                int offset = endianSwap32(readUnaligned32(mem, EPMapOffset + 6 + i * 10));
                 PSMFEntry pEnt = new PSMFEntry(pts, offset);
                 EPMap.put(currentEntryNumber++, pEnt);
             }

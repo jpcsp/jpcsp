@@ -169,6 +169,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         mpegRingbufferAddr = 0;
         avcAuAddr = 0;
         atracAuAddr = 0;
+        isAvcEsBufInUse = false;
         atracStreamsMap = new HashMap<Integer, Integer>();
         avcStreamsMap = new HashMap<Integer, Integer>();
         pcmStreamsMap = new HashMap<Integer, Integer>();
@@ -2095,17 +2096,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         int packetsAdded = cpu.gpr[2];
         mpegRingbuffer.read(mem, mpegRingbufferAddr);
 
-        if (log.isDebugEnabled()) {
-            log.debug("sceMpegRingbufferPut packetsAdded=" + packetsAdded + ", packetsRead=" + mpegRingbuffer.packetsRead);
-        }
-
         if (packetsAdded > 0) {
             if (checkMediaEngineState() && (meChannel != null)) {
                 meChannel.write(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             } else if (isEnableConnector()) {
                 mpegCodec.writeVideo(mpegRingbuffer.data, packetsAdded * mpegRingbuffer.packetSize);
             }
-            if (mpegRingbuffer.packetsFree - packetsAdded < 0) {
+            if (packetsAdded > mpegRingbuffer.packetsFree) {
                 log.warn("sceMpegRingbufferPut clamping packetsAdded old=" + packetsAdded + " new=" + mpegRingbuffer.packetsFree);
                 packetsAdded = mpegRingbuffer.packetsFree;
             }
@@ -2114,6 +2111,11 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             mpegRingbuffer.packetsFree -= packetsAdded;
             mpegRingbuffer.write(mem, mpegRingbufferAddr);
         }
+
+        if (log.isDebugEnabled()) {
+            log.debug("sceMpegRingbufferPut packetsAdded=" + packetsAdded + ", packetsRead=" + mpegRingbuffer.packetsRead);
+        }
+
         cpu.gpr[2] = packetsAdded;
     }
 

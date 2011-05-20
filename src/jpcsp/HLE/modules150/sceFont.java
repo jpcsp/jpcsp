@@ -294,15 +294,17 @@ public class sceFont implements HLEModule, HLEStartModule {
     protected void loadDefaultSystemFont() {
         try {
     		SeekableDataInput fontFile = Modules.IoFileMgrForUserModule.getFile(fontDirPath + "/" + customFontFile, IoFileMgrForUser.PSP_O_RDONLY);
-    		fontFile.skipBytes(32);  // Skip custom header.
-            char[] c = new char[(int) fontFile.length() - 32];
-            for (int i = 0; i < c.length; i++) {
-                c[i] = (char) (fontFile.readByte() & 0xFF);
-            }
-            Debug.Font.setDebugFont(c); // Set the internal debug font.
-            Debug.Font.setDebugCharSize(8);
-            Debug.Font.setDebugCharHeight(8);
-            Debug.Font.setDebugCharWidth(8);
+    		if (fontFile != null) {
+	    		fontFile.skipBytes(32);  // Skip custom header.
+	            char[] c = new char[(int) fontFile.length() - 32];
+	            for (int i = 0; i < c.length; i++) {
+	                c[i] = (char) (fontFile.readByte() & 0xFF);
+	            }
+	            Debug.Font.setDebugFont(c); // Set the internal debug font.
+	            Debug.Font.setDebugCharSize(8);
+	            Debug.Font.setDebugCharHeight(8);
+	            Debug.Font.setDebugCharWidth(8);
+    		}
         } catch (IOException e) {
             // The file was removed from flash0.
         	log.error(e);
