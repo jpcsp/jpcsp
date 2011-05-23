@@ -3361,11 +3361,17 @@ public class VideoEngine {
 
     private void executeCommandTRXSBP() {
         context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0xFF000000) | normalArgument;
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("%s sourceAddress=0x%08X", helper.getCommandString(command), context.textureTx_sourceAddress));
+        }
     }
 
     private void executeCommandTRXSBW() {
         context.textureTx_sourceAddress = (context.textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
         context.textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("%s sourceAddress=0x%08X, sourceLineWidth=%d", helper.getCommandString(command), context.textureTx_sourceAddress, context.textureTx_sourceLineWidth));
+        }
 
         // TODO Check when sx and sy are reset to 0. Here or after TRXKICK?
         context.textureTx_sx = 0;
@@ -3374,11 +3380,17 @@ public class VideoEngine {
 
     private void executeCommandTRXDBP() {
         context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0xFF000000) | normalArgument;
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("%s destinationAddress=0x%08X", helper.getCommandString(command), context.textureTx_destinationAddress));
+        }
     }
 
     private void executeCommandTRXDBW() {
         context.textureTx_destinationAddress = (context.textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
         context.textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("%s destinationAddress=0x%08X, destinationLineWidth=%d", helper.getCommandString(command), context.textureTx_destinationAddress, context.textureTx_destinationLineWidth));
+        }
 
         // TODO Check when dx and dy are reset to 0. Here or after TRXKICK?
         context.textureTx_dx = 0;
@@ -3903,11 +3915,17 @@ public class VideoEngine {
     private void executeCommandTRXDPOS() {
         context.textureTx_dx = normalArgument & 0x1FF;
         context.textureTx_dy = (normalArgument >> 10) & 0x1FF;
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("%s dx=%d, dy=%d", helper.getCommandString(command), context.textureTx_dx, context.textureTx_dy));
+        }
     }
 
     private void executeCommandTRXSIZE() {
         context.textureTx_width = (normalArgument & 0x3FF) + 1;
-        context.textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
+        context.textureTx_height = ((normalArgument >> 10) & 0x3FF) + 1;
+        if (isLogDebugEnabled) {
+        	log.debug(String.format("%s width=%d, height=%d", helper.getCommandString(command), context.textureTx_width, context.textureTx_height));
+        }
     }
 
     private void executeCommandVSCX() {
