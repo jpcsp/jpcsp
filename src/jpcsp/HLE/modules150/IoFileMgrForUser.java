@@ -133,6 +133,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public final static int PSP_DEV_TYPE_ALIAS = 0x20;
     public final static int PSP_DEV_TYPE_MOUNT = 0x40;
 
+    public final static int STDOUT_UID = 1;
+    public final static int STDERR_UID = 2;
+    public final static int STDIN_UID = 3;
+
     protected static enum IoOperation {
         open(5), close(1), read(5), write(5), seek, ioctl(2), remove, rename, mkdir;
 
@@ -1326,12 +1330,12 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         IoInfo info = null;
         int result;
 
-        if (uid == 1) {
+        if (uid == STDOUT_UID) {
             // stdout
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stdout.info(message);
             result = size;
-        } else if (uid == 2) {
+        } else if (uid == STDERR_UID) {
             // stderr
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stderr.info(message);
@@ -1398,7 +1402,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         SeekableDataInput dataInput = null;
         int requestedSize = size;
 
-        if (uid == 3) { // stdin
+        if (uid == STDIN_UID) { // stdin
             log.warn("UNIMPLEMENTED:hleIoRead uid = stdin");
             result = 0;
         } else {
@@ -1459,7 +1463,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         IoInfo info = null;
         long result = 0;
 
-        if (uid == 1 || uid == 2 || uid == 3) { // stdio
+        if (uid == STDOUT_UID || uid == STDERR_UID || uid == STDIN_UID) { // stdio
             log.error("seek - can't seek on stdio uid " + Integer.toHexString(uid));
             result = -1;
         } else {
@@ -2165,7 +2169,11 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             return;
         }
         hleIoWrite(uid, data_addr, size, false);
-        delayIoOperation(IoOperation.write);
+
+        // Do not delay output on stdout/stderr
+        if (uid != STDOUT_UID && uid != STDERR_UID) {
+        	delayIoOperation(IoOperation.write);
+        }
     }
 
     public void sceIoWriteAsync(Processor processor) {
