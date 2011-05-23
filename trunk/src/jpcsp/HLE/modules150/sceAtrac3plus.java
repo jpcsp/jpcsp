@@ -143,6 +143,8 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     // Note: After firmware 2.50, these limits can be changed by sceAtracReinit.
     protected int atrac3MaxIDsCount = 2;
     protected int atrac3plusMaxIDsCount = 2;
+    protected int atrac3Num;
+    protected int atrac3plusNum;
     protected static final int atracDecodeDelay = 2300; // Microseconds, based on PSP tests
 
     public static boolean useAtracCodec = false;
@@ -168,8 +170,6 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
     	protected int id;
         protected int codecType;
         protected AtracCodec atracCodec;
-        protected int atrac3Num;
-        protected int atrac3plusNum;
         // Sound data.
         protected int atracBitrate = 64;
         protected int atracChannels = 2;

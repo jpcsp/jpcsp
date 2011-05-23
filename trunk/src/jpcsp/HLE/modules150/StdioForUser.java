@@ -22,6 +22,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 
 import org.apache.log4j.Logger;
 
@@ -118,20 +119,21 @@ public class StdioForUser implements HLEModule {
     public void sceKernelStdin(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        cpu.gpr[2] = 3;
+        cpu.gpr[2] = IoFileMgrForUser.STDIN_UID;
     }
 
     public void sceKernelStdout(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        cpu.gpr[2] = 1;
+        cpu.gpr[2] = IoFileMgrForUser.STDOUT_UID;
     }
 
     public void sceKernelStderr(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        cpu.gpr[2] = 2;
+        cpu.gpr[2] = IoFileMgrForUser.STDERR_UID;
     }
+
     public final HLEModuleFunction sceKernelStdioReadFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioRead") {
 
         @Override
