@@ -109,34 +109,43 @@ public class CaptureImage {
 		// Unfortunately, I was not able to generate the image file
 		// using the ImageIO API :-(
 		// This is why I'm generating a BMP file manually...
+		//
+		// See http://en.wikipedia.org/wiki/BMP_file_format
+		// for detailed information about the BMP file format
+		//
 		byte[] fileHeader = new byte[14];
-		byte[] dibHeader = new byte[40];
-		int rowPad = (4 - ((width * 3) & 3)) & 3;
-		int imageSize = height * ((width * 3) + rowPad);
+		byte[] dibHeader = new byte[56];
+		int rowPad = (4 - ((width * 4) & 3)) & 3;
+		int imageSize = height * ((width * 4) + rowPad);
 		int fileSize = fileHeader.length + dibHeader.length + imageSize;
 		OutputStream outBmp = new BufferedOutputStream(new FileOutputStream(fileName), fileSize);
 
-		fileHeader[0] = 'B';
-		fileHeader[1] = 'M';
-		storeLittleEndianInt(fileHeader, 2, fileSize);
-		storeLittleEndianInt(fileHeader, 10, fileHeader.length + dibHeader.length);
+		fileHeader[0] = 'B';                                  // Magic number
+		fileHeader[1] = 'M';                                  // Magic number
+		storeLittleEndianInt(fileHeader, 2, fileSize);        // Size of the BMP file
+		storeLittleEndianInt(fileHeader, 10, fileHeader.length + dibHeader.length); // Offset where the Pixel Array (bitmap data) can be found
 
-		storeLittleEndianInt(dibHeader, 0, dibHeader.length);
-		storeLittleEndianInt(dibHeader, 4, width);
-		storeLittleEndianInt(dibHeader, 8, -height);
-		storeLittleEndianShort(dibHeader, 12, 1);
-		storeLittleEndianShort(dibHeader, 14, 24);
-		storeLittleEndianInt(dibHeader, 16, 0);
-		storeLittleEndianInt(dibHeader, 20, imageSize);
-		storeLittleEndianInt(dibHeader, 24, 2835);
-		storeLittleEndianInt(dibHeader, 28, 2835);
-		storeLittleEndianInt(dibHeader, 32, 0);
-		storeLittleEndianInt(dibHeader, 36, 0);
+		storeLittleEndianInt(dibHeader, 0, dibHeader.length); // Number of bytes in the DIB header (from this point)
+		storeLittleEndianInt(dibHeader, 4, width);            // Width of the bitmap in pixels
+		storeLittleEndianInt(dibHeader, 8, -height);          // Height of the bitmap in pixels
+		storeLittleEndianShort(dibHeader, 12, 1);             // Number of color planes being used
+		storeLittleEndianShort(dibHeader, 14, 32);            // Number of bits per pixel
+		storeLittleEndianInt(dibHeader, 16, 3);               // BI_BITFIELDS, no Pixel Array compression used
+		storeLittleEndianInt(dibHeader, 20, imageSize);       // Size of the raw data in the Pixel Array (including padding)
+		storeLittleEndianInt(dibHeader, 24, 2835);            // Horizontal physical resolution of the image (pixels/meter)
+		storeLittleEndianInt(dibHeader, 28, 2835);            // Vertical physical resolution of the image (pixels/meter)
+		storeLittleEndianInt(dibHeader, 32, 0);               // Number of colors in the palette
+		storeLittleEndianInt(dibHeader, 36, 0);               // 0 means all colors are important
+		storeLittleEndianInt(dibHeader, 40, 0x00FF0000);      // Red channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
+		storeLittleEndianInt(dibHeader, 44, 0x0000FF00);      // Green channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
+		storeLittleEndianInt(dibHeader, 48, 0x000000FF);      // Blue channel bit mask in big-endian (valid because BI_BITFIELDS is specified)
+		storeLittleEndianInt(dibHeader, 52, 0xFF000000);      // Alpha channel bit mask in big-endian
 
 		outBmp.write(fileHeader);
 		outBmp.write(dibHeader);
 		byte[] rowPadBytes = new byte[rowPad];
-		byte[] pixelBytes = new byte[3];
+		byte[] pixelBytes = new byte[4];
+		byte[] blackPixelBytes = new byte[pixelBytes.length];
 		boolean imageType32Bit = bufferStorage == GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888;
     	if (buffer instanceof IntBuffer && imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
@@ -145,13 +154,13 @@ public class CaptureImage {
 				for (int x = 0; x < width; x++) {
 					try {
 						int pixel = intBuffer.get();
-						pixelBytes[0] = (byte) (pixel >> 16);
-						pixelBytes[1] = (byte) (pixel >>  8);
-						pixelBytes[2] = (byte) (pixel      );
+						pixelBytes[0] = (byte) (pixel >> 16); // B
+						pixelBytes[1] = (byte) (pixel >>  8); // G
+						pixelBytes[2] = (byte) (pixel      ); // R
+						pixelBytes[3] = (byte) (pixel >> 24); // A
 						outBmp.write(pixelBytes);
 					} catch (BufferUnderflowException e) {
-						pixelBytes[0] = pixelBytes[1] = pixelBytes[2] = 0;
-						outBmp.write(pixelBytes);
+						outBmp.write(blackPixelBytes);
 					}
 				}
 				outBmp.write(rowPadBytes);
@@ -168,9 +177,8 @@ public class CaptureImage {
 						getPixelBytes((short) (twoPixels >>> 16), bufferStorage, pixelBytes);
 						outBmp.write(pixelBytes);
 					} catch (BufferUnderflowException e) {
-						pixelBytes[0] = pixelBytes[1] = pixelBytes[2] = 0;
-						outBmp.write(pixelBytes);
-						outBmp.write(pixelBytes);
+						outBmp.write(blackPixelBytes);
+						outBmp.write(blackPixelBytes);
 					}
 				}
 				outBmp.write(rowPadBytes);
@@ -191,9 +199,10 @@ public class CaptureImage {
 	    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr + (invert ? (height - y - 1) : y) * bufferWidth * 4, bufferWidth * 4, 4);
 				for (int x = 0; x < width; x++) {
 					int pixel = memoryReader.readNext();
-					pixelBytes[0] = (byte) (pixel >> 16);
-					pixelBytes[1] = (byte) (pixel >>  8);
-					pixelBytes[2] = (byte) (pixel      );
+					pixelBytes[0] = (byte) (pixel >> 16); // B
+					pixelBytes[1] = (byte) (pixel >>  8); // G
+					pixelBytes[2] = (byte) (pixel      ); // R
+					pixelBytes[3] = (byte) (pixel >> 24); // A
 					outBmp.write(pixelBytes);
 				}
 				outBmp.write(rowPadBytes);
@@ -230,28 +239,29 @@ public class CaptureImage {
     private void getPixelBytes(short pixel, int imageType, byte[] pixelBytes) {
     	switch (imageType) {
     	case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
-    		pixelBytes[0] = (byte) ((pixel >> 8) & 0xF8);
-    		pixelBytes[1] = (byte) ((pixel >> 3) & 0xFC);
-    		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8);
+    		pixelBytes[0] = (byte) ((pixel >> 8) & 0xF8); // B
+    		pixelBytes[1] = (byte) ((pixel >> 3) & 0xFC); // G
+    		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8); // R
+    		pixelBytes[3] = 0;                            // A
     		break;
     	case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-    		pixelBytes[0] = (byte) ((pixel >> 7) & 0xF8);
-    		pixelBytes[1] = (byte) ((pixel >> 2) & 0xF8);
-    		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8);
+    		pixelBytes[0] = (byte) ((pixel >> 7) & 0xF8); // B
+    		pixelBytes[1] = (byte) ((pixel >> 2) & 0xF8); // G
+    		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8); // R
+    		pixelBytes[3] = (byte) ((pixel >> 15) != 0 ? 0xFF : 0x00); // A
     		break;
     	case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444:
-    		pixelBytes[0] = (byte) ((pixel >> 4) & 0xF0);
-    		pixelBytes[1] = (byte) ((pixel     ) & 0xF0);
-    		pixelBytes[2] = (byte) ((pixel << 4) & 0xF0);
-    		int alpha = (pixel >> 12) & 0x0F;
-    		pixelBytes[0] = (byte) ((pixelBytes[0] * alpha) / 0x0F);
-    		pixelBytes[1] = (byte) ((pixelBytes[1] * alpha) / 0x0F);
-    		pixelBytes[2] = (byte) ((pixelBytes[2] * alpha) / 0x0F);
+    		pixelBytes[0] = (byte) ((pixel >> 4) & 0xF0); // B
+    		pixelBytes[1] = (byte) ((pixel     ) & 0xF0); // G
+    		pixelBytes[2] = (byte) ((pixel << 4) & 0xF0); // R
+    		pixelBytes[3] = (byte) ((pixel >> 8) & 0xF0); // A
     		break;
 		default:
+			// Black pixel
 			pixelBytes[0] = 0;
 			pixelBytes[1] = 0;
 			pixelBytes[2] = 0;
+			pixelBytes[3] = 0;
 			break;
     	}
     }
@@ -282,15 +292,64 @@ public class CaptureImage {
     private void decompressImageDXT(int dxtLevel) {
 		IntBuffer decompressedBuffer = IntBuffer.allocate(round4(width) * round4(height));
 
+		//
+		// For more information of the S3 Texture compression (DXT), see
+		// http://en.wikipedia.org/wiki/S3_Texture_Compression
+		//
 		int strideX = 0;
 		int strideY = 0;
 		int[] colors = new int[4];
 		int strideSize = (dxtLevel == 1 ? 8 : 16);
+		int[] alphas = new int[16];
+		int[] alphasLookup = new int[8];
 		for (int i = 0; i < compressedImageSize; i += strideSize) {
 			if (dxtLevel > 1) {
-				// Skip Alpha values
-				getInt32(buffer);
-				getInt32(buffer);
+				if (dxtLevel <= 3) {
+					// 64 bits of alpha channel data: four bits for each pixel
+					int alphaBits = 0;
+					for (int j = 0; j < 16; j++, alphaBits >>>= 4) {
+						if ((j % 8) == 0) {
+							alphaBits = getInt32(buffer);
+						}
+						int alpha = alphaBits & 0x0F;
+						alphas[j] = alpha << 4;
+					}
+				} else {
+					// 64 bits of alpha channel data: two 8 bit alpha values and a 4x4 3 bit lookup table
+					int bits0 = getInt32(buffer);
+					int bits1 = getInt32(buffer);
+					int alpha0 = bits0 & 0xFF;
+					int alpha1 = (bits0 >> 8) & 0xFF;
+					alphasLookup[0] = alpha0;
+					alphasLookup[1] = alpha1;
+					if (alpha0 > alpha1) {
+						alphasLookup[2] = (6 * alpha0 + 1 * alpha1) / 7;
+						alphasLookup[3] = (5 * alpha0 + 2 * alpha1) / 7;
+						alphasLookup[4] = (4 * alpha0 + 3 * alpha1) / 7;
+						alphasLookup[5] = (3 * alpha0 + 4 * alpha1) / 7;
+						alphasLookup[6] = (2 * alpha0 + 5 * alpha1) / 7;
+						alphasLookup[7] = (1 * alpha0 + 6 * alpha1) / 7;
+					} else {
+						alphasLookup[2] = (4 * alpha0 + 1 * alpha1) / 5;
+						alphasLookup[3] = (3 * alpha0 + 2 * alpha1) / 5;
+						alphasLookup[4] = (2 * alpha0 + 3 * alpha1) / 5;
+						alphasLookup[5] = (1 * alpha0 + 4 * alpha1) / 5;
+						alphasLookup[6] = 0x00;
+						alphasLookup[7] = 0xFF;
+					}
+					int bits = bits0 >> 16;
+					for (int j = 0; j < 16; j++) {
+						int lookup;
+						if (j == 5) {
+							lookup = (bits & 1) << 2 | (bits1 & 3);
+							bits = bits1 >>> 2;
+						} else {
+							lookup = bits & 7;
+							bits >>>= 3;
+						}
+						alphas[j] = alphasLookup[lookup];
+					}
+				}
 			}
 			int color = getInt32(buffer);
 			int color0 = (color >>  0) & 0xFFFF;
@@ -332,9 +391,11 @@ public class CaptureImage {
 			colors[3] = ((b3 & 0xFF) << 16) | ((g3 & 0xFF) << 8) | (r3 & 0xFF);
 
 			int bits = getInt32(buffer);
-			for (int y = 0; y < 4; y++) {
-				for (int x = 0; x < 4; x++, bits >>>= 2) {
-					storePixel(decompressedBuffer, strideX + x, strideY + y, colors[bits & 3]);
+			for (int y = 0, alphaIndex = 0; y < 4; y++) {
+				for (int x = 0; x < 4; x++, bits >>>= 2, alphaIndex++) {
+					int bgr = colors[bits & 3];
+					int alpha = alphas[alphaIndex] << 24;
+					storePixel(decompressedBuffer, strideX + x, strideY + y, bgr | alpha);
 				}
 			}
 
