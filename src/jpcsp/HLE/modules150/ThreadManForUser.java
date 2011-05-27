@@ -1293,6 +1293,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         hleChangeThreadState(thread, PSP_THREAD_STOPPED);  // PSP_THREAD_STOPPED (checked)
         cancelThreadWait(thread);
         RuntimeContext.onThreadExit(thread);
+        if (thread == currentThread) {
+        	hleRescheduleCurrentThread();
+        }
     }
 
     private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
@@ -4140,10 +4143,17 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn("sceKernelGetThreadExitStatus unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+            if (thread.status != PSP_THREAD_STOPPED) {
+	            if (log.isDebugEnabled()) {
+	                log.debug(String.format("sceKernelGetThreadExitStatus not stopped uid=0x%x", uid));
+	            }
+                cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
+            } else {
+	            if (log.isDebugEnabled()) {
+	                log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+	            }
+	            cpu.gpr[2] = thread.exitStatus;
             }
-            cpu.gpr[2] = thread.exitStatus;
         }
     }
 

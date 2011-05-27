@@ -98,7 +98,9 @@ public class LoadExecForUser implements HLEModule {
             cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceKernelLoadExec file='%s' optionAddr=0x%08X", name, option_addr));
+        }
 
         // Flush system memory to mimic a real PSP reset.
         Modules.SysMemUserForUserModule.reset();
@@ -109,7 +111,9 @@ public class LoadExecForUser implements HLEModule {
             int argAddr = mem.read32(option_addr + 8);   // Pointer to a list of strings.
             int keyAddr = mem.read32(option_addr + 12);  // Pointer to an encryption key (may not be used).
 
-            log.debug("sceKernelLoadExec params: optSize=" + optSize + ", argSize=" + argSize + ", argAddr=" + Integer.toHexString(argAddr) + ", keyAddr=" + Integer.toHexString(keyAddr));
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("sceKernelLoadExec params: optSize=%d, argSize=%d, argAddr=0x%08X, keyAddr=0x%08X", optSize, argSize, argAddr, keyAddr));
+            }
         }
 
         try {
