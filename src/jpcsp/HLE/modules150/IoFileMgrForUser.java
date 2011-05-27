@@ -1066,27 +1066,29 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     log.debug("hleIoWaitAsync - already context switched, not waiting");
                     waitForAsync = false;
                 }
-                // The file was not found at sceIoOpenAsync.
-                if (info.result == (ERROR_ERRNO_FILE_NOT_FOUND & 0xffffffffL)) {
-                    log.debug("hleIoWaitAsync - file not found, not waiting");
-                    filelist.remove(info.uid);
-                    SceUidManager.releaseUid(info.uid, "IOFileManager-File");
-                    waitForAsync = false;
-                }
             }
+
+            // The file was not found at sceIoOpenAsync.
+            if (info.result == ERROR_ERRNO_FILE_NOT_FOUND) {
+                log.debug("hleIoWaitAsync - file not found, not waiting");
+                filelist.remove(info.uid);
+                triggerAsyncThread(info);
+                SceUidManager.releaseUid(info.uid, "IOFileManager-File");
+                waitForAsync = false;
+            }
+
             // Always store the result.
             Memory mem = Memory.getInstance();
             if (Memory.isAddressGood(res_addr)) {
                 log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
-                mem.write32(res_addr, (int) (info.result & 0xffffffffL));
-                mem.write32(res_addr + 4, (int) ((info.result >> 32) & 0xffffffffL));
+                mem.write64(res_addr, info.result);
             }
             Emulator.getProcessor().cpu.gpr[2] = 0;
             if (info != null) {
                 if (waitForAsync) {
                     // Only flush the result on sceIoWaitAsync and sceIoWaitAsyncCB calls.
                     info.result = ERROR_KERNEL_NO_ASYNC_OP;
-                    // Setup the ioListeners.
+                    // Call the ioListeners.
                     for (IIoListener ioListener : ioListeners) {
                         ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
                     }
@@ -1103,7 +1105,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
                     threadMan.hleRescheduleCurrentThread(callbacks);
                 } else {
-                    // For sceIoPollAsync, only setup the ioListeners.
+                    // For sceIoPollAsync, only call the ioListeners.
                     for (IIoListener ioListener : ioListeners) {
                         ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
                     }
@@ -1231,6 +1233,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         }
                         Emulator.getProcessor().cpu.gpr[2] = ERROR_ERRNO_FILE_ALREADY_EXISTS;
                     } else {
+                    	// When PSP_O_CREAT is specified, create the parent directories
+                    	// if they do not yet exist.
+                        if (!file.exists() && ((flags & PSP_O_CREAT) == PSP_O_CREAT)) {
+                        	String parentDir = new File(pcfilename).getParent();
+                        	new File(parentDir).mkdirs();
+                        }
+
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         info = new IoInfo(filename, raf, mode, flags, permissions);
                         if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY &&
@@ -2979,10 +2988,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             case 0x02425818: {
                 log.debug("sceIoDevctl get MS capacity (fatms0)");
                 int sectorSize = 0x200;
-                int sectorCount = 0x08;
+                int sectorCount = MemoryStick.getSectorSize() / sectorSize;
                 int maxClusters = (int) ((MemoryStick.getFreeSize() * 95L / 100) / (sectorSize * sectorCount));
                 int freeClusters = maxClusters;
-                int maxSectors = 512;
+                int maxSectors = maxClusters;
                 if (Memory.isAddressGood(indata_addr) && inlen >= 4) {
                     int addr = mem.read32(indata_addr);
                     if (Memory.isAddressGood(addr)) {
