@@ -47,8 +47,6 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public final static String paramSfoFileName = "PARAM.SFO";
 	public final static String anyFileName      = "<>";
 
-	public int baseAddress;
-
 	public pspUtilityDialogCommon base;
 	public int mode;
 		public final static int MODE_AUTOLOAD = 0;

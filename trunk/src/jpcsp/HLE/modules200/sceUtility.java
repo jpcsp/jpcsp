@@ -17,27 +17,39 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules200;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 
+import jpcsp.Emulator;
+import jpcsp.GeneralJpcspException;
+import jpcsp.Loader;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.kernel.types.SceUtilityInstallParams;
+import jpcsp.HLE.kernel.types.pspAbstractMemoryMappedStructure;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.filesystems.SeekableDataInput;
 
 public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
-
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
         if (version >= 200) {
-
             mm.addFunction(0x1579A159, sceUtilityLoadNetModuleFunction);
             mm.addFunction(0x64D50C56, sceUtilityUnloadNetModuleFunction);
+            mm.addFunction(0xC4700FA3, sceUtilityInstallGetStatusFunction);
+            mm.addFunction(0x1281DA8E, sceUtilityInstallInitStartFunction);
+            mm.addFunction(0x5EF1C24A, sceUtilityInstallShutdownStartFunction);
+            mm.addFunction(0xA03D29BA, sceUtilityInstallUpdateFunction);
 
             loadedNetModules = new HashMap<Integer, SceModule>();
             waitingNetModules = new HashMap<Integer, String>();
@@ -49,11 +61,67 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         super.uninstallModule(mm, version);
 
         if (version >= 200) {
-
             mm.removeFunction(sceUtilityLoadNetModuleFunction);
             mm.removeFunction(sceUtilityUnloadNetModuleFunction);
-
+            mm.removeFunction(sceUtilityInstallGetStatusFunction);
+            mm.removeFunction(sceUtilityInstallInitStartFunction);
+            mm.removeFunction(sceUtilityInstallShutdownStartFunction);
+            mm.removeFunction(sceUtilityInstallUpdateFunction);
         }
+    }
+
+    protected static class InstallUtilityDialogState extends UtilityDialogState {
+		protected SceUtilityInstallParams installParams;
+
+    	public InstallUtilityDialogState(String name) {
+			super(name);
+		}
+
+		@Override
+		protected boolean executeUpdateVisible(Processor processor) {
+			boolean keepVisible = false;
+
+			log.warn(String.format("Partial sceUtilityInstallUpdate %s", installParams.toString()));
+
+			// We only get the game name from the install params. Is the rest fixed?
+			String fileName = String.format("ms0:/PSP/GAME/%s/EBOOT.PBP", installParams.gameName);
+	        try {
+	            SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(fileName, IoFileMgrForUser.PSP_O_RDONLY);
+	            if (moduleInput != null) {
+	                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+	                moduleInput.readFully(moduleBytes);
+	                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+
+	    			// TODO How is this module being loaded?
+	                // Does it unload the current module? i.e. re-init the PSP
+	                SceModule module = Emulator.getInstance().load(name, moduleBuffer, true);
+	                Emulator.getClock().resume();
+
+	                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+	                	installParams.base.result = 0;
+	                	keepVisible = false;
+	                } else {
+	                    log.warn("sceUtilityInstall - failed, target is not an ELF");
+	                    installParams.base.result = -1;
+	                }
+	                moduleInput.close();
+	            }
+	        } catch (GeneralJpcspException e) {
+	            log.error("General Error : " + e.getMessage());
+	            Emulator.PauseEmu();
+	        } catch (IOException e) {
+	            log.error(String.format("sceUtilityInstall - Error while loading module %s: %s", fileName, e.getMessage()));
+	            installParams.base.result = -1;
+	        }
+
+			return keepVisible;
+		}
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			installParams = new SceUtilityInstallParams();
+			return installParams;
+		}
     }
 
     public static final String[] utilityNetModuleNames = new String[] {
@@ -77,8 +145,16 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
     protected HashMap<Integer, SceModule> loadedNetModules;
     protected HashMap<Integer, String> waitingNetModules;
+    protected InstallUtilityDialogState installState;
 
-    private String getNetModuleName(int module) {
+	@Override
+	public void start() {
+		super.start();
+
+		installState = new InstallUtilityDialogState("sceUtilityInstall");
+	}
+
+	private String getNetModuleName(int module) {
     	if (module < 0 || module >= utilityNetModuleNames.length) {
     		return "PSP_NET_MODULE_UNKNOWN_" + module;
     	}
@@ -154,6 +230,22 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         cpu.gpr[2] = hleUtilityUnloadNetModule(module);
     }
 
+    public void sceUtilityInstallInitStart(Processor processor) {
+        installState.executeInitStart(processor);
+    }
+
+    public void sceUtilityInstallShutdownStart(Processor processor) {
+    	installState.executeShutdownStart(processor);
+    }
+
+    public void sceUtilityInstallUpdate(Processor processor) {
+    	installState.executeUpdate(processor);
+    }
+
+    public void sceUtilityInstallGetStatus(Processor processor) {
+    	installState.executeGetStatus(processor);
+    }
+
     public final HLEModuleFunction sceUtilityLoadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadNetModule") {
 
         @Override
@@ -177,6 +269,58 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         @Override
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityUnloadNetModule(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceUtilityInstallGetStatusFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallGetStatus") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	sceUtilityInstallGetStatus(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallGetStatus(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceUtilityInstallInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallInitStart") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	sceUtilityInstallInitStart(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallInitStart(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceUtilityInstallShutdownStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallShutdownStart") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	sceUtilityInstallShutdownStart(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallShutdownStart(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceUtilityInstallUpdateFunction = new HLEModuleFunction("sceUtility", "sceUtilityInstallUpdate") {
+
+        @Override
+        public final void execute(Processor processor) {
+        	sceUtilityInstallUpdate(processor);
+        }
+
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityInstallUpdate(processor);";
         }
     };
 }

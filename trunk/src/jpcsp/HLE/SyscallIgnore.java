@@ -132,10 +132,6 @@ public enum SyscallIgnore {
 	sceUtilityDialogPowerUnlock(0x56bedca4), //1.50+
 	sceUtilityDialogSetStatus(0x680c0ea8), //1.50+
 	sceUtilityDialogSetThreadId(0x6f923bd3), //1.50+
-	sceUtilityInstallGetStatus(0xC4700FA3), // 2.00+
-	sceUtilityInstallInitStart(0x1281DA8E), // 2.00+
-	sceUtilityInstallShutdownStart(0x5EF1C24A), // 2.00+
-	sceUtilityInstallUpdate(0xA03D29BA), // 2.00+
 	sceUtilityLoadUsbModule(0x0D5BC6D2), // 2.00+
 	sceUtilitySetNetParam(0xfc4516f3), // 2.00+
 	sceUtilityUnloadUsbModule(0xF64910F0), // 2.71+
