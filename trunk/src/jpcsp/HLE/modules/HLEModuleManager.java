@@ -118,7 +118,8 @@ public class HLEModuleManager {
         sceMp4(Modules.sceMp4Module),
         sceHttp(Modules.sceHttpModule),
         sceHttps(Modules.sceHttpsModule),
-        sceSsl(Modules.sceSslModule);
+        sceSsl(Modules.sceSslModule),
+        sceP3da(Modules.sceP3daModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
