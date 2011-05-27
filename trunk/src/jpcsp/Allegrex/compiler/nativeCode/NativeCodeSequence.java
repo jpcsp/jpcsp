@@ -16,7 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import jpcsp.Memory;
+import jpcsp.Allegrex.compiler.CodeInstruction;
 
 /**
  * @author gid15
@@ -31,6 +35,7 @@ public class NativeCodeSequence {
 	private boolean isReturning = false;
 	private boolean wholeCodeBlock = false;
 	private String methodName = "call";
+	private List<CodeInstruction> beforeCodeInstructions;
 
 	private static class NativeOpcodeInfo {
 		private int opcode;
@@ -246,5 +251,16 @@ public class NativeCodeSequence {
 
 	public void setMethodName(String methodName) {
 		this.methodName = methodName;
+	}
+
+	public List<CodeInstruction> getBeforeCodeInstructions() {
+		return beforeCodeInstructions;
+	}
+
+	public void addBeforeCodeInstruction(CodeInstruction codeInstruction) {
+		if (beforeCodeInstructions == null) {
+			beforeCodeInstructions = new LinkedList<CodeInstruction>();
+		}
+		beforeCodeInstructions.add(codeInstruction);
 	}
 }

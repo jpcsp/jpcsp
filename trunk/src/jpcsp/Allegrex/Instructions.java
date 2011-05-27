@@ -2649,7 +2649,16 @@ public String disasm(int address, int insn) {
 return Common.disasmRS("mtlo", rs);
 }
 };
-public static final Instruction BEQ = new Instruction(73, FLAGS_BRANCH_INSTRUCTION) {
+
+//
+// BEQ has the flag "FLAG_ENDS_BLOCK" because it can end a block when the
+// conditional branch can be reduced to an unconditional branch (rt == rs).
+//    "BEQ $xx, $xx, target"
+// is equivalent to
+//    "B target"
+// This special case is recognized in the method Compiler.analyse().
+//
+public static final Instruction BEQ = new Instruction(73, FLAGS_BRANCH_INSTRUCTION | FLAG_ENDS_BLOCK) {
 
 @Override
 public final String name() { return "BEQ"; }

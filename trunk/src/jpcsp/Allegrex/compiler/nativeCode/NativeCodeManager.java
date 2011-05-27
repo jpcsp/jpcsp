@@ -27,6 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jpcsp.Allegrex.Common;
+import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.CodeBlock;
 import jpcsp.Allegrex.compiler.CodeInstruction;
 import jpcsp.Allegrex.compiler.Compiler;
@@ -91,6 +92,48 @@ public class NativeCodeManager {
 		}
 
 		return content.toString();
+	}
+
+	private void loadBeforeCodeInstructions(NativeCodeSequence nativeCodeSequence, String codeInstructions) {
+		BufferedReader reader = new BufferedReader(new StringReader(codeInstructions));
+		if (reader == null) {
+			return;
+		}
+
+		Pattern codeInstructionPattern = Pattern.compile("\\s*(\\w+\\s*:?\\s*)?\\[(\\p{XDigit}+)\\].*");
+		final int opcodeGroup = 2;
+		final int address = 0;
+		
+		try {
+			while (true) {
+				String line = reader.readLine();
+				if (line == null) {
+					break;
+				}
+
+				line = line.trim();
+				if (line.length() > 0) {
+					try {
+						Matcher codeInstructionMatcher = codeInstructionPattern.matcher(line);
+						int opcode = 0;
+						if (codeInstructionMatcher.matches()) {
+							opcode = Utilities.parseAddress(codeInstructionMatcher.group(opcodeGroup));
+						} else {
+							opcode = Utilities.parseAddress(line.trim());
+						}
+
+						Common.Instruction insn = Decoder.instruction(opcode);
+						CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, false, false, 0);
+
+						nativeCodeSequence.addBeforeCodeInstruction(codeInstruction);
+					} catch (NumberFormatException e) {
+						Compiler.log.error(e);
+					}
+				}
+			}
+		} catch (IOException e) {
+			Compiler.log.error(e);
+		}
 	}
 
 	private void loadNativeCodeOpcodes(NativeCodeSequence nativeCodeSequence, String codeInstructions) {
@@ -232,6 +275,11 @@ public class NativeCodeManager {
 			} else {
 				Compiler.log.error(String.format("BranchInstruction: label '%s' not found", branchInstructionLabel));
 			}
+		}
+
+		String beforeCodeInstructions = getContent(element.getElementsByTagName("BeforeCodeInstructions"));
+		if (beforeCodeInstructions != null) {
+			loadBeforeCodeInstructions(nativeCodeSequence, beforeCodeInstructions);
 		}
 
 		addNativeCodeSequence(nativeCodeSequence);

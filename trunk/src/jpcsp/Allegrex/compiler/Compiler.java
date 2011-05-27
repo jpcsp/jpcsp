@@ -30,6 +30,7 @@ import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.memory.IMemoryReader;
@@ -278,7 +279,23 @@ public class Compiler implements ICompiler {
                         isBranching = true;
                     }
                     if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
-                        endPc = npc;
+                    	if (insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL | Instruction.FLAG_IS_BRANCHING)) {
+                    		// Detect the conditional
+                    		//    "BEQ $xx, $xx, target"
+                    		// which is equivalent to the unconditional
+                    		//    "B target"
+                    		if (insn == Instructions.BEQ) {
+                        		int rt = (opcode >> 16) & 0x1F;
+                        		int rs = (opcode >> 21) & 0x1F;
+                        		if (rs == rt) {
+                        			endPc = npc;
+                        		}
+                    		} else {
+                    			log.error(String.format("Unknown conditional instruction ending a block: %s", insn.disasm(pc, opcode)));
+                    		}
+                    	} else {
+                    		endPc = npc;
+                    	}
                     }
                     if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
                         if (recursive) {

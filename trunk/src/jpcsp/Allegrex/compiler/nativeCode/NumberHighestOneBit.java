@@ -21,6 +21,14 @@ package jpcsp.Allegrex.compiler.nativeCode;
  *
  */
 public class NumberHighestOneBit extends AbstractNativeCodeSequence {
+	private static final int[] precomputedSpecial1 = new int[256];
+
+	static {
+		for (int n = 0; n < precomputedSpecial1.length; n++) {
+			precomputedSpecial1[n] = computeSpecial1(n);
+		}
+	}
+
 	static public void call(int valueReg, int bitReg) {
 		int[] gpr = getGpr();
 		int value = gpr[valueReg];
@@ -33,5 +41,27 @@ public class NumberHighestOneBit extends AbstractNativeCodeSequence {
 		}
 
 		gpr[bitReg] = bit;
+	}
+
+	static private int computeSpecial1(int n) {
+		if ((n & 255) == 0)
+			return 0;
+		if ((n & 128) == 0)
+			return 1;
+		if ((n & 64) == 0)
+			return 0;
+		if ((n & 32) == 0)
+			return 2;
+		if ((n & 16) == 0)
+			return 3;
+		if ((n & 8) == 0)
+			return 4;
+		return 0;
+	}
+
+	static public void callSpecial1(int valueReg) {
+		int value = getRegisterValue(valueReg);
+		int result = precomputedSpecial1[value & 0xFF];
+		setGprV0(result);
 	}
 }

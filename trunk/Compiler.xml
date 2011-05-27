@@ -3023,7 +3023,19 @@
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<Method>callWithStep</Method>
 		<Parameters>$a0,$zr,$a1,0,64</Parameters>
+		<BeforeCodeInstructions><![CDATA[
+088462FC:[8FA40000]: lw         $a0, 0($sp)
+]]></BeforeCodeInstructions>
 		<CodeInstructions><![CDATA[
+088462F0:[00058823]: subu       $s1, $zr, $a1 <=> negu $s1, $a1
+088462F4:[32230003]: andi       $v1, $s1, 3
+088462F8:[1060002D]: beq        $v1, $zr, 0x088463B0
+088462FC:[8FA40000]: lw         $a0, 0($sp)
+08846300:[286A0003]: slti       $t2, $v1, 3
+08846304:[11400016]: beq        $t2, $zr, 0x08846360
+08846308:[28670002]: slti       $a3, $v1, 2
+0884630C:[14E000DA]: bne        $a3, $zr, 0x08846678
+08846310:[00000000]: nop
 08846314:[BC980000]: cache      0x18, 0($a0)
 08846318:[AC800000]: sw         $zr, 0($a0)
 0884631C:[24A5FFFF]: addiu      $a1, $a1, -1
@@ -7446,7 +7458,118 @@
 088A59E0:[00081080]: sll        $v0, $t0, 0x0002
 ]]></CodeInstructions>
 	</NativeCodeSequence>
-</NativeCodeSequences>
+	<NativeCodeSequence name="BitSpecial1">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.NumberHighestOneBit</Class>
+		<Method>callSpecial1</Method>
+		<IsReturning>true</IsReturning>
+		<Parameters>$a1</Parameters>
+		<CodeInstructions><![CDATA[
+08816930:[30A400FF]: andi       $a0, $a1, 255
+08816934:[54800003]: bnel       $a0, $zr, 0x08816944
+08816938:[30830080]: andi       $v1, $a0, 128
+0881693C:[1000002D]: b          0x088169F4
+08816940:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+08816944:[14600003]: bne        $v1, $zr, 0x08816954
+08816948:[00000000]: nop
+0881694C:[10000029]: b          0x088169F4
+08816950:[24020001]: addiu      $v0, $zr, 1 <=> li $v0, 1
+08816954:[10600009]: beq        $v1, $zr, 0x0881697C
+08816958:[00000000]: nop
+0881695C:[30820040]: andi       $v0, $a0, 64
+08816960:[10400006]: beq        $v0, $zr, 0x0881697C
+08816964:[00000000]: nop
+08816968:[30820020]: andi       $v0, $a0, 32
+0881696C:[14400003]: bne        $v0, $zr, 0x0881697C
+08816970:[00000000]: nop
+08816974:[1000001F]: b          0x088169F4
+08816978:[24020002]: addiu      $v0, $zr, 2 <=> li $v0, 2
+0881697C:[1060000C]: beq        $v1, $zr, 0x088169B0
+08816980:[00000000]: nop
+08816984:[30820040]: andi       $v0, $a0, 64
+08816988:[10400009]: beq        $v0, $zr, 0x088169B0
+0881698C:[00000000]: nop
+08816990:[30820020]: andi       $v0, $a0, 32
+08816994:[10400006]: beq        $v0, $zr, 0x088169B0
+08816998:[00000000]: nop
+0881699C:[30820010]: andi       $v0, $a0, 16
+088169A0:[14400003]: bne        $v0, $zr, 0x088169B0
+088169A4:[00000000]: nop
+088169A8:[10000012]: b          0x088169F4
+088169AC:[24020003]: addiu      $v0, $zr, 3 <=> li $v0, 3
+088169B0:[50600010]: beql       $v1, $zr, 0x088169F4
+088169B4:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+088169B8:[30820040]: andi       $v0, $a0, 64
+088169BC:[1040000C]: beq        $v0, $zr, 0x088169F0
+088169C0:[00000000]: nop
+088169C4:[30820020]: andi       $v0, $a0, 32
+088169C8:[10400009]: beq        $v0, $zr, 0x088169F0
+088169CC:[00000000]: nop
+088169D0:[30820010]: andi       $v0, $a0, 16
+088169D4:[10400006]: beq        $v0, $zr, 0x088169F0
+088169D8:[00000000]: nop
+088169DC:[30820008]: andi       $v0, $a0, 8
+088169E0:[14400003]: bne        $v0, $zr, 0x088169F0
+088169E4:[00000000]: nop
+088169E8:[10000002]: b          0x088169F4
+088169EC:[24020004]: addiu      $v0, $zr, 4 <=> li $v0, 4
+088169F0:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+088169F4:[03E00008]: jr         $ra
+088169F8:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="memcpySequence">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
+		<Method>call</Method>
+		<Parameters>$s1,$s0,$s3</Parameters>
+		<CodeInstructions><![CDATA[
+08892904:[1A60002D]: blez       $s3, 0x088929BC
+08892908:[00003021]: addu       $a2, $zr, $zr <=> li $a2, 0
+0889290C:[2A610009]: slti       $at, $s3, 9
+08892910:[14200020]: bne        $at, $zr, 0x08892994
+08892914:[2664FFF8]: addiu      $a0, $s3, -8
+08892918:[06600007]: bltz       $s3, 0x08892938
+0889291C:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
+08892920:[3C017FFF]: lui        $at, 0x7FFF <=> li $at, 0x7FFF0000
+08892924:[3421FFFF]: ori        $at, $at, -1
+08892928:[0261082A]: slt        $at, $s3, $at
+0889292C:[10200002]: beq        $at, $zr, 0x08892938
+08892930:[00000000]: nop
+08892934:[24020001]: addiu      $v0, $zr, 1 <=> li $v0, 1
+08892938:[50400017]: beql       $v0, $zr, 0x08892998
+0889293C:[00D3082A]: slt        $at, $a2, $s3
+08892940:[82030000]: lb         $v1, 0($s0)
+08892944:[24C60008]: addiu      $a2, $a2, 8
+08892948:[00C4102A]: slt        $v0, $a2, $a0
+0889294C:[A2230000]: sb         $v1, 0($s1)
+08892950:[82030001]: lb         $v1, 1($s0)
+08892954:[A2230001]: sb         $v1, 1($s1)
+08892958:[82030002]: lb         $v1, 2($s0)
+0889295C:[A2230002]: sb         $v1, 2($s1)
+08892960:[82030003]: lb         $v1, 3($s0)
+08892964:[A2230003]: sb         $v1, 3($s1)
+08892968:[82030004]: lb         $v1, 4($s0)
+0889296C:[A2230004]: sb         $v1, 4($s1)
+08892970:[82030005]: lb         $v1, 5($s0)
+08892974:[A2230005]: sb         $v1, 5($s1)
+08892978:[82030006]: lb         $v1, 6($s0)
+0889297C:[A2230006]: sb         $v1, 6($s1)
+08892980:[82030007]: lb         $v1, 7($s0)
+08892984:[A2230007]: sb         $v1, 7($s1)
+08892988:[26100008]: addiu      $s0, $s0, 8
+0889298C:[1440FFEC]: bne        $v0, $zr, 0x08892940
+08892990:[26310008]: addiu      $s1, $s1, 8
+08892994:[00D3082A]: slt        $at, $a2, $s3
+08892998:[50200009]: beql       $at, $zr, 0x088929C0
+0889299C:[7C051E20]: seh        $v1, $a1
+088929A0:[82030000]: lb         $v1, 0($s0)
+088929A4:[24C60001]: addiu      $a2, $a2, 1
+088929A8:[00D3102A]: slt        $v0, $a2, $s3
+088929AC:[A2230000]: sb         $v1, 0($s1)
+088929B0:[26100001]: addiu      $s0, $s0, 1
+088929B4:[1440FFFA]: bne        $v0, $zr, 0x088929A0
+088929B8:[26310001]: addiu      $s1, $s1, 1
+]]></CodeInstructions>
+	</NativeCodeSequence>
 <!--
 	<NativeCodeSequence name="XXX">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.XXX</Class>
@@ -7457,3 +7580,4 @@
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 -->
+</NativeCodeSequences>
