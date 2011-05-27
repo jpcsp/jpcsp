@@ -308,8 +308,25 @@ public class CodeBlock {
     				codeInstructions.clear();
     				codeInstructions.add(nativeCodeInstruction);
     			} else {
+    				// Remove the first opcode that started this native code sequence
 	    			lit.remove();
+
+	    			// Add any code instructions that need to be inserted before
+	    			// the native code sequence
+	    			List<CodeInstruction> beforeCodeInstructions = nativeCodeSequence.getBeforeCodeInstructions();
+	    			if (beforeCodeInstructions != null) {
+	    				for (CodeInstruction beforeCodeInstruction : beforeCodeInstructions) {
+	    					CodeInstruction newCodeInstruction = new CodeInstruction(beforeCodeInstruction);
+	    					newCodeInstruction.setAddress(codeInstruction.getAddress());
+
+	    					lit.add(newCodeInstruction);
+	    				}
+	    			}
+
+	    			// Add the native code sequence itself
 	    			lit.add(nativeCodeInstruction);
+
+	    			// Remove the further opcodes from the native code sequence
 	    			for (int i = nativeCodeSequence.getNumOpcodes() - 1; i > 0 && lit.hasNext(); i--) {
 	    				lit.next();
 	    				lit.remove();

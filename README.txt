@@ -74,6 +74,9 @@ JPCSP v0.7 (????????):
 
 -> Draft implementation for the support of Video UMDs;
 
+-> Basic network support: Infrastructure network is almost complete.
+   Adhoc network or Signin to Playstation Network are not supported at all.
+
 -> A lot of compatibility improvements in almost of the PSP modules.
 
 

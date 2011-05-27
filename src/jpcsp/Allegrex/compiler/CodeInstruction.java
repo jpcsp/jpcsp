@@ -49,7 +49,17 @@ public class CodeInstruction {
 		this.branchingTo = branchingTo;
 	}
 
-	public int getAddress() {
+    public CodeInstruction(CodeInstruction codeInstruction) {
+    	this.address = codeInstruction.address;
+    	this.opcode = codeInstruction.opcode;
+    	this.insn = codeInstruction.insn;
+    	this.isBranchTarget = codeInstruction.isBranchTarget;
+    	this.branchingTo = codeInstruction.branchingTo;
+    	this.isBranching = codeInstruction.isBranching;
+    	this.label = codeInstruction.label;
+    }
+
+    public int getAddress() {
 		return address;
 	}
 
@@ -274,14 +284,14 @@ public class CodeInstruction {
     		if (branchingOpcode == Opcodes.IF_ICMPEQ) {
     			loadRs = false;
     			loadRt = false;
-    			
-    			//branchingOpcode = Opcodes.GOTO;
-    			
+				branchingOpcode = Opcodes.GOTO;
+
 				// The ASM library has problems with small frames having no
-				// stack (NullPointerException). Generate a dummy stack requirement.
-				// "IFEQ 0" is equivalent to GOTO
+				// stack (NullPointerException). Generate a dummy stack requirement:
+    			//   ILOAD 0
+    			//   POP
 				context.loadImm(0);
-				branchingOpcode = Opcodes.IFEQ;
+				context.getMethodVisitor().visitInsn(Opcodes.POP);
     		} else if (branchingOpcode == Opcodes.IF_ICMPNE) {
     			loadRs = false;
     			loadRt = false;
