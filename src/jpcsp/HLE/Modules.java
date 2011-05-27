@@ -58,6 +58,7 @@ import jpcsp.HLE.modules.sceNp;
 import jpcsp.HLE.modules.sceNpAuth;
 import jpcsp.HLE.modules.sceNpService;
 import jpcsp.HLE.modules.sceOpenPSID;
+import jpcsp.HLE.modules.sceP3da;
 import jpcsp.HLE.modules.scePower;
 import jpcsp.HLE.modules.scePsmf;
 import jpcsp.HLE.modules.scePsmfPlayer;
@@ -127,6 +128,7 @@ public class Modules {
     public static sceHttp sceHttpModule = new sceHttp();
     public static sceHttps sceHttpsModule = new sceHttps();
     public static sceSsl sceSslModule = new sceSsl();
+    public static sceP3da sceP3daModule = new sceP3da();
 
     public static Logger log = Logger.getLogger("hle");
 
