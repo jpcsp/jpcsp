@@ -1197,6 +1197,9 @@ public class sceUtility implements HLEModule, HLEStartModule {
 	        	openDialog(msgDialog);
 	        } else if (!isDialogActive()) {
 	        	msgDialogParams.buttonPressed = msgDialog.buttonPressed;
+	        	if (log.isDebugEnabled()) {
+	        		log.debug(String.format("sceUtilityMsgDialog returning buttonPressed=%d", msgDialogParams.buttonPressed));
+	        	}
 	            msgDialogParams.base.result = 0;
 	            msgDialogParams.write(mem);
 	        	finishDialog();
@@ -1843,6 +1846,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     		} else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
     			JButton okButton = new JButton("Ok");
     			okButton.addActionListener(closeActionListener);
+    			okButton.setActionCommand(actionCommandOK);
     			buttonPane.add(okButton);
     			setDefaultButton(okButton);
     		} else if (msgDialogParams.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_ERROR) {
@@ -1852,6 +1856,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
     			JButton okButton = new JButton("Ok");
     			okButton.addActionListener(closeActionListener);
+    			okButton.setActionCommand(actionCommandOK);
     			buttonPane.add(okButton);
     			setDefaultButton(okButton);
     		}
