@@ -2982,6 +2982,54 @@
 0880E55C:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memset">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+0899718C:[3C084000]: lui        $t0, 0x4000 <=> li $t0, 0x40000000
+08997190:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
+08997194:[01001821]: addu       $v1, $t0, $zr <=> move $v1, $t0
+08997198:[7C83E004]: ins        $v1, $a0, 0, 29
+0899719C:[7CA57A04]: ins        $a1, $a1, 8, 8
+089971A0:[7CA5FC04]: ins        $a1, $a1, 16, 16
+089971A4:[48E50000]: MTV.s      $a1, S000.s
+089971A8:[DC000000]: VPFXS      [x, x, x, x]
+089971AC:[D0008080]: vmov.q     C000.q, C000.q
+089971B0:[3088003F]: andi       $t0, $a0, 63
+089971B4:[11000007]: beq        $t0, $zr, 0x089971D4
+089971B8:[00000000]: nop
+089971BC:[10C00019]: beq        $a2, $zr, 0x08997224
+089971C0:[24C6FFFF]: addiu      $a2, $a2, -1
+089971C4:[A0850000]: sb         $a1, 0($a0)
+089971C8:[24840001]: addiu      $a0, $a0, 1
+089971CC:[0A265C6C]: j          0x089971B0
+089971D0:[24630001]: addiu      $v1, $v1, 1
+089971D4:[2CC80040]: sltiu      $t0, $a2, 64
+089971D8:[1500000D]: bne        $t0, $zr, 0x08997210
+089971DC:[00000000]: nop
+089971E0:[0000000F]: sync
+089971E4:[BC990000]: cache      0x19, 0($a0)
+089971E8:[24840040]: addiu      $a0, $a0, 64
+089971EC:[24C6FFC0]: addiu      $a2, $a2, -64
+089971F0:[2CC80040]: sltiu      $t0, $a2, 64
+089971F4:[F8600002]: vwb.q      C000.q, 0($v1)
+089971F8:[F8600012]: vwb.q      C000.q, 16($v1)
+089971FC:[F8600022]: vwb.q      C000.q, 32($v1)
+08997200:[F8600032]: vwb.q      C000.q, 48($v1)
+08997204:[24630040]: addiu      $v1, $v1, 64
+08997208:[1100FFF6]: beq        $t0, $zr, 0x089971E4
+0899720C:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+08997210:[10C00004]: beq        $a2, $zr, 0x08997224
+08997214:[24C6FFFF]: addiu      $a2, $a2, -1
+08997218:[A0850000]: sb         $a1, 0($a0)
+0899721C:[14C0FFFD]: bne        $a2, $zr, 0x08997214
+08997220:[24840001]: addiu      $a0, $a0, 1
+08997224:[FFFF040D]: vflush
+08997228:[486000FF]: Unimplemented MFVC imm7=127, rt=0
+0899722C:[03E00008]: jr         $ra
+08997230:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="bzero">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
 		<IsReturning>true</IsReturning>
