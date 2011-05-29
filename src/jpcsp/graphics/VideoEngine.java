@@ -5104,10 +5104,13 @@ public class VideoEngine {
                 int viewportWidth = (2 * halfWidth * viewportScaleFactor);
                 int viewportHeight = (2 * halfHeight * viewportScaleFactor);
 
-                // Y-Axis is upside down on PSP:
-                // - increase Y to go down on PSP
-                // - increase Y to go up on OpenGL
-                viewportY = -viewportY;
+                if (halfHeight < 0) {
+                    // When the viewport height is negative,
+                	// the Y-Axis is upside down on PSP:
+                    // - increase Y to go down on PSP
+                    // - increase Y to go up on OpenGL
+                	viewportY = -viewportY;
+                }
 
                 // Align the viewport to the top of the window
                 if (viewportHeight < (VIEWPORT_BASE_HEIGHT * viewportScaleFactor)) {
