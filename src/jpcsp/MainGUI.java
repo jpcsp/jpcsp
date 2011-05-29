@@ -1995,10 +1995,12 @@ private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_formComponentMoved
 
 private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
-    if (!useFullscreen) {
-        Modules.sceDisplayModule.componentResized(evt);
-        Modules.sceDisplayModule.setScreenResolution(evt.getComponent().getWidth() - 8, evt.getComponent().getHeight() - 80);   
-    }
+	// No need to notify the resizing event to the sceDisplay,
+	// it is directly notified by AWT.
+//    if (!useFullscreen) {
+//        Modules.sceDisplayModule.componentResized(evt);
+//        Modules.sceDisplayModule.setScreenResolution(evt.getComponent().getWidth() - 8, evt.getComponent().getHeight() - 80);   
+//    }
 }//GEN-LAST:event_formComponentResized
 
 private void noneCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noneCheckActionPerformed
