@@ -814,16 +814,23 @@ public class MediaEngine {
     }
 
     public void writeVideoImageWithRange(int dest_addr, int frameWidth, int videoPixelMode, int x, int y, int w, int h) {
-        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
         // Get the current generated image, convert it to pixels and write it
         // to memory.
         if (getCurrentImg() != null) {
-            int imageSize = h * w;
+        	// If we have a range covering the whole image, call the method
+        	// without range, its execution is faster.
+        	if (x == 0 && y == 0 && getCurrentImg().getWidth() == w && getCurrentImg().getHeight() == h) {
+        		writeVideoImage(dest_addr, frameWidth, videoPixelMode);
+        		return;
+        	}
+
+        	int imageSize = h * w;
             if (videoImagePixels == null || videoImagePixels.length < imageSize) {
                 videoImagePixels = new int[imageSize];
             }
             videoImagePixels = getCurrentImg().getRGB(x, y, w, h, videoImagePixels, 0, w);
             int pixelIndex = 0;
+            final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
             for (int i = 0; i < h; i++) {
                 int address = dest_addr + i * frameWidth * bytesPerPixel;
                 IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(address, bytesPerPixel);
