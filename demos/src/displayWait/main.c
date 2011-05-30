@@ -17,8 +17,12 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 int done = 0;
 int cpuFreq = 222;
 int startSystemTime;
+char buffer[10000000];
 
 extern void sceDisplayWaitVblankStartMulti(int count);
+extern int sceDisplayIsVblank();
+extern int sceDisplayGetCurrentHcount();
+extern int sceDisplayGetAccumulatedHcount();
 
 void runTest()
 {
@@ -49,6 +53,45 @@ void runTest()
 	}
 }
 
+void runTestHcount()
+{
+	char s[100];
+	strcpy(buffer, "");
+	int index = 0;
+	int previousIsVblank = -1;
+	int previousCurrentHcount = -1;
+	int previousAccumulatedHcount = -1;
+	int start = sceKernelGetSystemTimeLow();
+	while (1) {
+		int now = sceKernelGetSystemTimeLow();
+		// Run for 2 seconds
+		if (now - start >= 2000000) {
+			break;
+		}
+
+		int isVblank = sceDisplayIsVblank();
+		int currentHcount = sceDisplayGetCurrentHcount();
+		int accumulatedHcount = sceDisplayGetAccumulatedHcount();
+
+		// Display a log line when one of the 3 values has changed
+		if (isVblank != previousIsVblank || currentHcount != previousCurrentHcount || accumulatedHcount != previousAccumulatedHcount) {
+			sprintf(s, "now=%d, isVblank=%d, currentHcount=%d, accumulatedHcount=%d\n", now, isVblank, currentHcount, accumulatedHcount);
+			strcpy(buffer + index, s);
+			index += strlen(s);
+
+			previousIsVblank = isVblank;
+			previousCurrentHcount = currentHcount;
+			previousAccumulatedHcount = accumulatedHcount;
+		}
+	}
+
+	// Write the result to a file
+	SceUID logFd = sceIoOpen("sceDisplay.log", PSP_O_WRONLY | PSP_O_CREAT, 0777);
+	sceIoWrite(logFd, buffer, index);
+	sceIoClose(logFd);
+
+	pspDebugScreenPrintf("See results in sceDisplay.log\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -66,7 +109,8 @@ int main(int argc, char *argv[])
 	repeatDelay.tv_usec = 0;
 
 	pspDebugScreenInit();
-	pspDebugScreenPrintf("Press Cross to start the Test\n");
+	pspDebugScreenPrintf("Press Cross to start the Test sceDisplayWaitVblankStartMulti\n");
+	pspDebugScreenPrintf("Press Circle to start the Test sceDisplayGetCurrentHcount\n");
 
 	while(!done)
 	{
@@ -117,6 +161,11 @@ int main(int argc, char *argv[])
 		if (buttonDown & PSP_CTRL_CROSS)
 		{
 			runTest();
+		}
+
+		if (buttonDown & PSP_CTRL_CIRCLE)
+		{
+			runTestHcount();
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)

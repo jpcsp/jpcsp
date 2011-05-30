@@ -96,6 +96,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     public static final int PSP_DISPLAY_SETBUF_IMMEDIATE = 0;
     public static final int PSP_DISPLAY_SETBUF_NEXTFRAME = 1;
 
+    private static final float hCountPerVblank = 285.72f;
+
     // current Rendering Engine
     private IRenderingEngine re;
     private boolean startModules;
@@ -1091,7 +1093,25 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	return (microTimeSinceLastVblank <= 731);
     }
 
-	@Override
+    private int getCurrentHcount() {
+    	// Test result: currentHcount is 0 at the start of a Vblank and increases
+    	// up to 285 just before the next Vblank.
+    	long nowMicroTime = Emulator.getClock().microTime();
+    	long microTimeSinceLastVblank = nowMicroTime - lastVblankMicroTime;
+
+    	float vblankStep = microTimeSinceLastVblank / 16666.6666f;
+    	if (vblankStep > 1) {
+    		vblankStep = 1;
+    	}
+
+    	return (int) (vblankStep * hCountPerVblank);
+    }
+
+    public int getVcount() {
+    	return vcount;
+    }
+
+    @Override
 	protected void paintGL() {
         if (resizeFactor != 0) {
             width = (width / resizeFactor);
@@ -1634,13 +1654,28 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     public void sceDisplayGetCurrentHcount(Processor processor) {
         CpuState cpu = processor.cpu;
-        cpu.gpr[2] = (int) (vcount * 0.15f);
+        int currentHcount = getCurrentHcount();
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceDisplayGetCurrentHcount returning %d", currentHcount));
+        }
+
+        cpu.gpr[2] = currentHcount;
     }
 
     public void sceDisplayGetAccumulatedHcount(Processor processor) {
         CpuState cpu = processor.cpu;
-        // 17143 units per second
-        cpu.gpr[2] = (int) (vcount * 285.72f);
+
+        // The accumulatedHcount is the currentHcount plus the sum of the Hcounts
+        // from all the previous vblanks (vcount * number of Hcounts per Vblank).
+        int currentHcount = getCurrentHcount();
+        int accumulatedHcount = currentHcount + (int) (vcount * hCountPerVblank);
+
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceDisplayGetAccumulatedHcount returning %d (currentHcount=%d)", accumulatedHcount, currentHcount));
+        }
+
+        cpu.gpr[2] = accumulatedHcount;
     }
 
     public void sceDisplayAdjustAccumulatedHcount(Processor processor) {
