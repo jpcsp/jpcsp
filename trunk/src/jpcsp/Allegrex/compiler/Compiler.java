@@ -177,10 +177,10 @@ public class Compiler implements ICompiler {
     }
 
     public void invalidateRange(int addr, int size) {
-        // Recompile all the range from addr to addr + size.
-        for(int i = 0; i < size; i++) {
-            compile(addr + i);
-        }
+    	// There is currently no way to remove only selected compiled method
+    	// from the class loader.
+    	// Brute force method: invalidate all.
+    	invalidateAll();
     }
 
 	private void Initialise() {
