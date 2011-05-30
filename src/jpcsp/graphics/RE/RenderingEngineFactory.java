@@ -48,6 +48,9 @@ public class RenderingEngineFactory {
 			re = new REFixedFunction(re);
 		}
 
+        // Proxy implementing a viewport resizing filter
+		re = new ViewportFilter(re);
+
 		// Proxy implementing a texture anisotropic filter
 		re = new AnisotropicFilter(re);
 

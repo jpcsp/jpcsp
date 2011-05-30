@@ -285,12 +285,36 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 	public void stop() {
 	}
 
+    protected static final int PSP_KERNEL_ICACHE_PROBE_MISS = 0;
+    protected static final int PSP_KERNEL_ICACHE_PROBE_HIT = 1;
+    protected static final int PSP_KERNEL_DCACHE_PROBE_MISS = 0;
+    protected static final int PSP_KERNEL_DCACHE_PROBE_HIT = 1;
+    protected static final int PSP_KERNEL_DCACHE_PROBE_HIT_DIRTY = 2;
+
 	public void sceKernelDcacheInvalidateRange(Processor processor) {
-		log.trace("IGNORING:sceKernelDcacheInvalidateRange");
+		CpuState cpu = processor.cpu;
+
+		int addr = cpu.gpr[4];
+		int size = cpu.gpr[5];
+
+		Modules.log.trace("IGNORING: sceKernelDcacheInvalidateRange addr=0x" + Integer.toHexString(addr)
+                + ", size=" + size);
+
+        cpu.gpr[2] = 0;
 	}
 
 	public void sceKernelIcacheInvalidateRange(Processor processor) {
-		log.trace("IGNORING:sceKernelIcacheInvalidateRange");
+        CpuState cpu = processor.cpu;
+
+		int addr = cpu.gpr[4];
+		int size = cpu.gpr[5];
+
+        log.info("sceKernelIcacheInvalidateRange addr=0x" + Integer.toHexString(addr)
+                + ", size=" + size);
+
+        RuntimeContext.invalidateAll();
+
+        cpu.gpr[2] = 0;
 	}
 
 	public void sceKernelUtilsMd5Digest(Processor processor) {
@@ -556,27 +580,49 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 	}
 
 	public void sceKernelDcacheWritebackAll(Processor processor) {
-		Modules.log.trace("IGNORING:sceKernelDcacheWritebackAll");
+		Modules.log.trace("IGNORING: sceKernelDcacheWritebackAll");
 	}
 
 	public void sceKernelDcacheWritebackInvalidateAll(Processor processor) {
-		Modules.log.trace("IGNORING:sceKernelDcacheWritebackInvalidateAll");
+		Modules.log.trace("IGNORING: sceKernelDcacheWritebackInvalidateAll");
 	}
 
 	public void sceKernelDcacheWritebackRange(Processor processor) {
-		Modules.log.trace("IGNORING:sceKernelDcacheWritebackRange");
+        CpuState cpu = processor.cpu;
+
+		int addr = cpu.gpr[4];
+		int size = cpu.gpr[5];
+
+		Modules.log.trace("IGNORING: sceKernelDcacheWritebackRange addr=0x" + Integer.toHexString(addr)
+                + ", size=" + size);
 	}
 
 	public void sceKernelDcacheWritebackInvalidateRange(Processor processor) {
-		Modules.log.trace("IGNORING:sceKernelDcacheWritebackInvalidateRange");
+		CpuState cpu = processor.cpu;
+
+		int addr = cpu.gpr[4];
+		int size = cpu.gpr[5];
+
+		Modules.log.trace("IGNORING: sceKernelDcacheWritebackInvalidateRange addr=0x" + Integer.toHexString(addr)
+                + ", size=" + size);
 	}
 
 	public void sceKernelDcacheProbe(Processor processor) {
-		Modules.log.trace("IGNORING:sceKernelDcacheProbe");
+        CpuState cpu = processor.cpu;
+
+		int addr = cpu.gpr[4];
+
+		Modules.log.trace("IGNORING: sceKernelDcacheProbe addr=0x" + Integer.toHexString(addr));
+
+        cpu.gpr[2] = PSP_KERNEL_DCACHE_PROBE_HIT; // Dummy.
 	}
 
 	public void sceKernelDcacheReadTag(Processor processor) {
-		Modules.log.trace("IGNORING:sceKernelDcacheReadTag");
+        CpuState cpu = processor.cpu;
+
+		Modules.log.trace("UNIMPLEMENTED: sceKernelDcacheReadTag");
+
+        cpu.gpr[2] = 0xDEADC0DE;
 	}
 
 	public void sceKernelIcacheInvalidateAll(Processor processor) {
@@ -597,17 +643,19 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 	public void sceKernelIcacheProbe(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceKernelIcacheProbe [0x4FD31C9D]");
+		int addr = cpu.gpr[4];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		Modules.log.trace("IGNORING: sceKernelIcacheProbe addr=0x" + Integer.toHexString(addr));
+
+        cpu.gpr[2] = PSP_KERNEL_ICACHE_PROBE_HIT; // Dummy.
 	}
 
 	public void sceKernelIcacheReadTag(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented NID function sceKernelIcacheReadTag [0xFB05FAD0]");
+		Modules.log.trace("UNIMPLEMENTED: sceKernelIcacheReadTag");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0xDEADC0DE;
 	}
 
 	public final HLEModuleFunction sceKernelDcacheInvalidateRangeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheInvalidateRange") {

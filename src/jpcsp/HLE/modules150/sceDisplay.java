@@ -107,6 +107,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private int height;
     private int widthGe;
     private int heightGe;
+    private int resizeFactor;
 
     // current framebuffer settings
     private int topaddrFb;
@@ -331,6 +332,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         setSize(width, height);
     }
 
+    public void setResizeFactor(int factor) {
+        resizeFactor = factor;
+    }
+
     public static void setAntiAliasSamplesNum(int samples) {
         antiAliasSamplesNum = samples;
     }
@@ -365,6 +370,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         pixelformatGe = pixelformatFb;
         bottomaddrGe  = bottomaddrFb;
         pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+
+        resizeFactor = 1;
 
         isFbShowing = false;
         setGeBufCalledAtLeastOnce = false;
@@ -1086,6 +1093,13 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
 	@Override
 	protected void paintGL() {
+        if (resizeFactor != 0) {
+            width = (width / resizeFactor);
+            height = (height / resizeFactor);
+            widthGe = (widthGe / resizeFactor);
+            heightGe = (heightGe / resizeFactor);
+        }
+
     	if (statistics != null) {
             statistics.start();
         }
@@ -1272,18 +1286,18 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     @Override
 	public void componentMoved(ComponentEvent e) {
-        captureX = e.getComponent().getX() + 4;
-        captureY = e.getComponent().getY() + 76;
-        captureWidth = e.getComponent().getWidth() - 8;
-        captureHeight = e.getComponent().getHeight() - 80;
+        captureX = getX();
+        captureY = getY();
+        captureWidth = getWidth();
+        captureHeight = getHeight();
 	}
 
     @Override
 	public void componentResized(ComponentEvent e) {
-        captureX = e.getComponent().getX() + 4;
-        captureY = e.getComponent().getY() + 76;
-        captureWidth = e.getComponent().getWidth() - 8;
-        captureHeight = e.getComponent().getHeight() - 80;
+        captureX = getX();
+        captureY = getY();
+        captureWidth = getWidth();
+        captureHeight = getHeight();
 	}
 
     public void sceDisplaySetMode(Processor processor) {

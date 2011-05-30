@@ -176,6 +176,13 @@ public class Compiler implements ICompiler {
         classLoader = new CompilerClassLoader(this);
     }
 
+    public void invalidateRange(int addr, int size) {
+        // Recompile all the range from addr to addr + size.
+        for(int i = 0; i < size; i++) {
+            compile(addr + i);
+        }
+    }
+
 	private void Initialise() {
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setIgnoringElementContentWhitespace(true);

@@ -69,6 +69,7 @@ import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.ScePspDateTime;
+import jpcsp.HLE.kernel.types.SceUtilityGamedataInstallParams;
 import jpcsp.HLE.kernel.types.SceUtilityGameSharingParams;
 import jpcsp.HLE.kernel.types.SceUtilityHtmlViewerParams;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
@@ -258,7 +259,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
         screenshotState = new ScreenshotUtilityDialogState("sceUtilityScreenshot");
         htmlViewerState = new HtmlViewerUtilityDialogState("sceUtilityHtmlViewer");
         savedataErrState = new NotImplementedUtilityDialogState("sceUtilitySavedataErr");
-        gamedataInstallState = new NotImplementedUtilityDialogState("sceUtilityGamedataInstall");
+        gamedataInstallState = new GamedataInstallUtilityDialogState("sceUtilityGamedataInstall");
 
         systemParam_nickname = Settings.getInstance().readString("emu.sysparam.nickname");
         systemParam_adhocChannel = Settings.getInstance().readInt("emu.sysparam.adhocchannel", 0);
@@ -353,7 +354,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
     protected ScreenshotUtilityDialogState screenshotState;
     protected HtmlViewerUtilityDialogState htmlViewerState;
     protected UtilityDialogState savedataErrState;
-    protected UtilityDialogState gamedataInstallState;
+    protected GamedataInstallUtilityDialogState gamedataInstallState;
 
     protected String systemParam_nickname;
     protected int systemParam_adhocChannel;
@@ -1370,6 +1371,25 @@ public class sceUtility implements HLEModule, HLEStartModule {
 		protected pspAbstractMemoryMappedStructure createParams() {
 			screenshotParams = new SceUtilityScreenshotParams();
 			return screenshotParams;
+		}
+    }
+
+    protected static class GamedataInstallUtilityDialogState extends UtilityDialogState {
+    	protected SceUtilityGamedataInstallParams gamedataInstallParams;
+
+    	public GamedataInstallUtilityDialogState(String name) {
+            super(name);
+        }
+
+		@Override
+		protected pspAbstractMemoryMappedStructure createParams() {
+			gamedataInstallParams = new SceUtilityGamedataInstallParams();
+			return gamedataInstallParams;
+		}
+
+		@Override
+		protected boolean executeUpdateVisible(Processor processor) {
+			return false;
 		}
     }
 

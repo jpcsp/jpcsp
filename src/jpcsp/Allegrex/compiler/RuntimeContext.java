@@ -965,6 +965,14 @@ public class RuntimeContext {
     	}
     }
 
+    public static void invalidateRange(int addr, int size) {
+        if (isActive) {
+    		log.debug("RuntimeContext.invalidateRange(addr=0x" + Integer.toHexString(addr) + ", size=" + size + ")");
+            codeBlocks.clear();
+            Compiler.getInstance().invalidateRange(addr, size);
+    	}
+    }
+
     public static void instructionTypeCount(Instruction insn, int opcode) {
     	int count = 0;
     	if (instructionTypeCounts.containsKey(insn)) {

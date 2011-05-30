@@ -83,6 +83,8 @@ import org.apache.log4j.Logger;
 //
 public class VideoEngine {
 
+    private static final int VIEWPORT_BASE_WIDTH = 480;
+    private static final int VIEWPORT_BASE_HEIGHT  = 272;
     public static final int NUM_LIGHTS = 4;
     public static final int SIZEOF_FLOAT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_FLOAT];
     public final static String[] psm_names = new String[]{
@@ -128,6 +130,8 @@ public class VideoEngine {
     private boolean useAsyncVertexCache = true;
     public boolean useOptimisticVertexCache = false;
     private boolean useTextureAnisotropicFilter = false;
+    private boolean useViewportResizeFilter = false;
+    private int viewportResizeFilterScaleFactor;
     private static GeCommands helper;
     private int command;
     private int normalArgument;
@@ -196,9 +200,6 @@ public class VideoEngine {
     private IntBuffer multiDrawFirst;
     private IntBuffer multiDrawCount;
     private static final int maxMultiDrawElements = 1000;
-    public static final int VIEWPORT_BASE_WIDTH = 480;
-    public static final int VIEWPORT_BASE_HEIGHT  = 272;
-    private static int viewportScaleFactor = 1;
 
     public static class MatrixUpload {
         private final float[] matrix;
@@ -420,10 +421,6 @@ public class VideoEngine {
         if (useAsyncVertexCache) {
         	AsyncVertexCache.getInstance().setUseVertexArray(re.isVertexArrayAvailable());
         }
-    }
-
-    public void setViewportResolution(int width, int height) {
-        viewportScaleFactor += Math.round(((width / VIEWPORT_BASE_WIDTH) + (height / VIEWPORT_BASE_HEIGHT)) / 2);
     }
 
     public IRenderingEngine getRenderingEngine() {
@@ -5003,15 +5000,15 @@ public class VideoEngine {
 
     private void setScissor() {
         if (context.scissor_x1 >= 0 && context.scissor_y1 >= 0
-                && (context.scissor_width * viewportScaleFactor) <= (context.region_width * viewportScaleFactor)
-                && (context.scissor_height * viewportScaleFactor) <= (context.region_height * viewportScaleFactor)) {
-        	int scissorX = context.scissor_x1 * viewportScaleFactor;
-        	int scissorY = context.scissor_y1 * viewportScaleFactor;
-        	int scissorWidth = context.scissor_width * viewportScaleFactor;
-        	int scissorHeight = context.scissor_height * viewportScaleFactor;
+                && context.scissor_width <= context.region_width
+                && context.scissor_height <= context.region_height) {
+        	int scissorX = context.scissor_x1;
+        	int scissorY = context.scissor_y1;
+        	int scissorWidth = context.scissor_width ;
+        	int scissorHeight = context.scissor_height;
 
-        	if (scissorHeight < (VIEWPORT_BASE_HEIGHT * viewportScaleFactor)) {
-        		scissorY = VIEWPORT_BASE_HEIGHT * viewportScaleFactor - scissorHeight - scissorY;
+        	if (scissorHeight < VIEWPORT_BASE_HEIGHT) {
+        		scissorY = VIEWPORT_BASE_HEIGHT - scissorHeight - scissorY;
         	}
 
             re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -5093,16 +5090,16 @@ public class VideoEngine {
                 if (context.viewport_cx == 0 && context.viewport_cy == 0 && context.viewport_height == 0 && context.viewport_width == 0) {
                     context.viewport_cx = 2048;
                     context.viewport_cy = 2048;
-                    context.viewport_width = VIEWPORT_BASE_WIDTH * viewportScaleFactor;
-                    context.viewport_height = VIEWPORT_BASE_HEIGHT * viewportScaleFactor;
+                    context.viewport_width = VIEWPORT_BASE_WIDTH;
+                    context.viewport_height = VIEWPORT_BASE_HEIGHT;
                 }
 
                 int halfHeight = Math.abs(context.viewport_height);
                 int halfWidth = Math.abs(context.viewport_width);
-                int viewportX = ((context.viewport_cx - halfWidth - context.offset_x) * viewportScaleFactor);
-                int viewportY = ((context.viewport_cy - halfHeight - context.offset_y) * viewportScaleFactor);
-                int viewportWidth = (2 * halfWidth * viewportScaleFactor);
-                int viewportHeight = (2 * halfHeight * viewportScaleFactor);
+                int viewportX = (context.viewport_cx - halfWidth - context.offset_x);
+                int viewportY = (context.viewport_cy - halfHeight - context.offset_y);
+                int viewportWidth = (2 * halfWidth);
+                int viewportHeight = (2 * halfHeight);
 
                 if (halfHeight < 0) {
                     // When the viewport height is negative,
@@ -5113,8 +5110,8 @@ public class VideoEngine {
                 }
 
                 // Align the viewport to the top of the window
-                if (viewportHeight < (VIEWPORT_BASE_HEIGHT * viewportScaleFactor)) {
-                    viewportY += VIEWPORT_BASE_HEIGHT * viewportScaleFactor - viewportHeight;
+                if (viewportHeight < VIEWPORT_BASE_HEIGHT) {
+                    viewportY += VIEWPORT_BASE_HEIGHT - viewportHeight;
                 }
 
                 re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
@@ -5967,6 +5964,22 @@ public class VideoEngine {
     		}
     		result[i] = s;
     	}
+    }
+
+    public boolean isUseViewportResizeFilter() {
+		return useViewportResizeFilter;
+	}
+
+	public void setUseViewportResizeFilter(boolean useViewportResizeFilter) {
+		this.useViewportResizeFilter = useViewportResizeFilter;
+	}
+
+    public int getViewportResizeFilterResolution() {
+        return viewportResizeFilterScaleFactor;
+    }
+
+    public void setViewportResizeFilterResolution(int width, int height) {
+        viewportResizeFilterScaleFactor = Math.round(((width / VIEWPORT_BASE_WIDTH) + (height / VIEWPORT_BASE_HEIGHT)) / 2);
     }
 
 	public boolean isUseTextureAnisotropicFilter() {

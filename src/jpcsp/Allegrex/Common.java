@@ -448,7 +448,8 @@ public class Common {
         "VFPU_2_SQRTPI", "VFPU_2_PI", "VFPU_1_PI", "VFPU_PI_4",
         "VFPU_PI_2", "VFPU_PI", "VFPU_E", "VFPU_LOG2E",
         "VFPU_LOG10E", "VFPU_LN2", "VFPU_LN10", "VFPU_2PI",
-        "VFPU_PI_6", "VFPU_LOG10TWO", "VFPU_LOG2TEN", "VFPU_SQRT3_2"
+        "VFPU_PI_6", "VFPU_LOG10TWO", "VFPU_LOG2TEN", "VFPU_SQRT3_2", "", "",
+        "", "", "", "", "", "", "", "", "", ""
     };
     public static String[] fcrNames = {
         "$fcsr0", "$fcsr1", "$fcsr2", "$fcsr3", "$fcsr4", "$fcsr5", "$fcsr6", "$fcsr7",
