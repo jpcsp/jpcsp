@@ -221,14 +221,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OptionsMenu = new javax.swing.JMenu();
         VideoOpt = new javax.swing.JMenu();
         ResizeMenu = new javax.swing.JMenu();
-        OneItem = new javax.swing.JMenuItem();
-        OneHalfItem = new javax.swing.JMenuItem();
-        TwoItem = new javax.swing.JMenuItem();
-        TwoHalfItem = new javax.swing.JMenuItem();
-        ThreeItem = new javax.swing.JMenuItem();
+        oneTimeResize = new javax.swing.JCheckBoxMenuItem();
+        twoTimesResize = new javax.swing.JCheckBoxMenuItem();
+        threeTimesResize = new javax.swing.JCheckBoxMenuItem();
         FiltersMenu = new javax.swing.JMenu();
         noneCheck = new javax.swing.JCheckBoxMenuItem();
         anisotropicCheck = new javax.swing.JCheckBoxMenuItem();
+        resizeCheck = new javax.swing.JCheckBoxMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
         AudioOpt = new javax.swing.JMenu();
@@ -276,14 +275,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
-            }
-        });
-        addComponentListener(new java.awt.event.ComponentAdapter() {
-            public void componentMoved(java.awt.event.ComponentEvent evt) {
-                formComponentMoved(evt);
-            }
-            public void componentResized(java.awt.event.ComponentEvent evt) {
-                formComponentResized(evt);
             }
         });
 
@@ -407,52 +398,40 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         ResizeMenu.setText("Resize");
 
-        OneItem.setText("1x");
-        OneItem.addActionListener(new java.awt.event.ActionListener() {
+        resGroup.add(oneTimeResize);
+        oneTimeResize.setSelected(true);
+        oneTimeResize.setText("1x");
+        oneTimeResize.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OneItemActionPerformed(evt);
+                oneTimeResizeActionPerformed(evt);
             }
         });
-        ResizeMenu.add(OneItem);
+        ResizeMenu.add(oneTimeResize);
 
-        OneHalfItem.setText("1.5x");
-        OneHalfItem.addActionListener(new java.awt.event.ActionListener() {
+        resGroup.add(twoTimesResize);
+        twoTimesResize.setText("2x");
+        twoTimesResize.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OneHalfItemActionPerformed(evt);
+                twoTimesResizeActionPerformed(evt);
             }
         });
-        ResizeMenu.add(OneHalfItem);
+        ResizeMenu.add(twoTimesResize);
 
-        TwoItem.setText("2x");
-        TwoItem.addActionListener(new java.awt.event.ActionListener() {
+        resGroup.add(threeTimesResize);
+        threeTimesResize.setText("3x");
+        threeTimesResize.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                TwoItemActionPerformed(evt);
+                threeTimesResizeActionPerformed(evt);
             }
         });
-        ResizeMenu.add(TwoItem);
-
-        TwoHalfItem.setText("2.5x");
-        TwoHalfItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                TwoHalfItemActionPerformed(evt);
-            }
-        });
-        ResizeMenu.add(TwoHalfItem);
-
-        ThreeItem.setText("3x");
-        ThreeItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ThreeItemActionPerformed(evt);
-            }
-        });
-        ResizeMenu.add(ThreeItem);
+        ResizeMenu.add(threeTimesResize);
 
         VideoOpt.add(ResizeMenu);
 
         FiltersMenu.setText("Filters");
 
         filtersGroup.add(noneCheck);
-        noneCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.none"));
+        noneCheck.setSelected(true);
         noneCheck.setText("None");
         noneCheck.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -470,6 +449,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         FiltersMenu.add(anisotropicCheck);
+
+        resizeCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.resize"));
+        resizeCheck.setText("Resize");
+        resizeCheck.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resizeCheckActionPerformed(evt);
+            }
+        });
+        FiltersMenu.add(resizeCheck);
 
         VideoOpt.add(FiltersMenu);
 
@@ -1583,6 +1571,9 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         boolean filterAnisotropic = Settings.getInstance().readBool("emu.graphics.filters.anisotropic");
         VideoEngine.getInstance().setUseTextureAnisotropicFilter(filterAnisotropic);
 
+        boolean filterResize = Settings.getInstance().readBool("emu.graphics.filters.resize");
+        VideoEngine.getInstance().setUseViewportResizeFilter(filterResize);
+
         String antialias = Settings.getInstance().readString("emu.graphics.antialias");
         int samples = 0;
         if (antialias != null) {
@@ -1694,6 +1685,11 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             String filterAnisotropic = patchSettings.getProperty("emu.graphics.filters.anisotropic");
             if (filterAnisotropic != null) {
                 VideoEngine.getInstance().setUseTextureAnisotropicFilter(Integer.parseInt(filterAnisotropic) != 0);
+            }
+
+            String filterResize = patchSettings.getProperty("emu.graphics.filters.resize");
+            if (filterResize != null) {
+                VideoEngine.getInstance().setUseViewportResizeFilter(Integer.parseInt(filterResize) != 0);
             }
 
             String antialias = patchSettings.getProperty("emu.graphics.antialias");
@@ -1945,41 +1941,6 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     }
 }//GEN-LAST:event_CustomLoggerActionPerformed
 
-private void TwoItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoItemActionPerformed
-    int w = 480 * 2;
-    int h = 352 * 2;
-    setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(w, h);
-}//GEN-LAST:event_TwoItemActionPerformed
-
-private void ThreeItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ThreeItemActionPerformed
-    int w = 480 * 3;
-    int h = 352 * 3;
-    setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(w, h);
-}//GEN-LAST:event_ThreeItemActionPerformed
-
-private void OneHalfItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneHalfItemActionPerformed
-    int w = (int) (480 * 1.5);
-    int h = (int) (352 * 1.5);
-    setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(w, h);
-}//GEN-LAST:event_OneHalfItemActionPerformed
-
-private void TwoHalfItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_TwoHalfItemActionPerformed
-    int w = (int) (480 * 2.5);
-    int h = (int) (352 * 2.5);
-    setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(w, h);
-}//GEN-LAST:event_TwoHalfItemActionPerformed
-
-private void OneItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OneItemActionPerformed
-    int w = 480;
-    int h = 352;
-    setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(w, h);
-}//GEN-LAST:event_OneItemActionPerformed
-
 private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {                                           
     changeLanguage("cn_CN");
 }                                          
@@ -1988,30 +1949,44 @@ private void ChineseTWActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     changeLanguage("tw_TW");
 }//GEN-LAST:event_ChinesePRCActionPerformed
 
-private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentMoved
-    if (!useFullscreen) {
-        Modules.sceDisplayModule.componentMoved(evt); 
-    }
-}//GEN-LAST:event_formComponentMoved
-
-private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
-	// No need to notify the resizing event to the sceDisplay,
-	// it is directly notified by AWT.
-//    if (!useFullscreen) {
-//        Modules.sceDisplayModule.componentResized(evt);
-//        Modules.sceDisplayModule.setScreenResolution(evt.getComponent().getWidth() - 8, evt.getComponent().getHeight() - 80);   
-//    }
-}//GEN-LAST:event_formComponentResized
-
 private void noneCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_noneCheckActionPerformed
 	VideoEngine.getInstance().setUseTextureAnisotropicFilter(false);
-    Settings.getInstance().writeBool("emu.graphics.filters.none", noneCheck.isSelected());
+    Settings.getInstance().writeBool("emu.graphics.filters.anisotropic", false);
 }//GEN-LAST:event_noneCheckActionPerformed
 
 private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_anisotropicCheckActionPerformed
 	VideoEngine.getInstance().setUseTextureAnisotropicFilter(true);
     Settings.getInstance().writeBool("emu.graphics.filters.anisotropic", anisotropicCheck.isSelected());
 }//GEN-LAST:event_anisotropicCheckActionPerformed
+
+private void oneTimeResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_oneTimeResizeActionPerformed
+    int w = 480;
+    int h = 272 + 80; // Adjust the Y coordinate due to the menu bar.
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(480, 272);
+    VideoEngine.getInstance().setViewportResizeFilterResolution(480, 272);
+}//GEN-LAST:event_oneTimeResizeActionPerformed
+
+private void twoTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_twoTimesResizeActionPerformed
+    int w = 480 * 2;
+    int h = (272 * 2) + 80; // Adjust the Y coordinate due to the menu bar.
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(480*2, 272*2);
+    VideoEngine.getInstance().setViewportResizeFilterResolution(480*2, 272*2);
+}//GEN-LAST:event_twoTimesResizeActionPerformed
+
+private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_threeTimesResizeActionPerformed
+    int w = 480 * 3;
+    int h = (272 * 3) + 80; // Adjust the Y coordinate due to the menu bar.
+    setSize(new Dimension(w, h));
+    Modules.sceDisplayModule.setScreenResolution(480*3, 272*3);
+    VideoEngine.getInstance().setViewportResizeFilterResolution(480*3, 272*3);
+}//GEN-LAST:event_threeTimesResizeActionPerformed
+
+private void resizeCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resizeCheckActionPerformed
+    VideoEngine.getInstance().setUseViewportResizeFilter(true);
+    Settings.getInstance().writeBool("emu.graphics.filters.resize", resizeCheck.isSelected());
+}//GEN-LAST:event_resizeCheckActionPerformed
 
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
@@ -2188,8 +2163,6 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenu LoggerMenu;
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JCheckBoxMenuItem MuteOpt;
-    private javax.swing.JMenuItem OneHalfItem;
-    private javax.swing.JMenuItem OneItem;
     private javax.swing.JMenuItem OpenFile;
     private javax.swing.JMenuItem OpenMemStick;
     private javax.swing.JMenu OptionsMenu;
@@ -2207,11 +2180,8 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JMenuItem SaveSnap;
     private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem Spanish;
-    private javax.swing.JMenuItem ThreeItem;
     private javax.swing.JCheckBoxMenuItem ToggleLogger;
     private javax.swing.JMenu ToolsSubMenu;
-    private javax.swing.JMenuItem TwoHalfItem;
-    private javax.swing.JMenuItem TwoItem;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JMenu VideoOpt;
     private javax.swing.JCheckBoxMenuItem anisotropicCheck;
@@ -2221,8 +2191,12 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.JSeparator jSeparator2;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JCheckBoxMenuItem noneCheck;
+    private javax.swing.JCheckBoxMenuItem oneTimeResize;
     private javax.swing.JMenuItem openUmd;
     private javax.swing.ButtonGroup resGroup;
+    private javax.swing.JCheckBoxMenuItem resizeCheck;
+    private javax.swing.JCheckBoxMenuItem threeTimesResize;
+    private javax.swing.JCheckBoxMenuItem twoTimesResize;
     // End of variables declaration//GEN-END:variables
 
     private boolean userChooseSomething(int returnVal) {

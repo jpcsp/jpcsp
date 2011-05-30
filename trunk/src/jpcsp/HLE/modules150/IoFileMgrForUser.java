@@ -1427,8 +1427,8 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
                     log.warn("hleIoRead - uid " + Integer.toHexString(uid) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
                     result = ERROR_KERNEL_FILE_READ_ERROR;
-                } else if (info.position >= info.readOnlyFile.length()) {
-                    // Allow seeking off the end of the file, just return 0 bytes read/written
+                } else if ((info.readOnlyFile == null) || (info.position >= info.readOnlyFile.length())) {
+                    // Ignore empty handles and allow seeking off the end of the file, just return 0 bytes read/written.
                     result = 0;
                 } else {
                     if (info.sectorBlockMode) {
@@ -1485,6 +1485,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 } else if (info.asyncPending) {
                     log.warn("seek - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
+                } else if (info.readOnlyFile == null) {
+                    // Ignore empty handles.
+                    result = 0;
                 } else {
                     if (info.sectorBlockMode) {
                         // In sectorBlockMode, the offset is a sector number

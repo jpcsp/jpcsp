@@ -51,14 +51,26 @@ public class sceP3da implements HLEModule {
 			mm.removeFunction(sceP3daBridgeCoreFunction);
 		}
 	}
+    public static final int PSP_P3DA_SAMPLES_NUM_STEP = 32;
+    public static final int PSP_P3DA_SAMPLES_NUM_MIN = 64;
+    public static final int PSP_P3DA_SAMPLES_NUM_DEFAULT = 256;
+    public static final int PSP_P3DA_SAMPLES_NUM_MAX = 2048;
+
+    public static final int PSP_P3DA_CHANNELS_NUM_MAX = 4;
+
+    private int p3daChannelsNum;
+    private int p3daSamplesNum;
 
 	public void sceP3daBridgeInit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int unknown1 = cpu.gpr[4]; // Values: 4
-		int unknown2 = cpu.gpr[5]; // Values: 2048
+		int channelsNum = cpu.gpr[4]; // Values: 4
+		int samplesNum = cpu.gpr[5];  // Values: 2048
 
-		log.warn(String.format("Unimplemented sceP3daBridgeInit unknown1=0x%08X, unknown2=0x%08X", unknown1, unknown2));
+		log.warn(String.format("PARTIAL: sceP3daBridgeInit channelsNum=%d, samplesNum=%d", channelsNum, samplesNum));
+
+        p3daChannelsNum = channelsNum;
+        p3daSamplesNum = samplesNum;
 
 		cpu.gpr[2] = 0;
 	}
@@ -66,7 +78,7 @@ public class sceP3da implements HLEModule {
 	public void sceP3daBridgeExit(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		log.warn("Unimplemented sceP3daBridgeExit");
+		log.warn("PARTIAL: sceP3daBridgeExit");
 
 		cpu.gpr[2] = 0;
 	}
@@ -74,15 +86,17 @@ public class sceP3da implements HLEModule {
 	public void sceP3daBridgeCore(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int unknown1 = cpu.gpr[4]; // Address to structure containing 2 32-bit values
-		int unknown2 = cpu.gpr[5]; // Values: 4
-		int unknown3 = cpu.gpr[6]; // Values: 2048
-		int unknown4 = cpu.gpr[7]; // Address (always the same)
-		int unknown5 = cpu.gpr[8]; // Address (alternating between 2 values separated by 0x2000)
-		int unknown6 = cpu.gpr[9]; // Values: 4
-		int unknown7 = cpu.gpr[10]; // Address (always the same)
+		int p3daCore = cpu.gpr[4];    // Address to structure containing 2 32-bit values
+		int channelsNum = cpu.gpr[5]; // Values: 4
+		int samplesNum = cpu.gpr[6];  // Values: 2048
+		int inputAddr = cpu.gpr[7];   // Address (always the same)
+		int outputAddr = cpu.gpr[8];  // Address (alternating between 2 values separated by 0x2000)
 
-		log.warn(String.format("Unimplemented sceP3daBridgeCore unknown1=0x%08X, unknown2=0x%08X, unknown3=0x%08X, unknown4=0x%08X, unknown5=0x%08X, unknown6=0x%08X, unknown7=0x%08X", unknown1, unknown2, unknown3, unknown4, unknown5, unknown6, unknown7));
+		log.warn(String.format("PARTIAL: sceP3daBridgeCore p3daCore=0x%08X, channelsNum=%d, samplesNum=%d, inputAddr=0x%08X, outputAddr=0x%08X", p3daCore, channelsNum, samplesNum, inputAddr, outputAddr));
+
+        // Overwrite these values, just like in sceSasCore.
+        p3daChannelsNum = channelsNum;
+        p3daSamplesNum = samplesNum;
 
 		cpu.gpr[2] = 0;
 	}

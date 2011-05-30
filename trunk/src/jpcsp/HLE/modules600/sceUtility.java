@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules630;
+package jpcsp.HLE.modules600;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -27,7 +27,7 @@ public class sceUtility extends jpcsp.HLE.modules310.sceUtility {
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
-        if (version >= 630) {
+        if (version >= 600) {
 
             mm.addFunction(0x180F7B62, sceUtilityGamedataInstallAbortFunction);
 
@@ -38,7 +38,7 @@ public class sceUtility extends jpcsp.HLE.modules310.sceUtility {
     public void uninstallModule(HLEModuleManager mm, int version) {
         super.uninstallModule(mm, version);
 
-        if (version >= 630) {
+        if (version >= 600) {
 
             mm.removeFunction(sceUtilityGamedataInstallAbortFunction);
 

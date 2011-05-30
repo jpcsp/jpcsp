@@ -322,13 +322,8 @@ public class Loader {
             module.loadAddressHigh = baseAddress;
 
             // Load into mem
-            if(Emulator.getInstance().getFirmwareVersion() >= 630) {
-                LoadELFProgram_630(f, module, baseAddress, elf, elfOffset);
-                LoadELFSections_630(f, module, baseAddress, elf, elfOffset);
-            } else {
-                LoadELFProgram(f, module, baseAddress, elf, elfOffset);
-                LoadELFSections(f, module, baseAddress, elf, elfOffset);
-            }
+            LoadELFProgram(f, module, baseAddress, elf, elfOffset);
+            LoadELFSections(f, module, baseAddress, elf, elfOffset);
 
             // Relocate PRX
             if (elf.getHeader().requiresRelocation()) {
@@ -408,17 +403,6 @@ public class Loader {
 
     // ELF Loader
 
-    private void LoadELFProgram_630(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset) throws IOException {
-        Emulator.log.info("6.30 firmware version's ELF program detected!");
-
-        // FIXME: How to detect if we have to use a baseAddress == 0?
-        if (elf.getProgramHeader(0).getP_vaddr() >= MemoryMap.START_USERSPACE) {
-            baseAddress = 0;
-        }
-        LoadELFProgram(f, module, baseAddress, elf, elfOffset);
-    }
-
     /** Load some programs into memory */
     private void LoadELFProgram(ByteBuffer f, SceModule module, int baseAddress,
         Elf32 elf, int elfOffset) throws IOException {
@@ -432,6 +416,10 @@ public class Loader {
             if (phdr.getP_type() == 0x00000001L) {
                 int fileOffset = (int)phdr.getP_offset();
                 int memOffset = baseAddress + (int)phdr.getP_vaddr();
+                if (!Memory.isAddressGood(memOffset)) {
+                    Memory.log.warn("Program header has invalid memory offset! Trying to use 0 as baseAddress.");
+                    memOffset = (int)phdr.getP_vaddr();
+                }
                 int fileLen = (int)phdr.getP_filesz();
                 int memLen = (int)phdr.getP_memsz();
 
@@ -464,17 +452,6 @@ public class Loader {
         Memory.log.debug(String.format("PH alloc consumption %08X (mem %08X)", (module.loadAddressHigh - module.loadAddressLow), module.bss_size));
     }
 
-    private void LoadELFSections_630(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset) throws IOException {
-        Emulator.log.info("6.30 firmware version's ELF sections detected!");
-
-        // FIXME: How to detect if we have to use a baseAddress == 0?
-        if (elf.getProgramHeader(0).getP_vaddr() >= MemoryMap.START_USERSPACE) {
-       	    baseAddress = 0;
-        }
-        LoadELFSections(f, module, baseAddress, elf, elfOffset);
-    }
-
     /** Load some sections into memory */
     private void LoadELFSections(ByteBuffer f, SceModule module, int baseAddress,
         Elf32 elf, int elfOffset) throws IOException {
@@ -490,6 +467,10 @@ public class Loader {
                         // Load this section into memory
                         // now loaded using program header type 1
                         int memOffset = baseAddress + (int)shdr.getSh_addr();
+                        if (!Memory.isAddressGood(memOffset)) {
+                            Memory.log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
+                            memOffset = (int)shdr.getSh_addr();
+                        }
                         int len = (int)shdr.getSh_size();
 
                         // Update memory area consumed by the module
@@ -508,11 +489,15 @@ public class Loader {
                     {
                         // Zero out this portion of memory
                         int memOffset = baseAddress + (int)shdr.getSh_addr();
+                        if (!Memory.isAddressGood(memOffset)) {
+                            Memory.log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
+                            memOffset = (int)shdr.getSh_addr();
+                        }
                         int len = (int)shdr.getSh_size();
 
                         if (len == 0) {
                             Memory.log.debug(String.format("%s: ignoring zero-length type 8 section %08X", shdr.getSh_namez(), memOffset));
-                        } else if (memOffset >= MemoryMap.START_RAM && memOffset + len <= MemoryMap.END_RAM) {
+                        } else {
                             Memory.log.debug(String.format("%s: clearing section %08X - %08X (len %08X)", shdr.getSh_namez(), memOffset, (memOffset + len), len));
 
                         	mem.memset(memOffset, (byte) 0x0, len);
@@ -526,8 +511,6 @@ public class Loader {
                                 module.loadAddressHigh = memOffset + len;
                                 Memory.log.debug(String.format("%s: new loadAddressHigh %08X (+%08X)", shdr.getSh_namez(), module.loadAddressHigh, len));
                             }
-                        } else {
-                            Memory.log.warn(String.format("Type 8 section outside valid range %08X - %08X", memOffset, (memOffset + len)));
                         }
                         break;
                     }
