@@ -27,13 +27,21 @@ import jpcsp.scheduler.Scheduler;
 public class VBlankInterruptHandler extends AbstractInterruptHandler {
 	private List<IAction> vblankActions = new LinkedList<IAction>();
 	private List<IAction> vblankActionsOnce = new LinkedList<IAction>();
+	private long nextVblankSchedule = IntrManager.VBLANK_SCHEDULE_MICROS;
 
 	@Override
 	protected void executeInterrupt() {
 		Scheduler scheduler = Emulator.getScheduler();
 
 		// Re-schedule next VBLANK interrupt in 1/60 second
-		scheduler.addAction(Scheduler.getNow() + IntrManager.VBLANK_SCHEDULE_MICROS, this);
+		scheduler.addAction(nextVblankSchedule, this);
+
+		// The next VBlank schedule is the next 1/60 interval after now
+		nextVblankSchedule += IntrManager.VBLANK_SCHEDULE_MICROS;
+		long now = Scheduler.getNow();
+		while (nextVblankSchedule < now) {
+			nextVblankSchedule += IntrManager.VBLANK_SCHEDULE_MICROS;
+		}
 
 		// Execute all the registered VBlank actions (each time)
 		for (IAction action : vblankActions) {

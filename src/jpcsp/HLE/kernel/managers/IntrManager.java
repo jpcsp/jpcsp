@@ -69,7 +69,7 @@ public class IntrManager {
 	public static final int PSP_NUMBER_INTERRUPTS = 67;
 	private static String[] PSP_INTERRUPT_NAMES;
 
-	public static final int VBLANK_SCHEDULE_MICROS = 1000000 / 60; // 1/60 second
+	public static final int VBLANK_SCHEDULE_MICROS = (1000000 + 30) / 60; // 1/60 second (rounded)
 
 	protected static IntrManager instance = null;
 	private Vector<LinkedList<AbstractInterruptHandler>> interrupts;
