@@ -126,7 +126,7 @@ public class scePsmfPlayer implements HLEModule {
     protected static final int psmfPlayerVideoTimestampStep = sceMpeg.videoTimestampStep;
     protected static final int psmfPlayerAudioTimestampStep = sceMpeg.audioTimestampStep;
     protected static final int psmfTimestampPerSecond = sceMpeg.mpegTimestampPerSecond;
-    protected static final int psmfMaxAheadTimestamp = 40000;
+    protected int psmfMaxAheadTimestamp = 40000;
 
     // PSMF Player timestamp vars.
     protected Date psmfPlayerLastDate;
@@ -348,6 +348,9 @@ public class scePsmfPlayer implements HLEModule {
 
         psmfPlayerAtracAu = new SceMpegAu();
         psmfPlayerAvcAu = new SceMpegAu();
+
+        // scePsmfPlayer creates a ringbuffer with 581 packets
+        psmfMaxAheadTimestamp = sceMpeg.getMaxAheadTimestamp(581);
 
         // Start with INIT.
         psmfPlayerStatus = PSMF_PLAYER_STATUS_INIT;
@@ -589,7 +592,7 @@ public class scePsmfPlayer implements HLEModule {
         }
         if (!checkPlayerInitialized(psmfPlayer)) {
         	// Error returned
-        } else if (psmfPlayerAvcAu.pts > psmfPlayerAtracAu.pts + psmfMaxAheadTimestamp) {
+        } else if (psmfPlayerAtracAu.pts != 0 && psmfPlayerAvcAu.pts > psmfPlayerAtracAu.pts + psmfMaxAheadTimestamp) {
             // If we're ahead of audio, return an error.
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMFPLAYER_NO_MORE_DATA;
             sceMpeg.delayThread(sceMpeg.mpegDecodeErrorDelay);
@@ -669,7 +672,7 @@ public class scePsmfPlayer implements HLEModule {
         }
         if (!checkPlayerInitialized(psmfPlayer)) {
         	// Error returned
-        } else if (psmfPlayerAtracAu.pts > psmfPlayerAvcAu.pts + psmfMaxAheadTimestamp) {
+        } else if (psmfPlayerAvcAu.pts != 0 && psmfPlayerAtracAu.pts > psmfPlayerAvcAu.pts + psmfMaxAheadTimestamp) {
             // If we're ahead of video, return an error.
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMFPLAYER_NO_MORE_DATA;
             sceMpeg.delayThread(sceMpeg.mpegDecodeErrorDelay);
@@ -718,10 +721,8 @@ public class scePsmfPlayer implements HLEModule {
             log.debug(String.format("scePsmfPlayerGetCurrentStatus psmfPlayer=0x%X, returning status=%d", psmfPlayer, psmfPlayerStatus));
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
+        // scePsmfPlayerGetCurrentStatus can be called from an interrupt
+
         if (!checkPlayerInitialized(psmfPlayer)) {
         	// Error returned
         } else {

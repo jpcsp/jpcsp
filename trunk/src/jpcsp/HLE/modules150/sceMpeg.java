@@ -441,6 +441,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }
     }
 
+    public static int getMaxAheadTimestamp(int packets) {
+        return Math.max(40000, packets * 700); // Empiric value based on tests using JpcspConnector
+    }
+
     private void generateFakeMPEGVideo(int dest_addr, int frameWidth) {
         Memory mem = Memory.getInstance();
 
@@ -2057,7 +2061,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (Memory.isAddressGood(ringbuffer_addr)) {
             SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(packets, data, size, callback_addr, callback_args);
             ringbuffer.write(mem, ringbuffer_addr);
-            maxAheadTimestamp = Math.max(40000, packets * 700); // Empiric value based on tests using JpcspConnector
+            maxAheadTimestamp = getMaxAheadTimestamp(packets);
             cpu.gpr[2] = 0;
         } else {
             log.warn("sceMpegRingbufferConstruct bad address " + String.format("0x%08X", ringbuffer_addr));
