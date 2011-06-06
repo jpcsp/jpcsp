@@ -102,6 +102,7 @@ struct attribute
 	float min;
 	float max;
 	float step;
+	char *format;
 	char **names;
 };
 
@@ -114,8 +115,20 @@ void* fbp1;
 void* zbp;
 
 
-void addAttribute(char *label, int *pvalue, float *pfvalue, int x, int y, float min, float max, float step)
+void addAttribute(char *label, int *pvalue, float *pfvalue, int x, int y, float min, float max, float step, char *format)
 {
+	if (format == NULL)
+	{
+		if (pvalue != NULL)
+		{
+			format = "%d";
+		}
+		else if (pfvalue != NULL)
+		{
+			format = "%.1f";
+		}
+	}
+
 	struct attribute *pattribute = &attributes[nattributes];
 	pattribute->label  = label;
 	pattribute->x	  = x;
@@ -126,6 +139,7 @@ void addAttribute(char *label, int *pvalue, float *pfvalue, int x, int y, float 
 	pattribute->max	= max;
 	pattribute->step   = step;
 	pattribute->names  = NULL;
+	pattribute->format = format;
 
 	nattributes++;
 }
@@ -183,12 +197,12 @@ void drawAttribute(struct attribute *pattribute)
 	}
 	else if (pattribute->pvalue != NULL)
 	{
-		sprintf(buffer, "%d", *(pattribute->pvalue));
+		sprintf(buffer, pattribute->format, *(pattribute->pvalue));
 		value = buffer;
 	}
 	else if (pattribute->pfvalue != NULL)
 	{
-		sprintf(buffer, "%.1f", *(pattribute->pfvalue));
+		sprintf(buffer, pattribute->format, *(pattribute->pfvalue));
 		value = buffer;
 	}
 
@@ -450,7 +464,9 @@ char *blendOpNames[] = { "GU_ADD", "GU_SUBTRACT", "GU_REVERSE_SUBTRACT", "GU_MIN
 
 int blendFuncSrc = 2;
 int blendFuncDst = 3;
-char *blendFuncNames[] = { "GU_SRC_COLOR", "GU_ONE_MINUS_SRC_COLOR", "GU_SRC_ALPHA", "GU_ONE_MINUS_SRC_ALPHA", "GU_DST_COLOR", "GU_ONE_MINUS_DST_COLOR", "GU_DST_ALPHA", "GU_ONE_MINUS_DST_ALPHA" };
+char *blendFuncNames[] = { "GU_SRC_COLOR", "GU_ONE_MINUS_SRC_COLOR", "GU_SRC_ALPHA", "GU_ONE_MINUS_SRC_ALPHA", "GU_DST_ALPHA", "GU_ONE_MINUS_DST_ALPHA", "GU_DOUBLE_SRC_ALPHA", "GU_ONE_MINUS_DOUBLE_SRC_ALPHA", "GU_DOUBLE_DST_ALPHA", "GU_ONE_MINUS_DOUBLE_DST_ALPHA", "GU_FIX" };
+struct Color blendSFix;
+struct Color blendDFix;
 
 int textureType1 = 0;
 int textureType2 = 0;
@@ -526,6 +542,10 @@ int viewportWidth = SCR_WIDTH;
 int viewportHeight = SCR_HEIGHT;
 int offsetX = 2048 - (SCR_WIDTH / 2);
 int offsetY = 2048 - (SCR_HEIGHT / 2);
+int regionX = 0;
+int regionY = 0;
+int regionWidth = SCR_WIDTH;
+int regionHeight = SCR_HEIGHT;
 int displayMode = 0;
 int displayWidth = SCR_WIDTH;
 int displayHeight = SCR_HEIGHT;
@@ -534,9 +554,9 @@ int stencilOpFail = 0;
 int stencilOpZFail = 0;
 int stencilOpZPass = 0;
 char *stencilOpNames[] = { "GU_KEEP", "GU_ZERO", "GU_REPLACE", "GU_INVERT", "GU_INCR", "GU_DECR" };
-int stencilFunc = 0;
+int stencilFunc = 1;
 int stencilReference = 0;
-int stencilMask = 0;
+int stencilMask = 0xFF;
 
 int rectangle1PrimType = GU_TRIANGLE_STRIP;
 int rectangle2PrimType = GU_TRIANGLE_STRIP;
@@ -550,25 +570,25 @@ char *patchPrimNames[] = { "GU_TRIANGLE_STRIP", "GU_LINE_STRIP", "GU_POINTS" };
 
 int fbw = BUF_WIDTH;
 
-void addColorAttribute(char *label, struct Color *pcolor, int x, int y, int hasAlpha)
+void addColorAttribute(char *label, struct Color *pcolor, int x, int y, int hasAlpha, int step)
 {
-	addAttribute(label, &pcolor->r, NULL, x +  0, y, 0, 0xFF, 10);
+	addAttribute(label, &pcolor->r, NULL, x +  0, y, 0, 0xFF, step, "%02X");
 	x += strlen(label);
-	addAttribute(", G", &pcolor->g, NULL, x +  5, y, 0, 0xFF, 10);
-	addAttribute(", B", &pcolor->b, NULL, x + 13, y, 0, 0xFF, 10);
+	addAttribute(", G", &pcolor->g, NULL, x +  5, y, 0, 0xFF, step, "%02X");
+	addAttribute(", B", &pcolor->b, NULL, x + 13, y, 0, 0xFF, step, "%02X");
 	if (hasAlpha)
 	{
-		addAttribute(", A", &pcolor->a, NULL, x + 21, y, 0, 0xFF, 10);
+		addAttribute(", A", &pcolor->a, NULL, x + 21, y, 0, 0xFF, step, "%02X");
 	}
 }
 
 
 void addPositionAttribute(char *label, ScePspFVector3 *pposition, int x, int y)
 {
-	addAttribute(label, NULL, &pposition->x,  x, y, -10, 10, 0.1);
+	addAttribute(label, NULL, &pposition->x,  x, y, -10, 10, 0.1, NULL);
 	x += strlen(label);
-	addAttribute(", Y", NULL, &pposition->y, x + 6, y, -10, 10, 0.1);
-	addAttribute(", Z", NULL, &pposition->z, x + 15, y, -10, 10, 0.1);
+	addAttribute(", Y", NULL, &pposition->y, x + 6, y, -10, 10, 0.1, NULL);
+	addAttribute(", Z", NULL, &pposition->z, x + 15, y, -10, 10, 0.1, NULL);
 }
 
 
@@ -577,28 +597,28 @@ int addLightAttribute(int index, struct Light *plight, int x, int y)
 	char *label = malloc(100);
 	sprintf(label, "Light %d", index + 1);
 
-	addAttribute(label, &plight->type, NULL, x, y, 0, 2, 1);
+	addAttribute(label, &plight->type, NULL, x, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&lightTypeNames[0]);
-	addAttribute(", Kind", &plight->kind, NULL, x + 20, y, 0, 3, 1);
+	addAttribute(", Kind", &plight->kind, NULL, x + 20, y, 0, 3, 1, NULL);
 	setAttributeValueNames(&lightKindNames[0]);
 	y++;
 	addPositionAttribute("    Position  X", &plight->position, x, y);
 	y++;
 	addPositionAttribute("    Direction X", &plight->direction, x, y);
 	y++;
-	addColorAttribute("    Ambient Color  R", &plight->ambientColor, x, y, 0);
+	addColorAttribute("    Ambient Color  R", &plight->ambientColor, x, y, 0, 0x10);
 	y++;
-	addColorAttribute("    Diffuse Color  R", &plight->diffuseColor, x, y, 0);
+	addColorAttribute("    Diffuse Color  R", &plight->diffuseColor, x, y, 0, 0x10);
 	y++;
-	addColorAttribute("    Specular Color R", &plight->specularColor, x, y, 0);
+	addColorAttribute("    Specular Color R", &plight->specularColor, x, y, 0, 0x10);
 	y++;
-	addAttribute("    Attenuation Cst", NULL, &plight->constantAttenuation, x, y, 0, 1000, 1);
-	addAttribute(", Lin", NULL, &plight->linearAttenuation, x + 24, y, 0, 1000, 1);
-	addAttribute(", Quad", NULL, &plight->quadraticAttenuation, x + 24 + 10, y, 0, 1000, 1);
+	addAttribute("    Attenuation Cst", NULL, &plight->constantAttenuation, x, y, 0, 1000, 1, NULL);
+	addAttribute(", Lin", NULL, &plight->linearAttenuation, x + 24, y, 0, 1000, 1, NULL);
+	addAttribute(", Quad", NULL, &plight->quadraticAttenuation, x + 24 + 10, y, 0, 1000, 1, NULL);
 	y++;
 
-	addAttribute("    Spot Exponent", NULL, &plight->spotExponent, x, y, 0, 128, 1);
-	addAttribute(", Cutoff", NULL, &plight->spotCutoff, x + 22, y, -1, 10, 0.1);
+	addAttribute("    Spot Exponent", NULL, &plight->spotExponent, x, y, 0, 128, 1, NULL);
+	addAttribute(", Cutoff", NULL, &plight->spotCutoff, x + 22, y, -1, 10, 0.1, NULL);
 	y++;
 
 	return y;
@@ -879,6 +899,7 @@ void drawRectangles()
 	if (clearFlagStencil != 0) clearFlags |= GU_STENCIL_BUFFER_BIT;
 
 	sceGuDrawBuffer(GU_PSM_8888, fbp0, fbw);
+	sceGuPixelMask(getColor(&pixelMask));
 
 	if (clearMode == 0)
 	{
@@ -901,10 +922,9 @@ void drawRectangles()
 	sceGumLoadIdentity();
 
 	sceGuDepthMask(depthMask);
-	sceGuPixelMask(getColor(&pixelMask));
 	sceGuDepthFunc(depthFunc);
 	sceGuAlphaFunc(alphaFunc, alphaReference, 0xFF);
-	sceGuBlendFunc(blendOp, blendFuncSrc, blendFuncDst, 0, 0);
+	sceGuBlendFunc(blendOp, blendFuncSrc, blendFuncDst, getColor(&blendSFix), getColor(&blendDFix));
 	sendCommandf(68, (float) zscale);
 	sendCommandf(71, (float) zpos);
 	sendCommandi(214, nearZ);
@@ -913,6 +933,8 @@ void drawRectangles()
 	//sceGuDepthOffset(depthOffset);
 	sceGuOffset(offsetX, offsetY);
 	sceGuViewport(viewportX, viewportY, viewportWidth, viewportHeight);
+	sendCommandi(21, (regionY << 10) | regionX); // REGION1 command
+	sendCommandi(22, (((regionY + regionHeight - 1) << 10) | (regionX + regionWidth - 1))); // REGION2 command
 	int materialFlags = 0;
 	if (materialAmbientFlag ) materialFlags |= GU_AMBIENT;
 	if (materialDiffuseFlag ) materialFlags |= GU_DIFFUSE;
@@ -1193,6 +1215,8 @@ void drawRectangles()
 
 void drawDebugPrintBuffer()
 {
+	sceKernelDcacheWritebackAll();
+
 	sceGuDisable(GU_ALPHA_TEST);
 	sceGuDisable(GU_DEPTH_TEST);
 	sceGuDisable(GU_SCISSOR_TEST);
@@ -1215,6 +1239,7 @@ void drawDebugPrintBuffer()
 	sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGBA);
 	sceGuEnable(GU_ALPHA_TEST);
 	sceGuAlphaFunc(GU_GREATER, 0x00, 0xFF);
+	sceGuPixelMask(0x00000000);
 	sceGuTexImage(0, SCR_TEXTURE_WIDTH, SCR_TEXTURE_HEIGHT, BUF_WIDTH, debugPrintBuffer);
 	debugPrintVertices[0].u = 0;
 	debugPrintVertices[0].v = 0;
@@ -1295,9 +1320,9 @@ void init()
 	int x = 0;
 	int y = 0;
 
-	addAttribute("Rendering      ", &rectangle1rendering, NULL, x, y, 0, 2, 1);
+	addAttribute("Rendering      ", &rectangle1rendering, NULL, x, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&renderingNames[0]);
-	addAttribute(NULL, &rectangle2rendering, NULL, x + 27, y, 0, 2, 1);
+	addAttribute(NULL, &rectangle2rendering, NULL, x + 27, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&renderingNames[0]);
 	y++;
 
@@ -1306,24 +1331,24 @@ void init()
 	{
 		stateValues1[i] = 0;
 		stateValues2[i] = 0;
-		addAttribute(stateNames[states[i]], &stateValues1[i], NULL, x, y, 0, 2, 1);
+		addAttribute(stateNames[states[i]], &stateValues1[i], NULL, x, y, 0, 2, 1, NULL);
 		setAttributeValueNames(&stateValueNames[0]);
-		addAttribute(NULL, &stateValues2[i], NULL, x + 27, y, 0, 2, 1);
+		addAttribute(NULL, &stateValues2[i], NULL, x + 27, y, 0, 2, 1, NULL);
 		setAttributeValueNames(&stateValueNames[0]);
 		y++;
 	}
 
-	addAttribute("Front Face     ", &frontFace1, NULL, x, y, 0, 2, 1);
+	addAttribute("Front Face     ", &frontFace1, NULL, x, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&faceNames[0]);
-	addAttribute(NULL, &frontFace2, NULL, x + 27, y, 0, 2, 1);
+	addAttribute(NULL, &frontFace2, NULL, x + 27, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&faceNames[0]);
 	y++;
 
-	addAttribute("Patch Primitive", &patchPrim, NULL, x, y, 0, 2, 1);
+	addAttribute("Patch Primitive", &patchPrim, NULL, x, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&patchPrimNames[0]);
 	y++;
 
-	addAttribute("sceGuDepthMask", &depthMask, NULL, x, y, 0, 1, 1);
+	addAttribute("sceGuDepthMask", &depthMask, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&depthMaskNames[0]);
 	y++;
 
@@ -1332,67 +1357,77 @@ void init()
 	pixelMask.b = 0x00;
 	pixelMask.a = 0x00;
 
-	addColorAttribute("Pixel Mask R", &pixelMask, x, y, 1);
+	addColorAttribute("Pixel Mask R", &pixelMask, x, y, 1, 1);
 	y++;
 
-	addAttribute("sceGuDepthFunc", &depthFunc, NULL, x, y, 0, 7, 1);
+	addAttribute("sceGuDepthFunc", &depthFunc, NULL, x, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&testFuncNames[0]);
 	y++;
 
-	addAttribute("NearZ", &nearZ, NULL, x, y, 0, 0xFFFF, 1000);
-	addAttribute(", FarZ", &farZ, NULL, x + 12, y, 0, 0xFFFF, 1000);
+	addAttribute("NearZ", &nearZ, NULL, x, y, 0, 0xFFFF, 1000, NULL);
+	addAttribute(", FarZ", &farZ, NULL, x + 12, y, 0, 0xFFFF, 1000, NULL);
 	y++;
 
-	addAttribute("Z Scale", &zscale, NULL, x, y, 0, 0xFFFF, 1000);
-	addAttribute(", Pos", &zpos, NULL, x + 14, y, 0, 0xFFFF, 1000);
+	addAttribute("Z Scale", &zscale, NULL, x, y, 0, 0xFFFF, 1000, NULL);
+	addAttribute(", Pos", &zpos, NULL, x + 14, y, 0, 0xFFFF, 1000, NULL);
 	y++;
 
-	addAttribute("Viewport X", &viewportX, NULL, x, y, 0, 4095, 10);
-	addAttribute(", Y", &viewportY, NULL, x + 16, y, 0, 4095, 10);
+	addAttribute("Viewport X", &viewportX, NULL, x, y, 0, 4095, 10, NULL);
+	addAttribute(", Y", &viewportY, NULL, x + 16, y, 0, 4095, 10, NULL);
 	y++;
-	addAttribute("         Width", &viewportWidth, NULL, x, y, -4096, 4095, 10);
-	addAttribute(", Height", &viewportHeight, NULL, x + 19, y, -4096, 4095, 10);
+	addAttribute("         Width", &viewportWidth, NULL, x, y, -4096, 4095, 10, NULL);
+	addAttribute(", Height", &viewportHeight, NULL, x + 19, y, -4096, 4095, 10, NULL);
 	y++;
-	addAttribute("Offset X", &offsetX, NULL, x, y, 0, 4096, 1);
-	addAttribute(", Y", &offsetY, NULL, x + 14, y, 0, 4096, 1);
+	addAttribute("Offset X", &offsetX, NULL, x, y, 0, 4096, 1, NULL);
+	addAttribute(", Y", &offsetY, NULL, x + 14, y, 0, 4096, 1, NULL);
 	y++;
-	addAttribute("Display Width", &displayWidth, NULL, x, y, 0, 512, 1);
-	addAttribute(", Height", &displayHeight, NULL, x + 18, y, 0, 512, 1);
-	addAttribute(", Mode", &displayMode, NULL, x + 31, y, 0, 100, 1);	// Which values can take displayMode?
+	addAttribute("Region   X", &regionX, NULL, x, y, 0, 4095, 10, NULL);
+	addAttribute(", Y", &regionY, NULL, x + 16, y, 0, 4095, 10, NULL);
+	y++;
+	addAttribute("         Width", &regionWidth, NULL, x, y, -4096, 4095, 10, NULL);
+	addAttribute(", Height", &regionHeight, NULL, x + 19, y, -4096, 4095, 10, NULL);
+	y++;
+	addAttribute("Display Width", &displayWidth, NULL, x, y, 0, 512, 1, NULL);
+	addAttribute(", Height", &displayHeight, NULL, x + 18, y, 0, 512, 1, NULL);
+	addAttribute(", Mode", &displayMode, NULL, x + 31, y, 0, 100, 1, NULL);	// Which values can take displayMode?
 	y++;
 
-	addAttribute("FrameBuffer Width", &fbw, NULL, x, y, 0, 1024, 1);
+	addAttribute("FrameBuffer Width", &fbw, NULL, x, y, 0, 1024, 1, NULL);
 	y++;
 
-	addAttribute("sceGuAlphaFunc", &alphaFunc, NULL, x, y, 0, 7, 1);
+	addAttribute("sceGuAlphaFunc", &alphaFunc, NULL, x, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&testFuncNames[0]);
-	addAttribute(", Reference", &alphaReference, NULL, x + 27, y, 0, 255, 10);
+	addAttribute(", Reference", &alphaReference, NULL, x + 27, y, 0, 255, 0x10, "%02X");
 	y++;
 
-	addAttribute("sceGuBlendFunc op", &blendOp, NULL, x, y, 0, 5, 1);
+	addAttribute("sceGuBlendFunc op", &blendOp, NULL, x, y, 0, 5, 1, NULL);
 	setAttributeValueNames(&blendOpNames[0]);
 	y++;
-	addAttribute("src", &blendFuncSrc, NULL, x + 15, y, 0, 7, 1);
+	addAttribute("src", &blendFuncSrc, NULL, x + 15, y, 0, 10, 1, NULL);
 	setAttributeValueNames(&blendFuncNames[0]);
 	y++;
-	addAttribute("dst", &blendFuncDst, NULL, x + 15, y, 0, 7, 1);
+	addAttribute("dst", &blendFuncDst, NULL, x + 15, y, 0, 10, 1, NULL);
 	setAttributeValueNames(&blendFuncNames[0]);
 	y++;
-
-	addAttribute("sceGuStencilOp fail", &stencilOpFail, NULL, x, y, 0, 5, 1);
-	setAttributeValueNames(&stencilOpNames[0]);
+	addColorAttribute("SFix R", &blendSFix, x + 15, y, 0, 0x10);
 	y++;
-	addAttribute("               zfail", &stencilOpZFail, NULL, x, y, 0, 5, 1);
-	setAttributeValueNames(&stencilOpNames[0]);
-	y++;
-	addAttribute("               zpass", &stencilOpZPass, NULL, x, y, 0, 5, 1);
-	setAttributeValueNames(&stencilOpNames[0]);
+	addColorAttribute("DFix R", &blendDFix, x + 15, y, 0, 0x10);
 	y++;
 
-	addAttribute("sceGuStencilFunc", &stencilFunc, NULL, x, y, 0, 7, 1);
+	addAttribute("sceGuStencilOp fail", &stencilOpFail, NULL, x, y, 0, 5, 1, NULL);
+	setAttributeValueNames(&stencilOpNames[0]);
+	y++;
+	addAttribute("               zfail", &stencilOpZFail, NULL, x, y, 0, 5, 1, NULL);
+	setAttributeValueNames(&stencilOpNames[0]);
+	y++;
+	addAttribute("               zpass", &stencilOpZPass, NULL, x, y, 0, 5, 1, NULL);
+	setAttributeValueNames(&stencilOpNames[0]);
+	y++;
+
+	addAttribute("sceGuStencilFunc", &stencilFunc, NULL, x, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&testFuncNames[0]);
-	addAttribute(", Ref", &stencilReference, NULL, x + 27, y, 0, 0xFF, 10);
-	addAttribute(", Mask", &stencilMask, NULL, x + 38, y, 0, 0xFF, 10);
+	addAttribute(", Ref", &stencilReference, NULL, x + 27, y, 0, 0xFF, 0x10, "%02X");
+	addAttribute(", Mask", &stencilMask, NULL, x + 38, y, 0, 0xFF, 0x10, "%02X");
 	y++;
 
 	rectangle1color.r = 0x00;
@@ -1412,56 +1447,56 @@ void init()
 	rectangle1normal.y = 0;
 	rectangle1normal.z = 1;
 
-	addAttribute("Rect1 pos X", NULL, &rectangle1translation.x, x, y, -10, 10, 0.1);
-	addAttribute(", Y", NULL, &rectangle1translation.y, x + 17, y, -10, 10, 0.1);
-	addAttribute(", Z", NULL, &rectangle1translation.z, x + 26, y, -20, 10, 0.1);
+	addAttribute("Rect1 pos X", NULL, &rectangle1translation.x, x, y, -10, 10, 0.1, NULL);
+	addAttribute(", Y", NULL, &rectangle1translation.y, x + 17, y, -10, 10, 0.1, NULL);
+	addAttribute(", Z", NULL, &rectangle1translation.z, x + 26, y, -20, 10, 0.1, NULL);
 	y++;
-	addAttribute("width", NULL, &rectangle1width, x + 6, y, 0, 20, 0.1);
-	addAttribute(", height", NULL, &rectangle1height, x + 17, y, 0, 20, 0.1);
+	addAttribute("width", NULL, &rectangle1width, x + 6, y, 0, 20, 0.1, NULL);
+	addAttribute(", height", NULL, &rectangle1height, x + 17, y, 0, 20, 0.1, NULL);
 	y++;
-	addAttribute("rot X", NULL, &rectangle1rotation.x, x + 6, y, -GU_PI, GU_PI, 0.1);
-	addAttribute(", Y", NULL, &rectangle1rotation.y, x + 17, y, -GU_PI, GU_PI, 0.1);
-	addAttribute(", Z", NULL, &rectangle1rotation.z, x + 26, y, -GU_PI, GU_PI, 0.1);
+	addAttribute("rot X", NULL, &rectangle1rotation.x, x + 6, y, -GU_PI, GU_PI, 0.1, NULL);
+	addAttribute(", Y", NULL, &rectangle1rotation.y, x + 17, y, -GU_PI, GU_PI, 0.1, NULL);
+	addAttribute(", Z", NULL, &rectangle1rotation.z, x + 26, y, -GU_PI, GU_PI, 0.1, NULL);
 	y++;
-	addAttribute("normal X", NULL, &rectangle1normal.x, x + 6, y, -10, 10, 0.1);
-	addAttribute(", Y", NULL, &rectangle1normal.y, x + 20, y, -10, 10, 0.1);
-	addAttribute(", Z", NULL, &rectangle1normal.z, x + 29, y, -10, 10, 0.1);
+	addAttribute("normal X", NULL, &rectangle1normal.x, x + 6, y, -10, 10, 0.1, NULL);
+	addAttribute(", Y", NULL, &rectangle1normal.y, x + 20, y, -10, 10, 0.1, NULL);
+	addAttribute(", Z", NULL, &rectangle1normal.z, x + 29, y, -10, 10, 0.1, NULL);
 	y++;
-	addColorAttribute("R", &rectangle1color, x + 6, y, 1);
+	addColorAttribute("R", &rectangle1color, x + 6, y, 1, 0x10);
 	y++;
-	addAttribute("Type", &rectangle1PrimType, NULL, x + 6, y, 0, 6, 1);
+	addAttribute("Type", &rectangle1PrimType, NULL, x + 6, y, 0, 6, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
 	y++;
 
-	addAttribute("sceGuTexFunc", &texFunc1, NULL, x + 6, y, 0, 4, 1);
+	addAttribute("sceGuTexFunc", &texFunc1, NULL, x + 6, y, 0, 4, 1, NULL);
 	setAttributeValueNames(&texFuncNames[0]);
-	addAttribute(NULL, &texFuncAlpha1, NULL, x + 36, y, 0, 2, 1);
+	addAttribute(NULL, &texFuncAlpha1, NULL, x + 36, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&texFuncAlphaNames[0]);
-	addAttribute(NULL, &texFuncDouble1, NULL, x + 42, y, 0, 1, 1);
+	addAttribute(NULL, &texFuncDouble1, NULL, x + 42, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&texFuncDoubleNames[0]);
 	y++;
 
-	addAttribute("Texture Type", &textureType1, NULL, x + 6, y, 0, 5, 1);
+	addAttribute("Texture Type", &textureType1, NULL, x + 6, y, 0, 5, 1, NULL);
 	setAttributeValueNames(&textureTypeNames[0]);
-	addAttribute(", a2", &texture1_a2, NULL, x + 34, y, 0, 1, 1);
+	addAttribute(", a2", &texture1_a2, NULL, x + 34, y, 0, 1, 1, NULL);
 	y++;
 
-	addAttribute("Tex Level Mode", &texLevelMode1, NULL, x + 6, y, 0, 2, 1);
+	addAttribute("Tex Level Mode", &texLevelMode1, NULL, x + 6, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&texModeNames[0]);
-	addAttribute(", Bias", &texBias1, NULL, x + 38, y, -127, 128, 1);
+	addAttribute(", Bias", &texBias1, NULL, x + 38, y, -127, 128, 1, NULL);
 	y++;
 
-	addAttribute("Slope", NULL, &texSlope1, x + 16, y, 0, 10, 0.1);
+	addAttribute("Slope", NULL, &texSlope1, x + 16, y, 0, 10, 0.1, NULL);
 	y++;
 
-	addAttribute("TextureFilter Min", &texMinFilter1, NULL, x + 6, y, 0, 7, 1);
+	addAttribute("TextureFilter Min", &texMinFilter1, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
-	addAttribute("Mag", &texMagFilter1, NULL, x + 20, y, 0, 7, 1);
+	addAttribute("Mag", &texMagFilter1, NULL, x + 20, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
 
-	addAttribute("Texture Format", &tpsm1, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1);
+	addAttribute("Texture Format", &tpsm1, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
@@ -1482,60 +1517,60 @@ void init()
 	rectangle2normal.y = 0;
 	rectangle2normal.z = 1;
 
-	addAttribute("Rect2 pos X", NULL, &rectangle2translation.x,  x, y, -10, 10, 0.1);
-	addAttribute(", Y", NULL, &rectangle2translation.y, x + 17, y, -10, 10, 0.1);
-	addAttribute(", Z", NULL, &rectangle2translation.z, x + 26, y, -20, 10, 0.1);
+	addAttribute("Rect2 pos X", NULL, &rectangle2translation.x,  x, y, -10, 10, 0.1, NULL);
+	addAttribute(", Y", NULL, &rectangle2translation.y, x + 17, y, -10, 10, 0.1, NULL);
+	addAttribute(", Z", NULL, &rectangle2translation.z, x + 26, y, -20, 10, 0.1, NULL);
 	y++;
-	addAttribute("width", NULL, &rectangle2width, x + 6, y, 0, 20, 0.1);
-	addAttribute(", height", NULL, &rectangle2height, x + 17, y, 0, 20, 0.1);
+	addAttribute("width", NULL, &rectangle2width, x + 6, y, 0, 20, 0.1, NULL);
+	addAttribute(", height", NULL, &rectangle2height, x + 17, y, 0, 20, 0.1, NULL);
 	y++;
-	addAttribute("rot X", NULL, &rectangle2rotation.x, x + 6, y, -GU_PI, GU_PI, 0.1);
-	addAttribute(", Y", NULL, &rectangle2rotation.y,  x + 17, y, -GU_PI, GU_PI, 0.1);
-	addAttribute(", Z", NULL, &rectangle2rotation.z,  x + 26, y, -GU_PI, GU_PI, 0.1);
+	addAttribute("rot X", NULL, &rectangle2rotation.x, x + 6, y, -GU_PI, GU_PI, 0.1, NULL);
+	addAttribute(", Y", NULL, &rectangle2rotation.y,  x + 17, y, -GU_PI, GU_PI, 0.1, NULL);
+	addAttribute(", Z", NULL, &rectangle2rotation.z,  x + 26, y, -GU_PI, GU_PI, 0.1, NULL);
 	y++;
-	addAttribute("normal X", NULL, &rectangle2normal.x, x + 6, y, -10, 10, 0.1);
-	addAttribute(", Y", NULL, &rectangle2normal.y, x + 20, y, -10, 10, 0.1);
-	addAttribute(", Z", NULL, &rectangle2normal.z, x + 29, y, -10, 10, 0.1);
+	addAttribute("normal X", NULL, &rectangle2normal.x, x + 6, y, -10, 10, 0.1, NULL);
+	addAttribute(", Y", NULL, &rectangle2normal.y, x + 20, y, -10, 10, 0.1, NULL);
+	addAttribute(", Z", NULL, &rectangle2normal.z, x + 29, y, -10, 10, 0.1, NULL);
 	y++;
-	addColorAttribute("R", &rectangle2color, x + 6, y, 1);
+	addColorAttribute("R", &rectangle2color, x + 6, y, 1, 0x10);
 	y++;
-	addAttribute("Type", &rectangle2PrimType, NULL, x + 6, y, 0, 6, 1);
+	addAttribute("Type", &rectangle2PrimType, NULL, x + 6, y, 0, 6, 1, NULL);
 	setAttributeValueNames(&primTypeNames[0]);
 	y++;
 
-	addAttribute("sceGuTexFunc", &texFunc2, NULL, x + 6, y, 0, 4, 1);
+	addAttribute("sceGuTexFunc", &texFunc2, NULL, x + 6, y, 0, 4, 1, NULL);
 	setAttributeValueNames(&texFuncNames[0]);
-	addAttribute(NULL, &texFuncAlpha2, NULL, x + 36, y, 0, 1, 1);
+	addAttribute(NULL, &texFuncAlpha2, NULL, x + 36, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&texFuncAlphaNames[0]);
-	addAttribute(NULL, &texFuncDouble2, NULL, x + 42, y, 0, 1, 1);
+	addAttribute(NULL, &texFuncDouble2, NULL, x + 42, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&texFuncDoubleNames[0]);
 	y++;
 
-	addAttribute("Texture Type", &textureType2, NULL, x + 6, y, 0, 5, 1);
+	addAttribute("Texture Type", &textureType2, NULL, x + 6, y, 0, 5, 1, NULL);
 	setAttributeValueNames(&textureTypeNames[0]);
-	addAttribute(", a2", &texture2_a2, NULL, x + 34, y, 0, 1, 1);
+	addAttribute(", a2", &texture2_a2, NULL, x + 34, y, 0, 1, 1, NULL);
 	y++;
 
-	addAttribute("Tex Level Mode", &texLevelMode2, NULL, x + 6, y, 0, 2, 1);
+	addAttribute("Tex Level Mode", &texLevelMode2, NULL, x + 6, y, 0, 2, 1, NULL);
 	setAttributeValueNames(&texModeNames[0]);
-	addAttribute(", Bias", &texBias2, NULL, x + 38, y, -127, 128, 1);
+	addAttribute(", Bias", &texBias2, NULL, x + 38, y, -127, 128, 1, NULL);
 	y++;
 
-	addAttribute("Slope", NULL, &texSlope2, x + 16, y, 0, 10, 0.1);
+	addAttribute("Slope", NULL, &texSlope2, x + 16, y, 0, 10, 0.1, NULL);
 	y++;
 
-	addAttribute("TextureFilter Min", &texMinFilter2, NULL, x + 6, y, 0, 7, 1);
+	addAttribute("TextureFilter Min", &texMinFilter2, NULL, x + 6, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
-	addAttribute("Mag", &texMagFilter2, NULL, x + 20, y, 0, 7, 1);
+	addAttribute("Mag", &texMagFilter2, NULL, x + 20, y, 0, 7, 1, NULL);
 	setAttributeValueNames(&texFilterNames[0]);
 	y++;
 
-	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1);
+	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1, NULL);
 	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
-	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1);
+	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
 	y++;
 
@@ -1544,22 +1579,22 @@ void init()
 	backgroundColor.b = 70;
 	backgroundColor.a = 0xFF;
 
-	addColorAttribute("Background R", &backgroundColor, x, y, 1);
+	addColorAttribute("Background R", &backgroundColor, x, y, 1, 0x10);
 	y++;
 
-	addAttribute("Clear Mode", &clearMode, NULL, x, y, 0, 1, 1);
+	addAttribute("Clear Mode", &clearMode, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&clearModeNames[0]);
 	y++;
 
-	addAttribute("Clear Color", &clearFlagColor, NULL, x, y, 0, 1, 1);
+	addAttribute("Clear Color", &clearFlagColor, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
-	addAttribute(", Depth", &clearFlagDepth, NULL, x + 16, y, 0, 1, 1);
+	addAttribute(", Depth", &clearFlagDepth, NULL, x + 16, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
-	addAttribute(", Stencil", &clearFlagStencil, NULL, x + 16 + 13, y, 0, 1, 1);
+	addAttribute(", Stencil", &clearFlagStencil, NULL, x + 16 + 13, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
 	y++;
-	addAttribute("Clear Depth", &clearDepth, NULL, x, y, 0, 0xFFFF, 2000);
-	addAttribute(", Stencil ", &clearStencil, NULL, x + 18, y, 0, 0xFF, 10);
+	addAttribute("Clear Depth", &clearDepth, NULL, x, y, 0, 0xFFFF, 2000, NULL);
+	addAttribute(", Stencil ", &clearStencil, NULL, x + 18, y, 0, 0xFF, 0x10, "0x%02X");
 	y++;
 
 	ambientColor.r = 0x00;
@@ -1583,38 +1618,38 @@ void init()
 	materialEmissive.g = 0xE0;
 	materialEmissive.b = 0xE0;
 
-	addColorAttribute("Ambient Color R", &ambientColor, x, y, 1);
+	addColorAttribute("Ambient Color R", &ambientColor, x, y, 1, 0x10);
 	y++;
-	addColorAttribute("TexEnv Color R", &texEnvColor, x, y, 0);
+	addColorAttribute("TexEnv Color R", &texEnvColor, x, y, 0, 0x10);
 	y++;
-	addAttribute("Material Emissive", &materialEmissiveFlag, NULL, x, y, 0, 1, 1);
+	addAttribute("Material Emissive", &materialEmissiveFlag, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
-	addColorAttribute(", R", &materialEmissive, x + 22, y, 0);
+	addColorAttribute(", R", &materialEmissive, x + 22, y, 0, 0x10);
 	y++;
-	addAttribute("Material Diffuse ", &materialDiffuseFlag, NULL, x, y, 0, 1, 1);
+	addAttribute("Material Diffuse ", &materialDiffuseFlag, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
-	addColorAttribute(", R", &materialDiffuse , x + 22, y, 0);
+	addColorAttribute(", R", &materialDiffuse , x + 22, y, 0, 0x10);
 	y++;
-	addAttribute("Material Specular", &materialSpecularFlag, NULL, x, y, 0, 1, 1);
+	addAttribute("Material Specular", &materialSpecularFlag, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
-	addColorAttribute(", R", &materialSpecular, x + 22, y, 0);
+	addColorAttribute(", R", &materialSpecular, x + 22, y, 0, 0x10);
 	y++;
-	addAttribute("Material Ambient ", &materialAmbientFlag, NULL, x, y, 0, 1, 1);
+	addAttribute("Material Ambient ", &materialAmbientFlag, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&onOffNames[0]);
-	addColorAttribute(", R", &materialAmbient , x + 22, y, 1);
+	addColorAttribute(", R", &materialAmbient , x + 22, y, 1, 0x10);
 	y++;
 
 	fogColor.r = 0xFF;
 	fogColor.g = 0xFF;
 	fogColor.b = 0xFF;
 
-	addAttribute("Fog Near", NULL, &fogNear, x, y, -10, 10, 0.1);
-	addAttribute(", Far", NULL, &fogFar, x + 15, y, -10, 10, 0.1);
+	addAttribute("Fog Near", NULL, &fogNear, x, y, -10, 10, 0.1, NULL);
+	addAttribute(", Far", NULL, &fogFar, x + 15, y, -10, 10, 0.1, NULL);
 	y++;
-	addColorAttribute("Fog Color R", &fogColor, x, y, 0);
+	addColorAttribute("Fog Color R", &fogColor, x, y, 0, 0x10);
 	y++;
 
-	addAttribute("Light Mode", &lightMode, NULL, x, y, 0, 1, 1);
+	addAttribute("Light Mode", &lightMode, NULL, x, y, 0, 1, 1, NULL);
 	setAttributeValueNames(&lightModeNames[0]);
 	y++;
 
