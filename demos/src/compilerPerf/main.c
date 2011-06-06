@@ -18,20 +18,25 @@ int done = 0;
 int cpuFreq = 222;
 int startSystemTime;
 
-float pspDurationMillis[] = { 0, 910, 1138, 1215, 1024, 989, 1229, 962, 1007, 1066, 1365, 682, 682, 819, 819, 819, 819, 682, 1214, 1229 };
+float pspDurationMillis[] = { 0, 910, 1138, 1215, 1024, 989, 1229, 962, 1007, 1066, 1365, 682, 682, 819, 819, 819, 819, 682, 1214, 1229,
+                              866, 1072, 1361, 792, 770, 846 };
 char *testNames[] = { "", "Empty loop", "Simple loop", "read32", "read16", "read8", "write32", "write16", "write8",
                       "Function call no params", "Function call with params",
 					  "FPU add.s", "FPU mul.s",
 					  "VFPU vadd.s", "VFPU vadd.p", "VFPU vadd.t", "VFPU vadd.q", "VFPU vadd.q sequence",
-					  "LWC1", "SWC1"
+					  "LWC1", "SWC1",
+					  "memcpy (native)", "memset (native)", "strcpy (native)",
+					  "memcpy (non-native)", "memset (non-native)", "strcpy (non-native)",
                     };
 
 #define KB(n)	((n) * 1024)
 #define MB(n)	(KB(n) * 1024)
 #define GB(n)	(MB(n) * 1024)
 #define BUFFER_SIZE		MB(10)
-char buffer[BUFFER_SIZE];
+char __attribute__((aligned(16))) buffer[BUFFER_SIZE];
 int dummy;
+float performanceSum;
+int performanceCount;
 
 SceUID logFd;
 
@@ -50,8 +55,10 @@ void endTest(int testNumber)
 	int durationMicros = endSystemTime - startSystemTime;
 	int durationMillis = (durationMicros + 500) / 1000;
 	float pspReference = pspDurationMillis[testNumber] / durationMillis;
+	performanceSum += pspReference;
+	performanceCount++;
 
-	sprintf(s, "%-25s: %4d ms (%3.0f%%) @ %d MHz\n", testNames[testNumber], durationMillis, pspReference * 100, scePowerGetCpuClockFrequencyInt());
+	sprintf(s, "%-25s: %4d ms (%4.0f%%) @ %d MHz\n", testNames[testNumber], durationMillis, pspReference * 100, scePowerGetCpuClockFrequencyInt());
 	pspDebugScreenPrintf("%s", s);
 	sceIoWrite(logFd, s, strlen(s));
 }
@@ -436,8 +443,129 @@ void runTest19()
 }
 
 
+void runTest20()
+{
+	startTest();
+	int i;
+	int length = BUFFER_SIZE / 2;
+	for (i = 0; i < 10; i++)
+	{
+		memcpy(buffer, buffer + length, length);
+	}
+	endTest(20);
+}
+
+
+void runTest21()
+{
+	startTest();
+	int i;
+	int length = BUFFER_SIZE;
+	for (i = 0; i < 10; i++)
+	{
+		memset(buffer, 0, length);
+	}
+	endTest(21);
+}
+
+
+void runTest22()
+{
+	startTest();
+	int i;
+	int length = BUFFER_SIZE / 2 - 16;
+	char *s = buffer + BUFFER_SIZE / 2;
+	memset(s, 'a', length);
+	s[length] = '\0';
+
+	for (i = 0; i < 10; i++)
+	{
+		strcpy(buffer, s);
+	}
+	endTest(22);
+}
+
+
+int runTest23()
+{
+	startTest();
+	int i;
+	int j;
+	int length = BUFFER_SIZE / 2;
+	int sum = 0;
+	for (i = 0; i < 3; i++)
+	{
+		for (j = 0; j < length; j++)
+		{
+			buffer[j] = buffer[j + length];
+			// Fake sum to avoid a native code sequence
+			sum += j;
+		}
+	}
+	endTest(23);
+
+	return sum;
+}
+
+
+int runTest24()
+{
+	startTest();
+	int i;
+	int j;
+	int length = BUFFER_SIZE;
+	int sum = 0;
+	for (i = 0; i < 2; i++)
+	{
+		for (j = 0; j < length; j++)
+		{
+			buffer[j] = '\0';
+			// Fake sum to avoid a native code sequence
+			sum += j;
+		}
+	}
+	endTest(24);
+
+	return sum;
+}
+
+
+int runTest25()
+{
+	startTest();
+	int i;
+	int j;
+	char c;
+	int length = BUFFER_SIZE / 2 - 16;
+	char *s = buffer + BUFFER_SIZE / 2;
+	memset(s, 'a', length);
+	s[length] = '\0';
+
+	int sum = 0;
+	for (i = 0; i < 3; i++)
+	{
+		for (j = 0; 1; j++)
+		{
+			c = s[j];
+			buffer[j] = c;
+			if (c == 0)
+			{
+				break;
+			}
+			// Fake sum to avoid a native code sequence
+			sum += j;
+		}
+	}
+	endTest(25);
+
+	return sum;
+}
+
+
 void runTest()
 {
+	performanceSum = 0;
+	performanceCount = 0;
 	runTest1();
 	runTest2();
 	runTest3();
@@ -457,7 +585,13 @@ void runTest()
 	runTest17();
 	runTest18();
 	runTest19();
-	pspDebugScreenPrintf("--- End of Tests ---\n");
+	runTest20();
+	runTest21();
+	runTest22();
+	runTest23();
+	runTest24();
+	runTest25();
+	pspDebugScreenPrintf("Overall performance index: %3.0f%%\n", performanceSum * 100 / performanceCount);
 }
 
 
