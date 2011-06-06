@@ -37,7 +37,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			mm.addFunction(0xBEA46419, sceKernelLockLwMutexFunction);
 			mm.addFunction(0xC1734599, sceKernelReferLwMutexStatusFunction);
 			mm.addFunction(0xDC692EE3, sceKernelTryLockLwMutexFunction);
-            mm.addFunction(0x37431849, Kernel_Library_37431849Function);
+            mm.addFunction(0x37431849, sceKernelTryLockLwMutex_600Function);
             mm.addFunction(0x1839852A, sceKernelMemcpyFunction);
 
 		}
@@ -54,7 +54,7 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 			mm.removeFunction(sceKernelLockLwMutexFunction);
 			mm.removeFunction(sceKernelReferLwMutexStatusFunction);
 			mm.removeFunction(sceKernelTryLockLwMutexFunction);
-            mm.removeFunction(Kernel_Library_37431849Function);
+            mm.removeFunction(sceKernelTryLockLwMutex_600Function);
             mm.removeFunction(sceKernelMemcpyFunction);
 
 		}
@@ -101,11 +101,11 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 		Managers.lwmutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
 	}
 
-    public void Kernel_Library_37431849(Processor processor) {
+    public void sceKernelTryLockLwMutex_600(Processor processor) {
         int[] gpr = processor.cpu.gpr;
 
         if(log.isDebugEnabled()) {
-            log.debug("Kernel_Library_37431849 redirecting to sceKernelTryLockLwMutex");
+            log.debug("sceKernelTryLockLwMutex_600 redirecting to sceKernelTryLockLwMutex");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -182,14 +182,14 @@ public class Kernel_Library extends jpcsp.HLE.modules150.Kernel_Library {
 		}
 	};
 
-    public final HLEModuleFunction Kernel_Library_37431849Function = new HLEModuleFunction("Kernel_Library", "Kernel_Library_37431849") {
+    public final HLEModuleFunction sceKernelTryLockLwMutex_600Function = new HLEModuleFunction("Kernel_Library", "sceKernelTryLockLwMutex_600") {
 		@Override
 		public final void execute(Processor processor) {
-			Kernel_Library_37431849(processor);
+			sceKernelTryLockLwMutex_600(processor);
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.Modules.Kernel_LibraryModule.Kernel_Library_37431849(processor);";
+			return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelTryLockLwMutex_600(processor);";
 		}
 	};
 

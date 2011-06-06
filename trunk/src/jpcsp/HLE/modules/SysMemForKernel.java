@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-public class SysMemForKernel extends jpcsp.HLE.modules150.SysMemForKernel {
+public class SysMemForKernel extends jpcsp.HLE.modules280.SysMemForKernel {
 	@Override
 	public final String getName() { return "SysMemForKernel"; }
 

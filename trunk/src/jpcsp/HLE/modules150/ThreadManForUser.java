@@ -1889,7 +1889,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     protected int setThreadCurrentStackSize(int size) {
         if(size > 0) {
-            currentThread.stackSize += size;
+            currentThread.expandStack(size);
         }
         return getThreadCurrentStackSize();
     }

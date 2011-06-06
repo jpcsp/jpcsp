@@ -32,10 +32,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 			mm.addFunction(0x2A3E5280, sceKernelQueryMemoryInfoFunction);
 			mm.addFunction(0x39F49610, sceKernelGetPTRIGFunction);
 			mm.addFunction(0x6231A71D, sceKernelSetPTRIGFunction);
-			
-			// Kernel export
-			mm.addFunction(0x6373995D, sceKernelGetModelFunction);
-			
+						
 		}
 	}
 	
@@ -48,9 +45,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 			mm.removeFunction(sceKernelQueryMemoryInfoFunction);
 			mm.removeFunction(sceKernelGetPTRIGFunction);
 			mm.removeFunction(sceKernelSetPTRIGFunction);
-			
-			// Kernel export
-			mm.removeFunction(sceKernelGetModelFunction);
+
 		}
 	}
 	
@@ -76,16 +71,6 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 		log.debug("Unimplemented NID function sceKernelSetPTRIG [0x6231A71D]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
-	}
-	
-	public void sceKernelGetModel(Processor processor) {
-		CpuState cpu = processor.cpu;
-
-		int result = 0; // <= 0 original, 1 slim
-
-        log.debug("sceKernelGetModel ret:" + result);
-
-        cpu.gpr[2] = result;
 	}
         
 	public final HLEModuleFunction sceKernelQueryMemoryInfoFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelQueryMemoryInfo") {
@@ -120,15 +105,5 @@ public class SysMemUserForUser extends jpcsp.HLE.modules200.SysMemUserForUser {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelSetPTRIG(processor);";
 		}
 	};
-	
-	public final HLEModuleFunction sceKernelGetModelFunction = new HLEModuleFunction("SysMemForKernel", "sceKernelGetModel") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetModel(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelSetPTRIG(processor);";
-		}
-	};
+
 }
