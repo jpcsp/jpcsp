@@ -1573,6 +1573,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         boolean filterResize = Settings.getInstance().readBool("emu.graphics.filters.resize");
         VideoEngine.getInstance().setUseViewportResizeFilter(filterResize);
+        VideoEngine.getInstance().setViewportResizeFilterResolution(480, 272);
 
         String antialias = Settings.getInstance().readString("emu.graphics.antialias");
         int samples = 0;
@@ -1690,6 +1691,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             String filterResize = patchSettings.getProperty("emu.graphics.filters.resize");
             if (filterResize != null) {
                 VideoEngine.getInstance().setUseViewportResizeFilter(Integer.parseInt(filterResize) != 0);
+                VideoEngine.getInstance().setViewportResizeFilterResolution(480, 272);
             }
 
             String antialias = patchSettings.getProperty("emu.graphics.antialias");
@@ -1963,7 +1965,6 @@ private void oneTimeResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     int w = 480;
     int h = 272 + 80; // Adjust the Y coordinate due to the menu bar.
     setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(480, 272);
     VideoEngine.getInstance().setViewportResizeFilterResolution(480, 272);
 }//GEN-LAST:event_oneTimeResizeActionPerformed
 
@@ -1971,7 +1972,6 @@ private void twoTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GE
     int w = 480 * 2;
     int h = (272 * 2) + 80; // Adjust the Y coordinate due to the menu bar.
     setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(480*2, 272*2);
     VideoEngine.getInstance().setViewportResizeFilterResolution(480*2, 272*2);
 }//GEN-LAST:event_twoTimesResizeActionPerformed
 
@@ -1979,12 +1979,11 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     int w = 480 * 3;
     int h = (272 * 3) + 80; // Adjust the Y coordinate due to the menu bar.
     setSize(new Dimension(w, h));
-    Modules.sceDisplayModule.setScreenResolution(480*3, 272*3);
     VideoEngine.getInstance().setViewportResizeFilterResolution(480*3, 272*3);
 }//GEN-LAST:event_threeTimesResizeActionPerformed
 
 private void resizeCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resizeCheckActionPerformed
-    VideoEngine.getInstance().setUseViewportResizeFilter(true);
+    VideoEngine.getInstance().setUseViewportResizeFilter(resizeCheck.isSelected());
     Settings.getInstance().writeBool("emu.graphics.filters.resize", resizeCheck.isSelected());
 }//GEN-LAST:event_resizeCheckActionPerformed
 

@@ -52,7 +52,9 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
 
         int size = cpu.gpr[4];
 
-        log.warn(String.format("PARTIAL: sceKernelExtendThreadStack size=0x%X", size));
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("sceKernelExtendThreadStack size=0x%X", size));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;

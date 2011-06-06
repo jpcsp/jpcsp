@@ -76,6 +76,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         PSP_MODULE_AV_VAUDIO(0x0305),
         PSP_MODULE_AV_AAC(0x0306),
         PSP_MODULE_AV_G729(0x0307),
+        PSP_MODULE_AV_MP4(0x0308),
         PSP_MODULE_NP_COMMON(0x0400),
         PSP_MODULE_NP_SERVICE(0x0401),
         PSP_MODULE_NP_MATCHING2(0x0402),

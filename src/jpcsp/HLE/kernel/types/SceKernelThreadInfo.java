@@ -269,6 +269,17 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 36, releaseCount);
     }
 
+    public void expandStack(int newSize) {
+        freeStack();
+        this.stackSize = newSize;
+        stackSysMemInfo = Modules.SysMemUserForUserModule.malloc(2, "ThreadMan-Stack", jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High, stackSize, 0);
+    	if (stackSysMemInfo == null) {
+    		stack_addr = 0;
+    	} else {
+    		stack_addr = stackSysMemInfo.addr;
+    	}
+    }
+
     public void freeStack() {
     	if (stackSysMemInfo != null) {
     		Modules.SysMemUserForUserModule.free(stackSysMemInfo);

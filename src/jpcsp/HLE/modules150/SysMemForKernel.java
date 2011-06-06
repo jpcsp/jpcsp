@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
@@ -29,7 +30,7 @@ import jpcsp.HLE.modules.HLEStartModule;
 import org.apache.log4j.Logger;
 
 public class SysMemForKernel implements HLEModule, HLEStartModule {
-    private static Logger log = Modules.getLogger("SysMemForKernel");
+    protected static Logger log = Modules.getLogger("SysMemForKernel");
 
     @Override
     public String getName() {
@@ -39,14 +40,18 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
+
             mm.addFunction(0xA089ECA4, sceKernelMemsetFunction);
+
         }
     }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
+
             mm.removeFunction(sceKernelMemsetFunction);
+
         }
     }
 
@@ -68,10 +73,18 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
 
         mem.memset(dest_addr, (byte) data, size);
 
+        // FIXME: sceKernelMemset can change compiled code!
+        // Invoking invalidateAll() everytime this function is called
+        // will significantly reduce the execution speed of most applications
+        // that use this method, instead of sceKernelIcacheInvalidateRange.
+        // A proper invalidateRange() is critically needed.
+        RuntimeContext.invalidateRange(dest_addr, size);
+
         log.debug("sceKernelMemset addr=0x" + Integer.toHexString(dest_addr) + " data=" + data + " size=" + size);
 
         cpu.gpr[2] = 0;
     }
+
     public final HLEModuleFunction sceKernelMemsetFunction = new HLEModuleFunction("SysMemForKernel", "sceKernelMemset") {
 
         @Override

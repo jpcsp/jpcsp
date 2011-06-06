@@ -33,7 +33,9 @@ public class ViewportFilter extends BaseRenderingEngineProxy {
         int resizeFactor = VideoEngine.getInstance().getViewportResizeFilterResolution();
 		useViewportResizeFilter = useViewportFilter;
         viewportScaleFactor = resizeFactor;
-        Modules.sceDisplayModule.setResizeFactor(resizeFactor);
+        if (useViewportResizeFilter) {
+          Modules.sceDisplayModule.setResizeFactor(viewportScaleFactor);
+        }
 		super.startDisplay();
 	}
 

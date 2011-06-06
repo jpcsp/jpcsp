@@ -72,7 +72,11 @@ public class sceMp4 implements HLEModule, HLEStartModule {
     public void sceMp4Init(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceMp4Init");
+        int unk1 = cpu.gpr[4]; // Values: 0 or 1
+        int unk2 = cpu.gpr[5]; // Values: 0 or 1
+
+        log.warn("PARTIAL: sceMp4Init (unk1=0x" + Integer.toHexString(unk1)
+                + ", unk2=0x" + Integer.toHexString(unk2) + ")");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
@@ -84,7 +88,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
     public void sceMp4Finish(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("UNIMPLEMENTED: sceMp4Finish");
+        log.warn("PARTIAL: sceMp4Finish");
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
