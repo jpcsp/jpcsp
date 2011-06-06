@@ -131,7 +131,7 @@ public class VideoEngine {
     public boolean useOptimisticVertexCache = false;
     private boolean useTextureAnisotropicFilter = false;
     private boolean useViewportResizeFilter = false;
-    private int viewportResizeFilterScaleFactor;
+    private int viewportResizeFilterScaleFactor = 1;
     private static GeCommands helper;
     private int command;
     private int normalArgument;
