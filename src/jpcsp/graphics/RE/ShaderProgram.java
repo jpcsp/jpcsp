@@ -24,7 +24,7 @@ import jpcsp.graphics.VideoEngine;
  */
 public class ShaderProgram {
 	private int programId = -1;
-	private long key;
+	private ShaderProgramKey key;
 	private int shaderAttribPosition;
 	private int shaderAttribNormal;
 	private int shaderAttribColor;
@@ -54,6 +54,49 @@ public class ShaderProgram {
 	private int texPixelFormat; // values: [0..14]
 	private int numberBones; // values: [0..8]
 	private int clutIndexHint; // values: [0..4]
+	private int alphaTestEnable; // values: [0..1]
+	private int alphaTestFunc; // values: [0..7]
+	private int stencilTestEnable; // values: [0..1]
+	private int stencilFunc; // values: [0..7]
+	private int stencilOpFail; // values: [0..5]
+	private int stencilOpZFail; // values: [0..5]
+	private int stencilOpZPass; // values: [0..5]
+	private int blendTestEnable; // values: [0..1]
+	private int blendEquation; // values: [0..5]
+	private int blendSrc; // values: [0..10];
+	private int blendDst; // values: [0..10];
+	private int colorMaskEnable; // values: [0..1]
+
+	public static class ShaderProgramKey {
+		private long key1;
+		private long key2;
+
+		public ShaderProgramKey(long key1, long key2) {
+			this.key1 = key1;
+			this.key2 = key2;
+		}
+
+		@Override
+		public int hashCode() {
+			int hashCode = (int) key1;
+			hashCode ^= (int) (key1 >> 32);
+			hashCode ^= (int) key2;
+			hashCode ^= (int) (key2 >> 32);
+			return hashCode;
+		}
+
+		public boolean equals(ShaderProgramKey that) {
+			return key1 == that.key1 && key2 == that.key2;
+		}
+
+		@Override
+		public boolean equals(Object that) {
+			if (that instanceof ShaderProgramKey) {
+				return equals((ShaderProgramKey) that);
+			}
+			return super.equals(that);
+		}
+	}
 
 	public ShaderProgram() {
 	}
@@ -88,6 +131,18 @@ public class ShaderProgram {
 		texPixelFormat = shaderContext.getTexPixelFormat();
 		numberBones = shaderContext.getNumberBones();
 		clutIndexHint = shaderContext.getClutIndexHint();
+		alphaTestEnable = shaderContext.getAlphaTestEnable();
+		alphaTestFunc = shaderContext.getAlphaTestFunc();
+		stencilTestEnable = shaderContext.getStencilTestEnable();
+		stencilFunc = shaderContext.getStencilFunc();
+		stencilOpFail = shaderContext.getStencilOpFail();
+		stencilOpZFail = shaderContext.getStencilOpZFail();
+		stencilOpZPass = shaderContext.getStencilOpZPass();
+		blendTestEnable = shaderContext.getBlendTestEnable();
+		blendEquation = shaderContext.getBlendEquation();
+		blendSrc = shaderContext.getBlendSrc();
+		blendDst = shaderContext.getBlendDst();
+		colorMaskEnable = shaderContext.getColorMaskEnable();
 
 		key = getKey(shaderContext, hasGeometryShader);
 	}
@@ -125,6 +180,18 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "TEX_PIXEL_FORMAT", dummyValue);
 		REShader.addDefine(defines, "NUMBER_BONES", dummyValue);
 		REShader.addDefine(defines, "CLUT_INDEX_HINT", dummyValue);
+		REShader.addDefine(defines, "ALPHA_TEST_ENABLE", dummyValue);
+		REShader.addDefine(defines, "ALPHA_TEST_FUNC", dummyValue);
+		REShader.addDefine(defines, "STENCIL_TEST_ENABLE", dummyValue);
+		REShader.addDefine(defines, "STENCIL_FUNC", dummyValue);
+		REShader.addDefine(defines, "STENCIL_OP_FAIL", dummyValue);
+		REShader.addDefine(defines, "STENCIL_OP_ZFAIL", dummyValue);
+		REShader.addDefine(defines, "STENCIL_OP_ZPASS", dummyValue);
+		REShader.addDefine(defines, "BLEND_TEST_ENABLE", dummyValue);
+		REShader.addDefine(defines, "BLEND_EQUATION", dummyValue);
+		REShader.addDefine(defines, "BLEND_SRC", dummyValue);
+		REShader.addDefine(defines, "BLEND_DST", dummyValue);
+		REShader.addDefine(defines, "COLOR_MASK_ENABLE", dummyValue);
 
 		return defines.toString();
 	}
@@ -161,12 +228,26 @@ public class ShaderProgram {
 		REShader.addDefine(defines, "TEX_PIXEL_FORMAT", texPixelFormat);
 		REShader.addDefine(defines, "NUMBER_BONES", numberBones);
 		REShader.addDefine(defines, "CLUT_INDEX_HINT", clutIndexHint);
+		REShader.addDefine(defines, "ALPHA_TEST_ENABLE", alphaTestEnable);
+		REShader.addDefine(defines, "ALPHA_TEST_FUNC", alphaTestFunc);
+		REShader.addDefine(defines, "STENCIL_TEST_ENABLE", stencilTestEnable);
+		REShader.addDefine(defines, "STENCIL_FUNC", stencilFunc);
+		REShader.addDefine(defines, "STENCIL_OP_FAIL", stencilOpFail);
+		REShader.addDefine(defines, "STENCIL_OP_ZFAIL", stencilOpZFail);
+		REShader.addDefine(defines, "STENCIL_OP_ZPASS", stencilOpZPass);
+		REShader.addDefine(defines, "BLEND_TEST_ENABLE", blendTestEnable);
+		REShader.addDefine(defines, "BLEND_EQUATION", blendEquation);
+		REShader.addDefine(defines, "BLEND_SRC", blendSrc);
+		REShader.addDefine(defines, "BLEND_DST", blendDst);
+		REShader.addDefine(defines, "COLOR_MASK_ENABLE", colorMaskEnable);
 
 		return defines.toString();
 	}
 
-	public static long getKey(ShaderContext shaderContext, boolean hasGeometryShader) {
+	public static ShaderProgramKey getKey(ShaderContext shaderContext, boolean hasGeometryShader) {
 		long key = 0;
+		long key1;
+		long key2;
 		int shift = 0;
 
 		key += hasGeometryShader ? 1 : 0;
@@ -226,18 +307,51 @@ public class ShaderProgram {
 		shift += 4;
 		key += ((long) shaderContext.getClutIndexHint()) << shift;
 		shift += 3;
+		key += ((long) shaderContext.getAlphaTestEnable()) << shift;
+		shift++;
+		key += ((long) shaderContext.getAlphaTestFunc()) << shift;
+		shift += 3;
+		key += ((long) shaderContext.getStencilTestEnable()) << shift;
+		shift++;
+		key += ((long) shaderContext.getStencilFunc()) << shift;
+		shift += 3;
+		key += ((long) shaderContext.getStencilOpFail()) << shift;
+		shift += 3;
+		key += ((long) shaderContext.getStencilOpZFail()) << shift;
+		shift += 3;
 
 		if (shift > Long.SIZE) {
-			VideoEngine.log.error(String.format("ShaderProgram: too long key: %d bits", shift));
+			VideoEngine.log.error(String.format("ShaderProgram: too long key1: %d bits", shift));
 		}
+		key1 = key;
+		key = 0;
+		shift = 0;
 
-		return key;
+		key += ((long) shaderContext.getStencilOpZPass()) << shift;
+		shift += 3;
+		key += ((long) shaderContext.getBlendTestEnable()) << shift;
+		shift++;
+		key += ((long) shaderContext.getBlendEquation()) << shift;
+		shift += 3;
+		key += ((long) shaderContext.getBlendSrc()) << shift;
+		shift += 4;
+		key += ((long) shaderContext.getBlendDst()) << shift;
+		shift += 4;
+		key += ((long) shaderContext.getColorMaskEnable()) << shift;
+		shift++;
+
+		if (shift > Long.SIZE) {
+			VideoEngine.log.error(String.format("ShaderProgram: too long key2: %d bits", shift));
+		}
+		key2 = key;
+
+		return new ShaderProgramKey(key1, key2);
 	}
 
 	public boolean matches(ShaderContext shaderContext, boolean hasGeometryShader) {
-		long key = getKey(shaderContext, hasGeometryShader);
+		ShaderProgramKey key = getKey(shaderContext, hasGeometryShader);
 
-		return key == this.key;
+		return key.equals(this.key);
 	}
 
 	public void use(IRenderingEngine re) {
@@ -283,7 +397,7 @@ public class ShaderProgram {
 		return shaderAttribWeights2;
 	}
 
-	public long getKey() {
+	public ShaderProgramKey getKey() {
 		return key;
 	}
 

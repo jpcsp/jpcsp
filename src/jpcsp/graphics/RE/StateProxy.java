@@ -109,6 +109,8 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	protected int bindVertexArray;
 	protected int activeTextureUnit;
 	protected boolean useTextureAnisotropicFilter;
+	protected float[] blendDFix;
+	protected float[] blendSFix;
 
 	protected static class StateBoolean {
 		private boolean undefined = true;
@@ -207,11 +209,14 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		materialSpecularColor = new float[4];
 		materialDiffuseColor = new float[4];
 		materialEmissiveColor = new float[4];
-		bindTexture = new int[2]; // assume max 2 active texture units
+		bindTexture = new int[3]; // assume max 3 active texture units
 
 		colorMaterialAmbient = new StateBoolean();
 		colorMaterialDiffuse = new StateBoolean();
 		colorMaterialSpecular = new StateBoolean();
+
+		blendDFix = new float[4];
+		blendSFix = new float[4];
 	}
 
 	@Override
@@ -561,10 +566,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 			colorMaskGreen = greenWriteEnabled;
 			colorMaskBlue = blueWriteEnabled;
 			colorMaskAlpha = alphaWriteEnabled;
-			colorMask[0] = redWriteEnabled ? 0x00 : 0xFF;
-			colorMask[1] = greenWriteEnabled ? 0x00 : 0xFF;
-			colorMask[2] = blueWriteEnabled ? 0x00 : 0xFF;
-			colorMask[3] = alphaWriteEnabled ? 0x00 : 0xFF;
+//			colorMask[0] = redWriteEnabled ? 0x00 : 0xFF;
+//			colorMask[1] = greenWriteEnabled ? 0x00 : 0xFF;
+//			colorMask[2] = blueWriteEnabled ? 0x00 : 0xFF;
+//			colorMask[3] = alphaWriteEnabled ? 0x00 : 0xFF;
 		}
 	}
 
@@ -572,6 +577,10 @@ public class StateProxy extends BaseRenderingEngineProxy {
 	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
 		if (redMask != colorMask[0] || greenMask != colorMask[1] || blueMask != colorMask[2] || alphaMask != colorMask[3]) {
 			super.setColorMask(redMask, greenMask, blueMask, alphaMask);
+//			colorMaskRed = redMask != 0xFF;
+//			colorMaskGreen = greenMask != 0xFF;
+//			colorMaskBlue = blueMask != 0xFF;
+//			colorMaskAlpha = alphaMask != 0xFF;
 			colorMask[0] = redMask;
 			colorMask[1] = greenMask;
 			colorMask[2] = blueMask;
@@ -1125,6 +1134,28 @@ public class StateProxy extends BaseRenderingEngineProxy {
 		if (value != currentTextureState.textureAnisotropy) {
 			super.setTextureAnisotropy(value);
 			currentTextureState.textureAnisotropy = value;
+		}
+	}
+
+	@Override
+	public void setBlendDFix(float[] color) {
+		if (blendDFix[0] != color[0] || blendDFix[1] != color[1] || blendDFix[2] != color[2] || blendDFix[3] != color[3]) {
+			super.setBlendDFix(color);
+			blendDFix[0] = color[0];
+			blendDFix[1] = color[1];
+			blendDFix[2] = color[2];
+			blendDFix[3] = color[3];
+		}
+	}
+
+	@Override
+	public void setBlendSFix(float[] color) {
+		if (blendSFix[0] != color[0] || blendSFix[1] != color[1] || blendSFix[2] != color[2] || blendSFix[3] != color[3]) {
+			super.setBlendSFix(color);
+			blendSFix[0] = color[0];
+			blendSFix[1] = color[1];
+			blendSFix[2] = color[2];
+			blendSFix[3] = color[3];
 		}
 	}
 }

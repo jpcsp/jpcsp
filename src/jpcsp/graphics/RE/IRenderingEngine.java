@@ -340,6 +340,7 @@ public interface IRenderingEngine {
 	public void setUniform(int id, float value);
 	public void setUniform2(int id, int[] values);
 	public void setUniform3(int id, int[] values);
+	public void setUniform3(int id, float[] values);
 	public void setUniform4(int id, int[] values);
 	public void setUniform4(int id, float[] values);
 	public void setUniformMatrix4(int id, int count, float[] values);
@@ -357,8 +358,8 @@ public interface IRenderingEngine {
 	public int createProgram();
 	public void useProgram(int program);
 	public void attachShader(int program, int shader);
-	public void linkProgram(int program);
-	public void validateProgram(int program);
+	public boolean linkProgram(int program);
+	public boolean validateProgram(int program);
 	public int getUniformLocation(int program, String name);
 	public int getAttribLocation(int program, String name);
 	public void bindAttribLocation(int program, int index, String name);
@@ -467,4 +468,6 @@ public interface IRenderingEngine {
 	public void setTextureAnisotropy(float value);
 	public float getMaxTextureAnisotropy();
 	public String getShadingLanguageVersion();
+	public void setBlendSFix(float[] color);
+	public void setBlendDFix(float[] color);
 }

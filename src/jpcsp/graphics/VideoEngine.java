@@ -119,6 +119,15 @@ public class VideoEngine {
         "LOP_SET"
     };
     private static final int[] textureByteAlignmentMapping = {2, 2, 2, 4};
+    private static final int[] minimumNumberOfVertex = {
+    	1, // PRIM_POINT
+    	2, // PRIM_LINE
+    	2, // PRIM_LINES_STRIPS
+    	3, // PRIM_TRIANGLE
+    	3, // PRIM_TRIANGLE_STRIPS
+    	3, // PRIM_TRIANGLE_FANS
+    	2  // PRIM_SPRITES
+    };
     private static VideoEngine instance;
     private sceDisplay display;
     private IRenderingEngine re;
@@ -171,7 +180,6 @@ public class VideoEngine {
     private boolean usingTRXKICK;
     private int maxSpriteHeight;
     private int maxSpriteWidth;
-    private boolean blendChanged;
     private boolean depthChanged;
     private boolean scissorChanged;
     // opengl needed information/buffers
@@ -579,7 +587,6 @@ public class VideoEngine {
         textureMatrixUpload.setChanged(true);
         clutIsDirty = true;
         lightingChanged = true;
-        blendChanged = true;
         viewportChanged = true;
         depthChanged = true;
         materialChanged = true;
@@ -881,84 +888,6 @@ public class VideoEngine {
 
     private static float floatArgument(int normalArgument) {
         return Float.intBitsToFloat(normalArgument << 8);
-    }
-
-    private int getStencilOp(int pspOP) {
-    	if (pspOP > SOP_DECREMENT_STENCIL_VALUE) {
-            log.warn("UNKNOWN stencil op " + pspOP);
-            return SOP_KEEP_STENCIL_VALUE;
-    	}
-
-    	return pspOP;
-    }
-
-    private int getBlendFix(float[] fix_color) {
-        if (fix_color[0] == 0 && fix_color[1] == 0 && fix_color[2] == 0) {
-            return IRenderingEngine.GU_FIX_BLACK;
-        } else if (fix_color[0] == 1 && fix_color[1] == 1 && fix_color[2] == 1) {
-            return IRenderingEngine.GU_FIX_WHITE;
-        } else {
-            return IRenderingEngine.GU_FIX_BLEND_COLOR;
-        }
-    }
-
-    private int getColorInt(float[] color) {
-    	return (((int) (color[0] * 255))      ) |
-    	       (((int) (color[1] * 255)) <<  8) |
-    	       (((int) (color[2] * 255)) << 16) |
-    	       (((int) (color[3] * 255)) << 24);
-    }
-
-    private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
-        float[] blend_color = null;
-        if (gl_blend_src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-            blend_color = context.sfix_color;
-            if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-                if (context.sfix_color[0] != context.dfix_color[0]
-                        || context.sfix_color[1] != context.dfix_color[1]
-                        || context.sfix_color[2] != context.dfix_color[2]
-                        || context.sfix_color[3] != context.dfix_color[3]) {
-                    log.warn(String.format("UNSUPPORTED: Both different SFIX (%08X) and DFIX (%08X) are not supported (blend equation=%d)", getColorInt(context.sfix_color), getColorInt(context.dfix_color), context.blendEquation));
-                }
-            }
-        } else if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
-            blend_color = context.dfix_color;
-        }
-
-        return blend_color;
-    }
-
-    // hack partially based on pspplayer
-    private void setBlendFunc() {
-    	int reBlendSrc = context.blend_src;
-    	if (context.blend_src < 0 || context.blend_src > 10) {
-            error("Unhandled alpha blend src used " + context.blend_src);
-            reBlendSrc = 0;
-    	} else if (context.blend_src == 10) { // GU_FIX
-    		reBlendSrc = getBlendFix(context.sfix_color);
-    	}
-
-    	int reBlendDst = context.blend_dst;
-    	if (context.blend_dst < 0 || context.blend_dst > 10) {
-            error("Unhandled alpha blend dst used " + context.blend_dst);
-            reBlendDst = 0;
-    	} else if (context.blend_dst == 10) { // GU_FIX
-        	if (reBlendSrc == IRenderingEngine.GU_FIX_BLEND_COLOR
-        	        && context.sfix_color[0] + context.dfix_color[0] == 1
-        	        && context.sfix_color[1] + context.dfix_color[1] == 1
-        	        && context.sfix_color[2] + context.dfix_color[2] == 1) {
-        		reBlendDst = IRenderingEngine.GU_FIX_BLEND_ONE_MINUS_COLOR;
-        	} else {
-        		reBlendDst = getBlendFix(context.dfix_color);
-        	}
-    	}
-
-        float[] blend_color = getBlendColor(reBlendSrc, reBlendDst);
-        if (blend_color != null) {
-        	re.setBlendColor(blend_color);
-        }
-
-        re.setBlendFunc(reBlendSrc, reBlendDst);
     }
 
     private int getClutAddr(int level, int clutNumEntries, int clutEntrySize) {
@@ -1396,7 +1325,6 @@ public class VideoEngine {
             }
         }
 
-        blendChanged = true;
         lightingChanged = true;
         projectionMatrixUpload.setChanged(true);
         modelMatrixUpload.setChanged(true);
@@ -1590,6 +1518,13 @@ public class VideoEngine {
         if (type > PRIM_SPRITES) {
             error(String.format("%s: Type %d unhandled at 0x%08X", helper.getCommandString(PRIM), type, currentList.pc - 4));
             return;
+        }
+
+        if (numberOfVertex < minimumNumberOfVertex[type]) {
+        	if (isLogDebugEnabled) {
+        		log.debug(String.format("%s type %d unsufficient number of vertex %d", helper.getCommandString(PRIM), type, numberOfVertex));
+        	}
+        	return;
         }
 
         updateGeBuf();
@@ -2645,12 +2580,18 @@ public class VideoEngine {
     }
 
     private void executeCommandREGION1() {
+    	int old_region_x1 = context.region_x1;
+    	int old_region_y1 = context.region_y1;
     	context.region_x1 = normalArgument & 0x3ff;
     	context.region_y1 = (normalArgument >> 10) & 0x3ff;
-    	scissorChanged = true;
+    	if (old_region_x1 != context.region_x1 || old_region_y1 != context.region_y1) {
+    		scissorChanged = true;
+    	}
     }
 
     private void executeCommandREGION2() {
+    	int old_region_x2 = context.region_x2;
+    	int old_region_y2 = context.region_y2;
     	context.region_x2 = normalArgument & 0x3ff;
     	context.region_y2 = (normalArgument >> 10) & 0x3ff;
     	context.region_width = (context.region_x2 + 1) - context.region_x1;
@@ -2658,7 +2599,9 @@ public class VideoEngine {
         if (isLogDebugEnabled) {
             log("drawRegion(" + context.region_x1 + "," + context.region_y1 + "," + context.region_width + "," + context.region_height + ")");
         }
-    	scissorChanged = true;
+    	if (old_region_x2 != context.region_x2 || old_region_y2 != context.region_y2) {
+    		scissorChanged = true;
+    	}
     }
 
     private void executeCommandLTE() {
@@ -3730,9 +3673,23 @@ public class VideoEngine {
     }
 
     private void executeCommandSOP() {
-        context.stencilOpFail = getStencilOp(normalArgument & 0xFF);
-        context.stencilOpZFail = getStencilOp((normalArgument >> 8) & 0xFF);
-        context.stencilOpZPass = getStencilOp((normalArgument >> 16) & 0xFF);
+        context.stencilOpFail = normalArgument & 0xFF;
+        context.stencilOpZFail = (normalArgument >> 8) & 0xFF;
+        context.stencilOpZPass = (normalArgument >> 16) & 0xFF;
+
+        if (context.stencilOpFail > SOP_DECREMENT_STENCIL_VALUE) {
+        	log.warn("Unknown stencil operation " + context.stencilOpFail);
+        	context.stencilOpFail = SOP_KEEP_STENCIL_VALUE;
+        }
+        if (context.stencilOpZFail > SOP_DECREMENT_STENCIL_VALUE) {
+        	log.warn("Unknown stencil operation " + context.stencilOpZFail);
+        	context.stencilOpZFail = SOP_KEEP_STENCIL_VALUE;
+        }
+        if (context.stencilOpZPass > SOP_DECREMENT_STENCIL_VALUE) {
+        	log.warn("Unknown stencil operation " + context.stencilOpZPass);
+        	context.stencilOpZPass = SOP_KEEP_STENCIL_VALUE;
+        }
+
         re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
 
         if (isLogDebugEnabled) {
@@ -3759,21 +3716,25 @@ public class VideoEngine {
     }
 
     private void executeCommandALPHA() {
-        int old_blend_src = context.blend_src;
-        int old_blend_dst = context.blend_dst;
         context.blend_src = normalArgument & 0xF;
         context.blend_dst = (normalArgument >> 4) & 0xF;
         context.blendEquation = (normalArgument >> 8) & 0xF;
+
         if (context.blendEquation > ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE) {
             log.warn("Unhandled blend operation " + context.blendEquation);
             context.blendEquation = ALPHA_SOURCE_BLEND_OPERATION_ADD;
         }
+    	if (context.blend_src > ALPHA_FIX) {
+            error("Unhandled alpha blend src used " + context.blend_src);
+            context.blend_src = ALPHA_SOURCE_ALPHA;
+    	}
+    	if (context.blend_dst > ALPHA_FIX) {
+            error("Unhandled alpha blend dst used " + context.blend_dst);
+            context.blend_dst = ALPHA_ONE_MINUS_SOURCE_ALPHA;
+    	}
 
         re.setBlendEquation(context.blendEquation);
-
-        if (old_blend_src != context.blend_src || old_blend_dst != context.blend_dst) {
-            blendChanged = true;
-        }
+        re.setBlendFunc(context.blend_src, context.blend_dst);
 
         if (isLogDebugEnabled) {
             log("sceGuBlendFunc(op=" + context.blendEquation + ", src=" + context.blend_src + ", dst=" + context.blend_dst + ")");
@@ -3781,38 +3742,28 @@ public class VideoEngine {
     }
 
     private void executeCommandSFIX() {
-        float old_sfix_color0 = context.sfix_color[0];
-        float old_sfix_color1 = context.sfix_color[1];
-        float old_sfix_color2 = context.sfix_color[2];
         context.sfix_color[0] = ((normalArgument) & 255) / 255.f;
         context.sfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
         context.sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
         context.sfix_color[3] = 1.f;
 
-        if (old_sfix_color0 != context.sfix_color[0] || old_sfix_color1 != context.sfix_color[1] || old_sfix_color2 != context.sfix_color[2]) {
-            blendChanged = true;
-        }
+        re.setBlendSFix(context.sfix_color);
 
         if (isLogDebugEnabled) {
-            log(String.format("%s : 0x%08X", helper.getCommandString(SFIX), normalArgument));
+            log(String.format("%s : 0x%06X", helper.getCommandString(SFIX), normalArgument));
         }
     }
 
     private void executeCommandDFIX() {
-        float old_dfix_color0 = context.dfix_color[0];
-        float old_dfix_color1 = context.dfix_color[1];
-        float old_dfix_color2 = context.dfix_color[2];
         context.dfix_color[0] = ((normalArgument) & 255) / 255.f;
         context.dfix_color[1] = ((normalArgument >> 8) & 255) / 255.f;
         context.dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
         context.dfix_color[3] = 1.f;
 
-        if (old_dfix_color0 != context.dfix_color[0] || old_dfix_color1 != context.dfix_color[1] || old_dfix_color2 != context.dfix_color[2]) {
-            blendChanged = true;
-        }
+        re.setBlendDFix(context.dfix_color);
 
         if (isLogDebugEnabled) {
-            log(String.format("%s : 0x%08X", helper.getCommandString(DFIX), normalArgument));
+            log(String.format("%s : 0x%06X", helper.getCommandString(DFIX), normalArgument));
         }
     }
 
@@ -4340,7 +4291,7 @@ public class VideoEngine {
 				}
 
 				geTexture = GETextureManager.getInstance().getGEIndexedTexture(re, geTexture, tex_addr, bufferWidth, context.texture_width[0], context.texture_height[0], pixelFormat);
-				geTexture.bind(re);
+				geTexture.bind(re, true);
 				setFlippedTexture(geTexture);
 
 				return true;
@@ -4371,7 +4322,7 @@ public class VideoEngine {
 			}
 			geTexture = GETextureManager.getInstance().getGEResizedTexture(re, geTexture, tex_addr, bufferWidth, width, height, pixelFormat);
 		}
-		geTexture.bind(re);
+		geTexture.bind(re, true);
 		setFlippedTexture(geTexture);
 
 		return true;
@@ -5058,14 +5009,6 @@ public class VideoEngine {
     		scissorChanged = false;
     	}
 
-    	/*
-         * Apply Blending
-         */
-        if (blendChanged) {
-            setBlendFunc();
-            blendChanged = false;
-        }
-
         /*
          * Apply projection matrix
          */
@@ -5087,32 +5030,16 @@ public class VideoEngine {
                 // Load the ortho for 2D after the depth settings
                 loadOrtho2D = true;
             } else {
-                if (context.viewport_cx == 0 && context.viewport_cy == 0 && context.viewport_height == 0 && context.viewport_width == 0) {
-                    context.viewport_cx = 2048;
-                    context.viewport_cy = 2048;
-                    context.viewport_width = VIEWPORT_BASE_WIDTH;
-                    context.viewport_height = VIEWPORT_BASE_HEIGHT;
-                }
-
                 int halfHeight = Math.abs(context.viewport_height);
                 int halfWidth = Math.abs(context.viewport_width);
-                int viewportX = (context.viewport_cx - halfWidth - context.offset_x);
-                int viewportY = (context.viewport_cy - halfHeight - context.offset_y);
-                int viewportWidth = (2 * halfWidth);
-                int viewportHeight = (2 * halfHeight);
+                int viewportX = context.viewport_cx - halfWidth - context.offset_x;
+                int viewportY = context.viewport_cy - halfHeight - context.offset_y;
+                int viewportWidth = 2 * halfWidth;
+                int viewportHeight = 2 * halfHeight;
 
-                if (halfHeight < 0) {
-                    // When the viewport height is negative,
-                	// the Y-Axis is upside down on PSP:
-                    // - increase Y to go down on PSP
-                    // - increase Y to go up on OpenGL
-                	viewportY = -viewportY;
-                }
-
-                // Align the viewport to the top of the window
-                if (viewportHeight < VIEWPORT_BASE_HEIGHT) {
-                    viewportY += VIEWPORT_BASE_HEIGHT - viewportHeight;
-                }
+                // For OpenGL, translate the viewportY from the upper left corner
+                // to the lower left corner.
+                viewportY = VIEWPORT_BASE_HEIGHT - viewportY - viewportHeight;
 
                 re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
             }
@@ -5327,10 +5254,7 @@ public class VideoEngine {
             if (vinfo.color != 0) {
                 useVertexColor = true;
             } else {
-                if (materialChanged) {
-                	re.setVertexColor(context.mat_ambient);
-                    materialChanged = false;
-                }
+            	re.setVertexColor(context.mat_ambient);
             }
         } else if (vinfo.color != 0 && context.mat_flags != 0) {
             useVertexColor = true;
@@ -5351,6 +5275,7 @@ public class VideoEngine {
                 }
                 materialChanged = false;
             }
+        	re.setVertexColor(context.mat_ambient);
         } else {
         	context.reColorMaterial.setEnabled(false);
             if (materialChanged) {
@@ -5360,6 +5285,7 @@ public class VideoEngine {
             	re.setMaterialSpecularColor(context.mat_specular);
                 materialChanged = false;
             }
+        	re.setVertexColor(context.mat_ambient);
         }
 
         if (context.textureFlag.isEnabled()) {
@@ -5851,7 +5777,6 @@ public class VideoEngine {
         viewMatrixUpload.setChanged(true);
         textureMatrixUpload.setChanged(true);
         lightingChanged = true;
-        blendChanged = true;
         textureChanged = true;
         geBufChanged = true;
         viewportChanged = true;

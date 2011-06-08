@@ -65,6 +65,26 @@ public class ShaderContext {
 	private int utex = -1;
 	private float[] vertexColor = new float[4];
 	private int clutIndexHint;
+	private int stencilTestEnable;
+	private int stencilFunc;
+	private int stencilRef;
+	private int stencilMask;
+	private int stencilOpFail;
+	private int stencilOpZFail;
+	private int stencilOpZPass;
+	private int fbTex = -1;
+	private int colorMaskEnable;
+	private int[] colorMask = new int[4];
+	private int[] notColorMask = new int[4];
+	private int alphaTestEnable;
+	private int alphaTestFunc;
+	private int alphaTestRef;
+	private int blendTestEnable;
+	private int blendEquation;
+	private int blendSrc;
+	private int blendDst;
+	private float[] blendSFix = new float[3];
+	private float[] blendDFix = new float[3];
 
 	public void setUniforms(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.zPos.getId(shaderProgram), zPos);
@@ -102,12 +122,34 @@ public class ShaderContext {
 		re.setUniform4(Uniforms.vertexColor.getId(shaderProgram), vertexColor);
 		re.setUniform(Uniforms.vinfoTexture.getId(shaderProgram), vinfoTexture);
 		re.setUniform(Uniforms.vinfoNormal.getId(shaderProgram), vinfoNormal);
+		re.setUniform(Uniforms.stencilTestEnable.getId(shaderProgram), stencilTestEnable);
+		re.setUniform(Uniforms.stencilFunc.getId(shaderProgram), stencilFunc);
+		re.setUniform(Uniforms.stencilRef.getId(shaderProgram), stencilRef);
+		re.setUniform(Uniforms.stencilMask.getId(shaderProgram), stencilMask);
+		re.setUniform(Uniforms.stencilOpFail.getId(shaderProgram), stencilOpFail);
+		re.setUniform(Uniforms.stencilOpZFail.getId(shaderProgram), stencilOpZFail);
+		re.setUniform(Uniforms.stencilOpZPass.getId(shaderProgram), stencilOpZPass);
+		re.setUniform(Uniforms.colorMaskEnable.getId(shaderProgram), colorMaskEnable);
+		re.setUniform4(Uniforms.colorMask.getId(shaderProgram), colorMask);
+		re.setUniform4(Uniforms.notColorMask.getId(shaderProgram), notColorMask);
+		re.setUniform(Uniforms.alphaTestEnable.getId(shaderProgram), alphaTestEnable);
+		re.setUniform(Uniforms.alphaTestFunc.getId(shaderProgram), alphaTestFunc);
+		re.setUniform(Uniforms.alphaTestRef.getId(shaderProgram), alphaTestRef);
+		re.setUniform(Uniforms.blendTestEnable.getId(shaderProgram), blendTestEnable);
+		re.setUniform(Uniforms.blendEquation.getId(shaderProgram), blendEquation);
+		re.setUniform(Uniforms.blendSrc.getId(shaderProgram), blendSrc);
+		re.setUniform(Uniforms.blendDst.getId(shaderProgram), blendDst);
+		re.setUniform3(Uniforms.blendSFix.getId(shaderProgram), blendSFix);
+		re.setUniform3(Uniforms.blendDFix.getId(shaderProgram), blendDFix);
+
+		setUniformsSamplers(re, shaderProgram);
 	}
 
 	protected void setUniformsSamplers(IRenderingEngine re, int shaderProgram) {
 		re.setUniform(Uniforms.clut.getId(shaderProgram), clut);
 		re.setUniform(Uniforms.tex.getId(shaderProgram), tex);
 		re.setUniform(Uniforms.utex.getId(shaderProgram), utex);
+		re.setUniform(Uniforms.fbTex.getId(shaderProgram), fbTex);
 	}
 
 	public void initShaderProgram(IRenderingEngine re, int shaderProgram) {
@@ -433,5 +475,175 @@ public class ShaderContext {
 
 	public void setVinfoNormal(int vinfoNormal) {
 		this.vinfoNormal = vinfoNormal;
+	}
+
+	public int getStencilTestEnable() {
+		return stencilTestEnable;
+	}
+
+	public void setStencilTestEnable(int stencilTestEnable) {
+		this.stencilTestEnable = stencilTestEnable;
+	}
+
+	public int getStencilFunc() {
+		return stencilFunc;
+	}
+
+	public void setStencilFunc(int stencilFunc) {
+		this.stencilFunc = stencilFunc;
+	}
+
+	public int getStencilRef() {
+		return stencilRef;
+	}
+
+	public void setStencilRef(int stencilRef) {
+		this.stencilRef = stencilRef;
+	}
+
+	public int getStencilMask() {
+		return stencilMask;
+	}
+
+	public void setStencilMask(int stencilMask) {
+		this.stencilMask = stencilMask;
+	}
+
+	public int getStencilOpFail() {
+		return stencilOpFail;
+	}
+
+	public void setStencilOpFail(int stencilOpFail) {
+		this.stencilOpFail = stencilOpFail;
+	}
+
+	public int getStencilOpZFail() {
+		return stencilOpZFail;
+	}
+
+	public void setStencilOpZFail(int stencilOpZFail) {
+		this.stencilOpZFail = stencilOpZFail;
+	}
+
+	public int getStencilOpZPass() {
+		return stencilOpZPass;
+	}
+
+	public void setStencilOpZPass(int stencilOpZPass) {
+		this.stencilOpZPass = stencilOpZPass;
+	}
+
+	public int getFbTex() {
+		return fbTex;
+	}
+
+	public void setFbTex(int fbTex) {
+		this.fbTex = fbTex;
+	}
+
+	public int getColorMaskEnable() {
+		return colorMaskEnable;
+	}
+
+	public void setColorMaskEnable(int colorMaskEnable) {
+		this.colorMaskEnable = colorMaskEnable;
+	}
+
+	public int[] getColorMask() {
+		return colorMask;
+	}
+
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+		this.colorMask[0] = redMask;
+		this.colorMask[1] = greenMask;
+		this.colorMask[2] = blueMask;
+		this.colorMask[3] = alphaMask;
+	}
+
+	public int[] getNotColorMask() {
+		return notColorMask;
+	}
+
+	public void setNotColorMask(int notRedMask, int notGreenMask, int notBlueMask, int notAlphaMask) {
+		this.notColorMask[0] = notRedMask;
+		this.notColorMask[1] = notGreenMask;
+		this.notColorMask[2] = notBlueMask;
+		this.notColorMask[3] = notAlphaMask;
+	}
+
+	public int getAlphaTestEnable() {
+		return alphaTestEnable;
+	}
+
+	public void setAlphaTestEnable(int alphaTestEnable) {
+		this.alphaTestEnable = alphaTestEnable;
+	}
+
+	public int getAlphaTestFunc() {
+		return alphaTestFunc;
+	}
+
+	public void setAlphaTestFunc(int alphaTestFunc) {
+		this.alphaTestFunc = alphaTestFunc;
+	}
+
+	public int getAlphaTestRef() {
+		return alphaTestRef;
+	}
+
+	public void setAlphaTestRef(int alphaTestRef) {
+		this.alphaTestRef = alphaTestRef;
+	}
+
+	public int getBlendTestEnable() {
+		return blendTestEnable;
+	}
+
+	public void setBlendTestEnable(int blendTestEnable) {
+		this.blendTestEnable = blendTestEnable;
+	}
+
+	public int getBlendEquation() {
+		return blendEquation;
+	}
+
+	public void setBlendEquation(int blendEquation) {
+		this.blendEquation = blendEquation;
+	}
+
+	public int getBlendSrc() {
+		return blendSrc;
+	}
+
+	public void setBlendSrc(int blendSrc) {
+		this.blendSrc = blendSrc;
+	}
+
+	public int getBlendDst() {
+		return blendDst;
+	}
+
+	public void setBlendDst(int blendDst) {
+		this.blendDst = blendDst;
+	}
+
+	public float[] getBlendSFix() {
+		return blendSFix;
+	}
+
+	public void setBlendSFix(float[] blendSFix) {
+		this.blendSFix[0] = blendSFix[0];
+		this.blendSFix[1] = blendSFix[1];
+		this.blendSFix[2] = blendSFix[2];
+	}
+
+	public float[] getBlendDFix() {
+		return blendDFix;
+	}
+
+	public void setBlendDFix(float[] blendDFix) {
+		this.blendDFix[0] = blendDFix[0];
+		this.blendDFix[1] = blendDFix[1];
+		this.blendDFix[2] = blendDFix[2];
 	}
 }

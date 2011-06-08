@@ -70,11 +70,10 @@ public class GETexture {
 		bufferLength = getTexImageWidth() * getTexImageHeight() * bytesPerPixel;
 	}
 
-	public void bind(IRenderingEngine re) {
+	public void bind(IRenderingEngine re, boolean forDrawing) {
 		if (textureId == -1) {
 			textureId = re.genTexture();
 			re.bindTexture(textureId);
-			re.setTextureFormat(pixelFormat, false);
     		re.setTexImage(0, pixelFormat, getTexImageWidth(), getTexImageHeight(), pixelFormat, pixelFormat, 0, null);
             re.setTextureMipmapMinFilter(TFLT_NEAREST);
             re.setTextureMipmapMagFilter(TFLT_NEAREST);
@@ -86,6 +85,9 @@ public class GETexture {
             }
 		} else {
 			re.bindTexture(textureId);
+		}
+
+		if (forDrawing) {
 			re.setTextureFormat(pixelFormat, false);
 		}
 	}
@@ -106,12 +108,16 @@ public class GETexture {
 		return height;
 	}
 
+	public int getPixelFormat() {
+		return pixelFormat;
+	}
+
 	public void copyScreenToTexture(IRenderingEngine re) {
 		if (VideoEngine.log.isDebugEnabled()) {
 			VideoEngine.log.debug(String.format("GETexture.copyScreenToTexture %s", toString()));
 		}
 
-		bind(re);
+		bind(re, false);
 		re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferWidth, width), height);
 		setChanged(true);
 	}
@@ -125,7 +131,7 @@ public class GETexture {
 			VideoEngine.log.debug(String.format("GETexture.copyTextureToScreen %s at %dx%d", toString(), x, y));
 		}
 
-		bind(re);
+		bind(re, true);
 
 		re.startDirectRendering(true, false, true, true, true, projectionWidth, projectionHeight);
 		re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);

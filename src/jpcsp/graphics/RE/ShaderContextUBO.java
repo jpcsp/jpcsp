@@ -35,6 +35,8 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo lightKind;
 	private ShaderUniformInfo lightEnabled;
 	private ShaderUniformInfo vertexColor;
+	private ShaderUniformInfo colorMask;
+	private ShaderUniformInfo notColorMask;
 	private ShaderUniformInfo matFlags;
 	private ShaderUniformInfo ctestRef;
 	private ShaderUniformInfo ctestMsk;
@@ -62,6 +64,23 @@ public class ShaderContextUBO extends ShaderContext {
 	private ShaderUniformInfo clutOffset;
 	private ShaderUniformInfo mipmapShareClut;
 	private ShaderUniformInfo texPixelFormat;
+	private ShaderUniformInfo stencilTestEnable;
+	private ShaderUniformInfo stencilFunc;
+	private ShaderUniformInfo stencilRef;
+	private ShaderUniformInfo stencilMask;
+	private ShaderUniformInfo stencilOpFail;
+	private ShaderUniformInfo stencilOpZFail;
+	private ShaderUniformInfo stencilOpZPass;
+	private ShaderUniformInfo alphaTestEnable;
+	private ShaderUniformInfo alphaTestFunc;
+	private ShaderUniformInfo alphaTestRef;
+	private ShaderUniformInfo blendTestEnable;
+	private ShaderUniformInfo blendEquation;
+	private ShaderUniformInfo blendSrc;
+	private ShaderUniformInfo blendDst;
+	private ShaderUniformInfo blendSFix;
+	private ShaderUniformInfo blendDFix;
+	private ShaderUniformInfo colorMaskEnable;
 	private ShaderUniformInfo numberBones;
 	private ShaderUniformInfo boneMatrix;
 	private ShaderUniformInfo endOfUBO;
@@ -134,6 +153,10 @@ public class ShaderContextUBO extends ShaderContext {
 		lightKind = addShaderUniform(Uniforms.lightKind, "ivec4");
 		lightEnabled = addShaderUniform(Uniforms.lightEnabled, "ivec4");
 		vertexColor = addShaderUniform(Uniforms.vertexColor, "vec4");
+		colorMask = addShaderUniform(Uniforms.colorMask, "ivec4");
+		notColorMask = addShaderUniform(Uniforms.notColorMask, "ivec4");
+		blendSFix = addShaderUniform(Uniforms.blendSFix, "vec3");
+		blendDFix = addShaderUniform(Uniforms.blendDFix, "vec3");
 		matFlags = addShaderUniform(Uniforms.matFlags, "ivec3");
 		ctestRef = addShaderUniform(Uniforms.ctestRef, "ivec3");
 		ctestMsk = addShaderUniform(Uniforms.ctestMsk, "ivec3");
@@ -161,6 +184,21 @@ public class ShaderContextUBO extends ShaderContext {
 		clutOffset = addShaderUniform(Uniforms.clutOffset, "int");
 		mipmapShareClut = addShaderUniform(Uniforms.mipmapShareClut, "bool");
 		texPixelFormat = addShaderUniform(Uniforms.texPixelFormat, "int");
+		stencilTestEnable = addShaderUniform(Uniforms.stencilTestEnable, "bool");
+		stencilFunc = addShaderUniform(Uniforms.stencilFunc, "int");
+		stencilRef = addShaderUniform(Uniforms.stencilRef, "int");
+		stencilMask = addShaderUniform(Uniforms.stencilMask, "int");
+		stencilOpFail = addShaderUniform(Uniforms.stencilOpFail, "int");
+		stencilOpZFail = addShaderUniform(Uniforms.stencilOpZFail, "int");
+		stencilOpZPass = addShaderUniform(Uniforms.stencilOpZPass, "int");
+		alphaTestEnable = addShaderUniform(Uniforms.alphaTestEnable, "bool");
+		alphaTestFunc = addShaderUniform(Uniforms.alphaTestFunc, "int");
+		alphaTestRef = addShaderUniform(Uniforms.alphaTestRef, "int");
+		blendTestEnable = addShaderUniform(Uniforms.blendTestEnable, "bool");
+		blendEquation = addShaderUniform(Uniforms.blendEquation, "int");
+		blendSrc = addShaderUniform(Uniforms.blendSrc, "int");
+		blendDst = addShaderUniform(Uniforms.blendDst, "int");
+		colorMaskEnable = addShaderUniform(Uniforms.colorMaskEnable, "bool");
 		numberBones = addShaderUniform(Uniforms.numberBones, "int");
 		boneMatrix = addShaderUniform(Uniforms.boneMatrix, "mat4", 8);
 		// The following entry has always to be the last one
@@ -284,6 +322,13 @@ public class ShaderContextUBO extends ShaderContext {
 		prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
 		for (int i = start; i < end; i++) {
 			data.putFloat(values[i]);
+		}
+	}
+
+	protected void copy(int[] values, ShaderUniformInfo shaderUniformInfo, int start, int end) {
+		prepareCopy(shaderUniformInfo.getOffset() + start * 4, (end - start) * 4);
+		for (int i = start; i < end; i++) {
+			data.putInt(values[i]);
 		}
 	}
 
@@ -573,6 +618,162 @@ public class ShaderContextUBO extends ShaderContext {
 		if (vinfoNormal != getVinfoNormal()) {
 			copy(vinfoNormal, this.vinfoNormal);
 			super.setVinfoNormal(vinfoNormal);
+		}
+	}
+
+	@Override
+	public void setStencilTestEnable(int stencilTestEnable) {
+		if (stencilTestEnable != getStencilTestEnable()) {
+			copy(stencilTestEnable, this.stencilTestEnable);
+			super.setStencilTestEnable(stencilTestEnable);
+		}
+	}
+
+	@Override
+	public void setStencilFunc(int stencilFunc) {
+		if (stencilFunc != getStencilFunc()) {
+			copy(stencilFunc, this.stencilFunc);
+			super.setStencilFunc(stencilFunc);
+		}
+	}
+
+	@Override
+	public void setStencilMask(int stencilMask) {
+		if (stencilMask != getStencilMask()) {
+			copy(stencilMask, this.stencilMask);
+			super.setStencilMask(stencilMask);
+		}
+	}
+
+	@Override
+	public void setStencilOpFail(int stencilOpFail) {
+		if (stencilOpFail != getStencilOpFail()) {
+			copy(stencilOpFail, this.stencilOpFail);
+			super.setStencilOpFail(stencilOpFail);
+		}
+	}
+
+	@Override
+	public void setStencilOpZFail(int stencilOpZFail) {
+		if (stencilOpZFail != getStencilOpZFail()) {
+			copy(stencilOpZFail, this.stencilOpZFail);
+			super.setStencilOpZFail(stencilOpZFail);
+		}
+	}
+
+	@Override
+	public void setStencilOpZPass(int stencilOpZPass) {
+		if (stencilOpZPass != getStencilOpZPass()) {
+			copy(stencilOpZPass, this.stencilOpZPass);
+			super.setStencilOpZPass(stencilOpZPass);
+		}
+	}
+
+	@Override
+	public void setStencilRef(int stencilRef) {
+		if (stencilRef != getStencilRef()) {
+			copy(stencilRef, this.stencilRef);
+			super.setStencilRef(stencilRef);
+		}
+	}
+
+	@Override
+	public void setColorMaskEnable(int colorMaskEnable) {
+		if (colorMaskEnable != getColorMaskEnable()) {
+			copy(colorMaskEnable, this.colorMaskEnable);
+			super.setColorMaskEnable(colorMaskEnable);
+		}
+	}
+
+	@Override
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+		int[] currentColorMask = getColorMask();
+		if (redMask != currentColorMask[0] || greenMask != currentColorMask[1] || blueMask != currentColorMask[2] || alphaMask != currentColorMask[3]) {
+			copy(new int[] { redMask, greenMask, blueMask, alphaMask }, this.colorMask, 0, 4);
+			super.setColorMask(redMask, greenMask, blueMask, alphaMask);
+		}
+	}
+
+	@Override
+	public void setNotColorMask(int notRedMask, int notGreenMask, int notBlueMask, int notAlphaMask) {
+		int[] currentNotColorMask = getNotColorMask();
+		if (notRedMask != currentNotColorMask[0] || notGreenMask != currentNotColorMask[1] || notBlueMask != currentNotColorMask[2] || notAlphaMask != currentNotColorMask[3]) {
+			copy(new int[] { notRedMask, notGreenMask, notBlueMask, notAlphaMask }, this.notColorMask, 0, 4);
+			super.setNotColorMask(notRedMask, notGreenMask, notBlueMask, notAlphaMask);
+		}
+	}
+
+	@Override
+	public void setAlphaTestEnable(int alphaTestEnable) {
+		if (alphaTestEnable != getAlphaTestEnable()) {
+			copy(alphaTestEnable, this.alphaTestEnable);
+			super.setAlphaTestEnable(alphaTestEnable);
+		}
+	}
+
+	@Override
+	public void setAlphaTestFunc(int alphaTestFunc) {
+		if (alphaTestFunc != getAlphaTestFunc()) {
+			copy(alphaTestFunc, this.alphaTestFunc);
+			super.setAlphaTestFunc(alphaTestFunc);
+		}
+	}
+
+	@Override
+	public void setAlphaTestRef(int alphaTestRef) {
+		if (alphaTestRef != getAlphaTestRef()) {
+			copy(alphaTestRef, this.alphaTestRef);
+			super.setAlphaTestRef(alphaTestRef);
+		}
+	}
+
+	@Override
+	public void setBlendTestEnable(int blendTestEnable) {
+		if (blendTestEnable != getBlendTestEnable()) {
+			copy(blendTestEnable, this.blendTestEnable);
+			super.setBlendTestEnable(blendTestEnable);
+		}
+	}
+
+	@Override
+	public void setBlendEquation(int blendEquation) {
+		if (blendEquation != getBlendEquation()) {
+			copy(blendEquation, this.blendEquation);
+			super.setBlendEquation(blendEquation);
+		}
+	}
+
+	@Override
+	public void setBlendSrc(int blendSrc) {
+		if (blendSrc != getBlendSrc()) {
+			copy(blendSrc, this.blendSrc);
+			super.setBlendSrc(blendSrc);
+		}
+	}
+
+	@Override
+	public void setBlendDst(int blendDst) {
+		if (blendDst != getBlendDst()) {
+			copy(blendDst, this.blendDst);
+			super.setBlendDst(blendDst);
+		}
+	}
+
+	@Override
+	public void setBlendSFix(float[] blendSFix) {
+		float[] sfix = getBlendSFix();
+		if (blendSFix[0] != sfix[0] || blendSFix[1] != sfix[1] || blendSFix[2] != sfix[2]) {
+			copy(blendSFix, this.blendSFix, 0, 3);
+			super.setBlendSFix(blendSFix);
+		}
+	}
+
+	@Override
+	public void setBlendDFix(float[] blendDFix) {
+		float[] dfix = getBlendDFix();
+		if (blendDFix[0] != dfix[0] || blendDFix[1] != dfix[1] || blendDFix[2] != dfix[2]) {
+			copy(blendDFix, this.blendDFix, 0, 3);
+			super.setBlendDFix(blendDFix);
 		}
 	}
 }

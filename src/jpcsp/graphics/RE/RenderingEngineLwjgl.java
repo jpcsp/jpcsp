@@ -103,12 +103,12 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_ONE_MINUS_DST_COLOR, // GU_ONE_MINUS_SRC_COLOR
 		GL11.GL_SRC_ALPHA,           // GU_SRC_ALPHA
 		GL11.GL_ONE_MINUS_SRC_ALPHA, // GU_ONE_MINUS_SRC_ALPHA
-		GL11.GL_DST_ALPHA,           // 4
-		GL11.GL_ONE_MINUS_DST_ALPHA, // 5
-		GL11.GL_SRC_ALPHA,           // 6
-		GL11.GL_ONE_MINUS_SRC_ALPHA, // 7
-		GL11.GL_DST_ALPHA,           // 8
-		GL11.GL_ONE_MINUS_DST_ALPHA, // 9
+		GL11.GL_DST_ALPHA,           // GU_DST_ALPHA
+		GL11.GL_ONE_MINUS_DST_ALPHA, // GU_ONE_MINUS_DST_ALPHA
+		GL11.GL_SRC_ALPHA,           // GU_DOUBLE_SRC_ALPHA
+		GL11.GL_ONE_MINUS_SRC_ALPHA, // GU_ONE_MINUS_DOUBLE_SRC_ALPHA
+		GL11.GL_DST_ALPHA,           // GU_DOUBLE_DST_ALPHA
+		GL11.GL_ONE_MINUS_DST_ALPHA, // GU_ONE_MINUS_DOUBLE_DST_ALPHA
 		GL11.GL_CONSTANT_COLOR,      // GU_FIX_BLEND_COLOR
 		GL11.GL_ONE_MINUS_CONSTANT_COLOR, // GU_FIX_BLEND_ONE_MINUS_COLOR
 		GL11.GL_ZERO,                // GU_FIX for 0x000000
@@ -735,6 +735,11 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
+	public void setUniform3(int id, float[] values) {
+        GL20.glUniform3f(id, values[0], values[1], values[2]);
+	}
+
+	@Override
 	public void setUniform4(int id, int[] values) {
         GL20.glUniform4i(id, values[0], values[1], values[2], values[3]);
 	}
@@ -842,13 +847,15 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void linkProgram(int program) {
+	public boolean linkProgram(int program) {
 		GL20.glLinkProgram(program);
+		return GL20.glGetProgram(program, GL20.GL_LINK_STATUS) == GL11.GL_TRUE;
 	}
 
 	@Override
-	public void validateProgram(int program) {
+	public boolean validateProgram(int program) {
 		GL20.glValidateProgram(program);
+		return GL20.glGetProgram(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_TRUE;
 	}
 
 	@Override
@@ -1619,5 +1626,15 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         }
 
         return null;
+	}
+
+	@Override
+	public void setBlendDFix(float[] color) {
+		// Nothing to do here
+	}
+
+	@Override
+	public void setBlendSFix(float[] color) {
+		// Nothing to do here
 	}
 }

@@ -18,19 +18,21 @@ package jpcsp.graphics.RE;
 
 import java.util.HashMap;
 
+import jpcsp.graphics.RE.ShaderProgram.ShaderProgramKey;
+
 /**
  * @author gid15
  *
  */
 public class ShaderProgramManager {
-	private HashMap<Long, ShaderProgram> shaderPrograms;
+	private HashMap<ShaderProgramKey, ShaderProgram> shaderPrograms;
 
 	public ShaderProgramManager() {
-		shaderPrograms = new HashMap<Long, ShaderProgram>();
+		shaderPrograms = new HashMap<ShaderProgramKey, ShaderProgram>();
 	}
 
 	public ShaderProgram getShaderProgram(ShaderContext shaderContext, boolean hasGeometryShader) {
-		Long key = ShaderProgram.getKey(shaderContext, hasGeometryShader);
+		ShaderProgramKey key = ShaderProgram.getKey(shaderContext, hasGeometryShader);
 		ShaderProgram shaderProgram = shaderPrograms.get(key);
 		if (shaderProgram == null) {
 			shaderProgram = new ShaderProgram(shaderContext, hasGeometryShader);

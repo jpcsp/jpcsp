@@ -458,6 +458,23 @@ So, to the different options:
     card driver, this feature is only available as an option. As a side effect, some
     graphic card drivers (e.g. AMD/ATI) are reported to be less buggy when using this
     option.
+- Enable the shader implementation for the "Stencil Test":
+    the PSP supports a "stencil" function used to implement some graphical effects.
+    This function cannot be implemented correctly using the standard OpenGL functions.
+    When enabling this option, an implementation matching the PSP features is
+    activated through the shaders. The option is only relevant when using the shaders
+    and is only available as an option because it has a negative impact on the
+    performance (lower FPS).
+    If your application is not displaying correctly or is logging the warning
+        "Both different SFIX (NNNNNNNN) and DFIX (NNNNNNNN) are not supported"
+    you might try this option.
+- Enable the shader implementation for the "Color Mask":
+    if your application is logging the warning
+        "Unimplemented Red/Green/Blue mask 0xNN"
+    your might try this option. It might increase the quality of the rendered graphics,
+    but is onyl relevant when using shaders.
+    It is only available as an option because it has a negative impact on the
+    performance (lower FPS).
 
 
 7. PSP fonts
