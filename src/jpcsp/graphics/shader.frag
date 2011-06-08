@@ -12,6 +12,13 @@
     #extension GL_ARB_compatibility : enable
 #endif
 
+// The built-in function round() is only available in v1.30 or later
+#if __VERSION__ >= 130
+    #define ROUND(n) round(n)
+#else
+    #define ROUND(n) floor((n) + 0.5)
+#endif
+
 #if USE_UBO
 	UBO_STRUCTURE
 #else
@@ -203,7 +210,7 @@ vec4 getIndexedTexture4444()
 // and must be transformed into 32-bit (ABGR8888)
 vec4 getIndexedTexture8888()
 {
-    vec4 Ct = round(TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * 255.0);
+    vec4 Ct = ROUND(TEXTURE_2D_PROJ(tex, gl_TexCoord[0].xyz) * 255.0);
     #if !USE_DYNAMIC_DEFINES || CLUT_INDEX_HINT == 0
         uint Ci = uint(Ct.r) | (uint(Ct.g) << 8u) | (uint(Ct.b) << 16u) | (uint(Ct.a) << 24u);
         int clutIndex = int((Ci >> uint(clutShift)) & uint(clutMask)) + clutOffset;
@@ -386,7 +393,7 @@ vec4 getFragColor()
 void ApplyColorTest(in vec3 Cf)
 {
     #if !USE_DYNAMIC_DEFINES
-        ivec3 Cs = ivec3(round(Cf * 255.0));
+        ivec3 Cs = ivec3(ROUND(Cf * 255.0));
         switch (ctestFunc)
         {
         case 0:
@@ -413,10 +420,10 @@ void ApplyColorTest(in vec3 Cf)
     #elif CTEST_FUNC == 0
         discard;
     #elif CTEST_FUNC == 2 && USE_BIT_OPERATORS
-        ivec3 Cs = ivec3(round(Cf * 255.0));
+        ivec3 Cs = ivec3(ROUND(Cf * 255.0));
         if ((Cs & ctestMsk) != (ctestRef & ctestMsk)) discard;
     #elif CTEST_FUNC == 3 && USE_BIT_OPERATORS
-        ivec3 Cs = ivec3(round(Cf * 255.0));
+        ivec3 Cs = ivec3((Cf * 255.0));
         if ((Cs & ctestMsk) == (ctestRef & ctestMsk)) discard;
     #endif
 }
@@ -465,10 +472,10 @@ void applyStencilOp(inout vec4 Cf, float fbAlpha, int stencilOp)
 int getStencilFbAlphaInt(float fbAlpha)
 {
     #if USE_BIT_OPERATORS
-        return int(round(fbAlpha * 255.0)) & stencilMask;
+        return int(ROUND(fbAlpha * 255.0)) & stencilMask;
     #else
         // Masking with stencilMask is not available when not using bit operators...
-        return int(round(fbAlpha * 255.0));
+        return int(ROUND(fbAlpha * 255.0));
     #endif
 }
 
@@ -567,9 +574,9 @@ void ApplyColorMask(inout vec4 Cf, in vec4 Cdst)
 {
     #if USE_BIT_OPERATORS
         // The current fragment color in integer format
-        ivec4 Cs = ivec4(round(Cf * 255.0));
+        ivec4 Cs = ivec4(ROUND(Cf * 255.0));
         // The current FrameBuffer pixel color
-        ivec4 Cd = ivec4(round(Cdst * 255.0));
+        ivec4 Cd = ivec4(ROUND(Cdst * 255.0));
 
         // ATI driver has problems to compute "~colorMask", so use a pre-computed
         // uniform "notColorMask"
@@ -599,27 +606,27 @@ void ApplyAlphaTest(inout vec4 Cf)
             // Nothing to do
             break;
         case 2: // ATST_PASS_PIXEL_IF_MATCHES
-            alphaTest = int(round(Cf.a * 255.0));
+            alphaTest = int(ROUND(Cf.a * 255.0));
             if (alphaTest != alphaTestRef) discard;
             break;
         case 3: // ATST_PASS_PIXEL_IF_DIFFERS
-            alphaTest = int(round(Cf.a * 255.0));
+            alphaTest = int(ROUND(Cf.a * 255.0));
             if (alphaTest == alphaTestRef) discard;
             break;
         case 4: // ATST_PASS_PIXEL_IF_LESS
-            alphaTest = int(round(Cf.a * 255.0));
+            alphaTest = int(ROUND(Cf.a * 255.0));
             if (alphaTest >= alphaTestRef) discard;
             break;
         case 5: // ATST_PASS_PIXEL_IF_LESS_OR_EQUAL
-            alphaTest = int(round(Cf.a * 255.0));
+            alphaTest = int(ROUND(Cf.a * 255.0));
             if (alphaTest > alphaTestRef) discard;
             break;
         case 6: // ATST_PASS_PIXEL_IF_GREATER
-            alphaTest = int(round(Cf.a * 255.0));
+            alphaTest = int(ROUND(Cf.a * 255.0));
             if (alphaTest <= alphaTestRef) discard;
             break;
         case 7: // ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL
-            alphaTest = int(round(Cf.a * 255.0));
+            alphaTest = int(ROUND(Cf.a * 255.0));
             if (alphaTest < alphaTestRef) discard;
             break;
         }
@@ -631,27 +638,27 @@ void ApplyAlphaTest(inout vec4 Cf)
         // Nothing to do
     #elif ALPHA_TEST_FUNC == 2
         // ATST_PASS_PIXEL_IF_MATCHES
-        int alphaTest = int(round(Cf.a * 255.0));
+        int alphaTest = int(ROUND(Cf.a * 255.0));
         if (alphaTest != alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 3
         // ATST_PASS_PIXEL_IF_DIFFERS
-        int alphaTest = int(round(Cf.a * 255.0));
+        int alphaTest = int(ROUND(Cf.a * 255.0));
         if (alphaTest == alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 4
         // ATST_PASS_PIXEL_IF_LESS
-        int alphaTest = int(round(Cf.a * 255.0));
+        int alphaTest = int(ROUND(Cf.a * 255.0));
         if (alphaTest >= alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 5
         // ATST_PASS_PIXEL_IF_LESS_OR_EQUAL
-        int alphaTest = int(round(Cf.a * 255.0));
+        int alphaTest = int(ROUND(Cf.a * 255.0));
         if (alphaTest > alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 6
         // ATST_PASS_PIXEL_IF_GREATER
-        int alphaTest = int(round(Cf.a * 255.0));
+        int alphaTest = int(ROUND(Cf.a * 255.0));
         if (alphaTest <= alphaTestRef) discard;
     #elif ALPHA_TEST_FUNC == 7
         // ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL
-        int alphaTest = int(round(Cf.a * 255.0));
+        int alphaTest = int(ROUND(Cf.a * 255.0));
         if (alphaTest < alphaTestRef) discard;
     #endif
 }
@@ -762,14 +769,17 @@ void main()
 
     #if !USE_DYNAMIC_DEFINES
         vec4 Cdst = vec4(0.0);
-        if (stencilTestEnable || blendTestEnable || colorMaskEnable)
-        {
-            // Retrieve the current FrameBuffer pixel color.
-            // As a performance improvement, this is only done when this color
-            // is used in later tests.
-            // i.e. when stencil test, blend test or color mask are enabled
-            Cdst = texelFetch(fbTex, getFragCoord(), 0);
-        }
+        // texelFetch is only available in v1.30 or later
+        #if __VERSION__ >= 130
+            if (stencilTestEnable || blendTestEnable || colorMaskEnable)
+            {
+                // Retrieve the current FrameBuffer pixel color.
+                // As a performance improvement, this is only done when this color
+                // is used in later tests.
+                // i.e. when stencil test, blend test or color mask are enabled
+                Cdst = texelFetch(fbTex, getFragCoord(), 0);
+            }
+        #endif
     #elif STENCIL_TEST_ENABLE || BLEND_TEST_ENABLE || COLOR_MASK_ENABLE
         vec4 Cdst = texelFetch(fbTex, getFragCoord(), 0);
     #endif
