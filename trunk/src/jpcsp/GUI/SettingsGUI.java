@@ -106,6 +106,12 @@ public class SettingsGUI extends javax.swing.JFrame {
         enabled = Settings.getInstance().readBool("emu.enabledynamicshaders");
         enableDynamicShadersCheck.setSelected(enabled);
 
+        enabled = Settings.getInstance().readBool("emu.enableshaderstenciltest");
+        enableShaderStencilTestCheck.setSelected(enabled);
+
+        enabled = Settings.getInstance().readBool("emu.enableshadercolormask");
+        enableShaderColorMaskCheck.setSelected(enabled);
+
         enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
         onlyGEGraphicsCheck.setSelected(enabled);
 
@@ -285,6 +291,8 @@ public class SettingsGUI extends javax.swing.JFrame {
         enableGETextureCheck = new javax.swing.JCheckBox();
         enableNativeCLUTCheck = new javax.swing.JCheckBox();
         enableDynamicShadersCheck = new javax.swing.JCheckBox();
+        enableShaderStencilTestCheck = new javax.swing.JCheckBox();
+        enableShaderColorMaskCheck = new javax.swing.JCheckBox();
         AudioPanel = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
@@ -574,6 +582,10 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         enableDynamicShadersCheck.setText(Resource.get("enabledynamicshaders"));
 
+        enableShaderStencilTestCheck.setText(Resource.get("enableshaderstenciltest"));
+
+        enableShaderColorMaskCheck.setText(Resource.get("enableshadercolormask"));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -589,7 +601,9 @@ public class SettingsGUI extends javax.swing.JFrame {
                     .addComponent(enableVAOCheck)
                     .addComponent(enableGETextureCheck)
                     .addComponent(enableNativeCLUTCheck)
-                    .addComponent(enableDynamicShadersCheck))
+                    .addComponent(enableDynamicShadersCheck)
+                    .addComponent(enableShaderStencilTestCheck)
+                    .addComponent(enableShaderColorMaskCheck))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -614,6 +628,10 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addComponent(enableNativeCLUTCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(enableDynamicShadersCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(enableShaderStencilTestCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(enableShaderColorMaskCheck)
                 .addContainerGap(30, Short.MAX_VALUE))
         );
 
@@ -1019,6 +1037,12 @@ public void RefreshWindow() {
 	enabled = Settings.getInstance().readBool("emu.enabledynamicshaders");
 	enableDynamicShadersCheck.setSelected(enabled);
 	
+	enabled = Settings.getInstance().readBool("emu.enableshaderstenciltest");
+	enableShaderStencilTestCheck.setSelected(enabled);
+	
+	enabled = Settings.getInstance().readBool("emu.enableshadercolormask");
+	enableShaderColorMaskCheck.setSelected(enabled);
+	
 	enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
 	onlyGEGraphicsCheck.setSelected(enabled);
 	
@@ -1105,6 +1129,8 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.enablegetexture", enableGETextureCheck.isSelected());
    Settings.getInstance().writeBool("emu.enablenativeclut", enableNativeCLUTCheck.isSelected());
    Settings.getInstance().writeBool("emu.enabledynamicshaders", enableDynamicShadersCheck.isSelected());
+   Settings.getInstance().writeBool("emu.enableshaderstenciltest", enableShaderStencilTestCheck.isSelected());
+   Settings.getInstance().writeBool("emu.enableshadercolormask", enableShaderColorMaskCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useConnector",useConnector.isSelected());
    Settings.getInstance().writeBool("emu.useFlashFonts",useFlashFonts.isSelected());
@@ -1186,6 +1212,8 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox enableDynamicShadersCheck;
     private javax.swing.JCheckBox enableGETextureCheck;
     private javax.swing.JCheckBox enableNativeCLUTCheck;
+    private javax.swing.JCheckBox enableShaderStencilTestCheck;
+    private javax.swing.JCheckBox enableShaderColorMaskCheck;
     private javax.swing.JCheckBox enableVAOCheck;
     private javax.swing.JCheckBox extractEboot;
     private javax.swing.JCheckBox extractPGD;

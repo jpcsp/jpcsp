@@ -1492,6 +1492,8 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("enablegetexture", "emu.enablegetexture", false);
         logConfigurationSettingBool("enablenativeclut", "emu.enablenativeclut", false);
         logConfigurationSettingBool("enabledynamicshaders", "emu.enabledynamicshaders", false);
+        logConfigurationSettingBool("enableshaderstenciltest", "emu.enableshaderstenciltest", false);
+        logConfigurationSettingBool("enableshadercolormask", "emu.enableshadercolormask", false);
 
         logConfigurationPanel("audio");
         logConfigurationSettingBool("disableaudiothreads", "emu.ignoreaudiothreads", false);

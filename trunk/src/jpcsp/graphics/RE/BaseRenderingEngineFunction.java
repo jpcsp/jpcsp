@@ -140,6 +140,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 		mustUseQuery
 	};
 	protected int activeTextureUnit = 0;
+	private boolean[] colorMask = new boolean[4];
 
 	public BaseRenderingEngineFunction(IRenderingEngine proxy) {
 		super(proxy);
@@ -187,12 +188,6 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 			}
 		}
 
-		if (stencil) {
-            // TODO Stencil not perfect, pspsdk clear code is doing more things
-            re.enableFlag(GU_STENCIL_TEST);
-            re.setStencilFunc(GeCommands.STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST, 0, 0);
-            re.setStencilOp(GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_KEEP_STENCIL_VALUE, GeCommands.SOP_ZERO_STENCIL_VALUE);
-		}
 		if (depth) {
             re.enableFlag(GU_DEPTH_TEST);
             context.depthFunc = GeCommands.ZTST_FUNCTION_ALWAYS_PASS_PIXEL;
@@ -259,6 +254,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 			re.setStencilOp(context.stencilOpFail, context.stencilOpZFail, context.stencilOpZPass);
 
 			re.setDepthMask(context.depthMask);
+			re.setColorMask(true, true, true, context.stencilTestFlag.isEnabled());
 	    	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
 
 			super.endClearMode();
@@ -277,13 +273,6 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 		return !clearMode || directMode;
 	}
 
-	@Override
-	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
-		if (canUpdate()) {
-			super.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
-		}
-	}
-
 	protected static boolean getBooleanColorMask(String name, int bitMask) {
 		if (bitMask == 0xFF) {
 			return false;
@@ -294,16 +283,23 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         return true;
 	}
 
+	@Override
+	public void setColorMask(boolean redWriteEnabled, boolean greenWriteEnabled, boolean blueWriteEnabled, boolean alphaWriteEnabled) {
+		colorMask[0] = redWriteEnabled;
+		colorMask[1] = greenWriteEnabled;
+		colorMask[2] = blueWriteEnabled;
+		colorMask[3] = alphaWriteEnabled;
+		super.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
+	}
+
     @Override
 	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
-    	if (canUpdate()) {
-	        boolean redWriteEnabled   = getBooleanColorMask("Red color mask", redMask);
-	        boolean greenWriteEnabled = getBooleanColorMask("Green color mask", greenMask);
-	        boolean blueWriteEnabled  = getBooleanColorMask("Blue color mask", blueMask);
-	        boolean alphaWriteEnabled = getBooleanColorMask("Alpha mask", alphaMask);
-	        re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, alphaWriteEnabled);
-	        super.setColorMask(redMask, greenMask, blueMask, alphaMask);
-    	}
+        boolean redWriteEnabled   = getBooleanColorMask("Red color mask", redMask);
+        boolean greenWriteEnabled = getBooleanColorMask("Green color mask", greenMask);
+        boolean blueWriteEnabled  = getBooleanColorMask("Blue color mask", blueMask);
+        // boolean alphaWriteEnabled = getBooleanColorMask("Alpha mask", alphaMask);
+        re.setColorMask(redWriteEnabled, greenWriteEnabled, blueWriteEnabled, colorMask[3]);
+        super.setColorMask(redMask, greenMask, blueMask, alphaMask);
     }
 
 	@Override
@@ -368,6 +364,8 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
         re.setTextureMipmapMinLevel(0);
         re.setTextureMipmapMaxLevel(0);
         re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+        int colorMask = colorWriteEnabled ? 0x00 : 0xFF;
+        re.setColorMask(colorMask, colorMask, colorMask, colorMask);
         re.setColorMask(colorWriteEnabled, colorWriteEnabled, colorWriteEnabled, colorWriteEnabled);
         re.setDepthMask(depthWriteEnabled);
         re.setTextureFunc(RE_TEXENV_REPLACE, true, false);
@@ -394,6 +392,7 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	@Override
 	public void endDirectRendering() {
 		// Restore all the values according to the context or the clearMode
+    	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
 		if (clearMode) {
 			setClearModeSettings(clearModeContext.color, clearModeContext.stencil, clearModeContext.depth);
 		} else {
@@ -405,7 +404,6 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	        context.stencilTestFlag.updateEnabled();
 	        context.cullFaceFlag.updateEnabled();
 	        context.textureFlag.update();
-	    	re.setColorMask(context.colorMask[0], context.colorMask[1], context.colorMask[2], context.colorMask[3]);
 	    	re.setDepthMask(context.depthMask);
 	        re.setTextureFunc(context.textureFunc, context.textureAlphaUsed, context.textureColorDoubled);
 		}
@@ -803,5 +801,105 @@ public class BaseRenderingEngineFunction extends BaseRenderingEngineProxy {
 	public void setActiveTexture(int index) {
 		activeTextureUnit = index;
 		super.setActiveTexture(index);
+	}
+
+	protected void setAlphaMask(boolean alphaWriteEnabled) {
+		if (colorMask[3] != alphaWriteEnabled) {
+			colorMask[3] = alphaWriteEnabled;
+			re.setColorMask(colorMask[0], colorMask[1], colorMask[2], colorMask[3]);
+		}
+	}
+
+	@Override
+	public void disableFlag(int flag) {
+		if (flag == IRenderingEngine.GU_STENCIL_TEST) {
+			setAlphaMask(false);
+		}
+		super.disableFlag(flag);
+	}
+
+	@Override
+	public void enableFlag(int flag) {
+		if (flag == IRenderingEngine.GU_STENCIL_TEST) {
+			setAlphaMask(true);
+		}
+		super.enableFlag(flag);
+	}
+
+    private int getBlendFix(float[] fix_color) {
+        if (fix_color[0] == 0 && fix_color[1] == 0 && fix_color[2] == 0) {
+            return IRenderingEngine.GU_FIX_BLACK;
+        } else if (fix_color[0] == 1 && fix_color[1] == 1 && fix_color[2] == 1) {
+            return IRenderingEngine.GU_FIX_WHITE;
+        } else {
+            return IRenderingEngine.GU_FIX_BLEND_COLOR;
+        }
+    }
+
+    private int getColorInt(float[] color) {
+    	return (((int) (color[0] * 255))      ) |
+    	       (((int) (color[1] * 255)) <<  8) |
+    	       (((int) (color[2] * 255)) << 16) |
+    	       (((int) (color[3] * 255)) << 24);
+    }
+
+    private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
+        float[] blend_color = null;
+        if (gl_blend_src == IRenderingEngine.GU_FIX_BLEND_COLOR) {
+            blend_color = context.sfix_color;
+            if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
+                if (context.sfix_color[0] != context.dfix_color[0]
+                        || context.sfix_color[1] != context.dfix_color[1]
+                        || context.sfix_color[2] != context.dfix_color[2]
+                        || context.sfix_color[3] != context.dfix_color[3]) {
+                    log.warn(String.format("UNSUPPORTED: Both different SFIX (%08X) and DFIX (%08X) are not supported (blend equation=%d)", getColorInt(context.sfix_color), getColorInt(context.dfix_color), context.blendEquation));
+                }
+            }
+        } else if (gl_blend_dst == IRenderingEngine.GU_FIX_BLEND_COLOR) {
+            blend_color = context.dfix_color;
+        }
+
+        return blend_color;
+    }
+
+	@Override
+	public void setBlendFunc(int src, int dst) {
+    	if (src == 10) { // GU_FIX
+    		src = getBlendFix(context.sfix_color);
+    	}
+
+    	if (dst == 10) { // GU_FIX
+        	if (src == IRenderingEngine.GU_FIX_BLEND_COLOR
+        	        && context.sfix_color[0] + context.dfix_color[0] == 1
+        	        && context.sfix_color[1] + context.dfix_color[1] == 1
+        	        && context.sfix_color[2] + context.dfix_color[2] == 1) {
+        		dst = IRenderingEngine.GU_FIX_BLEND_ONE_MINUS_COLOR;
+        	} else {
+        		dst = getBlendFix(context.dfix_color);
+        	}
+    	}
+
+        float[] blend_color = getBlendColor(src, dst);
+        if (blend_color != null) {
+        	re.setBlendColor(blend_color);
+        }
+
+		super.setBlendFunc(src, dst);
+	}
+
+	@Override
+	public void setBlendDFix(float[] color) {
+		// Update the blend color and functions when the DFIX is changing
+		setBlendFunc(context.blend_src, context.blend_dst);
+
+		super.setBlendDFix(color);
+	}
+
+	@Override
+	public void setBlendSFix(float[] color) {
+		// Update the blend color and functions when the SFIX is changing
+		setBlendFunc(context.blend_src, context.blend_dst);
+
+		super.setBlendSFix(color);
 	}
 }

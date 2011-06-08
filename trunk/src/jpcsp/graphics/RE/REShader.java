@@ -25,10 +25,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jpcsp.Settings;
+import jpcsp.HLE.Modules;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.Uniforms;
 import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.util.CpuDurationStatistics;
@@ -50,6 +52,7 @@ import jpcsp.util.Utilities;
 public class REShader extends BaseRenderingEngineFunction {
 	protected final static int ACTIVE_TEXTURE_NORMAL = 0;
 	protected final static int ACTIVE_TEXTURE_CLUT = 1;
+	protected final static int ACTIVE_TEXTURE_FRAMEBUFFER = 2;
 	protected final static float[] positionScale = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] normalScale   = new float[] { 1, 0x7F, 0x7FFF, 1 };
 	protected final static float[] textureScale  = new float[] { 1, 0x80, 0x8000, 1 };
@@ -69,6 +72,10 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean useGeometryShader;
 	protected boolean useUniformBufferObject = true;
 	protected boolean useNativeClut;
+	protected boolean useShaderStencilTest = false;
+	protected boolean useShaderColorMask = false;
+	protected boolean useShaderAlphaTest = false;
+	protected boolean useShaderBlendTest = false;
 	protected int clutTextureId = -1;
 	protected ByteBuffer clutBuffer;
     protected DurationStatistics textureCacheLookupStatistics = new CpuDurationStatistics("Lookup in TextureCache for CLUTs");
@@ -79,6 +86,10 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean useDynamicShaders;
 	protected ShaderProgram currentShaderProgram;
 	protected StringBuilder infoLogs;
+	protected GETexture fbTexture;
+	protected boolean stencilTestFlag;
+	protected int viewportWidth;
+	protected int viewportHeight;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -120,18 +131,38 @@ public class REShader extends BaseRenderingEngineFunction {
         	}
         }
 
-		if (useUniformBufferObject) {
+        useShaderStencilTest = Settings.getInstance().readBool("emu.enableshaderstenciltest");
+        useShaderColorMask = Settings.getInstance().readBool("emu.enableshadercolormask");
+
+        if (useUniformBufferObject) {
 			shaderContext = new ShaderContextUBO(re);
 		} else {
 			shaderContext = new ShaderContext();
 		}
 
-        initShadersDefines();
+		if (useShaderStencilTest) {
+			// When implementing the stencil test in the fragment shader,
+			// we need to implement the alpha test and blend test
+			// in the shader as well.
+			// The alpha test has to be performed before the stencil test
+			// in order to test the correct alpha values because these are updated
+			// by the stencil test.
+			// The alpha test of the fixed OpenGL functionality is always
+			// executed after the shader execution and would then use
+			// incorrect alpha test values.
+			// The blend test has also to use the correct alpha value,
+			// i.e. the alpha value before the stencil test.
+			useShaderAlphaTest = true;
+			useShaderBlendTest = true;
+		}
+
+		initShadersDefines();
 		loadShaders();
 
 		shaderContext.setColorDoubling(1);
 
 		shaderContext.setTex(ACTIVE_TEXTURE_NORMAL);
+		shaderContext.setFbTex(ACTIVE_TEXTURE_FRAMEBUFFER);
 		if (useNativeClut) {
 			shaderContext.setClut(ACTIVE_TEXTURE_CLUT);
 			shaderContext.setUtex(ACTIVE_TEXTURE_NORMAL);
@@ -268,16 +299,25 @@ public class REShader extends BaseRenderingEngineFunction {
         return compiled;
 	}
 
-	protected void linkShaderProgram(int program) {
-        re.linkProgram(program);
+	/**
+	 * Link and validate a shader program.
+	 * 
+	 * @param program       the program to be linked
+	 * @return true         if the link was successful
+	 *         false        if the link was not successful
+	 */
+	protected boolean linkShaderProgram(int program) {
+        boolean linked = re.linkProgram(program);
         addProgramInfoLog(program);
 
         // Trying to avoid warning message from AMD drivers:
         // "Validation warning! - Sampler value tex has not been set."
         re.setUniform(re.getUniformLocation(program, Uniforms.tex.getUniformString()), ACTIVE_TEXTURE_NORMAL);
 
-        re.validateProgram(program);
+        boolean validated = re.validateProgram(program);
         addProgramInfoLog(program);
+
+        return linked && validated;
 	}
 
 	protected ShaderProgram createShader(boolean hasGeometryShader, ShaderProgram shaderProgram) {
@@ -353,7 +393,10 @@ public class REShader extends BaseRenderingEngineFunction {
         re.bindAttribLocation(program, index++, attributeNameWeights1);
         re.bindAttribLocation(program, index++, attributeNameWeights2);
 
-        linkShaderProgram(program);
+        boolean linked = linkShaderProgram(program);
+        if (!linked) {
+        	return -1;
+        }
 
         re.useProgram(program);
 
@@ -408,6 +451,7 @@ public class REShader extends BaseRenderingEngineFunction {
 				String infoLog = infoLogs.toString();
 				infoLog = infoLog.replace("Vertex shader was successfully compiled to run on hardware.\n", "");
 				infoLog = infoLog.replace("Fragment shader was successfully compiled to run on hardware.\n", "");
+				infoLog = infoLog.replace("Geometry shader was successfully compiled to run on hardware.\n", "");
 				infoLog = infoLog.replace("Fragment shader(s) linked, vertex shader(s) linked. \n", "");
 				infoLog = infoLog.replace("Vertex shader(s) linked, fragment shader(s) linked. \n", "");
 				infoLog = infoLog.replace("Vertex shader(s) linked, fragment shader(s) linked.\n", "");
@@ -436,24 +480,58 @@ public class REShader extends BaseRenderingEngineFunction {
 		addInfoLog(infoLog);
     }
 
-	protected void setShaderFlag(int flag, int value) {
+	/**
+	 * Set the given flag in the shader context, if relevant.
+	 * @param flag   the flag to be set
+	 * @param value  the value of the flag (0 is disabled, 1 is enabled)
+	 * @return       true if the flag as to be enabled in OpenGL as well,
+	 *               false if the flag has to stay disabled in OpenGL.
+	 */
+	protected boolean setShaderFlag(int flag, int value) {
+		boolean setFlag = true;
+
 		switch (flag) {
 			case IRenderingEngine.GU_LIGHT0:
 			case IRenderingEngine.GU_LIGHT1:
 			case IRenderingEngine.GU_LIGHT2:
 			case IRenderingEngine.GU_LIGHT3:
 				shaderContext.setLightEnabled(flag - IRenderingEngine.GU_LIGHT0, value);
+				setFlag = false;
 				break;
 			case IRenderingEngine.GU_COLOR_TEST:
 				shaderContext.setCtestEnable(value);
+				setFlag = false;
 				break;
 			case IRenderingEngine.GU_LIGHTING:
 				shaderContext.setLightingEnable(value);
+				setFlag = false;
 				break;
 			case IRenderingEngine.GU_TEXTURE_2D:
 				shaderContext.setTexEnable(value);
 				break;
+			case IRenderingEngine.GU_STENCIL_TEST:
+				if (useShaderStencilTest) {
+					shaderContext.setStencilTestEnable(value);
+					stencilTestFlag = (value != 0);
+					setAlphaMask(stencilTestFlag);
+					setFlag = false;
+				}
+				break;
+			case IRenderingEngine.GU_ALPHA_TEST:
+				if (useShaderAlphaTest) {
+					shaderContext.setAlphaTestEnable(value);
+					setFlag = false;
+				}
+				break;
+			case IRenderingEngine.GU_BLEND:
+				if (useShaderBlendTest) {
+					shaderContext.setBlendTestEnable(value);
+					setFlag = false;
+				}
+				break;
 		}
+
+		return setFlag;
 	}
 
 	@Override
@@ -469,16 +547,18 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public void enableFlag(int flag) {
 		if (canUpdateFlag(flag)) {
-			setShaderFlag(flag, 1);
-			super.enableFlag(flag);
+			if (setShaderFlag(flag, 1)) {
+				super.enableFlag(flag);
+			}
 		}
 	}
 
 	@Override
 	public void disableFlag(int flag) {
 		if (canUpdateFlag(flag)) {
-			setShaderFlag(flag, 0);
-			super.disableFlag(flag);
+			if (setShaderFlag(flag, 0)) {
+				super.disableFlag(flag);
+			}
 		}
 	}
 
@@ -737,6 +817,70 @@ public class REShader extends BaseRenderingEngineFunction {
 		currentShaderProgram = shaderProgram;
 	}
 
+	/**
+	 * Check if the fragment shader requires the frame buffer texture (fbTex sampler)
+	 * to be updated with the current screen content.
+	 * 
+	 * A copy of the current screen content to the frame buffer texture
+	 * can be avoided if this method returns "false". The execution of such a copy
+	 * is quite expensive and should be avoided as much as possible.
+	 * 
+	 * We need to copy the current screen to the FrameBuffer texture only when one
+	 * of the following applies:
+	 * - the STENCIL_TEST flag is enabled
+	 * - the BLEND_TEST flag is enabled
+	 * - the Color mask is enabled
+	 *
+	 * @return  true  if the shader will use the fbTex sampler
+	 *          false if the shader will not use the fbTex sampler
+	 */
+	private boolean isFbTextureNeeded() {
+		if (useShaderStencilTest && shaderContext.getStencilTestEnable() != 0) {
+			return true;
+		}
+
+		if (useShaderBlendTest && shaderContext.getBlendTestEnable() != 0) {
+			return true;
+		}
+
+		if (useShaderColorMask && shaderContext.getColorMaskEnable() != 0) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * If necessary, load the frame buffer texture with the current screen
+	 * content so that it can be used by the fragment shader (fbTex sampler).
+	 */
+	private void loadFbTexture() {
+		if (!isFbTextureNeeded()) {
+			return;
+		}
+
+		int width = viewportWidth;
+		int height = viewportHeight;
+		int bufferWidth = context.fbw;
+		int pixelFormat = context.psm;
+
+		// Delete the texture and recreate a new one if its dimension has changed
+		if (fbTexture != null && (fbTexture.getWidth() != width || fbTexture.getHeight() != height || fbTexture.getTexImageWidth() != bufferWidth || fbTexture.getPixelFormat() != pixelFormat)) {
+			fbTexture.delete(re);
+			fbTexture = null;
+		}
+
+		// Create a new texture
+		if (fbTexture == null) {
+			fbTexture = new GETexture(Modules.sceDisplayModule.getTopAddrGe(), bufferWidth, width, height, pixelFormat);
+		}
+
+		// Copy the current screen (FrameBuffer) content to the texture
+		re.setActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER);
+		fbTexture.copyScreenToTexture(re);
+		re.setActiveTexture(ACTIVE_TEXTURE_NORMAL);
+	}
+
 	@Override
 	public void setVertexPointer(int size, int type, int stride, int bufferSize, Buffer buffer) {
 		re.setVertexAttribPointer(currentShaderProgram.getShaderAttribPosition(), size, type, false, stride, bufferSize, buffer);
@@ -785,14 +929,19 @@ public class REShader extends BaseRenderingEngineFunction {
 		// The uniform values are specific to a shader program:
 		// update the uniform values after switching the active shader program.
 		shaderContext.setUniforms(re, currentShaderProgram.getProgramId());
+		loadFbTexture();
 		super.drawArrays(type, first, count);
 	}
 
 	@Override
 	public void drawArraysBurstMode(int type, int first, int count) {
+		// drawArraysBurstMode is equivalent to drawArrays
+		// but without the need to set the uniforms (they are unchanged
+		// since the last call to drawArrays).
 		if (type == GU_SPRITES) {
 			type = spriteGeometryShaderInputType;
 		}
+		loadFbTexture();
 		super.drawArraysBurstMode(type, first, count);
 	}
 
@@ -969,5 +1118,108 @@ public class REShader extends BaseRenderingEngineFunction {
 	public void setVertexColor(float[] color) {
 		shaderContext.setVertexColor(color);
 		super.setVertexColor(color);
+	}
+
+	@Override
+	public void setStencilFunc(int func, int ref, int mask) {
+		if (useShaderStencilTest) {
+			shaderContext.setStencilFunc(func);
+			// Pre-mask the reference value with the mask value
+			shaderContext.setStencilRef(ref & mask);
+			shaderContext.setStencilMask(mask);
+		}
+		super.setStencilFunc(func, ref, mask);
+	}
+
+	@Override
+	public void setStencilOp(int fail, int zfail, int zpass) {
+		if (useShaderStencilTest) {
+			shaderContext.setStencilOpFail(fail);
+			shaderContext.setStencilOpZFail(zfail);
+			shaderContext.setStencilOpZPass(zpass);
+		}
+		super.setStencilOp(fail, zfail, zpass);
+	}
+
+	@Override
+	public void bindTexture(int texture) {
+		super.bindTexture(texture);
+	}
+
+	@Override
+	public void setColorMask(int redMask, int greenMask, int blueMask, int alphaMask) {
+		if (useShaderColorMask) {
+			shaderContext.setColorMask(redMask, greenMask, blueMask, alphaMask);
+			// The pre-computed not-values for the color masks
+			shaderContext.setNotColorMask((~redMask) & 0xFF, (~greenMask) & 0xFF, (~blueMask) & 0xFF, (~alphaMask) & 0xFF);
+			// The color mask is enabled when at least one color mask is non-zero
+			shaderContext.setColorMaskEnable(redMask != 0x00 || greenMask != 0x00 || blueMask != 0x00 || alphaMask != 0x00 ? 1 : 0);
+
+			// Do not call the "super" method in BaseRenderingEngineFunction
+			proxy.setColorMask(redMask, greenMask, blueMask, alphaMask);
+			// Set the on/off color masks
+			re.setColorMask(redMask != 0xFF, greenMask != 0xFF, blueMask != 0xFF, stencilTestFlag);
+		} else {
+			super.setColorMask(redMask, greenMask, blueMask, alphaMask);
+		}
+	}
+
+	@Override
+	public void setAlphaFunc(int func, int ref) {
+		if (useShaderAlphaTest) {
+			shaderContext.setAlphaTestFunc(func);
+			shaderContext.setAlphaTestRef(ref);
+		}
+		super.setAlphaFunc(func, ref);
+	}
+
+	@Override
+	public void setBlendEquation(int mode) {
+		if (useShaderBlendTest) {
+			shaderContext.setBlendEquation(mode);
+		}
+		super.setBlendEquation(mode);
+	}
+
+	@Override
+	public void setBlendFunc(int src, int dst) {
+		if (useShaderBlendTest) {
+			shaderContext.setBlendSrc(src);
+			shaderContext.setBlendDst(dst);
+			// Do not call the "super" method in BaseRenderingEngineFunction
+			proxy.setBlendFunc(src, dst);
+		} else {
+			super.setBlendFunc(src, dst);
+		}
+	}
+
+	@Override
+	public void setBlendDFix(float[] color) {
+		if (useShaderBlendTest) {
+			shaderContext.setBlendDFix(color);
+			// Do not call the "super" method in BaseRenderingEngineFunction
+			proxy.setBlendDFix(color);
+		} else {
+			super.setBlendDFix(color);
+		}
+	}
+
+	@Override
+	public void setBlendSFix(float[] color) {
+		if (useShaderBlendTest) {
+			shaderContext.setBlendSFix(color);
+			// Do not call the "super" method in BaseRenderingEngineFunction
+			proxy.setBlendSFix(color);
+		} else {
+			super.setBlendSFix(color);
+		}
+	}
+
+	@Override
+	public void setViewport(int x, int y, int width, int height) {
+		// Remember the viewport size for later use in loadFbTexture().
+		viewportWidth = width;
+		viewportHeight = height;
+		super.setViewport(x, y, width, height);
 	}
 }

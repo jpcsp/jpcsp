@@ -59,7 +59,27 @@ public enum Uniforms {
 	endOfUBO("endOfUBO"),
 	vertexColor("vertexColor"),
 	vinfoTexture("vinfoTexture"),
-	vinfoNormal("vinfoNormal");
+	vinfoNormal("vinfoNormal"),
+	stencilTestEnable("stencilTestEnable"),
+	stencilFunc("stencilFunc"),
+	stencilRef("stencilRef"),
+	stencilMask("stencilMask"),
+	stencilOpFail("stencilOpFail"),
+	stencilOpZFail("stencilOpZFail"),
+	stencilOpZPass("stencilOpZPass"),
+	fbTex("fbTex"),
+	colorMaskEnable("colorMaskEnable"),
+	colorMask("colorMask"),
+	notColorMask("notColorMask"),
+	alphaTestEnable("alphaTestEnable"),
+	alphaTestFunc("alphaTestFunc"),
+	alphaTestRef("alphaTestRef"),
+	blendTestEnable("blendTestEnable"),
+	blendEquation("blendEquation"),
+	blendSrc("blendSrc"),
+	blendDst("blendDst"),
+	blendSFix("blendSFix"),
+	blendDFix("blendDFix");
 
 	String uniformString;
 	int[] uniformId = new int[StateProxy.maxProgramId];

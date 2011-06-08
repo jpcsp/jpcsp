@@ -569,6 +569,8 @@
                               <Component id="enableGETextureCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="enableNativeCLUTCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="enableDynamicShadersCheck" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="enableShaderStencilTestCheck" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="enableShaderColorMaskCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace max="-2" attributes="0"/>
                       </Group>
@@ -596,6 +598,10 @@
                           <Component id="enableNativeCLUTCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="enableDynamicShadersCheck" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="enableShaderStencilTestCheck" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="enableShaderColorMaskCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace pref="30" max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -669,6 +675,20 @@
                   <Properties>
                     <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="Resource.get(&quot;enabledynamicshaders&quot;)" type="code"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="enableShaderStencilTestCheck">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="Resource.get(&quot;enableshaderstenciltest&quot;)" type="code"/>
+                    </Property>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="enableShaderColorMaskCheck">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="Resource.get(&quot;enableshadercolormask&quot;)" type="code"/>
                     </Property>
                   </Properties>
                 </Component>

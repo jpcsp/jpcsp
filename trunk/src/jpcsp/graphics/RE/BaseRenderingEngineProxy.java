@@ -358,6 +358,11 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
+	public void setUniform3(int id, float[] values) {
+		proxy.setUniform3(id, values);
+	}
+
+	@Override
 	public void setUniform4(int id, int[] values) {
 		proxy.setUniform4(id, values);
 	}
@@ -473,13 +478,13 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void linkProgram(int program) {
-		proxy.linkProgram(program);
+	public boolean linkProgram(int program) {
+		return proxy.linkProgram(program);
 	}
 
 	@Override
-	public void validateProgram(int program) {
-		proxy.validateProgram(program);
+	public boolean validateProgram(int program) {
+		return proxy.validateProgram(program);
 	}
 
 	@Override
@@ -1000,5 +1005,15 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	@Override
 	public String getShadingLanguageVersion() {
 		return proxy.getShadingLanguageVersion();
+	}
+
+	@Override
+	public void setBlendDFix(float[] color) {
+		proxy.setBlendDFix(color);
+	}
+
+	@Override
+	public void setBlendSFix(float[] color) {
+		proxy.setBlendSFix(color);
 	}
 }

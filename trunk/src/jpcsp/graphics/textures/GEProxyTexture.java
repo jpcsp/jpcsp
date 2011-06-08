@@ -33,8 +33,8 @@ public abstract class GEProxyTexture extends GETexture {
 	}
 
 	@Override
-	public void bind(IRenderingEngine re) {
-		super.bind(re);
+	public void bind(IRenderingEngine re, boolean forDrawing) {
+		super.bind(re, forDrawing);
 
 		if (isUpdateRequired(re)) {
 			// Update the texture each time the GETexture has changed
@@ -50,7 +50,9 @@ public abstract class GEProxyTexture extends GETexture {
 
 			re.bindFramebuffer(IRenderingEngine.RE_FRAMEBUFFER, 0);
 			re.bindTexture(textureId);
-			re.setTextureFormat(pixelFormat, false);
+			if (forDrawing) {
+				re.setTextureFormat(pixelFormat, false);
+			}
 
 			geTexture.setChanged(false);
 		}
