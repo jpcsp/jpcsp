@@ -242,6 +242,11 @@ public class REShader extends BaseRenderingEngineFunction {
 			shaderVersion = Math.max(130, shaderVersion);
 		}
 
+		if (useShaderStencilTest || useShaderBlendTest || useShaderColorMask) {
+			// Function texelFetch requires at least shader version 1.30
+			shaderVersion = Math.max(130, shaderVersion);
+		}
+
 		boolean useBitOperators = re.isExtensionAvailable("GL_EXT_gpu_shader4");
 		addDefine(staticDefines, "USE_BIT_OPERATORS", useBitOperators);
 		if (!useBitOperators) {
