@@ -1028,7 +1028,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		shaderContext.setClutShift(context.tex_clut_shift);
 		shaderContext.setClutMask(context.tex_clut_mask);
-		shaderContext.setClutOffset(context.tex_clut_start);
+		shaderContext.setClutOffset(context.tex_clut_start << 4);
 		shaderContext.setMipmapShareClut(context.mipmapShareClut);
 		shaderContext.setClutIndexHint(getClutIndexHint(pixelFormat, numEntries));
 
