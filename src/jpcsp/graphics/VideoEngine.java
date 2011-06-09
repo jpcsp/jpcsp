@@ -891,7 +891,7 @@ public class VideoEngine {
     }
 
     private int getClutAddr(int level, int clutNumEntries, int clutEntrySize) {
-        return context.tex_clut_addr + context.tex_clut_start * clutEntrySize;
+        return context.tex_clut_addr + (context.tex_clut_start << 4) * clutEntrySize;
     }
 
     private void readClut() {
@@ -919,8 +919,9 @@ public class VideoEngine {
         // Update the clut_buffer only if some clut parameters have been changed
         // since last update.
         if (clutIsDirty) {
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 2), (clutNumEntries - context.tex_clut_start) * 2, 2);
-            for (int i = context.tex_clut_start; i < clutNumEntries; i++) {
+        	int clutOffset = context.tex_clut_start << 4;
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 2), (clutNumEntries - clutOffset) << 1, 2);
+            for (int i = clutOffset; i < clutNumEntries; i++) {
                 clut_buffer16[i] = (short) memoryReader.readNext();
             }
             clutIsDirty = false;
@@ -940,8 +941,9 @@ public class VideoEngine {
         // Update the clut_buffer only if some clut parameters have been changed
         // since last update.
         if (clutIsDirty) {
-            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 4), (clutNumEntries - context.tex_clut_start) * 4, 4);
-            for (int i = context.tex_clut_start; i < clutNumEntries; i++) {
+        	int clutOffset = context.tex_clut_start << 4;
+            IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 4), (clutNumEntries - clutOffset) << 2, 4);
+            for (int i = clutOffset; i < clutNumEntries; i++) {
                 clut_buffer32[i] = memoryReader.readNext();
             }
             clutIsDirty = false;
@@ -956,7 +958,7 @@ public class VideoEngine {
     }
 
     private int getClutIndex(int index) {
-        return ((context.tex_clut_start + index) >> context.tex_clut_shift) & context.tex_clut_mask;
+        return ((index >> context.tex_clut_shift) & context.tex_clut_mask) | (context.tex_clut_start << 4);
     }
 
     // UnSwizzling based on pspplayer

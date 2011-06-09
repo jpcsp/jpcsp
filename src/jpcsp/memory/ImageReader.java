@@ -369,8 +369,6 @@ public class ImageReader {
 	 * - output: 32-bit values corresponding to the unswizzled image
 	 */
 	private static final class SwizzleDecoder extends ImageDecoder {
-		private int bufferWidth;
-		private int bytesPerPixel;
 		private int[] buffer;
 		private int index;
 		private int maxIndex;
@@ -380,8 +378,6 @@ public class ImageReader {
 
 		public SwizzleDecoder(IMemoryReader memoryReader, int bufferWidth, int bytesPerPixel) {
 			super(memoryReader);
-			this.bufferWidth = bufferWidth;
-			this.bytesPerPixel = bytesPerPixel;
 	        rowWidth = (bytesPerPixel > 0) ? (bufferWidth * bytesPerPixel) : (bufferWidth / 2);
 	        pitch = rowWidth / 4;
 	        bxc = rowWidth / 16;
@@ -515,20 +511,21 @@ public class ImageReader {
 		}
 
 		protected int getClutAddr() {
-			return clutAddr + clutStart * clutEntrySize;
+			return clutAddr + (clutStart << 4) * clutEntrySize;
 	    }
 
 		protected void readClut() {
 			int clutNumEntries = clutNumBlocks * 32 / clutEntrySize;
 			clut = new int[clutNumEntries];
+			int clutOffset = clutStart << 4;
 			IMemoryReader clutReader = MemoryReader.getMemoryReader(getClutAddr(), (clutNumEntries - clutStart) * clutEntrySize, clutEntrySize);
-			for (int i = clutStart; i < clutNumEntries; i++) {
+			for (int i = clutOffset; i < clutNumEntries; i++) {
 				clut[i] = clutReader.readNext();
 			}
 		}
 
 		protected int getClutIndex(int index) {
-			return ((clutStart + index) >> clutShift) & clutMask;
+			return ((index >> clutShift) & clutMask) | (clutStart << 4);
 		}
 
 		@Override
