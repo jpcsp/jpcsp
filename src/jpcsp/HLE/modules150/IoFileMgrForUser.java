@@ -47,6 +47,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -1447,6 +1448,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     info.position += size;
                     Utilities.readFully(info.readOnlyFile, data_addr, size);
                     result = size;
+
+                    // Invalidate any compiled code in the read range
+                    RuntimeContext.invalidateRange(data_addr, size);
 
                     if (info.sectorBlockMode) {
                         result /= UmdIsoFile.sectorLength;
