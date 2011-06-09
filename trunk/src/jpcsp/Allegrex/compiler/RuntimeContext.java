@@ -967,9 +967,28 @@ public class RuntimeContext {
 
     public static void invalidateRange(int addr, int size) {
         if (isActive) {
-    		log.debug("RuntimeContext.invalidateRange(addr=0x" + Integer.toHexString(addr) + ", size=" + size + ")");
-            codeBlocks.clear();
-            Compiler.getInstance().invalidateRange(addr, size);
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("RuntimeContext.invalidateRange(addr=0x%08X, size=%d)", addr, size));
+        	}
+
+        	// Invalidate all the code blocks only if the given range
+        	// is inside a code block.
+        	boolean isRangeInsideCodeBlock = false;
+        	for (CodeBlock codeBlock : codeBlocks.values()) {
+        		if (codeBlock.getLowestAddress() >= addr && codeBlock.getLowestAddress() < addr + size) {
+        			isRangeInsideCodeBlock = true;
+        			break;
+        		}
+        		if (codeBlock.getHighestAddress() >= addr && codeBlock.getHighestAddress() < addr + size) {
+        			isRangeInsideCodeBlock = true;
+        			break;
+        		}
+        	}
+
+        	if (isRangeInsideCodeBlock) {
+        		codeBlocks.clear();
+        		Compiler.getInstance().invalidateRange(addr, size);
+        	}
     	}
     }
 
