@@ -62,7 +62,6 @@ public class RuntimeContext {
 	public  static Processor processor;
 	public  static CpuState cpu;
 	public  static Memory memory;
-	public  static final boolean enableIntructionCounting = true;
 	public  static       boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
 	public  static final boolean debugCodeBlockCalls = false;
