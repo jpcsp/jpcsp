@@ -25,7 +25,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
 import static jpcsp.util.Utilities.readStringZ;
 
@@ -294,32 +293,21 @@ public class EventFlagManager {
             cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_NO_MULTI_PERM;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            Memory mem = Memory.getInstance();
-            int micros = 0;
-            if (Memory.isAddressGood(timeout_addr)) {
-                micros = mem.read32(timeout_addr);
-            }
             if (!checkEventFlag(event, bits, wait, outBits_addr)) {
                 // Failed, but it's ok, just wait a little
                 if (log.isDebugEnabled()) {
                     log.debug("hleKernelWaitEventFlag - '" + event.name + "' fast check failed");
                 }
                 event.numWaitThreads++;
-                // Go to wait state
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                currentThread.waitType = PSP_WAIT_EVENTFLAG;
-                currentThread.waitId = uid;
                 // Wait on a specific event flag
-                threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
                 currentThread.wait.waitingOnEventFlag = true;
                 currentThread.wait.EventFlag_id = uid;
                 currentThread.wait.EventFlag_bits = bits;
                 currentThread.wait.EventFlag_wait = wait;
                 currentThread.wait.EventFlag_outBits_addr = outBits_addr;
-                currentThread.wait.waitStateChecker = eventFlagWaitStateChecker;
 
-                threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                threadMan.hleRescheduleCurrentThread(doCallbacks);
+                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_EVENTFLAG, uid, eventFlagWaitStateChecker, timeout_addr, doCallbacks);
             } else {
                 // Success, do not reschedule the current thread.
                 if (log.isDebugEnabled()) {

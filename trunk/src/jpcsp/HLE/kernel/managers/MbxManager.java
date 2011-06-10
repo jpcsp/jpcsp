@@ -24,7 +24,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
 
 import java.util.HashMap;
@@ -251,11 +250,6 @@ public class MbxManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        int micros = 0;
-        if (!poll && Memory.isAddressGood(timeout_addr)) {
-            micros = mem.read32(timeout_addr);
-        }
-
         if (log.isDebugEnabled()) {
             String waitType = "";
             if (poll) {
@@ -263,7 +257,7 @@ public class MbxManager {
             } else if (timeout_addr == 0) {
                 waitType = "forever";
             } else {
-                waitType = micros + " ms";
+                waitType = mem.read32(timeout_addr) + " ms";
             }
             if (doCallbacks) {
                 waitType += " + CB";
@@ -284,15 +278,10 @@ public class MbxManager {
                     }
                     info.numWaitThreads++;
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    currentThread.waitType = PSP_WAIT_MBX;
-                    currentThread.waitId = uid;
-                    threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
                     currentThread.wait.waitingOnMbxReceive = true;
                     currentThread.wait.Mbx_id = uid;
                     currentThread.wait.Mbx_resultAddr = addr_msg_addr;
-                    currentThread.wait.waitStateChecker = mbxWaitStateChecker;
-                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                    threadMan.hleRescheduleCurrentThread(doCallbacks);
+                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MBX, uid, mbxWaitStateChecker, timeout_addr, doCallbacks);
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("hleKernelReceiveMbx has no messages.");

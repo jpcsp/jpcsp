@@ -29,7 +29,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_SUCH_DEVICE
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNSUPPORTED_OPERATION;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
@@ -1096,15 +1095,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     // Start the waiting mode.
                     ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    currentThread.waitType = PSP_WAIT_EVENTFLAG;
-                    int timeout = 0;
-                    boolean forever = true;
-                    threadMan.hleKernelThreadWait(currentThread, timeout, forever);
                     currentThread.wait.waitingOnIo = true;
                     currentThread.wait.Io_id = info.uid;
-                    currentThread.wait.waitStateChecker = ioWaitStateChecker;
-                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                    threadMan.hleRescheduleCurrentThread(callbacks);
+                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_EVENTFLAG, info.uid, ioWaitStateChecker, callbacks);
                 } else {
                     // For sceIoPollAsync, only call the ioListeners.
                     for (IIoListener ioListener : ioListeners) {

@@ -25,7 +25,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
 import static jpcsp.util.Utilities.readStringNZ;
 
@@ -295,12 +294,6 @@ public class SemaManager {
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-            Memory mem = Memory.getInstance();
-            int micros = 0;
-
-            if (Memory.isAddressGood(timeout_addr)) {
-                micros = mem.read32(timeout_addr);
-            }
 
             if (!tryWaitSemaphore(sema, signal)) {
                 // Failed, but it's ok, just wait a little
@@ -310,22 +303,11 @@ public class SemaManager {
                 sema.numWaitThreads++;
 
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-
-                // wait type
-                currentThread.waitType = PSP_WAIT_SEMA;
-                currentThread.waitId = semaid;
-
-                // Go to wait state
-                threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
-
                 // Wait on a specific semaphore
                 currentThread.wait.waitingOnSemaphore = true;
                 currentThread.wait.Semaphore_id = semaid;
                 currentThread.wait.Semaphore_signal = signal;
-                currentThread.wait.waitStateChecker = semaWaitStateChecker;
-
-                threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                threadMan.hleRescheduleCurrentThread(doCallbacks);
+                threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_SEMA, semaid, semaWaitStateChecker, timeout_addr, doCallbacks);
             } else {
                 // Success, do not reschedule the current thread.
                 if (log.isDebugEnabled()) {
