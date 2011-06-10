@@ -69,6 +69,8 @@ public interface IRenderingEngine {
 	public static final int RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551 = 12;
 	public static final int RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444 = 13;
 	public static final int RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888 = 14;
+	public static final int RE_DEPTH_COMPONENT                      = 15;
+	public static final int RE_STENCIL_INDEX                        = 16;
 
 	// Flags:
 	public static final int GU_ALPHA_TEST          = 0;
@@ -448,7 +450,7 @@ public interface IRenderingEngine {
 	public void deleteRenderbuffer(int renderbuffer);
 	public void bindFramebuffer(int target, int framebuffer);
 	public void bindRenderbuffer(int renderbuffer);
-	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height);
+	public void setRenderbufferStorage(int internalFormat, int width, int height);
 	public void setFramebufferRenderbuffer(int target, int attachment, int renderbuffer);
 	public void setFramebufferTexture(int target, int attachment, int texture, int level);
 	public int genVertexArray();

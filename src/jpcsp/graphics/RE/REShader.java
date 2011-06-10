@@ -26,10 +26,12 @@ import java.util.regex.Pattern;
 
 import jpcsp.Settings;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceDisplay;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.Uniforms;
 import jpcsp.graphics.VertexInfo;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.textures.FBTexture;
 import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
@@ -76,6 +78,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean useShaderColorMask = false;
 	protected boolean useShaderAlphaTest = false;
 	protected boolean useShaderBlendTest = false;
+	protected boolean useRenderToTexture = false;
 	protected int clutTextureId = -1;
 	protected ByteBuffer clutBuffer;
     protected DurationStatistics textureCacheLookupStatistics = new CpuDurationStatistics("Lookup in TextureCache for CLUTs");
@@ -90,6 +93,7 @@ public class REShader extends BaseRenderingEngineFunction {
 	protected boolean stencilTestFlag;
 	protected int viewportWidth;
 	protected int viewportHeight;
+	protected FBTexture renderTexture;
 
 	public REShader(IRenderingEngine proxy) {
 		super(proxy);
@@ -154,6 +158,17 @@ public class REShader extends BaseRenderingEngineFunction {
 			// i.e. the alpha value before the stencil test.
 			useShaderAlphaTest = true;
 			useShaderBlendTest = true;
+		}
+
+		if (useShaderStencilTest || useShaderBlendTest || useShaderColorMask) {
+			// If we are using shaders requiring the current frame buffer content
+			// as a texture, activate the rendering to a texture if available.
+			if (re.isFramebufferObjectAvailable()) {
+				useRenderToTexture = true;
+				log.info("Rendering to a texture");
+			} else {
+				log.info("Not rendering to a texture, FBO's are not supported by your graphics card. This will have a negative performance impact.");
+			}
 		}
 
 		initShadersDefines();
@@ -652,6 +667,30 @@ public class REShader extends BaseRenderingEngineFunction {
 	@Override
 	public void startDisplay() {
 		re.useProgram(defaultShaderProgram.getProgramId());
+
+		if (useRenderToTexture) {
+			sceDisplay display = Modules.sceDisplayModule;
+			int width = display.getWidthFb();
+			int height = display.getHeightFb();
+			int bufferWidth = display.getBufferWidthFb();
+			int pixelFormat = display.getPixelFormatFb();
+
+			// if the format of the Frame Buffer has changed, re-create a new texture
+			if (renderTexture != null && (width != renderTexture.getWidth() || height != renderTexture.getHeight() || bufferWidth != renderTexture.getTexImageWidth() || pixelFormat != renderTexture.getPixelFormat())) {
+				renderTexture.delete(re);
+				renderTexture = null;
+			}
+
+			// Activate the rendering to a texture
+			if (renderTexture == null) {
+				renderTexture = new FBTexture(display.getTopAddrFb(), bufferWidth, width, height, pixelFormat);
+				renderTexture.bind(re, false);
+				re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
+			} else {
+				renderTexture.bind(re, false);
+			}
+		}
+
 		super.startDisplay();
 
 		// We don't use Client States
@@ -663,7 +702,12 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	@Override
 	public void endDisplay() {
-        re.useProgram(0);
+		if (useRenderToTexture) {
+			// Copy the rendered texture back to the main frame buffer
+			renderTexture.copyTextureToScreen(re);
+		}
+
+		re.useProgram(0);
 		super.endDisplay();
 	}
 
@@ -868,6 +912,18 @@ public class REShader extends BaseRenderingEngineFunction {
 		int height = viewportHeight;
 		int bufferWidth = context.fbw;
 		int pixelFormat = context.psm;
+
+		if (useRenderToTexture) {
+			// Use the render texture if it is compatible with the current GE settings.
+			if (renderTexture.getWidth() >= width && renderTexture.getHeight() >= height && renderTexture.getTexImageWidth() >= bufferWidth && renderTexture.getPixelFormat() == pixelFormat) {
+				// Tell the shader which texture has to be used for the fbTex sampler.
+				re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
+				return;
+			}
+			// If the render texture is not compatible with the current GE settings,
+			// we are not lucky and have to copy the current screen to a compatible
+			// texture.
+		}
 
 		// Delete the texture and recreate a new one if its dimension has changed
 		if (fbTexture != null && (fbTexture.getWidth() != width || fbTexture.getHeight() != height || fbTexture.getTexImageWidth() != bufferWidth || fbTexture.getPixelFormat() != pixelFormat)) {

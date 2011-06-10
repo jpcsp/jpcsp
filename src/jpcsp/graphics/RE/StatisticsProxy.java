@@ -1247,10 +1247,10 @@ public class StatisticsProxy extends BaseRenderingEngineProxy {
 	}
 
 	@Override
-	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height) {
+	public void setRenderbufferStorage(int internalFormat, int width, int height) {
 		DurationStatistics statistic = statistics[122];
 		statistic.start();
-		super.setRenderbufferStorage(renderbuffer, internalFormat, width, height);
+		super.setRenderbufferStorage(internalFormat, width, height);
 		statistic.end();
 	}
 

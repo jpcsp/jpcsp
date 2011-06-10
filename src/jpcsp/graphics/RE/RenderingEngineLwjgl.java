@@ -293,7 +293,9 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
         GL11.GL_RGB,                           // RE_PIXEL_STORAGE_16BIT_INDEXED_BGR5650
         GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR5551
         GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_16BIT_INDEXED_ABGR4444
-        GL11.GL_RGBA                           // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        GL11.GL_RGBA,                          // RE_PIXEL_STORAGE_32BIT_INDEXED_ABGR8888
+        GL11.GL_DEPTH_COMPONENT,               // RE_DEPTH_COMPONENT
+        GL11.GL_STENCIL_INDEX                  // RE_STENCIL_INDEX
 	};
 	protected static final int[] textureTypeToGL = {
         GL12.GL_UNSIGNED_SHORT_5_6_5_REV,      // TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650
@@ -1514,7 +1516,7 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 	}
 
 	@Override
-	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height) {
+	public void setRenderbufferStorage(int internalFormat, int width, int height) {
 		ARBFramebufferObject.glRenderbufferStorage(ARBFramebufferObject.GL_RENDERBUFFER, textureInternalFormatToGL[internalFormat], width, height);
 	}
 
