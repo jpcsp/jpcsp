@@ -58,6 +58,7 @@ public class ModuleMgrForUser implements HLEModule {
         mpegbase,
         mpeg,
         psmf,
+        libpsmfplayer,
         pspnet,
         pspnet_adhoc,
         pspnet_adhocctl,
@@ -283,8 +284,9 @@ public class ModuleMgrForUser implements HLEModule {
                     // Simulate a successful loading
                     log.info("hleKernelLoadModule(path='" + name + "') encrypted module not loaded");
                     SceModule fakeModule = new SceModule(true);
+                    fakeModule.addAllocatedMemory(moduleInfo);
                     fakeModule.modname = prxname.toString();
-                    fakeModule.write(mem, fakeModule.address);
+                    fakeModule.write(mem, moduleInfo.addr);
                     Managers.modules.addModule(fakeModule);
                     cpu.gpr[2] = fakeModule.modid;
                 } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
