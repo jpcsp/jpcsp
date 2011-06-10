@@ -262,15 +262,11 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = 0;
         } else {
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-            // Wait type.
-            currentThread.waitType = SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
-            // Go to wait state.
-            threadMan.hleKernelThreadWait(currentThread, timeout, !doTimeout);
             // Wait on a specific umdStat.
             currentThread.wait.waitingOnUmd = true;
             currentThread.wait.wantedUmdStat = wantedStat;
             waitingThreads.add(currentThread);
-            threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
+            threadMan.hleKernelThreadEnterWaitState(currentThread, SceKernelThreadInfo.PSP_WAIT_EVENTFLAG, -1, null, timeout, !doTimeout, doCallbacks);
         }
         threadMan.hleRescheduleCurrentThread(doCallbacks);
     }

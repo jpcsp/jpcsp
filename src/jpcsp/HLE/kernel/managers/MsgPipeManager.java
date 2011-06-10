@@ -26,7 +26,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MSGPIPE;
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_High;
@@ -365,11 +364,6 @@ public class MsgPipeManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        int micros = 0;
-        if (!poll && Memory.isAddressGood(timeout_addr)) {
-            micros = mem.read32(timeout_addr);
-        }
-
         if (log.isDebugEnabled()) {
             String waitType = "";
             if (poll) {
@@ -377,7 +371,7 @@ public class MsgPipeManager {
             } else if (timeout_addr == 0) {
                 waitType = "forever";
             } else {
-                waitType = micros + " ms";
+                waitType = mem.read32(timeout_addr) + " ms";
             }
             if (doCallbacks) {
                 waitType += " + CB";
@@ -402,19 +396,12 @@ public class MsgPipeManager {
                     }
                     info.numSendWaitThreads++;
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    // Wait type.
-                    currentThread.waitType = PSP_WAIT_MSGPIPE;
-                    currentThread.waitId = uid;
-                    // Go to wait state.
-                    threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
-                    // Wait on a specific XXX.
+                    // Wait on a specific MsgPipe.
                     currentThread.wait.waitingOnMsgPipeSend = true;
                     currentThread.wait.MsgPipe_id = uid;
                     currentThread.wait.MsgPipe_address = msg_addr;
                     currentThread.wait.MsgPipe_size = size;
-                    currentThread.wait.waitStateChecker = msgPipeSendWaitStateChecker;
-                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                    threadMan.hleRescheduleCurrentThread(doCallbacks);
+                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MSGPIPE, uid, msgPipeSendWaitStateChecker, timeout_addr, doCallbacks);
                 } else {
                     log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size) + " max 0x" + Integer.toHexString(info.freeSize) + " (pipe needs consuming)");
                     cpu.gpr[2] = ERROR_KERNEL_MESSAGE_PIPE_FULL;
@@ -447,11 +434,6 @@ public class MsgPipeManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        int micros = 0;
-        if (!poll && Memory.isAddressGood(timeout_addr)) {
-            micros = mem.read32(timeout_addr);
-        }
-
         if (log.isDebugEnabled()) {
             String waitType = "";
             if (poll) {
@@ -459,7 +441,7 @@ public class MsgPipeManager {
             } else if (timeout_addr == 0) {
                 waitType = "forever";
             } else {
-                waitType = micros + " ms";
+                waitType = mem.read32(timeout_addr) + " ms";
             }
             if (doCallbacks) {
                 waitType += " + CB";
@@ -484,20 +466,13 @@ public class MsgPipeManager {
                     }
                     info.numReceiveWaitThreads++;
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    // Wait type.
-                    currentThread.waitType = PSP_WAIT_MSGPIPE;
-                    currentThread.waitId = uid;
-                    // Go to wait state.
-                    threadMan.hleKernelThreadWait(currentThread, micros, (timeout_addr == 0));
-                    // Wait on a specific XXX.
+                    // Wait on a specific MsgPipe.
                     currentThread.wait.waitingOnMsgPipeReceive = true;
                     currentThread.wait.MsgPipe_id = uid;
                     currentThread.wait.MsgPipe_address = msg_addr;
                     currentThread.wait.MsgPipe_size = size;
                     currentThread.wait.MsgPipe_resultSize_addr = resultSize_addr;
-                    currentThread.wait.waitStateChecker = msgPipeReceiveWaitStateChecker;
-                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                    threadMan.hleRescheduleCurrentThread(doCallbacks);
+                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MSGPIPE, uid, msgPipeReceiveWaitStateChecker, timeout_addr, doCallbacks);
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size) + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));

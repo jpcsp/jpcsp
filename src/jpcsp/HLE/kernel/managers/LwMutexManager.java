@@ -25,7 +25,6 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_LWMUTEX;
 
 import java.util.HashMap;
@@ -200,7 +199,6 @@ public class LwMutexManager {
 
     private void hleKernelLockLwMutex(int uid, int count, int timeout_addr, boolean wait, boolean doCallbacks) {
         CpuState cpu = Emulator.getProcessor().cpu;
-        Memory mem = Memory.getInstance();
 
         String message = "hleKernelLockLwMutex(uid=" + Integer.toHexString(uid) + ",count=" + count + ",timeout_addr=0x" + Integer.toHexString(timeout_addr) + ") wait=" + wait + ",cb=" + doCallbacks;
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
@@ -217,27 +215,11 @@ public class LwMutexManager {
                 if (wait) {
                     // Failed, but it's ok, just wait a little
                     info.numWaitThreads++;
-                    // wait type
-                    currentThread.waitType = PSP_WAIT_LWMUTEX;
-                    currentThread.waitId = uid;
-                    // Go to wait state
-                    int timeout = 0;
-                    boolean forever = (timeout_addr == 0);
-                    if (timeout_addr != 0) {
-                        if (Memory.isAddressGood(timeout_addr)) {
-                            timeout = mem.read32(timeout_addr);
-                        } else {
-                            log.warn(message + " - bad timeout address");
-                        }
-                    }
-                    threadMan.hleKernelThreadWait(currentThread, timeout, forever);
                     // Wait on a specific lwmutex
                     currentThread.wait.waitingOnLwMutex = true;
                     currentThread.wait.LwMutex_id = uid;
                     currentThread.wait.LwMutex_count = count;
-                    currentThread.wait.waitStateChecker = lwMutexWaitStateChecker;
-                    threadMan.hleChangeThreadState(currentThread, PSP_THREAD_WAITING);
-                    threadMan.hleRescheduleCurrentThread(doCallbacks);
+                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_LWMUTEX, uid, lwMutexWaitStateChecker, timeout_addr, doCallbacks);
                 } else {
                     if ((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) != PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) {
                         cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_RECURSIVE_NOT_ALLOWED;
