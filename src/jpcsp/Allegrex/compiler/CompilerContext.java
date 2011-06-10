@@ -41,6 +41,7 @@ import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.memory.SafeFastMemory;
+import jpcsp.util.DurationStatistics;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -78,6 +79,7 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_MAX = 13;
     private static final int STACK_MAX = 11;
     private static final int spRegisterIndex = 29;
+	private boolean enableIntructionCounting = false;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
     public Stack<Integer> blocksToBeAnalysed = new Stack<Integer>();
     private int currentInstructionCount;
@@ -113,6 +115,12 @@ public class CompilerContext implements ICompilerContext {
         this.classLoader = classLoader;
         nativeCodeManager = compiler.getNativeCodeManager();
         methodMaxInstructions = compiler.getDefaultMethodMaxInstructions();
+
+        // Count instructions only when the profile is enabled or
+        // when the statistics are enabled
+        if (Profiler.enableProfiler || DurationStatistics.collectStatistics) {
+        	enableIntructionCounting = true;
+        }
 
         if (fastSyscalls == null) {
 	        fastSyscalls = new TreeSet<Integer>();
@@ -771,7 +779,7 @@ public class CompilerContext implements ICompilerContext {
             mv.visitVarInsn(Opcodes.ASTORE, LOCAL_CPU);
         }
 
-        if (RuntimeContext.enableIntructionCounting) {
+        if (enableIntructionCounting) {
             currentInstructionCount = 0;
             mv.visitInsn(Opcodes.ICONST_0);
             mv.visitVarInsn(Opcodes.ISTORE, LOCAL_INSTRUCTION_COUNT);
@@ -816,7 +824,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void flushInstructionCount(boolean local, boolean last) {
-        if (RuntimeContext.enableIntructionCounting) {
+        if (enableIntructionCounting) {
         	if (local) {
         		if (currentInstructionCount > 0) {
         			mv.visitIincInsn(LOCAL_INSTRUCTION_COUNT, currentInstructionCount);
@@ -862,7 +870,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void beforeInstruction(CodeInstruction codeInstruction) {
-	    if (RuntimeContext.enableIntructionCounting) {
+	    if (enableIntructionCounting) {
 	    	if (codeInstruction.isBranchTarget()) {
 	    		flushInstructionCount(true, false);
 	    	}
