@@ -754,6 +754,14 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     public int getPixelFormatFb() { return pixelformatFb; }
     public int getSync() { return sync; }
 
+    public int getWidthFb() {
+    	return width;
+    }
+
+    public int getHeightFb() {
+    	return height;
+    }
+
     public int getTopAddrGe() {
     	return topaddrGe;
     }

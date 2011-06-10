@@ -273,6 +273,10 @@ public class GETexture {
 		}
 	}
 
+	public int getTextureId() {
+		return textureId;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("GETexture[0x%08X-0x%08X, %dx%d, bufferWidth=%d, pixelFormat=%d(%s)]", address, address + length, width, height, bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat));

@@ -918,8 +918,8 @@ public class BaseRenderingEngineProxy implements IRenderingEngine {
 	}
 
 	@Override
-	public void setRenderbufferStorage(int renderbuffer, int internalFormat, int width, int height) {
-		proxy.setRenderbufferStorage(renderbuffer, internalFormat, width, height);
+	public void setRenderbufferStorage(int internalFormat, int width, int height) {
+		proxy.setRenderbufferStorage(internalFormat, width, height);
 	}
 
 	@Override
