@@ -105,7 +105,7 @@ public class HLEModuleManager {
         sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3" }),
         sceDeflt(Modules.sceDefltModule),
         sceWlan(Modules.sceWlanModule),
-        sceNet(Modules.sceNetModule, new String[] { "pspnet" }),
+        sceNet(Modules.sceNetModule, new String[] { "pspnet", "PSP_MODULE_NET_COMMON" }),
         sceNetAdhoc(Modules.sceNetAdhocModule, new String[] { "pspnet_adhoc", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
         sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl" }),
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule),
@@ -121,9 +121,9 @@ public class HLEModuleManager {
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module),
-        sceHttp(Modules.sceHttpModule, new String[] { "libhttp_rfc" }),
+        sceHttp(Modules.sceHttpModule, new String[] { "libhttp_rfc", "PSP_MODULE_NET_HTTP" }),
         sceHttps(Modules.sceHttpsModule),
-        sceSsl(Modules.sceSslModule, new String[] { "libssl" }),
+        sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_MODULE_NET_SSL" }),
         sceP3da(Modules.sceP3daModule);
 
     	private HLEModule module;
@@ -215,9 +215,12 @@ public class HLEModuleManager {
     }
 
     private void addToFlash0PRXMap(String prxName, HLEModule module) {
-    	List<HLEModule> modules = new LinkedList<HLEModule>();
+    	prxName = prxName.toLowerCase();
+    	if (!flash0prxMap.containsKey(prxName)) {
+    		flash0prxMap.put(prxName, new LinkedList<HLEModule>());
+    	}
+    	List<HLEModule> modules = flash0prxMap.get(prxName);
     	modules.add(module);
-    	flash0prxMap.put(prxName.toLowerCase(), modules);
     }
 
     // Add modules in flash (or on UMD) that aren't loaded by default on this firmwareVersion
