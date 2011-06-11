@@ -22,6 +22,7 @@ import jpcsp.Emulator;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.format.DeferredStub;
 import jpcsp.util.CpuDurationStatistics;
@@ -109,15 +110,22 @@ public class SyscallHandler {
 	        // Try and handle as an HLE module export
 	        boolean handled = HLEModuleManager.getInstance().handleSyscall(code);
 	        if (!handled) {
-	            CpuState cpu = Emulator.getProcessor().cpu;
-	            String name = "";
-	            for (SyscallIgnore c : SyscallIgnore.values()) {
-	                if (c.getSyscall() == code) {
-	                	name = c.toString();
-	                	break;
-	                }
-	            }
-	            Modules.log.warn(String.format("Unsupported syscall %X %s %08X %08X %08X", code, name, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+	        	// Check if this is the syscall
+	        	// for an HLE function currently being uninstalled
+	        	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getSyscallFunction(code);
+	        	if (hleModuleFunction != null) {
+	        		Modules.log.error(String.format("HLE Function %s(%s) not activated by default for Firmware Version %X", hleModuleFunction.getFunctionName(), hleModuleFunction.getModuleName(), Emulator.getInstance().getFirmwareVersion()));
+	        	} else {
+		            CpuState cpu = Emulator.getProcessor().cpu;
+		            String name = "";
+		            for (SyscallIgnore c : SyscallIgnore.values()) {
+		                if (c.getSyscall() == code) {
+		                	name = c.toString();
+		                	break;
+		                }
+		            }
+		            Modules.log.warn(String.format("Unsupported syscall %X %s %08X %08X %08X", code, name, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+	        	}
 	        }
 
 	        if (DurationStatistics.collectStatistics) {
