@@ -49,29 +49,16 @@ public class ModuleMgrForUser implements HLEModule {
 
     protected static Logger log = Modules.getLogger("ModuleMgrForUser");
 
+    // Modules that should never be loaded
+    // (include here only modules not described in HLEModuleManager)
     enum bannedModulesList {
-        LIBFONT,
-        sc_sascore,
         audiocodec,
-        libatrac3plus,
         videocodec,
         mpegbase,
-        mpeg,
-        psmf,
-        libpsmfplayer,
-        pspnet,
-        pspnet_adhoc,
-        pspnet_adhocctl,
-        pspnet_inet,
-        pspnet_adhoc_matching,
         pspnet_adhoc_download,
-        pspnet_apctl,
-        pspnet_resolver,
         pspnet_ap_dialog_dummy,
         libparse_uri,
-        libparse_http,
-        libhttp_rfc,
-        libssl
+        libparse_http
     }
 
     @Override
@@ -177,29 +164,27 @@ public class ModuleMgrForUser implements HLEModule {
             prxname.append("UNKNOWN");
         }
 
-        // Load flash0 modules as Java HLE modules
+        HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+
+        // Check if this an HLE module
+        if (moduleManager.hasFlash0Module(prxname.toString())) {
+            log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
+            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
+            return true;
+        }
+
+        // Ban flash0 modules
         if (name.startsWith("flash0:")) {
-            // Simulate a successful loading
-            HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-            if (moduleManager.hasFlash0Module(prxname.toString())) {
-                log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
-            } else {
-                log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-            }
-            cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname.toString());
+            log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
             return true;
         }
 
         // Ban some modules
         for (bannedModulesList bannedModuleName : bannedModulesList.values()) {
             if (bannedModuleName.name().equalsIgnoreCase(prxname.toString())) {
-                HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-                if (moduleManager.hasFlash0Module(prxname.toString())) {
-                    log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
-                } else {
-                    log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from banlist not loaded");
-                }
-                cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname.toString());
+                log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from banlist not loaded");
+                cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
                 return true;
             }
         }

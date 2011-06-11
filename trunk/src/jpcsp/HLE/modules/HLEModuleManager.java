@@ -53,6 +53,11 @@ public class HLEModuleManager {
     private int syscallCodeAllocator;
     private boolean modulesStarted = false;
 
+    // Remember all the allocated syscalls, even when they are uninstalled
+    // so that SyscallHandler can output an appropriate message when trying
+    // to execute an uninstalled syscall.
+    private HashMap<Integer, HLEModuleFunction> allSyscallCodes;
+
     private HashMap<String, List<HLEModule>> flash0prxMap;
 
     /** The current firmware version we are using
@@ -104,7 +109,7 @@ public class HLEModuleManager {
         sceNetAdhoc(Modules.sceNetAdhocModule, new String[] { "pspnet_adhoc", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
         sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl" }),
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule),
-        sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule),
+        sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule, new String[] { "pspnet_adhoc_matching" }),
         sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle" }),
         sceNetApctl(Modules.sceNetApctl, new String[] { "pspnet_apctl", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
         sceNetInet(Modules.sceNetInet, new String[] { "pspnet_inet", "PSP_NET_MODULE_INET", "PSP_MODULE_NET_INET" }),
@@ -116,9 +121,9 @@ public class HLEModuleManager {
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module),
-        sceHttp(Modules.sceHttpModule),
+        sceHttp(Modules.sceHttpModule, new String[] { "libhttp_rfc" }),
         sceHttps(Modules.sceHttpsModule),
-        sceSsl(Modules.sceSslModule),
+        sceSsl(Modules.sceSslModule, new String[] { "libssl" }),
         sceP3da(Modules.sceP3daModule);
 
     	private HLEModule module;
@@ -135,7 +140,7 @@ public class HLEModuleManager {
     	// Module only loaded as a PRX, under different names
     	DefaultModule(HLEModule module, String[] prxNames) {
     		this.module = module;
-    		firmwareVersionAsDefault = 100; //Integer.MAX_VALUE;	// Never loaded by default
+    		firmwareVersionAsDefault = Integer.MAX_VALUE;	// Never loaded by default
     		this.prxNames = prxNames;
     	}
 
@@ -186,6 +191,8 @@ public class HLEModuleManager {
 
         syscallCodeToFunction = new HLEModuleFunction[syscallCodeAllocator];
 
+        allSyscallCodes = new HashMap<Integer, HLEModuleFunction>();
+
         this.firmwareVersion = firmwareVersion;
         installDefaultModules();
         initialiseFlash0PRXMap();
@@ -197,6 +204,12 @@ public class HLEModuleManager {
         for (DefaultModule defaultModule : DefaultModule.values()) {
         	if (defaultModule.isLoadedByDefault(firmwareVersion)) {
         		defaultModule.getModule().installModule(this, firmwareVersion);
+        	} else {
+        		// This module is not loaded by default on this firmware version.
+        		// Install and Uninstall the module to register the module syscalls
+        		// so that the loader can still resolve the imports for this module.
+        		defaultModule.getModule().installModule(this, firmwareVersion);
+        		defaultModule.getModule().uninstallModule(this, firmwareVersion);
         	}
         }
     }
@@ -296,6 +309,8 @@ public class HLEModuleManager {
     		syscallCodeToFunction = extendedArray;
     	}
     	syscallCodeToFunction[code] = func;
+
+    	allSyscallCodes.put(code, func);
     }
 
     public void addFunction(HLEModuleFunction func, int nid) {
@@ -392,5 +407,9 @@ public class HLEModuleManager {
 
 	public int getMaxSyscallCode() {
 		return syscallCodeAllocator;
+	}
+
+	public HLEModuleFunction getSyscallFunction(int code) {
+		return allSyscallCodes.get(code);
 	}
 }
