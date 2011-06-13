@@ -235,6 +235,30 @@ public class Compiler implements ICompiler {
         return executable;
 	}
 
+	public static boolean isEndBlockInsn(int pc, int opcode, Instruction insn) {
+        if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
+        	if (insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL | Instruction.FLAG_IS_BRANCHING)) {
+        		// Detect the conditional
+        		//    "BEQ $xx, $xx, target"
+        		// which is equivalent to the unconditional
+        		//    "B target"
+        		if (insn == Instructions.BEQ) {
+            		int rt = (opcode >> 16) & 0x1F;
+            		int rs = (opcode >> 21) & 0x1F;
+            		if (rs == rt) {
+            			return true;
+            		}
+        		} else {
+        			log.error(String.format("Unknown conditional instruction ending a block: %s", insn.disasm(pc, opcode)));
+        		}
+        	} else {
+        		return true;
+        	}
+        }
+
+        return false;
+	}
+
 	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive) throws ClassFormatError {
         if (log.isTraceEnabled()) {
             log.trace("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
@@ -285,25 +309,11 @@ public class Compiler implements ICompiler {
                         branchingTo = jumpTarget(npc, opcode);
                         isBranching = true;
                     }
-                    if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
-                    	if (insn.hasFlags(Instruction.FLAG_IS_CONDITIONAL | Instruction.FLAG_IS_BRANCHING)) {
-                    		// Detect the conditional
-                    		//    "BEQ $xx, $xx, target"
-                    		// which is equivalent to the unconditional
-                    		//    "B target"
-                    		if (insn == Instructions.BEQ) {
-                        		int rt = (opcode >> 16) & 0x1F;
-                        		int rs = (opcode >> 21) & 0x1F;
-                        		if (rs == rt) {
-                        			endPc = npc;
-                        		}
-                    		} else {
-                    			log.error(String.format("Unknown conditional instruction ending a block: %s", insn.disasm(pc, opcode)));
-                    		}
-                    	} else {
-                    		endPc = npc;
-                    	}
+
+                    if (isEndBlockInsn(pc, opcode, insn)) {
+                    	endPc = npc;
                     }
+
                     if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
                         if (recursive) {
                             context.blocksToBeAnalysed.push(branchingTo);
