@@ -35,10 +35,29 @@ March 25, 2010 - Merged all JPCSP's (v0.5) details into this README file.
 			        [INTRODUCTION]
 ...............................................................................
 ...............................................................................
-JPCSP is a Playstation Portable emulator written in Java for the PC.
-The reasons for this choice rely on the portability and flexibility of this
-programming language, which makes it much easier to test and apply changes 
-whenever needed.
+Jpcsp is the most advanced PlayStation Portable emulator,
+allowing you to play your PSP games on a PC.
+Jpcsp has been started in July 2008 and is developed by a small but active team.
+
+Even though Jpcsp is written in Java, it can already reach 100% PSP speed on
+a lot of commercial games... and the emulator performance is constantly increasing.
+
+Jpcsp takes full advantage of dual-core processors, matching the PSP dual-core
+architecture. Even a quad-core can give a small performance improvement by leaving
+free CPU cores for the Java JIT Compiler and the graphics cache.
+
+NVIDIA graphic cards are fully supported and Jpcsp can take advantage of powerful GPUs.
+Problems have been reported with ATI/AMD graphic cards: keep you Catalyst driver
+up-to-date as new releases might fix issues.
+
+The project is still a beta release, but currently more than 300 games are already
+playable. See the list on the official Forum.
+
+Video and Atrac3 sound are supported, but only on Windows 32bit systems.
+Atrac3+ sound is not directly supported as there is currently no free codec available
+for this format. However, Atrac3+ can be decoded automatically on Windows 32bit
+when installing SonicStage.
+
 This emulator is an open source project. If you want to contribute, check the
 links at the bottom of this FAQ.
 
@@ -549,7 +568,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses>.
 
 
 
-			   	[Contacts]
+			   	[Links]
 ...............................................................................
 ...............................................................................
 JPCSP's Google Code repository:
@@ -560,4 +579,7 @@ JPCSP's Official Website:
 
 JPCSP's Official Forum (hosted at Emunewz.net):
 - http://www.emunewz.net/forum/forumdisplay.php?fid=51
+
+Official recent SVN builds can be found at:
+- http://buildbot.orphis.net/jpcsp/
 ...............................................................................
