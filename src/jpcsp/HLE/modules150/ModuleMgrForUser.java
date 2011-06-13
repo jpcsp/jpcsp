@@ -288,20 +288,18 @@ public class ModuleMgrForUser implements HLEModule {
                 final int partitionId = 2;
                 final int allocType = SysMemUserForUser.PSP_SMEM_Low;
                 final int moduleHeaderSize = 256;
-                int totalAllocSize = moduleHeaderSize + moduleBytes.length;
 
-//                // Load the module in analyze mode to find out its required memory size
-//                SceModule testModule = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, true);
-//                moduleBuffer.rewind();
-//                int totalAllocSize = moduleHeaderSize + testModule.loadAddressHigh - testModule.loadAddressLow;
-
-                final int maxFreeMemSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
-                if (totalAllocSize > maxFreeMemSize) {
-                    totalAllocSize = maxFreeMemSize;
+                // Load the module in analyze mode to find out its required memory size
+                SceModule testModule = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, true);
+                moduleBuffer.rewind();
+                int totalAllocSize = moduleHeaderSize + testModule.loadAddressHigh - testModule.loadAddressLow;
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("Module '%s' requires %d bytes memory", name, totalAllocSize));
                 }
+
                 SysMemInfo testInfo = Modules.SysMemUserForUserModule.malloc(partitionId, "ModuleMgr-TestInfo", allocType, totalAllocSize, 0);
                 if (testInfo == null) {
-                    log.error(String.format("Failed module allocation of size 0x%08X for '%s'", totalAllocSize, name));
+                    log.error(String.format("Failed module allocation of size 0x%08X for '%s' (maxFreeMemSize=0x%08X)", totalAllocSize, name, Modules.SysMemUserForUserModule.maxFreeMemSize()));
                     cpu.gpr[2] = -1;
                     return;
                 }
