@@ -102,7 +102,7 @@ public class HLEModuleManager {
         sceWlan(Modules.sceWlanModule),
         sceNet(Modules.sceNetModule, new String[] { "pspnet", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
         sceNetAdhoc(Modules.sceNetAdhocModule, new String[] { "pspnet_adhoc", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
-        sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl" }),
+        sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule),
         sceNetAdhocMatching(Modules.sceNetAdhocMatchingModule, new String[] { "pspnet_adhoc_matching" }),
         sceNetIfhandle(Modules.sceNetIfhandleModule, new String[] { "ifhandle" }),
