@@ -1579,8 +1579,9 @@ public class CompilerContext implements ICompilerContext {
 
     	CodeInstruction previousInstruction = getCodeBlock().getCodeInstruction(codeInstruction.getAddress() - 4);
     	if (previousInstruction != null) {
-    		if (previousInstruction.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
-    			// Previous instruction was a J or JR instruction, nothing to do
+    		if (Compiler.isEndBlockInsn(previousInstruction.getAddress(), previousInstruction.getOpcode(), previousInstruction.getInsn())) {
+    			// The previous instruction was a J, JR or
+    			// unconditional branch instruction, nothing to do
     			return;
     		}
     	}

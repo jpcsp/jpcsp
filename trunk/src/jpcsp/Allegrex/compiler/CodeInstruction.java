@@ -207,8 +207,7 @@ public class CodeInstruction {
         }
 
         Label delaySlotLabel = null;
-        if (delaySlotCodeInstruction.hasLabel())
-        {
+        if (delaySlotCodeInstruction.hasLabel()) {
         	delaySlotLabel = delaySlotCodeInstruction.getLabel();
         	delaySlotCodeInstruction.forceNewLabel();
         }
