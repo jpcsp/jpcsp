@@ -27,6 +27,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
@@ -59,6 +61,10 @@ import jpcsp.util.Utilities;
 public class Loader {
     private static Loader instance;
     private boolean loadedFirstModule;
+    private static Logger log = Logger.getLogger("loader");
+
+    public final static int SCE_MAGIC = 0x4543537E;
+    private final static int FIRMWAREVERSION_HOMEBREW = 999; // Simulate version 9.99 instead of 1.50
 
     // Format bits
     public final static int FORMAT_UNKNOWN  = 0x00;
@@ -87,12 +93,17 @@ public class Loader {
      *                      disc0:/PSP_GAME/SYSDIR/BOOT.BIN
      *                      disc0:/PSP_GAME/SYSDIR/EBOOT.BIN
      *                      xxx:/yyy/zzz.prx
+     * @param f             the module file contents
      * @param baseAddress   should be at least 64-byte aligned,
      *                      or how ever much is the default alignment in pspsysmem.
+     * @param analyzeOnly   true, if the module is not really loaded, but only
+     *                            the SceModule object is returned;
+     *                      false, if the module is really loaded in memory.
      * @return              Always a SceModule object, you should check the
      *                      fileFormat member against the FORMAT_* bits.
-     *                      Example: (fileFormat & FORMAT_ELF) == FORMAT_ELF */
-    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress) throws IOException {
+     *                      Example: (fileFormat & FORMAT_ELF) == FORMAT_ELF
+     **/
+    public SceModule LoadModule(String pspfilename, ByteBuffer f, int baseAddress, boolean analyzeOnly) throws IOException {
         SceModule module = new SceModule(false);
 
         int currentOffset = f.position();
@@ -100,53 +111,57 @@ public class Loader {
         module.pspfilename = pspfilename;
 
         if (f.capacity() - f.position() == 0) {
-            Emulator.log.error("LoadModule: no data.");
+            log.error("LoadModule: no data.");
             return module;
         }
 
         // chain loaders
         do {
             f.position(currentOffset);
-            if (LoadPBP(f, module, baseAddress)) {
+            if (LoadPBP(f, module, baseAddress, analyzeOnly)) {
                 currentOffset = f.position();
 
                 // probably kxploit stub
                 if (currentOffset == f.limit())
                     break;
             } else if (!loadedFirstModule) {
-                loadPSF(module);
+                loadPSF(module, analyzeOnly);
             }
 
             if (module.psf != null) {
-                Emulator.log.info("PBP meta data :\n" + module.psf);
+                log.info("PBP meta data :\n" + module.psf);
 
                 if (!loadedFirstModule) {
                     // Set firmware version from PSF embedded in PBP
-                    Emulator.getInstance().setFirmwareVersion(module.psf.getString("PSP_SYSTEM_VER"));
+                	if (module.psf.isLikelyHomebrew()) {
+                		Emulator.getInstance().setFirmwareVersion(FIRMWAREVERSION_HOMEBREW);
+                	} else {
+                		Emulator.getInstance().setFirmwareVersion(module.psf.getString("PSP_SYSTEM_VER"));
+                	}
                     Modules.SysMemUserForUserModule.setMemory64MB(module.psf.getNumeric("MEMSIZE") == 1);
                 }
             }
 
             f.position(currentOffset);
-            if (LoadSCE(f, module, baseAddress))
+            if (LoadSCE(f, module, baseAddress, analyzeOnly))
                 break;
 
             f.position(currentOffset);
-            if (LoadPSP(f, module, baseAddress))
+            if (LoadPSP(f, module, baseAddress, analyzeOnly))
                 break;
 
             f.position(currentOffset);
-            if (LoadELF(f, module, baseAddress))
+            if (LoadELF(f, module, baseAddress, analyzeOnly))
                 break;
 
             f.position(currentOffset);
-            LoadUNK(f, module, baseAddress);
+            LoadUNK(f, module, baseAddress, analyzeOnly);
         } while(false);
 
         return module;
     }
 
-    private void loadPSF(SceModule module) {
+    private void loadPSF(SceModule module, boolean analyzeOnly) {
         if (module.psf != null)
             return;
 
@@ -228,7 +243,7 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadPBP(ByteBuffer f, SceModule module, int baseAddress) throws IOException {
+    private boolean LoadPBP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
         PBP pbp = new PBP(f);
         if (pbp.isValid()) {
             module.fileFormat |= FORMAT_PBP;
@@ -255,11 +270,11 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress) throws IOException {
-        long magic = Utilities.readUWord(f);
-        if (magic == 0x4543537EL) {
+    private boolean LoadSCE(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
+        int magic = Utilities.readWord(f);
+        if (magic == SCE_MAGIC) {
             module.fileFormat |= FORMAT_SCE;
-            Emulator.log.warn("Encrypted file not supported! (~SCE)");
+            log.warn("Encrypted file not supported! (~SCE)");
             return true;
         }
 		// Not a valid PSP
@@ -267,14 +282,14 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress) throws IOException {
+    private boolean LoadPSP(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
         PSP psp = new PSP(f);
         if (psp.isValid()) {
             module.fileFormat |= FORMAT_PSP;
-            Emulator.log.warn("Encrypted file detected! (~PSP)");
+            log.warn("Encrypted file detected! (~PSP)");
             if(!loadedFirstModule) {
-                Emulator.log.info("Calling crypto engine for PRX.");
-                LoadELF(psp.decrypt(f), module, baseAddress);
+                log.info("Calling crypto engine for PRX.");
+                LoadELF(psp.decrypt(f), module, baseAddress, analyzeOnly);
             }
             return true;
         }
@@ -283,29 +298,29 @@ public class Loader {
     }
 
     /** @return true on success */
-    private boolean LoadELF(ByteBuffer f, SceModule module, int baseAddress) throws IOException {
+    private boolean LoadELF(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
         int elfOffset = f.position();
         Elf32 elf = new Elf32(f);
         if (elf.getHeader().isValid()) {
             module.fileFormat |= FORMAT_ELF;
 
             if (!elf.getHeader().isMIPSExecutable()) {
-                Emulator.log.error("Loader NOT a MIPS executable");
+                log.error("Loader NOT a MIPS executable");
                 return false;
             }
 
             if (elf.getHeader().isPRXDetected()) {
-                Emulator.log.debug("Loader: Relocation required (PRX)");
+                log.debug("Loader: Relocation required (PRX)");
                 module.fileFormat |= FORMAT_PRX;
             } else if (elf.getHeader().requiresRelocation()) {
                 // Seen in .elf's generated by pspsdk with BUILD_PRX=1 before conversion to .prx
-                Emulator.log.info("Loader: Relocation required (ELF)");
+                log.info("Loader: Relocation required (ELF)");
             } else {
                 // After the user chooses a game to run and we load it, then
                 // we can't load another PBP at the same time. We can only load
                 // relocatable modules (PRX's) after the user loaded app.
                 if (baseAddress > 0x08900000)
-                    Emulator.log.warn("Loader: Probably trying to load PBP ELF while another PBP ELF is already loaded");
+                    log.warn("Loader: Probably trying to load PBP ELF while another PBP ELF is already loaded");
 
                 baseAddress = 0;
             }
@@ -322,44 +337,46 @@ public class Loader {
             module.loadAddressHigh = baseAddress;
 
             // Load into mem
-            LoadELFProgram(f, module, baseAddress, elf, elfOffset);
-            LoadELFSections(f, module, baseAddress, elf, elfOffset);
+            LoadELFProgram(f, module, baseAddress, elf, elfOffset, analyzeOnly);
+            LoadELFSections(f, module, baseAddress, elf, elfOffset, analyzeOnly);
 
-            // Relocate PRX
-            if (elf.getHeader().requiresRelocation()) {
-                relocateFromHeaders(f, module, baseAddress, elf, elfOffset);
+            if (!analyzeOnly) {
+	            // Relocate PRX
+	            if (elf.getHeader().requiresRelocation()) {
+	                relocateFromHeaders(f, module, baseAddress, elf, elfOffset);
+	            }
+
+	            // The following can only be done after relocation
+	            // Load .rodata.sceModuleInfo
+	            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset);
+	            // After LoadELFModuleInfo so the we can name the memory allocation after the module name
+	            LoadELFReserveMemory(module);
+	            // Save imports
+	            LoadELFImports(module);
+	            // Save exports
+	            LoadELFExports(module);
+	            // Try to fixup imports for ALL modules
+	            Managers.modules.addModule(module);
+	            ProcessUnresolvedImports();
+
+	            // Debug
+	            LoadELFDebuggerInfo(f, module, baseAddress, elf, elfOffset);
+
+	            // Flush module struct to psp mem
+	            module.write(Memory.getInstance(), module.address);
+
+	            loadedFirstModule = true;
             }
-
-            // The following can only be done after relocation
-            // Load .rodata.sceModuleInfo
-            LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset);
-            // After LoadELFModuleInfo so the we can name the memory allocation after the module name
-            LoadELFReserveMemory(module);
-            // Save imports
-            LoadELFImports(module);
-            // Save exports
-            LoadELFExports(module);
-            // Try to fixup imports for ALL modules
-            Managers.modules.addModule(module);
-            ProcessUnresolvedImports();
-
-            // Debug
-            LoadELFDebuggerInfo(f, module, baseAddress, elf, elfOffset);
-
-            // Flush module struct to psp mem
-            module.write(Memory.getInstance(), module.address);
-
-            loadedFirstModule = true;
             return true;
         }
 		// Not a valid ELF
-		Emulator.log.debug("Loader: Not a ELF");
+		log.debug("Loader: Not a ELF");
 		return false;
     }
 
     /** Dummy loader for unrecognized file formats, put at the end of a loader chain.
      * @return true on success */
-    private boolean LoadUNK(ByteBuffer f, SceModule module, int baseAddress) throws IOException {
+    private boolean LoadUNK(ByteBuffer f, SceModule module, int baseAddress, boolean analyzeOnly) throws IOException {
 
         byte m0 = f.get();
         byte m1 = f.get();
@@ -368,10 +385,10 @@ public class Loader {
 
         // Catch common user errors
         if (m0 == 0x43 && m1 == 0x49 && m2 == 0x53 && m3 == 0x4F) { // CSO
-            Emulator.log.info("This is not an executable file!");
-            Emulator.log.info("Try using the Load UMD menu item");
+            log.info("This is not an executable file!");
+            log.info("Try using the Load UMD menu item");
         } else if ((m0 == 0 && m1 == 0x50 && m2 == 0x53 && m3 == 0x46)) { // PSF
-            Emulator.log.info("This is not an executable file!");
+            log.info("This is not an executable file!");
         } else {
             boolean handled = false;
 
@@ -386,15 +403,15 @@ public class Loader {
                    (((char)id[4])=='0')&&
                    (((char)id[5])=='1'))
                 {
-                    Emulator.log.info("This is not an executable file!");
-                    Emulator.log.info("Try using the Load UMD menu item");
+                    log.info("This is not an executable file!");
+                    log.info("Try using the Load UMD menu item");
                     handled = true;
                 }
             }
 
             if (!handled) {
-                Emulator.log.info("Unrecognized file format");
-                Emulator.log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
+                log.info("Unrecognized file format");
+                log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
             }
         }
 
@@ -405,7 +422,7 @@ public class Loader {
 
     /** Load some programs into memory */
     private void LoadELFProgram(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset) throws IOException {
+        Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
 
         List<Elf32ProgramHeader> programHeaderList = elf.getProgramHeaderList();
         Memory mem = Memory.getInstance();
@@ -417,44 +434,56 @@ public class Loader {
                 int fileOffset = (int)phdr.getP_offset();
                 int memOffset = baseAddress + (int)phdr.getP_vaddr();
                 if (!Memory.isAddressGood(memOffset)) {
-                    Memory.log.warn("Program header has invalid memory offset! Trying to use 0 as baseAddress.");
+                    log.warn("Program header has invalid memory offset! Trying to use 0 as baseAddress.");
                     memOffset = (int)phdr.getP_vaddr();
                 }
                 int fileLen = (int)phdr.getP_filesz();
                 int memLen = (int)phdr.getP_memsz();
 
-                Memory.log.debug(String.format("PH#%d: loading program %08X - %08X - %08X", i, memOffset, memOffset + fileLen, memOffset + memLen));
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("PH#%d: loading program %08X - %08X - %08X", i, memOffset, memOffset + fileLen, memOffset + memLen));
+                }
 
                 f.position(elfOffset + fileOffset);
                 if (f.position() + fileLen > f.limit()) {
                     int newLen = f.limit() - f.position();
-                    Memory.log.warn(String.format("PH#%d: program overflow clamping len %08X to %08X", i, fileLen, newLen));
+                    log.warn(String.format("PH#%d: program overflow clamping len %08X to %08X", i, fileLen, newLen));
                     fileLen = newLen;
                 }
-                mem.copyToMemory(memOffset, f, fileLen);
+                if (!analyzeOnly) {
+                	mem.copyToMemory(memOffset, f, fileLen);
+                }
 
                 // Update memory area consumed by the module
                 if (memOffset < module.loadAddressLow) {
                     module.loadAddressLow = memOffset;
-                    Memory.log.debug(String.format("PH#%d: new loadAddressLow %08X", i, module.loadAddressLow));
+                    if (log.isDebugEnabled()) {
+                    	log.debug(String.format("PH#%d: new loadAddressLow %08X", i, module.loadAddressLow));
+                    }
                 }
                 if (memOffset + memLen > module.loadAddressHigh) {
                     module.loadAddressHigh = memOffset + memLen;
-                    Memory.log.trace(String.format("PH#%d: new loadAddressHigh %08X", i, module.loadAddressHigh));
+                    if (log.isTraceEnabled()) {
+                    	log.trace(String.format("PH#%d: new loadAddressHigh %08X", i, module.loadAddressHigh));
+                    }
                 }
 
-                Memory.log.trace(String.format("PH#%d: contributes %08X to bss size", i, (int)(phdr.getP_memsz() - phdr.getP_filesz())));
+                if (log.isTraceEnabled()) {
+                	log.trace(String.format("PH#%d: contributes %08X to bss size", i, (int)(phdr.getP_memsz() - phdr.getP_filesz())));
+                }
                 module.bss_size += (int)(phdr.getP_memsz() - phdr.getP_filesz());
             }
             i++;
         }
 
-        Memory.log.debug(String.format("PH alloc consumption %08X (mem %08X)", (module.loadAddressHigh - module.loadAddressLow), module.bss_size));
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("PH alloc consumption %08X (mem %08X)", (module.loadAddressHigh - module.loadAddressLow), module.bss_size));
+        }
     }
 
     /** Load some sections into memory */
     private void LoadELFSections(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int elfOffset) throws IOException {
+        Elf32 elf, int elfOffset, boolean analyzeOnly) throws IOException {
 
         List<Elf32SectionHeader> sectionHeaderList = elf.getSectionHeaderList();
         Memory mem = Memory.getInstance();
@@ -468,18 +497,18 @@ public class Loader {
                         // now loaded using program header type 1
                         int memOffset = baseAddress + (int)shdr.getSh_addr();
                         if (!Memory.isAddressGood(memOffset)) {
-                            Memory.log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
+                            log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
                             memOffset = (int)shdr.getSh_addr();
                         }
                         int len = (int)shdr.getSh_size();
 
                         // Update memory area consumed by the module
                         if ((int)(baseAddress + shdr.getSh_addr()) < module.loadAddressLow) {
-                            Memory.log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
+                            log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
                             module.loadAddressLow = (int)(baseAddress + shdr.getSh_addr());
                         }
                         if ((int)(baseAddress + shdr.getSh_addr() + shdr.getSh_size()) > module.loadAddressHigh) {
-                            Memory.log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
+                            log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
                             module.loadAddressHigh = (int)(baseAddress + shdr.getSh_addr() + shdr.getSh_size());
                         }
                         break;
@@ -490,26 +519,36 @@ public class Loader {
                         // Zero out this portion of memory
                         int memOffset = baseAddress + (int)shdr.getSh_addr();
                         if (!Memory.isAddressGood(memOffset)) {
-                            Memory.log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
+                            log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
                             memOffset = (int)shdr.getSh_addr();
                         }
                         int len = (int)shdr.getSh_size();
 
                         if (len == 0) {
-                            Memory.log.debug(String.format("%s: ignoring zero-length type 8 section %08X", shdr.getSh_namez(), memOffset));
+                        	if (log.isDebugEnabled()) {
+                        		log.debug(String.format("%s: ignoring zero-length type 8 section %08X", shdr.getSh_namez(), memOffset));
+                        	}
                         } else {
-                            Memory.log.debug(String.format("%s: clearing section %08X - %08X (len %08X)", shdr.getSh_namez(), memOffset, (memOffset + len), len));
+                        	if (log.isDebugEnabled()) {
+                        		log.debug(String.format("%s: clearing section %08X - %08X (len %08X)", shdr.getSh_namez(), memOffset, (memOffset + len), len));
+                        	}
 
-                        	mem.memset(memOffset, (byte) 0x0, len);
+                        	if (!analyzeOnly) {
+                        		mem.memset(memOffset, (byte) 0x0, len);
+                        	}
 
                             // Update memory area consumed by the module
                             if (memOffset < module.loadAddressLow) {
                                 module.loadAddressLow = memOffset;
-                                Memory.log.debug(String.format("%s: new loadAddressLow %08X (+%08X)", shdr.getSh_namez(), module.loadAddressLow, len));
+                                if (log.isDebugEnabled()) {
+                                	log.debug(String.format("%s: new loadAddressLow %08X (+%08X)", shdr.getSh_namez(), module.loadAddressLow, len));
+                                }
                             }
                             if (memOffset + len > module.loadAddressHigh) {
                                 module.loadAddressHigh = memOffset + len;
-                                Memory.log.debug(String.format("%s: new loadAddressHigh %08X (+%08X)", shdr.getSh_namez(), module.loadAddressHigh, len));
+                                if (log.isDebugEnabled()) {
+                                	log.debug(String.format("%s: new loadAddressHigh %08X (+%08X)", shdr.getSh_namez(), module.loadAddressHigh, len));
+                                }
                             }
                         }
                         break;
@@ -521,30 +560,40 @@ public class Loader {
         // Save the address/size of some sections for SceModule
         Elf32SectionHeader shdr = elf.getSectionHeader(".text");
         if (shdr != null) {
-            Emulator.log.trace(String.format("SH: Storing text size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("SH: Storing text size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
+        	}
             module.text_addr = (int)(baseAddress + shdr.getSh_addr());
             module.text_size = (int)shdr.getSh_size();
         }
 
         shdr = elf.getSectionHeader(".data");
         if (shdr != null) {
-            Emulator.log.trace(String.format("SH: Storing data size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("SH: Storing data size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
+        	}
             module.data_size = (int)shdr.getSh_size();
         }
 
         shdr = elf.getSectionHeader(".bss");
         if (shdr != null && shdr.getSh_size() != 0) {
-            Emulator.log.trace(String.format("SH: Storing bss size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("SH: Storing bss size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
+        	}
 
             if (module.bss_size == (int)shdr.getSh_size()) {
-                Emulator.log.trace("SH: Same bss size already set");
+            	if (log.isTraceEnabled()) {
+            		log.trace("SH: Same bss size already set");
+            	}
             } else if (module.bss_size > (int)shdr.getSh_size()) {
-                Emulator.log.trace(String.format("SH: Larger bss size already set (%08X > %08X)", module.bss_size, shdr.getSh_size()));
+            	if (log.isTraceEnabled()) {
+            		log.trace(String.format("SH: Larger bss size already set (%08X > %08X)", module.bss_size, shdr.getSh_size()));
+            	}
             } else if (module.bss_size != 0) {
-                Emulator.log.warn(String.format("SH: Overwriting bss size %08X with %08X", module.bss_size, shdr.getSh_size()));
+                log.warn(String.format("SH: Overwriting bss size %08X with %08X", module.bss_size, shdr.getSh_size()));
                 module.bss_size = (int)shdr.getSh_size();
             } else {
-                Emulator.log.info("SH: bss size not already set");
+                log.info("SH: bss size not already set");
                 module.bss_size = (int)shdr.getSh_size();
             }
         }
@@ -556,8 +605,8 @@ public class Loader {
 
     private void LoadELFReserveMemory(SceModule module) {
         // Mark the area of memory the module loaded into as used
-    	if (Modules.log.isDebugEnabled()) {
-    		Memory.log.debug(String.format("Reserving 0x%X bytes at 0x%08X for module '%s'", module.loadAddressHigh - module.loadAddressLow, module.loadAddressLow, module.pspfilename));
+    	if (log.isDebugEnabled()) {
+    		log.debug(String.format("Reserving 0x%X bytes at 0x%08X for module '%s'", module.loadAddressHigh - module.loadAddressLow, module.loadAddressLow, module.pspfilename));
     	}
 
         int address = module.loadAddressLow & ~(SysMemUserForUser.defaultSizeAlignment - 1); // Round down to match sysmem allocations
@@ -565,7 +614,7 @@ public class Loader {
 
         SysMemInfo info = Modules.SysMemUserForUserModule.malloc(2, module.modname, SysMemUserForUser.PSP_SMEM_Addr, size, address);
         if (info == null || info.addr != address) {
-            Memory.log.warn(String.format("Failed to properly reserve memory consumed by module %s at address 0x%08X, size 0x%X: allocated %s", module.modname, address, size, info));
+            log.warn(String.format("Failed to properly reserve memory consumed by module %s at address 0x%08X, size 0x%X: allocated %s", module.modname, address, size, info));
         }
         module.addAllocatedMemory(info);
     }
@@ -578,9 +627,9 @@ public class Loader {
         Elf32SectionHeader shdr = elf.getSectionHeader(".rodata.sceModuleInfo");
 
         if (!elf.getHeader().isPRXDetected() && shdr == null) {
-            Emulator.log.warn("ELF is not PRX, but has no section headers!");
+            log.warn("ELF is not PRX, but has no section headers!");
             int memOffset = (int)(phdr.getP_vaddr() + (phdr.getP_paddr() & 0x7FFFFFFFL) - phdr.getP_offset());
-            Emulator.log.warn("Manually locating ModuleInfo at address: 0x" + Integer.toHexString(memOffset));
+            log.warn("Manually locating ModuleInfo at address: 0x" + Integer.toHexString(memOffset));
 
             PSPModuleInfo moduleInfo = new PSPModuleInfo();
             moduleInfo.read(Memory.getInstance(), memOffset);
@@ -598,20 +647,20 @@ public class Loader {
             moduleInfo.read(Memory.getInstance(), memOffset);
             module.copy(moduleInfo);
         } else {
-            Emulator.log.error("ModuleInfo not found!");
+            log.error("ModuleInfo not found!");
             return;
         }
 
-        Emulator.log.info("Found ModuleInfo name:'" + module.modname
+        log.info("Found ModuleInfo name:'" + module.modname
             + "' version:" + String.format("%02x%02x", module.version[1], module.version[0])
             + " attr:" + String.format("%08x", module.attribute)
             + " gp:" + String.format("%08x", module.gp_value));
 
         if ((module.attribute & 0x1000) != 0) {
-            Emulator.log.warn("Kernel mode module detected");
+            log.warn("Kernel mode module detected");
         }
         if ((module.attribute & 0x0800) != 0) {
-            Emulator.log.warn("VSH mode module detected");
+            log.warn("VSH mode module detected");
         }
     }
 
@@ -634,8 +683,8 @@ public class Loader {
             int R_TYPE    = (int)( rel.getR_info()        & 0xFF);
             int OFS_BASE  = (int)((rel.getR_info() >>  8) & 0xFF);
             int ADDR_BASE = (int)((rel.getR_info() >> 16) & 0xFF);
-            if (Memory.log.isTraceEnabled()) {
-            	Memory.log.trace(String.format("Relocation #%d type=%d,base=%08X,addr=%08X", i, R_TYPE, OFS_BASE, ADDR_BASE));
+            if (log.isTraceEnabled()) {
+            	log.trace(String.format("Relocation #%d type=%d,base=%08X,addr=%08X", i, R_TYPE, OFS_BASE, ADDR_BASE));
             }
 
             // Check if R_TYPE is 0xFF (break code) and break the loop
@@ -644,7 +693,7 @@ public class Loader {
             // Some games (e.g.: "Final Fantasy: Dissidia") use this kind of relocation
             // suggesting that the PSP's ELF Loader is capable of recognizing it and stop.
             if (R_TYPE == 0xFF) {
-                Memory.log.warn("Special relocation code 0xFF detected!");
+                log.warn("Special relocation code 0xFF detected!");
                 break;
             }
 
@@ -672,22 +721,22 @@ public class Loader {
                 case 0: //R_MIPS_NONE
                     // Tested on PSP:
                     // R_MIPS_NONE just returns 0.
-                    if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_NONE addr=%08X", data_addr));
+                    if (log.isTraceEnabled()) {
+                		log.trace(String.format("R_MIPS_NONE addr=%08X", data_addr));
                 	}
                     break;
 
                 case 1: // R_MIPS_16
                 	data = (data & 0xFFFF0000) | ((data + S) & 0x0000FFFF);
-                	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                	if (log.isTraceEnabled()) {
+                		log.trace(String.format("R_MIPS_16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
                 	break;
 
                 case 2: //R_MIPS_32
                     data += S;
-                	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_32 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                	if (log.isTraceEnabled()) {
+                		log.trace(String.format("R_MIPS_32 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
                     break;
 
@@ -696,8 +745,8 @@ public class Loader {
                     result = ((A << 2) + S) >> 2;
                     data &= ~0x03FFFFFF;
                     data |= (int) (result & 0x03FFFFFF); // truncate
-                	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_26 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                	if (log.isTraceEnabled()) {
+                		log.trace(String.format("R_MIPS_26 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
                     break;
 
@@ -705,8 +754,8 @@ public class Loader {
                     A = hi16;
                     AHL = A << 16;
                     deferredHi16.add(data_addr);
-                	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_HI16 addr=%08X", data_addr));
+                	if (log.isTraceEnabled()) {
+                		log.trace(String.format("R_MIPS_HI16 addr=%08X", data_addr));
                 	}
                     break;
 
@@ -736,14 +785,14 @@ public class Loader {
                         }
                         data2 &= ~0x0000FFFF;
                         data2 |= (result >> 16) & 0x0000FFFF; // truncate
-                    	if (Memory.log.isTraceEnabled()) {
-                    		Memory.log.trace(String.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, mem.read32(data_addr2), data2));
+                    	if (log.isTraceEnabled()) {
+                    		log.trace(String.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, mem.read32(data_addr2), data2));
                         }
                         mem.write32(data_addr2, data2);
                         it.remove();
                     }
-                	if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_LO16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                	if (log.isTraceEnabled()) {
+                		log.trace(String.format("R_MIPS_LO16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                 	}
                     break;
 
@@ -755,17 +804,17 @@ public class Loader {
                         result = S + GP_OFFSET + (((A & 0x00008000) != 0) ? (((A & 0x00003FFF) + 0x4000) | 0xFFFF0000) : A) - GP_ADDR;
                     }
                     if ((result > 32768) || (result < -32768)) {
-                        Memory.log.warn("Relocation overflow (R_MIPS_GPREL16)");
+                        log.warn("Relocation overflow (R_MIPS_GPREL16)");
                     }
                     data &= ~0x0000FFFF;
                     data |= (int) (result & 0x0000FFFF);
-                    if (Memory.log.isTraceEnabled()) {
-                		Memory.log.trace(String.format("R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                    if (log.isTraceEnabled()) {
+                		log.trace(String.format("R_MIPS_GPREL16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
                     break;
 
                 default:
-                	Memory.log.warn(String.format("Unhandled relocation type %d at %08X", R_TYPE, data_addr));
+                	log.warn(String.format("Unhandled relocation type %d at %08X", R_TYPE, data_addr));
                     break;
             }
 
@@ -783,13 +832,15 @@ public class Loader {
         for (Elf32ProgramHeader phdr : elf.getProgramHeaderList()) {
             if (phdr.getP_type() == 0x700000A0L) {
                 int RelCount = (int)phdr.getP_filesz() / Elf32Relocate.sizeof();
-                Memory.log.debug("PH#" + i + ": relocating " + RelCount + " entries");
+                if (log.isDebugEnabled()) {
+                	log.debug("PH#" + i + ": relocating " + RelCount + " entries");
+                }
 
                 f.position((int)(elfOffset + phdr.getP_offset()));
                 relocateFromBuffer(f, module, baseAddress, elf, RelCount);
                 return;
             } else if (phdr.getP_type() == 0x700000A1L) {
-                Memory.log.warn("Unimplemented:PH#" + i + ": relocate type 0x700000A1");
+                log.warn("Unimplemented:PH#" + i + ": relocate type 0x700000A1");
             }
             i++;
         }
@@ -797,12 +848,14 @@ public class Loader {
         // Relocate from section headers
         for (Elf32SectionHeader shdr : elf.getSectionHeaderList()) {
             if (shdr.getSh_type() == Elf32SectionHeader.SHT_REL) {
-                Memory.log.warn(shdr.getSh_namez() + ": not relocating section");
+                log.warn(shdr.getSh_namez() + ": not relocating section");
             }
 
             if (shdr.getSh_type() == Elf32SectionHeader.SHT_PRXREL) {
                 int RelCount = (int)shdr.getSh_size() / Elf32Relocate.sizeof();
-                Memory.log.debug(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
+                if (log.isDebugEnabled()) {
+                	log.debug(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
+                }
 
                 f.position((int)(elfOffset + shdr.getSh_offset()));
                 relocateFromBuffer(f, module, baseAddress, elf, RelCount);
@@ -838,13 +891,15 @@ public class Loader {
                     it.remove();
                     numberofmappedNIDS++;
 
-                    Emulator.log.debug(String.format("Mapped import at 0x%08X to export at 0x%08X [0x%08X] (attempt %d)",
-                        importAddress, exportAddress, nid, module.importFixupAttempts));
+                    if (log.isDebugEnabled()) {
+                    	log.debug(String.format("Mapped import at 0x%08X to export at 0x%08X [0x%08X] (attempt %d)",
+                    			importAddress, exportAddress, nid, module.importFixupAttempts));
+                    }
                 }
 
                 // Ignore patched nids
                 else if (nid == 0) {
-                    Emulator.log.warn(String.format("Ignoring import at 0x%08X [0x%08X] (attempt %d)",
+                    log.warn(String.format("Ignoring import at 0x%08X [0x%08X] (attempt %d)",
                         importAddress, nid, module.importFixupAttempts));
 
                     it.remove();
@@ -864,12 +919,12 @@ public class Loader {
                         it.remove();
                         numberofmappedNIDS++;
 
-                        if (loadedFirstModule) {
-                            Emulator.log.debug(String.format("Mapped import at 0x%08X to syscall 0x%05X [0x%08X] (attempt %d)",
+                        if (loadedFirstModule && log.isDebugEnabled()) {
+                            log.debug(String.format("Mapped import at 0x%08X to syscall 0x%05X [0x%08X] (attempt %d)",
                                 importAddress, code, nid, module.importFixupAttempts));
                         }
                     } else {
-                        Emulator.log.warn(String.format("Failed to map import at 0x%08X [0x%08X] Module '%s'(attempt %d)",
+                        log.warn(String.format("Failed to map import at 0x%08X [0x%08X] Module '%s'(attempt %d)",
                             importAddress, nid, moduleName, module.importFixupAttempts));
                         numberoffailedNIDS++;
                     }
@@ -877,9 +932,10 @@ public class Loader {
             }
         }
 
-        Emulator.log.info(numberofmappedNIDS + " NIDS mapped");
-        if (numberoffailedNIDS > 0)
-            Emulator.log.info(numberoffailedNIDS + " remaining unmapped NIDS");
+        log.info(numberofmappedNIDS + " NIDS mapped");
+        if (numberoffailedNIDS > 0) {
+            log.info(numberoffailedNIDS + " remaining unmapped NIDS");
+        }
     }
 
     /* Loads from memory */
@@ -895,7 +951,7 @@ public class Loader {
 
             // Skip 0 sized entries.
             if (stubHeader.getSize() <= 0) {
-                Emulator.log.warn("Skipping dummy entry with size " + stubHeader.getSize());
+                log.warn("Skipping dummy entry with size " + stubHeader.getSize());
                 stubHeadersAddress += Elf32StubHeader.sizeof() / 2;
             } else {
                 if (Memory.isAddressGood((int)stubHeader.getOffsetModuleName())) {
@@ -906,21 +962,21 @@ public class Loader {
                 }
                 stubHeader.setModuleNamez(moduleName);
 
-                if (Emulator.log.isDebugEnabled()) {
-                	Emulator.log.debug(String.format("Processing Import #%d: %s", i, stubHeader.toString()));
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("Processing Import #%d: %s", i, stubHeader.toString()));
                 }
 
                 if (stubHeader.getSize() > 5) {
                     stubHeadersAddress += stubHeader.getSize() * 4;
-                    if (Emulator.log.isDebugEnabled()) {
-                    	Emulator.log.debug(String.format("'%s' has size %d", stubHeader.getModuleNamez(), stubHeader.getSize()));
+                    if (log.isDebugEnabled()) {
+                    	log.debug(String.format("'%s' has size %d", stubHeader.getModuleNamez(), stubHeader.getSize()));
                     }
                 } else {
                     stubHeadersAddress += Elf32StubHeader.sizeof();
                 }
 
                 if (!Memory.isAddressGood((int) stubHeader.getOffsetNid()) || !Memory.isAddressGood((int) stubHeader.getOffsetText())) {
-                	Emulator.log.warn(String.format("Incorrect s_nid or s_text address in StubHeader #%d: %s", i, stubHeader.toString()));
+                	log.warn(String.format("Incorrect s_nid or s_text address in StubHeader #%d: %s", i, stubHeader.toString()));
                 } else {
 	                // n stubs per module to import
 	                IMemoryReader nidReader = MemoryReader.getMemoryReader((int) stubHeader.getOffsetNid(), stubHeader.getImports() * 4, 4);
@@ -941,8 +997,8 @@ public class Loader {
         }
 
         if (module.unresolvedImports.size() > 0) {
-        	if (Emulator.log.isInfoEnabled()) {
-        		Emulator.log.info(String.format("Found %d unresolved imports", module.unresolvedImports.size()));
+        	if (log.isInfoEnabled()) {
+        		log.info(String.format("Found %d unresolved imports", module.unresolvedImports.size()));
         	}
         }
     }
@@ -962,7 +1018,7 @@ public class Loader {
 
             if ((entHeader.getSize() <= 0)) {
                 // Skip 0 sized entries.
-                Emulator.log.warn("Skipping dummy entry with size " + entHeader.getSize());
+                log.warn("Skipping dummy entry with size " + entHeader.getSize());
                 entHeadersAddress += Elf32EntHeader.sizeof() / 2;
             } else {
                 if (Memory.isAddressGood((int)entHeader.getOffsetModuleName())) {
@@ -973,14 +1029,14 @@ public class Loader {
                 }
                 entHeader.setModuleNamez(moduleName);
 
-                if (Emulator.log.isDebugEnabled()) {
-                	Emulator.log.debug(String.format("Processing header #%d at 0x%08X: %s", i, entHeadersAddress, entHeader.toString()));
+                if (log.isDebugEnabled()) {
+                	log.debug(String.format("Processing header #%d at 0x%08X: %s", i, entHeadersAddress, entHeader.toString()));
                 }
 
                 if (entHeader.getSize() > 4) {
                     entHeadersAddress += entHeader.getSize() * 4;
-                    if (Emulator.log.isDebugEnabled()) {
-                    	Emulator.log.debug(String.format("'%s' has size %d", entHeader.getModuleNamez(), entHeader.getSize()));
+                    if (log.isDebugEnabled()) {
+                    	log.debug(String.format("'%s' has size %d", entHeader.getModuleNamez(), entHeader.getSize()));
                     }
                 } else {
                     entHeadersAddress += Elf32EntHeader.sizeof();
@@ -1007,8 +1063,8 @@ public class Loader {
                         if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
                             nidMapper.addModuleNid(moduleName, nid, exportAddress);
                             entCount++;
-                            if (Emulator.log.isDebugEnabled()) {
-                                Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
+                            if (log.isDebugEnabled()) {
+                                log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
                             }
                         }
 	                }
@@ -1020,32 +1076,32 @@ public class Loader {
 	                    switch (nid) {
 	                        case 0xD632ACDB: // module_start
 	                            module.module_start_func = exportAddress;
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_start found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_start found: nid=0x%08X, function=0x%08X", nid, exportAddress));
 	                            }
 	                            break;
 	                        case 0xCEE8593C: // module_stop
 	                            module.module_stop_func = exportAddress;
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_stop found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_stop found: nid=0x%08X, function=0x%08X", nid, exportAddress));
 	                            }
 	                            break;
 	                        case 0x2F064FA6: // module_reboot_before
 	                            module.module_reboot_before_func = exportAddress;
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_reboot_before found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_reboot_before found: nid=0x%08X, function=0x%08X", nid, exportAddress));
 	                            }
 	                            break;
 	                        case 0xADF12745: // module_reboot_phase
 	                            module.module_reboot_phase_func = exportAddress;
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_reboot_phase found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_reboot_phase found: nid=0x%08X, function=0x%08X", nid, exportAddress));
 	                            }
 	                            break;
 	                        case 0xD3744BE0: // module_bootstart
 	                            module.module_bootstart_func = exportAddress;
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_bootstart found: nid=0x%08X, function=0x%08X", nid, exportAddress));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_bootstart found: nid=0x%08X, function=0x%08X", nid, exportAddress));
 	                            }
 	                            break;
 	                        default:
@@ -1053,8 +1109,8 @@ public class Loader {
 	                            if (Memory.isAddressGood(exportAddress) && ((entHeader.getAttr() & 0x4000) != 0x4000)) {
 	                                nidMapper.addModuleNid(moduleName, nid, exportAddress);
 	                                entCount++;
-	                                if (Emulator.log.isDebugEnabled()) {
-	                                    Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
+	                                if (log.isDebugEnabled()) {
+	                                    log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
 	                                }
 	                            }
 	                            break;
@@ -1070,43 +1126,43 @@ public class Loader {
 	                    switch (nid) {
 	                        case 0xF01D73A7: // module_info
 	                            // Seems to be ignored by the PSP
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_info found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_info found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
 	                            }
 	                            break;
 	                        case 0x0F7C276C: // module_start_thread_parameter
 	                            module.module_start_thread_priority = mem.read32(variableAddr + 4);
 	                            module.module_start_thread_stacksize = mem.read32(variableAddr + 8);
 	                            module.module_start_thread_attr = mem.read32(variableAddr + 12);
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_start_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_start_thread_priority, module.module_start_thread_stacksize, module.module_start_thread_attr));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_start_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_start_thread_priority, module.module_start_thread_stacksize, module.module_start_thread_attr));
 	                            }
 	                            break;
 	                        case 0xCF0CC697: // module_stop_thread_parameter
 	                            module.module_stop_thread_priority = mem.read32(variableAddr + 4);
 	                            module.module_stop_thread_stacksize = mem.read32(variableAddr + 8);
 	                            module.module_stop_thread_attr = mem.read32(variableAddr + 12);
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_stop_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_stop_thread_priority, module.module_stop_thread_stacksize, module.module_stop_thread_attr));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_stop_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_stop_thread_priority, module.module_stop_thread_stacksize, module.module_stop_thread_attr));
 	                            }
 	                            break;
 	                        case 0xF4F4299D: // module_reboot_before_thread_parameter
 	                            module.module_reboot_before_thread_priority = mem.read32(variableAddr + 4);
 	                            module.module_reboot_before_thread_stacksize = mem.read32(variableAddr + 8);
 	                            module.module_reboot_before_thread_attr = mem.read32(variableAddr + 12);
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.debug(String.format("module_reboot_before_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_reboot_before_thread_priority, module.module_reboot_before_thread_stacksize, module.module_reboot_before_thread_attr));
+	                            if (log.isDebugEnabled()) {
+	                                log.debug(String.format("module_reboot_before_thread_parameter found: nid=0x%08X, priority=%d, stacksize=%d, attr=0x%08X", nid, module.module_reboot_before_thread_priority, module.module_reboot_before_thread_stacksize, module.module_reboot_before_thread_attr));
 	                            }
 	                            break;
 	                        case 0x11B97506: // module_sdk_version
 	                            // Currently ignored
 	                            int sdk_version = mem.read32(variableAddr);
-	                            if (Emulator.log.isDebugEnabled()) {
-	                                Emulator.log.warn(String.format("module_sdk_version found: nid=0x%08X, sdk_version=0x%08X", nid, sdk_version));
+	                            if (log.isDebugEnabled()) {
+	                                log.warn(String.format("module_sdk_version found: nid=0x%08X, sdk_version=0x%08X", nid, sdk_version));
 	                            }
 	                            break;
 	                        default:
-	                            Emulator.log.warn(String.format("Unknown variable entry found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
+	                            log.warn(String.format("Unknown variable entry found: nid=0x%08X, addr=0x%08X", nid, variableAddr));
 	                            break;
 	                    }
 	                }
@@ -1115,8 +1171,8 @@ public class Loader {
         }
 
         if (entCount > 0) {
-        	if (Emulator.log.isInfoEnabled()) {
-        		Emulator.log.info(String.format("Found %d exports", entCount));
+        	if (log.isInfoEnabled()) {
+        		log.info(String.format("Found %d exports", entCount));
         	}
         }
     }

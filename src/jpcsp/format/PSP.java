@@ -31,7 +31,7 @@ import jpcsp.util.Utilities;
  */
 public class PSP {
 
-    private static final int PSP_MAGIC = 0x5053507E;
+    public static final int PSP_MAGIC = 0x5053507E;
     private int magic;
     private int mod_attr;
     private int comp_mod_attr;
