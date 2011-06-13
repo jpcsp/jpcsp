@@ -37,11 +37,6 @@ import jpcsp.HLE.kernel.types.SceModule;
  * This function will then return true if the syscall is handled, in which case
  * no error message should be printed by SyscallHandler.java.
  *
- * Modules that require stepping should implement HLEThread and call
- * mm.addThread inside installModule with a matching mm.removeThread in
- * uninstall module.
- * Example: ThreadMan, pspctrl, pspAudio, sceDisplay
- *
  * @author fiveofhearts
  */
 public class HLEModuleManager {
@@ -96,16 +91,16 @@ public class HLEModuleManager {
         sceSuspendForUser(Modules.sceSuspendForUserModule),
         sceDmac(Modules.sceDmacModule),
         sceHprm(Modules.sceHprmModule),		// check if loaded by default
-        sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS" }),
-        sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE" } ),
-        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE" }),
-        sceFont(Modules.sceFontModule, new String[] { "libfont" }),
-        scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer" }),
-        scePsmf(Modules.scePsmfModule, new String[] { "psmf" }),
+        sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS", "sceATRAC3plus_Library" }),
+        sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE", "sceSAScore" } ),
+        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE", "sceMpeg_library" }),
+        sceFont(Modules.sceFontModule, new String[] { "libfont", "sceFont_Library" }),
+        scePsmfPlayer(Modules.scePsmfPlayerModule, new String[] { "libpsmfplayer", "psmf_jk" }),
+        scePsmf(Modules.scePsmfModule, new String[] { "psmf", "scePsmf_library" }),
         sceMp3(Modules.sceMp3Module, new String[] { "PSP_AV_MODULE_MP3", "PSP_MODULE_AV_MP3" }),
         sceDeflt(Modules.sceDefltModule),
         sceWlan(Modules.sceWlanModule),
-        sceNet(Modules.sceNetModule, new String[] { "pspnet", "PSP_MODULE_NET_COMMON" }),
+        sceNet(Modules.sceNetModule, new String[] { "pspnet", "PSP_NET_MODULE_COMMON", "PSP_MODULE_NET_COMMON" }),
         sceNetAdhoc(Modules.sceNetAdhocModule, new String[] { "pspnet_adhoc", "PSP_NET_MODULE_ADHOC", "PSP_MODULE_NET_ADHOC" }),
         sceNetAdhocctl(Modules.sceNetAdhocctlModule, new String[] { "pspnet_adhocctl" }),
         sceNetAdhocDiscover(Modules.sceNetAdhocDiscoverModule),
@@ -121,9 +116,9 @@ public class HLEModuleManager {
         scePspNpDrm_user(Modules.scePspNpDrm_userModule, new String[] { "PSP_MODULE_NP_DRM" }),
         sceVaudio(Modules.sceVaudioModule, new String[] { "PSP_AV_MODULE_VAUDIO", "PSP_MODULE_AV_VAUDIO" }),
         sceMp4(Modules.sceMp4Module),
-        sceHttp(Modules.sceHttpModule, new String[] { "libhttp_rfc", "PSP_MODULE_NET_HTTP" }),
+        sceHttp(Modules.sceHttpModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttps(Modules.sceHttpsModule),
-        sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_MODULE_NET_SSL" }),
+        sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }),
         sceP3da(Modules.sceP3daModule);
 
     	private HLEModule module;
@@ -185,13 +180,22 @@ public class HLEModuleManager {
     }
 
     public void Initialise(int firmwareVersion) {
-        // Official syscalls start at 0x2000,
-        // so we'll put the HLE syscalls far away at 0x4000.
-        syscallCodeAllocator = 0x4000;
+    	if (syscallCodeToFunction == null) {
+    		// Official syscalls start at 0x2000,
+    		// so we'll put the HLE syscalls far away at 0x4000.
+    		syscallCodeAllocator = 0x4000;
 
-        syscallCodeToFunction = new HLEModuleFunction[syscallCodeAllocator];
+    		syscallCodeToFunction = new HLEModuleFunction[syscallCodeAllocator];
 
-        allSyscallCodes = new HashMap<Integer, HLEModuleFunction>();
+    		allSyscallCodes = new HashMap<Integer, HLEModuleFunction>();
+    	} else {
+    		// Remove all the functions.
+    		// Do not reset the syscall codes, they still might be in use in
+    		// already loaded modules.
+    		for (int i = 0; i < syscallCodeToFunction.length; i++) {
+    			syscallCodeToFunction[i] = null;
+    		}
+    	}
 
         this.firmwareVersion = firmwareVersion;
         installDefaultModules();
@@ -323,7 +327,12 @@ public class HLEModuleManager {
     public void addFunction(int nid, HLEModuleFunction func) {
         int code = getSyscallFromNid(nid);
     	if (code < syscallCodeToFunction.length && syscallCodeToFunction[code] != null) {
-        	Modules.log.error(String.format("Tried to register a second handler for NID 0x%08X called %s", nid, func.getFunctionName()));
+    		if (func != syscallCodeToFunction[code]) {
+    			Modules.log.error(String.format("Tried to register a second handler for NID 0x%08X called %s", nid, func.getFunctionName()));
+    		} else {
+    			func.setNid(nid);
+    			func.setSyscallCode(code);
+    		}
     	} else {
             func.setNid(nid);
     		func.setSyscallCode(code);

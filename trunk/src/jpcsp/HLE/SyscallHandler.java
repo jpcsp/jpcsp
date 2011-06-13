@@ -114,7 +114,7 @@ public class SyscallHandler {
 	        	// for an HLE function currently being uninstalled
 	        	HLEModuleFunction hleModuleFunction = HLEModuleManager.getInstance().getSyscallFunction(code);
 	        	if (hleModuleFunction != null) {
-	        		Modules.log.error(String.format("HLE Function %s(%s) not activated by default for Firmware Version %X", hleModuleFunction.getFunctionName(), hleModuleFunction.getModuleName(), Emulator.getInstance().getFirmwareVersion()));
+	        		Modules.log.error(String.format("HLE Function %s(%s) not activated by default for Firmware Version %d", hleModuleFunction.getFunctionName(), hleModuleFunction.getModuleName(), Emulator.getInstance().getFirmwareVersion()));
 	        	} else {
 		            CpuState cpu = Emulator.getProcessor().cpu;
 		            String name = "";

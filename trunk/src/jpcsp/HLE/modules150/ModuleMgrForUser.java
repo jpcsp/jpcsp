@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 
 import jpcsp.Loader;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -38,9 +39,11 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.IoFileMgrForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.format.PSP;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -53,10 +56,14 @@ public class ModuleMgrForUser implements HLEModule {
     // (include here only modules not described in HLEModuleManager)
     enum bannedModulesList {
         audiocodec,
+        sceAudiocodec_Driver,
         videocodec,
+        sceVideocodec_Driver,
         mpegbase,
+        sceMpegbase_Driver,
         pspnet_adhoc_download,
         pspnet_ap_dialog_dummy,
+        sceNetApDialogDummy_Library,
         libparse_uri,
         libparse_http
     }
@@ -147,36 +154,14 @@ public class ModuleMgrForUser implements HLEModule {
         return result;
     }
 
-    private boolean hleKernelLoadHLEModule(Processor processor, String name, StringBuilder prxname) {
+    private boolean loadHLEModule(Processor processor, String name, String prxname) {
         CpuState cpu = processor.cpu;
-
-        if (prxname == null) {
-            prxname = new StringBuilder();
-        }
-
-        int findprx = name.lastIndexOf("/");
-        int endprx = name.toLowerCase().indexOf(".prx");
-        if (endprx >= 0) {
-            prxname.append(name.substring(findprx + 1, endprx));
-        } else if (name.contains("sce_lbn")) {
-            prxname.append(extractHLEModuleName(name));
-        } else {
-            prxname.append("UNKNOWN");
-        }
-
         HLEModuleManager moduleManager = HLEModuleManager.getInstance();
 
         // Check if this an HLE module
-        if (moduleManager.hasFlash0Module(prxname.toString())) {
+        if (moduleManager.hasFlash0Module(prxname)) {
             log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
-            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
-            return true;
-        }
-
-        // Ban flash0 modules
-        if (name.startsWith("flash0:")) {
-            log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
+            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname);
             return true;
         }
 
@@ -187,6 +172,78 @@ public class ModuleMgrForUser implements HLEModule {
                 cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    private boolean hleKernelLoadHLEModule(Processor processor, String name, StringBuilder prxname) {
+        CpuState cpu = processor.cpu;
+        HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+
+        if (prxname == null) {
+            prxname = new StringBuilder();
+        }
+
+        // Extract the PRX name from the file name
+        int findprx = name.lastIndexOf("/");
+        int endprx = name.toLowerCase().indexOf(".prx");
+        if (endprx >= 0) {
+            prxname.append(name.substring(findprx + 1, endprx));
+        } else if (name.contains("sce_lbn")) {
+            prxname.append(extractHLEModuleName(name));
+        } else {
+            prxname.append("UNKNOWN");
+        }
+
+        // Ban flash0 modules
+        if (name.startsWith("flash0:")) {
+            log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+            cpu.gpr[2] = moduleManager.LoadFlash0Module(prxname.toString());
+            return true;
+        }
+
+        // Check if the PRX name matches an HLE module
+        if (loadHLEModule(processor, name, prxname.toString())) {
+        	return true;
+        }
+
+        // Extract the library name from the file itself
+        // for files in "~SCE"/"~PSP" format.
+        SeekableDataInput moduleInput = Modules.IoFileMgrForUserModule.getFile(name, IoFileMgrForUser.PSP_O_RDONLY);
+        if (moduleInput != null) {
+        	final int sceHeaderLength = 0x40;
+        	byte[] header = new byte[sceHeaderLength + 100];
+        	try {
+				moduleInput.readFully(header);
+        		ByteBuffer f = ByteBuffer.wrap(header);
+        		int sceMagic = Utilities.readWord(f);
+        		if (sceMagic == Loader.SCE_MAGIC) {
+        			f.position(sceHeaderLength);
+        			int pspMagic = Utilities.readWord(f);
+        			if (pspMagic == PSP.PSP_MAGIC) {
+        				f.position(f.position() + 6);
+        				String libName = Utilities.readStringZ(f);
+        				if (libName != null && libName.length() > 0) {
+        					// We could extract the library name from the file,
+        					// check if it matches an HLE module
+        					if (loadHLEModule(processor, name, libName)) {
+            					prxname.setLength(0);
+            					prxname.append(libName);
+        						return true;
+        					}
+        				}
+        			}
+        		}
+			} catch (IOException e) {
+				// Ignore exception
+			} finally {
+				try {
+					moduleInput.close();
+				} catch (IOException e) {
+					// Ignore exception
+				}
+			}
         }
 
         return false;
@@ -232,6 +289,12 @@ public class ModuleMgrForUser implements HLEModule {
                 final int allocType = SysMemUserForUser.PSP_SMEM_Low;
                 final int moduleHeaderSize = 256;
                 int totalAllocSize = moduleHeaderSize + moduleBytes.length;
+
+//                // Load the module in analyze mode to find out its required memory size
+//                SceModule testModule = Loader.getInstance().LoadModule(name, moduleBuffer, MemoryMap.START_USERSPACE, true);
+//                moduleBuffer.rewind();
+//                int totalAllocSize = moduleHeaderSize + testModule.loadAddressHigh - testModule.loadAddressLow;
+
                 final int maxFreeMemSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
                 if (totalAllocSize > maxFreeMemSize) {
                     totalAllocSize = maxFreeMemSize;
@@ -261,7 +324,7 @@ public class ModuleMgrForUser implements HLEModule {
                 int moduleBase = moduleInfo.addr;
 
                 // Load the module
-                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize);
+                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, moduleBase + moduleHeaderSize, false);
                 module.load();
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
