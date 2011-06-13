@@ -136,6 +136,7 @@ public class SceModule {
 
     public void unload() {
         isLoaded = false;
+        free();
     }
 
     public void start() {

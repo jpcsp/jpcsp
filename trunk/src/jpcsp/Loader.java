@@ -333,12 +333,19 @@ public class Loader {
             }
 
             // Note: baseAddress is 0 unless we are loading a PRX
-            module.loadAddressLow = (baseAddress != 0) ? (int)baseAddress : 0x08900000;
+            // Set loadAddressLow to the highest possible address, it will be updated
+            // by LoadELFProgram().
+            module.loadAddressLow = (baseAddress != 0) ? baseAddress : MemoryMap.END_USERSPACE;
             module.loadAddressHigh = baseAddress;
 
             // Load into mem
             LoadELFProgram(f, module, baseAddress, elf, elfOffset, analyzeOnly);
             LoadELFSections(f, module, baseAddress, elf, elfOffset, analyzeOnly);
+
+            if (module.loadAddressLow > module.loadAddressHigh) {
+            	log.error(String.format("Incorrect ELF module address: loadAddressLow=0x%08X, loadAddressHigh=0x%08X", module.loadAddressLow, module.loadAddressHigh));
+            	module.loadAddressHigh = module.loadAddressLow;
+            }
 
             if (!analyzeOnly) {
 	            // Relocate PRX
