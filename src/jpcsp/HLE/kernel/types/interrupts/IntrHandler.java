@@ -103,10 +103,12 @@ public class IntrHandler extends AbstractInterruptHandler {
 
 	@Override
 	protected void executeInterrupt() {
-		for (int id = minIndex; id <= maxIndex; id++) {
-			SubIntrHandler subIntrHandler = getSubIntrHandler(id);
-			if (subIntrHandler != null) {
-				IntrManager.getInstance().pushAllegrexInterruptHandler(subIntrHandler);
+		if (isEnabled()) {
+			for (int id = minIndex; id <= maxIndex; id++) {
+				SubIntrHandler subIntrHandler = getSubIntrHandler(id);
+				if (subIntrHandler != null && subIntrHandler.isEnabled()) {
+					IntrManager.getInstance().pushAllegrexInterruptHandler(subIntrHandler);
+				}
 			}
 		}
 	}
