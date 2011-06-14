@@ -3796,6 +3796,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
+        } else if (thread.status != PSP_THREAD_STOPPED) {
+            cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         } else {
             log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
             // Check if there's a registered event handler for this thread.
@@ -3811,11 +3813,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             } else {
                 // Mark thread for deletion
                 setToBeDeletedThread(thread);
-                if (thread.status != PSP_THREAD_STOPPED) {
-                    cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
-                } else {
-                    cpu.gpr[2] = 0;
-                }
+                cpu.gpr[2] = 0;
             }
         }
     }
@@ -3942,6 +3940,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
+        } else if (thread == currentThread) {
+        	// Cannot terminate itself
+        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_THREAD;
         } else {
             log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
             cpu.gpr[2] = 0;
@@ -3966,6 +3967,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
+        } else if (thread == currentThread) {
+        	// Cannot terminate itself
+        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_THREAD;
         } else {
             log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
             terminateThread(thread);
@@ -4280,6 +4284,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn("sceKernelReferThreadStatus unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
         } else {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("sceKernelReferThreadStatus for thread %s", thread.toString()));
+            }
             thread.write(Memory.getInstance(), addr);
             cpu.gpr[2] = 0;
         }
