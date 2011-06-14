@@ -34,7 +34,7 @@ public class Iso9660Handler extends Iso9660Directory {
     {
         super(r, 0, 0);
 
-        byte[] sector = r.readSector(16);
+        byte[] sector = r.readSector(UmdIsoReader.startSector);
         ByteArrayInputStream byteStream = new ByteArrayInputStream(sector);
 
         byteStream.skip(157); // reach rootDirTocHeader
