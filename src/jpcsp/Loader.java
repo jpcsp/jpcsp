@@ -441,8 +441,10 @@ public class Loader {
                 int fileOffset = (int)phdr.getP_offset();
                 int memOffset = baseAddress + (int)phdr.getP_vaddr();
                 if (!Memory.isAddressGood(memOffset)) {
-                    log.warn("Program header has invalid memory offset! Trying to use 0 as baseAddress.");
                     memOffset = (int)phdr.getP_vaddr();
+                    if (!Memory.isAddressGood(memOffset)) {
+                    	log.warn(String.format("Program header has invalid memory offset 0x%08X!", memOffset));
+                    }
                 }
                 int fileLen = (int)phdr.getP_filesz();
                 int memLen = (int)phdr.getP_memsz();
@@ -504,19 +506,21 @@ public class Loader {
                         // now loaded using program header type 1
                         int memOffset = baseAddress + (int)shdr.getSh_addr();
                         if (!Memory.isAddressGood(memOffset)) {
-                            log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
                             memOffset = (int)shdr.getSh_addr();
+                            if (!Memory.isAddressGood(memOffset)) {
+                                log.warn(String.format("Section header (type 1) has invalid memory offset 0x%08X!", memOffset));
+                            }
                         }
                         int len = (int)shdr.getSh_size();
 
                         // Update memory area consumed by the module
-                        if ((int)(baseAddress + shdr.getSh_addr()) < module.loadAddressLow) {
+                        if (memOffset < module.loadAddressLow) {
                             log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
-                            module.loadAddressLow = (int)(baseAddress + shdr.getSh_addr());
+                            module.loadAddressLow = memOffset;
                         }
-                        if ((int)(baseAddress + shdr.getSh_addr() + shdr.getSh_size()) > module.loadAddressHigh) {
+                        if (memOffset + len > module.loadAddressHigh) {
                             log.warn(String.format("%s: section allocates more than program %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
-                            module.loadAddressHigh = (int)(baseAddress + shdr.getSh_addr() + shdr.getSh_size());
+                            module.loadAddressHigh = memOffset + len;
                         }
                         break;
                     }
@@ -526,8 +530,10 @@ public class Loader {
                         // Zero out this portion of memory
                         int memOffset = baseAddress + (int)shdr.getSh_addr();
                         if (!Memory.isAddressGood(memOffset)) {
-                            log.warn("Section header (type 8) has invalid memory offset! Trying to use 0 as baseAddress.");
                             memOffset = (int)shdr.getSh_addr();
+                            if (!Memory.isAddressGood(memOffset)) {
+                                log.warn(String.format("Section header (type 8) has invalid memory offset 0x%08X!", memOffset));
+                            }
                         }
                         int len = (int)shdr.getSh_size();
 
