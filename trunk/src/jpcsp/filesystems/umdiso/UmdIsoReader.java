@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.filesystems.umdiso;
 
+import static jpcsp.filesystems.umdiso.UmdIsoFile.sectorLength;
+
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -37,7 +39,7 @@ import org.bolet.jgz.Inflater;
  * @author gigaherz
  */
 public class UmdIsoReader {
-
+	public static int startSector = 16;
     RandomAccessFile fileReader;
     private HashMap<String, Iso9660File> fileCache = new HashMap<String, Iso9660File>();
     private HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
@@ -84,7 +86,7 @@ public class UmdIsoReader {
         */
 
         format = FileFormat.Uncompressed;
-        numSectors = (int)(fileReader.length() / 2048);
+        numSectors = (int)(fileReader.length() / sectorLength);
 
         byte[] id = new byte[24];
 
@@ -133,7 +135,7 @@ public class UmdIsoReader {
         UmdIsoFile f = null;
         try
         {
-            f = new UmdIsoFile(this, 16, 2048, null, null);
+            f = new UmdIsoFile(this, startSector, sectorLength, null, null);
             f.read(id);
         }
         catch(ArrayIndexOutOfBoundsException e)
@@ -153,7 +155,7 @@ public class UmdIsoReader {
         {
             if(format == FileFormat.Uncompressed)
             {
-                numSectors = (int)(fileReader.length() / 2048);
+                numSectors = (int)(fileReader.length() / sectorLength);
             }
 
             return;
@@ -180,12 +182,12 @@ public class UmdIsoReader {
 
         if (format == FileFormat.Uncompressed) {
         	// Read an uncompressed ISO file in one call
-        	fileReader.seek(2048L * sectorNumber);
-        	fileReader.read(buffer, offset, numberSectors * 2048);
+        	fileReader.seek(((long) sectorLength) * sectorNumber);
+        	fileReader.read(buffer, offset, numberSectors * sectorLength);
         } else {
         	// Read sector per sector for the other formats
 	        for (int i = 0; i < numberSectors; i++) {
-	        	readSector(sectorNumber + i, buffer, offset + i * 2048);
+	        	readSector(sectorNumber + i, buffer, offset + i * sectorLength);
 	        }
         }
 
@@ -206,8 +208,8 @@ public class UmdIsoReader {
 
         if(format==FileFormat.Uncompressed)
         {
-            fileReader.seek(2048L * sectorNumber);
-            fileReader.read(buffer, offset, 2048);
+            fileReader.seek(((long) sectorLength) * sectorNumber);
+            fileReader.read(buffer, offset, sectorLength);
             return;
         }
 
@@ -221,7 +223,7 @@ public class UmdIsoReader {
                 long realOffset = (sectorOffset&0x7fffffff)<<offsetShift;
 
                 fileReader.seek(realOffset);
-                fileReader.read(buffer, offset, 2048);
+                fileReader.read(buffer, offset, sectorLength);
                 return;
             }
 
@@ -231,7 +233,7 @@ public class UmdIsoReader {
             int compressedLength = (int)(sectorEnd - sectorOffset);
             if(compressedLength<0)
             {
-            	for (int i = 0; i < 2048; i++) {
+            	for (int i = 0; i < sectorLength; i++) {
             		buffer[offset + i] = 0;
             	}
             	return;
@@ -247,7 +249,7 @@ public class UmdIsoReader {
 
                 ByteArrayInputStream b = new ByteArrayInputStream(compressedData);
                 inf.reset(b);
-                inf.readAll(buffer, offset, 2048);
+                inf.readAll(buffer, offset, sectorLength);
             }
             catch(IOException e) {
                 throw new IOException("Exception while uncompressing sector from " + fileName);
@@ -266,7 +268,7 @@ public class UmdIsoReader {
      * @throws IOException
      */
     public byte[] readSector(int sectorNumber) throws IOException {
-    	byte[] buffer = new byte[2048];
+    	byte[] buffer = new byte[sectorLength];
     	readSector(sectorNumber, buffer, 0);
 
     	return buffer;
@@ -371,7 +373,7 @@ public class UmdIsoReader {
         else if (filePath != null && filePath.length() == 0)
         {
         	fileStart = 0;
-        	fileLength = numSectors * 2048;
+        	fileLength = numSectors * sectorLength;
         }
         else
         {
@@ -557,8 +559,8 @@ public class UmdIsoReader {
         String[] files = listDirectory("");
         long size = dumpIndexRecursive(out, "", files);
         out.println(String.format("Total Size %10d", size));
-        out.println(String.format("Image Size %10d", numSectors * 2048));
-        out.println(String.format("Missing    %10d (%d sectors)", (numSectors * 2048) - size, numSectors - (size / 2048)));
+        out.println(String.format("Image Size %10d", numSectors * sectorLength));
+        out.println(String.format("Missing    %10d (%d sectors)", (numSectors * sectorLength) - size, numSectors - (size / sectorLength)));
         out.close();
     }
 }

@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.regex.Pattern;
@@ -69,6 +70,8 @@ import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.hardware.MemoryStick;
+import jpcsp.memory.IMemoryWriter;
+import jpcsp.memory.MemoryWriter;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -1620,6 +1623,60 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     }
                     break;
                 }
+	            // Get UMD Primary Volume Descriptor
+	            case 0x01020001: {
+	                if (Memory.isAddressGood(outdata_addr) && outlen == UmdIsoFile.sectorLength) {
+	                    if (info.isUmdFile() && iso != null) {
+                            try {
+                            	byte[] primaryVolumeSector = iso.readSector(UmdIsoReader.startSector);
+                            	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outdata_addr, outlen, 1);
+                            	for (int i = 0; i < outlen; i++)  {
+                            		memoryWriter.writeNext(primaryVolumeSector[i] & 0xFF);
+                            	}
+                            	memoryWriter.flush();
+                                result = 0;
+							} catch (IOException e) {
+								log.error(e);
+								result = ERROR_KERNEL_FILE_READ_ERROR;
+							}
+	                    } else {
+	                        log.warn("hleIoIoctl cmd=0x01020001 only allowed on UMD files");
+	                    }
+	                } else {
+	                    log.warn("hleIoIoctl cmd=0x01020001 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+	                    result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+	                }
+	                break;
+	            }
+	            // Get UMD Path Table
+	            case 0x01020002: {
+	                if (Memory.isAddressGood(outdata_addr) && outlen <= UmdIsoFile.sectorLength) {
+	                    if (info.isUmdFile() && iso != null) {
+                            try {
+                            	byte[] primaryVolumeSector = iso.readSector(UmdIsoReader.startSector);
+                            	ByteBuffer primaryVolume = ByteBuffer.wrap(primaryVolumeSector);
+                            	primaryVolume.position(140);
+                            	int pathTableLocation = Utilities.readWord(primaryVolume);
+                            	byte[] pathTableSector = iso.readSector(pathTableLocation);
+                            	IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(outdata_addr, outlen, 1);
+                            	for (int i = 0; i < outlen; i++)  {
+                            		memoryWriter.writeNext(pathTableSector[i] & 0xFF);
+                            	}
+                            	memoryWriter.flush();
+                                result = 0;
+							} catch (IOException e) {
+								log.error(e);
+								result = ERROR_KERNEL_FILE_READ_ERROR;
+							}
+	                    } else {
+	                        log.warn("hleIoIoctl cmd=0x01020001 only allowed on UMD files");
+	                    }
+	                } else {
+	                    log.warn("hleIoIoctl cmd=0x01020001 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+	                    result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+	                }
+	                break;
+	            }
                 // Get UMD file pointer.
                 case 0x01020004: {
                     if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
@@ -1905,7 +1962,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
 
                 default: {
-                    log.warn(String.format("hleIoIoctl 0x%08X unknown command", cmd));
+                    log.warn(String.format("hleIoIoctl 0x%08X unknown command, inlen=%d, outlen=%d", cmd, inlen, outlen));
                     if (Memory.isAddressGood(indata_addr)) {
                         for (int i = 0; i < inlen; i += 4) {
                             log.warn(String.format("hleIoIoctl indata[%d]=0x%08X", i / 4, mem.read32(indata_addr + i)));

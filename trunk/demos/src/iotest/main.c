@@ -37,6 +37,112 @@ void testIoDevctl()
 }
 
 
+char getPrintableChar(char c)
+{
+	if (c < ' ' || c > 0x7e)
+	{
+		c = '.';
+	}
+
+	return c;
+}
+
+
+void displayBuffer(char *buffer, int length)
+{
+	int i, j;
+
+	for (i = 0; i < length; i++)
+	{
+		pspDebugScreenPrintf(" %02X", buffer[i] & 0xFF);
+		if ((i % 16) == 15)
+		{
+			pspDebugScreenPrintf("  ");
+			for (j = i - 15; j <= i; j++)
+			{
+				pspDebugScreenPrintf("%c", getPrintableChar(buffer[j]));
+			}
+			pspDebugScreenPrintf("\n");
+			if ((i % 480) == 479)
+			{
+				pspDebugScreenPrintf("Press Cross to continue");
+				SceCtrlData pad;
+				// Wait for Cross press
+				while (1)
+				{
+					sceCtrlReadBufferPositive(&pad, 1);
+					if (pad.Buttons & PSP_CTRL_CROSS)
+					{
+						break;
+					}
+				}
+				// Wait for Cross release
+				while (1)
+				{
+					sceCtrlReadBufferPositive(&pad, 1);
+					if (!(pad.Buttons & PSP_CTRL_CROSS))
+					{
+						break;
+					}
+				}
+				pspDebugScreenClear();
+			}
+		}
+	}
+
+	int lengthLastLine = length % 16;
+	if (lengthLastLine > 0)
+	{
+		for (i = 0; i < lengthLastLine; i++)
+		{
+			pspDebugScreenPrintf("   ");
+		}
+		pspDebugScreenPrintf("  ");
+		for (i = length - lengthLastLine; i < length; i++)
+		{
+			pspDebugScreenPrintf("%c", getPrintableChar(buffer[i]));
+		}
+	}
+
+	pspDebugScreenPrintf("\n");
+}
+
+
+void testIoIoctl()
+{
+	char buffer[0x800];
+	SceUID uid;
+	int result;
+	int cmd;
+
+	memset(buffer, 0x11, sizeof(buffer));
+	uid = sceIoOpen("disc0:/PSP_GAME/SYSDIR/BOOT.BIN", PSP_O_RDONLY, 0);
+	if (uid < 0)
+	{
+		pspDebugScreenPrintf("Cannot open UMD file: result=0x%08X\n", uid);
+		return;
+	}
+
+	cmd = 0x01020001;
+	result = sceIoIoctl(uid, cmd, NULL, 0, buffer, sizeof(buffer));
+	pspDebugScreenPrintf("sceIoIoctl: 0x%08X result=0x%08X\n", cmd, result);
+	displayBuffer(buffer, sizeof(buffer));
+
+	int pathTableSize = *((int *) (&buffer[132]));
+	if (pathTableSize > sizeof(buffer))
+	{
+		pathTableSize = sizeof(buffer);
+	}
+
+	cmd = 0x01020002;
+	result = sceIoIoctl(uid, cmd, NULL, 0, buffer, pathTableSize);
+	pspDebugScreenPrintf("sceIoIoctl: 0x%08X result=0x%08X\n", cmd, result);
+	displayBuffer(buffer, pathTableSize);
+
+	sceIoClose(uid);
+}
+
+
 int main(int argc, char *argv[])
 {
 	SceCtrlData pad;
@@ -54,6 +160,7 @@ int main(int argc, char *argv[])
 
 	pspDebugScreenInit();
 	pspDebugScreenPrintf("Press Cross to start the sceIoDevctl Test\n");
+	pspDebugScreenPrintf("Press Circle to start the sceIoIoctl Test\n");
 
 	while(!done)
 	{
@@ -108,6 +215,7 @@ int main(int argc, char *argv[])
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
 		{
+			testIoIoctl();
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
