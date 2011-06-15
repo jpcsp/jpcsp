@@ -450,8 +450,10 @@ public class Compiler implements ICompiler {
 	}
 
 	public void setDefaultMethodMaxInstructions(int defaultMethodMaxInstructions) {
-		this.defaultMethodMaxInstructions = defaultMethodMaxInstructions;
+		if (defaultMethodMaxInstructions > 0) {
+			this.defaultMethodMaxInstructions = defaultMethodMaxInstructions;
 
-		log.info(String.format("Compiler MethodMaxInstructions: %d", defaultMethodMaxInstructions));
+			log.info(String.format("Compiler MethodMaxInstructions: %d", defaultMethodMaxInstructions));
+		}
 	}
 }
