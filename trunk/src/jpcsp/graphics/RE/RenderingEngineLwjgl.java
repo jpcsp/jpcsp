@@ -413,6 +413,10 @@ public class RenderingEngineLwjgl extends BaseRenderingEngine {
 		GL11.GL_PIXEL_MAP_A_TO_A     // RE_PIXEL_MAP_A_TO_A
 	};
 
+	public static String getVersion() {
+		return GL11.glGetString(GL11.GL_VERSION);
+	}
+
 	public static IRenderingEngine newInstance() {
 		if (GLContext.getCapabilities().OpenGL31) {
 			log.info("Using RenderingEngineLwjgl31");

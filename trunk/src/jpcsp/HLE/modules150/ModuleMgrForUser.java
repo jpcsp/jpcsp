@@ -49,7 +49,6 @@ import jpcsp.util.Utilities;
 import org.apache.log4j.Logger;
 
 public class ModuleMgrForUser implements HLEModule {
-
     protected static Logger log = Modules.getLogger("ModuleMgrForUser");
 
     // Modules that should never be loaded
@@ -67,6 +66,8 @@ public class ModuleMgrForUser implements HLEModule {
         libparse_uri,
         libparse_http
     }
+
+    public static final int loadHLEModuleDelay = 1000; // 1 ms delay
 
     @Override
     public String getName() {
@@ -255,6 +256,7 @@ public class ModuleMgrForUser implements HLEModule {
 
         StringBuilder prxname = new StringBuilder();
         if (hleKernelLoadHLEModule(processor, name, prxname)) {
+        	Modules.ThreadManForUserModule.hleKernelDelayThread(loadHLEModuleDelay, false);
             return;
         }
 

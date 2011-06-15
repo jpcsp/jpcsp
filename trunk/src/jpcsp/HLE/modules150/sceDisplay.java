@@ -60,6 +60,7 @@ import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 import jpcsp.graphics.RE.RenderingEngineFactory;
+import jpcsp.graphics.RE.RenderingEngineLwjgl;
 import jpcsp.graphics.RE.buffer.IREBufferManager;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.GETexture;
@@ -73,6 +74,8 @@ import org.apache.log4j.Logger;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.AWTGLCanvas;
 import org.lwjgl.opengl.ContextAttribs;
+import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.PixelFormat;
 
 public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule {
@@ -133,6 +136,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private boolean displayDirty;
     private boolean geDirty;
     private long lastUpdate;
+
+    private boolean initGLcalled;
+    private String openGLversion;
 
     // Canvas fields
     private Buffer pixelsFb;
@@ -347,6 +353,21 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         statistics = new DurationStatistics("sceDisplay Statistics");
         statisticsCopyGeToMemory = new DurationStatistics("Copy GE to Memory");
         statisticsCopyMemoryToGe = new DurationStatistics("Copy Memory to GE");
+
+        // Log debug information...
+        if (log.isDebugEnabled()) {
+	        try {
+				DisplayMode[] availableDisplayModes = Display.getAvailableDisplayModes();
+				for (int i = 0; availableDisplayModes != null && i < availableDisplayModes.length; i++) {
+					log.debug(String.format("Available Display Mode #%d = %s", i, availableDisplayModes[i]));
+				}
+				log.debug(String.format("Desktop Display Mode = %s", Display.getDesktopDisplayMode()));
+				log.debug(String.format("Current Display Mode = %s", Display.getDisplayMode()));
+				log.debug(String.format("initGL called = %b, OpenGL Version = %s", initGLcalled, openGLversion));
+			} catch (LWJGLException e) {
+				log.error(e);
+			}
+        }
 
         mode          = 0;
         width         = Screen.width;
@@ -1303,6 +1324,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 	protected void initGL() {
 		setSwapInterval(1);
 		super.initGL();
+
+		// Collect debugging information...
+		initGLcalled = true;
+		openGLversion = RenderingEngineLwjgl.getVersion();
 	}
 
 	@Override
