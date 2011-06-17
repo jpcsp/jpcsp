@@ -27,7 +27,7 @@ public class GEResizedTexture extends GEProxyTexture {
 	protected int y;
 
 	public GEResizedTexture(GETexture geTexture, int address, int bufferWidth, int width, int height, int pixelFormat) {
-		super(geTexture, address, bufferWidth, width, height, pixelFormat);
+		super(geTexture, address, bufferWidth, width, height, pixelFormat, false);
 
 		x = 0;
 		y = height - geTexture.getHeight();

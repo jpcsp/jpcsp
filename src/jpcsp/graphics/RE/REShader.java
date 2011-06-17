@@ -933,7 +933,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		// Create a new texture
 		if (fbTexture == null) {
-			fbTexture = new GETexture(Modules.sceDisplayModule.getTopAddrGe(), bufferWidth, width, height, pixelFormat);
+			fbTexture = new GETexture(Modules.sceDisplayModule.getTopAddrGe(), bufferWidth, width, height, pixelFormat, true);
 		}
 
 		// Copy the current screen (FrameBuffer) content to the texture

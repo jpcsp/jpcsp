@@ -29,7 +29,7 @@ public class FBTexture extends GETexture {
 	private int depthRenderBufferId = -1;
 
 	public FBTexture(int address, int bufferWidth, int width, int height, int pixelFormat) {
-		super(address, bufferWidth, width, height, pixelFormat);
+		super(address, bufferWidth, width, height, pixelFormat, true);
 	}
 
 	@Override

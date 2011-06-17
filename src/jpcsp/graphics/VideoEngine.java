@@ -63,6 +63,7 @@ import jpcsp.graphics.textures.GETexture;
 import jpcsp.graphics.textures.GETextureManager;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
+import jpcsp.hardware.Screen;
 import jpcsp.memory.IMemoryReader;
 import jpcsp.memory.MemoryReader;
 import jpcsp.util.CpuDurationStatistics;
@@ -82,9 +83,6 @@ import org.apache.log4j.Logger;
 // - Unswizzle textures in shader (is this possible?)
 //
 public class VideoEngine {
-
-    private static final int VIEWPORT_BASE_WIDTH = 480;
-    private static final int VIEWPORT_BASE_HEIGHT  = 272;
     public static final int NUM_LIGHTS = 4;
     public static final int SIZEOF_FLOAT = IRenderingEngine.sizeOfType[IRenderingEngine.RE_FLOAT];
     public final static String[] psm_names = new String[]{
@@ -139,8 +137,6 @@ public class VideoEngine {
     private boolean useAsyncVertexCache = true;
     public boolean useOptimisticVertexCache = false;
     private boolean useTextureAnisotropicFilter = false;
-    private boolean useViewportResizeFilter = false;
-    private int viewportResizeFilterScaleFactor = 1;
     private static GeCommands helper;
     private int command;
     private int normalArgument;
@@ -4960,8 +4956,8 @@ public class VideoEngine {
         	int scissorWidth = context.scissor_width ;
         	int scissorHeight = context.scissor_height;
 
-        	if (scissorHeight < VIEWPORT_BASE_HEIGHT) {
-        		scissorY = VIEWPORT_BASE_HEIGHT - scissorHeight - scissorY;
+        	if (scissorHeight < Screen.height) {
+        		scissorY = Screen.height - scissorHeight - scissorY;
         	}
 
             re.setScissor(scissorX, scissorY, scissorWidth, scissorHeight);
@@ -5028,7 +5024,7 @@ public class VideoEngine {
         boolean loadOrtho2D = false;
         if (viewportChanged) {
             if (context.transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-                re.setViewport(0, 0, VIEWPORT_BASE_WIDTH, VIEWPORT_BASE_HEIGHT);
+                re.setViewport(0, 0, Screen.width, Screen.height);
                 // Load the ortho for 2D after the depth settings
                 loadOrtho2D = true;
             } else {
@@ -5041,7 +5037,7 @@ public class VideoEngine {
 
                 // For OpenGL, translate the viewportY from the upper left corner
                 // to the lower left corner.
-                viewportY = VIEWPORT_BASE_HEIGHT - viewportY - viewportHeight;
+                viewportY = Screen.height - viewportY - viewportHeight;
 
                 re.setViewport(viewportX, viewportY, viewportWidth, viewportHeight);
             }
@@ -5891,22 +5887,6 @@ public class VideoEngine {
     		}
     		result[i] = s;
     	}
-    }
-
-    public boolean isUseViewportResizeFilter() {
-		return useViewportResizeFilter;
-	}
-
-	public void setUseViewportResizeFilter(boolean useViewportResizeFilter) {
-		this.useViewportResizeFilter = useViewportResizeFilter;
-	}
-
-    public int getViewportResizeFilterResolution() {
-        return viewportResizeFilterScaleFactor;
-    }
-
-    public void setViewportResizeFilterResolution(int width, int height) {
-        viewportResizeFilterScaleFactor = Math.round(((width / VIEWPORT_BASE_WIDTH) + (height / VIEWPORT_BASE_HEIGHT)) / 2);
     }
 
 	public boolean isUseTextureAnisotropicFilter() {

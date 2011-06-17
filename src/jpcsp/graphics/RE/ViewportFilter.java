@@ -16,12 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.RE;
 
-import jpcsp.graphics.VideoEngine;
-import jpcsp.HLE.Modules;
+import jpcsp.HLE.modules.sceDisplay;
 
 public class ViewportFilter extends BaseRenderingEngineProxy {
-    private int viewportScaleFactor = 1;
-    private boolean useViewportResizeFilter;
+    private boolean isDirectRendering;
 
 	public ViewportFilter(IRenderingEngine proxy) {
 		super(proxy);
@@ -29,13 +27,7 @@ public class ViewportFilter extends BaseRenderingEngineProxy {
 
 	@Override
 	public void startDisplay() {
-        boolean useViewportFilter = VideoEngine.getInstance().isUseViewportResizeFilter();
-        int resizeFactor = VideoEngine.getInstance().getViewportResizeFilterResolution();
-		useViewportResizeFilter = useViewportFilter;
-        viewportScaleFactor = resizeFactor;
-        if (useViewportResizeFilter) {
-          Modules.sceDisplayModule.setResizeFactor(viewportScaleFactor);
-        }
+		isDirectRendering = false;
 		super.startDisplay();
 	}
 
@@ -46,21 +38,37 @@ public class ViewportFilter extends BaseRenderingEngineProxy {
 
 	@Override
 	public void setViewport(int x, int y, int width, int height) {
-		if (useViewportResizeFilter) {
-			super.setViewport(x * viewportScaleFactor, y * viewportScaleFactor,
-                    width * viewportScaleFactor, height * viewportScaleFactor);
-		} else {
-			super.setViewport(x, y, width, height);
+		// No viewport resizing when rendering in direct mode
+		if (!isDirectRendering) {
+			x = sceDisplay.getResizedWidth(x);
+			y = sceDisplay.getResizedHeight(y);
+			width = sceDisplay.getResizedWidth(width);
+			height = sceDisplay.getResizedHeight(height);
 		}
+		super.setViewport(x, y, width, height);
 	}
 
     @Override
 	public void setScissor(int x, int y, int width, int height) {
-		if (useViewportResizeFilter) {
-			super.setScissor(x * viewportScaleFactor, y * viewportScaleFactor,
-                    width * viewportScaleFactor, height * viewportScaleFactor);
-		} else {
-			super.setScissor(x, y, width, height);
+		// No viewport resizing when rendering in direct mode
+		if (!isDirectRendering) {
+			x = sceDisplay.getResizedWidth(x);
+			y = sceDisplay.getResizedHeight(y);
+			width = sceDisplay.getResizedWidth(width);
+			height = sceDisplay.getResizedHeight(height);
 		}
+		super.setScissor(x, y, width, height);
+	}
+
+	@Override
+	public void endDirectRendering() {
+		isDirectRendering = false;
+		super.endDirectRendering();
+	}
+
+	@Override
+	public void startDirectRendering(boolean textureEnabled, boolean depthWriteEnabled, boolean colorWriteEnabled, boolean setOrthoMatrix, boolean orthoInverted, int width, int height) {
+		isDirectRendering = true;
+		super.startDirectRendering(textureEnabled, depthWriteEnabled, colorWriteEnabled, setOrthoMatrix, orthoInverted, width, height);
 	}
 }

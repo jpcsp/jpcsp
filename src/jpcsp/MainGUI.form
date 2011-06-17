@@ -213,17 +213,6 @@
                         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="anisotropicCheckActionPerformed"/>
                       </Events>
                     </MenuItem>
-                    <MenuItem class="javax.swing.JCheckBoxMenuItem" name="resizeCheck">
-                      <Properties>
-                        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                          <Connection code="Settings.getInstance().readBool(&quot;emu.graphics.filters.resize&quot;)" type="code"/>
-                        </Property>
-                        <Property name="text" type="java.lang.String" value="Resize"/>
-                      </Properties>
-                      <Events>
-                        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resizeCheckActionPerformed"/>
-                      </Events>
-                    </MenuItem>
                   </SubComponents>
                 </Menu>
                 <MenuItem class="javax.swing.JMenuItem" name="ShotItem">

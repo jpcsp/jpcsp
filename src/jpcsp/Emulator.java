@@ -343,6 +343,10 @@ public class Emulator implements Runnable {
     	return scheduler;
     }
 
+    public static MainGUI getMainGUI() {
+    	return gui;
+    }
+
     public static Emulator getInstance() {
         return instance;
     }
