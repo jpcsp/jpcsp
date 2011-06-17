@@ -179,8 +179,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         Insets insets = getInsets();
         Dimension minSize = new Dimension(
-                480 + insets.left + insets.right,
-                272 + insets.top + insets.bottom);
+                Screen.width + insets.left + insets.right,
+                Screen.height + insets.top + insets.bottom);
         setMinimumSize(minSize);
 
         //logging console window stuff
@@ -227,7 +227,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FiltersMenu = new javax.swing.JMenu();
         noneCheck = new javax.swing.JCheckBoxMenuItem();
         anisotropicCheck = new javax.swing.JCheckBoxMenuItem();
-        resizeCheck = new javax.swing.JCheckBoxMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         RotateItem = new javax.swing.JMenuItem();
         AudioOpt = new javax.swing.JMenu();
@@ -271,7 +270,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         setForeground(java.awt.Color.white);
-        setMinimumSize(new java.awt.Dimension(480, 272));
+        setMinimumSize(new java.awt.Dimension(Screen.width, Screen.height));
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
 			public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -450,15 +449,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         FiltersMenu.add(anisotropicCheck);
-
-        resizeCheck.setSelected(Settings.getInstance().readBool("emu.graphics.filters.resize"));
-        resizeCheck.setText("Resize");
-        resizeCheck.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                resizeCheckActionPerformed(evt);
-            }
-        });
-        FiltersMenu.add(resizeCheck);
 
         VideoOpt.add(FiltersMenu);
 
@@ -1574,10 +1564,6 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         boolean filterAnisotropic = Settings.getInstance().readBool("emu.graphics.filters.anisotropic");
         VideoEngine.getInstance().setUseTextureAnisotropicFilter(filterAnisotropic);
 
-        boolean filterResize = Settings.getInstance().readBool("emu.graphics.filters.resize");
-        VideoEngine.getInstance().setUseViewportResizeFilter(filterResize);
-        VideoEngine.getInstance().setViewportResizeFilterResolution(480, 272);
-
         String antialias = Settings.getInstance().readString("emu.graphics.antialias");
         int samples = 0;
         if (antialias != null) {
@@ -1689,12 +1675,6 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             String filterAnisotropic = patchSettings.getProperty("emu.graphics.filters.anisotropic");
             if (filterAnisotropic != null) {
                 VideoEngine.getInstance().setUseTextureAnisotropicFilter(Integer.parseInt(filterAnisotropic) != 0);
-            }
-
-            String filterResize = patchSettings.getProperty("emu.graphics.filters.resize");
-            if (filterResize != null) {
-                VideoEngine.getInstance().setUseViewportResizeFilter(Integer.parseInt(filterResize) != 0);
-                VideoEngine.getInstance().setViewportResizeFilterResolution(480, 272);
             }
 
             String antialias = patchSettings.getProperty("emu.graphics.antialias");
@@ -1964,31 +1944,22 @@ private void anisotropicCheckActionPerformed(java.awt.event.ActionEvent evt) {//
     Settings.getInstance().writeBool("emu.graphics.filters.anisotropic", anisotropicCheck.isSelected());
 }//GEN-LAST:event_anisotropicCheckActionPerformed
 
+private void setViewportResizeScaleFactor(int viewportResizeScaleFactor) {
+	Modules.sceDisplayModule.setViewportResizeScaleFactor(viewportResizeScaleFactor);
+	pack();
+}
+
 private void oneTimeResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_oneTimeResizeActionPerformed
-    int w = 480;
-    int h = 272 + 80; // Adjust the Y coordinate due to the menu bar.
-    setSize(new Dimension(w, h));
-    VideoEngine.getInstance().setViewportResizeFilterResolution(480, 272);
+	setViewportResizeScaleFactor(1);
 }//GEN-LAST:event_oneTimeResizeActionPerformed
 
 private void twoTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_twoTimesResizeActionPerformed
-    int w = 480 * 2;
-    int h = (272 * 2) + 80; // Adjust the Y coordinate due to the menu bar.
-    setSize(new Dimension(w, h));
-    VideoEngine.getInstance().setViewportResizeFilterResolution(480*2, 272*2);
+	setViewportResizeScaleFactor(2);
 }//GEN-LAST:event_twoTimesResizeActionPerformed
 
 private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_threeTimesResizeActionPerformed
-    int w = 480 * 3;
-    int h = (272 * 3) + 80; // Adjust the Y coordinate due to the menu bar.
-    setSize(new Dimension(w, h));
-    VideoEngine.getInstance().setViewportResizeFilterResolution(480*3, 272*3);
+	setViewportResizeScaleFactor(3);
 }//GEN-LAST:event_threeTimesResizeActionPerformed
-
-private void resizeCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resizeCheckActionPerformed
-    VideoEngine.getInstance().setUseViewportResizeFilter(resizeCheck.isSelected());
-    Settings.getInstance().writeBool("emu.graphics.filters.resize", resizeCheck.isSelected());
-}//GEN-LAST:event_resizeCheckActionPerformed
 
     private void exitEmu() {
         if (Settings.getInstance().readBool("gui.saveWindowPos")) {
@@ -2196,7 +2167,6 @@ private void resizeCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     private javax.swing.JCheckBoxMenuItem oneTimeResize;
     private javax.swing.JMenuItem openUmd;
     private javax.swing.ButtonGroup resGroup;
-    private javax.swing.JCheckBoxMenuItem resizeCheck;
     private javax.swing.JCheckBoxMenuItem threeTimesResize;
     private javax.swing.JCheckBoxMenuItem twoTimesResize;
     // End of variables declaration//GEN-END:variables

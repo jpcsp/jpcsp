@@ -83,7 +83,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
 	private static final long serialVersionUID = 2267866365228834812L;
 
-    private static final boolean useReadPixels = false;
     private boolean onlyGEGraphics = false;
     private boolean saveGEToTexture = false;
     private static final boolean useDebugGL = false;
@@ -104,6 +103,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     // current Rendering Engine
     private IRenderingEngine re;
     private boolean startModules;
+    private boolean isStarted;
     private int drawBuffer;
 
     // current display mode
@@ -112,7 +112,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private int height;
     private int widthGe;
     private int heightGe;
-    private int resizeFactor;
+
+    // Resizing options
+    private static float viewportResizeFilterScaleFactor = 1;
+    private boolean resizePending;
 
     // current framebuffer settings
     private int topaddrFb;
@@ -149,6 +152,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     private int canvasHeight;
     private boolean createTex;
     private int texFb;
+    private int resizedTexFb;
     private float texS;
     private float texT;
 
@@ -330,7 +334,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         setScreenResolution(Screen.width, Screen.height);
 
         texFb = -1;
+        resizedTexFb = -1;
         startModules = false;
+        isStarted = false;
+        resizePending = false;
         tempSize = 0;
     }
 
@@ -340,8 +347,48 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         setSize(width, height);
     }
 
-    public void setResizeFactor(int factor) {
-        resizeFactor = factor;
+    public float getViewportResizeScaleFactor() {
+        return viewportResizeFilterScaleFactor;
+    }
+
+    public void setViewportResizeScaleFactor(int width, int height) {
+    	// Compute the scale factor in the horizontal and vertical directions
+        float scaleWidth = ((float) width) / Screen.width;
+        float scaleHeight = ((float) height) / Screen.height;
+
+        // We are currently using only one scale factor to keep the PSP aspect ratio
+        float scaleAspectRatio = (scaleWidth + scaleHeight) / 2;
+        setViewportResizeScaleFactor(scaleAspectRatio);
+
+        resizePending = true;
+    }
+
+    public void setViewportResizeScaleFactor(float viewportResizeFilterScaleFactor) {
+    	if (viewportResizeFilterScaleFactor < 1) {
+    		// Invalid value
+    		return;
+    	}
+
+    	if (viewportResizeFilterScaleFactor != sceDisplay.viewportResizeFilterScaleFactor) {
+    		sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
+
+    		// Resize the component while keeping the PSP aspect ratio
+    		setSize(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
+
+    		// The preferred size is used when resizing the MainGUI
+    		setPreferredSize(getSize());
+
+    		// Recreate the texture if the scaling factor has changed
+			createTex = true;
+    	}
+    }
+
+    public final static int getResizedWidth(int width) {
+    	return Math.round(width * viewportResizeFilterScaleFactor);
+    }
+
+    public final static int getResizedHeight(int height) {
+    	return Math.round(height * viewportResizeFilterScaleFactor);
     }
 
     public static void setAntiAliasSamplesNum(int samples) {
@@ -393,8 +440,6 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         pixelformatGe = pixelformatFb;
         bottomaddrGe  = bottomaddrFb;
         pixelsGe = getPixels(topaddrGe, bottomaddrGe);
-
-        resizeFactor = 1;
 
         isFbShowing = false;
         setGeBufCalledAtLeastOnce = false;
@@ -453,6 +498,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	}
     	re = null;
     	startModules = false;
+    	isStarted = false;
     }
 
     public void exit() {
@@ -604,15 +650,15 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 			}
 
 			if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
-				GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
+				GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
 				geTexture.copyScreenToTexture(re);
 			} else {
 	        	// Set texFb as the current texture
-			    re.bindTexture(texFb);
+			    re.bindTexture(resizedTexFb);
 				re.setTextureFormat(pixelformatGe, false);
 
 			    // Copy screen to the current texture
-			    re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferwidthGe, widthGe), heightGe);
+			    re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(Math.min(bufferwidthGe, widthGe)), getResizedHeight(heightGe));
 
 			    // Re-render GE/current texture upside down
 			    drawFrameBuffer(true, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
@@ -827,7 +873,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		re.setTextureFormat(pixelformatGe, false);
         re.setTexImage(0,
             internalTextureFormat,
-            bufferwidthGe, Utilities.makePow2(heightGe),
+            getResizedWidth(bufferwidthGe),
+            getResizedHeight(Utilities.makePow2(heightGe)),
             pixelformatGe,
             pixelformatGe,
             0, null);
@@ -837,17 +884,17 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         re.setTextureMipmapMinLevel(0);
         re.setTextureMipmapMaxLevel(0);
         re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
-        re.setPixelStore(bufferwidthGe, getPixelFormatBytes(pixelformatGe));
+        re.setPixelStore(getResizedWidth(bufferwidthGe), getPixelFormatBytes(pixelformatGe));
 
         // Copy screen to the GE texture
-        re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(widthGe, bufferwidthGe), heightGe);
+        re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(Math.min(widthGe, bufferwidthGe)), getResizedHeight(heightGe));
 
         // Copy the GE texture into temp buffer
         temp.clear();
         re.getTexImage(0, pixelformatGe, pixelformatGe, temp);
 
         // Capture the GE image
-        CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, pixelformatGe, false, 0, true, false);
+        CaptureManager.captureImage(topaddrGe, 0, temp, getResizedWidth(widthGe), getResizedHeight(heightGe), getResizedWidth(bufferwidthGe), pixelformatGe, false, 0, true, false);
 
     	// Delete the GE texture
         re.deleteTexture(texGe);
@@ -889,7 +936,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		}
 
     	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
-			GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
+			GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
 			geTexture.copyTextureToScreen(re);
     	} else {
         	if (re.isVertexArrayAvailable()) {
@@ -914,11 +961,12 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		}
     }
 
-    /** @param first : true  = draw as psp size
-     *                 false = draw as window size */
-    private void drawFrameBuffer(boolean first, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
-        if(!isrotating){
-
+    /**
+     * @param keepOriginalSize : true  = draw as psp size
+     *                           false = draw as window size
+     **/
+    private void drawFrameBuffer(boolean keepOriginalSize, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
+        if (!isrotating) {
             texS1 = texS4 = texS;
             texT1 = texT2 = texT;
 
@@ -926,13 +974,12 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         }
 
     	re.startDirectRendering(true, false, true, true, !invert, width, height);
-        if (first) {
+        if (keepOriginalSize) {
             re.setViewport(0, 0, width, height);
         } else {
-            re.setViewport(0, 0, canvasWidth, canvasHeight);
+            re.setViewport(0, 0, getResizedWidth(width), getResizedHeight(height));
         }
 
-        re.bindTexture(texFb);
 		re.setTextureFormat(pixelformat, false);
 
         IREBufferManager bufferManager = re.getBufferManager();
@@ -978,90 +1025,86 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         isrotating = false;
     }
 
-    private void copyScreenToPixels(Buffer pixels, int bufferwidth, int pixelformat, int width, int height) {
-        // Using glReadPixels instead of glGetTexImage is showing
-        // between 7 and 13% performance increase.
-        // But glReadPixels seems only to work correctly with 32bit pixels...
-    	// Update: glReadPixels has a poorer performance than glGetTexImage
-    	// on modern graphic cards.
-        if (useReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
-            re.setProjectionMatrix(VideoEngine.getOrthoMatrix(0, width, height, 0, -1, 1));
-            int bufferStep = bufferwidth * getPixelFormatBytes(pixelformat);
-            int widthToRead = Math.min(width, bufferwidth);
-            // Y-Axis on PSP is flipped against OpenGL, so we have to copy row by row
-            for (int y = 0, bufferPos = 0; y < height; y++, bufferPos += bufferStep) {
-            	Utilities.bytePositionBuffer(pixels, bufferPos); // this uses reflection -> slow(?)
-                re.readPixels(0, y, widthToRead, 1, pixelformat, pixelformat, pixels);
+    private void copyBufferByLines(IntBuffer dstBuffer, IntBuffer srcBuffer, int dstBufferWidth, int srcBufferWidth, int pixelFormat, int width, int height) {
+		int pixelsPerElement = 4 / getPixelFormatBytes(pixelFormat);
+		for (int y = 0; y < height; y++) {
+			int srcStartOffset = y * srcBufferWidth / pixelsPerElement;
+			int dstStartOffset = y * dstBufferWidth / pixelsPerElement;
+			srcBuffer.limit(srcStartOffset + (width + 1) / pixelsPerElement);
+			srcBuffer.position(srcStartOffset);
+			dstBuffer.position(dstStartOffset);
+            if (srcBuffer.remaining() < dstBuffer.remaining()) {
+                dstBuffer.put(srcBuffer);
             }
-        } else {
-        	// Set texFb as the current texture
-            re.bindTexture(texFb);
-			re.setTextureFormat(pixelformatFb, false);
+		}
+    }
 
-            re.setPixelStore(bufferwidth, getPixelFormatBytes(pixelformat));
+    private void copyScreenToPixels(Buffer pixels, int bufferWidth, int pixelFormat, int width, int height) {
+    	// Set texFb as the current texture
+        re.bindTexture(texFb);
+		re.setTextureFormat(pixelformatFb, false);
 
-            // Copy screen to the current texture
-            re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferwidth, width), height);
+        re.setPixelStore(bufferWidth, getPixelFormatBytes(pixelFormat));
 
-            // Copy the current texture into memory
-            Buffer buffer = (pixels.capacity() >= temp.capacity() ? pixels : temp);
-            buffer.clear();
-            re.getTexImage(0, pixelformat, pixelformat, buffer);
+        // Copy screen to the current texture
+        re.copyTexSubImage(0, 0, 0, 0, 0, Math.min(bufferWidth, width), height);
 
-            // Copy temp into pixels, temp is probably square and pixels is less,
-            // a smaller rectangle, otherwise we could copy straight into pixels.
-            if (buffer == temp) {
-	            temp.clear();
-	            pixels.clear();
-	            temp.limit(pixels.limit());
-	            if (temp instanceof ByteBuffer) {
-	                ((ByteBuffer) pixels).put((ByteBuffer) temp);
-	            } else if (temp instanceof IntBuffer) {
-	            	VideoEngine videoEngine = VideoEngine.getInstance();
-	            	if (videoEngine.isUsingTRXKICK() && videoEngine.getMaxSpriteHeight() < Integer.MAX_VALUE) {
-	            		// Hack: God of War is using GE command lists stored into the non-visible
-	            		// part of the GE buffer. The lists are copied from the main memory into
-	            		// the VRAM using TRXKICK. Be careful to not overwrite these non-visible
-	            		// parts.
-	            		//
-	            		// Copy only the visible part of the GE to the memory, e.g.
-	            		// when width==480 and bufferwidth==1024, copy only 480 pixels
-	            		// per line and skip 1024-480 pixels.
-	            		IntBuffer srcBuffer = (IntBuffer) temp;
-	            		IntBuffer dstBuffer = (IntBuffer) pixels;
-	            		int pixelsPerElement = 4 / getPixelFormatBytes(pixelformat);
-	            		int maxHeight = videoEngine.getMaxSpriteHeight();
-	            		int maxWidth = videoEngine.getMaxSpriteWidth();
-	            		int textureAlignment = (pixelsPerElement == 1 ? 3 : 7);
-            			maxHeight = (maxHeight + textureAlignment) & ~textureAlignment;
-            			maxWidth = (maxWidth + textureAlignment) & ~textureAlignment;
-	            		if (VideoEngine.log.isDebugEnabled()) {
-	            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight + ", maxSpriteWidth=" + maxWidth);
-	            		}
-	            		if (maxHeight > height) {
-	            			maxHeight = height;
-	            		}
-	            		if (maxWidth > width) {
-	            			maxWidth = width;
-	            		}
-	            		for (int y = 0; y < maxHeight; y++) {
-	            			int startOffset = y * bufferwidth / pixelsPerElement;
-	            			srcBuffer.limit(startOffset + (maxWidth + 1) / pixelsPerElement);
-	            			srcBuffer.position(startOffset);
-	            			dstBuffer.position(startOffset);
-                            if(srcBuffer.remaining() < dstBuffer.remaining()) {
-                                dstBuffer.put(srcBuffer);
-                            }
-	            		}
-	            	} else {
-	            		((IntBuffer) pixels).put((IntBuffer) temp);
-	            	}
-	            } else {
-	                throw new RuntimeException("unhandled buffer type");
-	            }
+        // Copy the current texture into memory
+        Buffer buffer = (pixels.capacity() >= temp.capacity() ? pixels : temp);
+        buffer.clear();
+        re.getTexImage(0, pixelFormat, pixelFormat, buffer);
+
+        // Copy temp into pixels, temp is probably square and pixels is less,
+        // a smaller rectangle, otherwise we could copy straight into pixels.
+        if (buffer == temp) {
+            temp.clear();
+            pixels.clear();
+            temp.limit(pixels.limit());
+
+            if (temp instanceof ByteBuffer) {
+        		ByteBuffer srcBuffer = (ByteBuffer) temp;
+        		ByteBuffer dstBuffer = (ByteBuffer) pixels;
+    			dstBuffer.put(srcBuffer);
+            } else if (temp instanceof IntBuffer) {
+        		IntBuffer srcBuffer = (IntBuffer) temp;
+        		IntBuffer dstBuffer = (IntBuffer) pixels;
+
+        		VideoEngine videoEngine = VideoEngine.getInstance();
+            	if (videoEngine.isUsingTRXKICK() && videoEngine.getMaxSpriteHeight() < Integer.MAX_VALUE) {
+            		// Hack: God of War is using GE command lists stored into the non-visible
+            		// part of the GE buffer. The lists are copied from the main memory into
+            		// the VRAM using TRXKICK. Be careful to not overwrite these non-visible
+            		// parts.
+            		//
+            		// Copy only the visible part of the GE to the memory, e.g.
+            		// when width==480 and bufferwidth==1024, copy only 480 pixels
+            		// per line and skip 1024-480 pixels.
+                	int srcBufferWidth = bufferWidth;
+                	int dstBufferWidth = bufferWidth;
+            		int pixelsPerElement = 4 / getPixelFormatBytes(pixelFormat);
+            		int maxHeight = videoEngine.getMaxSpriteHeight();
+            		int maxWidth = videoEngine.getMaxSpriteWidth();
+            		int textureAlignment = (pixelsPerElement == 1 ? 3 : 7);
+        			maxHeight = (maxHeight + textureAlignment) & ~textureAlignment;
+        			maxWidth = (maxWidth + textureAlignment) & ~textureAlignment;
+            		if (VideoEngine.log.isDebugEnabled()) {
+            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight + ", maxSpriteWidth=" + maxWidth);
+            		}
+            		if (maxHeight > height) {
+            			maxHeight = height;
+            		}
+            		if (maxWidth > width) {
+            			maxWidth = width;
+            		}
+            		copyBufferByLines(dstBuffer, srcBuffer, dstBufferWidth, srcBufferWidth, pixelFormat, maxWidth, maxHeight);
+            	} else {
+        			dstBuffer.put(srcBuffer);
+            	}
+            } else {
+                throw new RuntimeException("unhandled buffer type");
             }
-            // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
         }
+        // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
     }
 
     protected void blockCurrentThreadOnVblank(int cycles, boolean doCallbacks) {
@@ -1140,14 +1183,50 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	return vcount;
     }
 
+    private int createTexture(int textureId, boolean isResized) {
+        if (textureId != -1) {
+        	re.deleteTexture(textureId);
+        }
+        textureId = re.genTexture();
+
+        re.bindTexture(textureId);
+		re.setTextureFormat(pixelformatFb, false);
+
+        //
+        // The format of the frame (or GE) buffer is
+        //   A the alpha & stencil value
+        //   R the Red color component
+        //   G the Green color component
+        //   B the Blue color component
+        //
+        // GU_PSM_8888 : 0xAABBGGRR
+        // GU_PSM_4444 : 0xABGR
+        // GU_PSM_5551 : ABBBBBGGGGGRRRRR
+        // GU_PSM_5650 : BBBBBGGGGGGRRRRR
+        //
+        re.setTexImage(0,
+            internalTextureFormat,
+            isResized ? getResizedWidth(bufferwidthFb) : bufferwidthFb,
+            isResized ? getResizedHeight(Utilities.makePow2(height)) : Utilities.makePow2(height),
+            pixelformatFb,
+            pixelformatFb,
+            0, null);
+        re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
+        re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
+        re.setTextureMipmapMinLevel(0);
+        re.setTextureMipmapMaxLevel(0);
+        re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+
+        return textureId;
+    }
+
     @Override
 	protected void paintGL() {
-        if (resizeFactor != 0) {
-            width = (width / resizeFactor);
-            height = (height / resizeFactor);
-            widthGe = (widthGe / resizeFactor);
-            heightGe = (heightGe / resizeFactor);
-        }
+    	if (resizePending) {
+    		// Resize the MainGUI to use the preferred size of this sceDisplay
+    		Emulator.getMainGUI().pack();
+    		resizePending = false;
+    	}
 
     	if (statistics != null) {
             statistics.start();
@@ -1172,48 +1251,22 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 	    		saveGEToTexture = false;
 	    		log.warn("Saving GE to Textures has been automatically disabled: FBO is not supported by this OpenGL version");
 	    	}
+	    	isStarted = true;
     	}
 
-        if (createTex) {
-            if (texFb != -1) {
-            	re.deleteTexture(texFb);
-            }
-            texFb = re.genTexture();
+    	if (!isStarted) {
+        	re.clear(0.0f, 0.0f, 0.0f, 0.0f);
+            return;
+    	}
 
-            re.bindTexture(texFb);
-			re.setTextureFormat(pixelformatFb, false);
-
-            //
-            // The format of the frame (or GE) buffer is
-            //   A the alpha & stencil value
-            //   R the Red color component
-            //   G the Green color component
-            //   B the Blue color component
-            //
-            // GU_PSM_8888 : 0xAABBGGRR
-            // GU_PSM_4444 : 0xABGR
-            // GU_PSM_5551 : ABBBBBGGGGGRRRRR
-            // GU_PSM_5650 : BBBBBGGGGGGRRRRR
-            //
-            re.setTexImage(0,
-                internalTextureFormat,
-                bufferwidthFb, Utilities.makePow2(height),
-                pixelformatFb,
-                pixelformatFb,
-                0, null);
-            re.setTextureMipmapMinFilter(GeCommands.TFLT_NEAREST);
-            re.setTextureMipmapMagFilter(GeCommands.TFLT_NEAREST);
-            re.setTextureMipmapMinLevel(0);
-            re.setTextureMipmapMaxLevel(0);
-            re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
+    	if (createTex) {
+        	// Create two textures: one at original PSP size and
+        	// one resized to the display size
+        	texFb = createTexture(texFb, false);
+        	resizedTexFb = createTexture(resizedTexFb, true);
 
             checkTemp();
             createTex = false;
-        }
-
-        if (texFb == -1) {
-        	re.clear(0.0f, 0.0f, 0.0f, 0.0f);
-            return;
         }
 
         if (onlyGEGraphics) {
@@ -1234,15 +1287,15 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
             	}
 
             	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrGe)) {
-            		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe);
+            		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrGe, bufferwidthGe, widthGe, heightGe, pixelformatGe, true);
             		geTexture.copyScreenToTexture(re);
             	} else {
 	                // Set texFb as the current texture
-	                re.bindTexture(texFb);
+	                re.bindTexture(resizedTexFb);
 	    			re.setTextureFormat(pixelformatGe, false);
 
 	                // Copy screen to the current texture
-	                re.copyTexSubImage(0, 0, 0, 0, 0, widthGe, heightGe);
+	                re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(widthGe), getResizedHeight(heightGe));
 
 	                // Re-render GE/current texture upside down
 	                drawFrameBuffer(true, true, bufferwidthFb, pixelformatFb, width, height);
@@ -1257,7 +1310,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         		log.debug(String.format("sceDisplay.paintGL - rendering the FB 0x%08X", topaddrFb));
         	}
         	if (saveGEToTexture && !VideoEngine.getInstance().isVideoTexture(topaddrFb)) {
-        		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrFb, bufferwidthFb, width, height, pixelformatFb);
+        		GETexture geTexture = GETextureManager.getInstance().getGETexture(re, topaddrFb, bufferwidthFb, width, height, pixelformatFb, true);
         		geTexture.copyTextureToScreen(re);
         	} else {
 	            pixelsFb.clear();
@@ -1304,8 +1357,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
 	private void checkTemp() {
         // Buffer large enough to store the complete FB or GE texture
-        int sizeInBytes = Math.max(bufferwidthFb, bufferwidthGe)
-                        * Utilities.makePow2(Math.max(height, heightGe))
+        int sizeInBytes = getResizedWidth(Math.max(bufferwidthFb, bufferwidthGe))
+                        * getResizedHeight(Utilities.makePow2(Math.max(height, heightGe)))
                         * getPixelFormatBytes(Math.max(pixelformatFb, pixelformatGe));
 
         if (sizeInBytes > tempSize) {
@@ -1351,7 +1404,9 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         captureY = getY();
         captureWidth = getWidth();
         captureHeight = getHeight();
-	}
+
+        setViewportResizeScaleFactor(getWidth(), getHeight());
+    }
 
     public void sceDisplaySetMode(Processor processor) {
         CpuState cpu = processor.cpu;

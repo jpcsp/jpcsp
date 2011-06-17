@@ -63,7 +63,7 @@ public class GETextureManager {
 		return geTexture;
 	}
 
-	public GETexture getGETexture(IRenderingEngine re, int address, int bufferWidth, int width, int height, int pixelFormat) {
+	public GETexture getGETexture(IRenderingEngine re, int address, int bufferWidth, int width, int height, int pixelFormat, boolean useViewportResize) {
 		GETexture geTexture = checkGETexturePSM8888(address, bufferWidth, width, height, pixelFormat);
 		if (geTexture == null) {
 			geTexture = checkGETexture(address, bufferWidth, width, height, pixelFormat);
@@ -71,7 +71,7 @@ public class GETextureManager {
 
 		if (geTexture == null) {
 			Long key = getKey(address, bufferWidth, width, height, pixelFormat);
-			geTexture = new GETexture(address, bufferWidth, width, height, pixelFormat);
+			geTexture = new GETexture(address, bufferWidth, width, height, pixelFormat, useViewportResize);
 			geTextures.put(key, geTexture);
 		}
 

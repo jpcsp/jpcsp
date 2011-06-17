@@ -48,16 +48,19 @@ public class RenderingEngineFactory {
 			re = new REFixedFunction(re);
 		}
 
+		// Proxy removing redundant calls.
+		// E.g. calls setting multiple times the same value,
+		// or calls with an invalid parameter (e.g. for unused shader uniforms).
+		// In the rendering pipeline, the State Proxy has to be called after
+		// the Anisotropic/Viewport filters. These are modifying some parameters
+		// and the State Proxy has to use the final parameter values.
+		re = new StateProxy(re);
+
 		// Proxy implementing a texture anisotropic filter
 		re = new AnisotropicFilter(re);
 
         // Proxy implementing a viewport resizing filter
 		re = new ViewportFilter(re);
-
-		// Proxy removing redundant calls.
-		// E.g. calls setting multiple times the same value,
-		// or calls with an invalid parameter (e.g. for unused shader uniforms).
-		re = new StateProxy(re);
 
 		// Return the first entry in the pipeline
 		return re;

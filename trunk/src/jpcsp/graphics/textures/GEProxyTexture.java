@@ -27,8 +27,8 @@ public abstract class GEProxyTexture extends GETexture {
 	private int fboId = -1;
 	protected GETexture geTexture;
 
-	public GEProxyTexture(GETexture geTexture, int address, int bufferWidth, int width, int height, int pixelFormat) {
-		super(address, Utilities.makePow2(width), width, height, pixelFormat);
+	public GEProxyTexture(GETexture geTexture, int address, int bufferWidth, int width, int height, int pixelFormat, boolean useViewportResize) {
+		super(address, Utilities.makePow2(width), width, height, pixelFormat, useViewportResize);
 		this.geTexture = geTexture;
 	}
 
