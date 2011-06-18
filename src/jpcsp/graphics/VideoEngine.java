@@ -4309,7 +4309,7 @@ public class VideoEngine {
 
 		int width = context.texture_width[0];
 		int height = context.texture_height[0];
-		if (geTexture.getTexImageWidth() == width && geTexture.getTexImageHeight() == height) {
+		if (geTexture.getWidth() == width && geTexture.getHeight() == height) {
 			if (isLogDebugEnabled) {
 				log.debug(String.format("Reusing GETexture %s", geTexture));
 			}
