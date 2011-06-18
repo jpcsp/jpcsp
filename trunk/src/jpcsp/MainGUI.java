@@ -849,8 +849,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     private void toggleFullscreenMode() {
         Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-        int w = (int) d.getWidth();
-        int h = (int) d.getHeight();
         if (useFullscreen) {
             dispose();
             setUndecorated(true);
@@ -859,7 +857,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             makeFullscreenMenu();
             setLocation(0, 0);
             setSize(d);
-            Modules.sceDisplayModule.setScreenResolution(w, h);
             setVisible(true);
         }
     }

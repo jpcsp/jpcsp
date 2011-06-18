@@ -75,14 +75,14 @@ public class sceHttps implements HLEModule {
     // Certificate related statics (guessed from a PSP's certificates' list).
     // The PSP currently handles certificates for the following issuers:
     //   - RSA: 2 certificates (resolved);
-    //   - VERISIGN: 13 certificates (not resolved);
-    //   - SCE: 5 (not resolved);
-    //   - GEOTRUST: 3 (not resolved);
-    //   - ENTRUST: 1 (not resolved);
-    //   - VALICERT: 1 (not resolved);
-    //   - CYBERTRUST: 4 (not resolved);
-    //   - THAWTE: 2 (not resolved);
-    //   - COMODO: 3 (not resolved).
+    //   - VERISIGN: 14 certificates (resolved);
+    //   - SCE: 5 (resolved);
+    //   - GEOTRUST: 4 (resolved);
+    //   - ENTRUST: 1 (resolved);
+    //   - VALICERT: 1 (resolved);
+    //   - CYBERTRUST: 4 (resolved);
+    //   - THAWTE: 2 (resolved);
+    //   - COMODO: 3 (resolved).
     public static final int PSP_HTTPS_ISSUER_ALL = 0x00000000; // Loads all certificates from flash.
     public static final int PSP_HTTPS_ISSUER_RSA = 0x00000001;
     public static final int PSP_HTTPS_ISSUER_VERISIGN = 0x00000002;
@@ -95,9 +95,65 @@ public class sceHttps implements HLEModule {
     public static final int PSP_HTTPS_ISSUER_COMODO = 0x00000009;
 
     public static final int PSP_HTTPS_CERT_ALL = 0xFFFFFFFF; // Loads all certificates for a particular issuer.
-    public static final int PSP_HTTPS_CERT_RSA_UNK1 = 0x00000001;
-    public static final int PSP_HTTPS_CERT_RSA_UNK2 = 0x00000002;
-    public static final int PSP_HTTPS_CERT_RSA_ALL = (PSP_HTTPS_CERT_RSA_UNK1 | PSP_HTTPS_CERT_RSA_UNK2);
+    public static final int PSP_HTTPS_CERT_RSA_1024_V1_C3 = 0x00000001;
+    public static final int PSP_HTTPS_CERT_RSA_2048_V3 = 0x00000002;
+    public static final int PSP_HTTPS_CERT_RSA_ALL = (PSP_HTTPS_CERT_RSA_1024_V1_C3 | PSP_HTTPS_CERT_RSA_2048_V3);
+
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C1 = 0x00000001;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C2 = 0x00000002;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C3 = 0x00000004;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C1_G2 = 0x00000008;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C2_G2 = 0x00000010;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C3_G2 = 0x00000020;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C4_G2 = 0x00000040;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C1_G3 = 0x00000080;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C2_G3 = 0x00000100;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C3_G3 = 0x00000200;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C4_G3 = 0x00000400;
+    public static final int PSP_HTTPS_CERT_VERISIGN_TSA = 0x00000800;
+    public static final int PSP_HTTPS_CERT_VERISIGN_RSA_SS = 0x00001000;
+    public static final int PSP_HTTPS_CERT_VERISIGN_PCA_C3_G5 = 0x00002000;
+    public static final int PSP_HTTPS_CERT_VERISIGN_ALL = (PSP_HTTPS_CERT_VERISIGN_PCA_C1 | PSP_HTTPS_CERT_VERISIGN_PCA_C2
+            | PSP_HTTPS_CERT_VERISIGN_PCA_C3 | PSP_HTTPS_CERT_VERISIGN_PCA_C1_G2 | PSP_HTTPS_CERT_VERISIGN_PCA_C2_G2 | PSP_HTTPS_CERT_VERISIGN_PCA_C3_G2
+            | PSP_HTTPS_CERT_VERISIGN_PCA_C4_G2 | PSP_HTTPS_CERT_VERISIGN_PCA_C1_G3 | PSP_HTTPS_CERT_VERISIGN_PCA_C2_G3 | PSP_HTTPS_CERT_VERISIGN_PCA_C2_G3
+            | PSP_HTTPS_CERT_VERISIGN_PCA_C3_G3 | PSP_HTTPS_CERT_VERISIGN_PCA_C4_G3 | PSP_HTTPS_CERT_VERISIGN_TSA | PSP_HTTPS_CERT_VERISIGN_RSA_SS | PSP_HTTPS_CERT_VERISIGN_PCA_C3_G5);
+
+    public static final int PSP_HTTPS_CERT_SCEI_ROOT_CA_01 = 0x00000001;
+    public static final int PSP_HTTPS_CERT_SCEI_ROOT_CA_02 = 0x00000002;
+    public static final int PSP_HTTPS_CERT_SCEI_ROOT_CA_03 = 0x00000004;
+    public static final int PSP_HTTPS_CERT_SCEI_ROOT_CA_04 = 0x00000008;
+    public static final int PSP_HTTPS_CERT_SCEI_ROOT_CA_05 = 0x00000010;
+    public static final int PSP_HTTPS_CERT_SCEI_ALL = (PSP_HTTPS_CERT_SCEI_ROOT_CA_01 | PSP_HTTPS_CERT_SCEI_ROOT_CA_02
+            | PSP_HTTPS_CERT_SCEI_ROOT_CA_03 | PSP_HTTPS_CERT_SCEI_ROOT_CA_04 | PSP_HTTPS_CERT_SCEI_ROOT_CA_05);
+
+    public static final int PSP_HTTPS_CERT_GEOTRUST_GLOBAL_CA = 0x00000001;
+    public static final int PSP_HTTPS_CERT_GEOTRUST_EQUIFAX_SECURE_CA = 0x00000002;
+    public static final int PSP_HTTPS_CERT_GEOTRUST_EQUIFAX_SECURE_EBUSINESS_CA1 = 0x00000004;
+    public static final int PSP_HTTPS_CERT_GEOTRUST_EQUIFAX_SECURE_GLOBAL_EBUSINESS_CA1 = 0x00000008;
+    public static final int PSP_HTTPS_CERT_GEOTRUST_ALL = (PSP_HTTPS_CERT_GEOTRUST_GLOBAL_CA | PSP_HTTPS_CERT_GEOTRUST_EQUIFAX_SECURE_CA
+            | PSP_HTTPS_CERT_GEOTRUST_EQUIFAX_SECURE_EBUSINESS_CA1 | PSP_HTTPS_CERT_GEOTRUST_EQUIFAX_SECURE_GLOBAL_EBUSINESS_CA1);
+
+    public static final int PSP_HTTPS_CERT_ENTRUST_SECURE_SERVER_CA = 0x00000001;
+    public static final int PSP_HTTPS_CERT_ENTRUST_ALL = PSP_HTTPS_CERT_ENTRUST_SECURE_SERVER_CA;
+
+    public static final int PSP_HTTPS_CERT_VALICERT_C2_CA = 0x00000001;
+    public static final int PSP_HTTPS_CERT_VALICERT_ALL = PSP_HTTPS_CERT_VALICERT_C2_CA;
+
+    public static final int PSP_HTTPS_CERT_CYBERTRUST_BALTIMORE_ROOT_CA = 0x00000001;
+    public static final int PSP_HTTPS_CERT_CYBERTRUST_GTE_GLOBAL_ROOT_CA = 0x00000002;
+    public static final int PSP_HTTPS_CERT_CYBERTRUST_GTE_ROOT_CA = 0x00000004;
+    public static final int PSP_HTTPS_CERT_CYBERTRUST_GLOBALSIGN_ROOT_CA_R1 = 0x00000008;
+    public static final int PSP_HTTPS_CERT_CYBERTRUST_ALL = (PSP_HTTPS_CERT_CYBERTRUST_BALTIMORE_ROOT_CA | PSP_HTTPS_CERT_CYBERTRUST_GTE_GLOBAL_ROOT_CA
+            | PSP_HTTPS_CERT_CYBERTRUST_GTE_ROOT_CA | PSP_HTTPS_CERT_CYBERTRUST_GLOBALSIGN_ROOT_CA_R1);
+
+    public static final int PSP_HTTPS_CERT_THAWTE_PREMIUMSERVER_CA = 0x00000001;
+    public static final int PSP_HTTPS_CERT_THAWTE_SERVER_CA = 0x00000002;
+    public static final int PSP_HTTPS_CERT_THAWTE_ALL = (PSP_HTTPS_CERT_THAWTE_PREMIUMSERVER_CA | PSP_HTTPS_CERT_THAWTE_SERVER_CA);
+
+    public static final int PSP_HTTPS_CERT_COMODO_ATE_CA_ROOT = 0x00000001;
+    public static final int PSP_HTTPS_CERT_COMODO_AAA_CS = 0x00000002;
+    public static final int PSP_HTTPS_CERT_COMODO_UTN_UFH = 0x00000004;
+    public static final int PSP_HTTPS_CERT_COMODO_ALL = (PSP_HTTPS_CERT_COMODO_ATE_CA_ROOT | PSP_HTTPS_CERT_COMODO_AAA_CS | PSP_HTTPS_CERT_COMODO_UTN_UFH);
 
     // Error detail statics.
     public static final int PSP_HTTPS_ERROR_DETAIL_INTERNAL = 0x1;
