@@ -50,8 +50,6 @@ public enum SyscallIgnore {
 	sceDisplayDisable(0x681EE6A7),
 	sceDisplayEnable(0x432D133F),
 	sceDisplaySetBrightness(0x9E3C6DC6),
-	sceGameUpdate_CBE69FB3(0xCBE69FB3),
-	sceGameUpdate_BB4B68DE(0xBB4B68DE),
 	sceHprmEnd(0x588845DA),
 	sceImposeGetParam(0x531C9778),
 	sceImposeSetParam(0x810FB7FB),

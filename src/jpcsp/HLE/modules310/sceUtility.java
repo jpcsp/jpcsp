@@ -64,6 +64,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         PSP_MODULE_NET_PARSEHTTP(0x0104),
         PSP_MODULE_NET_HTTP(0x0105),
         PSP_MODULE_NET_SSL(0x0106),
+        PSP_MODULE_NET_HTTPSTORAGE(0x0108),
         PSP_MODULE_USB_PSPCM(0x0200),
         PSP_MODULE_USB_MIC(0x0201),
         PSP_MODULE_USB_CAM(0x0202),

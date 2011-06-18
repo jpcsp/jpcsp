@@ -119,7 +119,8 @@ public class HLEModuleManager {
         sceHttp(Modules.sceHttpModule, new String[] { "libhttp_rfc", "PSP_NET_MODULE_HTTP", "PSP_MODULE_NET_HTTP" }),
         sceHttps(Modules.sceHttpsModule),
         sceSsl(Modules.sceSslModule, new String[] { "libssl", "PSP_NET_MODULE_SSL", "PSP_MODULE_NET_SSL" }),
-        sceP3da(Modules.sceP3daModule);
+        sceP3da(Modules.sceP3daModule),
+        sceGameUpdate(Modules.sceGameUpdateModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

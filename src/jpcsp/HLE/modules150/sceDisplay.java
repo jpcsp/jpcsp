@@ -20,6 +20,7 @@ import static jpcsp.graphics.GeCommands.TFLT_NEAREST;
 import static jpcsp.graphics.GeCommands.TWRAP_WRAP_MODE_CLAMP;
 import static jpcsp.graphics.VideoEngine.SIZEOF_FLOAT;
 
+import java.awt.Dimension;
 import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.awt.Rectangle;
@@ -375,7 +376,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
 
     		// Resize the component while keeping the PSP aspect ratio
-    		setSize(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
+    		setMinimumSize(new Dimension(getResizedWidth(Screen.width), getResizedHeight(Screen.height)));
 
     		// The preferred size is used when resizing the MainGUI
     		setPreferredSize(getSize());
