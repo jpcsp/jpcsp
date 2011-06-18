@@ -676,7 +676,7 @@ public class REShader extends BaseRenderingEngineFunction {
 			int pixelFormat = display.getPixelFormatFb();
 
 			// if the format of the Frame Buffer has changed, re-create a new texture
-			if (renderTexture != null && (width != renderTexture.getWidth() || height != renderTexture.getHeight() || bufferWidth != renderTexture.getTexImageWidth() || pixelFormat != renderTexture.getPixelFormat())) {
+			if (renderTexture != null && !renderTexture.isCompatible(width, height, bufferWidth, pixelFormat)) {
 				renderTexture.delete(re);
 				renderTexture = null;
 			}
@@ -915,7 +915,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		if (useRenderToTexture) {
 			// Use the render texture if it is compatible with the current GE settings.
-			if (renderTexture.getWidth() >= width && renderTexture.getHeight() >= height && renderTexture.getTexImageWidth() >= bufferWidth && renderTexture.getPixelFormat() == pixelFormat) {
+			if (renderTexture.getWidth() >= width && renderTexture.getHeight() >= height && renderTexture.getBufferWidth() >= bufferWidth && renderTexture.getPixelFormat() == pixelFormat) {
 				// Tell the shader which texture has to be used for the fbTex sampler.
 				re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
 				return;
@@ -926,7 +926,7 @@ public class REShader extends BaseRenderingEngineFunction {
 		}
 
 		// Delete the texture and recreate a new one if its dimension has changed
-		if (fbTexture != null && (fbTexture.getWidth() != width || fbTexture.getHeight() != height || fbTexture.getTexImageWidth() != bufferWidth || fbTexture.getPixelFormat() != pixelFormat)) {
+		if (fbTexture != null && !fbTexture.isCompatible(width, height, bufferWidth, pixelFormat)) {
 			fbTexture.delete(re);
 			fbTexture = null;
 		}

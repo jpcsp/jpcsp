@@ -66,10 +66,8 @@ public class GETexture {
 		bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelFormat);
 		length = bufferWidth * height * bytesPerPixel;
 		heightPow2 = Utilities.makePow2(height);
-		texS = width / (float) bufferWidth;
-		texT = height / (float) heightPow2;
-		changed = true;
 		this.useViewportResize = useViewportResize;
+		changed = true;
 		resizeScale = getViewportResizeScaleFactor();
 		bufferLength = getTexImageWidth() * getTexImageHeight() * bytesPerPixel;
 	}
@@ -88,6 +86,14 @@ public class GETexture {
 		// re-create it if the viewport resize factor has been changed dynamically.
 		if (textureId == -1 || viewportResizeScaleFactor != resizeScale) {
 			resizeScale = viewportResizeScaleFactor;
+
+			if (useViewportResize) {
+				texS = sceDisplay.getResizedWidth(width) / (float) getTexImageWidth();
+				texT = sceDisplay.getResizedHeight(height) / (float) getTexImageHeight();
+			} else {
+				texS = width / (float) bufferWidth;
+				texT = height / (float) heightPow2;
+			}
 
 			if (textureId != -1) {
 				re.deleteTexture(textureId);
@@ -112,12 +118,16 @@ public class GETexture {
 		}
 	}
 
+	public int getBufferWidth() {
+		return bufferWidth;
+	}
+
 	public int getTexImageWidth() {
-		return useViewportResize ? sceDisplay.getResizedWidth(bufferWidth) : bufferWidth;
+		return useViewportResize ? sceDisplay.getResizedWidthPow2(bufferWidth) : bufferWidth;
 	}
 
 	public int getTexImageHeight() {
-		return useViewportResize ? sceDisplay.getResizedHeight(heightPow2) : heightPow2;
+		return useViewportResize ? sceDisplay.getResizedHeightPow2(heightPow2) : heightPow2;
 	}
 
 	public int getWidth() {
@@ -139,8 +149,12 @@ public class GETexture {
 
 		bind(re, false);
 
-		int texWidth = useViewportResize ? sceDisplay.getResizedWidth(Math.min(bufferWidth, width)) : Math.min(bufferWidth, width);
-		int texHeight = useViewportResize ? sceDisplay.getResizedHeight(height) : height;
+		int texWidth = Math.min(bufferWidth, width);
+		int texHeight = height;
+		if (useViewportResize) {
+			texWidth = sceDisplay.getResizedWidth(texWidth);
+			texHeight = sceDisplay.getResizedHeight(texHeight);
+		}
 		re.copyTexSubImage(0, 0, 0, 0, 0, texWidth, texHeight);
 
 		setChanged(true);
@@ -299,6 +313,20 @@ public class GETexture {
 
 	public int getTextureId() {
 		return textureId;
+	}
+
+	public boolean isCompatible(int width, int height, int bufferWidth, int pixelFormat) {
+		if (width != this.width || height != this.height || bufferWidth != this.bufferWidth || pixelFormat != this.pixelFormat) {
+			return false;
+		}
+
+		if (useViewportResize) {
+			if (resizeScale != getViewportResizeScaleFactor()) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	@Override

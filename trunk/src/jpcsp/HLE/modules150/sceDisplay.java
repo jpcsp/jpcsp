@@ -115,6 +115,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     // Resizing options
     private static float viewportResizeFilterScaleFactor = 1;
+    private static int viewportResizeFilterScaleFactorInt = 1;
     private boolean resizePending;
 
     // current framebuffer settings
@@ -371,6 +372,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     	if (viewportResizeFilterScaleFactor != sceDisplay.viewportResizeFilterScaleFactor) {
     		sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
+    		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
 
     		// Resize the component while keeping the PSP aspect ratio
     		setSize(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
@@ -383,12 +385,48 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     	}
     }
 
+    /**
+     * Resize the given value according to the viewport resizing factor, assuming
+     * it is a value along the X-Axis (e.g. "x" or "width" value).
+     *
+     * @param width        value on the X-Axis to be resized
+     * @return             the resized value
+     */
     public final static int getResizedWidth(int width) {
     	return Math.round(width * viewportResizeFilterScaleFactor);
     }
 
+    /**
+     * Resize the given value according to the viewport resizing factor, assuming
+     * it is a value along the X-Axis being a power of 2 (i.e. 2^n).
+     *
+     * @param width        value on the X-Axis to be resized, must be a power of 2.
+     * @return             the resized value, as a power of 2.
+     */
+    public final static int getResizedWidthPow2(int widthPow2) {
+    	return widthPow2 * viewportResizeFilterScaleFactorInt;
+    }
+
+    /**
+     * Resize the given value according to the viewport resizing factor, assuming
+     * it is a value along the Y-Axis (e.g. "y" or "height" value).
+     *
+     * @param height       value on the Y-Axis to be resized
+     * @return             the resized value
+     */
     public final static int getResizedHeight(int height) {
     	return Math.round(height * viewportResizeFilterScaleFactor);
+    }
+
+    /**
+     * Resize the given value according to the viewport resizing factor, assuming
+     * it is a value along the Y-Axis being a power of 2 (i.e. 2^n).
+     *
+     * @param width        value on the Y-Axis to be resized, must be a power of 2.
+     * @return             the resized value, as a power of 2.
+     */
+    public final static int getResizedHeightPow2(int heightPow2) {
+    	return heightPow2 * viewportResizeFilterScaleFactorInt;
     }
 
     public static void setAntiAliasSamplesNum(int samples) {
@@ -873,8 +911,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 		re.setTextureFormat(pixelformatGe, false);
         re.setTexImage(0,
             internalTextureFormat,
-            getResizedWidth(bufferwidthGe),
-            getResizedHeight(Utilities.makePow2(heightGe)),
+            getResizedWidthPow2(bufferwidthGe),
+            getResizedHeightPow2(Utilities.makePow2(heightGe)),
             pixelformatGe,
             pixelformatGe,
             0, null);
@@ -884,7 +922,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         re.setTextureMipmapMinLevel(0);
         re.setTextureMipmapMaxLevel(0);
         re.setTextureWrapMode(TWRAP_WRAP_MODE_CLAMP, TWRAP_WRAP_MODE_CLAMP);
-        re.setPixelStore(getResizedWidth(bufferwidthGe), getPixelFormatBytes(pixelformatGe));
+        re.setPixelStore(getResizedWidthPow2(bufferwidthGe), getPixelFormatBytes(pixelformatGe));
 
         // Copy screen to the GE texture
         re.copyTexSubImage(0, 0, 0, 0, 0, getResizedWidth(Math.min(widthGe, bufferwidthGe)), getResizedHeight(heightGe));
@@ -894,7 +932,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         re.getTexImage(0, pixelformatGe, pixelformatGe, temp);
 
         // Capture the GE image
-        CaptureManager.captureImage(topaddrGe, 0, temp, getResizedWidth(widthGe), getResizedHeight(heightGe), getResizedWidth(bufferwidthGe), pixelformatGe, false, 0, true, false);
+        CaptureManager.captureImage(topaddrGe, 0, temp, getResizedWidth(widthGe), getResizedHeight(heightGe), getResizedWidthPow2(bufferwidthGe), pixelformatGe, false, 0, true, false);
 
     	// Delete the GE texture
         re.deleteTexture(texGe);
@@ -1206,8 +1244,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         //
         re.setTexImage(0,
             internalTextureFormat,
-            isResized ? getResizedWidth(bufferwidthFb) : bufferwidthFb,
-            isResized ? getResizedHeight(Utilities.makePow2(height)) : Utilities.makePow2(height),
+            isResized ? getResizedWidthPow2(bufferwidthFb) : bufferwidthFb,
+            isResized ? getResizedHeightPow2(Utilities.makePow2(height)) : Utilities.makePow2(height),
             pixelformatFb,
             pixelformatFb,
             0, null);
@@ -1357,8 +1395,8 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
 	private void checkTemp() {
         // Buffer large enough to store the complete FB or GE texture
-        int sizeInBytes = getResizedWidth(Math.max(bufferwidthFb, bufferwidthGe))
-                        * getResizedHeight(Utilities.makePow2(Math.max(height, heightGe)))
+        int sizeInBytes = getResizedWidthPow2(Math.max(bufferwidthFb, bufferwidthGe))
+                        * getResizedHeightPow2(Utilities.makePow2(Math.max(height, heightGe)))
                         * getPixelFormatBytes(Math.max(pixelformatFb, pixelformatGe));
 
         if (sizeInBytes > tempSize) {
