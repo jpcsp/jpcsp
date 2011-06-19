@@ -138,6 +138,14 @@ public class GETexture {
 		return height;
 	}
 
+	public int getResizedWidth() {
+		return useViewportResize ? sceDisplay.getResizedWidth(width) : width;
+	}
+
+	public int getResizedHeight() {
+		return useViewportResize ? sceDisplay.getResizedHeight(height) : height;
+	}
+
 	public int getPixelFormat() {
 		return pixelFormat;
 	}
