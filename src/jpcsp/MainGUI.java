@@ -2100,6 +2100,10 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
         });
     }
 
+    public boolean isFullScreen() {
+    	return useFullscreen;
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem About;
     private javax.swing.JMenu AudioOpt;

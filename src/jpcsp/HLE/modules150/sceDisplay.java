@@ -25,6 +25,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.awt.Rectangle;
 import java.awt.Robot;
+import java.awt.Toolkit;
 import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -359,7 +360,25 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         float scaleHeight = ((float) height) / Screen.height;
 
         // We are currently using only one scale factor to keep the PSP aspect ratio
-        float scaleAspectRatio = (scaleWidth + scaleHeight) / 2;
+        float scaleAspectRatio;
+        if (Emulator.getMainGUI().isFullScreen()) {
+        	// In full screen mode, also keep the aspect ratio.
+        	// The best aspect ratio is when the horizontal or vertical dimension
+        	// is matching the screen size and the other dimension is less or equal
+        	// to the screen size.
+        	Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        	if (screenSize.width == width && screenSize.height > height) {
+        		// Screen stretched to the full width
+        		scaleAspectRatio = scaleWidth;
+        	} else if (screenSize.height == height && screenSize.width > width) {
+        		// Screen stretched to the full height
+        		scaleAspectRatio = scaleHeight;
+        	} else {
+        		scaleAspectRatio = Math.min(scaleWidth, scaleHeight);
+        	}
+        } else {
+        	scaleAspectRatio = (scaleWidth + scaleHeight) / 2;
+        }
         setViewportResizeScaleFactor(scaleAspectRatio);
 
         resizePending = true;
