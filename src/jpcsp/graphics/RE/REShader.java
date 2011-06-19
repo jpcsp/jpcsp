@@ -915,7 +915,7 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		if (useRenderToTexture) {
 			// Use the render texture if it is compatible with the current GE settings.
-			if (renderTexture.getWidth() >= width && renderTexture.getHeight() >= height && renderTexture.getBufferWidth() >= bufferWidth && renderTexture.getPixelFormat() == pixelFormat) {
+			if (renderTexture.getResizedWidth() >= width && renderTexture.getResizedHeight() >= height && renderTexture.getBufferWidth() >= bufferWidth && renderTexture.getPixelFormat() == pixelFormat) {
 				// Tell the shader which texture has to be used for the fbTex sampler.
 				re.bindActiveTexture(ACTIVE_TEXTURE_FRAMEBUFFER, renderTexture.getTextureId());
 				return;
