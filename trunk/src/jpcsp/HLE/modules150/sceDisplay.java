@@ -376,7 +376,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
 
     		// Resize the component while keeping the PSP aspect ratio
-    		setMinimumSize(new Dimension(getResizedWidth(Screen.width), getResizedHeight(Screen.height)));
+    		setSize(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
 
     		// The preferred size is used when resizing the MainGUI
     		setPreferredSize(getSize());
