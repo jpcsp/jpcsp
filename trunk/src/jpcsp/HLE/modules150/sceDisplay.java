@@ -402,6 +402,10 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		// The preferred size is used when resizing the MainGUI
     		setPreferredSize(size);
 
+    		if (Emulator.getMainGUI().isFullScreen()) {
+    			Emulator.getMainGUI().setPreferredSize(size);
+    		}
+
     		// Recreate the texture if the scaling factor has changed
 			createTex = true;
 
