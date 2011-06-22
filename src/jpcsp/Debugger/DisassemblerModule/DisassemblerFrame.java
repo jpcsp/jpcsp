@@ -1642,7 +1642,13 @@ try {
 }
 }//GEN-LAST:event_ImportBreaksActionPerformed
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
+	}
+
+	// Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
     private javax.swing.JMenuItem CopyAddress;

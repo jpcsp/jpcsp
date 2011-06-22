@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.GUI;
 
 import jpcsp.log.LogWindow;
+import jpcsp.Emulator;
 import jpcsp.MainGUI;
 import jpcsp.Resource;
 import jpcsp.Settings;
@@ -1189,7 +1190,13 @@ private void splitFilesBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     maxSizeSpinner.setEnabled(splitFilesBox.isSelected());
 }//GEN-LAST:event_splitFilesBoxActionPerformed
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
+	}
+
+	// Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel LoggerAdvancedPanel;
     private javax.swing.JPanel LoggerGeneralPanel;
     private javax.swing.JPanel LoggerSettingsPanel;

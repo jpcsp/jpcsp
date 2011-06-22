@@ -22,6 +22,7 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
@@ -30,7 +31,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.Toolkit;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -122,7 +122,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     File loadedFile;
     boolean umdLoaded;
     boolean useFullscreen;
-    JPopupMenu fullscreenMenu;
+    JPopupMenu fullScreenMenu;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
     private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
@@ -135,6 +135,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     };
     private static final String logConfigurationSettingLeft = "    %1$-40s [%2$s]";
     private static final String logConfigurationSettingRight = "    [%2$s] %1$s";
+    public static final int displayModeBitDepth = 32;
+    public static final int preferredDisplayModeRefreshRate = 60; // Preferred refresh rate if 60Hz
+    private DisplayMode displayMode;
+    private SetLocationThread setLocationThread;
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -160,10 +164,27 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         //end of
 
-        initComponents();
-        populateRecentMenu();
+        useFullscreen = Settings.getInstance().readBool("gui.fullscreen");
+        if (useFullscreen && !isDisplayable()) {
+            setUndecorated(true);
+            setLocation(0, 0);
+            setSize(getFullScreenDimension());
+            setPreferredSize(getFullScreenDimension());
+        } else {
+        	setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
+        }
 
-        setLocation(Settings.getInstance().readWindowPos(windowNameForSettings));
+        String resolution = Settings.getInstance().readString("emu.graphics.resolution");
+        if (resolution != null && !resolution.equals("Native")) {
+        	if (resolution.contains("x")) {
+	            int width = Integer.parseInt(resolution.split("x")[0]);
+	            int heigth = Integer.parseInt(resolution.split("x")[1]);
+	            changeScreenResolution(width, heigth);
+        	}
+        }
+
+        createComponents();
+
         State.fileLogger.setLocation(getLocation().x + 488, getLocation().y + 18);
         setTitle(MetaInformation.FULL_NAME);
 
@@ -173,9 +194,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Modules.sceDisplayModule.addMouseListener(this);
         addComponentListener(this);
         pack();
-
-        useFullscreen = Settings.getInstance().readBool("gui.fullscreen");
-        toggleFullscreenMode();
 
         Insets insets = getInsets();
         Dimension minSize = new Dimension(
@@ -203,7 +221,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         filtersGroup = new javax.swing.ButtonGroup();
         resGroup = new javax.swing.ButtonGroup();
-        jToolBar1 = new javax.swing.JToolBar();
+        mainToolBar = new javax.swing.JToolBar();
         RunButton = new javax.swing.JToggleButton();
         PauseButton = new javax.swing.JToggleButton();
         ResetButton = new javax.swing.JButton();
@@ -270,7 +288,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         setForeground(java.awt.Color.white);
-        setMinimumSize(new java.awt.Dimension(Screen.width, Screen.height));
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
 			public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -278,8 +295,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
 
-        jToolBar1.setFloatable(false);
-        jToolBar1.setRollover(true);
+        mainToolBar.setFloatable(false);
+        mainToolBar.setRollover(true);
 
         RunButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
         RunButton.setText(Resource.get("run"));
@@ -292,7 +309,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 RunButtonActionPerformed(evt);
             }
         });
-        jToolBar1.add(RunButton);
+        mainToolBar.add(RunButton);
 
         PauseButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
         PauseButton.setText(Resource.get("pause"));
@@ -305,7 +322,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 PauseButtonActionPerformed(evt);
             }
         });
-        jToolBar1.add(PauseButton);
+        mainToolBar.add(PauseButton);
 
         ResetButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
         ResetButton.setText(Resource.get("reset"));
@@ -318,9 +335,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 ResetButtonActionPerformed(evt);
             }
         });
-        jToolBar1.add(ResetButton);
+        mainToolBar.add(ResetButton);
 
-        getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
+        getContentPane().add(mainToolBar, java.awt.BorderLayout.NORTH);
 
         FileMenu.setText(Resource.get("file"));
 
@@ -769,106 +786,189 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void createComponents() {
+        initComponents();
+
+        if (useFullscreen) {
+        	// Hide the menu bar and the toolbar in full screen mode
+        	MenuBar.setVisible(false);
+        	mainToolBar.setVisible(false);
+            getContentPane().remove(mainToolBar);
+
+        	makeFullScreenMenu();
+        }
+
+        populateRecentMenu();
+    }
+
     private void changeLanguage(String language) {
         Resource.setLanguage(language);
         Settings.getInstance().writeString("emu.language", language);
-        initComponents();
+        createComponents();
     }
 
-    private void makeFullscreenMenu() {
-        fullscreenMenu = new JPopupMenu();
-        JMenuItem popupMenuItemRun = new JMenuItem("Run");
+    /**
+     * Create a popup menu for use in full screen mode.
+     * In full screen mode, the menu bar and the toolbar are not displayed.
+     * To keep a consistent user interface, the popup menu is composed of the
+     * entries from the toolbar and from the menu bar.
+     *
+     * Accelerators are only working when the popup menu is displayed.
+     */
+    private void makeFullScreenMenu() {
+        fullScreenMenu = new JPopupMenu();
+
+        JMenuItem popupMenuItemRun = new JMenuItem(Resource.get("run"));
+        popupMenuItemRun.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png")));
         popupMenuItemRun.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 RunButtonActionPerformed(e);
             }
         });
-        JMenuItem popupMenuItemPause = new JMenuItem("Pause");
+
+        JMenuItem popupMenuItemPause = new JMenuItem(Resource.get("pause"));
+        popupMenuItemPause.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png")));
         popupMenuItemPause.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 PauseButtonActionPerformed(e);
             }
         });
-        JMenuItem popupMenuItemReset = new JMenuItem("Reset");
+
+        JMenuItem popupMenuItemReset = new JMenuItem(Resource.get("reset"));
+        popupMenuItemReset.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png")));
         popupMenuItemReset.addActionListener(new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ResetButtonActionPerformed(e);
             }
         });
-        JMenuItem popupMenuItemLoadUMD = new JMenuItem("Load UMD");
-        popupMenuItemLoadUMD.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                openUmdActionPerformed(e);
-            }
-        });
-        JMenuItem popupMenuItemLoadMemStick = new JMenuItem("Load MemStick");
-        popupMenuItemLoadMemStick.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                OpenMemStickActionPerformed(e);
-            }
-        });
-        JMenuItem popupMenuItemLoadFile = new JMenuItem("Load File");
-        popupMenuItemLoadFile.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                OpenFileActionPerformed(e);
-            }
-        });
-        JMenuItem popupMenuItemConfiguration = new JMenuItem("Configuration");
-        popupMenuItemConfiguration.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ConfigMenuActionPerformed(e);
-            }
-        });
-        JMenuItem popupMenuItemExit = new JMenuItem("Exit");
-        popupMenuItemExit.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ExitEmuActionPerformed(e);
-            }
-        });
 
-        fullscreenMenu.add(popupMenuItemRun);
-        fullscreenMenu.add(popupMenuItemPause);
-        fullscreenMenu.add(popupMenuItemReset);
-        fullscreenMenu.addSeparator();
-        fullscreenMenu.add(popupMenuItemLoadUMD);
-        fullscreenMenu.add(popupMenuItemLoadMemStick);
-        fullscreenMenu.add(popupMenuItemLoadFile);
-        fullscreenMenu.addSeparator();
-        fullscreenMenu.add(popupMenuItemConfiguration);
-        fullscreenMenu.addSeparator();
-        fullscreenMenu.add(popupMenuItemExit);
-    }
+        fullScreenMenu.add(popupMenuItemRun);
+        fullScreenMenu.add(popupMenuItemPause);
+        fullScreenMenu.add(popupMenuItemReset);
+        fullScreenMenu.addSeparator();
 
-    private void toggleFullscreenMode() {
-        Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
-        if (useFullscreen) {
-            dispose();
-            setUndecorated(true);
-            MenuBar.setVisible(false);
-            jToolBar1.setVisible(false);
-            makeFullscreenMenu();
-            setLocation(0, 0);
-            setSize(d);
-            setVisible(true);
+        // Add all the menu entries from the MenuBar to the full screen menu
+        while (MenuBar.getMenuCount() > 0) {
+        	fullScreenMenu.add(MenuBar.getMenu(0));
         }
+
+        // Move the "Exit" menu item from the File menu
+        // to the end of the full screen menu for convenience.
+        fullScreenMenu.addSeparator();
+        fullScreenMenu.add(ExitEmu);
+
+        // The resize menu is not relevant in full screen mode
+        VideoOpt.remove(ResizeMenu);
     }
 
-    private void changeScreenResolution(int width, int heigth, int depth, int ratio) {
+    public static Dimension getFullScreenDimension() {
+    	return GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().getSize();
+    }
+
+    /**
+     * Display a new window in front of the main window.
+     * If the main window is the full screen window, disable the full screen mode
+     * so that the new window can be displayed (no other window can be displayed
+     * in front of a full screen window).
+     * 
+     * @param window     the window to be displayed
+     */
+    public void startWindowDialog(Window window) {
         GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        DisplayMode newDisplayMode = new DisplayMode(width, heigth, depth, ratio);
-        if(localDevice.isFullScreenSupported()) {
-            localDevice.setFullScreenWindow(this);
-            localDevice.setDisplayMode(newDisplayMode);
+    	if (localDevice.getFullScreenWindow() != null) {
+    		localDevice.setFullScreenWindow(null);
+    	}
+    	window.setVisible(true);
+    }
+
+    /**
+     * Restore the full screen window if required.
+     */
+    public void endWindowDialog() {
+    	if (displayMode != null) {
+    		GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+    		if (localDevice.getFullScreenWindow() == null) {
+    			localDevice.setFullScreenWindow(this);
+				setDisplayMode();
+    		}
+    		if (useFullscreen) {
+		        setSize(getFullScreenDimension());
+		        setPreferredSize(getFullScreenDimension());
+				setLocation();
+    		}
+    	}
+    }
+
+    private void changeScreenResolution(int width, int height) {
+        // Find the matching display mode with the preferred refresh rate
+    	// (or the highest refresh rate if the preferred refresh rate is not found).
+        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode[] displayModes = localDevice.getDisplayModes();
+        DisplayMode bestDisplayMode = null;
+        for (int i = 0; displayModes != null && i < displayModes.length; i++) {
+        	DisplayMode displayMode = displayModes[i];
+        	if (displayMode.getWidth() == width && displayMode.getHeight() == height && displayMode.getBitDepth() == displayModeBitDepth) {
+        		if (bestDisplayMode == null || (bestDisplayMode.getRefreshRate() < displayMode.getRefreshRate() && bestDisplayMode.getRefreshRate() != preferredDisplayModeRefreshRate)) {
+        			bestDisplayMode = displayMode;
+        		}
+        	}
         }
-        
+
+        if (bestDisplayMode != null) {
+        	changeScreenResolution(bestDisplayMode);
+        }
+    }
+
+    private void setDisplayMode() {
+    	if (displayMode != null) {
+	        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+	        localDevice.setDisplayMode(displayMode);
+
+	        if (setLocationThread == null) {
+	        	// Set up a thread calling setLocation() at regular intervals.
+	        	// It seems that the window location is sometimes lost when
+	        	// changing the DisplayMode.
+	        	setLocationThread = new SetLocationThread();
+	        	setLocationThread.setName("Set MainGUI Location Thread");
+	        	setLocationThread.setDaemon(true);
+	        	setLocationThread.start();
+	        }
+    	}
+    }
+
+    public void setLocation() {
+    	if (displayMode != null && useFullscreen) {
+	        // FIXME When running in non-native resolution, the window is not displaying
+	        // if it is completely visible. It is only displaying if part of it is
+	        // hidden (e.g. outside screen borders).
+	        // This seems to be a Java bug.
+	        // Hack here is to move the window 1 pixel outside the screen so that
+	        // it gets displayed.
+    		if (getLocation().y != -1) {
+    			setLocation(getLocation().x, -1);
+    		}
+    	}
+    }
+
+    private void changeScreenResolution(DisplayMode displayMode) {
+        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        if (localDevice.isFullScreenSupported()) {
+        	this.displayMode = displayMode;
+    		localDevice.setFullScreenWindow(this);
+            setDisplayMode();
+        	if (useFullscreen) {
+    	        setSize(getFullScreenDimension());
+    	        setPreferredSize(getFullScreenDimension());
+    	        setLocation();
+        	}
+
+            if (Emulator.log.isInfoEnabled()) {
+            	Emulator.log.info(String.format("Changing resolution to %dx%d, %d bits, %d Hz", displayMode.getWidth(), displayMode.getHeight(), displayMode.getBitDepth(), displayMode.getRefreshRate()));
+            }
+        }
     }
 
     public LogWindow getConsoleWindow() {
@@ -905,11 +1005,10 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     if (State.debugger == null) {
         State.debugger = new DisassemblerFrame(emulator);
         State.debugger.setLocation(Settings.getInstance().readWindowPos("disassembler"));
-        State.debugger.setVisible(true);
     } else {
-        State.debugger.setVisible(true);
         State.debugger.RefreshDebugger(false);
     }
+    startWindowDialog(State.debugger);
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
 private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
@@ -1090,11 +1189,10 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
     if (elfheader == null) {
         elfheader = new ElfHeaderInfo();
         elfheader.setLocation(Settings.getInstance().readWindowPos("elfheader"));
-        elfheader.setVisible(true);
     } else {
         elfheader.RefreshWindow();
-        elfheader.setVisible(true);
     }
+    startWindowDialog(elfheader);
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
@@ -1102,21 +1200,19 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
     if (State.memoryViewer == null) {
         State.memoryViewer = new MemoryViewer();
         State.memoryViewer.setLocation(Settings.getInstance().readWindowPos("memoryview"));
-        State.memoryViewer.setVisible(true);
     } else {
         State.memoryViewer.RefreshMemory();
-        State.memoryViewer.setVisible(true);
     }
+    startWindowDialog(State.memoryViewer);
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
 
 private void EnterImageViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterImageViewerActionPerformed
     if (State.imageViewer == null) {
         State.imageViewer = new ImageViewer();
-        State.imageViewer.setVisible(true);
     } else {
         State.imageViewer.refreshImage();
-        State.imageViewer.setVisible(true);
     }
+    startWindowDialog(State.imageViewer);
 }//GEN-LAST:event_EnterImageViewerActionPerformed
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
@@ -1130,11 +1226,10 @@ private void ConfigMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
         setgui = new SettingsGUI();
         Point mainwindow = this.getLocation();
         setgui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
-        setgui.setVisible(true);
     } else {
         setgui.RefreshWindow();
-        setgui.setVisible(true);
     }
+    startWindowDialog(setgui);
 }//GEN-LAST:event_ConfigMenuActionPerformed
 
 private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitEmuActionPerformed
@@ -1147,11 +1242,10 @@ private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         memstick = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
         Point mainwindow = this.getLocation();
         memstick.setLocation(mainwindow.x + 100, mainwindow.y + 50);
-        memstick.setVisible(true);
     } else {
         memstick.refreshFiles();
-        memstick.setVisible(true);
     }
+    memstick.setVisible(true);
 }//GEN-LAST:event_OpenMemStickActionPerformed
 
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
@@ -1573,15 +1667,6 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             }
         }
         sceDisplay.setAntiAliasSamplesNum(samples);
-
-        String resolution = Settings.getInstance().readString("emu.graphics.resolution");
-        if (resolution != null && !resolution.equals("Native")) {
-        	if (resolution.contains("x")) {
-	            int width = Integer.parseInt(resolution.split("x")[0]);
-	            int heigth = Integer.parseInt(resolution.split("x")[1]);
-	            changeScreenResolution(width, heigth, 32, 60);
-        	}
-        }
     }
 
     /** @return true if a patch file was found */
@@ -1675,7 +1760,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             }
 
             String antialias = patchSettings.getProperty("emu.graphics.antialias");
-            if(antialias != null) {
+            if (antialias != null) {
                 int samples = 0;
                 if (antialias.equals("x4")) {
                     samples = 4;
@@ -1686,16 +1771,6 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 }
                 sceDisplay.setAntiAliasSamplesNum(samples);
             }
-
-            String resolution = patchSettings.getProperty("emu.graphics.resolution");
-            if (resolution != null && !resolution.equals("Native")) {
-                if (resolution.contains("x")) {
-                    int width = Integer.parseInt(resolution.split("x")[0]);
-                    int heigth = Integer.parseInt(resolution.split("x")[1]);
-                    changeScreenResolution(width, heigth, 32, 60);
-                }
-            }
-
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -1727,20 +1802,19 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
         emulator.setInstructionCounter(instructioncounter);
         Point mainwindow = this.getLocation();
         instructioncounter.setLocation(mainwindow.x + 100, mainwindow.y + 50);
-        instructioncounter.setVisible(true);
     } else {
         instructioncounter.RefreshWindow();
-        instructioncounter.setVisible(true);
     }
+    startWindowDialog(instructioncounter);
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
 private void FileLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FileLogActionPerformed
     PauseEmu();
-    State.fileLogger.setVisible(true);
+    startWindowDialog(State.fileLogger);
 }//GEN-LAST:event_FileLogActionPerformed
 
 private void VfpuRegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_VfpuRegistersActionPerformed
-    VfpuFrame.getInstance().setVisible(true);
+	startWindowDialog(VfpuFrame.getInstance());
 }//GEN-LAST:event_VfpuRegistersActionPerformed
 
 private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpIsoActionPerformed
@@ -1870,7 +1944,7 @@ private void PortugueseBRActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
 private void cwcheatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cwcheatActionPerformed
     CheatsGUI cwCheats = new CheatsGUI("CWCheat");
-    cwCheats.setVisible(true);
+    startWindowDialog(cwCheats);
 }//GEN-LAST:event_cwcheatActionPerformed
 
 private void RussianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RussianActionPerformed
@@ -1890,11 +1964,8 @@ private void ControlsConfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         ctrlgui = new ControlsGUI();
         Point mainwindow = this.getLocation();
         ctrlgui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
-        ctrlgui.setVisible(true);
-        /* add a direct link to the main window*/
-    } else {
-        ctrlgui.setVisible(true);
     }
+    startWindowDialog(ctrlgui);
 }//GEN-LAST:event_ControlsConfActionPerformed
 
 private void MuteOptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MuteOptActionPerformed
@@ -1915,12 +1986,10 @@ private void CustomLoggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         loggui = new LogGUI();
         Point mainwindow = this.getLocation();
         loggui.setLocation(mainwindow.x + 100, mainwindow.y + 50);
-        loggui.setVisible(true);
         /* add a direct link to the main window*/
         loggui.setMainGUI(this);
-    } else {
-        loggui.setVisible(true);
     }
+    startWindowDialog(loggui);
 }//GEN-LAST:event_CustomLoggerActionPerformed
 
 private void ChinesePRCActionPerformed(java.awt.event.ActionEvent evt) {                                           
@@ -2163,7 +2232,7 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     private javax.swing.ButtonGroup filtersGroup;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JSeparator jSeparator2;
-    private javax.swing.JToolBar jToolBar1;
+    private javax.swing.JToolBar mainToolBar;
     private javax.swing.JCheckBoxMenuItem noneCheck;
     private javax.swing.JCheckBoxMenuItem oneTimeResize;
     private javax.swing.JMenuItem openUmd;
@@ -2177,43 +2246,43 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
     }
 
     @Override
-    public void mousePressed(MouseEvent arg0) {
-        if (useFullscreen && arg0.isPopupTrigger()) {
-            fullscreenMenu.show(arg0.getComponent(), arg0.getX(), arg0.getY());
+    public void mousePressed(MouseEvent event) {
+        if (useFullscreen && event.isPopupTrigger()) {
+            fullScreenMenu.show(event.getComponent(), event.getX(), event.getY());
         }
     }
 
     @Override
-    public void mouseReleased(MouseEvent arg0) {
-        if (useFullscreen && arg0.isPopupTrigger()) {
-            fullscreenMenu.show(arg0.getComponent(), arg0.getX(), arg0.getY());
+    public void mouseReleased(MouseEvent event) {
+        if (useFullscreen && event.isPopupTrigger()) {
+            fullScreenMenu.show(event.getComponent(), event.getX(), event.getY());
         }
     }
 
     @Override
-    public void mouseClicked(MouseEvent arg0) {
+    public void mouseClicked(MouseEvent event) {
     }
 
     @Override
-    public void mouseEntered(MouseEvent arg0) {
+    public void mouseEntered(MouseEvent event) {
     }
 
     @Override
-    public void mouseExited(MouseEvent arg0) {
+    public void mouseExited(MouseEvent event) {
     }
 
     @Override
-    public void keyTyped(KeyEvent arg0) {
+    public void keyTyped(KeyEvent event) {
     }
 
     @Override
-    public void keyPressed(KeyEvent arg0) {
-        State.controller.keyPressed(arg0);
+    public void keyPressed(KeyEvent event) {
+        State.controller.keyPressed(event);
     }
 
     @Override
-    public void keyReleased(KeyEvent arg0) {
-        State.controller.keyReleased(arg0);
+    public void keyReleased(KeyEvent event) {
+        State.controller.keyReleased(event);
     }
 
     @Override
@@ -2269,5 +2338,21 @@ private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//
                 }
             }
         }
+    }
+
+    private static class SetLocationThread extends Thread {
+		@Override
+		public void run() {
+			while (true) {
+				try {
+					// Wait for 1 second
+					sleep(1000);
+				} catch (InterruptedException e) {
+					// Ignore Exception
+				}
+
+				Emulator.getMainGUI().setLocation();
+			}
+		}
     }
 }

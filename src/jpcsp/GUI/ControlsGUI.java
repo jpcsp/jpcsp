@@ -136,6 +136,7 @@ public class ControlsGUI extends javax.swing.JFrame implements KeyListener {
 		if (controllerPollThread != null) {
 			controllerPollThread.exit = true;
 		}
+		Emulator.getMainGUI().endWindowDialog();
 		super.dispose();
 	}
 
@@ -1003,7 +1004,7 @@ private void fieldStartMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
     setKey(fieldStart, keyCode.START);
 }//GEN-LAST:event_fieldStartMouseClicked
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+// Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel bgLabel1;
     private javax.swing.JComboBox controllerBox;
     private javax.swing.JLabel controllerLabel;

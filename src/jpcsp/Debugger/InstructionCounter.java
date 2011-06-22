@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import javax.swing.JFileChooser;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Resource;
 import jpcsp.Allegrex.Common.Instruction;
@@ -403,6 +404,11 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
         }
     }
 
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
+	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable OpcodeTable;

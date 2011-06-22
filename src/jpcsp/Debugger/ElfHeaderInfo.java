@@ -16,6 +16,7 @@
  */
 package jpcsp.Debugger;
 
+import jpcsp.Emulator;
 import jpcsp.Resource;
 import jpcsp.Settings;
 
@@ -95,6 +96,11 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
         Settings.getInstance().writeWindowPos("elfheader", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
 
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
+	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextArea ELFInfoArea;

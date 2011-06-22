@@ -25,6 +25,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import jpcsp.Emulator;
 import jpcsp.Settings;
 import jpcsp.Allegrex.CpuState;
 
@@ -161,5 +162,11 @@ public class VfpuFrame extends JFrame {
                 }
             }
         }
+	}
+
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
 	}
 }

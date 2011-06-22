@@ -1218,16 +1218,8 @@
             </Component>
             <Component class="javax.swing.JComboBox" name="resolutionBox">
               <Properties>
-                <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
-                  <StringArray count="7">
-                    <StringItem index="0" value="Native"/>
-                    <StringItem index="1" value="640x480"/>
-                    <StringItem index="2" value="800x600"/>
-                    <StringItem index="3" value="1152x768"/>
-                    <StringItem index="4" value="1280x720"/>
-                    <StringItem index="5" value="1280x768"/>
-                    <StringItem index="6" value="1366x768"/>
-                  </StringArray>
+                <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection code="makeResolutions()" type="code"/>
                 </Property>
               </Properties>
             </Component>
