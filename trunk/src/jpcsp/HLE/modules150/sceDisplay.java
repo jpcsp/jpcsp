@@ -25,7 +25,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.image.BufferedImage;
 import java.awt.Rectangle;
 import java.awt.Robot;
-import java.awt.Toolkit;
 import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -40,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 
 import jpcsp.Emulator;
+import jpcsp.MainGUI;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
@@ -366,11 +366,11 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
         	// The best aspect ratio is when the horizontal or vertical dimension
         	// is matching the screen size and the other dimension is less or equal
         	// to the screen size.
-        	Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        	if (screenSize.width == width && screenSize.height > height) {
+        	Dimension fullScreenDimension = MainGUI.getFullScreenDimension();
+        	if (fullScreenDimension.width == width && fullScreenDimension.height > height) {
         		// Screen stretched to the full width
         		scaleAspectRatio = scaleWidth;
-        	} else if (screenSize.height == height && screenSize.width > width) {
+        	} else if (fullScreenDimension.height == height && fullScreenDimension.width > width) {
         		// Screen stretched to the full height
         		scaleAspectRatio = scaleHeight;
         	} else {
@@ -394,14 +394,20 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
     		sceDisplay.viewportResizeFilterScaleFactor = viewportResizeFilterScaleFactor;
     		sceDisplay.viewportResizeFilterScaleFactorInt = Math.round((float) Math.ceil(viewportResizeFilterScaleFactor));
 
+    		Dimension size = new Dimension(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
+
     		// Resize the component while keeping the PSP aspect ratio
-    		setSize(getResizedWidth(Screen.width), getResizedHeight(Screen.height));
+    		setSize(size);
 
     		// The preferred size is used when resizing the MainGUI
-    		setPreferredSize(getSize());
+    		setPreferredSize(size);
 
     		// Recreate the texture if the scaling factor has changed
 			createTex = true;
+
+			if (log.isDebugEnabled()) {
+				log.debug(String.format("setViewportResizeScaleFactor resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, size.width, size.height, canvasWidth, canvasHeight, getLocation().x, getLocation().y));
+			}
     	}
     }
 
@@ -1280,7 +1286,11 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     @Override
 	protected void paintGL() {
-    	if (resizePending) {
+    	if (log.isTraceEnabled()) {
+    		log.trace(String.format("paintGL resize=%f, size(%dx%d), canvas(%dx%d), location(%d,%d)", viewportResizeFilterScaleFactor, getSize().width, getSize().height, canvasWidth, canvasHeight, getLocation().x, getLocation().y));
+    	}
+
+    	if (resizePending && Emulator.getMainGUI().isVisible()) {
     		// Resize the MainGUI to use the preferred size of this sceDisplay
     		Emulator.getMainGUI().pack();
     		resizePending = false;
@@ -1443,12 +1453,15 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
 	@Override
 	public void setBounds(int x, int y, int width, int height) {
-		canvasWidth  = width;
-        canvasHeight = height;
-        super.setBounds(x, y, width, height);
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("setBounds width=%d, height=%d", width, height));
+		}
+		canvasWidth = width;
+		canvasHeight = height;
+		super.setBounds(x, y, width, height);
 	}
 
-    @Override
+	@Override
 	public void componentMoved(ComponentEvent e) {
         captureX = getX();
         captureY = getY();

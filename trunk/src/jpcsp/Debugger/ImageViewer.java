@@ -38,6 +38,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.WindowConstants;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Resource;
@@ -352,6 +353,12 @@ public class ImageViewer extends JFrame {
 		if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
 			goToAddress();
 		}
+	}
+
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
 	}
 
 	private class MemoryImage extends JPanel {

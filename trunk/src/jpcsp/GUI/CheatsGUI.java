@@ -20,6 +20,7 @@ package jpcsp.GUI;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 
@@ -308,4 +309,10 @@ public class CheatsGUI extends javax.swing.JFrame implements KeyListener {
             toggle = false;
         }
     }
+
+    @Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
+	}
 }

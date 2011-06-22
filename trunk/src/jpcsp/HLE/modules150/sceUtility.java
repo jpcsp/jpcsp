@@ -57,6 +57,7 @@ import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 
 import jpcsp.Controller;
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Resource;
@@ -1502,9 +1503,14 @@ public class sceUtility implements HLEModule, HLEStartModule {
 				@Override
 				public void actionPerformed(ActionEvent event) {
 					processActionCommand(event.getActionCommand());
-					dialog.dispose();
+					dispose();
 				}
     		};
+		}
+
+		protected void dispose() {
+			dialog.dispose();
+			Emulator.getMainGUI().endWindowDialog();
 		}
 
 		protected void processActionCommand(String actionCommand) {
@@ -1528,6 +1534,8 @@ public class sceUtility implements HLEModule, HLEStartModule {
     		contentPane.add(buttonPane);
 
 			dialog.pack();
+
+			Emulator.getMainGUI().startWindowDialog(dialog);
 		}
 
 		protected void setDefaultButton(JButton button) {
@@ -1650,10 +1658,10 @@ public class sceUtility implements HLEModule, HLEStartModule {
         public void checkController() {
 			if (isConfirmButtonPressed()) {
 				processActionCommand(confirmButtonActionCommand);
-				dialog.dispose();
+				dispose();
 			} else if (isCancelButtonPressed()) {
 				processActionCommand(cancelButtonActionCommand);
-				dialog.dispose();
+				dispose();
 			}
 		}
     }
@@ -1720,7 +1728,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
                 public void actionPerformed(ActionEvent event) {
                     if (updateSelection()) {
     					processActionCommand(event.getActionCommand());
-                        dialog.dispose();
+                        dispose();
                     }
                 }
             });

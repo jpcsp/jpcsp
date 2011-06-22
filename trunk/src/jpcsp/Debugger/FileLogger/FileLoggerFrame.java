@@ -30,6 +30,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
 
+import jpcsp.Emulator;
 import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.HLE.Modules;
@@ -701,7 +702,14 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable, IIo
                 String.format("path=0x%08X('%s') newpath=0x%08X('%s')",
                 path_addr, path, new_path_addr, newpath)));
     }
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
+	}
+
+	// Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable commandLogTable;
     private javax.swing.JTable fileHandleTable;
     private javax.swing.JScrollPane jScrollPane1;

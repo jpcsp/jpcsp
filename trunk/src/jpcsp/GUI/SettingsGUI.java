@@ -17,10 +17,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.GUI;
 
+import java.awt.DisplayMode;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.MutableComboBoxModel;
 
+import jpcsp.Emulator;
+import jpcsp.MainGUI;
 import jpcsp.Resource;
 import jpcsp.Settings;
 
@@ -230,6 +238,27 @@ public class SettingsGUI extends javax.swing.JFrame {
         comboBox.addElement("1000");
         comboBox.addElement("3000");
 
+        return comboBox;
+    }
+
+    private ComboBoxModel makeResolutions() {
+        MutableComboBoxModel comboBox = new DefaultComboBoxModel();
+        comboBox.addElement("Native");
+
+        Set<String> resolutions = new HashSet<String>();
+        GraphicsDevice localDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        DisplayMode[] displayModes = localDevice.getDisplayModes();
+        for (int i = 0; displayModes != null && i < displayModes.length; i++) {
+        	DisplayMode displayMode = displayModes[i];
+        	if (displayMode.getBitDepth() == MainGUI.displayModeBitDepth) {
+        		String resolution = String.format("%dx%d", displayMode.getWidth(), displayMode.getHeight());
+        		if (!resolutions.contains(resolution)) {
+        			comboBox.addElement(resolution);
+        			resolutions.add(resolution);
+        		}
+        	}
+        }
+        
         return comboBox;
     }
 
@@ -900,7 +929,7 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         resolutionLabel.setText("Resolution:");
 
-        resolutionBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Native", "640x480", "800x600", "1152x768", "1280x720", "1280x768", "1366x768" }));
+        resolutionBox.setModel(makeResolutions());
 
         javax.swing.GroupLayout DisplayPanelLayout = new javax.swing.GroupLayout(DisplayPanel);
         DisplayPanel.setLayout(DisplayPanelLayout);
@@ -1182,6 +1211,13 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
   }
 }//GEN-LAST:event_jButton2ActionPerformed
 
+
+	@Override
+	public void dispose() {
+		Emulator.getMainGUI().endWindowDialog();
+		super.dispose();
+	}
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel AudioPanel;
     private javax.swing.JRadioButton ClassicOpenDialogumd;
@@ -1268,5 +1304,4 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JComboBox wlanPowerBox;
     private javax.swing.JLabel wlanPowerLabel;
     // End of variables declaration//GEN-END:variables
-
 }
