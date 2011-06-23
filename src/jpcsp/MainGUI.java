@@ -1602,6 +1602,11 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         logConfigurationSettingBool("cryptoSavedata", "emu.cryptoSavedata", false);
         logConfigurationSettingBool("extractPGD", "emu.extractPGD", false);
 
+        logConfigurationPanel("display");
+        logConfigurationSettingString("antiAliasing", "emu.graphics.antialias", true);
+        logConfigurationSettingString("resolution", "emu.graphics.resolution", true);
+        logConfigurationSettingBool("fullscreenMode", "gui.fullscreen", false);
+
         boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
         Modules.sceDisplayModule.setOnlyGEGraphics(onlyGEGraphics);
 

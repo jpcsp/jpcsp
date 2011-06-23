@@ -1138,7 +1138,9 @@
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
               <JTabbedPaneConstraints tabName="Display">
-                <Property name="tabTitle" type="java.lang.String" value="Display"/>
+                <Property name="tabTitle" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection code="Resource.get(&quot;display&quot;)" type="code"/>
+                </Property>
               </JTabbedPaneConstraints>
             </Constraint>
           </Constraints>
@@ -1196,7 +1198,9 @@
             </Component>
             <Component class="javax.swing.JLabel" name="antiAliasLabel">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Anti-aliasing:"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection code="Resource.get(&quot;antiAliasing&quot;)" type="code"/>
+                </Property>
               </Properties>
             </Component>
             <Component class="javax.swing.JComboBox" name="antiAliasingBox">
@@ -1213,7 +1217,9 @@
             </Component>
             <Component class="javax.swing.JLabel" name="resolutionLabel">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Resolution:"/>
+                <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                  <Connection code="Resource.get(&quot;resolution&quot;)" type="code"/>
+                </Property>
               </Properties>
             </Component>
             <Component class="javax.swing.JComboBox" name="resolutionBox">
