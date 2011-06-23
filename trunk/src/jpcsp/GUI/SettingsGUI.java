@@ -923,11 +923,11 @@ public class SettingsGUI extends javax.swing.JFrame {
 
         fullscreenCheck.setText(Resource.get("fullscreenMode"));
 
-        antiAliasLabel.setText("Anti-aliasing:");
+        antiAliasLabel.setText(Resource.get("antiAliasing"));
 
         antiAliasingBox.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "OFF", "x4", "x8", "x16" }));
 
-        resolutionLabel.setText("Resolution:");
+        resolutionLabel.setText(Resource.get("resolution"));
 
         resolutionBox.setModel(makeResolutions());
 
@@ -965,7 +965,7 @@ public class SettingsGUI extends javax.swing.JFrame {
                 .addContainerGap(228, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("Display", DisplayPanel);
+        jTabbedPane1.addTab(Resource.get("display"), DisplayPanel);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
