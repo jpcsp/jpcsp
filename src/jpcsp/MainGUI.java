@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.DisplayMode;
 import java.awt.GraphicsDevice;
@@ -47,7 +49,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -139,6 +143,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     public static final int preferredDisplayModeRefreshRate = 60; // Preferred refresh rate if 60Hz
     private DisplayMode displayMode;
     private SetLocationThread setLocationThread;
+    private JComponent fillerLeft;
+    private JComponent fillerRight;
+    private JComponent fillerTop;
+    private JComponent fillerBottom;
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -795,7 +803,27 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         	mainToolBar.setVisible(false);
             getContentPane().remove(mainToolBar);
 
-        	makeFullScreenMenu();
+            fillerLeft = new JLabel();
+            fillerRight = new JLabel();
+            fillerTop = new JLabel();
+            fillerBottom = new JLabel();
+
+            fillerLeft.setBackground(Color.BLACK);
+            fillerRight.setBackground(Color.BLACK);
+            fillerTop.setBackground(Color.BLACK);
+            fillerBottom.setBackground(Color.BLACK);
+
+            fillerLeft.setOpaque(true);
+            fillerRight.setOpaque(true);
+            fillerTop.setOpaque(true);
+            fillerBottom.setOpaque(true);
+
+            getContentPane().add(fillerLeft, BorderLayout.LINE_START);
+            getContentPane().add(fillerRight, BorderLayout.LINE_END);
+            getContentPane().add(fillerTop, BorderLayout.NORTH);
+            getContentPane().add(fillerBottom, BorderLayout.SOUTH);
+
+            makeFullScreenMenu();
         }
 
         populateRecentMenu();
@@ -865,7 +893,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }
 
     public static Dimension getFullScreenDimension() {
-    	return GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().getSize();
+    	DisplayMode displayMode;
+    	if (Emulator.getMainGUI().displayMode != null) {
+    		displayMode = Emulator.getMainGUI().displayMode;
+    	} else {
+    		displayMode = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode();
+    	}
+        return new Dimension(displayMode.getWidth(), displayMode.getHeight());
+//    	return GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().getSize();
     }
 
     /**
@@ -895,9 +930,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 				setDisplayMode();
     		}
     		if (useFullscreen) {
-		        setSize(getFullScreenDimension());
-		        setPreferredSize(getFullScreenDimension());
-				setLocation();
+    			setFullScreenDisplaySize();
     		}
     	}
     }
@@ -947,10 +980,51 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 	        // This seems to be a Java bug.
 	        // Hack here is to move the window 1 pixel outside the screen so that
 	        // it gets displayed.
-    		if (getLocation().y != -1) {
-    			setLocation(getLocation().x, -1);
+    		if (fillerTop == null || fillerTop.getHeight() == 0) {
+    			if (getLocation().y != -1) {
+    				setLocation(0, -1);
+    			}
+    		} else if (fillerLeft.getWidth() == 0) {
+    			if (getLocation().x != -1) {
+    				setLocation(-1, 0);
+    			}
     		}
     	}
+    }
+
+    public void setFullScreenDisplaySize() {
+		Dimension size = new Dimension(sceDisplay.getResizedWidth(Screen.width), sceDisplay.getResizedHeight(Screen.height));
+		setFullScreenDisplaySize(size);
+    }
+
+    private void setFullScreenDisplaySize(Dimension size) {
+    	Dimension fullScreenSize = getFullScreenDimension();
+
+    	setLocation();
+    	if (size.width < fullScreenSize.width) {
+    		fillerLeft.setSize((fullScreenSize.width - size.width) / 2, fullScreenSize.height);
+    		fillerRight.setSize(fullScreenSize.width - size.width - fillerLeft.getWidth(), fullScreenSize.height);
+    	} else {
+    		fillerLeft.setSize(0, 0);
+    		fillerRight.setSize(1, fullScreenSize.height);
+    		setSize(fullScreenSize.width + 1, fullScreenSize.height);
+        	setPreferredSize(getSize());
+    	}
+
+    	if (size.height < fullScreenSize.height) {
+    		fillerTop.setSize(fullScreenSize.width, (fullScreenSize.height - size.height) / 2);
+    		fillerBottom.setSize(fullScreenSize.width, fullScreenSize.height - size.height - fillerTop.getHeight());
+    	} else {
+    		fillerTop.setSize(0, 0);
+    		fillerBottom.setSize(fullScreenSize.width, 1);
+    		setSize(fullScreenSize.width, fullScreenSize.height + 1);
+        	setPreferredSize(getSize());
+    	}
+
+    	fillerLeft.setPreferredSize(fillerLeft.getSize());
+    	fillerRight.setPreferredSize(fillerRight.getSize());
+    	fillerTop.setPreferredSize(fillerTop.getSize());
+    	fillerBottom.setPreferredSize(fillerBottom.getSize());
     }
 
     private void changeScreenResolution(DisplayMode displayMode) {
