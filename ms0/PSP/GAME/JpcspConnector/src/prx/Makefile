@@ -9,7 +9,7 @@ ASFLAGS = $(CFLAGS)
 
 LIBDIR =
 LDFLAGS =
-LIBS = -lpspgu ../libmpeg/libpspmpeg.a -lpspaudiolib -lpspaudio -lpsppower -lpspusb -lpspusbstor -lpspatrac3 -lpspaudio
+LIBS = -lpspgu ../libmpeg/libpspmpeg.a -lpspaudiolib -lpspaudio -lpsppower -lpspusb -lpspusbstor -lpspatrac3 -lpspaudio ../libpsputility/libpsputility.a
 USE_PSPSDK_LIBC = 1
 
 EXTRA_TARGETS = EBOOT.PBP

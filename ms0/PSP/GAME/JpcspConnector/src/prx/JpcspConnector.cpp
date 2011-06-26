@@ -19,11 +19,21 @@
 #define USE_USB	0
 #define DEBUG_TIMING	0
 #define DEBUG_ATRAC		0
+#define TEST_UTILITY	0
 
 #if DEBUG_ATRAC
 extern "C" {
 	int sceAtracGetStreamDataInfo(int atracID, u8** writePointer, u32* availableBytes, u32* readOffset);
 	int sceAtracGetNextDecodePosition(int atracID, int *position);
+}
+#endif
+
+#if TEST_UTILITY
+extern "C" {
+	int sceUtilityScreenshotGetStatus();
+	int sceUtilitySavedataGetStatus();
+	int sceUtilityOskGetStatus();
+	int sceUtilityMsgDialogGetStatus();
 }
 #endif
 
@@ -81,6 +91,22 @@ void JpcspConnector::initialize()
 		sceIoWrite(fd, command, strlen(command));
 	}
 	sceIoClose(fd);
+#endif
+
+#if TEST_UTILITY
+	int result = sceUtilityScreenshotGetStatus();
+	char msg[1000];
+	sprintf(msg, "sceUtilityScreenshotGetStatus=0x%08X\n", result);
+	debug(msg);
+	result = sceUtilitySavedataGetStatus();
+	sprintf(msg, "sceUtilitySavedataGetStatus=0x%08X\n", result);
+	debug(msg);
+	result = sceUtilityOskGetStatus();
+	sprintf(msg, "sceUtilityOskGetStatus=0x%08X\n", result);
+	debug(msg);
+	result = sceUtilityMsgDialogGetStatus();
+	sprintf(msg, "sceUtilityMsgDialogGetStatus=0x%08X\n", result);
+	debug(msg);
 #endif
 
 	allocateFileBuffer(VIDEO_STREAM, MB(8));

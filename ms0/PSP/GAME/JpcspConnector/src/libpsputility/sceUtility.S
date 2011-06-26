@@ -119,4 +119,7 @@
 #ifdef F_sceUtility_0038
         IMPORT_FUNC     "sceUtility",0xF7D8D092,sceUtilityUnloadAvModule
 #endif
+#ifdef F_sceUtility_0039
+        IMPORT_FUNC     "sceUtility",0xD81957B7,sceUtilityScreenshotGetStatus
+#endif
 

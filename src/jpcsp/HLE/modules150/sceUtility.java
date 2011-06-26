@@ -381,7 +381,7 @@ public class sceUtility implements HLEModule, HLEStartModule {
 
         public UtilityDialogState(String name) {
             this.name = name;
-            status = PSP_UTILITY_DIALOG_STATUS_NONE;
+            status = SceKernelErrors.ERROR_UTILITY_WRONG_TYPE;
             result = PSP_UTILITY_DIALOG_RESULT_OK;
         }
 
