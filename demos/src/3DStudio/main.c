@@ -546,6 +546,10 @@ int regionX = 0;
 int regionY = 0;
 int regionWidth = SCR_WIDTH;
 int regionHeight = SCR_HEIGHT;
+int scissorX = 0;
+int scissorY = 0;
+int scissorWidth = SCR_WIDTH;
+int scissorHeight = SCR_HEIGHT;
 int displayMode = 0;
 int displayWidth = SCR_WIDTH;
 int displayHeight = SCR_HEIGHT;
@@ -935,6 +939,7 @@ void drawRectangles()
 	sceGuViewport(viewportX, viewportY, viewportWidth, viewportHeight);
 	sendCommandi(21, (regionY << 10) | regionX); // REGION1 command
 	sendCommandi(22, (((regionY + regionHeight - 1) << 10) | (regionX + regionWidth - 1))); // REGION2 command
+	sceGuScissor(scissorX, scissorY, scissorWidth, scissorHeight);
 	int materialFlags = 0;
 	if (materialAmbientFlag ) materialFlags |= GU_AMBIENT;
 	if (materialDiffuseFlag ) materialFlags |= GU_DIFFUSE;
@@ -1386,6 +1391,12 @@ void init()
 	y++;
 	addAttribute("         Width", &regionWidth, NULL, x, y, -4096, 4095, 10, NULL);
 	addAttribute(", Height", &regionHeight, NULL, x + 19, y, -4096, 4095, 10, NULL);
+	y++;
+	addAttribute("Scissor  X", &scissorX, NULL, x, y, 0, 4095, 10, NULL);
+	addAttribute(", Y", &scissorY, NULL, x + 16, y, 0, 4095, 10, NULL);
+	y++;
+	addAttribute("         Width", &scissorWidth, NULL, x, y, -4096, 4095, 10, NULL);
+	addAttribute(", Height", &scissorHeight, NULL, x + 19, y, -4096, 4095, 10, NULL);
 	y++;
 	addAttribute("Display Width", &displayWidth, NULL, x, y, 0, 512, 1, NULL);
 	addAttribute(", Height", &displayHeight, NULL, x + 18, y, 0, 512, 1, NULL);
