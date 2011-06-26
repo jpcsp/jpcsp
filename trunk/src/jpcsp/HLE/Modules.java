@@ -43,6 +43,7 @@ import jpcsp.HLE.modules.sceHprm;
 import jpcsp.HLE.modules.sceHttp;
 import jpcsp.HLE.modules.sceHttps;
 import jpcsp.HLE.modules.sceImpose;
+import jpcsp.HLE.modules.sceJpeg;
 import jpcsp.HLE.modules.sceMp3;
 import jpcsp.HLE.modules.sceMp4;
 import jpcsp.HLE.modules.sceMpeg;
@@ -69,6 +70,8 @@ import jpcsp.HLE.modules.sceSasCore;
 import jpcsp.HLE.modules.sceSsl;
 import jpcsp.HLE.modules.sceSuspendForUser;
 import jpcsp.HLE.modules.sceUmdUser;
+import jpcsp.HLE.modules.sceUsb;
+import jpcsp.HLE.modules.sceUsbCam;
 import jpcsp.HLE.modules.sceUtility;
 import jpcsp.HLE.modules.sceVaudio;
 import jpcsp.HLE.modules.sceWlan;
@@ -131,6 +134,9 @@ public class Modules {
     public static sceSsl sceSslModule = new sceSsl();
     public static sceP3da sceP3daModule = new sceP3da();
     public static sceGameUpdate sceGameUpdateModule = new sceGameUpdate();
+    public static sceUsbCam sceUsbCamModule = new sceUsbCam();
+    public static sceJpeg sceJpegModule = new sceJpeg();
+    public static sceUsb sceUsbModule = new sceUsb();
 
     public static Logger log = Logger.getLogger("hle");
 
