@@ -446,18 +446,22 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     }
 
     private void generateFakeMPEGVideo(int dest_addr, int frameWidth) {
+    	generateFakeImage(dest_addr, frameWidth, avcDetailFrameWidth, avcDetailFrameHeight, videoPixelMode);
+    }
+
+    public static void generateFakeImage(int dest_addr, int frameWidth, int imageWidth, int imageHeight, int pixelMode) {
         Memory mem = Memory.getInstance();
 
         Random random = new Random();
         final int pixelSize = 3;
-        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(videoPixelMode);
-        for (int y = 0; y < avcDetailFrameHeight - pixelSize + 1; y += pixelSize) {
+        final int bytesPerPixel = sceDisplay.getPixelFormatBytes(pixelMode);
+        for (int y = 0; y < imageHeight - pixelSize + 1; y += pixelSize) {
             int address = dest_addr + y * frameWidth * bytesPerPixel;
-            final int width = Math.min(avcDetailFrameWidth, frameWidth);
+            final int width = Math.min(imageWidth, frameWidth);
             for (int x = 0; x < width; x += pixelSize) {
                 int n = random.nextInt(256);
                 int color = 0xFF000000 | (n << 16) | (n << 8) | n;
-                int pixelColor = Debug.getPixelColor(color, videoPixelMode);
+                int pixelColor = Debug.getPixelColor(color, pixelMode);
                 if (bytesPerPixel == 4) {
                     for (int i = 0; i < pixelSize; i++) {
                         for (int j = 0; j < pixelSize; j++) {

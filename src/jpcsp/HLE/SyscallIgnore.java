@@ -132,7 +132,6 @@ public enum SyscallIgnore {
 	sceUtilityDialogPowerUnlock(0x56bedca4), //1.50+
 	sceUtilityDialogSetStatus(0x680c0ea8), //1.50+
 	sceUtilityDialogSetThreadId(0x6f923bd3), //1.50+
-	sceUtilityLoadUsbModule(0x0D5BC6D2), // 2.00+
 	sceUtilitySetNetParam(0xfc4516f3), // 2.00+
 	sceUtilityUnloadUsbModule(0xF64910F0), // 2.71+
 	sceVideocodecDecode(0xDBA273FA), // 2.71+
@@ -153,15 +152,6 @@ public enum SyscallIgnore {
     SysMemUserForUser_1B4217BC(0x1B4217BC), // 6.30+
 	unknown_CC9ADCF8(0xCC9ADCF8), // 1.00+
 	UnSupportIntr(0x27BC9A45), // 1.00+
-	UsbActivate(0x586db82c), // 1.00+
-	UsbDeactivate(0xc572a9c8), // 1.00+
-	UsbGetDrvList(0x4e537366), // 1.00+
-	UsbGetDrvState(0x112cc951), // 3.71+? homebrew psplayer 2.0 (mp3 player)
-	UsbGetState(0xc21645a4), // 2.71+
-	UsbStart(0xae5de6af), // 2.71+
-	UsbStop(0xc2464fa0), // 2.71+
-	UsbWaitCancel(0x1c360735), // 2.71+
-	UsbWaitState(0x5be0e002), // 2.00+
 	WlanDevAttach(0x482cae9a), // 2.00+
 	WlanDevDetach(0xc9a8cab7), // 1.50+
 	WlanDevGetStateGPIO(0x05fe320c), // 1.00+
