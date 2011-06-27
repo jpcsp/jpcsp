@@ -407,8 +407,23 @@ public class VideoEngine {
         return lastList;
     }
 
+    public void stop() {
+    	// If we are still drawing a list, stop the list processing
+    	if (currentList != null) {
+            synchronized (drawListQueue) {
+            	drawListQueue.clear();
+			}
+    		listHasEnded = true;
+    		try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// Ignore Exception
+			}
+    	}
+    }
+
     public void start() {
-        display = Modules.sceDisplayModule;
+    	display = Modules.sceDisplayModule;
         re = display.getRenderingEngine();
         re.setGeContext(context);
         context.setRenderingEngine(re);

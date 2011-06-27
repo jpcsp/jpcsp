@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
+import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.RE.IRenderingEngine;
 
 /**
@@ -75,5 +76,10 @@ public class FBTexture extends GETexture {
 			depthRenderBufferId = -1;
 		}
 		super.delete(re);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("FBTexture[0x%08X-0x%08X, %dx%d, bufferWidth=%d, pixelFormat=%d(%s)]", address, address + length, width, height, bufferWidth, pixelFormat, VideoEngine.getPsmName(pixelFormat));
 	}
 }
