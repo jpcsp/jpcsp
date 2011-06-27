@@ -498,6 +498,19 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         mpegAvcAu.dts = mpegAvcAu.pts - videoTimestampStep; // DTS is always 1 frame before PTS
     }
 
+    protected void finishMpeg() {
+        if (checkMediaEngineState()) {
+            me.finish();
+            if (meChannel != null) {
+            	meChannel.clear();
+            }
+        } else if (isEnableConnector()) {
+            mpegCodec.finish();
+        }
+        setCurrentMpegAnalyzed(false);
+        VideoEngine.getInstance().resetVideoTextures();
+    }
+
     public void sceMpegQueryStreamOffset(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
@@ -608,16 +621,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (checkMediaEngineState()) {
-            me.finish();
-            if (meChannel != null) {
-            	meChannel.clear();
-            }
-        } else if (isEnableConnector()) {
-            mpegCodec.finish();
-        }
-        setCurrentMpegAnalyzed(false);
-        VideoEngine.getInstance().resetVideoTextures();
+        finishMpeg();
 
         cpu.gpr[2] = 0;
     }
@@ -708,12 +712,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (checkMediaEngineState()) {
-            me.finish();
-            if (meChannel != null) {
-            	meChannel.clear();
-            }
-        }
+        finishMpeg();
         if (getMpegHandle(mpeg) != mpegHandle) {
             log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
@@ -1280,12 +1279,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (checkMediaEngineState()) {
-            me.finish();
-            if (meChannel != null) {
-            	meChannel.clear();
-            }
-        }
+        finishMpeg();
         cpu.gpr[2] = 0;
     }
 
@@ -1302,12 +1296,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (checkMediaEngineState()) {
-            me.finish();
-            if (meChannel != null) {
-            	meChannel.clear();
-            }
-        }
+        finishMpeg();
         cpu.gpr[2] = 0;
     }
 
@@ -1597,12 +1586,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (checkMediaEngineState()) {
-            me.finish();
-            if (meChannel != null) {
-            	meChannel.clear();
-            }
-        }
+        finishMpeg();
         cpu.gpr[2] = 0;
     }
 
