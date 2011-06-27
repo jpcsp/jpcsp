@@ -560,6 +560,7 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     @Override
     public void stop() {
+    	VideoEngine.getInstance().stop();
     	if (asyncDisplayThread != null) {
     		asyncDisplayThread.exit();
     		asyncDisplayThread = null;
