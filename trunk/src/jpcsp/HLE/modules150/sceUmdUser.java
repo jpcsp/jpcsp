@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_UMD;
 import static jpcsp.util.Utilities.readStringZ;
 
 import java.util.LinkedList;
@@ -130,12 +131,9 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
     public int getUmdStat() {
         int stat;
         if (iso != null) {
-            stat = PSP_UMD_PRESENT;
+            stat = PSP_UMD_PRESENT | PSP_UMD_READY;
             if (umdActivated) {
-                stat |= PSP_UMD_READY;
                 stat |= PSP_UMD_READABLE;
-            } else {
-                stat |= PSP_UMD_NOT_READY;
             }
         } else {
             stat = PSP_UMD_NOT_PRESENT;
@@ -163,8 +161,6 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
 
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
         log.info("UMD stat timedout");
-        // Untrack
-        thread.wait.waitingOnUmd = false;
         removeWaitingThread(thread);
         // Return WAIT_TIMEOUT
         thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
@@ -172,15 +168,13 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
 
     public void onThreadWaitReleased(SceKernelThreadInfo thread) {
         log.info("UMD stat released");
-        // Untrack
-        thread.wait.waitingOnUmd = false;
         removeWaitingThread(thread);
         // Return ERROR_WAIT_STATUS_RELEASED
         thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.wait.waitingOnUmd) {
+        if (thread.waitType == JPCSP_WAIT_UMD) {
             removeWaitingThread(thread);
         }
     }
@@ -190,10 +184,11 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
             SceKernelThreadInfo waitingThread = lit.next();
             if (waitingThread.status == SceKernelThreadInfo.PSP_THREAD_WAITING) {
                 int wantedUmdStat = waitingThread.wait.wantedUmdStat;
-                if (waitingThread.wait.waitingOnUmd && checkDriveStat(wantedUmdStat)) {
-                    log.debug("sceUmdUser - checkWaitingThreads waking " + Integer.toHexString(waitingThread.uid) + " thread:'" + waitingThread.name + "'");
-                    // Untrack
-                    waitingThread.wait.waitingOnUmd = false;
+                if (waitingThread.waitType == JPCSP_WAIT_UMD &&
+                        checkDriveStat(wantedUmdStat)) {
+                	if (log.isDebugEnabled()) {
+                		log.debug("sceUmdUser - checkWaitingThreads waking " + Integer.toHexString(waitingThread.uid) + " thread:'" + waitingThread.name + "'");
+                	}
                     lit.remove();
                     // Return success
                     waitingThread.cpuContext.gpr[2] = 0;
@@ -230,7 +225,17 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
         umdActivated = true;
         cpu.gpr[2] = 0;
-        checkWaitingThreads();
+
+        SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+    	thread.doCallbacks = true;
+        if (iso != null) {
+        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_PRESENT | PSP_UMD_READABLE);
+        } else {
+        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY);
+        }
+    	thread.doCallbacks = false;
+
+    	checkWaitingThreads();
     }
 
     public void sceUmdDeactivate(Processor processor) {
@@ -247,9 +252,21 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+        // Trigger the callback only if the UMD was already activated
+        boolean triggerCallback = umdActivated;
         umdActivated = false;
         umdDeactivateCalled = true;
         cpu.gpr[2] = 0;
+        if (triggerCallback) {
+        	SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
+        	thread.doCallbacks = true;
+	        if (iso != null) {
+	        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_PRESENT | PSP_UMD_READY);
+	        } else {
+	        	Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, PSP_UMD_NOT_PRESENT | PSP_UMD_NOT_READY);
+	        }
+        	thread.doCallbacks = false;
+        }
         checkWaitingThreads();
     }
 
@@ -262,10 +279,9 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         } else {
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
             // Wait on a specific umdStat.
-            currentThread.wait.waitingOnUmd = true;
             currentThread.wait.wantedUmdStat = wantedStat;
             waitingThreads.add(currentThread);
-            threadMan.hleKernelThreadEnterWaitState(currentThread, SceKernelThreadInfo.PSP_WAIT_EVENTFLAG, -1, null, timeout, !doTimeout, doCallbacks);
+            threadMan.hleKernelThreadEnterWaitState(currentThread, JPCSP_WAIT_UMD, -1, null, timeout, !doTimeout, doCallbacks);
         }
         threadMan.hleRescheduleCurrentThread(doCallbacks);
     }
@@ -328,14 +344,12 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
 
         for (ListIterator<SceKernelThreadInfo> lit = waitingThreads.listIterator(); lit.hasNext();) {
             SceKernelThreadInfo waitingThread = lit.next();
-            if (!waitingThread.wait.waitingOnUmd || waitingThread.status != SceKernelThreadInfo.PSP_THREAD_WAITING) {
+            if (!waitingThread.isWaiting() || waitingThread.waitType != JPCSP_WAIT_UMD) {
                 log.error("sceUmdCancelWaitDriveStat thread " + Integer.toHexString(waitingThread.uid)
                         + " '" + waitingThread.name + "' not waiting on umd");
             } else {
                 log.debug("sceUmdCancelWaitDriveStat waking thread " + Integer.toHexString(waitingThread.uid)
                         + " '" + waitingThread.name + "'");
-                // Untrack.
-                waitingThread.wait.waitingOnUmd = false;
                 lit.remove();
                 // Return WAIT_CANCELLED.
                 waitingThread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_CANCELLED;
@@ -406,7 +420,6 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
         }
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
         if (threadMan.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
-            Modules.ThreadManForUserModule.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdStat());
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;

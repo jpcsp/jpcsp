@@ -62,8 +62,6 @@ public class SemaManager {
     /** Don't call this unless thread.wait.waitingOnSemaphore == true
      * @return true if the thread was waiting on a valid sema */
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        // Untrack
-        thread.wait.waitingOnSemaphore = false;
         // Update numWaitThreads
         SceKernelSemaInfo sema = semaMap.get(thread.wait.Semaphore_id);
         if (sema != null) {
@@ -104,7 +102,7 @@ public class SemaManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.wait.waitingOnSemaphore) {
+        if (thread.waitType == PSP_WAIT_SEMA) {
             // decrement numWaitThreads
             removeWaitingThread(thread);
         }
@@ -117,9 +115,7 @@ public class SemaManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_SEMA &&
-                    thread.wait.waitingOnSemaphore &&
                     thread.wait.Semaphore_id == semaid) {
-                thread.wait.waitingOnSemaphore = false;
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -147,14 +143,12 @@ public class SemaManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_SEMA &&
-                        thread.wait.waitingOnSemaphore &&
                         thread.wait.Semaphore_id == sema.uid &&
                         tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
                     if (log.isDebugEnabled()) {
                         log.debug("onSemaphoreModified waking thread 0x" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
                     }
                     sema.numWaitThreads--;
-                    thread.wait.waitingOnSemaphore = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -168,14 +162,12 @@ public class SemaManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_SEMA &&
-                        thread.wait.waitingOnSemaphore &&
                         thread.wait.Semaphore_id == sema.uid &&
                         tryWaitSemaphore(sema, thread.wait.Semaphore_signal)) {
                     if (log.isDebugEnabled()) {
                         log.debug("onSemaphoreModified waking thread 0x" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
                     }
                     sema.numWaitThreads--;
-                    thread.wait.waitingOnSemaphore = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -304,7 +296,6 @@ public class SemaManager {
 
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
                 // Wait on a specific semaphore
-                currentThread.wait.waitingOnSemaphore = true;
                 currentThread.wait.Semaphore_id = semaid;
                 currentThread.wait.Semaphore_signal = signal;
                 threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_SEMA, semaid, semaWaitStateChecker, timeout_addr, doCallbacks);

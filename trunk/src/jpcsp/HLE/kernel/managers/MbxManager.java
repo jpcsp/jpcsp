@@ -61,7 +61,6 @@ public class MbxManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        thread.wait.waitingOnMbxReceive = false;
         SceKernelMbxInfo info = mbxMap.get(thread.wait.Mbx_id);
         if (info != null) {
             info.numWaitThreads--;
@@ -96,7 +95,9 @@ public class MbxManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        removeWaitingThread(thread);
+    	if (thread.waitType == PSP_WAIT_MBX) {
+    		removeWaitingThread(thread);
+    	}
     }
 
     private void onMbxDeletedCancelled(int mbxid, int result) {
@@ -106,9 +107,7 @@ public class MbxManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_MBX &&
-                    thread.wait.waitingOnMbxReceive &&
                     thread.wait.Mbx_id == mbxid) {
-                thread.wait.waitingOnMbxReceive = false;
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -136,7 +135,6 @@ public class MbxManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_MBX &&
-                        thread.wait.waitingOnMbxReceive &&
                         thread.wait.Mbx_id == info.uid &&
                         info.hasMessage()) {
                     if (log.isDebugEnabled()) {
@@ -146,7 +144,6 @@ public class MbxManager {
                     int msgAddr = info.removeMsg(mem);
                     mem.write32(thread.wait.Mbx_resultAddr, msgAddr);
                     info.numWaitThreads--;
-                    thread.wait.waitingOnMbxReceive = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -156,7 +153,6 @@ public class MbxManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_MBX &&
-                        thread.wait.waitingOnMbxReceive &&
                         thread.wait.Mbx_id == info.uid &&
                         info.hasMessage()) {
                     if (log.isDebugEnabled()) {
@@ -166,7 +162,6 @@ public class MbxManager {
                     int msgAddr = info.removeMsg(mem);
                     mem.write32(thread.wait.Mbx_resultAddr, msgAddr);
                     info.numWaitThreads--;
-                    thread.wait.waitingOnMbxReceive = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -278,7 +273,6 @@ public class MbxManager {
                     }
                     info.numWaitThreads++;
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    currentThread.wait.waitingOnMbxReceive = true;
                     currentThread.wait.Mbx_id = uid;
                     currentThread.wait.Mbx_resultAddr = addr_msg_addr;
                     threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_MBX, uid, mbxWaitStateChecker, timeout_addr, doCallbacks);

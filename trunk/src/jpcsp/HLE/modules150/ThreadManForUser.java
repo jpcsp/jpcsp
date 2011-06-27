@@ -25,11 +25,14 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THRE
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD_EVENT_HANDLER;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_VTIMER;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY_DORMANT;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_TERMINATED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_BLOCKED;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_UMD;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_KERNEL;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_USER;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
@@ -39,9 +42,17 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_WAITING_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_DELAY;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MSGPIPE;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MUTEX;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_NONE;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SLEEP;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_THREAD_END;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_FPL;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_LWMUTEX;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_MBX;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_SEMA;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_VPL;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.writeStringZ;
 
@@ -863,7 +874,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public boolean isThreadBlocked(SceKernelThreadInfo thread) {
-    	return (thread.status & PSP_THREAD_WAITING) != 0 && thread.wait.waitingBlocked;
+    	return thread.isWaiting() && thread.waitType == JPCSP_WAIT_BLOCKED;
     }
 
     public void hleBlockCurrentThread() {
@@ -943,19 +954,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     private void hleBlockThread(SceKernelThreadInfo thread, boolean doCallbacks, IAction onUnblockAction, IWaitStateChecker waitStateChecker) {
-    	// A blocked thread (e.g. a thread blocked due to audio output or
-    	// wait for vblank or sceCtrl sample reading) is implemented like
-    	// a "wait for Event Flag". This is the closest implementation to a real PSP,
-    	// as event flags are usually used by a PSP to implement these wait
-    	// functions.
-        if (thread.status != PSP_THREAD_WAITING) {
+        if (!thread.isWaiting()) {
 	    	thread.doCallbacks = doCallbacks;
-	    	thread.wait.waitingBlocked = true;
 	    	thread.wait.onUnblockAction = onUnblockAction;
-	    	thread.waitType = SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
+	    	thread.waitType = JPCSP_WAIT_BLOCKED;
 	    	thread.waitId = 0;
 	    	thread.wait.waitStateChecker = waitStateChecker;
-	        hleChangeThreadState(thread, PSP_THREAD_WAITING);
+	        hleChangeThreadState(thread, thread.isSuspended() ? PSP_THREAD_WAITING_SUSPEND : PSP_THREAD_WAITING);
         }
     }
 
@@ -1035,47 +1040,47 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     /** Call this when a thread's wait timeout has expired.
      * You can assume the calling function will set thread.status = ready. */
     private void onWaitTimeout(SceKernelThreadInfo thread) {
-        // ThreadEnd
-        if (thread.wait.waitingOnThreadEnd) {
-            // Untrack
-            thread.wait.waitingOnThreadEnd = false;
-
-            // Return WAIT_TIMEOUT
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
-        } // EventFlag
-        else if (thread.wait.waitingOnEventFlag) {
-            Managers.eventFlags.onThreadWaitTimeout(thread);
-        } // Sema
-        else if (thread.wait.waitingOnSemaphore) {
-            Managers.semas.onThreadWaitTimeout(thread);
-        } // UMD stat
-        else if (thread.wait.waitingOnUmd) {
-            Modules.sceUmdUserModule.onThreadWaitTimeout(thread);
-        } // Mutex
-        else if (thread.wait.waitingOnMutex) {
-            Managers.mutex.onThreadWaitTimeout(thread);
-        } // LwMutex
-        else if (thread.wait.waitingOnLwMutex) {
-            Managers.lwmutex.onThreadWaitTimeout(thread);
-        } // MsgPipe
-        else if (thread.wait.waitingOnMsgPipeSend || thread.wait.waitingOnMsgPipeReceive) {
-            Managers.msgPipes.onThreadWaitTimeout(thread);
-        } //Mbx
-        else if (thread.wait.waitingOnMbxReceive) {
-            Managers.mbx.onThreadWaitTimeout(thread);
-        } //Fpl
-        else if (thread.wait.waitingOnFpl) {
-            Managers.fpl.onThreadWaitTimeout(thread);
-        } //Vpl
-        else if (thread.wait.waitingOnVpl) {
-            Managers.vpl.onThreadWaitTimeout(thread);
-        }
-
-    // IO has no timeout, it's always forever
+    	switch (thread.waitType) {
+    		case PSP_WAIT_THREAD_END:
+                // Return WAIT_TIMEOUT
+    			thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_TIMEOUT;
+    			break;
+    		case PSP_WAIT_EVENTFLAG:
+    			Managers.eventFlags.onThreadWaitTimeout(thread);
+    			break;
+    		case PSP_WAIT_SEMA:
+    			Managers.semas.onThreadWaitTimeout(thread);
+    			break;
+    		case JPCSP_WAIT_UMD:
+    			Modules.sceUmdUserModule.onThreadWaitTimeout(thread);
+    			break;
+    		case PSP_WAIT_MUTEX:
+    			Managers.mutex.onThreadWaitTimeout(thread);
+    			break;
+    		case PSP_WAIT_LWMUTEX:
+    			Managers.lwmutex.onThreadWaitTimeout(thread);
+    			break;
+    		case PSP_WAIT_MSGPIPE:
+    			Managers.msgPipes.onThreadWaitTimeout(thread);
+    			break;
+    		case PSP_WAIT_MBX:
+    			Managers.mbx.onThreadWaitTimeout(thread);
+    			break;
+    		case PSP_WAIT_FPL:
+    			Managers.fpl.onThreadWaitTimeout(thread);
+    			break;
+    		case PSP_WAIT_VPL:
+    			Managers.vpl.onThreadWaitTimeout(thread);
+    			break;
+    	}
     }
 
-    public void hleThreadWaitRelease(SceKernelThreadInfo thread) {
-        if (thread.waitType != PSP_WAIT_NONE) {
+    private void hleThreadWaitRelease(SceKernelThreadInfo thread) {
+    	// Thread was in a WAITING SUSPEND state?
+    	if (thread.isSuspended()) {
+    		// Go back to the SUSPEND state
+    		hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
+    	} else if (thread.waitType != PSP_WAIT_NONE) {
             onWaitReleased(thread);
             hleChangeThreadState(thread, PSP_THREAD_READY);
         }
@@ -1083,44 +1088,42 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     /** Call this when a thread's wait has been released. */
     private void onWaitReleased(SceKernelThreadInfo thread) {
-        // ThreadEnd
-        if (thread.wait.waitingOnThreadEnd) {
-            // Untrack
-            thread.wait.waitingOnThreadEnd = false;
-            // Return ERROR_WAIT_STATUS_RELEASED
-            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
-        } // EventFlag
-        else if (thread.wait.waitingOnEventFlag) {
-            Managers.eventFlags.onThreadWaitReleased(thread);
-        } // Sema
-        else if (thread.wait.waitingOnSemaphore) {
-            Managers.semas.onThreadWaitReleased(thread);
-        } // UMD stat
-        else if (thread.wait.waitingOnUmd) {
-            Modules.sceUmdUserModule.onThreadWaitReleased(thread);
-        } // Mutex
-        else if (thread.wait.waitingOnMutex) {
-            Managers.mutex.onThreadWaitReleased(thread);
-        } // LwMutex
-        else if (thread.wait.waitingOnLwMutex) {
-            Managers.lwmutex.onThreadWaitReleased(thread);
-        } // MsgPipe
-        else if (thread.wait.waitingOnMsgPipeSend || thread.wait.waitingOnMsgPipeReceive) {
-            Managers.msgPipes.onThreadWaitReleased(thread);
-        } //Mbx
-        else if (thread.wait.waitingOnMbxReceive) {
-            Managers.mbx.onThreadWaitReleased(thread);
-        } //Fpl
-        else if (thread.wait.waitingOnFpl) {
-            Managers.fpl.onThreadWaitReleased(thread);
-        } //Vpl
-        else if (thread.wait.waitingOnVpl) {
-            Managers.vpl.onThreadWaitReleased(thread);
-        } // Block
-        else if (thread.wait.waitingBlocked) {
-        	thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
-        }
-        // IO has no timeout, it's always forever.
+    	switch (thread.waitType) {
+			case PSP_WAIT_THREAD_END:
+	            // Return ERROR_WAIT_STATUS_RELEASED
+	            thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+				break;
+			case PSP_WAIT_EVENTFLAG:
+	            Managers.eventFlags.onThreadWaitReleased(thread);
+				break;
+			case PSP_WAIT_SEMA:
+	            Managers.semas.onThreadWaitReleased(thread);
+				break;
+			case JPCSP_WAIT_UMD:
+	            Modules.sceUmdUserModule.onThreadWaitReleased(thread);
+				break;
+			case PSP_WAIT_MUTEX:
+	            Managers.mutex.onThreadWaitReleased(thread);
+				break;
+			case PSP_WAIT_LWMUTEX:
+	            Managers.lwmutex.onThreadWaitReleased(thread);
+				break;
+			case PSP_WAIT_MSGPIPE:
+	            Managers.msgPipes.onThreadWaitReleased(thread);
+				break;
+			case PSP_WAIT_MBX:
+	            Managers.mbx.onThreadWaitReleased(thread);
+				break;
+			case PSP_WAIT_FPL:
+	            Managers.fpl.onThreadWaitReleased(thread);
+				break;
+			case PSP_WAIT_VPL:
+	            Managers.vpl.onThreadWaitReleased(thread);
+				break;
+			case JPCSP_WAIT_BLOCKED:
+	        	thread.cpuContext.gpr[2] = ERROR_KERNEL_WAIT_STATUS_RELEASED;
+				break;
+    	}
     }
 
     private void deleteAllThreads() {
@@ -1150,10 +1153,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             thread.freeStack();
         }
 
-        cancelThreadWait(thread);
-        threadMap.remove(thread.uid);
-        SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
-
         Managers.eventFlags.onThreadDeleted(thread);
         Managers.semas.onThreadDeleted(thread);
         Managers.mutex.onThreadDeleted(thread);
@@ -1166,6 +1165,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         RuntimeContext.onThreadDeleted(thread);
         // TODO blocking audio?
         // TODO async io?
+
+        cancelThreadWait(thread);
+        threadMap.remove(thread.uid);
+        SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
 
         statistics.addThreadStatistics(thread);
     }
@@ -1191,7 +1194,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     private void setToBeDeletedThread(SceKernelThreadInfo thread) {
         thread.doDelete = true;
 
-        if (thread.status == PSP_THREAD_STOPPED) {
+        if (thread.isStopped()) {
             // It's possible for a game to request the same thread to be deleted multiple times.
             // We only mark for deferred deletion.
             // Example:
@@ -1271,24 +1274,23 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                 Scheduler.getInstance().removeAction(thread.wait.microTimeTimeout, thread.wait.waitTimeoutAction);
                 thread.wait.waitTimeoutAction = null;
             }
-            if (thread.wait.waitingBlocked) {
-            	thread.wait.waitingBlocked = false;
+            if (thread.waitType == JPCSP_WAIT_BLOCKED) {
             	if (thread.wait.onUnblockAction != null) {
             		thread.wait.onUnblockAction.execute();
             		thread.wait.onUnblockAction = null;
             	}
             }
             thread.doCallbacks = false;
-        } else if (thread.status == PSP_THREAD_STOPPED) {
+        } else if (thread.isStopped()) {
             if (thread.doDeleteAction != null) {
                 Scheduler.getInstance().removeAction(0, thread.doDeleteAction);
                 thread.doDeleteAction = null;
             }
-        } else if (thread.status == PSP_THREAD_READY) {
+        } else if (thread.isReady()) {
             removeFromReadyThreads(thread);
-        } else if (thread.status == PSP_THREAD_SUSPEND) {
+        } else if (thread.isSuspended()) {
             thread.doCallbacks = false;
-        } else if (thread.status == PSP_THREAD_RUNNING) {
+        } else if (thread.isRunning()) {
         	needThreadReschedule = true;
         	// When a running thread has to yield to a thread having a higher
         	// priority, the thread stays in front of the ready threads having
@@ -1308,7 +1310,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (thread.waitType == PSP_WAIT_NONE) {
                 log.warn("changeThreadState thread '" + thread.name + "' => PSP_THREAD_WAITING. waitType should NOT be PSP_WAIT_NONE. caller:" + getCallingFunction());
             }
-        } else if (thread.status == PSP_THREAD_STOPPED) {
+        } else if (thread.isStopped()) {
             // TODO check if stopped threads eventually get automatically deleted on a real psp
             // HACK auto delete module mgr threads
             if (thread.name.equals("root") || // should probably find the real name and change it
@@ -1324,12 +1326,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                 }
             }
             onThreadStopped(thread);
-        } else if (thread.status == PSP_THREAD_READY) {
+        } else if (thread.isReady()) {
             addToReadyThreads(thread, addReadyThreadsFirst);
             thread.waitType = PSP_WAIT_NONE;
             thread.wait.waitTimeoutAction = null;
             thread.wait.waitStateChecker = null;
-        } else if (thread.status == PSP_THREAD_RUNNING) {
+        } else if (thread.isRunning()) {
             // debug
             if (thread.waitType != PSP_WAIT_NONE) {
                 log.error("changeThreadState thread '" + thread.name + "' => PSP_THREAD_RUNNING. waitType should be PSP_WAIT_NONE. caller:" + getCallingFunction());
@@ -1339,19 +1341,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     private void cancelThreadWait(SceKernelThreadInfo thread) {
         // Cancel all waiting actions
-        thread.wait.waitingOnEventFlag = false;
-        thread.wait.waitingOnIo = false;
-        thread.wait.waitingOnMbxReceive = false;
-        thread.wait.waitingOnMsgPipeReceive = false;
-        thread.wait.waitingOnMsgPipeSend = false;
-        thread.wait.waitingOnMutex = false;
-        thread.wait.waitingOnLwMutex = false;
-        thread.wait.waitingOnSemaphore = false;
-        thread.wait.waitingOnThreadEnd = false;
-        thread.wait.waitingOnUmd = false;
-        thread.wait.waitingOnFpl = false;
-        thread.wait.waitingOnVpl = false;
-        thread.wait.waitingBlocked = false;
         thread.wait.onUnblockAction = null;
         thread.wait.waitStateChecker = null;
         thread.waitType = PSP_WAIT_NONE;
@@ -1374,15 +1363,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         for (SceKernelThreadInfo thread : threadMap.values()) {
             // Wakeup threads that are in sceKernelWaitThreadEnd
             // We're assuming if waitingOnThreadEnd is set then thread.status = waiting
-            if (thread.status == PSP_THREAD_WAITING &&
-            		thread.wait.waitingOnThreadEnd &&
+            if (thread.isWaiting() &&
+            		thread.waitType == PSP_WAIT_THREAD_END &&
                     thread.wait.ThreadEnd_id == stoppedThread.uid) {
-                // Untrack
-                thread.wait.waitingOnThreadEnd = false;
+            	hleThreadWaitRelease(thread);
                 // Return exit status of stopped thread
                 thread.cpuContext.gpr[2] = stoppedThread.exitStatus;
-                // Wakeup
-                hleChangeThreadState(thread, PSP_THREAD_READY);
             }
         }
     }
@@ -1830,7 +1816,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     }
 
     public void hleKernelWakeupThread(SceKernelThreadInfo thread) {
-        if (thread.status != PSP_THREAD_WAITING || thread.waitType != PSP_WAIT_SLEEP) {
+        if (!thread.isWaiting() || thread.waitType != PSP_WAIT_SLEEP) {
             thread.wakeupCount++;
             if (log.isDebugEnabled()) {
             	log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount to " + thread.wakeupCount);
@@ -1841,14 +1827,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
             }
-            hleChangeThreadState(thread, PSP_THREAD_READY);
-            // switch in the target thread if it's now higher priority
-            if (thread.currentPriority < currentThread.currentPriority) {
-                if (log.isDebugEnabled()) {
-                    log.debug("sceKernelWakeupThread yielding to thread with higher priority");
-                }
-                hleRescheduleCurrentThread();
-            }
+            hleThreadWaitRelease(thread);
+
+            // Check if we have to switch in the target thread
+            // e.g. if if has a higher priority
+            hleRescheduleCurrentThread();
         }
     }
 
@@ -1868,7 +1851,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn(String.format("hleKernelWaitThreadEnd %s banned, not waiting", thread.toString()));
             Emulator.getProcessor().cpu.gpr[2] = 0;
             hleRescheduleCurrentThread();
-        } else if (thread.status == PSP_THREAD_STOPPED) {
+        } else if (thread.isStopped()) {
         	if (log.isDebugEnabled()) {
         		log.debug(String.format("hleKernelWaitThreadEnd %s thread already stopped, not waiting", thread.toString()));
         	}
@@ -1876,7 +1859,6 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             hleRescheduleCurrentThread();
         } else {
             // Wait on a specific thread end
-            currentThread.wait.waitingOnThreadEnd = true;
             currentThread.wait.ThreadEnd_id = uid;
         	hleKernelThreadEnterWaitState(PSP_WAIT_THREAD_END, uid, waitThreadEndWaitStateChecker, timeoutAddr, callbacks);
         }
@@ -2590,11 +2572,21 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } else if (uid == currentThread.uid) {
             log.warn("sceKernelSuspendThread on self is not allowed");
             cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_THREAD;
+        } else if (thread.isSuspended()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceKernelSuspendThread thread already suspended: thread=%s", thread.toString()));
+        	}
+        	cpu.gpr[2] = ERROR_KERNEL_THREAD_ALREADY_SUSPEND;
+        } else if (thread.isStopped()) {
+        	if (log.isDebugEnabled()) {
+        		log.debug(String.format("sceKernelSuspendThread thread already stopped: thread=%s", thread.toString()));
+        	}
+        	cpu.gpr[2] = ERROR_KERNEL_THREAD_ALREADY_DORMANT;
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
             }
-            if (thread.status == PSP_THREAD_WAITING) {
+            if (thread.isWaiting()) {
             	hleChangeThreadState(thread, PSP_THREAD_WAITING_SUSPEND);
             } else {
             	hleChangeThreadState(thread, PSP_THREAD_SUSPEND);
@@ -2615,7 +2607,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         if (thread == null) {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (thread.status != PSP_THREAD_SUSPEND && thread.status != PSP_THREAD_WAITING_SUSPEND) {
+        } else if (!thread.isSuspended()) {
             log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
             cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
         } else if (isBannedThread(thread)) {
@@ -2625,7 +2617,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
             }
-            if (thread.status == PSP_THREAD_WAITING_SUSPEND) {
+            if (thread.isWaiting()) {
                 hleChangeThreadState(thread, PSP_THREAD_WAITING);
             } else {
             	hleChangeThreadState(thread, PSP_THREAD_READY);
@@ -3796,7 +3788,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (thread.status != PSP_THREAD_STOPPED) {
+        } else if (!thread.isStopped()) {
             cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         } else {
             log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
@@ -3840,7 +3832,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // Banned, fake start.
             cpu.gpr[2] = 0;
             hleRescheduleCurrentThread();
-        } else if (thread.status != PSP_THREAD_STOPPED) {
+        } else if (!thread.isStopped()) {
             cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         } else {
             // Check if there's a registered event handler for this thread.
@@ -4073,7 +4065,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } else if (thread == null) {
             log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + ") unknown thread");
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if ((thread.status & PSP_THREAD_STOPPED) == PSP_THREAD_STOPPED) {
+        } else if (thread.isStopped()) {
             log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid) + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority) + " thread is stopped, ignoring");
             // Tested on PSP:
             // If the thread is stopped, it's current priority is replaced by it's initial priority.
@@ -4144,7 +4136,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } else if (thread == null) {
             log.warn("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") unknown thread");
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_NOT_FOUND_THREAD;
-        } else if (thread.status != PSP_THREAD_WAITING) {
+        } else if (!thread.isWaiting()) {
             if (log.isDebugEnabled()) {
                 log.debug("sceKernelReleaseWaitThread SceUID=" + Integer.toHexString(uid) + ") Thread not waiting: status=" + thread.status);
             }
@@ -4155,10 +4147,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             }
             cpu.gpr[2] = 0;
             hleThreadWaitRelease(thread);
-            // Switch to the released thread if it has a higher priority.
-            if (thread.currentPriority < currentThread.currentPriority) {
-                hleRescheduleCurrentThread();
-            }
+
+            // Check if we need to switch to the released thread
+            // (e.g. has a higher priority)
+            hleRescheduleCurrentThread();
         }
     }
 
@@ -4202,7 +4194,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             log.warn("sceKernelGetThreadExitStatus unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD;
         } else {
-            if (thread.status != PSP_THREAD_STOPPED) {
+            if (!thread.isStopped()) {
 	            if (log.isDebugEnabled()) {
 	                log.debug(String.format("sceKernelGetThreadExitStatus not stopped uid=0x%x", uid));
 	            }
@@ -4707,7 +4699,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 				return false;
 			}
 
-			if (threadEnd.status == PSP_THREAD_STOPPED) {
+			if (threadEnd.isStopped()) {
                 // Return exit status of stopped thread
                 thread.cpuContext.gpr[2] = threadEnd.exitStatus;
                 return false;

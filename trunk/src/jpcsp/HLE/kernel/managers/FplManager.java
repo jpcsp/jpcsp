@@ -67,8 +67,6 @@ public class FplManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        // Untrack
-        thread.wait.waitingOnEventFlag = false;
         // Update numWaitThreads
         SceKernelFplInfo fpl = fplMap.get(thread.wait.Fpl_id);
         if (fpl != null) {
@@ -107,7 +105,7 @@ public class FplManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.wait.waitingOnFpl) {
+        if (thread.waitType == PSP_WAIT_FPL) {
             removeWaitingThread(thread);
         }
     }
@@ -119,9 +117,7 @@ public class FplManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_FPL &&
-                    thread.wait.waitingOnFpl &&
                     thread.wait.Fpl_id == fid) {
-                thread.wait.waitingOnFpl = false;
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -149,13 +145,11 @@ public class FplManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_FPL &&
-                        thread.wait.waitingOnFpl &&
                         thread.wait.Fpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onFplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.wait.waitingOnFpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -165,13 +159,11 @@ public class FplManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_FPL &&
-                        thread.wait.waitingOnFpl &&
                         thread.wait.Fpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onFplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.wait.waitingOnFpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -297,7 +289,6 @@ public class FplManager {
                     fpl.numWaitThreads++;
                     // Go to wait state
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    currentThread.wait.waitingOnFpl = true;
                     currentThread.wait.Fpl_id = uid;
                     currentThread.wait.Fpl_dataAddr = data_addr;
                     threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_FPL, uid, fplWaitStateChecker, timeout_addr, doCallbacks);
