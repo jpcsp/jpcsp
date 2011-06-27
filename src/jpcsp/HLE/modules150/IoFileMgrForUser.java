@@ -28,8 +28,8 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_ASYNC_OP;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_SUCH_DEVICE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNSUPPORTED_OPERATION;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_IO;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_READY;
-import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_WAIT_EVENTFLAG;
 import static jpcsp.util.Utilities.readStringNZ;
 import static jpcsp.util.Utilities.readStringZ;
 
@@ -979,12 +979,11 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 // Find threads waiting on this uid and wake them up.
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
-                    if (thread.wait.waitingOnIo && thread.wait.Io_id == info.uid) {
+                    if (thread.waitType == JPCSP_WAIT_IO &&
+                            thread.wait.Io_id == info.uid) {
                         if (log.isDebugEnabled()) {
                             log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
                         }
-                        // Untrack
-                        thread.wait.waitingOnIo = false;
                         // Return success
                         thread.cpuContext.gpr[2] = 0;
                         // Wakeup
@@ -1098,9 +1097,8 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     // Start the waiting mode.
                     ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    currentThread.wait.waitingOnIo = true;
                     currentThread.wait.Io_id = info.uid;
-                    threadMan.hleKernelThreadEnterWaitState(PSP_WAIT_EVENTFLAG, info.uid, ioWaitStateChecker, callbacks);
+                    threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.uid, ioWaitStateChecker, callbacks);
                 } else {
                     // For sceIoPollAsync, only call the ioListeners.
                     for (IIoListener ioListener : ioListeners) {

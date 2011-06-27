@@ -566,4 +566,12 @@ public class Utilities {
 
     	return dump.toString();
     }
+
+    public static int alignUp(int value, int alignment) {
+    	return alignDown(value + alignment, alignment);
+    }
+
+    public static int alignDown(int value, int alignment) {
+    	return value & ~alignment;
+    }
 }

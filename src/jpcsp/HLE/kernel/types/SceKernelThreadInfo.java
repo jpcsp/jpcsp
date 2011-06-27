@@ -60,6 +60,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_THREAD_STOPPED  = 0x00000010;
     public static final int PSP_THREAD_KILLED   = 0x00000020;
 
+    // Wait types
     public static final int PSP_WAIT_NONE               = 0x00;
     public static final int PSP_WAIT_SLEEP              = 0x01; // Wait on sleep thread.
     public static final int PSP_WAIT_DELAY              = 0x02; // Wait on delay thread.
@@ -74,6 +75,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_WAIT_CALLBACK_DELETE    = 0x0b; // Wait on callback delete.
     public static final int PSP_WAIT_MUTEX              = 0x0c; // Wait on mutex.
     public static final int PSP_WAIT_LWMUTEX            = 0x0d; // Wait on lwmutex.
+    // These wait types are only used internally in Jpcsp and are not real PSP wait types.
+    public static final int JPCSP_WAIT_IO               = 0x100; // Wait on IO.
+    public static final int JPCSP_WAIT_UMD              = 0x101; // Wait on UMD.
+    public static final int JPCSP_WAIT_BLOCKED          = 0x102; // Thread blocked.
 
     // SceKernelThreadInfo.
     public final String name;
@@ -232,6 +237,19 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         return o1.currentPriority - o2.currentPriority;
     }
 
+    private int getPSPWaitType() {
+    	if (waitType >= 0x100) {
+        	// A blocked thread (e.g. a thread blocked due to audio output or
+        	// wait for vblank or sceCtrl sample reading) is implemented like
+        	// a "wait for Event Flag". This is the closest implementation to a real PSP,
+        	// as event flags are usually used by a PSP to implement these wait
+        	// functions.
+    		// Jpcsp internal wait types are best matched to PSP_WAIT_EVENTFLAG.
+    		return PSP_WAIT_EVENTFLAG;
+    	}
+		return waitType;
+    }
+
     public void write(Memory mem, int address) {
         mem.write32(address, 104); // size
         Utilities.writeStringNZ(mem, address + 4, 32, name);
@@ -243,7 +261,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 56, gpReg_addr);
         mem.write32(address + 60, initPriority);
         mem.write32(address + 64, currentPriority);
-        mem.write32(address + 68, waitType);
+        mem.write32(address + 68, getPSPWaitType());
         mem.write32(address + 72, waitId);
         mem.write32(address + 76, wakeupCount);
         mem.write32(address + 80, exitStatus);
@@ -330,31 +348,31 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         StringBuilder s = new StringBuilder();
 
         // A thread should only be waiting on at most 1 thing, handle it anyway
-        if (wait.waitingOnThreadEnd) {
+        if (waitType == PSP_WAIT_THREAD_END) {
             s.append(String.format(" | ThreadEnd (0x%04X)", wait.ThreadEnd_id));
         }
 
-        if (wait.waitingOnEventFlag) {
+        if (waitType == PSP_WAIT_EVENTFLAG) {
             s.append(String.format(" | EventFlag (0x%04X)", wait.EventFlag_id));
         }
 
-        if (wait.waitingOnSemaphore) {
+        if (waitType == PSP_WAIT_SEMA) {
             s.append(String.format(" | Semaphore (0x%04X)", wait.Semaphore_id));
         }
 
-        if (wait.waitingOnMutex) {
+        if (waitType == PSP_WAIT_MUTEX) {
             s.append(String.format(" | Mutex (0x%04X)", wait.Mutex_id));
         }
 
-        if (wait.waitingOnIo) {
+        if (waitType == JPCSP_WAIT_IO) {
             s.append(String.format(" | Io (0x%04X)", wait.Io_id));
         }
 
-        if (wait.waitingOnUmd) {
+        if (waitType == JPCSP_WAIT_UMD) {
             s.append(String.format(" | Umd (0x%02X)", wait.wantedUmdStat));
         }
 
-        if (wait.waitingBlocked) {
+        if (waitType == JPCSP_WAIT_BLOCKED) {
         	s.append(String.format(" | Blocked"));
         }
 
@@ -379,7 +397,27 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         return s.toString();
     }
 
-	@Override
+    public boolean isSuspended() {
+    	return (status & PSP_THREAD_SUSPEND) != 0;
+    }
+
+    public boolean isWaiting() {
+    	return (status & PSP_THREAD_WAITING) != 0;
+    }
+
+    public boolean isRunning() {
+    	return (status & PSP_THREAD_RUNNING) != 0;
+    }
+
+    public boolean isReady() {
+    	return (status & PSP_THREAD_READY) != 0;
+    }
+
+    public boolean isStopped() {
+    	return (status & PSP_THREAD_STOPPED) != 0;
+    }
+
+    @Override
 	public String toString() {
 		StringBuilder s = new StringBuilder();
 

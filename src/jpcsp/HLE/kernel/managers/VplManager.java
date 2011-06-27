@@ -50,7 +50,7 @@ import org.apache.log4j.Logger;
 
 public class VplManager {
 
-    protected static Logger log = Modules.getLogger("ThreadManForUser");
+    public static Logger log = Modules.getLogger("ThreadManForUser");
 
     private HashMap<Integer, SceKernelVplInfo> vplMap;
     private VplWaitStateChecker vplWaitStateChecker;
@@ -68,8 +68,6 @@ public class VplManager {
     }
 
     private boolean removeWaitingThread(SceKernelThreadInfo thread) {
-        // Untrack
-        thread.wait.waitingOnVpl = false;
         // Update numWaitThreads
         SceKernelVplInfo fpl = vplMap.get(thread.wait.Vpl_id);
         if (fpl != null) {
@@ -108,7 +106,7 @@ public class VplManager {
     }
 
     public void onThreadDeleted(SceKernelThreadInfo thread) {
-        if (thread.wait.waitingOnVpl) {
+        if (thread.waitType == PSP_WAIT_VPL) {
             removeWaitingThread(thread);
         }
     }
@@ -120,9 +118,7 @@ public class VplManager {
         for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
             SceKernelThreadInfo thread = it.next();
             if (thread.waitType == PSP_WAIT_VPL &&
-                    thread.wait.waitingOnVpl &&
                     thread.wait.Vpl_id == vid) {
-                thread.wait.waitingOnVpl = false;
                 thread.cpuContext.gpr[2] = result;
                 threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                 reschedule = true;
@@ -150,13 +146,11 @@ public class VplManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_VPL &&
-                        thread.wait.waitingOnVpl &&
                         thread.wait.Vpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onVplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.wait.waitingOnVpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -166,13 +160,11 @@ public class VplManager {
             for (Iterator<SceKernelThreadInfo> it = threadMan.iteratorByPriority(); it.hasNext();) {
                 SceKernelThreadInfo thread = it.next();
                 if (thread.waitType == PSP_WAIT_VPL &&
-                        thread.wait.waitingOnVpl &&
                         thread.wait.Vpl_id == info.uid) {
                     if (log.isDebugEnabled()) {
                         log.debug(String.format("onVplFree waking thread %s", thread.toString()));
                     }
                     info.numWaitThreads--;
-                    thread.wait.waitingOnVpl = false;
                     thread.cpuContext.gpr[2] = 0;
                     threadMan.hleChangeThreadState(thread, PSP_THREAD_READY);
                     reschedule = true;
@@ -187,24 +179,7 @@ public class VplManager {
 
     /** @return the address of the allocated block or 0 if failed. */
     private int tryAllocateVpl(SceKernelVplInfo info, int size) {
-        int addr = 0;
-        int alignedSize = (size + 7) & ~7;
-        if (alignedSize + 8 <= info.freeSize) {
-            if ((info.attr & PSP_VPL_ATTR_ADDR_HIGH) == PSP_VPL_ATTR_ADDR_HIGH) {
-                addr = info.freeHighAddress - alignedSize;
-                info.freeHighAddress -= alignedSize + 8;
-            } else {
-                addr = info.freeLowAddress + 8;
-                info.freeLowAddress += alignedSize + 8;
-            }
-            // 8-byte header per data block.
-            Memory mem = Memory.getInstance();
-            mem.write32(addr - 8, info.allocAddress);
-            mem.write32(addr - 4, 0);
-            info.freeSize -= alignedSize + 8;
-        }
-        info.dataBlockMap.put(addr, alignedSize);
-        return addr;
+    	return info.alloc(size);
     }
 
     public void sceKernelCreateVpl(int name_addr, int partitionid, int attr, int size, int opt_addr) {
@@ -258,7 +233,7 @@ public class VplManager {
             if (info.freeSize < info.poolSize) {
                 log.warn("sceKernelDeleteVpl approx " + (info.poolSize - info.freeSize) + " unfreed bytes allocated");
             }
-            info.deleteSysMemInfo();
+            info.delete();
             cpu.gpr[2] = 0;
             onVplDeleted(uid);
         }
@@ -291,7 +266,6 @@ public class VplManager {
                     // Go to wait state
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
                     // Wait on a specific fpl
-                    currentThread.wait.waitingOnVpl = true;
                     currentThread.wait.Vpl_id = uid;
                     currentThread.wait.Vpl_size = size;
                     currentThread.wait.Vpl_dataAddr = data_addr;

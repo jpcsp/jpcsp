@@ -30,11 +30,14 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.MemoryChunk;
+import jpcsp.HLE.kernel.types.MemoryChunkList;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -182,273 +185,6 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         }
     }
 
-    protected static class MemoryChunk {
-    	// Start address of this MemoryChunk
-    	public int addr;
-    	// Size of this MemoryChunk: it extends from addr to (addr + size -1)
-    	public int size;
-    	// The MemoryChunk are kept sorted by addr and linked with next/previous
-    	// The MemoryChunk with the lowest addr has previous == null
-    	// The MemoryChunk with the highest addr has next == null
-    	public MemoryChunk next;
-    	public MemoryChunk previous;
-
-    	public MemoryChunk(int addr, int size) {
-    		this.addr = addr;
-    		this.size = size;
-    	}
-
-    	/**
-    	 * Check if the memoryChunk has enough space to allocate a block.
-    	 *
-    	 * @param availableSize size of the requested block
-    	 * @param addrAlignment base address alignment of the requested block
-    	 * @return              true if the chunk is large enough to allocate the block
-    	 *                      false if the chunk is too small for the requested block
-    	 */
-    	public boolean isAvailable(int availableSize, int addrAlignment) {
-    		if (alignUp(addr, addrAlignment) + availableSize <= addr + size) {
-    			return true;
-    		}
-
-    		return false;
-    	}
-
-    	@Override
-		public String toString() {
-			return String.format("[addr=0x%08X-0x%08X, size=0x%X]", addr, addr + size, size);
-		}
-    }
-
-    protected static class MemoryChunkList {
-    	// The MemoryChunk objects are linked and kept sorted by address.
-    	//
-    	// low: MemoryChunk with the lowest address.
-    	// Start point to scan list by increasing address
-    	private MemoryChunk low;
-    	// high: MemoryChunk with the highest address.
-    	// Start point to scan the list by decreasing address
-    	private MemoryChunk high;
-
-    	public MemoryChunkList(MemoryChunk initialMemoryChunk) {
-    		low = initialMemoryChunk;
-    		high = initialMemoryChunk;
-    	}
-
-    	/**
-    	 * Remove a MemoryChunk from the list.
-    	 *
-    	 * @param memoryChunk the MemoryChunk to be removed
-    	 */
-    	public void remove(MemoryChunk memoryChunk) {
-    		if (memoryChunk.previous != null) {
-    			memoryChunk.previous.next = memoryChunk.next;
-    		}
-    		if (memoryChunk.next != null) {
-    			memoryChunk.next.previous = memoryChunk.previous;
-    		}
-
-    		if (low == memoryChunk) {
-    			low = memoryChunk.next;
-    		}
-    		if (high == memoryChunk) {
-    			high = memoryChunk.previous;
-    		}
-    	}
-
-    	/**
-    	 * Allocate a memory from the MemoryChunk, at its lowest address.
-    	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
-    	 *
-    	 * @param memoryChunk   the MemoryChunk where the memory should be allocated
-    	 * @param size          the size of the memory to be allocated
-    	 * @param addrAlignment base address alignment of the requested block
-    	 * @return              the base address of the allocated memory
-    	 */
-    	public int allocLow(MemoryChunk memoryChunk, int size, int addrAlignment) {
-    		int addr = alignUp(memoryChunk.addr, addrAlignment);
-
-    		return alloc(memoryChunk, addr, size);
-    	}
-
-    	/**
-    	 * Allocate a memory from the MemoryChunk, at its highest address.
-    	 * The MemoryChunk is updated accordingly or is removed if it stays empty.
-    	 *
-    	 * @param memoryChunk   the MemoryChunk where the memory should be allocated
-    	 * @param size          the size of the memory to be allocated
-    	 * @param addrAlignment base address alignment of the requested block
-    	 * @return              the base address of the allocated memory
-    	 */
-    	public int allocHigh(MemoryChunk memoryChunk, int size, int addrAlignment) {
-			int addr = alignDown(memoryChunk.addr + memoryChunk.size, addrAlignment) - size;
-
-			return alloc(memoryChunk, addr, size);
-    	}
-
-    	/**
-    	 * Allocate a memory from the MemoryChunk, given the base address.
-    	 * The base address must be inside the MemoryChunk
-    	 * The MemoryChunk is updated accordingly, is removed if it stays empty or
-    	 * is split into 2 remaining free parts.
-    	 *
-    	 * @param memoryChunk the MemoryChunk where the memory should be allocated
-    	 * @param addr        the base address of the memory to be allocated
-    	 * @param size        the size of the memory to be allocated
-    	 * @return            the base address of the allocated memory, or 0
-    	 *                    if the MemoryChunk is too small to allocate the desired size.
-    	 */
-    	public int alloc(MemoryChunk memoryChunk, int addr, int size) {
-    		if (addr < memoryChunk.addr || memoryChunk.addr + memoryChunk.size < addr + size) {
-    			// The MemoryChunk is too small to allocate the desired size
-    			// are the requested address is outside the MemoryChunk
-    			return 0;
-    		} else if (memoryChunk.size == size) {
-    			// Allocate the complete MemoryChunk
-    			remove(memoryChunk);
-    		} else if (memoryChunk.addr == addr) {
-    			// Allocate at the lowest address
-				memoryChunk.size -= size;
-				memoryChunk.addr += size;
-    		} else if (memoryChunk.addr + memoryChunk.size == addr + size) {
-    			// Allocate at the highest address
-				memoryChunk.size -= size;
-    		} else {
-    			// Allocate in the middle of a MemoryChunk: it must be split
-    			// in 2 parts: one for lowest part and one for the highest part.
-    			// Update memoryChunk to contain the lowest part,
-    			// and create a new MemoryChunk to contain to highest part.
-    			int lowSize = addr - memoryChunk.addr;
-    			int highSize = memoryChunk.size - lowSize - size;
-    			MemoryChunk highMemoryChunk = new MemoryChunk(addr + size, highSize);
-    			memoryChunk.size = lowSize;
-
-    			addAfter(highMemoryChunk, memoryChunk);
-    		}
-
-    		return addr;
-    	}
-
-    	/**
-    	 * Add a new MemoryChunk after another one.
-    	 * This method does not check if the addresses are kept ordered.
-    	 *
-    	 * @param memoryChunk the MemoryChunk to be added
-    	 * @param reference   memoryChunk has to be added after this reference
-    	 */
-    	private void addAfter(MemoryChunk memoryChunk, MemoryChunk reference) {
-    		memoryChunk.previous = reference;
-    		memoryChunk.next = reference.next;
-    		reference.next = memoryChunk;
-    		if (memoryChunk.next != null) {
-    			memoryChunk.next.previous = memoryChunk;
-    		}
-
-    		if (high == reference) {
-    			high = memoryChunk;
-    		}
-    	}
-
-    	/**
-    	 * Add a new MemoryChunk before another one.
-    	 * This method does not check if the addresses are kept ordered.
-    	 *
-    	 * @param memoryChunk the MemoryChunk to be added
-    	 * @param reference   memoryChunk has to be added before this reference
-    	 */
-    	private void addBefore(MemoryChunk memoryChunk, MemoryChunk reference) {
-    		memoryChunk.previous = reference.previous;
-    		memoryChunk.next = reference;
-    		reference.previous = memoryChunk;
-    		if (memoryChunk.previous != null) {
-    			memoryChunk.previous.next = memoryChunk;
-    		}
-
-    		if (low == reference) {
-    			low = memoryChunk;
-    		}
-    	}
-
-    	/**
-    	 * Add a new MemoryChunk to the list. It is added in the list so that
-    	 * the addresses are kept in increasing order.
-    	 * The MemoryChunk might be merged into another adjacent MemoryChunk.
-    	 *
-    	 * @param memoryChunk the MemoryChunk to be added
-    	 */
-    	public void add(MemoryChunk memoryChunk) {
-    		// Scan the list to find the insertion point to keep the elements
-    		// ordered by increasing address.
-    		for (MemoryChunk scanChunk = low; scanChunk != null; scanChunk = scanChunk.next) {
-    			// Merge the MemoryChunk if it is adjacent to other elements in the list
-    			if (scanChunk.addr + scanChunk.size == memoryChunk.addr) {
-    				// The MemoryChunk is adjacent at its lowest address,
-    				// merge it into the previous one.
-    				scanChunk.size += memoryChunk.size;
-
-    				// Check if the gap to the next chunk has not been closed,
-    				// in which case, we can also merge the next chunk.
-    				MemoryChunk nextChunk = scanChunk.next;
-    				if (nextChunk != null) {
-    					if (scanChunk.addr + scanChunk.size == nextChunk.addr) {
-    						// Merge with nextChunk
-    						scanChunk.size += nextChunk.size;
-    						remove(nextChunk);
-    					}
-    				}
-    				return;
-    			} else if (memoryChunk.addr + memoryChunk.size == scanChunk.addr) {
-    				// The MemoryChunk is adjacent at its highest address,
-    				// merge it into the next one.
-    				scanChunk.addr = memoryChunk.addr;
-    				scanChunk.size += memoryChunk.size;
-
-    				// Check if the gap to the previous chunk has not been closed,
-    				// in which case, we can also merge the previous chunk.
-    				MemoryChunk previousChunk = scanChunk.previous;
-    				if (previousChunk != null) {
-    					if (previousChunk.addr + previousChunk.size == scanChunk.addr) {
-    						// Merge with previousChunk
-    						previousChunk.size += scanChunk.size;
-    						remove(scanChunk);
-    					}
-    				}
-    				return;
-    			} else if (scanChunk.addr > memoryChunk.addr) {
-    				// We have found the insertion point for the MemoryChunk,
-    				// add it before this element to keep the addresses in
-    				// increasing order.
-    				addBefore(memoryChunk, scanChunk);
-    				return;
-    			}
-    		}
-
-    		// The MemoryChunk has not yet been added, add it at the very end
-    		// of the list.
-    		if (high == null && low == null) {
-    			// The list is empty, add the element
-    			high = memoryChunk;
-    			low = memoryChunk;
-    		} else {
-    			addAfter(memoryChunk, high);
-    		}
-    	}
-
-		@Override
-		public String toString() {
-			StringBuilder result = new StringBuilder();
-
-			for (MemoryChunk memoryChunk = low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-				if (result.length() > 0) {
-					result.append(", ");
-				}
-				result.append(memoryChunk.toString());
-			}
-
-			return result.toString();
-		}
-    }
-
     static protected String getTypeName(int type) {
         String typeName;
 
@@ -476,14 +212,6 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         return typeName;
     }
 
-    private static int alignUp(int value, int alignment) {
-    	return alignDown(value + alignment, alignment);
-    }
-
-    private static int alignDown(int value, int alignment) {
-    	return value & ~alignment;
-    }
-
     // Allocates to 256-byte alignment
     public SysMemInfo malloc(int partitionid, String name, int type, int size, int addr) {
         int allocatedAddress = 0;
@@ -493,33 +221,19 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
             // Use the alignment provided in the addr parameter
             alignment = addr - 1;
         }
-        int allocatedSize = alignUp(size, alignment);
+        int allocatedSize = Utilities.alignUp(size, alignment);
 
         switch (type) {
         	case PSP_SMEM_Low:
         	case PSP_SMEM_LowAligned:
-        		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-        			if (memoryChunk.isAvailable(allocatedSize, alignment)) {
-        				allocatedAddress = freeMemoryChunks.allocLow(memoryChunk, allocatedSize, alignment);
-        				break;
-        			}
-        		}
+        		allocatedAddress = freeMemoryChunks.allocLow(allocatedSize, alignment);
         		break;
         	case PSP_SMEM_High:
         	case PSP_SMEM_HighAligned:
-        		for (MemoryChunk memoryChunk = freeMemoryChunks.high; memoryChunk != null; memoryChunk = memoryChunk.previous) {
-        			if (memoryChunk.isAvailable(allocatedSize, alignment)) {
-        				allocatedAddress = freeMemoryChunks.allocHigh(memoryChunk, allocatedSize, alignment);
-        				break;
-        			}
-        		}
+        		allocatedAddress = freeMemoryChunks.allocHigh(allocatedSize, alignment);
         		break;
         	case PSP_SMEM_Addr:
-        		for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
-        			if (memoryChunk.addr <= addr && addr < memoryChunk.addr + memoryChunk.size) {
-        				allocatedAddress = freeMemoryChunks.alloc(memoryChunk, addr, allocatedSize);
-        			}
-        		}
+        		allocatedAddress = freeMemoryChunks.alloc(addr, allocatedSize);
         		break;
     		default:
     			log.warn(String.format("malloc: unknown type %s", getTypeName(type)));
@@ -563,7 +277,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
     public int maxFreeMemSize() {
     	int maxFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+    	for (MemoryChunk memoryChunk = freeMemoryChunks.getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
     		if (memoryChunk.size > maxFreeMemSize) {
     			maxFreeMemSize = memoryChunk.size;
     		}
@@ -573,7 +287,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 
     public int totalFreeMemSize() {
         int totalFreeMemSize = 0;
-    	for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+    	for (MemoryChunk memoryChunk = freeMemoryChunks.getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
     		totalFreeMemSize += memoryChunk.size;
     	}
 
@@ -606,7 +320,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
             allocatedSize += info.size;
         }
 
-        for (MemoryChunk memoryChunk = freeMemoryChunks.low; memoryChunk != null; memoryChunk = memoryChunk.next) {
+        for (MemoryChunk memoryChunk = freeMemoryChunks.getLowMemoryChunk(); memoryChunk != null; memoryChunk = memoryChunk.next) {
             for (int i = memoryChunk.addr; i < memoryChunk.addr + memoryChunk.size; i += SLOT_SIZE) {
                 if (i >= 0x08800000 && i < 0x0A000000) {
                     fragmented[(i - 0x08800000) / SLOT_SIZE] = true;
