@@ -173,17 +173,20 @@ public class Compiler implements ICompiler {
 
     public void invalidateAll() {
         // Simply generate a new class loader.
+    	log.info("Compiler: invalidating all compiled classes");
         classLoader = new CompilerClassLoader(this);
     }
 
-    public void invalidateRange(int addr, int size) {
-    	// There is currently no way to remove only selected compiled method
-    	// from the class loader.
-    	// Brute force method: invalidate all.
-    	invalidateAll();
+    public void invalidateCodeBlock(CodeBlock codeBlock) {
+    	IExecutable executable = codeBlock.getExecutable();
+    	if (executable != null) {
+    		// Force a recompilation of the codeBlock at the next execution
+        	RecompileExecutable recompileExecutable = new RecompileExecutable(codeBlock);
+        	executable.setExecutable(recompileExecutable);
+    	}
     }
 
-	private void Initialise() {
+    private void Initialise() {
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setIgnoringElementContentWhitespace(true);
 		documentBuilderFactory.setIgnoringComments(true);
@@ -220,12 +223,12 @@ public class Compiler implements ICompiler {
 		return pc + (((short) (opcode & 0x0000FFFF)) << 2);
 	}
 
-	private IExecutable interpret(CompilerContext context, int startAddress) {
+	private IExecutable interpret(CompilerContext context, int startAddress, int instanceIndex) {
         if (log.isDebugEnabled()) {
             log.debug("Compiler.interpret Block 0x" + Integer.toHexString(startAddress));
         }
         startAddress = startAddress & Memory.addressMask;
-        CodeBlock codeBlock = new CodeBlock(startAddress);
+        CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
 
         IExecutable executable = codeBlock.getInterpretedExecutable(context);
         if (log.isDebugEnabled()) {
@@ -259,12 +262,12 @@ public class Compiler implements ICompiler {
         return false;
 	}
 
-	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive) throws ClassFormatError {
+	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive, int instanceIndex) throws ClassFormatError {
         if (log.isTraceEnabled()) {
             log.trace("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
         }
         startAddress = startAddress & Memory.addressMask;
-        CodeBlock codeBlock = new CodeBlock(startAddress);
+        CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);
         Stack<Integer> pendingBlockAddresses = new Stack<Integer>();
         pendingBlockAddresses.clear();
         pendingBlockAddresses.push(startAddress);
@@ -340,7 +343,7 @@ public class Compiler implements ICompiler {
         return executable;
 	}
 
-	public void analyseRecursive(int startAddress) {
+	public void analyseRecursive(int startAddress, int instanceIndex) {
 	    if (RuntimeContext.hasCodeBlock(startAddress)) {
 	        if (log.isDebugEnabled()) {
 	            log.debug("Compiler.analyse 0x" + Integer.toHexString(startAddress).toUpperCase() + " - already analysed");
@@ -352,21 +355,25 @@ public class Compiler implements ICompiler {
             log.debug("Compiler.analyse 0x" + Integer.toHexString(startAddress).toUpperCase());
         }
 
-        CompilerContext context = new CompilerContext(classLoader);
+        CompilerContext context = new CompilerContext(classLoader, instanceIndex);
 		context.blocksToBeAnalysed.push(startAddress);
 		while (!context.blocksToBeAnalysed.isEmpty()) {
 			int blockStartAddress = context.blocksToBeAnalysed.pop();
-			analyse(context, blockStartAddress, true);
+			analyse(context, blockStartAddress, true, instanceIndex);
 		}
 	}
 
     @Override
     public IExecutable compile(String name) {
-        return compile(CompilerContext.getClassAddress(name));
+        return compile(CompilerContext.getClassAddress(name), CompilerContext.getClassInstanceIndex(name));
     }
 
     @Override
     public IExecutable compile(int address) {
+    	return compile(address, getResetCount());
+    }
+
+    public IExecutable compile(int address, int instanceIndex) {
     	if (!Memory.isAddressGood(address)) {
             if(isIgnoreInvalidMemory())
                 log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", address));
@@ -382,12 +389,12 @@ public class Compiler implements ICompiler {
     	Emulator.getClock().pause();
 
     	compileDuration.start();
-        CompilerContext context = new CompilerContext(classLoader);
+        CompilerContext context = new CompilerContext(classLoader, instanceIndex);
         IExecutable executable = null;
         ClassFormatError error = null;
         for (int retries = 2; retries > 0; retries--) {
             try {
-                executable = analyse(context, address, false);
+                executable = analyse(context, address, false, instanceIndex);
                 break;
             } catch (ClassFormatError e) {
                 // Catch exception
@@ -399,7 +406,7 @@ public class Compiler implements ICompiler {
                 int methodMaxInstructions = context.getMethodMaxInstructions() * 3 / 4;
                 Compiler.log.debug("Catched exception '" + e.toString() + "' (can be ignored)");
                 Compiler.log.debug("Retrying compilation again with maxInstruction=" + methodMaxInstructions + ", retries left=" + (retries - 1) + "...");
-                context = new CompilerContext(classLoader);
+                context = new CompilerContext(classLoader, instanceIndex);
                 context.setMethodMaxInstructions(methodMaxInstructions);
             } catch (NullPointerException e) {
             	log.error(String.format("Catched exception '%s' while compiling 0x%08X (0x%08X-0x%08X)", e.toString(), address, context.getCodeBlock().getLowestAddress(), context.getCodeBlock().getHighestAddress()));
@@ -410,8 +417,8 @@ public class Compiler implements ICompiler {
 
         if (executable == null) {
             Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
-            context = new CompilerContext(classLoader);
-            executable = interpret(context, address);
+            context = new CompilerContext(classLoader, instanceIndex);
+            executable = interpret(context, address, instanceIndex);
             if (executable == null && error != null) {
             	throw error;
             }

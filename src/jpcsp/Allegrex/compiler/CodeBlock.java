@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Allegrex.compiler.CompilerContext.executableDescriptor;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -52,9 +55,11 @@ public class CodeBlock {
 	private final static String objectInternalName = Type.getInternalName(Object.class);
 	private final static String[] interfacesForExecutable = new String[] { Type.getInternalName(IExecutable.class) };
 	private final static String[] exceptions = new String[] { Type.getInternalName(Exception.class) };
+	private int instanceIndex;
 
-	public CodeBlock(int startAddress) {
+	public CodeBlock(int startAddress, int instanceCount) {
 		this.startAddress = startAddress;
+		this.instanceIndex = instanceCount;
 		lowestAddress = startAddress;
 		highestAddress = startAddress;
 
@@ -134,7 +139,7 @@ public class CodeBlock {
 	}
 
 	public String getClassName() {
-	    return CompilerContext.getClassName(getStartAddress());
+	    return CompilerContext.getClassName(getStartAddress(), getInstanceIndex());
 	}
 
 	public String getInternalClassName() {
@@ -175,7 +180,10 @@ public class CodeBlock {
 	}
 
     private void addNonStaticMethods(CompilerContext context, ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getExecMethodName(), context.getExecMethodDesc(), null, exceptions);
+    	MethodVisitor mv;
+
+    	// public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+    	mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getExecMethodName(), context.getExecMethodDesc(), null, exceptions);
         mv.visitCode();
         mv.visitVarInsn(Opcodes.ILOAD, 1);
         mv.visitVarInsn(Opcodes.ILOAD, 2);
@@ -183,6 +191,19 @@ public class CodeBlock {
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(), context.getStaticExecMethodName(), context.getStaticExecMethodDesc());
         mv.visitInsn(Opcodes.IRETURN);
         mv.visitMaxs(3, 4);
+        mv.visitEnd();
+
+        // private static IExecutable e;
+        FieldVisitor fv = cv.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, context.getReplaceFieldName(), executableDescriptor, null, null);
+        fv.visitEnd();
+
+        // public void setExecutable(IExecutable e);
+        mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getReplaceMethodName(), context.getReplaceMethodDesc(), null, exceptions);
+        mv.visitCode();
+        mv.visitVarInsn(Opcodes.ALOAD, 1);
+        mv.visitFieldInsn(Opcodes.PUTSTATIC, getClassName(), context.getReplaceFieldName(), executableDescriptor);
+        mv.visitInsn(Opcodes.RETURN);
+        mv.visitMaxs(1, 2);
         mv.visitEnd();
     }
 
@@ -534,5 +555,14 @@ public class CodeBlock {
     	}
 
     	return executable;
+    }
+
+    public int getInstanceIndex() {
+    	return instanceIndex;
+    }
+
+    public int getNewInstanceIndex() {
+    	instanceIndex++;
+    	return instanceIndex;
     }
 }
