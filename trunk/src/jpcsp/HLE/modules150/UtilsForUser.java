@@ -297,8 +297,9 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		int addr = cpu.gpr[4];
 		int size = cpu.gpr[5];
 
-		Modules.log.trace("IGNORING: sceKernelDcacheInvalidateRange addr=0x" + Integer.toHexString(addr)
-                + ", size=" + size);
+		if (log.isTraceEnabled()) {
+			log.trace(String.format("IGNORING: sceKernelDcacheInvalidateRange addr=0x%08X, size=%d", addr, size));
+		}
 
         cpu.gpr[2] = 0;
 	}
@@ -309,10 +310,11 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 		int addr = cpu.gpr[4];
 		int size = cpu.gpr[5];
 
-        log.info("sceKernelIcacheInvalidateRange addr=0x" + Integer.toHexString(addr)
-                + ", size=" + size);
+		if (log.isInfoEnabled()) {
+			log.info(String.format("sceKernelIcacheInvalidateRange addr=0x%08X, size=%d", addr, size));
+		}
 
-        RuntimeContext.invalidateAll();
+        RuntimeContext.invalidateRange(addr, size);
 
         cpu.gpr[2] = 0;
 	}

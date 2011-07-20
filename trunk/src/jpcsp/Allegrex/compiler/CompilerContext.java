@@ -108,11 +108,15 @@ public class CompilerContext implements ICompilerContext {
     private static final String profilerInternalName = Type.getInternalName(Profiler.class);
     private static final String vfpuValueDescriptor = Type.getDescriptor(VfpuValue.class);
     private static final String vfpuValueInternalName = Type.getInternalName(VfpuValue.class);
+	public  static final String executableDescriptor = Type.getDescriptor(IExecutable.class);
+	public  static final String executableInternalName = Type.getInternalName(IExecutable.class);
 	private static Set<Integer> fastSyscalls;
+	private int instanceIndex;
 
-    public CompilerContext(CompilerClassLoader classLoader) {
+    public CompilerContext(CompilerClassLoader classLoader, int instanceIndex) {
     	Compiler compiler = Compiler.getInstance();
         this.classLoader = classLoader;
+        this.instanceIndex = instanceIndex;
         nativeCodeManager = compiler.getNativeCodeManager();
         methodMaxInstructions = compiler.getDefaultMethodMaxInstructions();
 
@@ -687,7 +691,7 @@ public class CompilerContext implements ICompilerContext {
 		    	mv.visitInsn(Opcodes.DUP);			// alternativeReturnAddress = returnAddress
 	    	}
 	        mv.visitInsn(Opcodes.ICONST_0);		// isJump = false
-	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address), getStaticExecMethodName(), getStaticExecMethodDesc());
+	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address, instanceIndex), getStaticExecMethodName(), getStaticExecMethodDesc());
 	        if (useAltervativeReturnAddress) {
 	        	Label doNotReturnImmediately = new Label();
 	        	mv.visitInsn(Opcodes.DUP);
@@ -714,7 +718,7 @@ public class CompilerContext implements ICompilerContext {
 
     public void visitCall(int address, String methodName) {
     	flushInstructionCount(false, false);
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address), methodName, "()V");
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address, instanceIndex), methodName, "()V");
     }
 
     public void visitIntepreterCall(int opcode, Instruction insn) {
@@ -804,6 +808,21 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void startInternalMethod() {
+    	// if (e != null)
+    	Label notReplacedLabel = new Label();
+    	mv.visitFieldInsn(Opcodes.GETSTATIC, codeBlock.getClassName(), getReplaceFieldName(), executableDescriptor);
+    	mv.visitJumpInsn(Opcodes.IFNULL, notReplacedLabel);
+    	{
+    		// return e.exec(returnAddress, alternativeReturnAddress, isJump);
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, codeBlock.getClassName(), getReplaceFieldName(), executableDescriptor);
+    		loadLocalVar(LOCAL_RETURN_ADDRESS);
+    		loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
+    		loadLocalVar(LOCAL_IS_JUMP);
+            mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, executableInternalName, getExecMethodName(), getExecMethodDesc());
+            mv.visitInsn(Opcodes.IRETURN);
+    	}
+    	mv.visitLabel(notReplacedLabel);
+
     	if (Profiler.enableProfiler) {
     		loadImm(getCodeBlock().getStartAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addCall", "(I)V");
@@ -994,8 +1013,8 @@ public class CompilerContext implements ICompilerContext {
         }
     }
 
-    public static String getClassName(int address) {
-    	return "_S1_" + Compiler.getResetCount() + "_" + Integer.toHexString(address).toUpperCase();
+    public static String getClassName(int address, int instanceIndex) {
+    	return "_S1_" + instanceIndex + "_" + Integer.toHexString(address).toUpperCase();
     }
 
     public static int getClassAddress(String name) {
@@ -1004,12 +1023,32 @@ public class CompilerContext implements ICompilerContext {
         return Integer.parseInt(hexAddress, 16);
     }
 
+    public static int getClassInstanceIndex(String name) {
+    	int startIndex = name.indexOf("_", 1);
+    	int endIndex = name.lastIndexOf("_");
+    	String instanceIndex = name.substring(startIndex + 1, endIndex);
+
+    	return Integer.parseInt(instanceIndex);
+    }
+
     public String getExecMethodName() {
         return "exec";
     }
 
     public String getExecMethodDesc() {
         return "(IIZ)I";
+    }
+
+    public String getReplaceFieldName() {
+    	return "e";
+    }
+
+    public String getReplaceMethodName() {
+    	return "setExecutable";
+    }
+
+    public String getReplaceMethodDesc() {
+    	return "(" + executableDescriptor + ")V";
     }
 
     public String getStaticExecMethodName() {

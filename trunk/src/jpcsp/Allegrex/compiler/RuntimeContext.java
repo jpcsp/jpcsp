@@ -970,23 +970,13 @@ public class RuntimeContext {
         		log.debug(String.format("RuntimeContext.invalidateRange(addr=0x%08X, size=%d)", addr, size));
         	}
 
-        	// Invalidate all the code blocks only if the given range
-        	// is inside a code block.
-        	boolean isRangeInsideCodeBlock = false;
+        	// Invalidate the code blocks located in the given range
         	for (CodeBlock codeBlock : codeBlocks.values()) {
         		if (codeBlock.getLowestAddress() >= addr && codeBlock.getLowestAddress() < addr + size) {
-        			isRangeInsideCodeBlock = true;
-        			break;
+        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
+        		} else if (codeBlock.getHighestAddress() >= addr && codeBlock.getHighestAddress() < addr + size) {
+        			Compiler.getInstance().invalidateCodeBlock(codeBlock);
         		}
-        		if (codeBlock.getHighestAddress() >= addr && codeBlock.getHighestAddress() < addr + size) {
-        			isRangeInsideCodeBlock = true;
-        			break;
-        		}
-        	}
-
-        	if (isRangeInsideCodeBlock) {
-        		codeBlocks.clear();
-        		Compiler.getInstance().invalidateRange(addr, size);
         	}
     	}
     }
