@@ -392,15 +392,38 @@ file.
 - Profiler:
 The profiler is a method used by JPCSP to analyse repeated code sequences in
 order to allow further optimization. If you wish, you can turn this feature on
-under "Options" > "Configuration" > "General". The data will be saved for a 
-certain application after closing the emulator.
-Use "Reset Profiler Information" under "Debug" to clear the saved data.
+under "Options" > "Configuration" > "General". The data will be saved in the file
+"profiler.txt" after closing the emulator.
+Use "Reset Profiler Information" under "Debug" to clear the current profiler data
+and re-start collecting profiler information from now on.
 
 
 - ISO contents:
 You can dump the current ISO/CSO image's contents into an illustrative .txt
-file. In order to do this, go to "Debug">"Dump ISO to ISO-index.txt".
+file named iso-index.txt.
+In order to do this, go to "Debug" > "Dump ISO to ISO-index.txt".
 
+
+- Memory breakpoints:
+You can set memory read or write breakpoints: create a file named "Memory.mbrk"
+in the main directory. When this file is present, the DebuggerMemory is automatically
+activated when Jpcsp is started. Expect a small performance drop.
+The format of the file is quite simple:
+
+   R 0xXXXXXXXX
+   W 0xXXXXXXXX
+   RW 0xXXXXXXXX
+   R 0xXXXXXXXX - 0xYYYYYYYY
+   W 0xXXXXXXXX - 0xYYYYYYYY
+   RW 0xXXXXXXXX - 0xYYYYYYYY
+   read|write|read8|write8|read16|write16|read32|write32|pause
+
+to set read (R), write (W) and read-write (RW) breakpoints on a single address
+or an address range.
+The last line is to enable traces of the corresponding reads and writes. One or
+multiple of these options can be specified (e.g., only "write" or "read32|write32").
+When "pause" is specified, the emulator is pausing when reading/writing the selected
+addresses. Otherwise, the emulator is just logging at INFO level the memory access.
 
 6. Explanation of the advanced Video options:
 
