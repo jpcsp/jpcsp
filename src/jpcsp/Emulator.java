@@ -147,8 +147,7 @@ public class Emulator implements Runnable {
             throw new GeneralJpcspException("File format not supported!");
         }
         if (isBootModuleBad(module.modname)) {
-            JpcspDialogManager.showError(null, "Patched module '" + module.modname + "' detected! " +
-                    "Patched files are not supported by JPCSP!");
+            JpcspDialogManager.showError(null, Resource.get("prometheusLoader"));
         }
 
         moduleLoaded = true;
