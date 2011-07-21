@@ -567,6 +567,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         if (device.equals("fatms0")) {
             device = "ms0";
         }
+
+        // Ignore the filename in "umd0:xxx".
+        // Using umd0: is always opening the whole UMD in sector block mode,
+        // ignoring the file name specified after the colon.
+        if (device.startsWith("umd")) {
+        	pspfilename = "";
+        }
+
         // strip leading and trailing slash from supplied path
         // this step is common to absolute and relative paths
         if (pspfilename.startsWith("/")) {
@@ -589,7 +597,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         return filename;
     }
 
-    private final String[] umdPrefixes = new String[]{
+    private final String[] umdPrefixes = new String[] {
         "disc", "umd"
     };
 
@@ -1171,6 +1179,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 (flags & PSP_O_APPEND) == PSP_O_APPEND) {
             log.warn("hleIoOpen - read and append flags both set!");
         }
+
         IoInfo info = null;
         try {
             String pcfilename = getDeviceFilePath(filename);
