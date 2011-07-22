@@ -3242,18 +3242,39 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     public void sceIoGetFdList(Processor processor) {
         CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
         int out_addr = cpu.gpr[4];
         int outSize = cpu.gpr[5];
         int fdNum_addr = cpu.gpr[6];
 
-        log.warn("IGNORING: sceIoGetFdList (out_addr=0x" + out_addr + ", outSize=" + outSize + ", fdNum_addr=" + fdNum_addr + ")");
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("sceIoGetFdList out_addr=0x%08X, outSize=%d, fdNum_addr=0x%08X", out_addr, outSize, fdNum_addr));
+        }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        cpu.gpr[2] = 0;
+
+        int count = 0;
+        if (Memory.isAddressGood(out_addr) && outSize > 0) {
+	        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(out_addr, 4 * outSize, 4);
+	        for (Integer fd : filelist.keySet()) {
+	        	if (count >= outSize) {
+	        		break;
+	        	}
+	        	memoryWriter.writeNext(fd.intValue());
+	        }
+	        memoryWriter.flush();
+        }
+
+        if (fdNum_addr != 0) {
+            // Return the total number of files open
+        	mem.write32(fdNum_addr, filelist.size());
+        }
+
+        cpu.gpr[2] = count;
     }
 
     public final HLEModuleFunction sceIoPollAsyncFunction = new HLEModuleFunction("IoFileMgrForUser", "sceIoPollAsync") {
