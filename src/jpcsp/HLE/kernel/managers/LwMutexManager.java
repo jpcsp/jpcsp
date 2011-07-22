@@ -178,11 +178,11 @@ public class LwMutexManager {
         } else if (info.threadid == thread.uid) {
             // If the lwmutex is already locked, but it's trying to be locked by the same thread
             // that acquired it initially, check if recursive locking is allowed.
-            // If not, don't increase this lwmutex's lock count, but still return true.
+            // If not, return an error.
             if (((info.attr & PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE) == PSP_LWMUTEX_ATTR_ALLOW_RECURSIVE)) {
                 info.lockedCount += count;
+                return true;
             }
-            return true;
         }
         return false;
     }
@@ -202,7 +202,7 @@ public class LwMutexManager {
                 if (log.isDebugEnabled()) {
                     log.debug(message + " - '" + info.name + "' fast check failed");
                 }
-                if (wait) {
+                if (wait && info.threadid == currentThread.uid) {
                     // Failed, but it's ok, just wait a little
                     info.numWaitThreads++;
                     // Wait on a specific lwmutex

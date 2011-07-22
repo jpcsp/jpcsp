@@ -188,11 +188,11 @@ public class MutexManager {
         } else if (info.threadid == thread.uid) {
             // If the mutex is already locked, but it's trying to be locked by the same thread
             // that acquired it initially, check if recursive locking is allowed.
-            // If not, don't increase this mutex's lock count, but still return true.
+            // If not, return an error.
             if (((info.attr & PSP_MUTEX_ATTR_ALLOW_RECURSIVE) == PSP_MUTEX_ATTR_ALLOW_RECURSIVE)) {
                 info.lockedCount += count;
+                return true;
             }
-            return true;
         }
         return false;
     }
@@ -253,7 +253,7 @@ public class MutexManager {
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("hleKernelLockMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - fast check failed", info.toString(), count, timeout_addr, wait, doCallbacks));
                 }
-                if (wait) {
+                if (wait && info.threadid != currentThread.uid) {
                     // Failed, but it's ok, just wait a little
                     info.numWaitThreads++;
                     // Wait on a specific mutex
