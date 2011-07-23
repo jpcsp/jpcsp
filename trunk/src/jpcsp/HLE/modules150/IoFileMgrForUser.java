@@ -1676,14 +1676,29 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 								result = ERROR_KERNEL_FILE_READ_ERROR;
 							}
 	                    } else {
-	                        log.warn("hleIoIoctl cmd=0x01020001 only allowed on UMD files");
+	                        log.warn("hleIoIoctl cmd=0x01020002 only allowed on UMD files");
 	                    }
 	                } else {
-	                    log.warn("hleIoIoctl cmd=0x01020001 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+	                    log.warn("hleIoIoctl cmd=0x01020002 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
 	                    result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
 	                }
 	                break;
 	            }
+                // Get Sector size
+                case 0x01020003: {
+                    if (Memory.isAddressGood(outdata_addr) && outlen == 4) {
+	                    if (info.isUmdFile() && iso != null) {
+	                    	mem.write32(outdata_addr, UmdIsoFile.sectorLength);
+	                    	result = 0;
+	                    } else {
+	                        log.warn("hleIoIoctl cmd=0x01020003 only allowed on UMD files");
+	                    }
+	                } else {
+	                    log.warn("hleIoIoctl cmd=0x01020003 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+	                    result = SceKernelErrors.ERROR_ERRNO_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
                 // Get UMD file pointer.
                 case 0x01020004: {
                     if (Memory.isAddressGood(outdata_addr) && outlen >= 4) {
