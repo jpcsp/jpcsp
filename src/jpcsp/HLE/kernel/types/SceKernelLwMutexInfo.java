@@ -72,6 +72,6 @@ public class SceKernelLwMutexInfo {
 
     @Override
     public String toString() {
-        return String.format("SceKernelLwMutexInfo(uid=%x, name=%s, mutexUid=%x, lwMutexOpaqueWorkAreaAddr=0x%X, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X", uid, name, lwMutexUid, lwMutexOpaqueWorkAreaAddr, initCount, lockedCount, numWaitThreads, attr);
+        return String.format("SceKernelLwMutexInfo(uid=%x, name=%s, mutexUid=%x, lwMutexOpaqueWorkAreaAddr=0x%X, initCount=%d, lockedCount=%d, numWaitThreads=%d, attr=0x%X, threadid=0x%X)", uid, name, lwMutexUid, lwMutexOpaqueWorkAreaAddr, initCount, lockedCount, numWaitThreads, attr, threadid);
     }
 }
