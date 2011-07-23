@@ -33,6 +33,10 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_TERM
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_CREATE;
+import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_DELETE;
+import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT;
+import static jpcsp.HLE.kernel.types.SceKernelThreadEventHandlerInfo.THREAD_EVENT_START;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_BLOCKED;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_UMD;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.PSP_THREAD_ATTR_KERNEL;
@@ -1213,6 +1217,18 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
     }
 
+    private void triggerThreadEvent(SceKernelThreadInfo thread, SceKernelThreadInfo contextThread, int event) {
+        if (threadEventMap.containsKey(thread.uid)) {
+            int handlerUid = threadEventMap.get(thread.uid);
+            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
+
+            // Check if this handler's mask matches the function.
+            if (handler.hasEventMask(event)) {
+                handler.triggerThreadEventHandler(contextThread, event);
+            }
+        }
+    }
+
     public void hleKernelChangeThreadPriority(SceKernelThreadInfo thread, int newPriority) {
     	if (thread == null) {
     		return;
@@ -2309,8 +2325,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
         	return;
         }
+
         if (threadEventHandlerMap.containsKey(uid)) {
-            threadEventHandlerMap.remove(uid);
+        	SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.remove(uid);
+        	handler.release();
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_THREAD_EVENT_HANDLER;
@@ -3837,16 +3855,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             }
             cpu.gpr[2] = thread.uid;
 
-            // Check if there's a registered event handler for this thread.
-            if (threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-
-                // Check if this handler's mask matches the function.
-                if (handler.checkCreateMask()) {
-                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_CREATE);
-                }
-            }
+            triggerThreadEvent(thread, currentThread, THREAD_EVENT_CREATE);
         }
     }
 
@@ -3879,16 +3888,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             setToBeDeletedThread(thread);
             cpu.gpr[2] = 0;
 
-            // Check if there's a registered event handler for this thread.
-            if (threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-
-                // Check if this handler's mask matches the function.
-                if (handler.checkDeleteMask()) {
-                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_DELETE);
-                }
-            }
+            triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
         }
     }
 
@@ -3922,15 +3922,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
             thread.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT; // Update the exit status.
 
-            // Check if there's a registered event handler for this thread.
-            if (threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-                // Check if this handler's mask matches the function.
-                if (handler.checkStartMask()) {
-                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_START);
-                }
-            }
+            triggerThreadEvent(thread, currentThread, THREAD_EVENT_START);
         }
     }
 
@@ -3961,15 +3953,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             thread.exitStatus = exitStatus;
         }
 
-        // Check if there's a registered event handler for this thread.
-        if (threadEventMap.containsKey(thread.uid)) {
-            int handlerUid = threadEventMap.get(thread.uid);
-            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-            // Check if this handler's mask matches the function.
-            if (handler.checkExitMask()) {
-                handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT);
-            }
-        }
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
 
         cpu.gpr[2] = 0;
         hleChangeThreadState(thread, PSP_THREAD_STOPPED);
@@ -3994,25 +3978,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
         thread.exitStatus = exitStatus;
 
-        // Check if there's a registered event handler for this thread.
-        if (threadEventMap.containsKey(thread.uid)) {
-            int handlerUid = threadEventMap.get(thread.uid);
-            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-            // Check if this handler's mask matches the function.
-            if (handler.checkExitMask()) {
-                handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT);
-            }
-        }
-
-        // Check if there's a registered event handler for this thread.
-        if (threadEventMap.containsKey(thread.uid)) {
-            int handlerUid = threadEventMap.get(thread.uid);
-            SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-            // Check if this handler's mask matches the function.
-            if (handler.checkDeleteMask()) {
-                handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT);
-            }
-        }
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
+        triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
 
         cpu.gpr[2] = 0;
         hleChangeThreadState(thread, PSP_THREAD_STOPPED);
@@ -4039,15 +4006,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } else {
             log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-            // Check if there's a registered event handler for this thread.
-            if (threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-                // Check if this handler's mask matches the function.
-                if (handler.checkExitMask()) {
-                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT);
-                }
-            }
+            triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
 
             cpu.gpr[2] = 0;
             terminateThread(thread);
@@ -4077,25 +4036,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } else {
             log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-            // Check if there's a registered event handler for this thread.
-            if (threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-                // Check if this handler's mask matches the function.
-                if (handler.checkExitMask()) {
-                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT);
-                }
-            }
-
-            // Check if there's a registered event handler for this thread.
-            if (threadEventMap.containsKey(thread.uid)) {
-                int handlerUid = threadEventMap.get(thread.uid);
-                SceKernelThreadEventHandlerInfo handler = threadEventHandlerMap.get(handlerUid);
-                // Check if this handler's mask matches the function.
-                if (handler.checkDeleteMask()) {
-                    handler.triggerThreadEventHandler(SceKernelThreadEventHandlerInfo.THREAD_EVENT_EXIT);
-                }
-            }
+            triggerThreadEvent(thread, currentThread, THREAD_EVENT_EXIT);
+            triggerThreadEvent(thread, currentThread, THREAD_EVENT_DELETE);
 
             terminateThread(thread);
             setToBeDeletedThread(thread);

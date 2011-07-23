@@ -33,6 +33,7 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
     public int result;  // Return value from the handler's callback.
 
 	private static final int DEFAULT_SIZE = 52;
+	private static final String uidPurpose = "ThreadMan-ThreadEventHandler";
 
     // Thread Event IDs.
     public final static int THREAD_EVENT_ID_ALL = 0xFFFFFFFF;
@@ -54,32 +55,21 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
         this.handler = handler;
         this.common = common;
 
-		uid = SceUidManager.getNewUid("ThreadMan-ThreadEventHandler");
+		uid = SceUidManager.getNewUid(uidPurpose);
 	}
 
-    public boolean checkCreateMask() {
-        return ((mask & THREAD_EVENT_CREATE) == THREAD_EVENT_CREATE);
-    }
+	public void release() {
+		SceUidManager.releaseUid(uid, uidPurpose);
+		mask = 0;
+		handler = 0;
+	}
 
-    public boolean checkStartMask() {
-        return ((mask & THREAD_EVENT_START) == THREAD_EVENT_START);
-    }
+	public boolean hasEventMask(int event) {
+		return (mask & event) == event;
+	}
 
-    public boolean checkExitMask() {
-        return ((mask & THREAD_EVENT_EXIT) == THREAD_EVENT_EXIT);
-    }
-
-    public boolean checkDeleteMask() {
-        return ((mask & THREAD_EVENT_DELETE) == THREAD_EVENT_DELETE);
-    }
-
-    public void triggerThreadEventHandler(int evt) {
-        // Uses the current thread's (caller) context and uid.
-        SceKernelThreadInfo thread = Modules.ThreadManForUserModule.getCurrentThread();
-
-        if (thread != null) {
-            Modules.ThreadManForUserModule.executeCallback(thread, handler, new AfterEventHandler(), true, evt, thread.uid, common);
-        }
+	public void triggerThreadEventHandler(SceKernelThreadInfo contextThread, int event) {
+        Modules.ThreadManForUserModule.executeCallback(contextThread, handler, new AfterEventHandler(), false, event, thid, common);
     }
 
     private class AfterEventHandler implements IAction {
@@ -87,9 +77,9 @@ public class SceKernelThreadEventHandlerInfo extends pspAbstractMemoryMappedStru
 			public void execute() {
 				result = Emulator.getProcessor().cpu.gpr[2];
 
-				Modules.log.info("Thread Event Handler exit detected (thid="
-                        + thid + ", result="
-                        + Integer.toHexString(result) + ")");
+				if (Modules.log.isInfoEnabled()) {
+					Modules.log.info(String.format("Thread Event Handler exit detected (thid=%X, result=0x%08X)", thid, result));
+				}
 			}
         }
 
