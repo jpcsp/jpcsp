@@ -274,6 +274,18 @@ public class UmdIsoReader {
     	return buffer;
     }
 
+    private int removePath(String[] path, int index, int length) {
+    	if (index < 0 || index >= length) {
+    		return length;
+    	}
+
+    	for (int i = index + 1; i < length; i++) {
+    		path[i - 1] = path[i];
+    	}
+
+    	return length - 1;
+    }
+
     private Iso9660File getFileEntry(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660File info;
@@ -301,39 +313,38 @@ public class UmdIsoReader {
 
         String[] path = filePath.split("[\\/]");
 
-        // walk through path
-        for(int i=0;i<path.length;)
-        {
-            if(path[i].compareTo(".")==0)
-            {
-                if(i==(path.length-1))
-                {
-                    break;
-                }
-                // skip the path "."
-                i++;
-            }
-            else if(path[i].compareTo("..")==0)
-            {
-                i=Math.max(0,i-1);
-            }
-            else
-            {
-                int index = dir.getFileIndex(path[i]);
+        // First convert the path to a canonical path by removing all the
+        // occurrences of "." and "..".
+        int pathLength = path.length;
+        for (int i = 0; i < pathLength; ) {
+        	if (path[i].equals(".")) {
+        		// Remove "."
+        		pathLength = removePath(path, i, pathLength);
+        	} else if (path[i].equals("..")) {
+        		// Remove ".." and its parent
+        		pathLength = removePath(path, i, pathLength);
+        		pathLength = removePath(path, i - 1, pathLength);
+        	} else {
+        		i++;
+        	}
+        }
 
-                info = dir.getEntryByIndex(index);
+        // walk through the canonical path
+        for (int i = 0; i < pathLength; ) {
+            int index = dir.getFileIndex(path[i]);
 
-                if((info.getProperties()&2)==2) // if it's a directory
-                {
-                    dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
-                    StringBuilder dirPath = new StringBuilder(path[0]);
-                    for (int j = 1; j <= i; j++) {
-                    	dirPath.append("/").append(path[j]);
-                    }
-                    dirCache.put(dirPath.toString(), dir);
+            info = dir.getEntryByIndex(index);
+
+            if ((info.getProperties()&2)==2) // if it's a directory
+            {
+                dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
+                StringBuilder dirPath = new StringBuilder(path[0]);
+                for (int j = 1; j <= i; j++) {
+                	dirPath.append("/").append(path[j]);
                 }
-                i++;
+                dirCache.put(dirPath.toString(), dir);
             }
+            i++;
         }
 
         if (info != null) {
