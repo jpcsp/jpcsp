@@ -62,14 +62,24 @@ import com.xuggle.xuggler.video.IConverter;
 
 public class UmdVideoPlayer implements KeyListener {
 
+    private static final int BASE_VIDEO_WIDTH = 480;
+    private static final int BASE_VIDEO_HEIGTH = 272;
+
+    // ISO file vars.
+    private String fileName;
     private UmdIsoReader iso;
     private UmdIsoFile isoFile;
+
+    // Stream storage vars.
     private HashMap<Integer, MpsStreamInfo> mpsStreamMap;
     private int currentStreamIndex;
+
+    // Display related vars.
+    private JLabel display;
     private int screenWidth;
     private int screenHeigth;
-    private boolean videoPaused;
-    private String fileName;
+
+    // MediaEngine vars.
     private IContainer container;
     private IVideoResampler resampler;
     private int videoStreamId;
@@ -81,14 +91,21 @@ public class UmdVideoPlayer implements KeyListener {
     private long systemClockStartTime;
     private IConverter converter;
     private BufferedImage image;
+    private boolean seekFrameFastForward;
+    private boolean seekFrameRewind;
+
+    // State vars (for sync thread).
+    private boolean videoPaused;
     private boolean done;
     private boolean endOfVideo;
     private boolean threadExit;
-    private JLabel display;
+
+    // Internal data related vars.
     private MpsDisplayThread displayThread;
     private MpsByteChannel byteChannel;
     private SourceDataLine mLine;
 
+    // MPS stream class.
     protected class MpsStreamInfo {
 
         private String streamName;
@@ -132,6 +149,7 @@ public class UmdVideoPlayer implements KeyListener {
         }
     }
 
+    // MPS stream's marker class.
     protected class MpsStreamMarkerInfo {
 
         private String streamMarkerName;
@@ -153,17 +171,13 @@ public class UmdVideoPlayer implements KeyListener {
 
     public UmdVideoPlayer(MainGUI gui, UmdIsoReader iso) {
         this.iso = iso;
-        screenWidth = 480;
-        screenHeigth = 272;
+
         display = new JLabel();
         gui.remove(Modules.sceDisplayModule);
         gui.getContentPane().add(display, BorderLayout.CENTER);
         gui.addKeyListener(this);
-        Insets insets = gui.getInsets();
-        Dimension minSize = new Dimension(
-                screenWidth + insets.left + insets.right,
-                screenHeigth + insets.top + insets.bottom);
-        gui.setMinimumSize(minSize);
+        setVideoPlayerResizeScaleFactor(gui, 1);
+
         init();
     }
 
@@ -173,6 +187,14 @@ public class UmdVideoPlayer implements KeyListener {
             goToNextMpsStream();
         } else if ((keyCode.getKeyCode() == KeyEvent.VK_LEFT) && (currentStreamIndex > 0)) {
             goToPreviousMpsStream();
+        } else if ((keyCode.getKeyCode() == KeyEvent.VK_W) && (!videoPaused)) {
+            pauseVideo();
+        } else if ((keyCode.getKeyCode() == KeyEvent.VK_S)) {
+            resumeVideo();
+        } else if ((keyCode.getKeyCode() == KeyEvent.VK_A)) {
+            rewind();
+        } else if ((keyCode.getKeyCode() == KeyEvent.VK_D)) {
+            fastForward();
         }
     }
 
@@ -196,9 +218,16 @@ public class UmdVideoPlayer implements KeyListener {
         if (mpsStreamMap.containsKey(currentStreamIndex)) {
             MpsStreamInfo info = mpsStreamMap.get(currentStreamIndex);
             fileName = "UMD_VIDEO/STREAM/" + info.getName() + ".MPS";
-            Modules.log.info("Loading stream:" + fileName);
+            Modules.log.info("Loading stream: " + fileName);
             try {
                 isoFile = iso.getFile(fileName);
+                // Look for valid CLIPINF files (contain the ripped off PSMF header from the
+                // MPS streams).
+                String cpiFileName = "UMD_VIDEO/CLIPINF/" + info.getName() + ".CLP";
+                UmdIsoFile cpiFile = iso.getFile(cpiFileName);
+                if (cpiFile != null) {
+                    Modules.log.info("Found CLIPINF data for this stream: " + cpiFileName);
+                }
             } catch (FileNotFoundException e) {
             } catch (IOException e) {
                 Emulator.log.error(e);
@@ -207,6 +236,16 @@ public class UmdVideoPlayer implements KeyListener {
         if (isoFile != null) {
             startVideo();
         }
+    }
+
+    public void setVideoPlayerResizeScaleFactor(MainGUI gui, int factor) {
+        screenWidth = BASE_VIDEO_WIDTH * factor;
+        screenHeigth = BASE_VIDEO_HEIGTH * factor;
+        Insets insets = gui.getInsets();
+        Dimension minSize = new Dimension(
+                screenWidth + insets.left + insets.right,
+                screenHeigth + insets.top + insets.bottom);
+        gui.setMinimumSize(minSize);
     }
 
     private int endianSwap32(int x) {
@@ -233,16 +272,19 @@ public class UmdVideoPlayer implements KeyListener {
                 Modules.log.info("Accessing valid PLAYLIST.UMD file: playListSize=" + playListSize + ", playListTracksNum=" + playListTracksNum);
             }
             for (int i = 0; i < playListTracksNum; i++) {
-                int trackLength = endianSwap32(file.readInt());
-                file.skipBytes(4);   // 0x03100332.
-                file.skipBytes(29);  // NULL.
+                file.skipBytes(2);   // 0x035C.
+                file.skipBytes(2);   // 0x0310.
+                file.skipBytes(2);   // 0x0332.
+                file.skipBytes(30);  // NULL.
                 file.skipBytes(2);   // 0x02E8.
                 file.skipBytes(2);   // 0x0000/0x1000.
-                file.skipBytes(4);   // Date? (found 0x20100509 - 2010/05/09 on a 2010 release).
+                int releaseDateYear = endianSwap16(file.readShort());
+                int releaseDateDay = file.readByte();
+                int releaseDateMonth = file.readByte();
                 file.skipBytes(4);   // NULL.
                 file.skipBytes(4);   // Unknown (found 0x00000900).
                 file.skipBytes(1);   // Unknown size.
-                file.skipBytes(731); // Unknown NULL area with size 0x2DB.
+                file.skipBytes(732); // Unknown NULL area with size 0x2DC.
                 int streamHeigth = (int) (file.readByte() * 0x10); // Stream's original heigth.
                 file.skipBytes(2);   // NULL.
                 file.skipBytes(4);   // 0x00010000.
@@ -258,7 +300,8 @@ public class UmdVideoPlayer implements KeyListener {
                 int streamFirstTimestamp = endianSwap32(file.readInt());
                 file.skipBytes(2); // NULL.
                 int streamLastTimestamp = endianSwap32(file.readInt());
-                int streamMarkerDataLength = endianSwap32(file.readInt());  // Stream's markers' data length.
+                file.skipBytes(2); // NULL.
+                int streamMarkerDataLength = endianSwap16(file.readShort());  // Stream's markers' data length.
                 int streamMarkersNum = endianSwap16(file.readShort());  // Stream's number of markers.
                 MpsStreamMarkerInfo[] streamMarkers = new MpsStreamMarkerInfo[streamMarkersNum];
                 for (int j = 0; j < streamMarkersNum; j++) {
@@ -266,7 +309,8 @@ public class UmdVideoPlayer implements KeyListener {
                     int streamMarkerCharsNum = (int) file.readByte(); // Marker name length.
                     file.skipBytes(4); // NULL.
                     int streamMarkerTimestamp = endianSwap32(file.readInt());
-                    file.skipBytes(6); // NULL.
+                    file.skipBytes(2); // NULL.
+                    file.skipBytes(4); // NULL.
                     byte[] markerBuf = new byte[24];
                     file.read(markerBuf, 0, 24);
                     String markerName = new String(markerBuf);
@@ -289,9 +333,14 @@ public class UmdVideoPlayer implements KeyListener {
         if (mpsStreamMap.containsKey(currentStreamIndex)) {
             MpsStreamInfo info = mpsStreamMap.get(currentStreamIndex);
             fileName = "UMD_VIDEO/STREAM/" + info.getName() + ".MPS";
-            Modules.log.info("Loading stream:" + fileName);
+            Modules.log.info("Loading stream: " + fileName);
             try {
                 isoFile = iso.getFile(fileName);
+                String cpiFileName = "UMD_VIDEO/CLIPINF/" + info.getName() + ".CLP";
+                UmdIsoFile cpiFile = iso.getFile(cpiFileName);
+                if (cpiFile != null) {
+                    Modules.log.info("Found CLIPINF data for this stream: " + cpiFileName);
+                }
             } catch (FileNotFoundException e) {
             } catch (IOException e) {
                 Emulator.log.error(e);
@@ -303,15 +352,18 @@ public class UmdVideoPlayer implements KeyListener {
     }
 
     private void goToPreviousMpsStream() {
-        closeVideo();
-        closeAudio();
         currentStreamIndex--;
         if (mpsStreamMap.containsKey(currentStreamIndex)) {
             MpsStreamInfo info = mpsStreamMap.get(currentStreamIndex);
             fileName = "UMD_VIDEO/STREAM/" + info.getName() + ".MPS";
-            Modules.log.info("Loading stream:" + fileName);
+            Modules.log.info("Loading stream: " + fileName);
             try {
                 isoFile = iso.getFile(fileName);
+                String cpiFileName = "UMD_VIDEO/CLIPINF/" + info.getName() + ".CLP";
+                UmdIsoFile cpiFile = iso.getFile(cpiFileName);
+                if (cpiFile != null) {
+                    Modules.log.info("Found CLIPINF data for this stream: " + cpiFileName);
+                }
             } catch (FileNotFoundException e) {
             } catch (IOException e) {
                 Emulator.log.error(e);
@@ -319,29 +371,6 @@ public class UmdVideoPlayer implements KeyListener {
         }
         if (isoFile != null) {
             startVideo();
-        }
-    }
-
-    private Image getImage() {
-        return image;
-    }
-
-    public void takeScreenshot() {
-        int tag = 0;
-        File screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
-        File directory = new File(System.getProperty("user.dir"));
-        for (File file : directory.listFiles()) {
-            if (file.getName().equals(screenshot.getName())) {
-               tag++;
-               screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
-            }
-        }
-        try {
-            BufferedImage img = (BufferedImage)getImage();
-            ImageIO.write(img, "png", screenshot);
-            img.flush();
-        } catch (Exception e) {
-            return;
         }
     }
 
@@ -359,7 +388,21 @@ public class UmdVideoPlayer implements KeyListener {
         videoPaused = true;
     }
 
-    private boolean startVideo() {
+    public void resumeVideo() {
+        videoPaused = false;
+        seekFrameFastForward = false;
+        seekFrameRewind = false;
+    }
+
+    public void fastForward() {
+        seekFrameFastForward = true;
+    }
+
+    public void rewind() {
+        seekFrameRewind = true;
+    }
+
+    public boolean startVideo() {
         endOfVideo = false;
         videoPaused = false;
 
@@ -531,6 +574,15 @@ public class UmdVideoPlayer implements KeyListener {
                     }
                 }
             }
+            if (seekFrameFastForward) {
+                container.seekKeyFrame(videoStreamId, -1, 0);
+                container.seekKeyFrame(videoStreamId, packet.getTimeStamp() + Global.DEFAULT_PTS_PER_SECOND, IContainer.SEEK_FLAG_ANY);
+                seekFrameFastForward = false;
+            } else if (seekFrameRewind) {
+                container.seekKeyFrame(videoStreamId, -1, 0);
+                container.seekKeyFrame(videoStreamId, packet.getTimeStamp() - Global.DEFAULT_PTS_PER_SECOND, IContainer.SEEK_FLAG_BACKWARDS);
+                seekFrameRewind = false;
+            }
         } else {
             endOfVideo = true;
         }
@@ -567,6 +619,29 @@ public class UmdVideoPlayer implements KeyListener {
             mLine.close();
             mLine = null;
         }
+    }
+
+    public void takeScreenshot() {
+        int tag = 0;
+        File screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
+        File directory = new File(System.getProperty("user.dir"));
+        for (File file : directory.listFiles()) {
+            if (file.getName().equals(screenshot.getName())) {
+               tag++;
+               screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
+            }
+        }
+        try {
+            BufferedImage img = (BufferedImage)getImage();
+            ImageIO.write(img, "png", screenshot);
+            img.flush();
+        } catch (Exception e) {
+            return;
+        }
+    }
+
+    private Image getImage() {
+        return image;
     }
 
     private void sleep(long millis) {

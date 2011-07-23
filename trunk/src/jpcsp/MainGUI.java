@@ -1499,6 +1499,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
             UmdIsoReader iso = new UmdIsoReader(file.getPath());
             UmdIsoFile psfFile = iso.getFile("UMD_VIDEO/param.sfo");
+            UmdIsoFile umdDataFile = iso.getFile("UMD_DATA.BIN");
 
             PSF psf = new PSF();
             byte[] data = new byte[(int) psfFile.length()];
@@ -1509,7 +1510,15 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             String title = psf.getPrintableString("TITLE");
             String discId = psf.getString("DISC_ID");
             if (discId == null) {
-                discId = State.DISCID_UNKNOWN_UMD;
+                byte[] umdDataId = new byte[10];
+                String umdDataIdString = "";
+                umdDataFile.readFully(umdDataId, 0, 9);
+                umdDataIdString = new String(umdDataId);
+                if (umdDataIdString.equals("")) {
+                    discId = State.DISCID_UNKNOWN_UMD;
+                } else {
+                    discId = umdDataIdString;
+                }
             }
 
             setTitle(MetaInformation.FULL_NAME + " - " + title);
@@ -2096,14 +2105,29 @@ private void setViewportResizeScaleFactor(int viewportResizeScaleFactor) {
 
 private void oneTimeResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_oneTimeResizeActionPerformed
 	setViewportResizeScaleFactor(1);
+    if (umdvideoplayer != null) {
+        umdvideoplayer.pauseVideo();
+        umdvideoplayer.setVideoPlayerResizeScaleFactor(this, 1);
+        umdvideoplayer.resumeVideo();
+    }
 }//GEN-LAST:event_oneTimeResizeActionPerformed
 
 private void twoTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_twoTimesResizeActionPerformed
 	setViewportResizeScaleFactor(2);
+    if (umdvideoplayer != null) {
+        umdvideoplayer.pauseVideo();
+        umdvideoplayer.setVideoPlayerResizeScaleFactor(this, 2);
+        umdvideoplayer.resumeVideo();
+    }
 }//GEN-LAST:event_twoTimesResizeActionPerformed
 
 private void threeTimesResizeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_threeTimesResizeActionPerformed
 	setViewportResizeScaleFactor(3);
+    if (umdvideoplayer != null) {
+        umdvideoplayer.pauseVideo();
+        umdvideoplayer.setVideoPlayerResizeScaleFactor(this, 3);
+        umdvideoplayer.resumeVideo();
+    }
 }//GEN-LAST:event_threeTimesResizeActionPerformed
 
     private void exitEmu() {

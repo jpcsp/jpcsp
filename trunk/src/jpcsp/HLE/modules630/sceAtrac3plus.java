@@ -18,12 +18,10 @@ package jpcsp.HLE.modules630;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.kernel.managers.IntrManager;
-import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
-public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
+public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
     @Override
     public String getName() { return "sceAtrac3plus"; }
 
@@ -32,7 +30,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
     	super.installModule(mm, version);
 
     	if (version >= 630) {
-            mm.addFunction(0x231FC6B7, _sceAtracGetContextAddressFunction);
             mm.addFunction(0x0C116E1B, sceAtracLowLevelDecodeFunction);
             mm.addFunction(0x1575D64B, sceAtracLowLevelInitDecoderFunction);
         }
@@ -43,25 +40,9 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
     	super.uninstallModule(mm, version);
 
     	if (version >= 630) {
-            mm.removeFunction(_sceAtracGetContextAddressFunction);
             mm.removeFunction(sceAtracLowLevelDecodeFunction);
             mm.removeFunction(sceAtracLowLevelInitDecoderFunction);
         }
-    }
-
-    public void _sceAtracGetContextAddress(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int at3IDNum = cpu.gpr[4];
-
-        log.warn(String.format("PARTIAL: _sceAtracGetContextAddress at3IDNum=%d", at3IDNum));
-
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
-        // Always returns 0, but it may change the internal context address (at3IDNum).
-        cpu.gpr[2] = 0;
     }
 
     public void sceAtracLowLevelDecode(Processor processor) {
@@ -79,17 +60,6 @@ public class sceAtrac3plus extends jpcsp.HLE.modules250.sceAtrac3plus {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
-    public final HLEModuleFunction _sceAtracGetContextAddressFunction = new HLEModuleFunction("sceAtrac3plus", "_sceAtracGetContextAddress") {
-        @Override
-        public final void execute(Processor processor) {
-        	_sceAtracGetContextAddress(processor);
-        }
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule._sceAtracGetContextAddress(processor);";
-        }
-    };
 
     public final HLEModuleFunction sceAtracLowLevelDecodeFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracLowLevelDecode") {
         @Override
