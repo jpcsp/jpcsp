@@ -94,8 +94,10 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
 
     @Override
     public void start() {
-        umdActivated = false;
-        umdDeactivateCalled = false;
+    	// Remember if the UMD was activated even after a call to sceKernelLoadExec()
+    	setUmdActivated();
+
+    	umdDeactivateCalled = false;
         waitingThreads = new LinkedList<SceKernelThreadInfo>();
     }
 
@@ -117,6 +119,10 @@ public class sceUmdUser implements HLEModule, HLEStartModule {
 
     public void setIsoReader(UmdIsoReader iso) {
         this.iso = iso;
+        setUmdActivated();
+    }
+
+    private void setUmdActivated() {
         if (iso == null) {
             umdActivated = false;
         } else {
