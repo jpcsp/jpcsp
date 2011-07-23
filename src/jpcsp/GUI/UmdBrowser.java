@@ -424,12 +424,22 @@ public class UmdBrowser extends JDialog {
                 UmdIsoReader iso = new UmdIsoReader(programs[rowIndex].getPath());
 
                 UmdIsoFile paramSfo = iso.getFile("UMD_VIDEO/param.sfo");
+                UmdIsoFile umdDataFile = iso.getFile("UMD_DATA.BIN");
+
+                // Manually fetch the DISC ID from the UMD_DATA.BIN (video ISO files lack
+                // this param in their param.sfo).
+                byte[] umdDataId = new byte[10];
+                String umdDataIdString = "";
+                umdDataFile.readFully(umdDataId, 0, 9);
+                umdDataIdString = new String(umdDataId);
+
                 byte[] sfo = new byte[(int)paramSfo.length()];
                 paramSfo.read(sfo);
                 paramSfo.close();
                 ByteBuffer buf = ByteBuffer.wrap(sfo);
                 psfs[rowIndex] = new PSF();
                 psfs[rowIndex].read(buf);
+                psfs[rowIndex].put("DISC_ID", umdDataIdString);
 
                 UmdIsoFile icon0umd = iso.getFile("UMD_VIDEO/ICON0.PNG");
                 byte[] icon0 = new byte[(int) icon0umd.length()];

@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules630;
+package jpcsp.HLE.modules600;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -29,7 +29,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
-        if (version >= 630) {
+        if (version >= 600) {
             mm.addFunction(0x4AA9EAD6, __sceSasSetVoiceATRAC3Function);
             mm.addFunction(0x7497EA85, __sceSasConcatenateATRAC3Function);
             mm.addFunction(0xF6107F00, __sceSasUnsetATRAC3Function);
@@ -40,7 +40,7 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
     public void uninstallModule(HLEModuleManager mm, int version) {
         super.uninstallModule(mm, version);
 
-        if (version >= 630) {
+        if (version >= 600) {
             mm.removeFunction(__sceSasSetVoiceATRAC3Function);
             mm.removeFunction(__sceSasConcatenateATRAC3Function);
             mm.removeFunction(__sceSasUnsetATRAC3Function);

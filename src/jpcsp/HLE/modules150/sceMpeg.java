@@ -52,7 +52,7 @@ import org.apache.log4j.Logger;
 
 public class sceMpeg implements HLEModule, HLEStartModule {
 
-    private static Logger log = Modules.getLogger("sceMpeg");
+    protected static Logger log = Modules.getLogger("sceMpeg");
 
     @Override
     public String getName() {

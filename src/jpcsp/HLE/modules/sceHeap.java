@@ -14,22 +14,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package jpcsp.HLE.modules;
 
-public class sceSasCore extends jpcsp.HLE.modules600.sceSasCore {
+public class sceHeap extends jpcsp.HLE.modules500.sceHeap{
+	@Override
+	public final String getName() { return "sceHeap"; }
 
-    @Override
-    public final String getName() {
-        return "sceSasCore";
-    }
+	@Override
+	public void installModule(HLEModuleManager mm, int version) {
+		super.installModule(mm, version);
+	}
 
-    @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-    }
-
-    @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-    }
+	@Override
+	public void uninstallModule(HLEModuleManager mm, int version) {
+		super.uninstallModule(mm, version);
+	}
 }

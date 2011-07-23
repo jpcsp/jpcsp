@@ -16,16 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules352;
 
-import org.apache.log4j.Logger;
-
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
-    private static Logger log = Modules.getLogger("sceMpeg");
 
 	@Override
 	public String getName() {
