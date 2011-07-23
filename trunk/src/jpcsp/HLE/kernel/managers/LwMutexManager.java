@@ -190,19 +190,18 @@ public class LwMutexManager {
     private void hleKernelLockLwMutex(int uid, int count, int timeout_addr, boolean wait, boolean doCallbacks) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        String message = "hleKernelLockLwMutex(uid=" + Integer.toHexString(uid) + ",count=" + count + ",timeout_addr=0x" + Integer.toHexString(timeout_addr) + ") wait=" + wait + ",cb=" + doCallbacks;
         SceKernelLwMutexInfo info = lwMutexMap.get(uid);
         if (info == null) {
-            log.warn(message + " - unknown UID");
+            log.warn(String.format("hleKernelLockLwMutex uid=%d, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b -  - unknown UID", uid, count, timeout_addr, wait, doCallbacks));
             cpu.gpr[2] = ERROR_KERNEL_LWMUTEX_NOT_FOUND;
         } else {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
             if (!tryLockLwMutex(info, count, currentThread)) {
                 if (log.isDebugEnabled()) {
-                    log.debug(message + " - '" + info.name + "' fast check failed");
+                    log.debug(String.format("hleKernelLockLwMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - fast check failed", info.toString(), count, timeout_addr, wait, doCallbacks));
                 }
-                if (wait && info.threadid == currentThread.uid) {
+                if (wait && info.threadid != currentThread.uid) {
                     // Failed, but it's ok, just wait a little
                     info.numWaitThreads++;
                     // Wait on a specific lwmutex
@@ -219,7 +218,7 @@ public class LwMutexManager {
             } else {
                 // Success, do not reschedule the current thread.
                 if (log.isDebugEnabled()) {
-                    log.debug("hleKernelLockLwMutex - '" + info.name + "' fast check succeeded");
+                    log.debug(String.format("hleKernelLockLwMutex %s, count=%d, timeout_addr=0x%08X, wait=%b, doCallbacks=%b - fast check succeeded", info.toString(), count, timeout_addr, wait, doCallbacks));
                 }
                 cpu.gpr[2] = 0;
             }

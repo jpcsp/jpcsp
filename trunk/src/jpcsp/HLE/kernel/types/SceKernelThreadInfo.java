@@ -364,6 +364,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
             s.append(String.format(" | Mutex (0x%04X)", wait.Mutex_id));
         }
 
+        if (waitType == PSP_WAIT_LWMUTEX) {
+            s.append(String.format(" | LwMutex (0x%04X)", wait.LwMutex_id));
+        }
+
         if (waitType == JPCSP_WAIT_IO) {
             s.append(String.format(" | Io (0x%04X)", wait.Io_id));
         }
