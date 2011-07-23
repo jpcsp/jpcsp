@@ -530,7 +530,7 @@
     0893F3D8:[00C23025]: or         $a2, $a2, $v0
     0893F3DC:[10E0FFEC]: beq        $a3, $zr, 0x0893F390
     0893F3E0:[24C60001]: addiu      $a2, $a2, 1
-    0893F3E4:[0A24FCDC]: j          0x0893F370
+    0893F3E4:[0A24FCDC/FC000000]: j          0x0893F370
     0893F3E8:[00001821]: addu       $v1, $zr, $zr <=> li $v1, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -693,7 +693,7 @@
 0880E4D0:[A0620000]: sb         $v0, 0($v1)
 0880E4D4:[1CC0FFFB]: bgtz       $a2, 0x0880E4C4
 0880E4D8:[24630001]: addiu      $v1, $v1, 1
-0880E4DC:[0A20391D]: j          0x0880E474
+0880E4DC:[0A20391D/FC000000]: j          0x0880E474
 0880E4E0:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -766,7 +766,7 @@
     088D3B44:[A0620000]: sb         $v0, 0($v1)
     088D3B48:[1CC0FFFB]: bgtz       $a2, 0x088D3B38
     088D3B4C:[24630001]: addiu      $v1, $v1, 1
-    088D3B50:[0A234EBA]: j          0x088D3AE8
+    088D3B50:[0A234EBA/FC000000]: j          0x088D3AE8
     088D3B54:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -1205,7 +1205,7 @@
 0880E81C:[A0620000]: sb         $v0, 0($v1)
 0880E820:[1CC0FFFB]: bgtz       $a2, 0x0880E810
 0880E824:[24630001]: addiu      $v1, $v1, 1
-0880E828:[0A2039F0]: j          0x0880E7C0
+0880E828:[0A2039F0/FC000000]: j          0x0880E7C0
 0880E82C:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -1493,7 +1493,7 @@
 08815BB8:[F8C30032]: vwb.q      C030.q, 48($a2)
 08815BBC:[FFFF040D]: vflush
 08815BC0:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815BC4:[0A2056B5]: j          0x08815AD4
+08815BC4:[0A2056B5/FC000000]: j          0x08815AD4
 08815BC8:[00000000]: nop
 08815BCC:[BC7B0000]: cache      0x1B, 0($v1)
 08815BD0:[24630040]: addiu      $v1, $v1, 64
@@ -1522,7 +1522,7 @@
 08815C2C:[00000000]: nop
 08815C30:[FFFF040D]: vflush
 08815C34:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815C38:[0A2056B5]: j          0x08815AD4
+08815C38:[0A2056B5/FC000000]: j          0x08815AD4
 08815C3C:[00000000]: nop
 08815C40:[1102001C]: beq        $t0, $v0, 0x08815CB4
 08815C44:[2402000C]: addiu      $v0, $zr, 12 <=> li $v0, 12
@@ -1551,7 +1551,7 @@
 08815CA0:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08815CA4:[FFFF040D]: vflush
 08815CA8:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815CAC:[0A2056B5]: j          0x08815AD4
+08815CAC:[0A2056B5/FC000000]: j          0x08815AD4
 08815CB0:[00000000]: nop
 08815CB4:[BC7B0000]: cache      0x1B, 0($v1)
 08815CB8:[C8A00000]: lv.s       S000.s, 0($a1)
@@ -1580,7 +1580,7 @@
 08815D14:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08815D18:[FFFF040D]: vflush
 08815D1C:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815D20:[0A2056B5]: j          0x08815AD4
+08815D20:[0A2056B5/FC000000]: j          0x08815AD4
 08815D24:[00000000]: nop
 08815D28:[24E7FFC0]: addiu      $a3, $a3, -64
 08815D2C:[BC7B0000]: cache      0x1B, 0($v1)
@@ -1605,7 +1605,7 @@
 08815D78:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08815D7C:[FFFF040D]: vflush
 08815D80:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815D84:[0A2056B5]: j          0x08815AD4
+08815D84:[0A2056B5/FC000000]: j          0x08815AD4
 08815D88:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -1814,7 +1814,7 @@
 088159D4:[F8C30032]: vwb.q      C030.q, 48($a2)
 088159D8:[FFFF040D]: vflush
 088159DC:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-088159E0:[0A20563C]: j          0x088158F0
+088159E0:[0A20563C/FC000000]: j          0x088158F0
 088159E4:[00000000]: nop
 088159E8:[BC7B0000]: cache      0x1B, 0($v1)
 088159EC:[24630040]: addiu      $v1, $v1, 64
@@ -1843,7 +1843,7 @@
 08815A48:[00000000]: nop
 08815A4C:[FFFF040D]: vflush
 08815A50:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815A54:[0A20563C]: j          0x088158F0
+08815A54:[0A20563C/FC000000]: j          0x088158F0
 08815A58:[00000000]: nop
 08815A5C:[1102001C]: beq        $t0, $v0, 0x08815AD0
 08815A60:[2402000C]: addiu      $v0, $zr, 12 <=> li $v0, 12
@@ -1872,7 +1872,7 @@
 08815ABC:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08815AC0:[FFFF040D]: vflush
 08815AC4:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815AC8:[0A20563C]: j          0x088158F0
+08815AC8:[0A20563C/FC000000]: j          0x088158F0
 08815ACC:[00000000]: nop
 08815AD0:[BC7B0000]: cache      0x1B, 0($v1)
 08815AD4:[C8A00000]: lv.s       S000.s, 0($a1)
@@ -1901,7 +1901,7 @@
 08815B30:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08815B34:[FFFF040D]: vflush
 08815B38:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815B3C:[0A20563C]: j          0x088158F0
+08815B3C:[0A20563C/FC000000]: j          0x088158F0
 08815B40:[00000000]: nop
 08815B44:[24E7FFC0]: addiu      $a3, $a3, -64
 08815B48:[BC7B0000]: cache      0x1B, 0($v1)
@@ -1926,7 +1926,7 @@
 08815B94:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08815B98:[FFFF040D]: vflush
 08815B9C:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08815BA0:[0A20563C]: j          0x088158F0
+08815BA0:[0A20563C/FC000000]: j          0x088158F0
 08815BA4:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -2047,7 +2047,7 @@
 08B9008C:[F9430032]: vwb.q      C030.q, 48($t2)
 08B90090:[FFFF040D]: vflush
 08B90094:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08B90098:[0A2E3FED]: j          0x08B8FFB4
+08B90098:[0A2E3FED/FC000000]: j          0x08B8FFB4
 08B9009C:[00000000]: nop
 08B900A0:[110C001C]: beq        $t0, $t4, 0x08B90114
 08B900A4:[240D000C]: addiu      $t5, $zr, 12 <=> li $t5, 12
@@ -2076,7 +2076,7 @@
 08B90100:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08B90104:[FFFF040D]: vflush
 08B90108:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08B9010C:[0A2E3FED]: j          0x08B8FFB4
+08B9010C:[0A2E3FED/FC000000]: j          0x08B8FFB4
 08B90110:[00000000]: nop
 08B90114:[BCFB0000]: cache      0x1B, 0($a3)
 08B90118:[C8A00000]: lv.s       S000.s, 0($a1)
@@ -2105,7 +2105,7 @@
 08B90174:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08B90178:[FFFF040D]: vflush
 08B9017C:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08B90180:[0A2E3FED]: j          0x08B8FFB4
+08B90180:[0A2E3FED/FC000000]: j          0x08B8FFB4
 08B90184:[00000000]: nop
 08B90188:[24C6FFC0]: addiu      $a2, $a2, -64
 08B9018C:[BCFB0000]: cache      0x1B, 0($a3)
@@ -2130,7 +2130,7 @@
 08B901D8:[486000FF]: Unimplemented MFVC imm7=127, rt=0
 08B901DC:[FFFF040D]: vflush
 08B901E0:[486000FF]: Unimplemented MFVC imm7=127, rt=0
-08B901E4:[0A2E3FED]: j          0x08B8FFB4
+08B901E4:[0A2E3FED/FC000000]: j          0x08B8FFB4
 08B901E8:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -2642,7 +2642,7 @@
     0884A1D0:[00051200]: sll        $v0, $a1, 0x0008
     0884A1D4:[00A21025]: or         $v0, $a1, $v0
     0884A1D8:[00021C00]: sll        $v1, $v0, 0x0010
-    0884A1DC:[0A21285C]: j          0x0884A170
+    0884A1DC:[0A21285C/FC000000]: j          0x0884A170
     0884A1E0:[00431825]: or         $v1, $v0, $v1
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -2693,7 +2693,7 @@
     088DE520:[03E00008]: jr         $ra
     088DE524:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
     088DE528:[24C6FFFC]: addiu      $a2, $a2, -4
-    088DE52C:[0A237940]: j          0x088DE500
+    088DE52C:[0A237940/FC000000]: j          0x088DE500
     088DE530:[24E70004]: addiu      $a3, $a3, 4
     088DE534:[00051200]: sll        $v0, $a1, 0x0008
     088DE538:[00A21025]: or         $v0, $a1, $v0
@@ -2702,7 +2702,7 @@
     088DE544:[00431825]: or         $v1, $v0, $v1
     088DE548:[1100FFEA]: beq        $t0, $zr, 0x088DE4F4
     088DE54C:[30C60007]: andi       $a2, $a2, 7
-    088DE550:[0A237938]: j          0x088DE4E0
+    088DE550:[0A237938/FC000000]: j          0x088DE4E0
     088DE554:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -2767,7 +2767,7 @@
     08A0F920:[25080001]: addiu      $t0, $t0, 1
     08A0F924:[03E00008]: jr         $ra
     08A0F928:[01201021]: addu       $v0, $t1, $zr <=> move $v0, $t1
-    08A0F92C:[0A283E3B]: j          0x08A0F8EC
+    08A0F92C:[0A283E3B/FC000000]: j          0x08A0F8EC
     08A0F930:[01002021]: addu       $a0, $t0, $zr <=> move $a0, $t0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -2818,7 +2818,7 @@
 08934224:[03E00008]: jr         $ra
 08934228:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
 08B73D98:[24C6FFFC]: addiu      $a2, $a2, -4
-08B73D9C:[0A2DCF5C]: j          0x08B73D70
+08B73D9C:[0A2DCF5C/FC000000]: j          0x08B73D70
 08B73DA0:[24E70004]: addiu      $a3, $a3, 4
 08B73DA4:[00051200]: sll        $v0, $a1, 0x0008
 08B73DA8:[00A21025]: or         $v0, $a1, $v0
@@ -2827,7 +2827,7 @@
 08B73DB4:[00431825]: or         $v1, $v0, $v1
 08B73DB8:[1100FFEA]: beq        $t0, $zr, 0x08B73D64
 08B73DBC:[30C60007]: andi       $a2, $a2, 7
-08B73DC0:[0A2DCF54]: j          0x08B73D50
+08B73DC0:[0A2DCF54/FC000000]: j          0x08B73D50
 08B73DC4:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -2909,7 +2909,7 @@
 08A2312C:[03E00008]: jr         $ra
 08A23130:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
 08A23134:[24C6FFFC]: addiu      $a2, $a2, -4
-08A23138:[0A288C43]: j          0x08A2310C
+08A23138:[0A288C43/FC000000]: j          0x08A2310C
 08A2313C:[24E70004]: addiu      $a3, $a3, 4
 08A23140:[00051200]: sll        $v0, $a1, 0x0008
 08A23144:[00A21025]: or         $v0, $a1, $v0
@@ -2918,7 +2918,7 @@
 08A23150:[00431825]: or         $v1, $v0, $v1
 08A23154:[1100FFEA]: beq        $t0, $zr, 0x08A23100
 08A23158:[30C60007]: andi       $a2, $a2, 7
-08A2315C:[0A288C3B]: j          0x08A230EC
+08A2315C:[0A288C3B/FC000000]: j          0x08A230EC
 08A23160:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -2969,7 +2969,7 @@
 0880E528:[03E00008]: jr         $ra
 0880E52C:[00801021]: addu       $v0, $a0, $zr <=> move $v0, $a0
 0880E530:[24C6FFFC]: addiu      $a2, $a2, -4
-0880E534:[0A203942]: j          0x0880E508
+0880E534:[0A203942/FC000000]: j          0x0880E508
 0880E538:[24E70004]: addiu      $a3, $a3, 4
 0880E53C:[00051200]: sll        $v0, $a1, 0x0008
 0880E540:[00A21025]: or         $v0, $a1, $v0
@@ -2978,7 +2978,7 @@
 0880E54C:[00431825]: or         $v1, $v0, $v1
 0880E550:[1100FFEA]: beq        $t0, $zr, 0x0880E4FC
 0880E554:[30C60007]: andi       $a2, $a2, 7
-0880E558:[0A20393A]: j          0x0880E4E8
+0880E558:[0A20393A/FC000000]: j          0x0880E4E8
 0880E55C:[00001021]: addu       $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -3002,7 +3002,7 @@
 089971C0:[24C6FFFF]: addiu      $a2, $a2, -1
 089971C4:[A0850000]: sb         $a1, 0($a0)
 089971C8:[24840001]: addiu      $a0, $a0, 1
-089971CC:[0A265C6C]: j          0x089971B0
+089971CC:[0A265C6C/FC000000]: j          0x089971B0
 089971D0:[24630001]: addiu      $v1, $v1, 1
 089971D4:[2CC80040]: sltiu      $t0, $a2, 64
 089971D8:[1500000D]: bne        $t0, $zr, 0x08997210
@@ -3400,7 +3400,7 @@
 08805074:[80820000]: lb         $v0, 0($a0)
 08805078:[5440FFFE]: bnel       $v0, $zr, 0x08805074
 0880507C:[24840001]: addiu      $a0, $a0, 1
-08805080:[0E201427]: jal        0x0880509C
+08805080:[0E201427/FC000000]: jal        0x0880509C
 08805084:[00000000]: nop
 08805088:[02001021]: addu       $v0, $s0, $zr <=> move $v0, $s0
 0880508C:[8FBF0004]: lw         $ra, 4($sp)
@@ -3549,7 +3549,7 @@
 088D55C4:[00621824]: and        $v1, $v1, $v0
 088D55C8:[1460FFF8]: bne        $v1, $zr, 0x088D55AC
 088D55CC:[24A50001]: addiu      $a1, $a1, 1
-088D55D0:[0A235569]: j          0x088D55A4
+088D55D0:[0A235569/FC000000]: j          0x088D55A4
 088D55D4:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -3694,10 +3694,10 @@
     0881C4A8:[00809021]: addu       $s2, $a0, $zr <=> move $s2, $a0
     0881C4AC:[AFB10004]: sw         $s1, 4($sp)
     0881C4B0:[AFB00000]: sw         $s0, 0($sp)
-    0881C4B4:[0E223CBB]: jal        0x0888F2EC -> strlen
+    0881C4B4:[0E223CBB/FC000000]: jal        0x0888F2EC -> strlen
     0881C4B8:[00A08021]: addu       $s0, $a1, $zr <=> move $s0, $a1
     0881C4BC:[02002021]: addu       $a0, $s0, $zr <=> move $a0, $s0
-    0881C4C0:[0E223CBB]: jal        0x0888F2EC -> strlen
+    0881C4C0:[0E223CBB/FC000000]: jal        0x0888F2EC -> strlen
     0881C4C4:[00408821]: addu       $s1, $v0, $zr <=> move $s1, $v0
     0881C4C8:[02221023]: subu       $v0, $s1, $v0
     0881C4CC:[02402021]: addu       $a0, $s2, $zr <=> move $a0, $s2
@@ -3714,7 +3714,7 @@
     0881C4F8:[8FB20008]: lw         $s2, 8($sp)
     0881C4FC:[8FB10004]: lw         $s1, 4($sp)
     0881C500:[8FB00000]: lw         $s0, 0($sp)
-    0881C504:[0A2070FF]: j          0x0881C3FC
+    0881C504:[0A2070FF/FC000000]: j          0x0881C3FC
     0881C508:[27BD0010]: addiu      $sp, $sp, 16
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -5929,7 +5929,7 @@
 08962290:[27BD0010]: addiu      $sp, $sp, 16
 08962294:[0E25E3A2/FC000000]: jal        0x08978E88 [sceGeListUpdateStallAddr]
 08962298:[8C44AB9C]: lw         $a0, -21604($v0)
-0896229C:[0A2588A3]: j          0x0896228C
+0896229C:[0A2588A3/FC000000]: j          0x0896228C
 089622A0:[8FBF0000]: lw         $ra, 0($sp)
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -6499,7 +6499,7 @@
     088066F0:[AC49002C]: sw         $t1, 44($v0)
     088066F4:[AC4A0030]: sw         $t2, 48($v0)
     088066F8:[24420034]: addiu      $v0, $v0, 52
-    088066FC:[0A20199E]: j          0x08806678
+    088066FC:[0A20199E/FC000000]: j          0x08806678
     08806700:[00000000]: nop
     08806704:[50A00003]: beql       $a1, $zr, 0x08806714
     08806708:[8C820008]: lw         $v0, 8($a0)
@@ -6544,7 +6544,7 @@
     088067A4:[AC4A003C]: sw         $t2, 60($v0)
     088067A8:[AC4B0040]: sw         $t3, 64($v0)
     088067AC:[24420044]: addiu      $v0, $v0, 68
-    088067B0:[0A20199E]: j          0x08806678
+    088067B0:[0A20199E/FC000000]: j          0x08806678
     088067B4:[00000000]: nop
     088067B8:[8C820008]: lw         $v0, 8($a0)
     088067BC:[3C083C00]: lui        $t0, 0x3C00 <=> li $t0, 0x3C000000
@@ -6577,7 +6577,7 @@
     08806828:[AC49002C]: sw         $t1, 44($v0)
     0880682C:[AC4A0030]: sw         $t2, 48($v0)
     08806830:[24420034]: addiu      $v0, $v0, 52
-    08806834:[0A20199E]: j          0x08806678
+    08806834:[0A20199E/FC000000]: j          0x08806678
     08806838:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -6679,7 +6679,7 @@
 0890649C:[AC49002C]: sw         $t1, 44($v0)
 089064A0:[AC4A0030]: sw         $t2, 48($v0)
 089064A4:[24420034]: addiu      $v0, $v0, 52
-089064A8:[0A241900]: j          0x08906400
+089064A8:[0A241900/FC000000]: j          0x08906400
 089064AC:[00000000]: nop
 089064B0:[50A00003]: beql       $a1, $zr, 0x089064C0
 089064B4:[8C820008]: lw         $v0, 8($a0)
@@ -6736,7 +6736,7 @@
 08906580:[AC4A003C]: sw         $t2, 60($v0)
 08906584:[AC4B0040]: sw         $t3, 64($v0)
 08906588:[24420044]: addiu      $v0, $v0, 68
-0890658C:[0A241900]: j          0x08906400
+0890658C:[0A241900/FC000000]: j          0x08906400
 08906590:[00000000]: nop
 08906594:[8C820008]: lw         $v0, 8($a0)
 08906598:[3C083C00]: lui        $t0, 0x3C00 <=> li $t0, 0x3C000000
@@ -6778,7 +6778,7 @@
 08906628:[AC49002C]: sw         $t1, 44($v0)
 0890662C:[AC4A0030]: sw         $t2, 48($v0)
 08906630:[24420034]: addiu      $v0, $v0, 52
-08906634:[0A241900]: j          0x08906400
+08906634:[0A241900/FC000000]: j          0x08906400
 08906638:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -6937,7 +6937,7 @@
 0890679C:[27BD0010]: addiu      $sp, $sp, 16
 089067A0:[9703000E]: lhu        $v1, 14($t8)
 089067A4:[A704000E]: sh         $a0, 14($t8)
-089067A8:[0A2419CA]: j          0x08906728
+089067A8:[0A2419CA/FC000000]: j          0x08906728
 089067AC:[A7030004]: sh         $v1, 4($t8)
 089067B0:[87020004]: lh         $v0, 4($t8)
 089067B4:[870E0006]: lh         $t6, 6($t8)
@@ -6946,12 +6946,12 @@
 089067C0:[A702000E]: sh         $v0, 14($t8)
 089067C4:[A7100004]: sh         $s0, 4($t8)
 089067C8:[A70F0006]: sh         $t7, 6($t8)
-089067CC:[0A2419CA]: j          0x08906728
+089067CC:[0A2419CA/FC000000]: j          0x08906728
 089067D0:[A70E0010]: sh         $t6, 16($t8)
 089067D4:[870D0006]: lh         $t5, 6($t8)
 089067D8:[970B0010]: lhu        $t3, 16($t8)
 089067DC:[A70D0010]: sh         $t5, 16($t8)
-089067E0:[0A2419CA]: j          0x08906728
+089067E0:[0A2419CA/FC000000]: j          0x08906728
 089067E4:[A70B0006]: sh         $t3, 6($t8)
 ]]></CodeInstructions>
 	</NativeCodeSequence>
@@ -7279,7 +7279,7 @@
 0889BA3C:[8E670008]: lw         $a3, 8($s3)
 0889BA40:[02070018]: mult       $s0, $a3
 0889BA44:[00002812]: mflo       $a1
-0889BA48:[0E2686EF]: jal        0x089A1BBC [sceKernelDcacheWritebackInvalidateRange]
+0889BA48:[0E2686EF/FC000000]: jal        0x089A1BBC [sceKernelDcacheWritebackInvalidateRange]
 0889BA4C:[00000000]: nop
 0889BA50:[26940001]: addiu      $s4, $s4, 1
 0889BA54:[0292202A]: slt        $a0, $s4, $s2
