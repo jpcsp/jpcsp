@@ -21,6 +21,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_COUNT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_SEMAPHORE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_SEMA_ZERO;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
@@ -257,17 +258,17 @@ public class SemaManager {
             log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid) + ",signal=" + signal + ",timeout=0x" + Integer.toHexString(timeout_addr) + ") callbacks=" + doCallbacks);
         }
 
-        if (IntrManager.getInstance().isInsideInterrupt()) {
-            if (log.isDebugEnabled()) {
-                log.debug("hleKernelWaitSema called insided an interrupt");
-            }
-            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
-            return;
-        }
         if (signal <= 0) {
             log.warn("hleKernelWaitSema - bad signal " + signal);
             cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_COUNT;
             return;
+        }
+        if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelWaitSema called when dispatch thread disabled");
+            }
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);

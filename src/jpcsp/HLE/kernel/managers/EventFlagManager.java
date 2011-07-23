@@ -19,8 +19,10 @@ package jpcsp.HLE.kernel.managers;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_NO_MULTI_PERM;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_EVENT_FLAG_POLL_FAILED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_MODE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CANCELLED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_DELETE;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
@@ -274,13 +276,28 @@ public class EventFlagManager {
             log.debug("hleKernelWaitEventFlag uid=0x" + Integer.toHexString(uid) + " bits=0x" + Integer.toHexString(bits) + " wait=0x" + Integer.toHexString(wait) + " outBits=0x" + Integer.toHexString(outBits_addr) + " timeout=0x" + Integer.toHexString(timeout_addr) + " callbacks=" + doCallbacks);
         }
 
+        if ((wait & ~(PSP_EVENT_WAITOR | PSP_EVENT_WAITCLEAR | PSP_EVENT_WAITCLEARALL)) != 0 ||
+            (wait & (PSP_EVENT_WAITCLEAR | PSP_EVENT_WAITCLEARALL)) == (PSP_EVENT_WAITCLEAR | PSP_EVENT_WAITCLEARALL)) {
+        	cpu.gpr[2] = ERROR_KERNEL_ILLEGAL_MODE;
+        	return;
+        }
+        if (bits == 0) {
+        	cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
+        	return;
+        }
+        if (!Modules.ThreadManForUserModule.isDispatchThreadEnabled()) {
+            if (log.isDebugEnabled()) {
+                log.debug("hleKernelWaitEventFlag called when dispatch thread disabled");
+            }
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
+        }
+
         SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", true);
         SceKernelEventFlagInfo event = eventMap.get(uid);
         if (event == null) {
             log.warn("hleKernelWaitEventFlag unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_KERNEL_NOT_FOUND_EVENT_FLAG;
-        } else if (bits == 0) {
-        	cpu.gpr[2] = ERROR_KERNEL_EVENT_FLAG_ILLEGAL_WAIT_PATTERN;
         } else if (event.numWaitThreads >= 1 &&
                 (event.attr & PSP_EVENT_WAITMULTIPLE) != PSP_EVENT_WAITMULTIPLE) {
             log.warn("hleKernelWaitEventFlag already another thread waiting on it");
