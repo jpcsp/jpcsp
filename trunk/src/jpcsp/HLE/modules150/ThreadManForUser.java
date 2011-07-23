@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ADDR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
@@ -29,6 +30,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_ALREADY
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_NOT_SUSPEND;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_THREAD_IS_TERMINATED;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_STATUS_RELEASED;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_WAIT_TIMEOUT;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_BLOCKED;
@@ -875,6 +877,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     public boolean isThreadBlocked(SceKernelThreadInfo thread) {
     	return thread.isWaiting() && thread.waitType == JPCSP_WAIT_BLOCKED;
+    }
+
+    public boolean isDispatchThreadEnabled() {
+    	return dispatchThreadEnabled;
     }
 
     public void hleBlockCurrentThread() {
@@ -2244,7 +2250,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (threadMap.containsKey(thid)) {
@@ -2296,8 +2302,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         if (threadEventHandlerMap.containsKey(uid)) {
             threadEventHandlerMap.remove(uid);
@@ -2335,7 +2345,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         String name = readStringNZ(name_addr, 32);
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceKernelCallbackInfo callback = hleKernelCreateCallback(name, func_addr, user_arg_addr);
@@ -2348,7 +2358,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (hleKernelDeleteCallback(uid)) {
@@ -2440,7 +2450,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
 
@@ -2494,8 +2504,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         hleKernelSleepThread(false);
     }
@@ -2510,8 +2524,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         hleKernelSleepThread(true);
         checkCallbacks();
@@ -2637,8 +2655,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         hleKernelWaitThreadEnd(uid, timeout_addr, false);
     }
@@ -2654,8 +2676,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         hleKernelWaitThreadEnd(uid, timeout_addr, true);
         checkCallbacks();
@@ -2668,8 +2694,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int micros = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         hleKernelDelayThread(micros, false);
     }
@@ -2681,8 +2711,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int micros = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         hleKernelDelayThread(micros, true);
     }
@@ -2701,8 +2735,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int sysclocks_addr = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         if (Memory.isAddressGood(sysclocks_addr)) {
             long sysclocks = mem.read64(sysclocks_addr);
@@ -2729,8 +2767,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int sysclocks_addr = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         if (Memory.isAddressGood(sysclocks_addr)) {
             long sysclocks = mem.read64(sysclocks_addr);
@@ -2746,7 +2788,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.semas.sceKernelCreateSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
@@ -2756,7 +2798,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.semas.sceKernelDeleteSema(cpu.gpr[4]);
@@ -2771,7 +2813,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.semas.sceKernelWaitSema(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
@@ -2781,7 +2823,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.semas.sceKernelWaitSemaCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
@@ -2806,7 +2848,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.eventFlags.sceKernelCreateEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
@@ -2816,7 +2858,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.eventFlags.sceKernelDeleteEventFlag(cpu.gpr[4]);
@@ -2836,7 +2878,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.eventFlags.sceKernelWaitEventFlag(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
@@ -2846,7 +2888,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.eventFlags.sceKernelWaitEventFlagCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
@@ -2871,7 +2913,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mbx.sceKernelCreateMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
@@ -2881,7 +2923,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.mbx.sceKernelDeleteMbx(cpu.gpr[4]);
@@ -2896,8 +2938,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.mbx.sceKernelReceiveMbx(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
@@ -2906,8 +2952,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.mbx.sceKernelReceiveMbxCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
@@ -2931,7 +2981,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.msgPipes.sceKernelCreateMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
@@ -2941,7 +2991,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.msgPipes.sceKernelDeleteMsgPipe(cpu.gpr[4]);
@@ -2951,8 +3001,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.msgPipes.sceKernelSendMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
@@ -2961,8 +3015,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.msgPipes.sceKernelSendMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
@@ -2976,8 +3034,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.msgPipes.sceKernelReceiveMsgPipe(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
@@ -2986,8 +3048,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.msgPipes.sceKernelReceiveMsgPipeCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
     }
@@ -3011,7 +3077,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.vpl.sceKernelCreateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]);
@@ -3021,7 +3087,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.vpl.sceKernelDeleteVpl(cpu.gpr[4]);
@@ -3031,8 +3097,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.vpl.sceKernelAllocateVpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
@@ -3041,8 +3111,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.vpl.sceKernelAllocateVplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
@@ -3056,7 +3130,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.vpl.sceKernelFreeVpl(cpu.gpr[4], cpu.gpr[5]);
@@ -3076,7 +3150,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.fpl.sceKernelCreateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]);
@@ -3086,7 +3160,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.fpl.sceKernelDeleteFpl(cpu.gpr[4]);
@@ -3096,8 +3170,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.fpl.sceKernelAllocateFpl(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
@@ -3106,8 +3184,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
+        }
+        if (!isDispatchThreadEnabled()) {
+        	cpu.gpr[2] = ERROR_KERNEL_WAIT_CAN_NOT_WAIT;
+        	return;
         }
         Managers.fpl.sceKernelAllocateFplCB(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
     }
@@ -3121,7 +3203,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         Managers.fpl.sceKernelFreeFpl(cpu.gpr[4], cpu.gpr[5]);
@@ -3305,7 +3387,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceKernelVTimerInfo sceKernelVTimerInfo = new SceKernelVTimerInfo(name);
@@ -3329,7 +3411,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.remove(vtimerUid);
@@ -3477,7 +3559,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
@@ -3512,7 +3594,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         SceKernelVTimerInfo sceKernelVTimerInfo = vtimers.get(vtimerUid);
@@ -3776,7 +3858,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (uid == 0) {
@@ -3818,7 +3900,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int data_addr = cpu.gpr[6];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!checkThreadID(uid)) {
@@ -3872,7 +3954,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (exitStatus < 0) {
@@ -3909,7 +3991,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         thread.exitStatus = exitStatus;
@@ -3950,7 +4032,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (!checkThreadID(uid)) {
@@ -3984,7 +4066,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         dispatchThreadEnabled = false;
@@ -4008,7 +4090,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
@@ -4163,7 +4245,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = currentThread.uid;
@@ -4177,7 +4259,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = currentThread.currentPriority;
@@ -4218,7 +4300,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         cpu.gpr[2] = size;
@@ -4231,7 +4313,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         int uid = cpu.gpr[4];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (uid == 0) {
@@ -4295,7 +4377,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         if (uid == 0) {
@@ -4352,7 +4434,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
-            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+            cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
         int saveCount = 0;
