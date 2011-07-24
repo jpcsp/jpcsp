@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import static jpcsp.HLE.modules150.sceMpeg.endianSwap32;
-import static jpcsp.HLE.modules150.sceMpeg.readUnaligned32;
+import static jpcsp.util.Utilities.endianSwap32;
+import static jpcsp.util.Utilities.readUnaligned32;
 
 import java.util.HashMap;
 
