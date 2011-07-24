@@ -919,7 +919,13 @@ public class Loader {
                         importAddress, nid, module.importFixupAttempts));
 
                     it.remove();
-                    mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
+                    // This is an import to be ignored, implement it with the following
+                    // code sequence:
+                    //    jr $ra          (already written to memory)
+                    //    li $v0, 0
+                    // Rem.: "BUST A MOVE GHOST" is testing the return value $v0,
+                    //       so it has to be set explicitly to 0.
+                    mem.write32(importAddress + 4, AllegrexOpcodes.ADDU | (2 << 11) | (0 << 16) | (0 << 21)); // addu $v0, $zr, $zr <=> li $v0, 0
                 } else {
                     // Attempt to fixup stub to known syscalls
                     int code = nidMapper.nidToSyscall(nid);
