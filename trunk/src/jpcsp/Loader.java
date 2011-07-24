@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import static jpcsp.util.Utilities.readUnaligned32;
+import static jpcsp.util.Utilities.writeUnaligned32;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
@@ -716,7 +719,7 @@ public class Loader {
             // Address of data to relocate
             int data_addr = (int)(baseAddress + rel.getR_offset() + phOffset);
             // Value of data to relocate
-            int data = mem.read32(data_addr);
+            int data = readUnaligned32(mem, data_addr);
             long result = 0; // Used to hold the result of relocation, OR this back into data
 
             int word32 = data & 0xFFFFFFFF; // <=> data;
@@ -782,7 +785,7 @@ public class Loader {
                     // Process deferred R_MIPS_HI16
                     for (Iterator<Integer> it = deferredHi16.iterator(); it.hasNext();) {
                         int data_addr2 = it.next();
-                        int data2 = mem.read32(data_addr2);
+                        int data2 = readUnaligned32(mem, data_addr2);
                         result = ((data2 & 0x0000FFFF) << 16) + A + S;
                         // The low order 16 bits are always treated as a signed
                         // value. Therefore, a negative value in the low order bits
@@ -799,9 +802,9 @@ public class Loader {
                         data2 &= ~0x0000FFFF;
                         data2 |= (result >> 16) & 0x0000FFFF; // truncate
                     	if (log.isTraceEnabled()) {
-                    		log.trace(String.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, mem.read32(data_addr2), data2));
+                    		log.trace(String.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, readUnaligned32(mem, data_addr2), data2));
                         }
-                        mem.write32(data_addr2, data2);
+                    	writeUnaligned32(mem, data_addr2, data2);
                         it.remove();
                     }
                 	if (log.isTraceEnabled()) {
@@ -831,7 +834,7 @@ public class Loader {
                     break;
             }
 
-            mem.write32(data_addr, data);
+            writeUnaligned32(mem, data_addr, data);
         }
     }
 

@@ -574,4 +574,37 @@ public class Utilities {
     public static int alignDown(int value, int alignment) {
     	return value & ~alignment;
     }
+
+    public static int endianSwap32(int x) {
+    	return Integer.reverseBytes(x);
+    }
+
+    public static int readUnaligned32(Memory mem, int address) {
+        switch (address & 3) {
+            case 0: return mem.read32(address);
+            case 2: return mem.read16(address) | (mem.read16(address + 2) << 16);
+            default:
+                return (mem.read8(address + 3) << 24) |
+                       (mem.read8(address + 2) << 16) |
+                       (mem.read8(address + 1) <<  8) |
+                       (mem.read8(address));
+        }
+    }
+
+    public static void writeUnaligned32(Memory mem, int address, int data) {
+        switch (address & 3) {
+            case 0:
+            	mem.write32(address, data);
+            	break;
+            case 2:
+            	mem.write16(address, (short) data);
+            	mem.write16(address + 2, (short) (data >> 16));
+            	break;
+            default:
+            	mem.write8(address, (byte) data);
+            	mem.write8(address + 1, (byte) (data >> 8));
+            	mem.write8(address + 2, (byte) (data >> 16));
+            	mem.write8(address + 3, (byte) (data >> 24));
+        }
+    }
 }

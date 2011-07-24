@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.media;
 
+import static jpcsp.util.Utilities.endianSwap32;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBufferByte;
@@ -262,8 +264,8 @@ public class MediaEngine {
     public void init(byte[] bufferData) {
     	this.bufferData = bufferData;
     	this.bufferAddress = 0;
-    	this.bufferSize = sceMpeg.endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_SIZE_OFFSET));
-    	this.bufferMpegOffset = sceMpeg.endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
+    	this.bufferSize = endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_SIZE_OFFSET));
+    	this.bufferMpegOffset = endianSwap32(read32(bufferData, sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
     	init();
     }
 
