@@ -51,7 +51,7 @@ public class SceKernelVplInfo {
     private SceKernelVplInfo(String name, int partitionid, int attr, int size, int memType) {
         this.name = name;
         this.attr = attr;
-        poolSize = size - vplBlockHeaderSize; // 32 bytes overhead per VPL
+        poolSize = size - vplHeaderSize; // 32 bytes overhead per VPL
 
         freeSize = poolSize;
         numWaitThreads = 0;
