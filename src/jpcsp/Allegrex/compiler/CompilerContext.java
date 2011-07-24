@@ -128,6 +128,7 @@ public class CompilerContext implements ICompilerContext {
 
         if (fastSyscalls == null) {
 	        fastSyscalls = new TreeSet<Integer>();
+	        addFastSyscall(0x3AD58B8C); // sceKernelSuspendDispatchThread
 	        addFastSyscall(0x110DEC9A); // sceKernelUSec2SysClock
 	        addFastSyscall(0xC8CD158C); // sceKernelUSec2SysClockWide
 	        addFastSyscall(0xBA6B92E2); // sceKernelSysClock2USec 

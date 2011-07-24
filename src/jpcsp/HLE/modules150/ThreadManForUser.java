@@ -4062,7 +4062,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+
         dispatchThreadEnabled = false;
+
         cpu.gpr[2] = state;
     }
 
@@ -4086,10 +4088,13 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
+
+        cpu.gpr[2] = 0;
+
         if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
             dispatchThreadEnabled = true;
+            hleRescheduleCurrentThread();
         }
-        cpu.gpr[2] = 0;
     }
 
     public void sceKernelChangeCurrentThreadAttr(Processor processor) {
