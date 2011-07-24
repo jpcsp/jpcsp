@@ -259,7 +259,7 @@ public class VplManager {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (addr == 0) {
                 if (log.isDebugEnabled()) {
-                    log.debug("hleKernelAllocateFpl - '" + vpl.name + "' fast check failed");
+                    log.debug("hleKernelAllocateVpl - '" + vpl.name + "' fast check failed");
                 }
                 if (wait) {
                     vpl.numWaitThreads++;
