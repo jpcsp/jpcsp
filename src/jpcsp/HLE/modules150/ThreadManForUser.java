@@ -3917,12 +3917,15 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
         } else if (!thread.isStopped()) {
             cpu.gpr[2] = ERROR_KERNEL_THREAD_IS_NOT_DORMANT;
         } else {
+        	// Remember the currentThread as it might be changed when starting the thread
+            SceKernelThreadInfo callingThread = currentThread;
+
             log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
             cpu.gpr[2] = 0;
             hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
             thread.exitStatus = ERROR_KERNEL_THREAD_IS_NOT_DORMANT; // Update the exit status.
 
-            triggerThreadEvent(thread, currentThread, THREAD_EVENT_START);
+            triggerThreadEvent(thread, callingThread, THREAD_EVENT_START);
         }
     }
 
