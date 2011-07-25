@@ -21,7 +21,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
-public class sceUtility extends jpcsp.HLE.modules310.sceUtility {
+public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
