@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package jpcsp.HLE.modules310;
+package jpcsp.HLE.modules303;
 
 import java.util.HashMap;
 
@@ -34,7 +34,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
-        if (version >= 310) {
+        if (version >= 303) {
 
             mm.addFunction(0x2A2B3DE0, sceUtilityLoadModuleFunction);
             mm.addFunction(0xE49BFE92, sceUtilityUnloadModuleFunction);
@@ -48,7 +48,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
     public void uninstallModule(HLEModuleManager mm, int version) {
         super.uninstallModule(mm, version);
 
-        if (version >= 310) {
+        if (version >= 303) {
 
             mm.removeFunction(sceUtilityLoadModuleFunction);
             mm.removeFunction(sceUtilityUnloadModuleFunction);
