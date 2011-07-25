@@ -217,11 +217,16 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         int allocatedAddress = 0;
 
         int alignment = defaultSizeAlignment - 1;
+
+        // The allocated size has not to be aligned to the requested alignment
+        // (for PSP_SMEM_LowAligned or PSP_SMEM_HighAligned),
+        // it is only aligned to the default size alignment.
+        int allocatedSize = Utilities.alignUp(size, alignment);
+
         if (type == PSP_SMEM_LowAligned || type == PSP_SMEM_HighAligned) {
             // Use the alignment provided in the addr parameter
             alignment = addr - 1;
         }
-        int allocatedSize = Utilities.alignUp(size, alignment);
 
         switch (type) {
         	case PSP_SMEM_Low:
@@ -242,6 +247,9 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         SysMemInfo sysMemInfo;
 		if (allocatedAddress == 0) {
             log.warn(String.format("malloc cannot allocate partition=%d, type=%s, size=0x%X, addr=0x%08X", partitionid, getTypeName(type), size, addr));
+			if (log.isTraceEnabled()) {
+				log.trace("Free list: " + freeMemoryChunks);
+			}
 			sysMemInfo = null;
 		} else {
 			sysMemInfo = new SysMemInfo(partitionid, name, type, size, allocatedSize, allocatedAddress);
