@@ -57,10 +57,11 @@ public class VplManager {
 
     protected final static int PSP_VPL_ATTR_FIFO = 0;
     protected final static int PSP_VPL_ATTR_PRIORITY = 0x100;
+    protected final static int PSP_VPL_ATTR_UNKNOWN = 0x200; // Maybe a WAITMULTIPLE option like for event flags?
 
-    public final static int PSP_VPL_ATTR_MASK = 0x41FF;            // Anything outside this mask is an illegal attr.
     public final static int PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
     public final static int PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
+    public final static int PSP_VPL_ATTR_MASK = PSP_VPL_ATTR_EXT | PSP_VPL_ATTR_ADDR_HIGH | PSP_VPL_ATTR_UNKNOWN | PSP_VPL_ATTR_PRIORITY | 0xFF; // Anything outside this mask is an illegal attr.
 
     public void reset() {
         vplMap = new HashMap<Integer, SceKernelVplInfo>();
@@ -188,12 +189,16 @@ public class VplManager {
 
         String name = Utilities.readStringZ(name_addr);
         if (log.isDebugEnabled()) {
-            log.debug("sceKernelCreateVpl(name=" + name + ",partition=" + partitionid + ",attr=0x" + Integer.toHexString(attr) + ",size=0x" + Integer.toHexString(size) + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
+            log.debug(String.format("sceKernelCreateVpl(name=%s, partition=%d, attr=0x%X, size=0x%X, opt=0x%08X)", name, partitionid, attr, size, opt_addr));
         }
 
         if (Memory.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
             log.warn("sceKernelCreateVpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
+        }
+
+        if ((attr & (PSP_VPL_ATTR_UNKNOWN | PSP_VPL_ATTR_EXT)) != 0) {
+            log.warn(String.format("sceKernelCreateVpl(name=%s, partition=%d, attr=0x%X, size=0x%X, opt=0x%08X) - unknown attribute", name, partitionid, attr, size, opt_addr));
         }
 
         int memType = PSP_SMEM_Low;
