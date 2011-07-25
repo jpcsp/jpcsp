@@ -13,6 +13,8 @@
 PSP_MODULE_INFO("Memory Test", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
+#define PSP_SMEM_LowAligned 3
+
 int done = 0;
 
 int testThread(SceSize args, void *argp)
@@ -89,7 +91,8 @@ int main(int argc, char *argv[])
 	pspDebugScreenInit();
 	pspDebugScreenPrintf("Press Cross to start the Memory Test\n");
 	pspDebugScreenPrintf("Press Circle to Start a new thread\n");
-	pspDebugScreenPrintf("Press Rect to restart with sceKernelLoadExec (requires FW 1.5)\n");
+	pspDebugScreenPrintf("Press Square to restart with sceKernelLoadExec (requires FW 1.5)\n");
+	pspDebugScreenPrintf("Press Left to start Memory Test for alignment\n");
 	pspDebugScreenPrintf("Press Triangle to Exit\n");
 
 	while(!done)
@@ -210,6 +213,30 @@ int main(int argc, char *argv[])
 		if (buttonDown & PSP_CTRL_TRIANGLE)
 		{
 			done = 1;
+		}
+
+		if (buttonDown & PSP_CTRL_LEFT)
+		{
+			SceUID uid;
+			int size;
+			int alignment;
+			void *addr;
+
+			size = 0x100;
+			alignment = 0x100;
+			uid = sceKernelAllocPartitionMemory(2, "Test", PSP_SMEM_LowAligned, size, (void*) alignment);
+			addr = sceKernelGetBlockHeadAddr(uid);
+			pspDebugScreenPrintf("sceKernelAllocPartitionMemory(0x%X, align=0x%X) = 0x%08X\n", size, alignment, (int) addr);
+			size = 0x1100;
+			alignment = 0x1000;
+			uid = sceKernelAllocPartitionMemory(2, "Test", PSP_SMEM_LowAligned, size, (void*) alignment);
+			addr = sceKernelGetBlockHeadAddr(uid);
+			pspDebugScreenPrintf("sceKernelAllocPartitionMemory(0x%X, align=0x%X) = 0x%08X\n", size, alignment, (int) addr);
+			size = 0x100;
+			alignment = 0x100;
+			uid = sceKernelAllocPartitionMemory(2, "Test", PSP_SMEM_LowAligned, 0x100, (void*) alignment);
+			addr = sceKernelGetBlockHeadAddr(uid);
+			pspDebugScreenPrintf("sceKernelAllocPartitionMemory(0x%X, align=0x%X) = 0x%08X\n", size, alignment, (int) addr);
 		}
 
 		oldButtons = pad.Buttons;
