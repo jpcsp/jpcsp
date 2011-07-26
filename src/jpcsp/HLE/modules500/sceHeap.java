@@ -75,7 +75,8 @@ public class sceHeap implements HLEModule {
         }
     }
 
-    private final static int PSP_HEAP_ATTR_ADDR_HIGH = 0x4000;       // Create the heap in high memory.
+    protected final static int PSP_HEAP_ATTR_ADDR_HIGH = 0x4000;       // Create the heap in high memory.
+    protected final static int PSP_HEAP_ATTR_EXT =       0x8000;       // Automatically extend the heap's memory.
     private HashMap<Integer, SysMemInfo> heapMap = new HashMap<Integer, SysMemInfo>();
     private HashMap<Integer, SysMemInfo> heapMemMap = new HashMap<Integer, SysMemInfo>();
 
@@ -278,7 +279,7 @@ public class sceHeap implements HLEModule {
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
-        }      
+        }
         int memType = PSP_SMEM_Low;
         if ((attr & PSP_HEAP_ATTR_ADDR_HIGH) == PSP_HEAP_ATTR_ADDR_HIGH) {
             memType = PSP_SMEM_High;

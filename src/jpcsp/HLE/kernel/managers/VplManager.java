@@ -55,13 +55,12 @@ public class VplManager {
     private HashMap<Integer, SceKernelVplInfo> vplMap;
     private VplWaitStateChecker vplWaitStateChecker;
 
-    protected final static int PSP_VPL_ATTR_FIFO = 0;
+    protected final static int PSP_VPL_ATTR_FIFO =         0;
     protected final static int PSP_VPL_ATTR_PRIORITY = 0x100;
-    protected final static int PSP_VPL_ATTR_UNKNOWN = 0x200; // Maybe a WAITMULTIPLE option like for event flags?
-
-    public final static int PSP_VPL_ATTR_ADDR_HIGH = 0x4000;       // Create the vpl in high memory.
-    public final static int PSP_VPL_ATTR_EXT = 0x8000;             // Extend the vpl memory area (exact purpose is unknown).
-    public final static int PSP_VPL_ATTR_MASK = PSP_VPL_ATTR_EXT | PSP_VPL_ATTR_ADDR_HIGH | PSP_VPL_ATTR_UNKNOWN | PSP_VPL_ATTR_PRIORITY | 0xFF; // Anything outside this mask is an illegal attr.
+    protected final static int PSP_VPL_ATTR_PASS =     0x200;   // Allow threads that want to allocate small memory blocks to bypass the waiting queue (less memory goes first).
+    public final static int PSP_VPL_ATTR_ADDR_HIGH =  0x4000;   // Create the VPL in high memory.
+    public final static int PSP_VPL_ATTR_EXT =        0x8000;   // Automatically extend the VPL's memory area (when allocating a block from the VPL and the remaining size is too small, this flag tells the VPL to automatically attempt to extend it's memory area).
+    public final static int PSP_VPL_ATTR_MASK = PSP_VPL_ATTR_EXT | PSP_VPL_ATTR_ADDR_HIGH | PSP_VPL_ATTR_PASS | PSP_VPL_ATTR_PRIORITY | 0xFF; // Anything outside this mask is an illegal attr.
 
     public void reset() {
         vplMap = new HashMap<Integer, SceKernelVplInfo>();
@@ -195,10 +194,6 @@ public class VplManager {
         if (Memory.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
             log.warn("sceKernelCreateVpl option at 0x" + Integer.toHexString(opt_addr) + " (size=" + optsize + ")");
-        }
-
-        if ((attr & (PSP_VPL_ATTR_UNKNOWN | PSP_VPL_ATTR_EXT)) != 0) {
-            log.warn(String.format("sceKernelCreateVpl(name=%s, partition=%d, attr=0x%X, size=0x%X, opt=0x%08X) - unknown attribute", name, partitionid, attr, size, opt_addr));
         }
 
         int memType = PSP_SMEM_Low;
