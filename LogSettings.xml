@@ -22,6 +22,13 @@
 <param name='ConversionPattern' value='%m%n' />
 </layout>
 </appender>
+  <appender name='KprintfTxtAppender' class='org.apache.log4j.FileAppender'>
+    <param name='File' value='kprintf.txt' />
+    <param name='Append' value='false' />
+    <layout class='org.apache.log4j.PatternLayout'>
+      <param name='ConversionPattern' value='%m' />
+    </layout>
+  </appender>
   <appender name="TxtAppender" class="org.apache.log4j.FileAppender">
     <param name="File" value="log.txt" />
     <param name="Append" value="false" />
@@ -40,10 +47,17 @@
 <logger name='loader' > <level value='off' /> </logger>
 <logger name='stdout' />
 <logger name='stderr' />
+
 <!-- Output profiler info to 'profiler.txt' -->
 <logger name='profiler' additivity='false'>
 <level value='info' />
 <appender-ref ref='ProfilerTxtAppender' />
+</logger>
+
+<!-- Output Kprintf info to 'kprintf.txt' -->
+<logger name='kprintf' additivity='false'>
+<level value='info' />
+<appender-ref ref='KprintfTxtAppender' />
 </logger>
 
 <root>
