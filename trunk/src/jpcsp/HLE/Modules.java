@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 
 import jpcsp.HLE.modules.InterruptManager;
 import jpcsp.HLE.modules.IoFileMgrForUser;
+import jpcsp.HLE.modules.KDebugForKernel;
 import jpcsp.HLE.modules.Kernel_Library;
 import jpcsp.HLE.modules.LoadCoreForKernel;
 import jpcsp.HLE.modules.LoadExecForUser;
@@ -139,6 +140,7 @@ public class Modules {
     public static sceJpeg sceJpegModule = new sceJpeg();
     public static sceUsb sceUsbModule = new sceUsb();
     public static sceHeap sceHeapModule = new sceHeap();
+    public static KDebugForKernel KDebugForKernelModule = new KDebugForKernel();
 
     public static Logger log = Logger.getLogger("hle");
 

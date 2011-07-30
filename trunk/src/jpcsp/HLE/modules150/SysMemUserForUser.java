@@ -358,7 +358,54 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
         System.err.println(fragmentedDiagram);
     }
 
-	public void sceKernelMaxFreeMemSize(Processor processor) {
+    public void hleKernelPrintf(CpuState cpu, Logger logger, String sceFunctionName) {
+		int string_addr = cpu.gpr[4];
+
+		String msg = readStringNZ(string_addr, 256);
+        if (log.isDebugEnabled()) {
+        	log.debug(String.format("%s(string_addr=0x%08X) '%s'", sceFunctionName, string_addr, msg));
+        }
+
+        // Format and print the message to stdout
+        if (logger.isInfoEnabled()) {
+        	String formattedMsg = msg;
+        	try {
+        		int[] gpr = cpu.gpr;
+            	// For now, use only the 7 register parameters: $a1-$a3, $t0-$t3
+            	// Further parameters should be retrieved from the stack.
+        		Object[] formatParameters = new Object[] {
+        				gpr[5],
+        				gpr[6],
+        				gpr[7],
+        				gpr[8],
+        				gpr[9],
+        				gpr[10],
+        				gpr[11]
+        		};
+
+        		// Translate the C-like format string to a Java format string:
+        		// - %u or %i -> %d
+        		// - %p -> %08X
+        		String javaMsg = msg;
+        		javaMsg = javaMsg.replaceAll("\\%[ui]", "%d");
+        		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
+
+        		// Support basic string output "%s"
+        		// Assume %s is always the first parameter...
+        		if (javaMsg.contains("%s")) {
+        			formatParameters[0] = Utilities.readStringZ(gpr[5]);
+        		}
+
+        		// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
+        		formattedMsg = String.format(javaMsg, formatParameters[0], formatParameters[1], formatParameters[2], formatParameters[3], formatParameters[4], formatParameters[5], formatParameters[6]);
+        	} catch (Exception e) {
+        		// Ignore formatting exception
+        	}
+        	logger.info(formattedMsg);
+        }
+    }
+
+    public void sceKernelMaxFreeMemSize(Processor processor) {
 		CpuState cpu = processor.cpu;
 
 		int maxFreeMemSize = maxFreeMemSize();
@@ -451,34 +498,7 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
 	public void sceKernelPrintf(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		int string_addr = cpu.gpr[4];
-
-		String msg = readStringNZ(string_addr, 256);
-        if (log.isDebugEnabled()) {
-        	log.debug(String.format("sceKernelPrintf(string_addr=0x%08X) '%s'", string_addr, msg));
-        }
-
-        // Format and print the message to stdout
-        if (stdout.isInfoEnabled()) {
-        	String formattedMsg = msg;
-        	try {
-        		// Translate the C-like format string to a Java format string:
-        		// - %u or %i -> %d
-        		// - %p -> %08X
-        		String javaMsg = msg;
-        		javaMsg = javaMsg.replaceAll("\\%[ui]", "%d");
-        		javaMsg = javaMsg.replaceAll("\\%p", "%08X");
-
-        		int[] gpr = cpu.gpr;
-            	// For now, use only the 7 register parameters: $a1-$a3, $t0-$t3
-            	// Further parameters should be retrieved from the stack.
-            	// String.format: If there are more arguments than format specifiers, the extra arguments are ignored.
-        		formattedMsg = String.format(javaMsg, gpr[5], gpr[6], gpr[7], gpr[8], gpr[9], gpr[10], gpr[11]);
-        	} catch (Exception e) {
-        		// Ignore formatting exception
-        	}
-        	stdout.info(formattedMsg);
-        }
+		hleKernelPrintf(cpu, stdout, "sceKernelPrintf");
 
         cpu.gpr[2] = 0;
 	}

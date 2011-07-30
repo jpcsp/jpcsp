@@ -124,7 +124,8 @@ public class HLEModuleManager {
         sceUsbCam(Modules.sceUsbCamModule, new String[] { "PSP_USB_MODULE_CAM", "PSP_MODULE_USB_CAM" }),
         sceJpeg(Modules.sceJpegModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC" }),
         sceUsb(Modules.sceUsbModule),
-        sceHeap(Modules.sceHeapModule);
+        sceHeap(Modules.sceHeapModule),
+        KDebugForKernel(Modules.KDebugForKernelModule);
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
