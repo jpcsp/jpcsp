@@ -119,19 +119,19 @@ public class StdioForUser implements HLEModule {
     public void sceKernelStdin(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        cpu.gpr[2] = IoFileMgrForUser.STDIN_UID;
+        cpu.gpr[2] = IoFileMgrForUser.STDIN_ID;
     }
 
     public void sceKernelStdout(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        cpu.gpr[2] = IoFileMgrForUser.STDOUT_UID;
+        cpu.gpr[2] = IoFileMgrForUser.STDOUT_ID;
     }
 
     public void sceKernelStderr(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        cpu.gpr[2] = IoFileMgrForUser.STDERR_UID;
+        cpu.gpr[2] = IoFileMgrForUser.STDERR_ID;
     }
 
     public final HLEModuleFunction sceKernelStdioReadFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioRead") {

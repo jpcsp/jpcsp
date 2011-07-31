@@ -136,9 +136,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public final static int PSP_DEV_TYPE_ALIAS = 0x20;
     public final static int PSP_DEV_TYPE_MOUNT = 0x40;
 
-    public final static int STDOUT_UID = 1;
-    public final static int STDERR_UID = 2;
-    public final static int STDIN_UID = 3;
+    public final static int STDOUT_ID = 1;
+    public final static int STDERR_ID = 2;
+    public final static int STDIN_ID = 3;
+
+    private final static int MIN_ID = 4;
+    private final static int MAX_ID = 63;
+    private final static String idPurpose = "IOFileManager-File";
 
     protected static enum IoOperation {
         open(5), close(1), read(5), write(5), seek, ioctl(2), remove, rename, mkdir;
@@ -165,8 +169,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     // modeStrings indexed by [0, PSP_O_RDONLY, PSP_O_WRONLY, PSP_O_RDWR]
     // SeekableRandomFile doesn't support write only: take "rw",
     private final static String[] modeStrings = {"r", "r", "rw", "rw"};
-    private HashMap<Integer, IoInfo> filelist;
-    private HashMap<Integer, IoDirInfo> dirlist;
+    private HashMap<Integer, IoInfo> fileIds;
+    private HashMap<Integer, IoInfo> fileUids;
+    private HashMap<Integer, IoDirInfo> dirIds;
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
     private IoWaitStateChecker ioWaitStateChecker;
@@ -195,6 +200,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public long position; // virtual position, beyond the end is allowed, before the start is an error
         public long cachePosition; // Simulate an out of cache position for asynchronous ioctl read/seek operations.
         public boolean sectorBlockMode;
+        public final int id;
         public final int uid;
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
         public boolean closePending = false; // sceIoCloseAsync has been called on this file
@@ -216,8 +222,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             this.flags = flags;
             this.permissions = permissions;
             sectorBlockMode = false;
-            uid = SceUidManager.getNewUid("IOFileManager-File");
-            filelist.put(uid, this);
+            id = getNewId();
+            uid = getNewUid();
+            fileIds.put(id, this);
+            fileUids.put(uid, this);
         }
 
         /** UMD version (read only) */
@@ -229,8 +237,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             this.flags = flags;
             this.permissions = permissions;
             sectorBlockMode = false;
-            uid = SceUidManager.getNewUid("IOFileManager-File");
-            filelist.put(uid, this);
+            id = getNewId();
+            uid = getNewUid();
+            fileIds.put(id, this);
+            fileUids.put(uid, this);
         }
 
         public boolean isUmdFile() {
@@ -256,6 +266,17 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 // Ignore.
             }
         }
+
+        public IoInfo close() {
+        	IoInfo info = fileIds.remove(id);
+        	if (info != null) {
+        		fileUids.remove(uid);
+        		releaseId(id);
+        		releaseUid(uid);
+        	}
+
+        	return info;
+        }
     }
 
     class IoDirInfo {
@@ -264,7 +285,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         final String[] filenames;
         int position;
         int printableposition;
-        final int uid;
+        final int id;
 
         public IoDirInfo(String path, String[] filenames) {
             // iso reader doesn't like path//filename, so trim trailing /
@@ -283,8 +304,8 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             if (filenames.length > position && filenames[position].equals("\01")) {
                 position++;
             }
-            uid = SceUidManager.getNewUid("IOFileManager-Directory");
-            dirlist.put(uid, this);
+            id = getNewId();
+            dirIds.put(id, this);
         }
 
         public boolean hasNext() {
@@ -299,6 +320,15 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 printableposition++;
             }
             return filename;
+        }
+
+        public IoDirInfo close() {
+        	IoDirInfo info = dirIds.remove(id);
+        	if (info != null) {
+        		releaseId(id);
+        	}
+
+        	return info;
         }
     }
 
@@ -369,7 +399,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         @Override
         public boolean continueWaitState(SceKernelThreadInfo thread, ThreadWaitInfo wait) {
-            IoInfo info = filelist.get(wait.Io_id);
+            IoInfo info = fileIds.get(wait.Io_id);
             if (info == null) {
                 return false;
             }
@@ -479,9 +509,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     @Override
     public void start() {
-        if (filelist != null) {
+        if (fileIds != null) {
             // Close open files
-            for (Iterator<IoInfo> it = filelist.values().iterator(); it.hasNext();) {
+            for (Iterator<IoInfo> it = fileIds.values().iterator(); it.hasNext();) {
                 IoInfo info = it.next();
                 try {
                     info.readOnlyFile.close();
@@ -490,8 +520,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 }
             }
         }
-        filelist = new HashMap<Integer, IoInfo>();
-        dirlist = new HashMap<Integer, IoDirInfo>();
+        fileIds = new HashMap<Integer, IoInfo>();
+        fileUids = new HashMap<Integer, IoInfo>();
+        dirIds = new HashMap<Integer, IoDirInfo>();
         MemoryStick.setStateMs(MemoryStick.PSP_MEMORYSTICK_STATE_DRIVER_READY);
         defaultAsyncPriority = -1;
         if (ioListeners == null) {
@@ -510,6 +541,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     public boolean getAllowExtractPGDStatus() {
         return allowExtractPGD;
+    }
+
+    private static int getNewUid() {
+    	return SceUidManager.getNewUid(idPurpose);
+    }
+
+    private static void releaseUid(int uid) {
+    	SceUidManager.releaseUid(uid, idPurpose);
+    }
+
+    private static int getNewId() {
+    	return SceUidManager.getNewId(idPurpose, MIN_ID, MAX_ID);
+    }
+
+    private static void releaseId(int id) {
+    	SceUidManager.releaseId(id, idPurpose);
     }
 
     /*
@@ -813,18 +860,16 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         return resultFile;
     }
 
-    public SeekableDataInput getFile(int uid) {
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.get(uid);
+    public SeekableDataInput getFile(int id) {
+        IoInfo info = fileIds.get(id);
         if (info == null) {
             return null;
         }
         return info.readOnlyFile;
     }
 
-    public String getFileFilename(int uid) {
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.get(uid);
+    public String getFileFilename(int id) {
+        IoInfo info = fileIds.get(id);
         if (info == null) {
             return null;
         }
@@ -895,16 +940,19 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         ThreadManForUser threadMan = Modules.ThreadManForUserModule;
 
         int uid = cpu.gpr[asyncThreadRegisterArgument];
-        if (log.isDebugEnabled()) {
-            log.debug("hleAsyncThread uid=" + Integer.toHexString(uid));
-        }
 
-        IoInfo info = filelist.get(uid);
+        IoInfo info = fileUids.get(uid);
         if (info == null) {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("hleAsyncThread non-existing uid=%x", uid));
+            }
             cpu.gpr[2] = 0; // Exit status
             // Exit and delete the thread to free its resources (e.g. its stack)
             threadMan.hleKernelExitDeleteThread();
         } else {
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("hleAsyncThread id=%x", info.id));
+            }
             boolean asyncCompleted = doStepAsync(info);
             if (threadMan.getCurrentThread() == info.asyncThread) {
                 if (asyncCompleted) {
@@ -984,11 +1032,11 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     // Trigger Async callback.
                     threadMan.hleKernelNotifyCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, info.cbid, info.notifyArg);
                 }
-                // Find threads waiting on this uid and wake them up.
+                // Find threads waiting on this id and wake them up.
                 for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext();) {
                     SceKernelThreadInfo thread = it.next();
                     if (thread.waitType == JPCSP_WAIT_IO &&
-                            thread.wait.Io_id == info.uid) {
+                            thread.wait.Io_id == info.id) {
                         if (log.isDebugEnabled()) {
                             log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
                         }
@@ -1039,14 +1087,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     /*
      * HLE functions.
      */
-    public void hleIoWaitAsync(int uid, int res_addr, boolean wait, boolean callbacks) {
+    public void hleIoWaitAsync(int id, int res_addr, boolean wait, boolean callbacks) {
         if (log.isDebugEnabled()) {
-            log.debug("hleIoWaitAsync(uid=" + Integer.toHexString(uid) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
+            log.debug("hleIoWaitAsync(id=" + Integer.toHexString(id) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.get(uid);
+        IoInfo info = fileIds.get(id);
         if (info == null) {
-            log.warn("hleIoWaitAsync - unknown uid " + Integer.toHexString(uid));
+            log.warn("hleIoWaitAsync - unknown id " + Integer.toHexString(id));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else if (info.result == ERROR_KERNEL_NO_ASYNC_OP) {
             log.debug("hleIoWaitAsync - PSP_ERROR_NO_ASYNC_OP");
@@ -1064,7 +1111,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 // The file was marked as closePending, so close it right away to avoid delays.
                 if (info.closePending) {
                     log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
-                    hleIoClose(info.uid, false);
+                    hleIoClose(info.id, false);
                     waitForAsync = false;
                 }
                 // This case happens when the game switches thread before calling waitAsync,
@@ -1081,9 +1128,8 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             // The file was not found at sceIoOpenAsync.
             if (info.result == ERROR_ERRNO_FILE_NOT_FOUND) {
                 log.debug("hleIoWaitAsync - file not found, not waiting");
-                filelist.remove(info.uid);
+                info.close();
                 triggerAsyncThread(info);
-                SceUidManager.releaseUid(info.uid, "IOFileManager-File");
                 waitForAsync = false;
             }
 
@@ -1100,17 +1146,17 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     info.result = ERROR_KERNEL_NO_ASYNC_OP;
                     // Call the ioListeners.
                     for (IIoListener ioListener : ioListeners) {
-                        ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
+                        ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
                     }
                     // Start the waiting mode.
                     ThreadManForUser threadMan = Modules.ThreadManForUserModule;
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    currentThread.wait.Io_id = info.uid;
-                    threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.uid, ioWaitStateChecker, callbacks);
+                    currentThread.wait.Io_id = info.id;
+                    threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.id, ioWaitStateChecker, callbacks);
                 } else {
                     // For sceIoPollAsync, only call the ioListeners.
                     for (IIoListener ioListener : ioListeners) {
-                        ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
+                        ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
                     }
                 }
             }
@@ -1213,9 +1259,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                                 info.sectorBlockMode = true;
                             }
                             info.result = ERROR_KERNEL_NO_ASYNC_OP;
-                            Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                            Emulator.getProcessor().cpu.gpr[2] = info.id;
                             if (log.isDebugEnabled()) {
-                                log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
+                                log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
                             }
                         } catch (FileNotFoundException e) {
                             if (log.isDebugEnabled()) {
@@ -1252,9 +1298,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                             info.truncate(0);
                         }
                         info.result = ERROR_KERNEL_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
-                        Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                        Emulator.getProcessor().cpu.gpr[2] = info.id;
                         if (log.isDebugEnabled()) {
-                            log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
+                            log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
                         }
                     }
                 }
@@ -1281,26 +1327,25 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 // For async we still need to make and return a file handle even if we couldn't open the file,
                 // this is so the game can query on the handle (wait/async stat/io callback).
                 info = new IoInfo(readStringZ(filename_addr), null, null, flags, permissions);
-                Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                Emulator.getProcessor().cpu.gpr[2] = info.id;
             }
 
             startIoAsync(info, result, IoOperation.open);
         }
     }
 
-    private void hleIoClose(int uid, boolean async) {
+    private void hleIoClose(int id, boolean async) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
         if (log.isDebugEnabled()) {
-            log.debug("hleIoClose - uid " + Integer.toHexString(uid));
+            log.debug("hleIoClose - id " + Integer.toHexString(id));
         }
 
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
+        IoInfo info = fileIds.get(id);
         if (async) {
-            IoInfo info = filelist.get(uid);
             if (info != null) {
                 if (info.asyncPending) {
-                    log.warn("sceIoCloseAsync - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                    log.warn("sceIoCloseAsync - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     cpu.gpr[2] = ERROR_KERNEL_ASYNC_BUSY;
                 } else {
                     info.closePending = true;
@@ -1310,11 +1355,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
             }
         } else {
-            IoInfo info = filelist.remove(uid);
             try {
                 if (info == null) {
-                    if (uid != 1 && uid != 2) { // Ignore stdout and stderr.
-                        log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
+                    if (id != 1 && id != 2) { // Ignore stdout and stderr.
+                        log.warn("sceIoClose - unknown id " + Integer.toHexString(id));
                     }
                     cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else {
@@ -1323,7 +1367,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         // generates a dummy IoInfo when the file could not be opened.
                         info.readOnlyFile.close();
                     }
-                    SceUidManager.releaseUid(info.uid, "IOFileManager-File");
+                    info.close();
                     triggerAsyncThread(info);
                     info.result = 0;
                     cpu.gpr[2] = 0;
@@ -1334,40 +1378,39 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 cpu.gpr[2] = -1;
             }
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoClose(cpu.gpr[2], uid);
+                ioListener.sceIoClose(cpu.gpr[2], id);
             }
         }
     }
 
-    private void hleIoWrite(int uid, int data_addr, int size, boolean async) {
+    private void hleIoWrite(int id, int data_addr, int size, boolean async) {
         IoInfo info = null;
         int result;
 
-        if (uid == STDOUT_UID) {
+        if (id == STDOUT_ID) {
             // stdout
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stdout.info(message);
             result = size;
-        } else if (uid == STDERR_UID) {
+        } else if (id == STDERR_ID) {
             // stderr
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stderr.info(message);
             result = size;
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("hleIoWrite(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
+                log.debug("hleIoWrite(id=" + Integer.toHexString(id) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
             }
             try {
-                SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-                info = filelist.get(uid);
+                info = fileIds.get(id);
                 if (info == null) {
-                    log.warn("hleIoWrite - unknown uid " + Integer.toHexString(uid));
+                    log.warn("hleIoWrite - unknown id " + Integer.toHexString(id));
                     result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.asyncPending) {
-                    log.warn("hleIoWrite - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                    log.warn("hleIoWrite - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
-                    log.warn("hleIoWrite - uid " + Integer.toHexString(uid) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
+                    log.warn("hleIoWrite - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
                     result = -1;
                 } else {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
@@ -1401,13 +1444,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
         updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.write);
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoWrite(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
+            ioListener.sceIoWrite(Emulator.getProcessor().cpu.gpr[2], id, data_addr, Emulator.getProcessor().cpu.gpr[6], size);
         }
     }
 
-    public void hleIoRead(int uid, int data_addr, int size, boolean async) {
+    public void hleIoRead(int id, int data_addr, int size, boolean async) {
         if (log.isDebugEnabled()) {
-            log.debug("hleIoRead(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
+            log.debug("hleIoRead(id=" + Integer.toHexString(id) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
         }
         IoInfo info = null;
         int result;
@@ -1415,21 +1458,20 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         SeekableDataInput dataInput = null;
         int requestedSize = size;
 
-        if (uid == STDIN_UID) { // stdin
-            log.warn("UNIMPLEMENTED:hleIoRead uid = stdin");
+        if (id == STDIN_ID) { // stdin
+            log.warn("UNIMPLEMENTED:hleIoRead id = stdin");
             result = 0;
         } else {
             try {
-                SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-                info = filelist.get(uid);
+                info = fileIds.get(id);
                 if (info == null) {
-                    log.warn("hleIoRead - unknown uid " + Integer.toHexString(uid));
+                    log.warn("hleIoRead - unknown id " + Integer.toHexString(id));
                     result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.asyncPending) {
-                    log.warn("hleIoRead - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                    log.warn("hleIoRead - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else if ((data_addr < MemoryMap.START_RAM) && (data_addr + size > MemoryMap.END_RAM)) {
-                    log.warn("hleIoRead - uid " + Integer.toHexString(uid) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
+                    log.warn("hleIoRead - id " + Integer.toHexString(id) + " data is outside of ram 0x" + Integer.toHexString(data_addr) + " - 0x" + Integer.toHexString(data_addr + size));
                     result = ERROR_KERNEL_FILE_READ_ERROR;
                 } else if ((info.readOnlyFile == null) || (info.position >= info.readOnlyFile.length())) {
                     // Ignore empty handles and allow seeking off the end of the file, just return 0 bytes read/written.
@@ -1471,26 +1513,25 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
         updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read);
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRead(result, uid, data_addr, requestedSize, size, position, dataInput);
+            ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
         }
     }
 
-    private void hleIoLseek(int uid, long offset, int whence, boolean resultIs64bit, boolean async) {
+    private void hleIoLseek(int id, long offset, int whence, boolean resultIs64bit, boolean async) {
         IoInfo info = null;
         long result = 0;
 
-        if (uid == STDOUT_UID || uid == STDERR_UID || uid == STDIN_UID) { // stdio
-            log.error("seek - can't seek on stdio uid " + Integer.toHexString(uid));
+        if (id == STDOUT_ID || id == STDERR_ID || id == STDIN_ID) { // stdio
+            log.error("seek - can't seek on stdio id " + Integer.toHexString(id));
             result = -1;
         } else {
             try {
-                SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-                info = filelist.get(uid);
+                info = fileIds.get(id);
                 if (info == null) {
-                    log.warn("seek - unknown uid " + Integer.toHexString(uid));
+                    log.warn("seek - unknown id " + Integer.toHexString(id));
                     result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
                 } else if (info.asyncPending) {
-                    log.warn("seek - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                    log.warn("seek - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
                     result = ERROR_KERNEL_ASYNC_BUSY;
                 } else if (info.readOnlyFile == null) {
                     // Ignore empty handles.
@@ -1504,10 +1545,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     switch (whence) {
                         case PSP_SEEK_SET:
                             if (offset < 0) {
-                                log.warn("SEEK_SET UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
+                                log.warn("SEEK_SET id " + Integer.toHexString(id) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
                                 result = ERROR_INVALID_ARGUMENT;
                                 for (IIoListener ioListener : ioListeners) {
-                                    ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                                    ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
                                 return;
                             }
@@ -1519,10 +1560,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                             break;
                         case PSP_SEEK_CUR:
                             if (info.position + offset < 0) {
-                                log.warn("SEEK_CUR UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
+                                log.warn("SEEK_CUR id " + Integer.toHexString(id) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
                                 result = ERROR_INVALID_ARGUMENT;
                                 for (IIoListener ioListener : ioListeners) {
-                                    ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                                    ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
                                 return;
                             }
@@ -1534,10 +1575,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                             break;
                         case PSP_SEEK_END:
                             if (info.readOnlyFile.length() + offset < 0) {
-                                log.warn("SEEK_END UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
+                                log.warn("SEEK_END id " + Integer.toHexString(id) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
                                 result = ERROR_INVALID_ARGUMENT;
                                 for (IIoListener ioListener : ioListeners) {
-                                    ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                                    ioListener.sceIoSeek64(ERROR_INVALID_ARGUMENT, id, offset, whence);
                                 }
                                 return;
                             }
@@ -1567,22 +1608,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             for (IIoListener ioListener : ioListeners) {
                 ioListener.sceIoSeek64(
                         (long) (Emulator.getProcessor().cpu.gpr[2] & 0xFFFFFFFFL) | ((long) Emulator.getProcessor().cpu.gpr[3] << 32),
-                        uid, offset, whence);
+                        id, offset, whence);
             }
         } else {
             for (IIoListener ioListener : ioListeners) {
-                ioListener.sceIoSeek32(Emulator.getProcessor().cpu.gpr[2], uid, (int) offset, whence);
+                ioListener.sceIoSeek32(Emulator.getProcessor().cpu.gpr[2], id, (int) offset, whence);
             }
         }
     }
 
-    public void hleIoIoctl(int uid, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen, boolean async) {
+    public void hleIoIoctl(int id, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen, boolean async) {
         IoInfo info = null;
         int result = -1;
         Memory mem = Memory.getInstance();
 
         if (log.isDebugEnabled()) {
-            log.debug(String.format("hleIoIoctl(uid=%x, cmd=0x%08X, indata=0x%08X, inlen=%d, outdata=0x%08X, outlen=%d, async=%b", uid, cmd, indata_addr, inlen, outdata_addr, outlen, async));
+            log.debug(String.format("hleIoIoctl(id=%x, cmd=0x%08X, indata=0x%08X, inlen=%d, outdata=0x%08X, outlen=%d, async=%b", id, cmd, indata_addr, inlen, outdata_addr, outlen, async));
             if (Memory.isAddressGood(indata_addr)) {
                 for (int i = 0; i < inlen; i += 4) {
                     log.debug(String.format("hleIoIoctl indata[%d]=0x%08X", i / 4, mem.read32(indata_addr + i)));
@@ -1595,14 +1636,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             }
         }
 
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        info = filelist.get(uid);
+        info = fileIds.get(id);
         if (info == null) {
-            log.warn("hleIoIoctl - unknown uid " + Integer.toHexString(uid));
+            log.warn("hleIoIoctl - unknown id " + Integer.toHexString(id));
             result = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else if (info.asyncPending) {
             // Can't execute another operation until the previous one completed
-            log.warn("hleIoIoctl - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+            log.warn("hleIoIoctl - id " + Integer.toHexString(id) + " PSP_ERROR_ASYNC_BUSY");
             result = ERROR_KERNEL_ASYNC_BUSY;
         } else {
             switch (cmd) {
@@ -2001,14 +2041,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
         updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.ioctl);
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoIoctl(Emulator.getProcessor().cpu.gpr[2], uid, cmd, indata_addr, inlen, outdata_addr, outlen);
+            ioListener.sceIoIoctl(Emulator.getProcessor().cpu.gpr[2], id, cmd, indata_addr, inlen, outdata_addr, outlen);
         }
     }
 
     public void sceIoPollAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int res_addr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
@@ -2019,13 +2059,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoWaitAsync(uid, res_addr, false, false);
+        hleIoWaitAsync(id, res_addr, false, false);
     }
 
     public void sceIoWaitAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int res_addr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
@@ -2036,13 +2076,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoWaitAsync(uid, res_addr, true, false);
+        hleIoWaitAsync(id, res_addr, true, false);
     }
 
     public void sceIoWaitAsyncCB(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int res_addr = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
@@ -2053,13 +2093,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoWaitAsync(uid, res_addr, true, true);
+        hleIoWaitAsync(id, res_addr, true, true);
     }
 
     public void sceIoGetAsyncStat(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int poll = cpu.gpr[5];
         int res_addr = cpu.gpr[6];
 
@@ -2071,43 +2111,42 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoWaitAsync(uid, res_addr, (poll == 0), false);
+        hleIoWaitAsync(id, res_addr, (poll == 0), false);
     }
 
     public void sceIoChangeAsyncPriority(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int priority = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoChangeAsyncPriority uid=0x" + Integer.toHexString(uid) + ", priority=0x" + Integer.toHexString(priority));
+            log.debug("sceIoChangeAsyncPriority id=0x" + Integer.toHexString(id) + ", priority=0x" + Integer.toHexString(priority));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         if (priority == -1) {
             priority = Modules.ThreadManForUserModule.getCurrentThread().currentPriority;
         }
         if (priority < 0) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_PRIORITY;
-        } else if (uid == -1) {
+        } else if (id == -1) {
             defaultAsyncPriority = priority;
             cpu.gpr[2] = 0;
         } else {
-            IoInfo info = filelist.get(uid);
+            IoInfo info = fileIds.get(id);
             if (info != null) {
                 if (log.isDebugEnabled()) {
-                    log.debug(String.format("sceIoChangeAsyncPriority changing priority of async thread from fd=%x to %d", info.uid, priority));
+                    log.debug(String.format("sceIoChangeAsyncPriority changing priority of async thread from fd=%x to %d", info.id, priority));
                 }
                 info.asyncThreadPriority = priority;
                 cpu.gpr[2] = 0;
                 Modules.ThreadManForUserModule.hleKernelChangeThreadPriority(info.asyncThread, priority);
             } else {
-                log.warn("sceIoChangeAsyncPriority invalid fd=" + uid);
+                log.warn("sceIoChangeAsyncPriority invalid fd=" + id);
                 cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
             }
         }
@@ -2116,22 +2155,21 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoSetAsyncCallback(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int cbid = cpu.gpr[5];
         int notifyArg = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoSetAsyncCallback - uid " + Integer.toHexString(uid) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
+            log.debug("sceIoSetAsyncCallback - id " + Integer.toHexString(id) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.get(uid);
+        IoInfo info = fileIds.get(id);
         if (info == null) {
-            log.warn("sceIoSetAsyncCallback - unknown uid " + Integer.toHexString(uid));
+            log.warn("sceIoSetAsyncCallback - unknown id " + Integer.toHexString(id));
             cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
             if (Modules.ThreadManForUserModule.hleKernelRegisterCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
@@ -2140,7 +2178,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 triggerAsyncThread(info);
                 cpu.gpr[2] = 0;
             } else {
-                log.warn("sceIoSetAsyncCallback - not a callback uid " + Integer.toHexString(uid));
+                log.warn("sceIoSetAsyncCallback - not a callback id " + Integer.toHexString(id));
                 cpu.gpr[2] = -1;
             }
         }
@@ -2149,7 +2187,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoClose(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
             log.debug("sceIoClose redirecting to hleIoClose");
@@ -2159,14 +2197,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoClose(uid, false);
+        hleIoClose(id, false);
         delayIoOperation(IoOperation.close);
     }
 
     public void sceIoCloseAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
             log.debug("sceIoCloseAsync redirecting to hleIoClose");
@@ -2176,7 +2214,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoClose(uid, true);
+        hleIoClose(id, true);
     }
 
     public void sceIoOpen(Processor processor) {
@@ -2219,7 +2257,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoRead(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
@@ -2227,14 +2265,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoRead(uid, data_addr, size, false);
+        hleIoRead(id, data_addr, size, false);
         delayIoOperation(IoOperation.read);
     }
 
     public void sceIoReadAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
@@ -2242,13 +2280,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoRead(uid, data_addr, size, true);
+        hleIoRead(id, data_addr, size, true);
     }
 
     public void sceIoWrite(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
@@ -2256,10 +2294,10 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoWrite(uid, data_addr, size, false);
+        hleIoWrite(id, data_addr, size, false);
 
         // Do not delay output on stdout/stderr
-        if (uid != STDOUT_UID && uid != STDERR_UID) {
+        if (id != STDOUT_ID && id != STDERR_ID) {
         	delayIoOperation(IoOperation.write);
         }
     }
@@ -2267,7 +2305,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoWriteAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int data_addr = cpu.gpr[5];
         int size = cpu.gpr[6];
 
@@ -2275,87 +2313,87 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoWrite(uid, data_addr, size, true);
+        hleIoWrite(id, data_addr, size, true);
     }
 
     public void sceIoLseek(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         long offset = ((long) cpu.gpr[6] & 0xFFFFFFFFL) | ((long) cpu.gpr[7] << 32);
         int whence = cpu.gpr[8];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
+            log.debug("sceIoLseek - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoLseek(uid, offset, whence, true, false);
+        hleIoLseek(id, offset, whence, true, false);
         delayIoOperation(IoOperation.seek);
     }
 
     public void sceIoLseekAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         long offset = ((long) cpu.gpr[6] & 0xFFFFFFFFL) | ((long) cpu.gpr[7] << 32);
         int whence = cpu.gpr[8];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoLseekAsync - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
+            log.debug("sceIoLseekAsync - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoLseek(uid, offset, whence, true, true);
+        hleIoLseek(id, offset, whence, true, true);
     }
 
     public void sceIoLseek32(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int offset = cpu.gpr[5];
         int whence = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
+            log.debug("sceIoLseek32 - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoLseek(uid, (long) offset, whence, false, false);
+        hleIoLseek(id, (long) offset, whence, false, false);
         delayIoOperation(IoOperation.seek);
     }
 
     public void sceIoLseek32Async(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int offset = cpu.gpr[5];
         int whence = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
+            log.debug("sceIoLseek32Async - id " + Integer.toHexString(id) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoLseek(uid, (long) offset, whence, false, true);
+        hleIoLseek(id, (long) offset, whence, false, true);
     }
 
     public void sceIoIoctl(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int cmd = cpu.gpr[5];
         int indata_addr = cpu.gpr[6];
         int inlen = cpu.gpr[7];
@@ -2366,14 +2404,14 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoIoctl(uid, cmd, indata_addr, inlen, outdata_addr, outlen, false);
+        hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, false);
         delayIoOperation(IoOperation.ioctl);
     }
 
     public void sceIoIoctlAsync(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int cmd = cpu.gpr[5];
         int indata_addr = cpu.gpr[6];
         int inlen = cpu.gpr[7];
@@ -2384,7 +2422,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        hleIoIoctl(uid, cmd, indata_addr, inlen, outdata_addr, outlen, true);
+        hleIoIoctl(id, cmd, indata_addr, inlen, outdata_addr, outlen, true);
     }
 
     public void sceIoDopen(Processor processor) {
@@ -2420,7 +2458,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         if (iso.isDirectory(isofilename)) {
                             String[] filenames = iso.listDirectory(isofilename);
                             IoDirInfo info = new IoDirInfo(pcfilename, filenames);
-                            cpu.gpr[2] = info.uid;
+                            cpu.gpr[2] = info.id;
                         } else {
                             log.warn("sceIoDopen '" + isofilename + "' not a umd directory!");
                             cpu.gpr[2] = -1;
@@ -2444,7 +2482,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 File f = new File(pcfilename);
                 if (f.isDirectory()) {
                     IoDirInfo info = new IoDirInfo(pcfilename, f.list());
-                    cpu.gpr[2] = info.uid;
+                    cpu.gpr[2] = info.id;
                 } else {
                     log.warn("sceIoDopen '" + pcfilename + "' not a directory! (could be missing)");
                     cpu.gpr[2] = ERROR_ERRNO_FILE_NOT_FOUND;
@@ -2462,17 +2500,16 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoDread(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
         int dirent_addr = cpu.gpr[5];
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-Directory", true);
-        IoDirInfo info = dirlist.get(uid);
+        IoDirInfo info = dirIds.get(id);
         if (info == null) {
-            log.warn("sceIoDread unknown uid " + Integer.toHexString(uid));
+            log.warn("sceIoDread unknown id " + Integer.toHexString(id));
             cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else if (info.hasNext()) {
             String filename = info.next();
@@ -2483,22 +2520,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 dirent.write(Memory.getInstance(), dirent_addr);
 
                 if ((stat.attr & 0x10) == 0x10) {
-                    log.debug("sceIoDread uid=" + Integer.toHexString(uid) + " #" + info.printableposition + " dir='" + info.path + "', dir='" + filename + "'");
+                    log.debug("sceIoDread id=" + Integer.toHexString(id) + " #" + info.printableposition + " dir='" + info.path + "', dir='" + filename + "'");
                 } else {
-                    log.debug("sceIoDread uid=" + Integer.toHexString(uid) + " #" + info.printableposition + " dir='" + info.path + "', file='" + filename + "'");
+                    log.debug("sceIoDread id=" + Integer.toHexString(id) + " #" + info.printableposition + " dir='" + info.path + "', file='" + filename + "'");
                 }
 
                 cpu.gpr[2] = 1;
             } else {
-                log.warn("sceIoDread uid=" + Integer.toHexString(uid) + " stat failed (" + info.path + "/" + filename + ")");
+                log.warn("sceIoDread id=" + Integer.toHexString(id) + " stat failed (" + info.path + "/" + filename + ")");
                 cpu.gpr[2] = -1;
             }
         } else {
-            log.debug("sceIoDread uid=" + Integer.toHexString(uid) + " no more files");
+            log.debug("sceIoDread id=" + Integer.toHexString(id) + " no more files");
             cpu.gpr[2] = 0;
         }
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDread(cpu.gpr[2], uid, dirent_addr);
+            ioListener.sceIoDread(cpu.gpr[2], id, dirent_addr);
         }
         delayIoOperation(IoOperation.read);
     }
@@ -2506,28 +2543,27 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoDclose(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoDclose - uid = " + Integer.toHexString(uid));
+            log.debug("sceIoDclose - id = " + Integer.toHexString(id));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-Directory", true);
-        IoDirInfo info = dirlist.remove(uid);
+        IoDirInfo info = dirIds.get(id);
         if (info == null) {
-            log.warn("sceIoDclose - unknown uid " + Integer.toHexString(uid));
+            log.warn("sceIoDclose - unknown id " + Integer.toHexString(id));
             cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
-            SceUidManager.releaseUid(info.uid, "IOFileManager-Directory");
+        	info.close();
             cpu.gpr[2] = 0;
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoDclose(cpu.gpr[2], uid);
+            ioListener.sceIoDclose(cpu.gpr[2], id);
         }
         delayIoOperation(IoOperation.close);
     }
@@ -3147,20 +3183,19 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoGetDevType(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoGetDevType - uid " + Integer.toHexString(uid));
+            log.debug("sceIoGetDevType - id " + Integer.toHexString(id));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.get(uid);
+        IoInfo info = fileIds.get(id);
         if (info == null) {
-            log.warn("sceIoGetDevType - unknown uid " + Integer.toHexString(uid));
+            log.warn("sceIoGetDevType - unknown id " + Integer.toHexString(id));
             cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
             // For now, return alias type, since it's the most used.
@@ -3230,20 +3265,19 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     public void sceIoCancel(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        int uid = cpu.gpr[4];
+        int id = cpu.gpr[4];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceIoCancel - uid " + Integer.toHexString(uid));
+            log.debug("sceIoCancel - id " + Integer.toHexString(id));
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        IoInfo info = filelist.get(uid);
+        IoInfo info = fileIds.get(id);
         if (info == null) {
-            log.warn("sceIoCancel - unknown uid " + Integer.toHexString(uid));
+            log.warn("sceIoCancel - unknown id " + Integer.toHexString(id));
             cpu.gpr[2] = ERROR_KERNEL_BAD_FILE_DESCRIPTOR;
         } else {
             info.closePending = true;
@@ -3251,7 +3285,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
 
         for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoCancel(cpu.gpr[2], uid);
+            ioListener.sceIoCancel(cpu.gpr[2], id);
         }
     }
 
@@ -3275,7 +3309,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         int count = 0;
         if (Memory.isAddressGood(out_addr) && outSize > 0) {
 	        IMemoryWriter memoryWriter = MemoryWriter.getMemoryWriter(out_addr, 4 * outSize, 4);
-	        for (Integer fd : filelist.keySet()) {
+	        for (Integer fd : fileIds.keySet()) {
 	        	if (count >= outSize) {
 	        		break;
 	        	}
@@ -3286,7 +3320,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
         if (fdNum_addr != 0) {
             // Return the total number of files open
-        	mem.write32(fdNum_addr, filelist.size());
+        	mem.write32(fdNum_addr, fileIds.size());
         }
 
         cpu.gpr[2] = count;
