@@ -739,23 +739,18 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_NO_SUCH_DEVICE;
                 } else {
                     String isofilename = trimUmdPrefix(pcfilename);
+                    int mode = 4; // 4 = readable
+                    int attr = 0;
+                    long size = 0;
+                    long timestamp = 0;
+                    int startSector = 0;
                     try {
-                        int mode = 4; // 4 = readable
-                        int attr = 0;
-                        long size = 0;
-                        long timestamp = 0;
-                        int startSector = 0;
-                        // Set attr (dir/file)
-                        if (iso.isDirectory(isofilename)) {
-                            attr |= 0x10;
-                            mode |= 1; // 1 = executable
-                        } else { // isFile
-                            attr |= 0x20;
-                            UmdIsoFile file = iso.getFile(isofilename);
-                            size = file.length();
-                            timestamp = file.getTimestamp().getTime();
-                            startSector = file.getStartSector();
-                        }
+                        // Check for files first.
+                        UmdIsoFile file = iso.getFile(isofilename);
+                        attr = 0x20;
+                        size = file.length();
+                        timestamp = file.getTimestamp().getTime();
+                        startSector = file.getStartSector();
                         // Octal extend into user and group
                         mode = mode + mode * 8 + mode * 64;
                         // Copy attr into mode
@@ -767,8 +762,29 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                         if (startSector > 0) {
                             stat.setReserved(0, startSector);
                         }
-                    } catch (FileNotFoundException e) {
-                        log.warn("stat - '" + isofilename + "' umd file not found");
+                    } catch (FileNotFoundException fnfe) {
+                        // If file wasn't found, try looking for a directory.
+                        try {
+                            if (iso.isDirectory(isofilename)) {
+                                attr |= 0x10;
+                                mode |= 1; // 1 = executable
+                            }
+                            // Octal extend into user and group
+                            mode = mode + mode * 8 + mode * 64;
+                            // Copy attr into mode
+                            mode |= attr << 8;
+                            stat = new SceIoStat(mode, attr, size,
+                                    ScePspDateTime.fromUnixTime(timestamp),
+                                    ScePspDateTime.fromUnixTime(0),
+                                    ScePspDateTime.fromUnixTime(timestamp));
+                            if (startSector > 0) {
+                                stat.setReserved(0, startSector);
+                            }
+                        } catch (FileNotFoundException dnfe) {
+                            log.warn("stat - '" + isofilename + "' umd file/dir not found");
+                        } catch (IOException e) {
+                            log.warn("stat - umd io error: " + e.getMessage());
+                        }
                     } catch (IOException e) {
                         log.warn("stat - umd io error: " + e.getMessage());
                     }
