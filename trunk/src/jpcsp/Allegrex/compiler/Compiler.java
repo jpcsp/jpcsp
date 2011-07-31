@@ -264,7 +264,7 @@ public class Compiler implements ICompiler {
 
 	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive, int instanceIndex) throws ClassFormatError {
         if (log.isTraceEnabled()) {
-            log.trace("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
+            log.trace(String.format("Compiler.analyse Block 0x%08X", startAddress));
         }
         startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress, instanceIndex);

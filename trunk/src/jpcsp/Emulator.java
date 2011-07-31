@@ -171,7 +171,15 @@ public class Emulator implements Runnable {
 
         CpuState cpu = processor.cpu;
 
-        cpu.pc = module.entry_addr; //PC.
+        int entryAddr = module.entry_addr;
+        if (Memory.isAddressGood(module.module_start_func)) {
+        	if (module.module_start_func != entryAddr) {
+        		log.warn(String.format("Using the module start function as module entry: 0x%08X instead of 0x%08X", module.module_start_func, entryAddr));
+        		entryAddr = module.module_start_func;
+        	}
+        }
+
+        cpu.pc = entryAddr; //PC.
         cpu.npc = cpu.pc + 4;
         cpu.gpr[27] = 0; //k1.
         cpu.gpr[28] = module.gp_value; //gp_reg.
