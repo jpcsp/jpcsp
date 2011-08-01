@@ -1110,8 +1110,18 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     if (thread.waitType == JPCSP_WAIT_IO &&
                             thread.wait.Io_id == info.id) {
                         if (log.isDebugEnabled()) {
-                            log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
+                            log.debug("IoFileMgrForUser.doStepAsync - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
                         }
+
+                        // Write result
+                        Memory mem = Memory.getInstance();
+                        if (Memory.isAddressGood(thread.wait.Io_resultAddr)) {
+                        	if (log.isDebugEnabled()) {
+                        		log.debug("IoFileMgrForUser.doStepAsync - storing result 0x" + Long.toHexString(info.result));
+                        	}
+                            mem.write64(thread.wait.Io_resultAddr, info.result);
+                        }
+
                         // Return success
                         thread.cpuContext.gpr[2] = 0;
                         // Wakeup
@@ -1205,31 +1215,33 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 waitForAsync = false;
             }
 
-            // Always store the result.
-            Memory mem = Memory.getInstance();
-            if (Memory.isAddressGood(res_addr)) {
-                log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
-                mem.write64(res_addr, info.result);
-            }
             Emulator.getProcessor().cpu.gpr[2] = 0;
-            if (info != null) {
-                if (waitForAsync) {
-                    // Only flush the result on sceIoWaitAsync and sceIoWaitAsyncCB calls.
-                    info.result = ERROR_KERNEL_NO_ASYNC_OP;
-                    // Call the ioListeners.
-                    for (IIoListener ioListener : ioListeners) {
-                        ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
-                    }
-                    // Start the waiting mode.
-                    ThreadManForUser threadMan = Modules.ThreadManForUserModule;
-                    SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-                    currentThread.wait.Io_id = info.id;
-                    threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.id, ioWaitStateChecker, callbacks);
-                } else {
-                    // For sceIoPollAsync, only call the ioListeners.
-                    for (IIoListener ioListener : ioListeners) {
-                        ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
-                    }
+            if (waitForAsync) {
+                // Only flush the result on sceIoWaitAsync and sceIoWaitAsyncCB calls.
+                info.result = ERROR_KERNEL_NO_ASYNC_OP;
+                // Call the ioListeners.
+                for (IIoListener ioListener : ioListeners) {
+                    ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
+                }
+                // Start the waiting mode.
+                ThreadManForUser threadMan = Modules.ThreadManForUserModule;
+                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                currentThread.wait.Io_id = info.id;
+                currentThread.wait.Io_resultAddr = res_addr;
+                threadMan.hleKernelThreadEnterWaitState(JPCSP_WAIT_IO, info.id, ioWaitStateChecker, callbacks);
+            } else {
+                // Always store the result.
+                Memory mem = Memory.getInstance();
+                if (Memory.isAddressGood(res_addr)) {
+                	if (log.isDebugEnabled()) {
+                		log.debug("hleIoWaitAsync - storing result 0x" + Long.toHexString(info.result));
+                	}
+                    mem.write64(res_addr, info.result);
+                }
+
+                // For sceIoPollAsync, only call the ioListeners.
+                for (IIoListener ioListener : ioListeners) {
+                    ioListener.sceIoPollAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
                 }
             }
         }
