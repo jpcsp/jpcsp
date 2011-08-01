@@ -31,6 +31,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.HLE.modules150.scePsmf.PSMFHeader.PSMFEntry;
 
 import org.apache.log4j.Logger;
 
@@ -107,13 +108,23 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
     @Override
     public void start() {
-        psmfMap = new HashMap<Integer, PSMFHeader>();
+        psmfHeaderMap = new HashMap<Integer, PSMFHeader>();
     }
 
     @Override
     public void stop() {
     }
-    private HashMap<Integer, PSMFHeader> psmfMap;
+    private HashMap<Integer, PSMFHeader> psmfHeaderMap;
+
+    private PSMFHeader getPsmfHeader(int psmf) {
+    	if (Memory.isAddressGood(psmf)) {
+    		Memory mem = Memory.getInstance();
+    		int headerAddress = mem.read32(psmf + 24);
+    		return psmfHeaderMap.get(headerAddress);
+    	}
+
+    	return null;
+    }
 
     protected int endianSwap16(int x) {
         return (x >> 8) | ((x << 8) & 0xFF00);
@@ -165,8 +176,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
             private int EPPts;
             private int EPOffset;
+            private int id;
 
-            public PSMFEntry(int pts, int offset) {
+            public PSMFEntry(int id, int pts, int offset) {
+            	this.id = id;
                 EPPts = pts;
                 EPOffset = offset;
             }
@@ -177,6 +190,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
 
             public int getEntryOffset() {
                 return EPOffset;
+            }
+
+            public int getId() {
+            	return id;
             }
         }
 
@@ -274,8 +291,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             for (int i = 0; i < EPMapEntriesNum; i++) {
                 int pts = endianSwap32(readUnaligned32(mem, EPMapOffset + 2 + i * 10));
                 int offset = endianSwap32(readUnaligned32(mem, EPMapOffset + 6 + i * 10));
-                PSMFEntry pEnt = new PSMFEntry(pts, offset);
-                EPMap.put(currentEntryNumber++, pEnt);
+                int id = currentEntryNumber++;
+                PSMFEntry pEnt = new PSMFEntry(id, pts, offset);
+                EPMap.put(id, pEnt);
             }
         }
 
@@ -331,34 +349,24 @@ public class scePsmf implements HLEModule, HLEStartModule {
             return EPMapEntriesNum;
         }
 
+        public boolean hasEPMap() {
+        	return getEPMapEntriesNum() > 0;
+        }
+
         public PSMFEntry getEPMapEntry(int id) {
             return EPMap.get(id);
         }
 
         public PSMFEntry getEPMapEntryWithTimestamp(int ts) {
-            PSMFEntry entry = null;
-            for (; EPMap.values().iterator().hasNext(); entry = EPMap.values().iterator().next()) {
-                if (entry != null) {
-                    if (entry.getEntryPTS() == ts) {
-                        break;
-                    }
+        	PSMFEntry foundEntry = null;
+            for (PSMFEntry entry : EPMap.values()) {
+            	if (foundEntry == null || entry.getEntryPTS() <= ts) {
+            		foundEntry = entry;
+            	} else if (entry.getEntryPTS() > ts) {
+                    break;
                 }
             }
-            return entry;
-        }
-
-        public int getEPMapEntryIDWithTimestamp(int ts) {
-            PSMFEntry entry = null;
-            int id = 0;
-            for (; EPMap.values().iterator().hasNext(); entry = EPMap.values().iterator().next()) {
-                if (entry != null) {
-                    if (entry.getEntryPTS() == ts) {
-                        break;
-                    }
-                }
-                id++;
-            }
-            return id;
+            return foundEntry;
         }
 
         public int getNumberOfStreams() {
@@ -463,7 +471,7 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
         Modules.sceMpegModule.setCurrentMpegAnalyzed(false);
         PSMFHeader header = new PSMFHeader(buffer_addr);
-        psmfMap.put(psmf, header);
+        psmfHeaderMap.put(header.getHeaderOffset(), header);
 
         // Reads several parameters from the PMF file header and stores them in
         // a 52 byte struct.
@@ -504,9 +512,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int streamType = psmfMap.get(psmf).getCurrentStreamType();
-            int streamCh = psmfMap.get(psmf).getCurrentStreamChannel();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            int streamType = header.getCurrentStreamType();
+            int streamCh = header.getCurrentStreamChannel();
             mem.write32(type_addr, streamType);
             mem.write32(ch_addr, streamCh);
             cpu.gpr[2] = 0;
@@ -528,8 +537,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            cpu.gpr[2] = psmfMap.get(psmf).getCurrentStreamNumber();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            cpu.gpr[2] = header.getCurrentStreamNumber();
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
@@ -550,8 +560,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            psmfMap.get(psmf).setStreamType(type, ch);
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            header.setStreamType(type, ch);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
@@ -572,8 +583,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            psmfMap.get(psmf).setStreamNum(streamNum);
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            header.setStreamNum(streamNum);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
@@ -595,8 +607,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int startTime = psmfMap.get(psmf).getPresentationStartTime();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            int startTime = header.getPresentationStartTime();
             mem.write32(startTimeAddr, startTime);
             if (log.isDebugEnabled()) {
                 log.debug(String.format("scePsmfGetPresentationStartTime startTime=%d", startTime));
@@ -623,8 +636,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int endTime = psmfMap.get(psmf).getPresentationEndTime();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            int endTime = header.getPresentationEndTime();
             mem.write32(endTimeAddr, endTime);
             if (log.isDebugEnabled()) {
                 log.debug(String.format("scePsmfGetPresentationEndTime endTime=%d", endTime));
@@ -649,8 +663,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            cpu.gpr[2] = psmfMap.get(psmf).getNumberOfStreams();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            cpu.gpr[2] = header.getNumberOfStreams();
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
@@ -669,8 +684,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            cpu.gpr[2] = psmfMap.get(psmf).getEPMapEntriesNum();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            cpu.gpr[2] = header.getEPMapEntriesNum();
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
@@ -691,9 +707,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int width = psmfMap.get(psmf).getVideoWidth();
-            int height = psmfMap.get(psmf).getVideoHeight();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            int width = header.getVideoWidth();
+            int height = header.getVideoHeight();
             mem.write32(videoInfoAddr, width);
             mem.write32(videoInfoAddr + 4, height);
             cpu.gpr[2] = 0;
@@ -717,9 +734,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int setup = psmfMap.get(psmf).getAudioChannelsSetup();
-            int freq = psmfMap.get(psmf).getAudioSampleFrequency();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            int setup = header.getAudioChannelsSetup();
+            int freq = header.getAudioSampleFrequency();
             mem.write32(audioInfoAddr, setup);
             mem.write32(audioInfoAddr + 4, freq);
             cpu.gpr[2] = 0;
@@ -741,7 +759,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null && header.hasEPMap()) {
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
@@ -764,12 +783,18 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int pts = psmfMap.get(psmf).getEPMapEntry(id).getEntryPTS();
-            int offset = psmfMap.get(psmf).getEPMapEntry(id).getEntryOffset();
-            mem.write32(out_addr, pts);
-            mem.write32(out_addr + 4, offset);
-            cpu.gpr[2] = 0;
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null && header.hasEPMap()) {
+        	PSMFEntry entry = header.getEPMapEntry(id);
+        	if (entry != null) {
+	            int pts = entry.getEntryPTS();
+	            int offset = entry.getEntryOffset();
+	            mem.write32(out_addr, pts);
+	            mem.write32(out_addr + 4, offset);
+	            cpu.gpr[2] = 0;
+        	} else {
+        		cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_ID;
+        	}
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
@@ -791,17 +816,22 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            if (ts < psmfMap.get(psmf).getPresentationStartTime()) {
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null && header.hasEPMap()) {
+        	if (ts < header.getPresentationStartTime()) {
                 cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
-            } else {
-                PSMFHeader.PSMFEntry entry = psmfMap.get(psmf).getEPMapEntryWithTimestamp(ts);
-                int pts = entry.getEntryPTS();
-                int offset = entry.getEntryOffset();
-                mem.write32(entry_addr, pts);
-                mem.write32(entry_addr + 4, offset);
-                cpu.gpr[2] = 0;
-            }
+        	} else {
+	            PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
+	            if (entry == null) {
+	            	cpu.gpr[2] = -1;
+	            } else {
+	                int pts = entry.getEntryPTS();
+	                int offset = entry.getEntryOffset();
+	                mem.write32(entry_addr, pts);
+	                mem.write32(entry_addr + 4, offset);
+	                cpu.gpr[2] = 0;
+	            }
+        	}
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
@@ -821,12 +851,18 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            if (ts < psmfMap.get(psmf).getPresentationStartTime()) {
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null && header.hasEPMap()) {
+        	if (ts < header.getPresentationStartTime()) {
                 cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_TIMESTAMP;
-            } else {
-                cpu.gpr[2] = psmfMap.get(psmf).getEPMapEntryIDWithTimestamp(ts);
-            }
+        	} else {
+	            PSMFEntry entry = header.getEPMapEntryWithTimestamp(ts);
+	            if (entry == null) {
+	                cpu.gpr[2] = -1;
+	            } else {
+	            	cpu.gpr[2] = entry.getId();
+	            }
+        	}
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
@@ -897,10 +933,14 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            cpu.gpr[2] = psmfMap.get(psmf).getSpecificStreamNum(stream_type);
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            cpu.gpr[2] = header.getSpecificStreamNum(stream_type);
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
+        }
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("scePsmfGetNumberOfSpecificStreams (psmf=0x%08X, stream_type=%d) returning 0x%08X", psmf, stream_type, cpu.gpr[2]));
         }
     }
 
@@ -919,8 +959,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            psmfMap.get(psmf).setStreamTypeNum(type, type_num);
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            header.setStreamTypeNum(type, type_num);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
@@ -968,8 +1009,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int size = psmfMap.get(psmf).getHeaderSize();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            int size = header.getHeaderSize();
             mem.write32(size_addr, size);
             cpu.gpr[2] = 0;
         } else {
@@ -992,8 +1034,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            int size = psmfMap.get(psmf).getStreamSize();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            int size = header.getStreamSize();
             mem.write32(size_addr, size);
             cpu.gpr[2] = 0;
         } else {
@@ -1014,8 +1057,9 @@ public class scePsmf implements HLEModule, HLEStartModule {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        if (psmfMap.containsKey(psmf)) {
-            cpu.gpr[2] = psmfMap.get(psmf).getVersion();
+        PSMFHeader header = getPsmfHeader(psmf);
+        if (header != null) {
+            cpu.gpr[2] = header.getVersion();
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
         }
