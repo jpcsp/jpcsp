@@ -46,6 +46,7 @@ public class ThreadWaitInfo {
 
     // IO
     public int Io_id;
+    public int Io_resultAddr;
 
     // UMD
     public int wantedUmdStat;
@@ -98,6 +99,7 @@ public class ThreadWaitInfo {
     	LwMutex_count = that.LwMutex_count;
 
     	Io_id = that.Io_id;
+    	Io_resultAddr = that.Io_resultAddr;
 
     	wantedUmdStat = that.wantedUmdStat;
 
