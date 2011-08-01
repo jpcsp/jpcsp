@@ -51,6 +51,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.IWaitStateChecker;
 import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.HLE.kernel.types.SceIoStat;
@@ -208,6 +209,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         public long asyncDoneMillis; // When the async operation can be completed
         public int asyncThreadPriority = defaultAsyncPriority;
         public SceKernelThreadInfo asyncThread;
+        public IAction asyncAction;
 
         // Async callback
         public int cbid = -1;
@@ -410,6 +412,47 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
             return true;
         }
+    }
+
+    private class IOAsyncReadAction implements IAction {
+    	private IoInfo info;
+    	private int address;
+    	private int size;
+    	private int requestedSize;
+
+    	public IOAsyncReadAction(IoInfo info, int address, int requestedSize, int size) {
+    		this.info = info;
+    		this.address = address;
+    		this.requestedSize = requestedSize;
+    		this.size = size;
+    	}
+
+    	@Override
+		public void execute() {
+    		long position = info.position;
+    		int result = 0;
+
+    		try {
+				Utilities.readFully(info.readOnlyFile, address, size);
+	    		info.position += size;
+	    		result = size;
+                if (info.sectorBlockMode) {
+                    result /= UmdIsoFile.sectorLength;
+                }
+			} catch (IOException e) {
+				log.error(e);
+                result = ERROR_KERNEL_FILE_READ_ERROR;
+			}
+
+            info.result = result;
+
+            // Invalidate any compiled code in the read range
+            RuntimeContext.invalidateRange(address, size);
+
+            for (IIoListener ioListener : ioListeners) {
+	            ioListener.sceIoRead(result, info.id, address, requestedSize, size, position, info.readOnlyFile);
+	        }
+		}
     }
 
     @Override
@@ -896,12 +939,16 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         return modeStrings[flags & PSP_O_RDWR];
     }
 
-    // Handle returning/storing result for sync/async operations
     private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation) {
+    	updateResult(cpu, info, result, async, resultIs64bit, ioOperation, null);
+    }
+
+    // Handle returning/storing result for sync/async operations
+    private void updateResult(CpuState cpu, IoInfo info, long result, boolean async, boolean resultIs64bit, IoOperation ioOperation, IAction asyncAction) {
         if (info != null) {
             if (async) {
                 if (!info.asyncPending) {
-                    startIoAsync(info, result, ioOperation);
+                    startIoAsync(info, result, ioOperation, asyncAction);
                     result = 0;
                 }
             } else {
@@ -1000,12 +1047,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
      * @param info   the file
      * @param result the result the async IO should return
      */
-    private void startIoAsync(IoInfo info, long result, IoOperation ioOperation) {
+    private void startIoAsync(IoInfo info, long result, IoOperation ioOperation, IAction asyncAction) {
         if (info == null) {
             return;
         }
         info.asyncPending = true;
         info.asyncDoneMillis = Emulator.getClock().currentTimeMillis() + ioOperation.asyncDelayMillis;
+        info.asyncAction = asyncAction;
         info.result = result;
         if (info.asyncThread == null) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
@@ -1038,7 +1086,15 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
     private boolean doStepAsync(IoInfo info) {
         boolean done = true;
-        if (info != null && info.asyncPending) {
+
+        // Execute any pending async action and remove it
+        if (info.asyncAction != null) {
+        	IAction asyncAction = info.asyncAction;
+        	info.asyncAction = null;
+        	asyncAction.execute();
+        }
+
+        if (info.asyncPending) {
             ThreadManForUser threadMan = Modules.ThreadManForUserModule;
             if (info.getAsyncRestMillis() > 0) {
                 done = false;
@@ -1346,7 +1402,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 Emulator.getProcessor().cpu.gpr[2] = info.id;
             }
 
-            startIoAsync(info, result, IoOperation.open);
+            startIoAsync(info, result, IoOperation.open, null);
         }
     }
 
@@ -1473,6 +1529,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         long position = 0;
         SeekableDataInput dataInput = null;
         int requestedSize = size;
+        IAction asyncAction = null;
 
         if (id == STDIN_ID) { // stdin
             log.warn("UNIMPLEMENTED:hleIoRead id = stdin");
@@ -1502,19 +1559,28 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                     if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length()) {
                         int oldSize = size;
                         size = (int) (info.readOnlyFile.length() - info.readOnlyFile.getFilePointer());
-                        log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
+                        if (log.isDebugEnabled()) {
+                        	log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
+                        }
                     }
-                    position = info.position;
-                    dataInput = info.readOnlyFile;
-                    info.position += size;
-                    Utilities.readFully(info.readOnlyFile, data_addr, size);
-                    result = size;
 
-                    // Invalidate any compiled code in the read range
-                    RuntimeContext.invalidateRange(data_addr, size);
+                    if (async) {
+                    	// Execute the read operation in the IO async thread
+                    	asyncAction = new IOAsyncReadAction(info, data_addr, requestedSize, size);
+                    	result = 0;
+                    } else {
+                        position = info.position;
+                        dataInput = info.readOnlyFile;
+                    	Utilities.readFully(info.readOnlyFile, data_addr, size);
+                        info.position += size;
+                        result = size;
 
-                    if (info.sectorBlockMode) {
-                        result /= UmdIsoFile.sectorLength;
+                    	// Invalidate any compiled code in the read range
+                        RuntimeContext.invalidateRange(data_addr, size);
+
+                        if (info.sectorBlockMode) {
+                            result /= UmdIsoFile.sectorLength;
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -1527,9 +1593,12 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 Emulator.PauseEmu();
             }
         }
-        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read);
-        for (IIoListener ioListener : ioListeners) {
-            ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
+        updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read, asyncAction);
+        // Call the IO listeners (performed in the async action if one is provided)
+        if (asyncAction != null) {
+	        for (IIoListener ioListener : ioListeners) {
+	            ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
+	        }
         }
     }
 
