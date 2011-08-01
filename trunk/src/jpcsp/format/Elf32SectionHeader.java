@@ -74,6 +74,9 @@ public class Elf32SectionHeader {
 	public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("sh_name " + "\t " + formatString("long", Long.toHexString(getSh_name() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        if (sh_namez != null && sh_namez.length() > 0) {
+        	str.append("sh_namez \t '" + sh_namez + "'\n");
+        }
         str.append("sh_type " + "\t " + formatString("long", Long.toHexString(getSh_type() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("sh_flags " + "\t " + integerToHex(getSh_flags() & 0xFF) + "\n");
         str.append("sh_addr " + "\t " + formatString("long", Long.toHexString(getSh_addr() & 0xFFFFFFFFL).toUpperCase()) + "\n");

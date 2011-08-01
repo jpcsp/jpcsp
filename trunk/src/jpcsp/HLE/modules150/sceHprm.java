@@ -70,7 +70,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
     
     @Override
     public void start() {
-    	peekCurrentKeyWarningLogged = false;
+    	hprmWarningLogged = false;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class sceHprm implements HLEModule, HLEStartModule {
     private boolean enableHeadphone = false;
     private boolean enableMicrophone = false;
 
-    private boolean peekCurrentKeyWarningLogged;
+    private boolean hprmWarningLogged;
 
     public void sceHprmRegisterCallback(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -141,13 +141,13 @@ public class sceHprm implements HLEModule, HLEStartModule {
         int key_addr = cpu.gpr[4];
 
         if (Memory.isAddressGood(key_addr)) {
-            if (peekCurrentKeyWarningLogged) {
-                if (log.isTraceEnabled()) {
-                    log.trace("IGNORING:sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ")");
+            if (hprmWarningLogged) {
+                if (log.isDebugEnabled()) {
+                    log.debug("IGNORING: sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ")");
                 }
             } else {
-                log.warn("IGNORING:sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ") future calls will only appear in TRACE log");
-                peekCurrentKeyWarningLogged = true;
+                log.warn("IGNORING: sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ") future calls will only appear in TRACE log");
+                hprmWarningLogged = true;
             }
             mem.write32(key_addr, 0); // fake
             cpu.gpr[2] = 0; // check
@@ -160,17 +160,35 @@ public class sceHprm implements HLEModule, HLEStartModule {
     public void sceHprmPeekLatch(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("Unimplemented NID function sceHprmPeekLatch [0x2BCEC83E]");
+        int latchAddr = cpu.gpr[4];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (hprmWarningLogged) {
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("IGNORING: sceHprmPeekLatch 0x%08X", latchAddr));
+            }
+        } else {
+        	log.warn(String.format("IGNORING: sceHprmPeekLatch 0x%08X", latchAddr));
+        	hprmWarningLogged = true;
+        }
+
+        cpu.gpr[2] = 0;
     }
 
     public void sceHprmReadLatch(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        log.warn("Unimplemented NID function sceHprmReadLatch [0x40D2F9F0]");
+        int latchAddr = cpu.gpr[4];
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (hprmWarningLogged) {
+            if (log.isDebugEnabled()) {
+            	log.debug(String.format("IGNORING: sceHprmReadLatch 0x%08X", latchAddr));
+            }
+        } else {
+        	log.warn(String.format("IGNORING: sceHprmReadLatch 0x%08X", latchAddr));
+        	hprmWarningLogged = true;
+        }
+
+        cpu.gpr[2] = 0;
     }
 
     public final HLEModuleFunction sceHprmRegisterCallbackFunction = new HLEModuleFunction("sceHprm", "sceHprmRegisterCallback") {
