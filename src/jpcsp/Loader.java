@@ -440,6 +440,9 @@ public class Loader {
         int i = 0;
         module.bss_size = 0;
         for (Elf32ProgramHeader phdr : programHeaderList) {
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("ELF Program Header: %s", phdr.toString()));
+        	}
             if (phdr.getP_type() == 0x00000001L) {
                 int fileOffset = (int)phdr.getP_offset();
                 int memOffset = baseAddress + (int)phdr.getP_vaddr();
@@ -501,6 +504,9 @@ public class Loader {
         Memory mem = Memory.getInstance();
 
         for (Elf32SectionHeader shdr : sectionHeaderList) {
+        	if (log.isTraceEnabled()) {
+        		log.trace(String.format("ELF Section Header: %s", shdr.toString()));
+        	}
             if ((shdr.getSh_flags() & Elf32SectionHeader.SHF_ALLOCATE) == Elf32SectionHeader.SHF_ALLOCATE) {
                 switch (shdr.getSh_type()) {
                     case Elf32SectionHeader.SHT_PROGBITS: // 1
