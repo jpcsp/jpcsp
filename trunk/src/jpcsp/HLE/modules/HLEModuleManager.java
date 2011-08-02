@@ -125,7 +125,8 @@ public class HLEModuleManager {
         sceJpeg(Modules.sceJpegModule, new String[] { "PSP_AV_MODULE_AVCODEC", "PSP_MODULE_AV_AVCODEC" }),
         sceUsb(Modules.sceUsbModule),
         sceHeap(Modules.sceHeapModule),
-        KDebugForKernel(Modules.KDebugForKernelModule);
+        KDebugForKernel(Modules.KDebugForKernelModule),
+        sceCcc(Modules.sceCccModule, new String[] { "libccc" });
 
     	private HLEModule module;
     	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default

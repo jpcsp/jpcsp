@@ -46,7 +46,6 @@ public enum SyscallIgnore {
 	sceAudiocodeCheckNeedMem(0x9D3F790C),
 	sceAudiocodecInit(0x5B37EB1D),
 	sceAudiocodecReleaseEDRAM(0x29681260),
-	sceCccSetTable(0xB4D1CBBF),
 	sceDisplayDisable(0x681EE6A7),
 	sceDisplayEnable(0x432D133F),
 	sceDisplaySetBrightness(0x9E3C6DC6),
