@@ -530,6 +530,8 @@ public class sceSasCore implements HLEModule, HLEStartModule {
             for (int i = 0; i < voices.length; i++) {
                 if (((voice_bit >> i) & 1) != 0) {
                     voices[i].setPaused(true);
+                } else {
+                	voices[i].setPaused(false);
                 }
             }
             cpu.gpr[2] = 0;
