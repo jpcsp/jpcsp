@@ -33,6 +33,7 @@ import jpcsp.HLE.modules.ThreadManForUser;
 import jpcsp.HLE.modules.UtilsForUser;
 import jpcsp.HLE.modules.sceAtrac3plus;
 import jpcsp.HLE.modules.sceAudio;
+import jpcsp.HLE.modules.sceCcc;
 import jpcsp.HLE.modules.sceCtrl;
 import jpcsp.HLE.modules.sceDeflt;
 import jpcsp.HLE.modules.sceDisplay;
@@ -141,6 +142,7 @@ public class Modules {
     public static sceUsb sceUsbModule = new sceUsb();
     public static sceHeap sceHeapModule = new sceHeap();
     public static KDebugForKernel KDebugForKernelModule = new KDebugForKernel();
+    public static sceCcc sceCccModule = new sceCcc();
 
     public static Logger log = Logger.getLogger("hle");
 
