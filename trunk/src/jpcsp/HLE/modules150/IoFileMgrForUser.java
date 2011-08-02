@@ -1122,6 +1122,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                             mem.write64(thread.wait.Io_resultAddr, info.result);
                         }
 
+                        // Return error at next call to sceIoWaitAsync
+                        info.result = ERROR_KERNEL_NO_ASYNC_OP;
+
                         // Return success
                         thread.cpuContext.gpr[2] = 0;
                         // Wakeup
@@ -1217,8 +1220,6 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
             if (waitForAsync) {
-                // Only flush the result on sceIoWaitAsync and sceIoWaitAsyncCB calls.
-                info.result = ERROR_KERNEL_NO_ASYNC_OP;
                 // Call the ioListeners.
                 for (IIoListener ioListener : ioListeners) {
                     ioListener.sceIoWaitAsync(Emulator.getProcessor().cpu.gpr[2], id, res_addr);
