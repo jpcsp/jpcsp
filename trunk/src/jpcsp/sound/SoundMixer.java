@@ -84,7 +84,7 @@ public class SoundMixer {
     	for (int i = 0; i < voices.length; i++) {
     		SoundVoice voice = voices[i];
 
-            if (voice.isPlaying()) {
+            if (voice.isPlaying() && !voice.isPaused()) {
             	ISampleSource sampleSource = synthesizers[i].getSampleSource();
             	int playSample = voice.getPlaySample();
             	int restPlay = sampleSource.getNumberSamples() - playSample;
