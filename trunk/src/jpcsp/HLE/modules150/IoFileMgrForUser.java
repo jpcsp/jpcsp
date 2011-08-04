@@ -26,6 +26,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_BAD_FILE_DESCR
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_FILE_READ_ERROR;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_ASYNC_OP;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_NO_SUCH_DEVICE;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_TOO_MANY_OPEN_FILES;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_UNSUPPORTED_OPERATION;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_MEMSTICK_DEVCTL_BAD_PARAMS;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.JPCSP_WAIT_IO;
@@ -225,9 +226,13 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             this.permissions = permissions;
             sectorBlockMode = false;
             id = getNewId();
-            uid = getNewUid();
-            fileIds.put(id, this);
-            fileUids.put(uid, this);
+            if (isValidId()) {
+            	uid = getNewUid();
+            	fileIds.put(id, this);
+            	fileUids.put(uid, this);
+            } else {
+            	uid = -1;
+            }
         }
 
         /** UMD version (read only) */
@@ -240,9 +245,17 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             this.permissions = permissions;
             sectorBlockMode = false;
             id = getNewId();
-            uid = getNewUid();
-            fileIds.put(id, this);
-            fileUids.put(uid, this);
+            if (isValidId()) {
+            	uid = getNewUid();
+            	fileIds.put(id, this);
+            	fileUids.put(uid, this);
+            } else {
+            	uid = -1;
+            }
+        }
+
+        public boolean isValidId() {
+        	return id != SceUidManager.INVALID_ID;
         }
 
         public boolean isUmdFile() {
@@ -1339,14 +1352,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                             String trimmedFileName = trimUmdPrefix(pcfilename);
                             UmdIsoFile file = iso.getFile(trimmedFileName);
                             info = new IoInfo(filename, file, mode, flags, permissions);
-                            if (trimmedFileName != null && trimmedFileName.length() == 0) {
-                                // Opening "umd0:" is allowing to read the whole UMD per sectors.
-                                info.sectorBlockMode = true;
-                            }
-                            info.result = ERROR_KERNEL_NO_ASYNC_OP;
-                            Emulator.getProcessor().cpu.gpr[2] = info.id;
-                            if (log.isDebugEnabled()) {
-                                log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
+                            if (!info.isValidId()) {
+                            	// Too many open files...
+                            	log.warn(String.format("hleIoOpen - too many open files"));
+                            	Emulator.getProcessor().cpu.gpr[2] = ERROR_KERNEL_TOO_MANY_OPEN_FILES;
+                            	// Return immediately the error, even in async mode
+                            	async = false;
+                            } else {
+	                            if (trimmedFileName != null && trimmedFileName.length() == 0) {
+	                                // Opening "umd0:" is allowing to read the whole UMD per sectors.
+	                                info.sectorBlockMode = true;
+	                            }
+	                            info.result = ERROR_KERNEL_NO_ASYNC_OP;
+	                            Emulator.getProcessor().cpu.gpr[2] = info.id;
+	                            if (log.isDebugEnabled()) {
+	                                log.debug("hleIoOpen assigned id = 0x" + Integer.toHexString(info.id));
+	                            }
                             }
                         } catch (FileNotFoundException e) {
                             if (log.isDebugEnabled()) {

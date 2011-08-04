@@ -210,6 +210,9 @@ public class sceGe_user implements HLEModule, HLEStartModule {
     private void triggerAsyncCallback(int cbid, int listId, int behavior, int signalId, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
     	SceKernelCallbackInfo callback = callbacks.get(cbid);
     	if (callback != null && callback.callback_addr != 0) {
+    		if (log.isDebugEnabled()) {
+    			log.debug(String.format("Scheduling Async Callback %s, listId=0x%X, behavior=%d, signalId=0x%X", callback.toString(), listId, behavior, signalId));
+    		}
     		GeCallbackInterruptHandler geCallbackInterruptHandler = new GeCallbackInterruptHandler(callback.callback_addr, callback.callback_arg_addr);
     		GeInterruptHandler geInterruptHandler = new GeInterruptHandler(geCallbackInterruptHandler, listId, behavior, signalId);
     		Emulator.getScheduler().addAction(geInterruptHandler);
