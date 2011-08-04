@@ -173,6 +173,9 @@ public class REShader extends BaseRenderingEngineFunction {
 
 		initShadersDefines();
 		loadShaders();
+		if (defaultShaderProgram == null) {
+			return;
+		}
 
 		shaderContext.setColorDoubling(1);
 
@@ -183,6 +186,14 @@ public class REShader extends BaseRenderingEngineFunction {
 			shaderContext.setUtex(ACTIVE_TEXTURE_NORMAL);
 			clutBuffer = ByteBuffer.allocateDirect(4096 * 4).order(ByteOrder.LITTLE_ENDIAN);
 		}
+	}
+
+	protected boolean isValidShader() {
+		if (defaultShaderProgram == null) {
+			return false;
+		}
+
+		return true;
 	}
 
 	protected static void addDefine(StringBuilder defines, String name, String value) {
@@ -441,25 +452,36 @@ public class REShader extends BaseRenderingEngineFunction {
 
 	protected void loadShaders() {
 		defaultShaderProgram = createShader(false, null);
-		if (useGeometryShader) {
-			defaultSpriteShaderProgram = createShader(true, null);
-			if (defaultSpriteShaderProgram == null) {
-				useGeometryShader = false;
+		if (defaultShaderProgram != null) {
+			if (useGeometryShader) {
+				defaultSpriteShaderProgram = createShader(true, null);
 			}
+
+			defaultShaderProgram.use(re);
 		}
 
-		defaultShaderProgram.use(re);
+		if (defaultSpriteShaderProgram == null) {
+			useGeometryShader = false;
+		}
 	}
 
 	public static boolean useShaders(IRenderingEngine re) {
-		boolean useShaders = Settings.getInstance().readBool("emu.useshaders");
-		boolean availableShaders = re.isShaderAvailable();
-
-		if (useShaders && !availableShaders) {
-			log.info("Shaders are not available on your computer. They have been automatically disabled.");
+		if (!Settings.getInstance().readBool("emu.useshaders")) {
+			return false;
 		}
 
-		return useShaders && availableShaders;
+		if (!re.isShaderAvailable()) {
+			log.info("Shaders are not available on your computer. They have been automatically disabled.");
+			return false;
+		}
+
+		REShader reTestShader = new REShader(re);
+		if (!reTestShader.isValidShader()) {
+			log.warn("Shaders do not run correctly on your computer. They have been automatically disabled.");
+			return false;
+		}
+
+		return true;
 	}
 
 	protected void printInfoLog(boolean isError) {
