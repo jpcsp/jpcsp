@@ -19,6 +19,8 @@ volatile int highPrioCounter = 0;
 volatile int mediumPrioCounter = 0;
 volatile int lowPrioCounter = 0;
 volatile int testDone = 0;
+char buffer[10000];
+char *msg;
 
 int threadHighPrio(SceSize args, void *argp)
 {
@@ -73,6 +75,13 @@ int threadBusy(SceSize args, void *argp)
 	return 0;
 }
 
+int sleepingThread(SceSize args, void *argp)
+{
+	sceKernelSleepThread();
+	strcat(msg, "Sleeping Thread\n");
+	return 0;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -91,6 +100,7 @@ int main(int argc, char *argv[])
 
 	pspDebugScreenInit();
 	pspDebugScreenPrintf("Press Cross to start the Task Scheduler Test\n");
+	pspDebugScreenPrintf("Press Circle to start the CpuSuspendIntr/CpuResumeIntr Test\n");
 	pspDebugScreenPrintf("Press Triangle to Exit\n");
 
 	while(!done)
@@ -165,6 +175,17 @@ int main(int argc, char *argv[])
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
 		{
+			msg = buffer;
+			strcpy(msg, "");
+			SceUID sleepingThid = sceKernelCreateThread("Sleeping Thread", sleepingThread, 0x10, 0x1000, 0, 0);
+			sceKernelStartThread(sleepingThid, 0, 0);
+			sceKernelDelayThread(100000);
+			int intr = sceKernelCpuSuspendIntr();
+			sceKernelWakeupThread(sleepingThid);
+			strcat(msg, "Main Thread with disabled interrupts\n");
+			sceKernelCpuResumeIntr(intr);
+			strcat(msg, "Main Thread with enabled interrupts\n");
+			pspDebugScreenPrintf("%s", msg);
 		}
 
 		if (buttonDown & PSP_CTRL_SQUARE)

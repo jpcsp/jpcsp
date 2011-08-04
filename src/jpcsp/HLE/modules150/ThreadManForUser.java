@@ -103,6 +103,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
+import jpcsp.hardware.Interrupts;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
@@ -775,6 +776,14 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             // No context switching inside an interrupt
             if (log.isDebugEnabled()) {
                 log.debug("Inside an interrupt, not context switching to " + newThread);
+            }
+            return false;
+        }
+
+        if (Interrupts.isInterruptsDisabled()) {
+            // No context switching when interrupts are disabled
+            if (log.isDebugEnabled()) {
+                log.debug("Interrupts are disabled, not context switching to " + newThread);
             }
             return false;
         }
