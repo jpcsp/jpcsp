@@ -31,6 +31,7 @@ public class SceUidManager {
 	// UID is a unique identifier across all purposes
     private static HashMap<Integer, SceUid> uidMap = new HashMap<Integer, SceUid>();
     private static int uidNext = 0x1; // LocoRoco expects UID to be 8bit
+    public static final int INVALID_ID = Integer.MIN_VALUE;
 
     // ID is an identifier only unique for the same purpose.
     // Different purposes can share the save ID values.
@@ -109,6 +110,12 @@ public class SceUidManager {
     			freeIds.add(id);
     		}
     		freeIdsMap.put(purpose, freeIds);
+    	}
+
+    	// No more free IDs?
+    	if (freeIds.size() <= 0) {
+    		// Return an invalid ID
+    		return INVALID_ID;
     	}
 
     	// Return the lowest free ID
