@@ -1629,7 +1629,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
         }
         updateResult(Emulator.getProcessor().cpu, info, result, async, false, IoOperation.read, asyncAction);
         // Call the IO listeners (performed in the async action if one is provided)
-        if (asyncAction != null) {
+        if (asyncAction == null) {
 	        for (IIoListener ioListener : ioListeners) {
 	            ioListener.sceIoRead(result, id, data_addr, requestedSize, size, position, dataInput);
 	        }
