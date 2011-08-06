@@ -148,9 +148,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
         private int presentationStartTime;
         private int presentationEndTime;
         private int streamNum;
-        private int streamStructSize;
         private int audioSampleFrequency;
-        private int audioChannelsSetup;
+        private int audioSamplesNum;
         private int videoWidth;
         private int videoHeight;
         private int EPMapEntriesNum;
@@ -174,14 +173,26 @@ public class scePsmf implements HLEModule, HLEStartModule {
         // Entry class for the EPMap.
         protected class PSMFEntry {
 
+            private int EPIndex;
+            private int EPPicOffset;
             private int EPPts;
             private int EPOffset;
             private int id;
 
-            public PSMFEntry(int id, int pts, int offset) {
+            public PSMFEntry(int id, int index, int picOffset, int pts, int offset) {
             	this.id = id;
+                EPIndex = index;
+                EPPicOffset = picOffset;
                 EPPts = pts;
                 EPOffset = offset;
+            }
+
+            public int getEntryIndex() {
+                return EPIndex;
+            }
+
+            public int getEntryPicOffset() {
+                return EPPicOffset;
             }
 
             public int getEntryPTS() {
@@ -215,11 +226,24 @@ public class scePsmf implements HLEModule, HLEStartModule {
             public int getStreamChannel() {
                 return StreamChannel;
             }
+
+            public void readStreamParams(int addr) {
+                Memory mem = Memory.getInstance();
+                int internalID = endianSwap16(mem.read16(addr));
+                int unk1 = endianSwap16(mem.read16(addr + 2));
+                audioSampleFrequency = endianSwap16(mem.read16(addr + 4));  // Should be ignored, since the default one is used instead.
+                int unk2 = endianSwap16(mem.read16(addr + 6));
+                audioSamplesNum = endianSwap16(mem.read16(addr + 8));
+                videoWidth = (mem.read8(addr + 10) * 0x10);    // PSMF video width (bytes per line).
+                videoHeight = (mem.read8(addr + 11) * 0x10);   // PSMF video heigth (bytes per line).
+                int unk3 = endianSwap16(mem.read16(addr + 12));
+            }
         }
 
         public PSMFHeader(int addr) {
             Memory mem = Memory.getInstance();
 
+            // PSMF Header Format
             if (mem.read32(addr) != sceMpeg.PSMF_MAGIC) {
                 log.warn("Invalid PSMF detected!");
             }
@@ -230,17 +254,22 @@ public class scePsmf implements HLEModule, HLEStartModule {
             streamOffset = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_OFFSET_OFFSET));
             streamSize = endianSwap32(mem.read32(addr + sceMpeg.PSMF_STREAM_SIZE_OFFSET));
 
+            int EPmapEntriesNumOffset = endianSwap16(mem.read16(addr + 82));
+            EPMapEntriesNum = endianSwap16(mem.read16(addr + 82 + EPmapEntriesNumOffset));                           // Number of entry points in the EPMap.
             presentationStartTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_FIRST_TIMESTAMP_OFFSET));  // First PTS in EPMap (90000).
-            presentationEndTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));    // mpegLastTimestamp.
-
-            streamStructSize = mem.read8(addr + 127);                      // 16 bytes per stream + 2 bytes for total stream number.
-            streamNum = endianSwap16(mem.read16(addr + 128));              // Number of total registered streams.
+            presentationEndTime = endianSwap32(readUnaligned32(mem, addr + sceMpeg.PSMF_LAST_TIMESTAMP_OFFSET));     // Last PTS in EPMap.
+            int unk1 = endianSwap16(mem.read16(addr + 98));
+            int unk2 = endianSwap16(mem.read16(addr + 104));
+            int streamDataBlockSize = endianSwap16(mem.read16(addr + 108));                                          // General stream information block size.
+            EPMapOffset = addr + 108 + streamDataBlockSize + 2;                                                      // Calculate the EPMapOffset from the streamDataBlockSize.
+            int unk3 = endianSwap32(mem.read32(addr + 122));
+            int streamStructSize = endianSwap16(mem.read16(addr + 126));                                             // Inner stream information block size.
+            streamNum = endianSwap16(mem.read16(addr + 128));                                                        // Number of total registered streams.
 
             // Stream area:
             // At offset 130, each 16 bytes represent one stream:
             //  - First two bytes (short): stream type ID;
-            //  - Next two bytes (short): size of the stream?;
-            //  - Remaining: padding and video/audio info.
+            //  - The remaining bytes represent varying kinds of stream parameters.
             streamMap = new HashMap<Integer, PSMFStream>();
             currentStreamNumber = -1;         // Current stream number.
             currentVideoStreamNumber = -1;    // Current video stream number.
@@ -251,9 +280,11 @@ public class scePsmf implements HLEModule, HLEStartModule {
             // Parse the stream field and assign each one to it's type.
             for (int i = 0; i < streamNum; i++) {
                 PSMFStream stream = null;
-                int streamID = endianSwap16(mem.read16(addr + 130 + i * 16));
+                int currentStreamAddr = (addr + 130 + i * 16);
+                int streamID = endianSwap16(mem.read16(currentStreamAddr));
                 if ((streamID & PSMF_VIDEO_STREAM_ID) == PSMF_VIDEO_STREAM_ID) {
                     stream = new PSMFStream(PSMF_AVC_STREAM, 0);
+                    stream.readStreamParams(currentStreamAddr);  // All PSMF params are stored in the AVC stream.
                     currentVideoStreamNumber++;
                     videoStreamNum++;
                 } else if ((streamID & PSMF_AUDIO_STREAM_ID) == PSMF_AUDIO_STREAM_ID) {
@@ -267,32 +298,21 @@ public class scePsmf implements HLEModule, HLEStartModule {
                 }
             }
 
-            // Video stream info.
-            EPMapEntriesNum = mem.read8(addr + 141);       // Number of entry points in the EPMap.
-            videoWidth = (mem.read8(addr + 142) * 0x10);   // PSMF video width (bytes per line).
-            videoHeight = (mem.read8(addr + 143) * 0x10);  // PSMF video heigth (bytes per line).
-
-            // Audio stream info.
-            audioChannelsSetup = mem.read8(addr + 160);    // 1 - Mono; 2 - Stereo.
-            audioSampleFrequency = mem.read8(addr + 161);  // 2 - 44100kHz.
-
-            // EPMap Offset:
-            // - Depends on the number of streams present in the header.
-            EPMapOffset = addr + 128 + streamStructSize;
-
             // EPMap info:
             // - Located at EPMapOffset;
             // - Each entry is composed by a total of 10 bytes:
-            //      - First 2 bytes (short): Padding;
-            //      - Next 4 bytes (int): PTS of the entry point;
-            //      - Last 4 bytes (int): Relative offset of the entry point in the MPEG data.
+            //      - 1 byte: Reference picture index (RAPI);
+            //      - 1 byte: Reference picture offset from the current index;
+            //      - 4 bytes: PTS of the entry point;
+            //      - 4 bytes: Relative offset of the entry point in the MPEG data.
             EPMap = new HashMap<Integer, PSMFEntry>();
-
             for (int i = 0; i < EPMapEntriesNum; i++) {
+                int index = mem.read8(EPMapOffset + i * 10);
+                int picOffset = mem.read8(EPMapOffset + 1 + i * 10);
                 int pts = endianSwap32(readUnaligned32(mem, EPMapOffset + 2 + i * 10));
                 int offset = endianSwap32(readUnaligned32(mem, EPMapOffset + 6 + i * 10));
                 int id = currentEntryNumber++;
-                PSMFEntry pEnt = new PSMFEntry(id, pts, offset);
+                PSMFEntry pEnt = new PSMFEntry(id, index, picOffset, pts, offset);
                 EPMap.put(id, pEnt);
             }
         }
@@ -337,8 +357,8 @@ public class scePsmf implements HLEModule, HLEStartModule {
             return audioSampleFrequency;
         }
 
-        public int getAudioChannelsSetup() {
-            return audioChannelsSetup;
+        public int getAudioSamplesNum() {
+            return audioSamplesNum;
         }
 
         public int getEPMapOffset() {
@@ -473,12 +493,12 @@ public class scePsmf implements HLEModule, HLEStartModule {
         PSMFHeader header = new PSMFHeader(buffer_addr);
         psmfHeaderMap.put(header.getHeaderOffset(), header);
 
-        // Reads several parameters from the PMF file header and stores them in
-        // a 52 byte struct.
-        // Prince of Persia - Revelations - USA - ULUS10063: 
-        // TODO the PSMF structure can only be 40 bytes long, e.g.
-        // scePsmfSetPsmf (psmf=0x9fbefc8 buffer_addr=0x9fbeff0)
-        // scePsmfSetPsmf (psmf=0x9fbee48 buffer_addr=0x9fbee70)
+        // PSMF struct:
+        // This is an internal system data area which is used to store
+        // several parameters of the file being handled.
+        // It's size ranges from 28 bytes to 52 bytes, since when a pointer to
+        // a certain PSMF area does not exist (NULL), it's omitted from the struct
+        // (e.g.: no mark data or non existant EPMap).
         mem.write32(psmf, header.getVersion());                  // PSMF version.
         mem.write32(psmf + 4, header.getHeaderSize());           // The PSMF header size (0x800).
         mem.write32(psmf + 8, header.getStreamSize());           // The PSMF stream size.
@@ -486,12 +506,12 @@ public class scePsmf implements HLEModule, HLEStartModule {
         mem.write32(psmf + 16, 0);                               // Group ID.
         mem.write32(psmf + 20, header.getCurrentStreamNumber()); // Current stream's number.
         mem.write32(psmf + 24, header.getHeaderOffset());        // Pointer to PSMF header.
-        mem.write32(psmf + 28, 0);                               // Pointer to current PSMF stream info (video/audio).
-        mem.write32(psmf + 32, 0);                               // Pointer to mark data (used for chapters).
-        mem.write32(psmf + 36, 0);                               // Pointer to current PSMF stream grouping period.
-//        mem.write32(psmf + 40, 0);                               // Pointer to current PSMF stream group.
-//        mem.write32(psmf + 44, header.getStreamOffset());        // Pointer to current PSMF stream.
-//        mem.write32(psmf + 48, header.getEPMapOffset());         // Pointer to PSMF EPMap.
+        // psmf + 28 - Pointer to current PSMF stream info (video/audio).
+        // psmf + 32 - Pointer to mark data (used for chapters in UMD_VIDEO).
+        // psmf + 36 - Pointer to current PSMF stream grouping period.
+        // psmf + 40 - Pointer to current PSMF stream group.
+        // psmf + 44 - Pointer to current PSMF stream.
+        // psmf + 48 - Pointer to PSMF EPMap.
 
         cpu.gpr[2] = 0;
     }
@@ -736,10 +756,10 @@ public class scePsmf implements HLEModule, HLEStartModule {
         }
         PSMFHeader header = getPsmfHeader(psmf);
         if (header != null) {
-            int setup = header.getAudioChannelsSetup();
-            int freq = header.getAudioSampleFrequency();
-            mem.write32(audioInfoAddr, setup);
-            mem.write32(audioInfoAddr + 4, freq);
+            int chConfig = sceMpeg.PSMF_AUDIO_CHANNEL_CONFIG_STEREO;
+            int sampleFreq = sceMpeg.PSMF_AUDIO_DEFAULT_SAMPLE_FREQUENCY;
+            mem.write32(audioInfoAddr, chConfig);
+            mem.write32(audioInfoAddr + 4, sampleFreq);
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_NOT_FOUND;
@@ -789,8 +809,12 @@ public class scePsmf implements HLEModule, HLEStartModule {
         	if (entry != null) {
 	            int pts = entry.getEntryPTS();
 	            int offset = entry.getEntryOffset();
+                int index = entry.getEntryIndex();
+                int picOffset = entry.getEntryPicOffset();
 	            mem.write32(out_addr, pts);
 	            mem.write32(out_addr + 4, offset);
+                mem.write32(out_addr + 8, index);
+                mem.write32(out_addr + 12, picOffset);
 	            cpu.gpr[2] = 0;
         	} else {
         		cpu.gpr[2] = SceKernelErrors.ERROR_PSMF_INVALID_ID;
@@ -827,8 +851,12 @@ public class scePsmf implements HLEModule, HLEStartModule {
 	            } else {
 	                int pts = entry.getEntryPTS();
 	                int offset = entry.getEntryOffset();
+                    int index = entry.getEntryIndex();
+                    int picOffset = entry.getEntryPicOffset();
 	                mem.write32(entry_addr, pts);
 	                mem.write32(entry_addr + 4, offset);
+                    mem.write32(entry_addr + 8, index);
+                    mem.write32(entry_addr + 12, picOffset);
 	                cpu.gpr[2] = 0;
 	            }
         	}

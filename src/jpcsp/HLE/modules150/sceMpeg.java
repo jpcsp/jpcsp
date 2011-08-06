@@ -207,6 +207,9 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     public static final int PSMF_STREAM_SIZE_OFFSET = 12;
     public static final int PSMF_FIRST_TIMESTAMP_OFFSET = 86;
     public static final int PSMF_LAST_TIMESTAMP_OFFSET = 92;
+    public static final int PSMF_AUDIO_CHANNEL_CONFIG_MONO = 1;
+    public static final int PSMF_AUDIO_CHANNEL_CONFIG_STEREO = 2;
+    public static final int PSMF_AUDIO_DEFAULT_SAMPLE_FREQUENCY = 2;
     protected static final int MPEG_MEMSIZE = 0x10000;          // 64k.
     public static final int atracDecodeDelay = 3000;         // Microseconds
     public static final int avcDecodeDelay = 5400;           // Microseconds

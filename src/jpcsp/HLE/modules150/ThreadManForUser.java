@@ -4075,9 +4075,12 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             return;
         }
 
-        dispatchThreadEnabled = false;
-
-        cpu.gpr[2] = state;
+        if (Interrupts.isInterruptsDisabled()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
+        } else {
+            dispatchThreadEnabled = false;
+            cpu.gpr[2] = state;
+        }
     }
 
     /**
@@ -4101,7 +4104,11 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             return;
         }
 
-        cpu.gpr[2] = 0;
+        if (Interrupts.isInterruptsDisabled()) {
+            cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED;
+        } else {
+            cpu.gpr[2] = 0;
+        }
 
         if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
             dispatchThreadEnabled = true;

@@ -392,6 +392,8 @@ public class UmdVideoPlayer implements KeyListener {
         videoPaused = false;
         seekFrameFastForward = false;
         seekFrameRewind = false;
+        firstTimestampInStream = Global.NO_PTS;
+        systemClockStartTime = System.currentTimeMillis();
     }
 
     public void fastForward() {
@@ -553,7 +555,10 @@ public class UmdVideoPlayer implements KeyListener {
                             long millisecondsStreamTimeSinceStartOfVideo = (picture.getTimeStamp() - firstTimestampInStream) / 1000;
                             final long millisecondsTolerance = 50;
                             final long millisecondsToSleep = (millisecondsStreamTimeSinceStartOfVideo - (millisecondsClockTimeSinceStartofVideo + millisecondsTolerance));
-                            sleep(millisecondsToSleep);
+                            // Don't sleep when fast-forwarding, rewinding or pausing.
+                            if (!seekFrameFastForward && !seekFrameRewind && !videoPaused) {
+                                sleep(millisecondsToSleep);
+                            }
                         }
                         if ((converter != null) && (newPic != null)) {
                             image = converter.toImage(newPic);
@@ -575,13 +580,17 @@ public class UmdVideoPlayer implements KeyListener {
                 }
             }
             if (seekFrameFastForward) {
-                container.seekKeyFrame(videoStreamId, -1, 0);
-                container.seekKeyFrame(videoStreamId, packet.getTimeStamp() + Global.DEFAULT_PTS_PER_SECOND, IContainer.SEEK_FLAG_ANY);
-                seekFrameFastForward = false;
+                container.seekKeyFrame(-1, 0, IContainer.SEEK_FLAG_FRAME);
+                int bitrate = container.getBitRate();
+                long seconds = (packet.getTimeStamp() / 1000) + 10;
+                long bytes = seconds * bitrate / 8;
+                container.seekKeyFrame(videoStreamId, bytes, IContainer.SEEK_FLAG_BYTE);
             } else if (seekFrameRewind) {
-                container.seekKeyFrame(videoStreamId, -1, 0);
-                container.seekKeyFrame(videoStreamId, packet.getTimeStamp() - Global.DEFAULT_PTS_PER_SECOND, IContainer.SEEK_FLAG_BACKWARDS);
-                seekFrameRewind = false;
+                container.seekKeyFrame(-1, 0, IContainer.SEEK_FLAG_BACKWARDS);
+                int bitrate = container.getBitRate();
+                long seconds = (packet.getTimeStamp() / 1000) - 10;
+                long bytes = seconds * bitrate / 8;
+                container.seekKeyFrame(videoStreamId, bytes, IContainer.SEEK_FLAG_BYTE);
             }
         } else {
             endOfVideo = true;
@@ -623,12 +632,13 @@ public class UmdVideoPlayer implements KeyListener {
 
     public void takeScreenshot() {
         int tag = 0;
-        File screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
+        String name = State.discId + "-" + "Shot" + "-" + tag + ".png";
+        File screenshot = new File(name);
         File directory = new File(System.getProperty("user.dir"));
-        for (File file : directory.listFiles()) {
-            if (file.getName().equals(screenshot.getName())) {
-               tag++;
-               screenshot = new File(State.title + "-" + "Shot" + "-" + tag + ".png");
+        for(File file : directory.listFiles()) {
+            if (file.getName().contains(State.discId + "-" + "Shot")) {
+                name = State.discId + "-" + "Shot" + "-" + ++tag + ".png";
+                screenshot = new File(name);
             }
         }
         try {
