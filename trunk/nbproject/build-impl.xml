@@ -190,13 +190,13 @@ is divided into following sections:
         <fail unless="src.dir">Must set src.dir</fail>
         <fail unless="test.src.dir">Must set test.src.dir</fail>
         <fail unless="build.dir">Must set build.dir</fail>
-        <fail unless="dist.dir">Must set dist.dir</fail>
+        <fail unless="bin.dir">Must set bin.dir</fail>
         <fail unless="build.classes.dir">Must set build.classes.dir</fail>
-        <fail unless="dist.javadoc.dir">Must set dist.javadoc.dir</fail>
+        <fail unless="bin.javadoc.dir">Must set bin.javadoc.dir</fail>
         <fail unless="build.test.classes.dir">Must set build.test.classes.dir</fail>
         <fail unless="build.test.results.dir">Must set build.test.results.dir</fail>
         <fail unless="build.classes.excludes">Must set build.classes.excludes</fail>
-        <fail unless="dist.jar">Must set dist.jar</fail>
+        <fail unless="bin.jar">Must set bin.jar</fail>
     </target>
     <target name="-init-macrodef-property">
         <macrodef name="property" uri="http://www.netbeans.org/ns/j2se-project/1">
@@ -385,7 +385,7 @@ is divided into following sections:
     </target>
     <target name="-init-presetdef-jar">
         <presetdef name="jar" uri="http://www.netbeans.org/ns/j2se-project/1">
-            <jar compress="${jar.compress}" jarfile="${dist.jar}">
+            <jar compress="${jar.compress}" jarfile="${bin.jar}">
                 <j2seproject1:fileset dir="${build.classes.dir}"/>
             </jar>
         </presetdef>
@@ -465,8 +465,8 @@ is divided into following sections:
                 ====================
             -->
     <target depends="init" name="-pre-pre-jar">
-        <dirname file="${dist.jar}" property="dist.jar.dir"/>
-        <mkdir dir="${dist.jar.dir}"/>
+        <dirname file="${bin.jar}" property="bin.jar.dir"/>
+        <mkdir dir="${bin.jar.dir}"/>
     </target>
     <target name="-pre-jar">
         <!-- Empty placeholder for easier customization. -->
@@ -486,12 +486,12 @@ is divided into following sections:
         </j2seproject1:jar>
         <echo>To run this application from the command line without Ant, try:</echo>
         <property location="${build.classes.dir}" name="build.classes.dir.resolved"/>
-        <property location="${dist.jar}" name="dist.jar.resolved"/>
-        <pathconvert property="run.classpath.with.dist.jar">
+        <property location="${bin.jar}" name="bin.jar.resolved"/>
+        <pathconvert property="run.classpath.with.bin.jar">
             <path path="${run.classpath}"/>
-            <map from="${build.classes.dir.resolved}" to="${dist.jar.resolved}"/>
+            <map from="${build.classes.dir.resolved}" to="${bin.jar.resolved}"/>
         </pathconvert>
-        <echo>java -cp "${run.classpath.with.dist.jar}" ${main.class}</echo>
+        <echo>java -cp "${run.classpath.with.bin.jar}" ${main.class}</echo>
     </target>
     <target depends="init,compile,-pre-pre-jar,-pre-jar" if="manifest.available+main.class+mkdist.available" name="-do-jar-with-libraries">
         <property location="${build.classes.dir}" name="build.classes.dir.resolved"/>
@@ -507,7 +507,7 @@ is divided into following sections:
             </chainedmapper>
         </pathconvert>
         <taskdef classname="org.netbeans.modules.java.j2seproject.copylibstask.CopyLibs" classpath="${libs.CopyLibs.classpath}" name="copylibs"/>
-        <copylibs compress="${jar.compress}" jarfile="${dist.jar}" manifest="${manifest.file}" runtimeclasspath="${run.classpath.without.build.classes.dir}">
+        <copylibs compress="${jar.compress}" jarfile="${bin.jar}" manifest="${manifest.file}" runtimeclasspath="${run.classpath.without.build.classes.dir}">
             <fileset dir="${build.classes.dir}"/>
             <manifest>
                 <attribute name="Main-Class" value="${main.class}"/>
@@ -515,8 +515,8 @@ is divided into following sections:
             </manifest>
         </copylibs>
         <echo>To run this application from the command line without Ant, try:</echo>
-        <property location="${dist.jar}" name="dist.jar.resolved"/>
-        <echo>java -jar "${dist.jar.resolved}"</echo>
+        <property location="${bin.jar}" name="bin.jar.resolved"/>
+        <echo>java -jar "${bin.jar.resolved}"</echo>
     </target>
     <target depends="init,compile,-pre-pre-jar,-pre-jar" if="manifest.available+mkdist.available" name="-do-jar-with-libraries-without-mainclass" unless="main.class.available">
         <property location="${build.classes.dir}" name="build.classes.dir.resolved"/>
@@ -532,7 +532,7 @@ is divided into following sections:
             </chainedmapper>
         </pathconvert>
         <taskdef classname="org.netbeans.modules.java.j2seproject.copylibstask.CopyLibs" classpath="${libs.CopyLibs.classpath}" name="copylibs"/>
-        <copylibs compress="${jar.compress}" jarfile="${dist.jar}" manifest="${manifest.file}" runtimeclasspath="${run.classpath.without.build.classes.dir}">
+        <copylibs compress="${jar.compress}" jarfile="${bin.jar}" manifest="${manifest.file}" runtimeclasspath="${run.classpath.without.build.classes.dir}">
             <fileset dir="${build.classes.dir}"/>
             <manifest>
                 <attribute name="Class-Path" value="${jar.classpath}"/>
@@ -553,7 +553,7 @@ is divided into following sections:
             </chainedmapper>
         </pathconvert>
         <taskdef classname="org.netbeans.modules.java.j2seproject.copylibstask.CopyLibs" classpath="${libs.CopyLibs.classpath}" name="copylibs"/>
-        <copylibs compress="${jar.compress}" jarfile="${dist.jar}" runtimeclasspath="${run.classpath.without.build.classes.dir}">
+        <copylibs compress="${jar.compress}" jarfile="${bin.jar}" runtimeclasspath="${run.classpath.without.build.classes.dir}">
             <fileset dir="${build.classes.dir}"/>
             <manifest>
                 <attribute name="Class-Path" value="${jar.classpath}"/>
@@ -635,8 +635,8 @@ is divided into following sections:
                 ===============
             -->
     <target depends="init" name="-javadoc-build">
-        <mkdir dir="${dist.javadoc.dir}"/>
-        <javadoc additionalparam="${javadoc.additionalparam}" author="${javadoc.author}" charset="UTF-8" destdir="${dist.javadoc.dir}" docencoding="UTF-8" encoding="${javadoc.encoding.used}" failonerror="true" noindex="${javadoc.noindex}" nonavbar="${javadoc.nonavbar}" notree="${javadoc.notree}" private="${javadoc.private}" source="${javac.source}" splitindex="${javadoc.splitindex}" use="${javadoc.use}" useexternalfile="true" version="${javadoc.version}" windowtitle="${javadoc.windowtitle}">
+        <mkdir dir="${bin.javadoc.dir}"/>
+        <javadoc additionalparam="${javadoc.additionalparam}" author="${javadoc.author}" charset="UTF-8" destdir="${bin.javadoc.dir}" docencoding="UTF-8" encoding="${javadoc.encoding.used}" failonerror="true" noindex="${javadoc.noindex}" nonavbar="${javadoc.nonavbar}" notree="${javadoc.notree}" private="${javadoc.private}" source="${javac.source}" splitindex="${javadoc.splitindex}" use="${javadoc.use}" useexternalfile="true" version="${javadoc.version}" windowtitle="${javadoc.windowtitle}">
             <classpath>
                 <path path="${javac.classpath}"/>
             </classpath>
@@ -649,7 +649,7 @@ is divided into following sections:
         </javadoc>
     </target>
     <target depends="init,-javadoc-build" if="netbeans.home" name="-javadoc-browse" unless="no.javadoc.preview">
-        <nbbrowse file="${dist.javadoc.dir}/index.html"/>
+        <nbbrowse file="${bin.javadoc.dir}/index.html"/>
     </target>
     <target depends="init,-javadoc-build,-javadoc-browse" description="Build Javadoc." name="javadoc"/>
     <!--
@@ -804,7 +804,7 @@ is divided into following sections:
     </target>
     <target depends="init" name="-do-clean">
         <delete dir="${build.dir}"/>
-        <delete dir="${dist.dir}" followsymlinks="false" includeemptydirs="true"/>
+        <delete dir="${bin.dir}" followsymlinks="false" includeemptydirs="true"/>
     </target>
     <target name="-post-clean">
         <!-- Empty placeholder for easier customization. -->

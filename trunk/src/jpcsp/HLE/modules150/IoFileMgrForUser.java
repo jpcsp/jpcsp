@@ -3055,7 +3055,7 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 break;
             }
             // Seek UMD disc (raw).
-            case 0x01F100A4: {
+            case 0x01F100A3: {
                 if (log.isDebugEnabled()) {
                     log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " seek UMD disc");
                 }
@@ -3071,17 +3071,40 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
                 break;
             }
             // Prepare UMD data into cache.
-            case 0x01F300A5: {
+            case 0x01F100A4: {
                 if (log.isDebugEnabled()) {
                     log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " prepare UMD data to cache");
                 }
-                if ((Memory.isAddressGood(indata_addr) && inlen >= 4) && (Memory.isAddressGood(outdata_addr) && outlen >= 4)) {
+                if ((Memory.isAddressGood(indata_addr) && inlen >= 4)) {
+                    // UMD cache read struct (16-bytes).
+                    int unk1 = mem.read32(indata_addr); // NULL.
                     int sector = mem.read32(indata_addr + 4);  // First sector of data to read.
+                    int unk2 = mem.read32(indata_addr + 8); // NULL.
                     int sectorNum = mem.read32(indata_addr + 12);  // Length of data to read.
                     if (log.isDebugEnabled()) {
                         log.debug("sector=" + sector + ", sectorNum=" + sectorNum);
                     }
-                    mem.write32(outdata_addr, 1); // Status (unitary index with unknown meaning).
+                    cpu.gpr[2] = 0;
+                } else {
+                    cpu.gpr[2] = -1;
+                }
+                break;
+            }
+            // Prepare UMD data into cache and get status.
+            case 0x01F300A5: {
+                if (log.isDebugEnabled()) {
+                    log.debug("sceIoDevctl " + String.format("0x%08X", cmd) + " prepare UMD data to cache and get status");
+                }
+                if ((Memory.isAddressGood(indata_addr) && inlen >= 4) && (Memory.isAddressGood(outdata_addr) && outlen >= 4)) {
+                    // UMD cache read struct (16-bytes).
+                    int unk1 = mem.read32(indata_addr); // NULL.
+                    int sector = mem.read32(indata_addr + 4);  // First sector of data to read.
+                    int unk2 = mem.read32(indata_addr + 8); // NULL.
+                    int sectorNum = mem.read32(indata_addr + 12);  // Length of data to read.
+                    if (log.isDebugEnabled()) {
+                        log.debug("sector=" + sector + ", sectorNum=" + sectorNum);
+                    }
+                    mem.write32(outdata_addr, 1); // Status (unitary index of the requested read, greater or equal to 1).
                     cpu.gpr[2] = 0;
                 } else {
                     cpu.gpr[2] = -1;

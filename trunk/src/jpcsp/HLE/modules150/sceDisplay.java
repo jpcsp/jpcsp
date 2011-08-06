@@ -861,13 +861,14 @@ public class sceDisplay extends AWTGLCanvas implements HLEModule, HLEStartModule
 
     public void saveScreen() {
         int tag = 0;
-        File screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
+        String fileName = State.discId + "-" + "Shot" + "-" + tag + ".png";
+        File screenshot = new File(fileName);
         File directory = new File(System.getProperty("user.dir"));
 
         for(File file : directory.listFiles()) {
-            if(file.getName().equals(screenshot.getName())) {
-               tag++;
-               screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
+            if (file.getName().contains(State.discId + "-" + "Shot")) {
+                fileName = State.discId + "-" + "Shot" + "-" + ++tag + ".png";
+                screenshot = new File(fileName);
             }
         }
 

@@ -114,6 +114,7 @@ public class SceKernelErrors {
     public final static int ERROR_ERRNO_FILE_QUOTA_EXCEEDED                     = 0x80010084;
 
     public final static int ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT        = 0x80020064;
+    public final static int ERROR_KERNEL_INTERRUPTS_ALREADY_DISABLED            = 0x80020066;
     public final static int ERROR_KERNEL_UNKNOWN_UID                            = 0x800200cb;
     public final static int ERROR_KERNEL_UNMATCH_TYPE_UID                       = 0x800200cc;
     public final static int ERROR_KERNEL_NOT_EXIST_ID                           = 0x800200cd;
