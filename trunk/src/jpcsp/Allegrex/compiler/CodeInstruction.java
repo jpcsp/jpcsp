@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Allegrex.Common._ra;
 import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
@@ -167,14 +168,20 @@ public class CodeInstruction {
     }
 
     private void compileJr(CompilerContext context, MethodVisitor mv) {
-        compileDelaySlot(context, mv);
+    	// Retrieve the call address from the Rs register before executing
+    	// the delay slot instruction, as it might theoretically modify the
+    	// content of the Rs register.
         context.loadRs();
+        compileDelaySlot(context, mv);
         context.visitJump();
     }
 
     private void compileJalr(CompilerContext context, MethodVisitor mv) {
-        compileDelaySlot(context, mv);
+    	// Retrieve the call address from the Rs register before executing
+    	// the delay slot instruction, as it might theoretically modify the
+    	// content of the Rs register.
         context.loadRs();
+        compileDelaySlot(context, mv);
         context.visitCall(getAddress() + 8, context.getRdRegisterIndex());
     }
 
@@ -233,13 +240,17 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeCall0(CompilerContext context, MethodVisitor mv) {
+        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra, false);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, 31, false);
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, false);
 
         return Opcodes.NOP;
     }
 
     private int getBranchingOpcodeBranch1(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+    	// Retrieve the call address from the Rs register before executing
+    	// the delay slot instruction, as it might theoretically modify the
+    	// content of the Rs register.
         context.loadRs();
         compileDelaySlot(context, mv);
 
@@ -256,21 +267,23 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeCall1(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra, true);
     	context.loadRs();
         compileDelaySlot(context, mv);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
-        context.visitCall(getBranchingTo(), getAddress() + 8, 31, true);
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true);
 
         return Opcodes.NOP;
     }
 
     private int getBranchingOpcodeCall1L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+        context.prepareCall(getBranchingTo(), getAddress() + 8, _ra, true);
     	context.loadRs();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, 31, true);
+        context.visitCall(getBranchingTo(), getAddress() + 8, _ra, true);
 
         return Opcodes.NOP;
     }
@@ -325,6 +338,9 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeBranch2(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+    	// Retrieve the registers for the branching opcode before executing
+    	// the delay slot instruction, as it might theoretically modify the
+    	// content of these registers.
     	branchingOpcode = loadRegistersForBranchingOpcodeBranch2(context, mv, branchingOpcode);
 		compileDelaySlot(context, mv);
 
@@ -337,6 +353,9 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeBranch2L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+    	// Retrieve the registers for the branching opcode before executing
+    	// the delay slot instruction, as it might theoretically modify the
+    	// content of these registers.
     	notBranchingOpcode = loadRegistersForBranchingOpcodeBranch2(context, mv, notBranchingOpcode);
     	if (notBranchingOpcode != Opcodes.NOP) {
     		CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);

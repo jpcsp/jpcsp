@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Allegrex.Common._ra;
+import static jpcsp.Allegrex.Common._sp;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -133,7 +136,7 @@ public class RuntimeContext {
 			// No setjmp/longjmp handling inside interrupts and idle state
 			returnValue = jumpCall(address, returnAddress, true);
 		} else {
-			int sp = cpu.gpr[29];
+			int sp = cpu.gpr[_sp];
 
 			if (log.isTraceEnabled()) {
 				log.trace(String.format("RuntimeContext.jump sp=0x%08X, stack=%s", sp, currentRuntimeThread.getStackString()));
@@ -167,8 +170,8 @@ public class RuntimeContext {
 
 			    if (returnValue == returnAddress || returnValue == alternativeReturnAddress) {
 			    	break;
-			    } else if (currentRuntimeThread.hasStackState(returnValue, cpu.gpr[29])) {
-			    	StackPopException e = new StackPopException(returnValue, cpu.gpr[29]);
+			    } else if (currentRuntimeThread.hasStackState(returnValue, cpu.gpr[_sp])) {
+			    	StackPopException e = new StackPopException(returnValue, cpu.gpr[_sp]);
 			    	if (log.isDebugEnabled()) {
 						log.debug(String.format("RuntimeContext.jump throwing %s, returnAddress=0x%08X, stack=%s", e.toString(), returnAddress, currentRuntimeThread.getStackString()));
 			    	}
@@ -212,7 +215,7 @@ public class RuntimeContext {
 			Instruction insn = Decoder.instruction(opcode);
 			insn.interpret(processor, opcode);
 			if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
-				cpu.pc = jumpCall(cpu.pc, cpu.gpr[31], false);
+				cpu.pc = jumpCall(cpu.pc, cpu.gpr[_ra], false);
 			} else if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
 				if (cpu.pc == returnAddress || cpu.pc == alternativeReturnAddress) {
 					interpret = false;
@@ -370,7 +373,7 @@ public class RuntimeContext {
 
     	IExecutable executable = getExecutable(pc);
         int newPc = 0;
-        int returnAddress = cpu.gpr[31];
+        int returnAddress = cpu.gpr[_ra];
 		try {
 			newPc = executable.exec(returnAddress, returnAddress, false);
 		} catch (StopThreadException e) {
