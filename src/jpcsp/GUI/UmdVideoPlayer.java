@@ -632,13 +632,13 @@ public class UmdVideoPlayer implements KeyListener {
 
     public void takeScreenshot() {
         int tag = 0;
-        String name = State.discId + "-" + "Shot" + "-" + tag + ".png";
-        File screenshot = new File(name);
+        String screenshotName = State.title + "-" + "Shot" + "-" + tag + ".png";
+        File screenshot = new File(screenshotName);
         File directory = new File(System.getProperty("user.dir"));
         for(File file : directory.listFiles()) {
-            if (file.getName().contains(State.discId + "-" + "Shot")) {
-                name = State.discId + "-" + "Shot" + "-" + ++tag + ".png";
-                screenshot = new File(name);
+            if (file.getName().contains(State.title + "-" + "Shot")) {
+                screenshotName = State.title + "-" + "Shot" + "-" + ++tag + ".png";
+                screenshot = new File(screenshotName);
             }
         }
         try {
