@@ -35,6 +35,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelErrors;
 import jpcsp.HLE.kernel.types.SceMpegAu;
@@ -43,6 +44,8 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEStartModule;
+import jpcsp.HLE.modules.SysMemUserForUser;
+import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.connector.MpegCodec;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.media.MediaEngine;
@@ -171,7 +174,6 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         mpegRingbufferAddr = 0;
         avcAuAddr = 0;
         atracAuAddr = 0;
-        isAvcEsBufInUse = false;
         atracStreamsMap = new HashMap<Integer, Integer>();
         avcStreamsMap = new HashMap<Integer, Integer>();
         pcmStreamsMap = new HashMap<Integer, Integer>();
@@ -188,6 +190,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
 
         encodedVideoFramesYCbCr = new HashMap<Integer, byte[]>();
         audioDecodeBuffer = new byte[MPEG_ATRAC_ES_OUTPUT_SIZE];
+        esBufferMap = new HashMap<Integer, SysMemInfo>();
+        streamMap = new HashMap<Integer, StreamInfo>();
     }
 
     @Override
@@ -251,9 +255,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected boolean isCurrentMpegAnalyzed;;
     public int maxAheadTimestamp = 40000;
     // MPEG AVC elementary stream.
-    protected static final int MPEG_AVC_ES_HANDLE = 0xE2E20000;  // Checked. Only one buffer per file.
     protected static final int MPEG_AVC_ES_SIZE = 2048;          // MPEG packet size.
-    protected boolean isAvcEsBufInUse = false;
     // MPEG ATRAC elementary stream.
     protected static final int MPEG_ATRAC_ES_SIZE = 2112;
     public    static final int MPEG_ATRAC_ES_OUTPUT_SIZE = 8192;
@@ -297,6 +299,34 @@ public class sceMpeg implements HLEModule, HLEStartModule {
     protected PacketChannel meChannel;
     protected HashMap<Integer, byte[]> encodedVideoFramesYCbCr;
     protected byte[] audioDecodeBuffer;
+    protected HashMap<Integer, SysMemInfo> esBufferMap;
+    protected HashMap<Integer, StreamInfo> streamMap;
+    protected static final String streamPurpose = "sceMpeg-Stream";
+
+    private class StreamInfo {
+    	private int uid;
+    	private int type;
+
+    	public StreamInfo(int type) {
+    		this.type = type;
+    		uid = SceUidManager.getNewUid(streamPurpose);
+    		streamMap.put(uid, this);
+    	}
+
+    	public int getUid() {
+    		return uid;
+    	}
+
+    	public int getType() {
+    		return type;
+    	}
+
+    	public void release() {
+    		SceUidManager.releaseId(uid, streamPurpose);
+    		uid = -1;
+    		type = -1;
+    	}
+    }
 
     public static boolean isEnableConnector() {
         return useMpegCodec;
@@ -325,16 +355,8 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         return new Date(millis);
     }
 
-    protected int makeFakeStreamHandle(int stream) {
-        return 0x34340000 | (stream & 0xFFFF);
-    }
-
-    protected boolean isFakeStreamHandle(int handle) {
-        return ((handle & 0xFFFF0000) == 0x34340000);
-    }
-
-    protected int getFakeStreamType(int handle) {
-        return (handle - 0x34340000);
+    protected StreamInfo getStreamInfo(int uid) {
+    	return streamMap.get(uid);
     }
 
     protected int getMpegHandle(int mpegAddr) {
@@ -729,27 +751,28 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else {
-            int handle = makeFakeStreamHandle(stream_type);
-            // Regist the respective stream.
+        	StreamInfo info = new StreamInfo(stream_type);
+        	int uid = info.getUid();
+            // Register the respective stream.
             switch (stream_type) {
                 case MPEG_AVC_STREAM:
                     isAvcRegistered = true;
-                    avcStreamsMap.put(handle, stream_num);
+                    avcStreamsMap.put(uid, stream_num);
                     break;
                 case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
                 case MPEG_ATRAC_STREAM:
                     isAtracRegistered = true;
-                    atracStreamsMap.put(handle, stream_num);
+                    atracStreamsMap.put(uid, stream_num);
                     break;
                 case MPEG_PCM_STREAM:
                     isPcmRegistered = true;
-                    pcmStreamsMap.put(handle, stream_num);
+                    pcmStreamsMap.put(uid, stream_num);
                     break;
                 default:
                     log.warn("sceMpegRegistStream unknown stream type=" + stream_type);
                     break;
             }
-            cpu.gpr[2] = handle;
+            cpu.gpr[2] = uid;
         }
     }
 
@@ -757,10 +780,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
-        int stream_addr = cpu.gpr[5];
+        int streamUid = cpu.gpr[5];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceMpegUnRegistStream(mpeg=0x" + Integer.toHexString(mpeg) + ", stream=0x" + Integer.toHexString(stream_addr) + ")");
+            log.debug("sceMpegUnRegistStream(mpeg=0x" + Integer.toHexString(mpeg) + ", stream=0x" + Integer.toHexString(streamUid) + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
@@ -771,25 +794,30 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegUnRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else {
-            // Unregist the respective stream.
-            switch (getFakeStreamType(stream_addr)) {
-                case MPEG_AVC_STREAM:
-                    isAvcRegistered = false;
-                    avcStreamsMap.remove(stream_addr);
-                    break;
-                case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
-                case MPEG_ATRAC_STREAM:
-                    isAtracRegistered = false;
-                    atracStreamsMap.remove(stream_addr);
-                    break;
-                case MPEG_PCM_STREAM:
-                    isPcmRegistered = false;
-                    pcmStreamsMap.remove(stream_addr);
-                    break;
-                default:
-                    log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(stream_addr));
-                    break;
-            }
+        	StreamInfo info = getStreamInfo(streamUid);
+        	if (info != null) {
+	            // Unregister the respective stream.
+	            switch (info.getType()) {
+	                case MPEG_AVC_STREAM:
+	                    isAvcRegistered = false;
+	                    avcStreamsMap.remove(streamUid);
+	                    break;
+	                case MPEG_AUDIO_STREAM:  // Unknown purpose. Use Atrac anyway.
+	                case MPEG_ATRAC_STREAM:
+	                    isAtracRegistered = false;
+	                    atracStreamsMap.remove(streamUid);
+	                    break;
+	                case MPEG_PCM_STREAM:
+	                    isPcmRegistered = false;
+	                    pcmStreamsMap.remove(streamUid);
+	                    break;
+	                default:
+	                    log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
+	                    break;
+	            }
+        	} else {
+                log.warn("sceMpegUnRegistStream unknown stream=0x" + Integer.toHexString(streamUid));
+        	}
             setCurrentMpegAnalyzed(false);
             cpu.gpr[2] = 0;
         }
@@ -812,12 +840,16 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ") bad mpeg handle");
             cpu.gpr[2] = -1;
         } else {
-            if (isAvcEsBufInUse) {
-                cpu.gpr[2] = 0;
-            } else {
-                cpu.gpr[2] = MPEG_AVC_ES_HANDLE;
-                isAvcEsBufInUse = true;
-            }
+        	SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "sceMpegMallocAvcEsBuf", SysMemUserForUser.PSP_SMEM_Low, MPEG_ATRAC_ES_SIZE, 0);
+        	if (info != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceMpegMallocAvcEsBuf allocated 0x%08X(size=%d)", info.addr, MPEG_ATRAC_ES_SIZE));
+                }
+        		esBufferMap.put(info.addr, info);
+        		cpu.gpr[2] = info.addr;
+        	} else {
+        		cpu.gpr[2] = 0;
+        	}
         }
     }
 
@@ -842,7 +874,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ", esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_VALUE;
         } else {
-            isAvcEsBufInUse = false;
+        	SysMemInfo info = esBufferMap.remove(esBuf);
+        	if (info != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("sceMpegFreeAvcEsBuf freeing 0x%08X(size=%d)", info.addr, info.size));
+                }
+        		Modules.SysMemUserForUserModule.free(info);
+        	}
             cpu.gpr[2] = 0;
         }
     }
@@ -927,7 +965,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else {
             // Check if sceMpegInitAu is being called for AVC or ATRAC
             // and write the proper AU (access unit) struct.
-            if (buffer_addr == MPEG_AVC_ES_HANDLE) {
+            if (esBufferMap.containsKey(buffer_addr)) {
             	mpegAvcAu.esBuffer = buffer_addr;
             	mpegAvcAu.esSize = MPEG_AVC_ES_SIZE;
             	mpegAvcAu.write(mem, au_addr);
@@ -960,43 +998,48 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
-        int stream_addr = cpu.gpr[5];
+        int streamUid = cpu.gpr[5];
         int mode = cpu.gpr[6];
 
         if (log.isDebugEnabled()) {
-            log.debug("sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(stream_addr) + ",mode=0x" + mode + ")");
+            log.debug("sceMpegChangeGetAuMode(mpeg=0x" + Integer.toHexString(mpeg) + ",stream_addr=0x" + Integer.toHexString(streamUid) + ",mode=0x" + mode + ")");
         }
 
         if (IntrManager.getInstance().isInsideInterrupt()) {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
             return;
         }
-        switch (getFakeStreamType(stream_addr)) {
-            case MPEG_AVC_STREAM:
-                if(mode == MPEG_AU_MODE_DECODE) {
-                    ignoreAvc = false;
-                } else if (mode == MPEG_AU_MODE_SKIP) {
-                    ignoreAvc = true;
-                }
-                break;
-            case MPEG_AUDIO_STREAM:
-            case MPEG_ATRAC_STREAM:
-                if(mode == MPEG_AU_MODE_DECODE) {
-                    ignoreAtrac = false;
-                } else if (mode == MPEG_AU_MODE_SKIP) {
-                    ignoreAvc = true;
-                }
-                break;
-            case MPEG_PCM_STREAM:
-                if(mode == MPEG_AU_MODE_DECODE) {
-                    ignorePcm = false;
-                } else if (mode == MPEG_AU_MODE_SKIP) {
-                    ignorePcm = true;
-                }
-                break;
-            default:
-                log.warn("sceMpegChangeGetAuMode unknown stream=0x" + Integer.toHexString(stream_addr));
-                break;
+        StreamInfo info = getStreamInfo(streamUid);
+        if (info != null) {
+	        switch (info.getType()) {
+	            case MPEG_AVC_STREAM:
+	                if(mode == MPEG_AU_MODE_DECODE) {
+	                    ignoreAvc = false;
+	                } else if (mode == MPEG_AU_MODE_SKIP) {
+	                    ignoreAvc = true;
+	                }
+	                break;
+	            case MPEG_AUDIO_STREAM:
+	            case MPEG_ATRAC_STREAM:
+	                if(mode == MPEG_AU_MODE_DECODE) {
+	                    ignoreAtrac = false;
+	                } else if (mode == MPEG_AU_MODE_SKIP) {
+	                    ignoreAvc = true;
+	                }
+	                break;
+	            case MPEG_PCM_STREAM:
+	                if(mode == MPEG_AU_MODE_DECODE) {
+	                    ignorePcm = false;
+	                } else if (mode == MPEG_AU_MODE_SKIP) {
+	                    ignorePcm = true;
+	                }
+	                break;
+	            default:
+	                log.warn("sceMpegChangeGetAuMode unknown stream=0x" + Integer.toHexString(streamUid));
+	                break;
+	        }
+        } else {
+            log.warn("sceMpegChangeGetAuMode unknown stream=0x" + Integer.toHexString(streamUid));
         }
         cpu.gpr[2] = 0;
     }
@@ -1006,13 +1049,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
-        int stream_addr = cpu.gpr[5];
+        int streamUid = cpu.gpr[5];
         int au_addr = cpu.gpr[6];
         int attr_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegGetAvcAu(mpeg=0x" + Integer.toHexString(mpeg)
-                    + ", stream=0x" + Integer.toHexString(stream_addr)
+                    + ", stream=0x" + Integer.toHexString(streamUid)
                     + ", au=0x" + Integer.toHexString(au_addr)
                     + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
         }
@@ -1030,10 +1073,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         } else if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
             delayThread(mpegDecodeErrorDelay);
-        } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
+        } else if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAvcAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
-        } else if (isFakeStreamHandle(stream_addr)) {
+        } else if (streamMap.containsKey(streamUid)) {
             if ((mpegAvcAu.pts > mpegAtracAu.pts + maxAheadTimestamp) && isAtracRegistered) {
                 // Video is ahead of audio, deliver no video data to wait for audio.
                 if (log.isDebugEnabled()) {
@@ -1083,7 +1126,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 }
             }
         } else {
-            log.warn("sceMpegGetAvcAu bad address " + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            log.warn("sceMpegGetAvcAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1093,13 +1136,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
-        int stream_addr = cpu.gpr[5];
+        int streamUid = cpu.gpr[5];
         int au_addr = cpu.gpr[6];
         int attr_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegGetPcmAu(mpeg=0x" + Integer.toHexString(mpeg)
-                    + ", stream=0x" + Integer.toHexString(stream_addr)
+                    + ", stream=0x" + Integer.toHexString(streamUid)
                     + ", au=0x" + Integer.toHexString(au_addr)
                     + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
         }
@@ -1117,10 +1160,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         }else if (mpegRingbuffer.packetsRead == 0 || (!checkMediaEngineState() && mpegRingbuffer.isEmpty())) {
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
             delayThread(mpegDecodeErrorDelay);
-        } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
+        } else if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetPcmAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
-        } else if (isFakeStreamHandle(stream_addr)) {
+        } else if (streamMap.containsKey(streamUid)) {
             cpu.gpr[2] = 0;
             // Update the audio timestamp (Atrac).
             if (!ignorePcm) {
@@ -1152,7 +1195,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             	delayThread(mpegDecodeErrorDelay);
             }
         } else {
-            log.warn("sceMpegGetPcmAu bad address " + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            log.warn("sceMpegGetPcmAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
             cpu.gpr[2] = -1;
         }
     }
@@ -1162,13 +1205,13 @@ public class sceMpeg implements HLEModule, HLEStartModule {
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
-        int stream_addr = cpu.gpr[5];
+        int streamUid = cpu.gpr[5];
         int au_addr = cpu.gpr[6];
         int attr_addr = cpu.gpr[7];
 
         if (log.isDebugEnabled()) {
             log.debug("sceMpegGetAtracAu(mpeg=0x" + Integer.toHexString(mpeg)
-                    + ", stream=0x" + Integer.toHexString(stream_addr)
+                    + ", stream=0x" + Integer.toHexString(streamUid)
                     + ", au=0x" + Integer.toHexString(au_addr)
                     + ", attr_addr=0x" + Integer.toHexString(attr_addr) + ")");
         }
@@ -1187,10 +1230,10 @@ public class sceMpeg implements HLEModule, HLEStartModule {
             log.debug("sceMpegGetAtracAu ringbuffer empty");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_NO_DATA; // No more data in ringbuffer.
             delayThread(mpegDecodeErrorDelay);
-        } else if (Memory.isAddressGood(stream_addr) && Memory.isAddressGood(au_addr)) {
+        } else if (Memory.isAddressGood(streamUid) && Memory.isAddressGood(au_addr)) {
             log.warn("sceMpegGetAtracAu didn't get a fake stream");
             cpu.gpr[2] = SceKernelErrors.ERROR_MPEG_INVALID_ADDR;
-        } else if (isFakeStreamHandle(stream_addr)) {
+        } else if (streamMap.containsKey(streamUid)) {
         	if (endOfAudioReached && endOfVideoReached) {
         		if (log.isDebugEnabled()) {
         			log.debug("sceMpegGetAtracAu end of audio and video reached");
@@ -1248,7 +1291,7 @@ public class sceMpeg implements HLEModule, HLEStartModule {
                 }
             }
         } else {
-            log.warn("sceMpegGetAtracAu bad address " + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            log.warn("sceMpegGetAtracAu bad address " + String.format("0x%08X 0x%08X", streamUid, au_addr));
             cpu.gpr[2] = -1;
         }
     }

@@ -590,7 +590,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
                 ((AllegrexOpcodes.SPECIAL & 0x3f) << 26) | (AllegrexOpcodes.SYSCALL & 0x3f) | ((sceKernelDelayThreadFunction.getSyscallCode() & 0x000fffff) << 6);
 
         // This memory is always reserved on a real PSP
-        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(1, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
+        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.KERNEL_PARTITION_ID, "ThreadMan-RootMem", SysMemUserForUser.PSP_SMEM_Addr, 0x4000, MemoryMap.START_USERSPACE);
         int reservedMem = info.addr;
 
         mem.write32(IDLE_THREAD_ADDRESS + 0, instruction_addiu);

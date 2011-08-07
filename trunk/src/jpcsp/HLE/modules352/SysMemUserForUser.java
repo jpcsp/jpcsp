@@ -130,7 +130,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules280.SysMemUserForUser {
             cpu.gpr[2] = SceKernelErrors.ERROR_KERNEL_ILLEGAL_MEMBLOCK_ALLOC_TYPE;
         } else {
             // Always allocate memory in user area (partitionid == 2).
-            SysMemInfo info = malloc(2, name, type, size, 0);
+            SysMemInfo info = malloc(SysMemUserForUser.USER_PARTITION_ID, name, type, size, 0);
             if (info != null) {
                 cpu.gpr[2] = info.uid;
             } else {

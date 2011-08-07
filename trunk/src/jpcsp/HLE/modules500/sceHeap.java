@@ -29,6 +29,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.SysMemUserForUser;
 import jpcsp.HLE.modules150.SysMemUserForUser.SysMemInfo;
 import jpcsp.util.Utilities;
 
@@ -292,7 +293,7 @@ public class sceHeap implements HLEModule {
         int totalHeapSize = (heapSize + (4 - 1)) & (~(4 - 1));
         int maxFreeSize = Modules.SysMemUserForUserModule.maxFreeMemSize();
         if (totalHeapSize <= maxFreeSize) {
-            info = Modules.SysMemUserForUserModule.malloc(2, "ThreadMan-Heap", memType, totalHeapSize, 0);
+            info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, "ThreadMan-Heap", memType, totalHeapSize, 0);
         } else {
             Modules.log.warn("sceHeapCreateHeap not enough free mem (want=" + totalHeapSize + ", free=" + maxFreeSize + ", diff=" + (totalHeapSize - maxFreeSize) + ")");
         }

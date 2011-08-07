@@ -634,7 +634,7 @@ public class Loader {
         int address = module.loadAddressLow & ~(SysMemUserForUser.defaultSizeAlignment - 1); // Round down to match sysmem allocations
         int size = module.loadAddressHigh - address;
 
-        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(2, module.modname, SysMemUserForUser.PSP_SMEM_Addr, size, address);
+        SysMemInfo info = Modules.SysMemUserForUserModule.malloc(SysMemUserForUser.USER_PARTITION_ID, module.modname, SysMemUserForUser.PSP_SMEM_Addr, size, address);
         if (info == null || info.addr != address) {
             log.warn(String.format("Failed to properly reserve memory consumed by module %s at address 0x%08X, size 0x%X: allocated %s", module.modname, address, size, info));
         }
