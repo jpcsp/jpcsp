@@ -69,7 +69,10 @@ public class SysMemUserForUser implements HLEModule, HLEStartModule {
     public static final int PSP_SMEM_LowAligned = 3;
     public static final int PSP_SMEM_HighAligned = 4;
 
-	@Override
+    public static final int KERNEL_PARTITION_ID = 1;
+    public static final int USER_PARTITION_ID = 2;
+
+    @Override
 	public String getName() { return "SysMemUserForUser"; }
 
 	@Override
