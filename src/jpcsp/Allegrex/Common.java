@@ -206,6 +206,40 @@ public class Common {
             return "UNK";
         }
     };
+
+    public static final int _zr = 0;
+    public static final int _at = 1;
+    public static final int _v0 = 2;
+    public static final int _v1 = 3;
+    public static final int _a0 = 4;
+    public static final int _a1 = 5;
+    public static final int _a2 = 6;
+    public static final int _a3 = 7;
+    public static final int _t0 = 8;
+    public static final int _t1 = 9;
+    public static final int _t2 = 10;
+    public static final int _t3 = 11;
+    public static final int _t4 = 12;
+    public static final int _t5 = 13;
+    public static final int _t6 = 14;
+    public static final int _t7 = 15;
+    public static final int _s0 = 16;
+    public static final int _s1 = 17;
+    public static final int _s2 = 18;
+    public static final int _s3 = 19;
+    public static final int _s4 = 20;
+    public static final int _s5 = 21;
+    public static final int _s6 = 22;
+    public static final int _s7 = 23;
+    public static final int _t8 = 24;
+    public static final int _t9 = 25;
+    public static final int _k0 = 26;
+    public static final int _k1 = 27;
+    public static final int _gp = 28;
+    public static final int _sp = 29;
+    public static final int _fp = 30;
+    public static final int _ra = 31;
+
     public static String[] gprNames = {
         "$zr", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
         "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
@@ -657,13 +691,14 @@ public class Common {
 
     public static String disasmJUMP(String opname, int uimm26, int opcode_address) {
         int jump = (opcode_address & 0xf0000000) | ((uimm26 & 0x3ffffff) << 2);
+        int jumpToSyscall = jump + 4;
 
         // If we think the target is a stub, try and append the syscall name
         if ((opname.equals("jal") || opname.equals("j")) && jump != 0 &&
-                Memory.isAddressGood(jump + 4)) {
-            int nextOpcode = jpcsp.Memory.getInstance().read32(jump + 4);
+                jumpToSyscall != opcode_address && Memory.isAddressGood(jumpToSyscall)) {
+            int nextOpcode = jpcsp.Memory.getInstance().read32(jumpToSyscall);
             Instruction nextInsn = Decoder.instruction(nextOpcode);
-            String secondTarget = nextInsn.disasm(jump + 4, nextOpcode);
+            String secondTarget = nextInsn.disasm(jumpToSyscall, nextOpcode);
             if (secondTarget.startsWith("syscall") && !secondTarget.contains("[unknown]")) {
                 return String.format("%1$-10s 0x%2$08X %3$s", opname, jump, secondTarget.substring(19));
             }

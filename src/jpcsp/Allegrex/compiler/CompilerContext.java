@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import static jpcsp.Allegrex.Common._sp;
+import static jpcsp.Allegrex.Common._zr;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
@@ -78,7 +81,6 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_TMP_VD2 = 12;
     private static final int LOCAL_MAX = 13;
     private static final int STACK_MAX = 11;
-    private static final int spRegisterIndex = 29;
 	private boolean enableIntructionCounting = false;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
     public Stack<Integer> blocksToBeAnalysed = new Stack<Integer>();
@@ -112,6 +114,8 @@ public class CompilerContext implements ICompilerContext {
 	public  static final String executableInternalName = Type.getInternalName(IExecutable.class);
 	private static Set<Integer> fastSyscalls;
 	private int instanceIndex;
+	private boolean preparedCall = false;
+	private NativeCodeSequence preparedCallNativeCodeBlock = null;
 
     public CompilerContext(CompilerClassLoader classLoader, int instanceIndex) {
     	Compiler compiler = Compiler.getInstance();
@@ -650,41 +654,61 @@ public class CompilerContext implements ICompilerContext {
         visitJump(Opcodes.GOTO, jumpLoop);
     }
 
-    public void visitCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
-    	flushInstructionCount(false, false);
-
-    	NativeCodeSequence calledNativeCodeBlock = null;
+    public void prepareCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
+    	preparedCall = true;
+    	preparedCallNativeCodeBlock = null;
 
     	// Do not call native block directly if we are profiling,
         // this would loose profiler information
         if (!Profiler.enableProfiler) {
         	// Is a native equivalent for this CodeBlock available?
-        	calledNativeCodeBlock = nativeCodeManager.getCompiledNativeCodeBlock(address);
+        	preparedCallNativeCodeBlock = nativeCodeManager.getCompiledNativeCodeBlock(address);
         }
 
-        if (calledNativeCodeBlock != null) {
-    		if (calledNativeCodeBlock.getNativeCodeSequenceClass().equals(Nop.class)) {
+        if (preparedCallNativeCodeBlock == null) {
+        	if (returnRegister != _zr) {
+        		// Load the return register ($ra) with the return address
+        		// before the delay slot is executed. The delay slot might overwrite it.
+        		// For example:
+        		//     addiu      $sp, $sp, -16
+        		//     sw         $ra, 0($sp)
+        		//     jal        0x0XXXXXXX
+        		//     lw         $ra, 0($sp)
+        		//     jr         $ra
+        		//     addiu      $sp, $sp, 16
+	        	prepareRegisterForStore(returnRegister);
+	    		loadImm(returnAddress);
+	            storeRegister(returnRegister);
+        	}
+        }
+    }
+
+    public void visitCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
+    	flushInstructionCount(false, false);
+
+        if (preparedCallNativeCodeBlock != null) {
+    		if (preparedCallNativeCodeBlock.getNativeCodeSequenceClass().equals(Nop.class)) {
         		// NativeCodeSequence Nop means nothing to do!
     		} else {
     			// Call NativeCodeSequence
     			if (Compiler.log.isDebugEnabled()) {
-    				Compiler.log.debug(String.format("Inlining call at 0x%08X to %s", getCodeInstruction().getAddress(), calledNativeCodeBlock));
+    				Compiler.log.debug(String.format("Inlining call at 0x%08X to %s", getCodeInstruction().getAddress(), preparedCallNativeCodeBlock));
     			}
 
-    			visitNativeCodeSequence(calledNativeCodeBlock, address, null);
+    			visitNativeCodeSequence(preparedCallNativeCodeBlock, address, null);
     		}
     	} else {
-	    	if (useAltervativeReturnAddress) {
+    		if (useAltervativeReturnAddress) {
 	    		loadLocalVar(LOCAL_RETURN_ADDRESS);
 	    		loadImm(returnAddress);
-		        if (returnRegister != 0) {
+		        if (!preparedCall && returnRegister != _zr) {
 		        	prepareRegisterForStore(returnRegister);
 		    		loadImm(returnAddress);
 		            storeRegister(returnRegister);
 		        }
 	    	} else {
 	    		loadImm(returnAddress);
-		        if (returnRegister != 0) {
+		        if (!preparedCall && returnRegister != _zr) {
 		        	prepareRegisterForStore(returnRegister);
 		    		loadImm(returnAddress);
 		            storeRegister(returnRegister);
@@ -706,11 +730,14 @@ public class CompilerContext implements ICompilerContext {
 	        	mv.visitInsn(Opcodes.POP);
 	        }
     	}
+
+        preparedCall = false;
+        preparedCallNativeCodeBlock = null;
     }
 
     public void visitCall(int returnAddress, int returnRegister) {
     	flushInstructionCount(false, false);
-        if (returnRegister != 0) {
+        if (returnRegister != _zr) {
             storeRegister(returnRegister, returnAddress);
         }
         loadImm(returnAddress);
@@ -1250,17 +1277,17 @@ public class CompilerContext implements ICompilerContext {
 
     @Override
 	public boolean isRdRegister0() {
-		return getRdRegisterIndex() == 0;
+		return getRdRegisterIndex() == _zr;
 	}
 
 	@Override
 	public boolean isRtRegister0() {
-		return getRtRegisterIndex() == 0;
+		return getRtRegisterIndex() == _zr;
 	}
 
 	@Override
 	public boolean isRsRegister0() {
-		return getRsRegisterIndex() == 0;
+		return getRsRegisterIndex() == _zr;
 	}
 
 	@Override
@@ -1288,7 +1315,7 @@ public class CompilerContext implements ICompilerContext {
 		}
 
 		if (RuntimeContext.debugMemoryRead) {
-			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex) {
+			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != _sp) {
 				mv.visitInsn(Opcodes.DUP);
 				loadImm(0);
 			    loadImm(codeInstruction.getAddress());
@@ -1301,7 +1328,7 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 		} else {
-			if (registerIndex == spRegisterIndex) {
+			if (registerIndex == _sp) {
 				// No need to check for a valid memory access when referencing the $sp register
 				loadImm(2);
     			mv.visitInsn(Opcodes.IUSHR);
@@ -1442,7 +1469,7 @@ public class CompilerContext implements ICompilerContext {
 		}
 
 		if (RuntimeContext.memoryInt != null) {
-			if (registerIndex == spRegisterIndex) {
+			if (registerIndex == _sp) {
 				// No need to check for a valid memory access when referencing the $sp register
 				loadImm(2);
     			mv.visitInsn(Opcodes.IUSHR);
@@ -1486,7 +1513,7 @@ public class CompilerContext implements ICompilerContext {
 		}
 
 		if (RuntimeContext.debugMemoryWrite) {
-			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex) {
+			if (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != _sp) {
 				mv.visitInsn(Opcodes.DUP2);
 				mv.visitInsn(Opcodes.SWAP);
 				loadImm(2);
@@ -1617,19 +1644,25 @@ public class CompilerContext implements ICompilerContext {
     		return;
     	}
 
+    	boolean skipDelaySlotInstruction = true;
     	CodeInstruction previousInstruction = getCodeBlock().getCodeInstruction(codeInstruction.getAddress() - 4);
     	if (previousInstruction != null) {
     		if (Compiler.isEndBlockInsn(previousInstruction.getAddress(), previousInstruction.getOpcode(), previousInstruction.getInsn())) {
-    			// The previous instruction was a J, JR or
-    			// unconditional branch instruction, nothing to do
-    			return;
+    			// The previous instruction was a J, JR or unconditional branch
+    			// instruction, we do not need to skip the delay slot instruction
+    			skipDelaySlotInstruction = false;
     		}
     	}
 
-    	Label afterDelaySlot = new Label();
-    	mv.visitJumpInsn(Opcodes.GOTO, afterDelaySlot);
+    	Label afterDelaySlot = null;
+    	if (skipDelaySlotInstruction) {
+    		afterDelaySlot = new Label();
+    		mv.visitJumpInsn(Opcodes.GOTO, afterDelaySlot);
+    	}
     	codeInstruction.compile(this, mv);
-    	mv.visitLabel(afterDelaySlot);
+    	if (skipDelaySlotInstruction) {
+    		mv.visitLabel(afterDelaySlot);
+    	}
     }
 
     public void compileExecuteInterpreter(int startAddress) {
