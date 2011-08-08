@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.1" encoding="UTF-8" ?>
 
 <Form version="1.5" maxVersion="1.6" type="org.netbeans.modules.form.forminfo.JFrameFormInfo">
   <NonVisualComponents>
@@ -101,12 +101,23 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="0" attributes="0">
-                              <Component id="snapConsoleCheck" pref="737" max="32767" attributes="1"/>
+                              <Component id="snapConsoleCheck" pref="733" max="32767" attributes="1"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
-                              <Component id="openLogwindowCheck" pref="151" max="32767" attributes="1"/>
+                              <Component id="openLogwindowCheck" pref="147" max="32767" attributes="1"/>
                               <EmptySpace min="-2" pref="592" max="-2" attributes="0"/>
+                          </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="logKeywordLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="logKeywordField" min="-2" pref="119" max="-2" attributes="0"/>
+                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <Component id="clearKeywordButton" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
+                              <EmptySpace pref="553" max="32767" attributes="0"/>
                           </Group>
                       </Group>
                   </Group>
@@ -119,7 +130,14 @@
                       <Component id="openLogwindowCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="snapConsoleCheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="262" max="32767" attributes="0"/>
+                      <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
+                      <Component id="logKeywordLabel" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="logKeywordField" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="clearKeywordButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
+                      <EmptySpace pref="189" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -138,6 +156,28 @@
                   <Connection code="Resource.get(&quot;snapconsole&quot;)" type="code"/>
                 </Property>
               </Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="logKeywordLabel">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Log by keyword:"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JTextField" name="logKeywordField">
+              <Properties>
+                <Property name="editable" type="boolean" value="false"/>
+                <Property name="text" type="java.lang.String" value="LOG_ALL"/>
+              </Properties>
+              <Events>
+                <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="logKeywordFieldMouseClicked"/>
+              </Events>
+            </Component>
+            <Component class="javax.swing.JButton" name="clearKeywordButton">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Clear"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clearKeywordButtonActionPerformed"/>
+              </Events>
             </Component>
           </SubComponents>
         </Container>

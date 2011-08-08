@@ -440,22 +440,22 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
     		this.size = size;
     	}
 
-    	@Override
-		public void execute() {
-    		long position = info.position;
-    		int result = 0;
+    	   @Override
+        public void execute() {
+            long position = info.position;
+            int result = 0;
 
-    		try {
-				Utilities.readFully(info.readOnlyFile, address, size);
-	    		info.position += size;
-	    		result = size;
+            try {
+                Utilities.readFully(info.readOnlyFile, address, size);
+                info.position += size;
+                result = size;
                 if (info.sectorBlockMode) {
                     result /= UmdIsoFile.sectorLength;
                 }
-			} catch (IOException e) {
-				log.error(e);
+            } catch (IOException e) {
+                log.error(e);
                 result = ERROR_KERNEL_FILE_READ_ERROR;
-			}
+            }
 
             info.result = result;
 
@@ -463,9 +463,9 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             RuntimeContext.invalidateRange(address, size);
 
             for (IIoListener ioListener : ioListeners) {
-	            ioListener.sceIoRead(result, info.id, address, requestedSize, size, position, info.readOnlyFile);
-	        }
-		}
+                ioListener.sceIoRead(result, info.id, address, requestedSize, size, position, info.readOnlyFile);
+            }
+        }
     }
 
     @Override
@@ -1202,25 +1202,27 @@ public class IoFileMgrForUser implements HLEModule, HLEStartModule {
             Emulator.getProcessor().cpu.gpr[2] = 1;
         } else {
             boolean waitForAsync = false;
-            // Check for invalid waiting conditions first.
+            
+            // Check for the waiting condition first.
             if (wait) {
-                // Allow waiting for the async thread.
-                waitForAsync = true;
-                // The file was marked as closePending, so close it right away to avoid delays.
-                if (info.closePending) {
-                    log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
-                    hleIoClose(info.id, false);
-                    waitForAsync = false;
-                }
-                // This case happens when the game switches thread before calling waitAsync,
-                // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
-                // Technically we should wait at least some time, since tests show
-                // a load of sceKernelDelayThread before sceIoWaitAsync won't make
-                // the async io complete (maybe something to do with thread priorities).
-                if (!info.asyncPending) {
-                    log.debug("hleIoWaitAsync - already context switched, not waiting");
-                    waitForAsync = false;
-                }
+                waitForAsync = true;                
+            }
+            
+            // This case happens when the game switches thread before calling waitAsync,
+            // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
+            // Technically we should wait at least some time, since tests show
+            // a load of sceKernelDelayThread before sceIoWaitAsync won't make
+            // the async io complete (maybe something to do with thread priorities).
+            if (!info.asyncPending) {
+                log.debug("hleIoWaitAsync - already context switched, not waiting");
+                waitForAsync = false;
+            }
+            
+            // The file was marked as closePending, so close it right away to avoid delays.
+            if (info.closePending) {
+                log.debug("hleIoWaitAsync - file marked with closePending, calling hleIoClose, not waiting");
+                hleIoClose(info.id, false);
+                waitForAsync = false;
             }
 
             // The file was not found at sceIoOpenAsync.
