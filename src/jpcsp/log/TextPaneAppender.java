@@ -31,7 +31,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package jpcsp.log;
 
 import java.awt.Color;
@@ -68,258 +67,261 @@ import org.apache.log4j.spi.LoggingEvent;
  *
  * @author Sven Reimers
  */
-
 public class TextPaneAppender extends AppenderSkeleton {
 
-	JTextPane textpane;
-	StyledDocument doc;
-	StringWriter sw;
-	Hashtable<Level, MutableAttributeSet> attributes;
-	Hashtable<Level, ImageIcon> icons;
+    JTextPane textpane;
+    StyledDocument doc;
+    StringWriter sw;
+    Hashtable<Level, MutableAttributeSet> attributes;
+    Hashtable<Level, ImageIcon> icons;
+    private String label;
+    private boolean fancy;
+    final String LABEL_OPTION = "Label";
+    final String COLOR_OPTION_FATAL = "Color.Emerg";
+    final String COLOR_OPTION_ERROR = "Color.Error";
+    final String COLOR_OPTION_WARN = "Color.Warn";
+    final String COLOR_OPTION_INFO = "Color.Info";
+    final String COLOR_OPTION_DEBUG = "Color.Debug";
+    final String COLOR_OPTION_BACKGROUND = "Color.Background";
+    final String FANCY_OPTION = "Fancy";
+    final String FONT_NAME_OPTION = "Font.Name";
+    final String FONT_SIZE_OPTION = "Font.Size";
+    static final Level levels[] = {Level.FATAL, Level.ERROR, Level.WARN, Level.INFO, Level.DEBUG, Level.TRACE};
 
-	private String label;
+    public static Image loadIcon(String path) {
+        Image img = null;
+        try {
+            URL url = ClassLoader.getSystemResource(path);
+            img = (Toolkit.getDefaultToolkit()).getImage(url);
+        } catch (Exception e) {
+            Emulator.log.error("Exception occured: " + e.getMessage(), e);
+        }
+        return (img);
+    }
 
-	private boolean fancy;
+    public TextPaneAppender(Layout layout, String name) {
+        this();
+        this.layout = layout;
+        this.name = name;
+        setTextPane(new JTextPane());
+        createAttributes();
+        createIcons();
+    }
 
-	final String LABEL_OPTION = "Label";
-	final String COLOR_OPTION_FATAL = "Color.Emerg";
-	final String COLOR_OPTION_ERROR = "Color.Error";
-	final String COLOR_OPTION_WARN = "Color.Warn";
-	final String COLOR_OPTION_INFO = "Color.Info";
-	final String COLOR_OPTION_DEBUG = "Color.Debug";
-	final String COLOR_OPTION_BACKGROUND = "Color.Background";
-	final String FANCY_OPTION = "Fancy";
-	final String FONT_NAME_OPTION = "Font.Name";
-	final String FONT_SIZE_OPTION = "Font.Size";
-	static final Level levels[] = { Level.FATAL, Level.ERROR, Level.WARN, Level.INFO, Level.DEBUG, Level.TRACE };
+    public TextPaneAppender() {
+        super();
+        setTextPane(new JTextPane());
+        createAttributes();
+        createIcons();
+        label = "";
+        sw = new StringWriter();
+        fancy = false;
+    }
 
-	public static Image loadIcon(String path) {
-		Image img = null;
-		try {
-			URL url = ClassLoader.getSystemResource(path);
-			img = (Toolkit.getDefaultToolkit()).getImage(url);
-		} catch (Exception e) {
-			Emulator.log.error("Exception occured: " + e.getMessage(), e);
-		}
-		return (img);
-	}
+    public void close() {
+    }
 
-	public TextPaneAppender(Layout layout, String name) {
-		this();
-		this.layout = layout;
-		this.name = name;
-		setTextPane(new JTextPane());
-		createAttributes();
-		createIcons();
-	}
+    private void createAttributes() {
+        attributes = new Hashtable<Level, MutableAttributeSet>();
+        for (int i = 0; i < levels.length; i++) {
+            MutableAttributeSet att = new SimpleAttributeSet();
+            attributes.put(levels[i], att);
+            StyleConstants.setFontSize(att, Settings.getInstance().getFont().getSize());
+            StyleConstants.setFontFamily(att, Settings.getInstance().getFont().getFamily());
+        }
+        StyleConstants.setForeground(attributes.get(Level.FATAL), Color.red);
+        StyleConstants.setForeground(attributes.get(Level.ERROR), Color.red);
+        StyleConstants.setForeground(attributes.get(Level.WARN), Color.orange);
+        StyleConstants.setForeground(attributes.get(Level.INFO), Color.black);
+        StyleConstants.setForeground(attributes.get(Level.DEBUG), Color.gray);
+        StyleConstants.setForeground(attributes.get(Level.TRACE), Color.gray);
+    }
 
-	public TextPaneAppender() {
-		super();
-		setTextPane(new JTextPane());
-		createAttributes();
-		createIcons();
-		label = "";
-		sw = new StringWriter();
-		fancy = false;
-	}
+    private void createIcons() {
+        icons = new Hashtable<Level, ImageIcon>();
+    }
 
-	public void close() {
-	}
-
-	private void createAttributes() {
-		attributes = new Hashtable<Level, MutableAttributeSet>();
-		for (int i = 0; i < levels.length; i++) {
-			MutableAttributeSet att = new SimpleAttributeSet();
-			attributes.put(levels[i], att);
-			StyleConstants.setFontSize(att, Settings.getInstance().getFont().getSize());
-			StyleConstants.setFontFamily(att, Settings.getInstance().getFont().getFamily());
-		}
-		StyleConstants.setForeground(attributes.get(Level.FATAL), Color.red);
-		StyleConstants.setForeground(attributes.get(Level.ERROR), Color.red);
-		StyleConstants.setForeground(attributes.get(Level.WARN), Color.orange);
-		StyleConstants.setForeground(attributes.get(Level.INFO), Color.black);
-		StyleConstants.setForeground(attributes.get(Level.DEBUG), Color.gray);
-		StyleConstants.setForeground(attributes.get(Level.TRACE), Color.gray);
-	}
-
-	private void createIcons() {
-		icons = new Hashtable<Level, ImageIcon>();
-	}
-
-	@Override
-	public void append(LoggingEvent event) {
-		String text = layout.format(event);
-		String trace = "";
-		if (event.getThrowableInformation() != null) {
-			String[] ts = event.getThrowableStrRep();
-			for(String s : ts)
-				sw.write(s);
-			for (int i = 0; i < sw.getBuffer().length(); i++) {
-				if (sw.getBuffer().charAt(i) == '\t')
-					sw.getBuffer().replace(i, i + 1, "        ");
-			}
-			trace = sw.toString();
-			sw.getBuffer().delete(0, sw.getBuffer().length());
-		}
-		try {
-			synchronized(textpane) {
-				if (fancy) {
-					textpane.setEditable(true);
-					textpane.insertIcon(icons.get(event.getLevel()));
-					textpane.setEditable(false);
-				}
-				doc.insertString(doc.getLength(), text + trace, attributes.get(event.getLevel()));
-
-                int l=doc.getLength();
-                if(l>30000)
-                {
-                    doc.remove(0, l-30000);
+    @Override
+    public void append(LoggingEvent event) {
+        String text = layout.format(event);
+        String trace = "";
+        String keyword = Settings.getInstance().readString("log.keyword");
+        if (event.getThrowableInformation() != null) {
+            String[] ts = event.getThrowableStrRep();
+            for (String s : ts) {
+                sw.write(s);
+            }
+            for (int i = 0; i < sw.getBuffer().length(); i++) {
+                if (sw.getBuffer().charAt(i) == '\t') {
+                    sw.getBuffer().replace(i, i + 1, "        ");
                 }
-			}
-		} catch (BadLocationException badex) {
-			System.err.println(badex);
-		}
-		textpane.setCaretPosition(doc.getLength());
-	}
+            }
+            trace = sw.toString();
+            sw.getBuffer().delete(0, sw.getBuffer().length());
+        }
+        try {
+            synchronized (textpane) {
+                if (fancy) {
+                    textpane.setEditable(true);
+                    textpane.insertIcon(icons.get(event.getLevel()));
+                    textpane.setEditable(false);
+                }
+                
+                // Log everything if there's no keyword, or just log messages with the
+                // specified keyword when it exists.
+                if (keyword.equals("LOG_ALL") || (!keyword.equals("LOG_ALL") && text.contains(keyword))) {
+                    doc.insertString(doc.getLength(), text + trace, attributes.get(event.getLevel()));
+                }
 
-	public JTextPane getTextPane() {
-		return textpane;
-	}
+                int l = doc.getLength();
+                if (l > 30000) {
+                    doc.remove(0, l - 30000);
+                }
+            }
+        } catch (BadLocationException badex) {
+            System.err.println(badex);
+        }
+        textpane.setCaretPosition(doc.getLength());
+    }
 
-	private static Color parseColor(String v) {
-		StringTokenizer st = new StringTokenizer(v, ",");
-		int val[] = { 255, 255, 255, 255 };
-		int i = 0;
-		while (st.hasMoreTokens()) {
-			val[i] = Integer.parseInt(st.nextToken());
-			i++;
-		}
-		return new Color(val[0], val[1], val[2], val[3]);
-	}
+    public JTextPane getTextPane() {
+        return textpane;
+    }
 
-	private static String colorToString(Color c) {
-		// alpha component emitted only if not default (255)
-		String res = "" + c.getRed() + "," + c.getGreen() + "," + c.getBlue();
-		return c.getAlpha() >= 255 ? res : res + "," + c.getAlpha();
-	}
+    private static Color parseColor(String v) {
+        StringTokenizer st = new StringTokenizer(v, ",");
+        int val[] = {255, 255, 255, 255};
+        int i = 0;
+        while (st.hasMoreTokens()) {
+            val[i] = Integer.parseInt(st.nextToken());
+            i++;
+        }
+        return new Color(val[0], val[1], val[2], val[3]);
+    }
 
-	@Override
-	public void setLayout(Layout layout) {
-		this.layout = layout;
-	}
+    private static String colorToString(Color c) {
+        // alpha component emitted only if not default (255)
+        String res = "" + c.getRed() + "," + c.getGreen() + "," + c.getBlue();
+        return c.getAlpha() >= 255 ? res : res + "," + c.getAlpha();
+    }
 
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
+    @Override
+    public void setLayout(Layout layout) {
+        this.layout = layout;
+    }
 
-	public void setTextPane(JTextPane textpane) {
-		this.textpane = textpane;
-		textpane.setEditable(false);
-		doc = textpane.getStyledDocument();
-	}
+    @Override
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	private void setColor(Level p, String v) {
-		StyleConstants.setForeground(attributes.get(p),
-				parseColor(v));
-	}
+    public void setTextPane(JTextPane textpane) {
+        this.textpane = textpane;
+        textpane.setEditable(false);
+        doc = textpane.getStyledDocument();
+    }
 
-	private String getColor(Level p) {
-		Color c = StyleConstants.getForeground(attributes.get(p));
-		return c == null ? null : colorToString(c);
-	}
+    private void setColor(Level p, String v) {
+        StyleConstants.setForeground(attributes.get(p),
+                parseColor(v));
+    }
 
-	public void setLabel(String label) {
-		this.label = label;
-	}
+    private String getColor(Level p) {
+        Color c = StyleConstants.getForeground(attributes.get(p));
+        return c == null ? null : colorToString(c);
+    }
 
-	public String getLabel() {
-		return label;
-	}
+    public void setLabel(String label) {
+        this.label = label;
+    }
 
-	public void setColorEmerg(String color) {
-		setColor(Level.FATAL, color);
-	}
+    public String getLabel() {
+        return label;
+    }
 
-	public String getColorEmerg() {
-		return getColor(Level.FATAL);
-	}
+    public void setColorEmerg(String color) {
+        setColor(Level.FATAL, color);
+    }
 
-	public void setColorError(String color) {
-		setColor(Level.ERROR, color);
-	}
+    public String getColorEmerg() {
+        return getColor(Level.FATAL);
+    }
 
-	public String getColorError() {
-		return getColor(Level.ERROR);
-	}
+    public void setColorError(String color) {
+        setColor(Level.ERROR, color);
+    }
 
-	public void setColorWarn(String color) {
-		setColor(Level.WARN, color);
-	}
+    public String getColorError() {
+        return getColor(Level.ERROR);
+    }
 
-	public String getColorWarn() {
-		return getColor(Level.WARN);
-	}
+    public void setColorWarn(String color) {
+        setColor(Level.WARN, color);
+    }
 
-	public void setColorInfo(String color) {
-		setColor(Level.INFO, color);
-	}
+    public String getColorWarn() {
+        return getColor(Level.WARN);
+    }
 
-	public String getColorInfo() {
-		return getColor(Level.INFO);
-	}
+    public void setColorInfo(String color) {
+        setColor(Level.INFO, color);
+    }
 
-	public void setColorDebug(String color) {
-		setColor(Level.DEBUG, color);
-	}
+    public String getColorInfo() {
+        return getColor(Level.INFO);
+    }
 
-	public String getColorDebug() {
-		return getColor(Level.DEBUG);
-	}
+    public void setColorDebug(String color) {
+        setColor(Level.DEBUG, color);
+    }
 
-	public void setColorBackground(String color) {
-		textpane.setBackground(parseColor(color));
-	}
+    public String getColorDebug() {
+        return getColor(Level.DEBUG);
+    }
 
-	public String getColorBackground() {
-		return colorToString(textpane.getBackground());
-	}
+    public void setColorBackground(String color) {
+        textpane.setBackground(parseColor(color));
+    }
 
-	public void setFancy(boolean fancy) {
-		this.fancy = fancy;
-	}
+    public String getColorBackground() {
+        return colorToString(textpane.getBackground());
+    }
 
-	public boolean getFancy() {
-		return fancy;
-	}
+    public void setFancy(boolean fancy) {
+        this.fancy = fancy;
+    }
 
-	public void setFontSize(int size) {
-		Enumeration<MutableAttributeSet> e = attributes.elements();
-		while (e.hasMoreElements()) {
-			StyleConstants.setFontSize(e.nextElement(), size);
-		}
-		return;
-	}
+    public boolean getFancy() {
+        return fancy;
+    }
 
-	public int getFontSize() {
-		AttributeSet attrSet = attributes.get(Level.INFO);
-		return StyleConstants.getFontSize(attrSet);
-	}
+    public void setFontSize(int size) {
+        Enumeration<MutableAttributeSet> e = attributes.elements();
+        while (e.hasMoreElements()) {
+            StyleConstants.setFontSize(e.nextElement(), size);
+        }
+        return;
+    }
 
-	public void setFontName(String name) {
-		Enumeration<MutableAttributeSet> e = attributes.elements();
-		while (e.hasMoreElements()) {
-			StyleConstants.setFontFamily(e.nextElement(), name);
-		}
-		return;
-	}
+    public int getFontSize() {
+        AttributeSet attrSet = attributes.get(Level.INFO);
+        return StyleConstants.getFontSize(attrSet);
+    }
 
-	public String getFontName() {
-		AttributeSet attrSet = attributes.get(Level.INFO);
-		return StyleConstants.getFontFamily(attrSet);
-	}
+    public void setFontName(String name) {
+        Enumeration<MutableAttributeSet> e = attributes.elements();
+        while (e.hasMoreElements()) {
+            StyleConstants.setFontFamily(e.nextElement(), name);
+        }
+        return;
+    }
 
-	public boolean requiresLayout() {
-		return true;
-	}
+    public String getFontName() {
+        AttributeSet attrSet = attributes.get(Level.INFO);
+        return StyleConstants.getFontFamily(attrSet);
+    }
+
+    public boolean requiresLayout() {
+        return true;
+    }
 }

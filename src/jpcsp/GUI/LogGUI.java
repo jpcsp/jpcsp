@@ -43,6 +43,10 @@ public class LogGUI extends javax.swing.JFrame {
 
         enabled = Settings.getInstance().readBool("gui.snapLogwindow");
         snapConsoleCheck.setSelected(enabled);
+        
+        String keyword = Settings.getInstance().readString("log.keyword");
+        logKeywordField.setText(keyword);
+        logKeywordField.setEditable(false);
     }
 
     public void setMainGUI(MainGUI mainWindow) {
@@ -82,6 +86,9 @@ public class LogGUI extends javax.swing.JFrame {
         LoggerGeneralPanel = new javax.swing.JPanel();
         openLogwindowCheck = new javax.swing.JCheckBox();
         snapConsoleCheck = new javax.swing.JCheckBox();
+        logKeywordLabel = new javax.swing.JLabel();
+        logKeywordField = new javax.swing.JTextField();
+        clearKeywordButton = new javax.swing.JButton();
         LoggerSettingsPanel = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         settingsArea = new javax.swing.JTextArea();
@@ -169,6 +176,23 @@ public class LogGUI extends javax.swing.JFrame {
 
         snapConsoleCheck.setText(Resource.get("snapconsole"));
 
+        logKeywordLabel.setText("Log by keyword:");
+
+        logKeywordField.setEditable(false);
+        logKeywordField.setText("LOG_ALL");
+        logKeywordField.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                logKeywordFieldMouseClicked(evt);
+            }
+        });
+
+        clearKeywordButton.setText("Clear");
+        clearKeywordButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                clearKeywordButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout LoggerGeneralPanelLayout = new javax.swing.GroupLayout(LoggerGeneralPanel);
         LoggerGeneralPanel.setLayout(LoggerGeneralPanelLayout);
         LoggerGeneralPanelLayout.setHorizontalGroup(
@@ -177,11 +201,19 @@ public class LogGUI extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(LoggerGeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(LoggerGeneralPanelLayout.createSequentialGroup()
-                        .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 737, Short.MAX_VALUE)
+                        .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 733, Short.MAX_VALUE)
                         .addContainerGap())
                     .addGroup(LoggerGeneralPanelLayout.createSequentialGroup()
-                        .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 151, Short.MAX_VALUE)
-                        .addGap(592, 592, 592))))
+                        .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 147, Short.MAX_VALUE)
+                        .addGap(592, 592, 592))
+                    .addGroup(LoggerGeneralPanelLayout.createSequentialGroup()
+                        .addGroup(LoggerGeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(logKeywordLabel)
+                            .addGroup(LoggerGeneralPanelLayout.createSequentialGroup()
+                                .addComponent(logKeywordField, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(clearKeywordButton)))
+                        .addContainerGap(553, Short.MAX_VALUE))))
         );
         LoggerGeneralPanelLayout.setVerticalGroup(
             LoggerGeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -190,7 +222,13 @@ public class LogGUI extends javax.swing.JFrame {
                 .addComponent(openLogwindowCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(snapConsoleCheck)
-                .addContainerGap(262, Short.MAX_VALUE))
+                .addGap(30, 30, 30)
+                .addComponent(logKeywordLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(LoggerGeneralPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(logKeywordField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(clearKeywordButton))
+                .addContainerGap(189, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab(Resource.get("general"), LoggerGeneralPanel);
@@ -687,6 +725,10 @@ public class LogGUI extends javax.swing.JFrame {
 
         enabled = Settings.getInstance().readBool("gui.snapLogwindow");
         snapConsoleCheck.setSelected(enabled);
+        
+        String keyword = Settings.getInstance().readString("log.keyword");
+        logKeywordField.setText(keyword);
+        logKeywordField.setEditable(false);
     }
 
     private void setCustom(boolean useCustom) {
@@ -1028,6 +1070,8 @@ public class LogGUI extends javax.swing.JFrame {
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
     Settings.getInstance().writeBool("gui.openLogwindow", openLogwindowCheck.isSelected());
     Settings.getInstance().writeBool("gui.snapLogwindow", snapConsoleCheck.isSelected());
+    Settings.getInstance().writeString("log.keyword", logKeywordField.getText());
+    logKeywordField.setEditable(false);
 
     if (snapConsoleCheck.isSelected() && mainWindow != null) {
         mainWindow.snaptoMainwindow();
@@ -1190,19 +1234,31 @@ private void splitFilesBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     maxSizeSpinner.setEnabled(splitFilesBox.isSelected());
 }//GEN-LAST:event_splitFilesBoxActionPerformed
 
+private void logKeywordFieldMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_logKeywordFieldMouseClicked
+    if(!logKeywordField.isEditable()) {
+        logKeywordField.setEditable(true);
+    }
+}//GEN-LAST:event_logKeywordFieldMouseClicked
+
+private void clearKeywordButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearKeywordButtonActionPerformed
+    logKeywordField.setText("LOG_ALL");
+    logKeywordField.setEditable(false);
+}//GEN-LAST:event_clearKeywordButtonActionPerformed
+
 	@Override
 	public void dispose() {
 		Emulator.getMainGUI().endWindowDialog();
 		super.dispose();
 	}
 
-	// Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel LoggerAdvancedPanel;
     private javax.swing.JPanel LoggerGeneralPanel;
     private javax.swing.JPanel LoggerSettingsPanel;
     private javax.swing.JCheckBox atracBox;
     private javax.swing.JCheckBox audioBox;
     private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JButton clearKeywordButton;
     private javax.swing.JCheckBox compilerBox;
     private javax.swing.JCheckBox cpuBox;
     private javax.swing.JCheckBox ctrlBox;
@@ -1239,6 +1295,8 @@ private void splitFilesBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JCheckBox loadCoreBox;
     private javax.swing.JCheckBox loadExecBox;
     private javax.swing.JCheckBox loaderBox;
+    private javax.swing.JTextField logKeywordField;
+    private javax.swing.JLabel logKeywordLabel;
     private javax.swing.JTextField logoutpath;
     private javax.swing.JSpinner maxSizeSpinner;
     private javax.swing.JCheckBox memBox;
