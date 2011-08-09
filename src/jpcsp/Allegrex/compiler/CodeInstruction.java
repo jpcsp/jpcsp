@@ -168,20 +168,22 @@ public class CodeInstruction {
     }
 
     private void compileJr(CompilerContext context, MethodVisitor mv) {
-    	// Retrieve the call address from the Rs register before executing
-    	// the delay slot instruction, as it might theoretically modify the
-    	// content of the Rs register.
-        context.loadRs();
+        // Execute the delay slot immediately. It can change the contents of
+        // the Rs register, but the application already predicts this.
+        // Some games rely on this and report memory errors otherwise
+        // (e.g.: ".hack Link"; "Queen's Gate Spiral Chaos").
         compileDelaySlot(context, mv);
+        context.loadRs();
         context.visitJump();
     }
 
     private void compileJalr(CompilerContext context, MethodVisitor mv) {
-    	// Retrieve the call address from the Rs register before executing
-    	// the delay slot instruction, as it might theoretically modify the
-    	// content of the Rs register.
-        context.loadRs();
+    	// Execute the delay slot immediately. It can change the contents of
+        // the Rs register, but the application already predicts this.
+        // Some games rely on this and report memory errors otherwise
+        // (e.g.: ".hack Link"; "Queen's Gate Spiral Chaos").
         compileDelaySlot(context, mv);
+        context.loadRs();       
         context.visitCall(getAddress() + 8, context.getRdRegisterIndex());
     }
 
