@@ -16,7 +16,7 @@
 		<pathelement location="lib/jgz-0.2.jar" />
 		<pathelement location="lib/jide-oss-2.8.4.jar" />
 		<pathelement location="lib/log4j-1.2.15.jar" />
-		<pathelement location="lib/asm-all-3.2.jar" />
+		<pathelement location="lib/asm-all-4.0_RC1.jar" />
 		<pathelement location="lib/jaxen-1.1.1.jar" />
 		<pathelement location="lib/jdom1.1.jar" />
 		<pathelement location="lib/xuggle-xuggler.jar" />

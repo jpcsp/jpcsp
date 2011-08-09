@@ -6,7 +6,7 @@
 	<classpathentry kind="lib" path="lib/jgz-0.2.jar"/>
 	<classpathentry kind="lib" path="lib/jide-oss-2.8.4.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar"/>
-	<classpathentry kind="lib" path="lib/asm-all-3.2.jar"/>
+	<classpathentry kind="lib" path="lib/asm-all-4.0_RC1.jar"/>
 	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/jdom1.1.jar"/>
 	<classpathentry kind="lib" path="lib/xuggle-xuggler.jar"/>
@@ -17,7 +17,7 @@
 	<classpathentry kind="lib" path="lib/xuggle-xuggler-test.jar"/>
         <classpathentry kind="lib" path="lib/jinput.jar"/>
         <classpathentry kind="lib" path="lib/lwjgl_util.jar"/>
-	<classpathentry kind="lib" path="lib/lwjgl.jar" sourcepath="lib/lwjgl-source-2.6.zip"/>
+	<classpathentry kind="lib" path="lib/lwjgl.jar" sourcepath="lib/lwjgl-source-2.7.1.zip"/>
 	<classpathentry kind="lib" path="lib/bcprov-jdk16-145.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
