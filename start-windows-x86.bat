@@ -1,5 +1,13 @@
 @echo off
-set PATH=%PATH%;lib\;lib\windows-x86\
+
+IF "%JPCSP_SET_PATH_ALREADY%" == "" GOTO JPCSP_SET_PATH_ALREADY
+
+set PATH=lib\;lib\windows-x86\;%PATH%
+SET JPCSP_SET_PATH_ALREADY=1
+
+:JPCSP_SET_PATH_ALREADY
+
+IF NOT "%JAVA_HOME%" == "" GOTO JAVA_HOME_ALREADY_DEFINED
 
 if NOT EXIST "%SystemRoot%\SysWOW64" goto JAVA32
 set key=HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment
@@ -14,6 +22,7 @@ set JAVA_HOME=
 for /f "tokens=3* skip=2" %%a in ('reg query "%key%" /v CurrentVersion') do set JAVA_VERSION=%%a
 for /f "tokens=2* skip=2" %%a in ('reg query "%key%\%JAVA_VERSION%" /v JavaHome') do set JAVA_HOME=%%b
 
+:JAVA_HOME_ALREADY_DEFINED
 if not exist "%JAVA_HOME%\bin\java.exe" goto JAVAMISSING
 echo Running Jpcsp 32bit...
 "%JAVA_HOME%\bin\java" -Xmx1024m -XX:MaxPermSize=128m -XX:ReservedCodeCacheSize=64m -Djava.library.path=lib/windows-x86 -jar bin/jpcsp.jar

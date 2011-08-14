@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -41,36 +42,12 @@ public class sceCcc implements HLEModule {
 
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.addFunction(sceCccDecodeUTF8Function, 0xC6A8BEE2);
-			mm.addFunction(sceCccEncodeUTF16Function, 0x8406F469);
-			mm.addFunction(sceCccSetTableFunction, 0xB4D1CBBF);
-			mm.addFunction(sceCccDecodeUTF16Function, 0xE0CF8091);
-			mm.addFunction(sceCccSJIStoUTF16Function, 0xBEB47224);
-			mm.addFunction(sceCccStrlenSJISFunction, 0xD9392CCB);
-			mm.addFunction(sceCccUTF16toSJISFunction, 0xF1B73D12);
-			mm.addFunction(sceCccUTF8toUTF16Function, 0x00D1378F);
-			mm.addFunction(sceCccStrlenUTF8Function, 0xB7D3C112);
-			mm.addFunction(sceCccStrlenUTF16Function, 0x4BDEB2A8);
-			mm.addFunction(sceCccUTF16toUTF8Function, 0x41B724A5);
-		}
+		mm.installModuleWithAnnotations(this, version);
 	}
 
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.removeFunction(sceCccDecodeUTF8Function);
-			mm.removeFunction(sceCccEncodeUTF16Function);
-			mm.removeFunction(sceCccSetTableFunction);
-			mm.removeFunction(sceCccDecodeUTF16Function);
-			mm.removeFunction(sceCccSJIStoUTF16Function);
-			mm.removeFunction(sceCccStrlenSJISFunction);
-			mm.removeFunction(sceCccUTF16toSJISFunction);
-			mm.removeFunction(sceCccUTF8toUTF16Function);
-			mm.removeFunction(sceCccStrlenUTF8Function);
-			mm.removeFunction(sceCccStrlenUTF16Function);
-			mm.removeFunction(sceCccUTF16toUTF8Function);
-		}
+		mm.uninstallModuleWithAnnotations(this, version);
 	}
 
 	protected static final Charset charsetUTF8 = Charset.forName("UTF-8");
@@ -249,6 +226,7 @@ public class sceCcc implements HLEModule {
 		cpu.gpr[2] = dstBytes.length;
 	}
 
+	@HLEFunction(nid = 0xC6A8BEE2, version = 150)
 	public final HLEModuleFunction sceCccDecodeUTF8Function = new HLEModuleFunction("sceCcc", "sceCccDecodeUTF8") {
 		@Override
 		public final void execute(Processor processor) {
@@ -260,6 +238,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0x8406F469, version = 150)
 	public final HLEModuleFunction sceCccEncodeUTF16Function = new HLEModuleFunction("sceCcc", "sceCccEncodeUTF16") {
 		@Override
 		public final void execute(Processor processor) {
@@ -271,6 +250,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0xB4D1CBBF, version = 150)
 	public final HLEModuleFunction sceCccSetTableFunction = new HLEModuleFunction("sceCcc", "sceCccSetTable") {
 		@Override
 		public final void execute(Processor processor) {
@@ -282,6 +262,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
 
+	@HLEFunction(nid = 0xE0CF8091, version = 150)
 	public final HLEModuleFunction sceCccDecodeUTF16Function = new HLEModuleFunction("sceCcc", "sceCccDecodeUTF16") {
 		@Override
 		public final void execute(Processor processor) {
@@ -293,6 +274,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0xBEB47224, version = 150)
 	public final HLEModuleFunction sceCccSJIStoUTF16Function = new HLEModuleFunction("sceCcc", "sceCccSJIStoUTF16") {
 		@Override
 		public final void execute(Processor processor) {
@@ -304,6 +286,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0xD9392CCB, version = 150)
 	public final HLEModuleFunction sceCccStrlenSJISFunction = new HLEModuleFunction("sceCcc", "sceCccStrlenSJIS") {
 		@Override
 		public final void execute(Processor processor) {
@@ -315,6 +298,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0xF1B73D12, version = 150)
 	public final HLEModuleFunction sceCccUTF16toSJISFunction = new HLEModuleFunction("sceCcc", "sceCccUTF16toSJIS") {
 		@Override
 		public final void execute(Processor processor) {
@@ -326,6 +310,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0x00D1378F, version = 150)
 	public final HLEModuleFunction sceCccUTF8toUTF16Function = new HLEModuleFunction("sceCcc", "sceCccUTF8toUTF16") {
 		@Override
 		public final void execute(Processor processor) {
@@ -337,6 +322,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
 
+	@HLEFunction(nid = 0xB7D3C112, version = 150)
 	public final HLEModuleFunction sceCccStrlenUTF8Function = new HLEModuleFunction("sceCcc", "sceCccStrlenUTF8") {
 		@Override
 		public final void execute(Processor processor) {
@@ -348,6 +334,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
 	public final HLEModuleFunction sceCccStrlenUTF16Function = new HLEModuleFunction("sceCcc", "sceCccStrlenUTF16") {
 		@Override
 		public final void execute(Processor processor) {
@@ -359,6 +346,7 @@ public class sceCcc implements HLEModule {
 		}
 	};
     
+	@HLEFunction(nid = 0x41B724A5, version = 150)
 	public final HLEModuleFunction sceCccUTF16toUTF8Function = new HLEModuleFunction("sceCcc", "sceCccUTF16toUTF8") {
 		@Override
 		public final void execute(Processor processor) {
