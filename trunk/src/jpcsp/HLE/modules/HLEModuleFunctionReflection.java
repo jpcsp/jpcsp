@@ -1,5 +1,6 @@
 package jpcsp.HLE.modules;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import jpcsp.Processor;
@@ -27,6 +28,19 @@ public class HLEModuleFunctionReflection extends HLEModuleFunction {
 	public void execute(Processor cpu) {
 		try {
 			this.hleModuleMethod.invoke(hleModule, cpu);
+		} catch (InvocationTargetException e) {
+			System.err.println(
+				"Error calling "
+				+ ":: hleModule='" + hleModule + "'"
+				+ ":: hleModuleClass='" + hleModuleClass + "'"
+				+ ":: hleModuleMethodName='" + hleModuleMethodName + "'"
+				+ ":: hleModuleMethod='" + hleModuleMethod + "'"
+			);
+			try {
+				throw(e.getCause());
+			} catch (Throwable e1) {
+				e1.printStackTrace();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

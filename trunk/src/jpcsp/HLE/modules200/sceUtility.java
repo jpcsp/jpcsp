@@ -41,7 +41,9 @@ import jpcsp.filesystems.SeekableDataInput;
 
 public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
+    public void installModule(HLEModuleManager mm, int version) {
+    	super.installModule(mm, version);
+    }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
@@ -119,8 +121,8 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     public static final int PSP_NET_MODULE_HTTP = 6;
     public static final int PSP_NET_MODULE_SSL = 7;
 
-    protected HashMap<Integer, SceModule> loadedNetModules;
-    protected HashMap<Integer, String> waitingNetModules;
+    protected HashMap<Integer, SceModule> loadedNetModules = new HashMap<Integer, SceModule>();
+    protected HashMap<Integer, String> waitingNetModules = new HashMap<Integer, String>();
     protected InstallUtilityDialogState installState;
 
 	@Override
