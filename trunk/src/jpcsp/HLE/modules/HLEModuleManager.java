@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -25,6 +28,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -430,5 +434,36 @@ public class HLEModuleManager {
 
 	public HLEModuleFunction getSyscallFunction(int code) {
 		return allSyscallCodes.get(code);
+	}
+	
+	public void installModuleWithAnnotations(HLEModule object, int version) {
+		try {
+			for (Field field : object.getClass().getFields()) {
+				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
+				if (hleFunction != null) {
+					if (version >= hleFunction.version()) {
+						this.addFunction((HLEModuleFunction)field.get(object), hleFunction.nid());
+					}
+				}
+			}
+		} catch (Exception e) {
+			Modules.getLogger("ThreadManForUser").error("installModuleWithAnnotations : EXCEPTION");
+			e.printStackTrace();
+		}
+	}
+	
+	public void uninstallModuleWithAnnotations(HLEModule object, int version) {
+		try {
+			for (Field field : object.getClass().getFields()) {
+				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
+				if (hleFunction != null) {
+					if (version >= hleFunction.version()) {
+						this.removeFunction((HLEModuleFunction)field.get(object));
+					}
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

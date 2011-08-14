@@ -82,6 +82,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
+import jpcsp.HLE.HLEFunction;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -153,9 +154,10 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
+    	mm.installModuleWithAnnotations(this, version);
 
-            mm.addFunction(0x6E9EA350, _sceKernelReturnFromCallbackFunction);
+        if (version >= 150) {
+        	mm.addFunction(0x6E9EA350, _sceKernelReturnFromCallbackFunction);
             mm.addFunction(0x0C106E53, sceKernelRegisterThreadEventHandlerFunction);
             mm.addFunction(0x72F3C145, sceKernelReleaseThreadEventHandlerFunction);
             mm.addFunction(0x369EEB6B, sceKernelReferThreadEventHandlerStatusFunction);
@@ -255,7 +257,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             mm.addFunction(0x53B00E9A, sceKernelSetVTimerHandlerWideFunction);
             mm.addFunction(0xD2D615EF, sceKernelCancelVTimerHandlerFunction);
             mm.addFunction(0x5F32BEAA, sceKernelReferVTimerStatusFunction);
-            mm.addFunction(0x446D8DE6, sceKernelCreateThreadFunction);
+            //mm.addFunction(0x446D8DE6, sceKernelCreateThreadFunction);
             mm.addFunction(0x9FA03CD3, sceKernelDeleteThreadFunction);
             mm.addFunction(0xF475845D, sceKernelStartThreadFunction);
             mm.addFunction(0x532A522E, _sceKernelExitThreadFunction);
@@ -291,8 +293,9 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
+    	mm.uninstallModuleWithAnnotations(this, version);
 
+        if (version >= 150) {
             mm.removeFunction(_sceKernelReturnFromCallbackFunction);
             mm.removeFunction(sceKernelRegisterThreadEventHandlerFunction);
             mm.removeFunction(sceKernelReleaseThreadEventHandlerFunction);
@@ -393,7 +396,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             mm.removeFunction(sceKernelSetVTimerHandlerWideFunction);
             mm.removeFunction(sceKernelCancelVTimerHandlerFunction);
             mm.removeFunction(sceKernelReferVTimerStatusFunction);
-            mm.removeFunction(sceKernelCreateThreadFunction);
+            //mm.removeFunction(sceKernelCreateThreadFunction);
             mm.removeFunction(sceKernelDeleteThreadFunction);
             mm.removeFunction(sceKernelStartThreadFunction);
             mm.removeFunction(_sceKernelExitThreadFunction);
@@ -6016,6 +6019,8 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
         }
     };
+    
+    @HLEFunction(nid = 0x446D8DE6, version = 150)
     public final HLEModuleFunction sceKernelCreateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateThread") {
 
         @Override
@@ -6028,6 +6033,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateThread(processor);";
         }
     };
+
     public final HLEModuleFunction sceKernelDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteThread") {
 
         @Override
