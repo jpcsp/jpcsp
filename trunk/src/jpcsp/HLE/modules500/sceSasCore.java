@@ -61,17 +61,6 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
             cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0xE1CD9561, version = 500)
-    public final HLEModuleFunction __sceSasSetVoicePCMFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetVoicePCM") {
+    @HLEFunction(nid = 0xE1CD9561, version = 500) public HLEModuleFunction __sceSasSetVoicePCMFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetVoicePCM(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVoicePCM(processor);";
-        }
-    };
 }

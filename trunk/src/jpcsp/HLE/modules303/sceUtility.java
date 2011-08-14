@@ -157,30 +157,8 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         cpu.gpr[2] = hleUtilityUnloadModule(module);
     }
-    @HLEFunction(nid = 0x2A2B3DE0, version = 303)
-    public final HLEModuleFunction sceUtilityLoadModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadModule") {
+    @HLEFunction(nid = 0x2A2B3DE0, version = 303) public HLEModuleFunction sceUtilityLoadModuleFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityLoadModule(processor);
-        }
+    @HLEFunction(nid = 0xE49BFE92, version = 303) public HLEModuleFunction sceUtilityUnloadModuleFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityLoadModule(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xE49BFE92, version = 303)
-    public final HLEModuleFunction sceUtilityUnloadModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityUnloadModule") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityUnloadModule(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityUnloadModule(processor);";
-        }
-    };
 }

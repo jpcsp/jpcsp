@@ -1439,341 +1439,33 @@ public class sceFont implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    @HLEFunction(nid = 0x099EF33C, version = 150)
-    public final HLEModuleFunction sceFontFindOptimumFontFunction = new HLEModuleFunction("sceFont", "sceFontFindOptimumFont") {
+    @HLEFunction(nid = 0x099EF33C, version = 150) public HLEModuleFunction sceFontFindOptimumFontFunction;
+    @HLEFunction(nid = 0x0DA7535E, version = 150) public HLEModuleFunction sceFontGetFontInfoFunction;
+    @HLEFunction(nid = 0x3AEA8CB6, version = 150) public HLEModuleFunction sceFontCloseFunction;
+    @HLEFunction(nid = 0x574B6FBC, version = 150) public HLEModuleFunction sceFontDoneLibFunction;
+    @HLEFunction(nid = 0x67F17ED7, version = 150) public HLEModuleFunction sceFontNewLibFunction;
+    @HLEFunction(nid = 0xA834319D, version = 150) public HLEModuleFunction sceFontOpenFunction;
+    @HLEFunction(nid = 0xCA1E6945, version = 150) public HLEModuleFunction sceFontGetCharGlyphImage_ClipFunction;
+    @HLEFunction(nid = 0xDCC80C2F, version = 150) public HLEModuleFunction sceFontGetCharInfoFunction;
+    @HLEFunction(nid = 0x980F4895, version = 150) public HLEModuleFunction sceFontGetCharGlyphImageFunction;
+    @HLEFunction(nid = 0x27F6E642, version = 150) public HLEModuleFunction sceFontGetNumFontListFunction;
+    @HLEFunction(nid = 0xBC75D85B, version = 150) public HLEModuleFunction sceFontGetFontListFunction;
+    @HLEFunction(nid = 0xBB8E7FE6, version = 150) public HLEModuleFunction sceFontOpenUserMemoryFunction;
+    @HLEFunction(nid = 0xEE232411, version = 150) public HLEModuleFunction sceFontSetAltCharacterCodeFunction;
+    @HLEFunction(nid = 0x5C3E4A9E, version = 150) public HLEModuleFunction sceFontGetCharImageRectFunction;
+    @HLEFunction(nid = 0x472694CD, version = 150) public HLEModuleFunction sceFontPointToPixelHFunction;
+    @HLEFunction(nid = 0x5333322D, version = 150) public HLEModuleFunction sceFontGetFontInfoByIndexNumberFunction;
+    @HLEFunction(nid = 0x48293280, version = 150) public HLEModuleFunction sceFontSetResolutionFunction;
+    @HLEFunction(nid = 0x02D7F94B, version = 150) public HLEModuleFunction sceFontFlushFunction;
+    @HLEFunction(nid = 0x57FCB733, version = 150) public HLEModuleFunction sceFontOpenUserFileFunction;
+    @HLEFunction(nid = 0x681E61A7, version = 150) public HLEModuleFunction sceFontFindFontFunction;
+    @HLEFunction(nid = 0x3C4B7E82, version = 150) public HLEModuleFunction sceFontPointToPixelVFunction;
+    @HLEFunction(nid = 0x74B21701, version = 150) public HLEModuleFunction sceFontPixelToPointHFunction;
+    @HLEFunction(nid = 0xF8F0752E, version = 150) public HLEModuleFunction sceFontPixelToPointVFunction;
+    @HLEFunction(nid = 0x2F67356A, version = 150) public HLEModuleFunction sceFontCalcMemorySizeFunction;
+    @HLEFunction(nid = 0x48B06520, version = 150) public HLEModuleFunction sceFontGetShadowImageRectFunction;
+    @HLEFunction(nid = 0x568BE516, version = 150) public HLEModuleFunction sceFontGetShadowGlyphImageFunction;
+    @HLEFunction(nid = 0x5DCF6858, version = 150) public HLEModuleFunction sceFontGetShadowGlyphImage_ClipFunction;
+    @HLEFunction(nid = 0xAA3DE7B5, version = 150) public HLEModuleFunction sceFontGetShadowInfoFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceFontFindOptimumFont(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontFindOptimumFont(Processor);";
-        }
-    };    @HLEFunction(nid = 0x0DA7535E, version = 150)
-    public final HLEModuleFunction sceFontGetFontInfoFunction = new HLEModuleFunction("sceFont", "sceFontGetFontInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetFontInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetFontInfo(Processor);";
-        }
-    };    @HLEFunction(nid = 0x3AEA8CB6, version = 150)
-    public final HLEModuleFunction sceFontCloseFunction = new HLEModuleFunction("sceFont", "sceFontClose") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontClose(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontClose(Processor);";
-        }
-    };    @HLEFunction(nid = 0x574B6FBC, version = 150)
-    public final HLEModuleFunction sceFontDoneLibFunction = new HLEModuleFunction("sceFont", "sceFontDoneLib") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontDoneLib(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontDoneLib(Processor);";
-        }
-    };    @HLEFunction(nid = 0x67F17ED7, version = 150)
-    public final HLEModuleFunction sceFontNewLibFunction = new HLEModuleFunction("sceFont", "sceFontNewLib") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontNewLib(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontNewLib(Processor);";
-        }
-    };    @HLEFunction(nid = 0xA834319D, version = 150)
-    public final HLEModuleFunction sceFontOpenFunction = new HLEModuleFunction("sceFont", "sceFontOpen") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontOpen(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontOpen(Processor);";
-        }
-    };    @HLEFunction(nid = 0xCA1E6945, version = 150)
-    public final HLEModuleFunction sceFontGetCharGlyphImage_ClipFunction = new HLEModuleFunction("sceFont", "sceFontGetCharGlyphImage_Clip") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetCharGlyphImage_Clip(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetCharGlyphImage_Clip(Processor);";
-        }
-    };    @HLEFunction(nid = 0xDCC80C2F, version = 150)
-    public final HLEModuleFunction sceFontGetCharInfoFunction = new HLEModuleFunction("sceFont", "sceFontGetCharInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetCharInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetCharInfo(Processor);";
-        }
-    };    @HLEFunction(nid = 0x980F4895, version = 150)
-    public final HLEModuleFunction sceFontGetCharGlyphImageFunction = new HLEModuleFunction("sceFont", "sceFontGetCharGlyphImage") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetCharGlyphImage(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetCharGlyphImage(Processor);";
-        }
-    };    @HLEFunction(nid = 0x27F6E642, version = 150)
-    public final HLEModuleFunction sceFontGetNumFontListFunction = new HLEModuleFunction("sceFont", "sceFontGetNumFontList") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetNumFontList(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetNumFontList(Processor);";
-        }
-    };    @HLEFunction(nid = 0xBC75D85B, version = 150)
-    public final HLEModuleFunction sceFontGetFontListFunction = new HLEModuleFunction("sceFont", "sceFontGetFontList") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetFontList(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetFontList(Processor);";
-        }
-    };    @HLEFunction(nid = 0xBB8E7FE6, version = 150)
-    public final HLEModuleFunction sceFontOpenUserMemoryFunction = new HLEModuleFunction("sceFont", "sceFontOpenUserMemory") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontOpenUserMemory(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontOpenUserMemory(Processor);";
-        }
-    };    @HLEFunction(nid = 0xEE232411, version = 150)
-    public final HLEModuleFunction sceFontSetAltCharacterCodeFunction = new HLEModuleFunction("sceFont", "sceFontSetAltCharacterCode") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontSetAltCharacterCode(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontSetAltCharacterCode(Processor);";
-        }
-    };    @HLEFunction(nid = 0x5C3E4A9E, version = 150)
-    public final HLEModuleFunction sceFontGetCharImageRectFunction = new HLEModuleFunction("sceFont", "sceFontGetCharImageRect") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetCharImageRect(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetCharImageRect(Processor);";
-        }
-    };    @HLEFunction(nid = 0x472694CD, version = 150)
-    public final HLEModuleFunction sceFontPointToPixelHFunction = new HLEModuleFunction("sceFont", "sceFontPointToPixelH") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontPointToPixelH(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontPointToPixelH(Processor);";
-        }
-    };    @HLEFunction(nid = 0x5333322D, version = 150)
-    public final HLEModuleFunction sceFontGetFontInfoByIndexNumberFunction = new HLEModuleFunction("sceFont", "sceFontGetFontInfoByIndexNumber") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetFontInfoByIndexNumber(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetFontInfoByIndexNumber(Processor);";
-        }
-    };    @HLEFunction(nid = 0x48293280, version = 150)
-    public final HLEModuleFunction sceFontSetResolutionFunction = new HLEModuleFunction("sceFont", "sceFontSetResolution") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontSetResolution(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontSetResolution(Processor);";
-        }
-    };    @HLEFunction(nid = 0x02D7F94B, version = 150)
-    public final HLEModuleFunction sceFontFlushFunction = new HLEModuleFunction("sceFont", "sceFontFlush") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontFlush(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontFlush(Processor);";
-        }
-    };    @HLEFunction(nid = 0x57FCB733, version = 150)
-    public final HLEModuleFunction sceFontOpenUserFileFunction = new HLEModuleFunction("sceFont", "sceFontOpenUserFile") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontOpenUserFile(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontOpenUserFile(Processor);";
-        }
-    };    @HLEFunction(nid = 0x681E61A7, version = 150)
-    public final HLEModuleFunction sceFontFindFontFunction = new HLEModuleFunction("sceFont", "sceFontFindFont") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontFindFont(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontFindFont(Processor);";
-        }
-    };    @HLEFunction(nid = 0x3C4B7E82, version = 150)
-    public final HLEModuleFunction sceFontPointToPixelVFunction = new HLEModuleFunction("sceFont", "sceFontPointToPixelV") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontPointToPixelV(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontPointToPixelV(Processor);";
-        }
-    };    @HLEFunction(nid = 0x74B21701, version = 150)
-    public final HLEModuleFunction sceFontPixelToPointHFunction = new HLEModuleFunction("sceFont", "sceFontPixelToPointH") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontPixelToPointH(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontPixelToPointH(Processor);";
-        }
-    };    @HLEFunction(nid = 0xF8F0752E, version = 150)
-    public final HLEModuleFunction sceFontPixelToPointVFunction = new HLEModuleFunction("sceFont", "sceFontPixelToPointV") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontPixelToPointV(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontPixelToPointV(Processor);";
-        }
-    };    @HLEFunction(nid = 0x2F67356A, version = 150)
-    public final HLEModuleFunction sceFontCalcMemorySizeFunction = new HLEModuleFunction("sceFont", "sceFontCalcMemorySize") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontCalcMemorySize(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontCalcMemorySize(Processor);";
-        }
-    };    @HLEFunction(nid = 0x48B06520, version = 150)
-    public final HLEModuleFunction sceFontGetShadowImageRectFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowImageRect") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetShadowImageRect(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowImageRect(Processor);";
-        }
-    };    @HLEFunction(nid = 0x568BE516, version = 150)
-    public final HLEModuleFunction sceFontGetShadowGlyphImageFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowGlyphImage") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetShadowGlyphImage(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowGlyphImage(Processor);";
-        }
-    };    @HLEFunction(nid = 0x5DCF6858, version = 150)
-    public final HLEModuleFunction sceFontGetShadowGlyphImage_ClipFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowGlyphImage_Clip") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetShadowGlyphImage_Clip(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowGlyphImage_Clip(Processor);";
-        }
-    };    @HLEFunction(nid = 0xAA3DE7B5, version = 150)
-    public final HLEModuleFunction sceFontGetShadowInfoFunction = new HLEModuleFunction("sceFont", "sceFontGetShadowInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceFontGetShadowInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceFontModule.sceFontGetShadowInfo(Processor);";
-        }
-    };
 }

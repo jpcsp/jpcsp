@@ -297,125 +297,26 @@ public class sceNetResolver implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-	@HLEFunction(nid = 0xF3370E61, version = 150)
-	public final HLEModuleFunction sceNetResolverInitFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverInit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverInit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverInit(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x6138194A, version = 150)
-	public final HLEModuleFunction sceNetResolverTermFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverTerm") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverTerm(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverTerm(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x244172AF, version = 150)
-	public final HLEModuleFunction sceNetResolverCreateFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverCreate") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverCreate(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverCreate(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x94523E09, version = 150)
-	public final HLEModuleFunction sceNetResolverDeleteFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverDelete") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverDelete(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverDelete(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x224C5F44, version = 150)
-	public final HLEModuleFunction sceNetResolverStartNtoAFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartNtoA") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverStartNtoA(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartNtoA(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x629E2FB7, version = 150)
-	public final HLEModuleFunction sceNetResolverStartAtoNFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartAtoN") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverStartAtoN(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartAtoN(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x808F6063, version = 150)
-	public final HLEModuleFunction sceNetResolverStopFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStop") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverStop(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStop(processor);";
-		}
-	};
-    @HLEFunction(nid = 0x14C17EF9, version = 150)
-    public final HLEModuleFunction sceNetResolverStartNtoAAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartNtoAAsync") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverStartNtoAAsync(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartNtoAAsync(processor);";
-		}
-	};
-    @HLEFunction(nid = 0xAAC09184, version = 150)
-    public final HLEModuleFunction sceNetResolverStartAtoNAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverStartAtoNAsync") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverStartAtoNAsync(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverStartAtoNAsync(processor);";
-		}
-	};
-    @HLEFunction(nid = 0x4EE99358, version = 150)
-    public final HLEModuleFunction sceNetResolverPollAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverPollAsync") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverPollAsync(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverPollAsync(processor);";
-		}
-	};
-    @HLEFunction(nid = 0x12748EB9, version = 150)
-    public final HLEModuleFunction sceNetResolverWaitAsyncFunction = new HLEModuleFunction("sceNetResolver", "sceNetResolverWaitAsync") {
-		@Override
-		public final void execute(Processor processor) {
-			sceNetResolverWaitAsync(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceNetResolverModule.sceNetResolverWaitAsync(processor);";
-		}
-	};
+	@HLEFunction(nid = 0xF3370E61, version = 150) public HLEModuleFunction sceNetResolverInitFunction;
+
+	@HLEFunction(nid = 0x6138194A, version = 150) public HLEModuleFunction sceNetResolverTermFunction;
+
+	@HLEFunction(nid = 0x244172AF, version = 150) public HLEModuleFunction sceNetResolverCreateFunction;
+
+	@HLEFunction(nid = 0x94523E09, version = 150) public HLEModuleFunction sceNetResolverDeleteFunction;
+
+	@HLEFunction(nid = 0x224C5F44, version = 150) public HLEModuleFunction sceNetResolverStartNtoAFunction;
+
+	@HLEFunction(nid = 0x629E2FB7, version = 150) public HLEModuleFunction sceNetResolverStartAtoNFunction;
+
+	@HLEFunction(nid = 0x808F6063, version = 150) public HLEModuleFunction sceNetResolverStopFunction;
+
+    @HLEFunction(nid = 0x14C17EF9, version = 150) public HLEModuleFunction sceNetResolverStartNtoAAsyncFunction;
+
+    @HLEFunction(nid = 0xAAC09184, version = 150) public HLEModuleFunction sceNetResolverStartAtoNAsyncFunction;
+
+    @HLEFunction(nid = 0x4EE99358, version = 150) public HLEModuleFunction sceNetResolverPollAsyncFunction;
+
+    @HLEFunction(nid = 0x12748EB9, version = 150) public HLEModuleFunction sceNetResolverWaitAsyncFunction;
+
 };

@@ -132,108 +132,20 @@ public class scePspNpDrm_user implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0xA1336091, version = 150)
-    public final HLEModuleFunction sceNpDrmSetLicenseeKeyFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmSetLicenseeKey") {
+    @HLEFunction(nid = 0xA1336091, version = 150) public HLEModuleFunction sceNpDrmSetLicenseeKeyFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNpDrmSetLicenseeKey(processor);
-        }
+    @HLEFunction(nid = 0x9B745542, version = 150) public HLEModuleFunction sceNpDrmClearLicenseeKeyFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmSetLicenseeKey(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x9B745542, version = 150)
-    public final HLEModuleFunction sceNpDrmClearLicenseeKeyFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmClearLicenseeKey") {
+    @HLEFunction(nid = 0x275987D1, version = 150) public HLEModuleFunction sceNpDrmRenameCheckFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNpDrmClearLicenseeKey(processor);
-        }
+    @HLEFunction(nid = 0x08D98894, version = 150) public HLEModuleFunction sceNpDrmEdataSetupKeyFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmClearLicenseeKey(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x275987D1, version = 150)
-    public final HLEModuleFunction sceNpDrmRenameCheckFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmRenameCheck") {
+    @HLEFunction(nid = 0x219EF5CC, version = 150) public HLEModuleFunction sceNpDrmEdataGetDataSizeFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNpDrmRenameCheck(processor);
-        }
+    @HLEFunction(nid = 0x2BAA4294, version = 150) public HLEModuleFunction sceNpDrmOpenFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmRenameCheck(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x08D98894, version = 150)
-    public final HLEModuleFunction sceNpDrmEdataSetupKeyFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmEdataSetupKey") {
+    @HLEFunction(nid = 0xC618D0B1, version = 150) public HLEModuleFunction sceKernelLoadModuleNpDrmFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNpDrmEdataSetupKey(processor);
-        }
+    @HLEFunction(nid = 0xAA5FC85B, version = 150) public HLEModuleFunction sceKernelLoadExecNpDrmFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmEdataSetupKey(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x219EF5CC, version = 150)
-    public final HLEModuleFunction sceNpDrmEdataGetDataSizeFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmEdataGetDataSize") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpDrmEdataGetDataSize(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmEdataGetDataSize(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x2BAA4294, version = 150)
-    public final HLEModuleFunction sceNpDrmOpenFunction = new HLEModuleFunction("scePspNpDrm_user", "sceNpDrmOpen") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNpDrmOpen(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceNpDrmOpen(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xC618D0B1, version = 150)
-    public final HLEModuleFunction sceKernelLoadModuleNpDrmFunction = new HLEModuleFunction("scePspNpDrm_user", "sceKernelLoadModuleNpDrm") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLoadModuleNpDrm(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceKernelLoadModuleNpDrm(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xAA5FC85B, version = 150)
-    public final HLEModuleFunction sceKernelLoadExecNpDrmFunction = new HLEModuleFunction("scePspNpDrm_user", "sceKernelLoadExecNpDrm") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLoadExecNpDrm(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePspNpDrm_userModule.sceKernelLoadExecNpDrm(processor);";
-        }
-    };
 }

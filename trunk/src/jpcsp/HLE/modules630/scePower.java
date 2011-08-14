@@ -42,17 +42,6 @@ public class scePower extends jpcsp.HLE.modules150.scePower {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x469989AD, version = 630)
-    public final HLEModuleFunction scePower_469989ADFunction = new HLEModuleFunction("scePower", "scePower_469989AD") {
+    @HLEFunction(nid = 0x469989AD, version = 630) public HLEModuleFunction scePower_469989ADFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            scePower_469989AD(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.scePowerModule.scePower_469989AD(processor);";
-        }
-    };
 }

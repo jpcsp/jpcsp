@@ -171,53 +171,9 @@ public class LoadExecForUser implements HLEModule {
         exitCbThread = threadMan.getCurrentThread();
 
         cpu.gpr[2] = 0;
-    }    @HLEFunction(nid = 0xBD2F1094, version = 150)
-    public final HLEModuleFunction sceKernelLoadExecFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelLoadExec") {
+    }    @HLEFunction(nid = 0xBD2F1094, version = 150) public HLEModuleFunction sceKernelLoadExecFunction;
+    @HLEFunction(nid = 0x2AC9954B, version = 150) public HLEModuleFunction sceKernelExitGameWithStatusFunction;
+    @HLEFunction(nid = 0x05572A5F, version = 150) public HLEModuleFunction sceKernelExitGameFunction;
+    @HLEFunction(nid = 0x4AC57943, version = 150) public HLEModuleFunction sceKernelRegisterExitCallbackFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLoadExec(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelLoadExec(processor);";
-        }
-    };    @HLEFunction(nid = 0x2AC9954B, version = 150)
-    public final HLEModuleFunction sceKernelExitGameWithStatusFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGameWithStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelExitGameWithStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGameWithStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x05572A5F, version = 150)
-    public final HLEModuleFunction sceKernelExitGameFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGame") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelExitGame(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGame(processor);";
-        }
-    };    @HLEFunction(nid = 0x4AC57943, version = 150)
-    public final HLEModuleFunction sceKernelRegisterExitCallbackFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelRegisterExitCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelRegisterExitCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelRegisterExitCallback(processor);";
-        }
-    };
 }

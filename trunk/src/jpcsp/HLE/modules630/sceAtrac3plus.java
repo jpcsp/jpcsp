@@ -47,26 +47,8 @@ public class sceAtrac3plus extends jpcsp.HLE.modules600.sceAtrac3plus {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x0C116E1B, version = 630)
-    public final HLEModuleFunction sceAtracLowLevelDecodeFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracLowLevelDecode") {
-        @Override
-        public final void execute(Processor processor) {
-        	sceAtracLowLevelDecode(processor);
-        }
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracLowLevelDecode(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x1575D64B, version = 630)
-    public final HLEModuleFunction sceAtracLowLevelInitDecoderFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracLowLevelInitDecoder") {
-        @Override
-        public final void execute(Processor processor) {
-        	sceAtracLowLevelInitDecoder(processor);
-        }
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracLowLevelInitDecoder(processor);";
-        }
-    };
+    @HLEFunction(nid = 0x0C116E1B, version = 630) public HLEModuleFunction sceAtracLowLevelDecodeFunction;
+
+    @HLEFunction(nid = 0x1575D64B, version = 630) public HLEModuleFunction sceAtracLowLevelInitDecoderFunction;
+
 }

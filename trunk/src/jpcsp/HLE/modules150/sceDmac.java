@@ -74,26 +74,8 @@ public class sceDmac implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0x617F3FE6, version = 150)
-	public final HLEModuleFunction sceDmacMemcpyFunction = new HLEModuleFunction("sceDmac", "sceDmacMemcpy") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDmacMemcpy(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDmacModule.sceDmacMemcpy(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xD97F94D8, version = 150)
-	public final HLEModuleFunction sceDmacTryMemcpyFunction = new HLEModuleFunction("sceDmac", "sceDmacTryMemcpy") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDmacTryMemcpy(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDmacModule.sceDmacTryMemcpy(processor);";
-		}
-	};
+	@HLEFunction(nid = 0x617F3FE6, version = 150) public HLEModuleFunction sceDmacMemcpyFunction;
+
+	@HLEFunction(nid = 0xD97F94D8, version = 150) public HLEModuleFunction sceDmacTryMemcpyFunction;
+
 }

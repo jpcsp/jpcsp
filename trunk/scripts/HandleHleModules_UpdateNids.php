@@ -1,23 +1,11 @@
 <?php
 
-class UpdateNids {
+require_once(__DIR__ . '/HandleHleModules.php');
+
+class HandleHleModules_UpdateNids extends HandleHleModules {
 	public function __construct() {
 	}
 
-	public function handleDir($path) {
-		$path = realpath($path);
-		foreach (scandir($path) as $file) {
-			if ($file[0] == '.') continue;
-			$rfile = realpath("{$path}/{$file}");
-			//echo "$rfile\n";
-			if (is_dir($rfile)) {
-				$this->handleDir($rfile);
-			} else {
-				$this->handleFile($rfile);
-			}
-		}
-	}
-	
 	public function handleFile($rfile) {
 		$data = file_get_contents($rfile);
 		if (strpos($data, 'void installModule(HLEModuleManager mm, int version) {') !== false) {
@@ -165,12 +153,5 @@ class UpdateNids {
 	}
 }
 
-$updateNids = new UpdateNids();
-foreach (scandir($path = __DIR__ . '/../src/jpcsp/HLE') as $file) {
-	$rfile = "{$path}/{$file}";
-	if (substr($file, 0, 7) == 'modules' && strlen($file) > 7) {
-		$updateNids->handleDir($rfile);
-	}
-}
-//$updateNids->handleDir(__DIR__ . '/../src/jpcsp/HLE');
-//$updateNids->handleFile(__DIR__ . '/../src/jpcsp/HLE/modules150/sceUsb.java');
+$handleHleModules = new HandleHleModules_UpdateNids();
+$handleHleModules->handleModuleFolders();

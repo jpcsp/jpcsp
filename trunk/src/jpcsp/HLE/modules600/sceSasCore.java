@@ -87,43 +87,10 @@ public class sceSasCore extends jpcsp.HLE.modules500.sceSasCore {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x4AA9EAD6, version = 600)
-    public final HLEModuleFunction __sceSasSetVoiceATRAC3Function = new HLEModuleFunction("sceSasCore", "__sceSasSetVoiceATRAC3") {
+    @HLEFunction(nid = 0x4AA9EAD6, version = 600) public HLEModuleFunction __sceSasSetVoiceATRAC3Function;
 
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasSetVoiceATRAC3(processor);
-        }
+    @HLEFunction(nid = 0x7497EA85, version = 600) public HLEModuleFunction __sceSasConcatenateATRAC3Function;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVoiceATRAC3(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x7497EA85, version = 600)
-    public final HLEModuleFunction __sceSasConcatenateATRAC3Function = new HLEModuleFunction("sceSasCore", "__sceSasConcatenateATRAC3") {
+    @HLEFunction(nid = 0xF6107F00, version = 600) public HLEModuleFunction __sceSasUnsetATRAC3Function;
 
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasConcatenateATRAC3(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasConcatenateATRAC3(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF6107F00, version = 600)
-    public final HLEModuleFunction __sceSasUnsetATRAC3Function = new HLEModuleFunction("sceSasCore", "__sceSasUnsetATRAC3") {
-
-        @Override
-        public final void execute(Processor processor) {
-            __sceSasUnsetATRAC3(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasUnsetATRAC3(processor);";
-        }
-    };
 }

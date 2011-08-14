@@ -40,17 +40,6 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xFEF27DC1, version = 271)
-    public final HLEModuleFunction ModuleMgrForUser_FEF27DC1Function = new HLEModuleFunction("ModuleMgrForUser", "ModuleMgrForUser_FEF27DC1") {
+    @HLEFunction(nid = 0xFEF27DC1, version = 271) public HLEModuleFunction ModuleMgrForUser_FEF27DC1Function;
 
-        @Override
-        public final void execute(Processor processor) {
-            ModuleMgrForUser_FEF27DC1(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.ModuleMgrForUser_FEF27DC1(processor);";
-        }
-    };
 }

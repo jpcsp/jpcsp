@@ -192,77 +192,11 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
             volatileMemLocked = false;
             cpu.gpr[2] = 0;
         }
-    }    @HLEFunction(nid = 0xEADB1BD7, version = 150)
-    public final HLEModuleFunction sceKernelPowerLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerLock") {
+    }    @HLEFunction(nid = 0xEADB1BD7, version = 150) public HLEModuleFunction sceKernelPowerLockFunction;
+    @HLEFunction(nid = 0x3AEE7261, version = 150) public HLEModuleFunction sceKernelPowerUnlockFunction;
+    @HLEFunction(nid = 0x090CCB3F, version = 150) public HLEModuleFunction sceKernelPowerTickFunction;
+    @HLEFunction(nid = 0x3E0271D3, version = 150) public HLEModuleFunction sceKernelVolatileMemLockFunction;
+    @HLEFunction(nid = 0xA14F40B2, version = 150) public HLEModuleFunction sceKernelVolatileMemTryLockFunction;
+    @HLEFunction(nid = 0xA569E425, version = 150) public HLEModuleFunction sceKernelVolatileMemUnlockFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelPowerLock(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerLock(processor);";
-        }
-    };    @HLEFunction(nid = 0x3AEE7261, version = 150)
-    public final HLEModuleFunction sceKernelPowerUnlockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerUnlock") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelPowerUnlock(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerUnlock(processor);";
-        }
-    };    @HLEFunction(nid = 0x090CCB3F, version = 150)
-    public final HLEModuleFunction sceKernelPowerTickFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerTick") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelPowerTick(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerTick(processor);";
-        }
-    };    @HLEFunction(nid = 0x3E0271D3, version = 150)
-    public final HLEModuleFunction sceKernelVolatileMemLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemLock") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelVolatileMemLock(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemLock(processor);";
-        }
-    };    @HLEFunction(nid = 0xA14F40B2, version = 150)
-    public final HLEModuleFunction sceKernelVolatileMemTryLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemTryLock") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelVolatileMemTryLock(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemTryLock(processor);";
-        }
-    };    @HLEFunction(nid = 0xA569E425, version = 150)
-    public final HLEModuleFunction sceKernelVolatileMemUnlockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemUnlock") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelVolatileMemUnlock(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemUnlock(processor);";
-        }
-    };
 }

@@ -72,56 +72,12 @@ public class sceGameUpdate implements HLEModule {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xCBE69FB3, version = 150)
-    public final HLEModuleFunction sceGameUpdateInitFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateInit") {
+    @HLEFunction(nid = 0xCBE69FB3, version = 150) public HLEModuleFunction sceGameUpdateInitFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceGameUpdateInit(processor);
-        }
+    @HLEFunction(nid = 0xBB4B68DE, version = 150) public HLEModuleFunction sceGameUpdateTermFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceGameUpdateModule.sceGameUpdateInit(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xBB4B68DE, version = 150)
-    public final HLEModuleFunction sceGameUpdateTermFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateTerm") {
+    @HLEFunction(nid = 0x596AD78C, version = 150) public HLEModuleFunction sceGameUpdateRunFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceGameUpdateTerm(processor);
-        }
+    @HLEFunction(nid = 0x5F5D98A6, version = 150) public HLEModuleFunction sceGameUpdateAbortFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceGameUpdateModule.sceGameUpdateTerm(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x596AD78C, version = 150)
-    public final HLEModuleFunction sceGameUpdateRunFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateRun") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceGameUpdateRun(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceGameUpdateModule.sceGameUpdateRun(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x5F5D98A6, version = 150)
-    public final HLEModuleFunction sceGameUpdateAbortFunction = new HLEModuleFunction("sceGameUpdate", "sceGameUpdateAbort") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceGameUpdateAbort(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceGameUpdateModule.sceGameUpdateAbort(processor);";
-        }
-    };
 }

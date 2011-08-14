@@ -77,26 +77,8 @@ public class sceDisplay extends jpcsp.HLE.modules200.sceDisplay {
         cpu.gpr[2] = 0;
         blockCurrentThreadOnVblank(cycleNum, true);
 	}
-	@HLEFunction(nid = 0x40F1469C, version = 500)
-	public final HLEModuleFunction sceDisplayWaitVblankStartMultiFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMulti") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDisplayWaitVblankStartMulti(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartMulti(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x77ED8B3A, version = 500)
-	public final HLEModuleFunction sceDisplayWaitVblankStartMultiCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartMultiCB") {
-		@Override
-		public final void execute(Processor processor) {
-			sceDisplayWaitVblankStartMultiCB(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartMultiCB(processor);";
-		}
-	};
+	@HLEFunction(nid = 0x40F1469C, version = 500) public HLEModuleFunction sceDisplayWaitVblankStartMultiFunction;
+
+	@HLEFunction(nid = 0x77ED8B3A, version = 500) public HLEModuleFunction sceDisplayWaitVblankStartMultiCBFunction;
+
 }

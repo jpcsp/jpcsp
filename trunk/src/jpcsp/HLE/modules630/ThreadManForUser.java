@@ -47,15 +47,6 @@ public class ThreadManForUser extends jpcsp.HLE.modules380.ThreadManForUser {
         }
         cpu.gpr[2] = setThreadCurrentStackSize(size);
 	}
-	@HLEFunction(nid = 0xBC80EC7C, version = 630)
-	public final HLEModuleFunction sceKernelExtendThreadStackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExtendThreadStack") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelExtendThreadStack(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelExtendThreadStack(processor);";
-		}
-	};
+	@HLEFunction(nid = 0xBC80EC7C, version = 630) public HLEModuleFunction sceKernelExtendThreadStackFunction;
+
 }

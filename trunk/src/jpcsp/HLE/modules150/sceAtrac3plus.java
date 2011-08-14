@@ -1418,305 +1418,30 @@ public class sceAtrac3plus implements HLEModule, HLEStartModule {
             mem.write32(errorAddr, atracIDs.get(atID).getInternalErrorInfo());
             cpu.gpr[2] = 0;
         }
-    }    @HLEFunction(nid = 0xD1F59FDB, version = 150)
-    public final HLEModuleFunction sceAtracStartEntryFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracStartEntry") {
+    }    @HLEFunction(nid = 0xD1F59FDB, version = 150) public HLEModuleFunction sceAtracStartEntryFunction;
+    @HLEFunction(nid = 0xD5C28CC0, version = 150) public HLEModuleFunction sceAtracEndEntryFunction;
+    @HLEFunction(nid = 0x780F88D1, version = 150) public HLEModuleFunction sceAtracGetAtracIDFunction;
+    @HLEFunction(nid = 0x61EB33F5, version = 150) public HLEModuleFunction sceAtracReleaseAtracIDFunction;
+    @HLEFunction(nid = 0x0E2A73AB, version = 150) public HLEModuleFunction sceAtracSetDataFunction;
+    @HLEFunction(nid = 0x3F6E26B5, version = 150) public HLEModuleFunction sceAtracSetHalfwayBufferFunction;
+    @HLEFunction(nid = 0x7A20E7AF, version = 150) public HLEModuleFunction sceAtracSetDataAndGetIDFunction;
+    @HLEFunction(nid = 0x0FAE370E, version = 150) public HLEModuleFunction sceAtracSetHalfwayBufferAndGetIDFunction;
+    @HLEFunction(nid = 0x6A8C3CD5, version = 150) public HLEModuleFunction sceAtracDecodeDataFunction;
+    @HLEFunction(nid = 0x9AE849A7, version = 150) public HLEModuleFunction sceAtracGetRemainFrameFunction;
+    @HLEFunction(nid = 0x5D268707, version = 150) public HLEModuleFunction sceAtracGetStreamDataInfoFunction;
+    @HLEFunction(nid = 0x7DB31251, version = 150) public HLEModuleFunction sceAtracAddStreamDataFunction;
+    @HLEFunction(nid = 0x83E85EA0, version = 150) public HLEModuleFunction sceAtracGetSecondBufferInfoFunction;
+    @HLEFunction(nid = 0x83BF7AFD, version = 150) public HLEModuleFunction sceAtracSetSecondBufferFunction;
+    @HLEFunction(nid = 0xE23E3A35, version = 150) public HLEModuleFunction sceAtracGetNextDecodePositionFunction;
+    @HLEFunction(nid = 0xA2BBA8BE, version = 150) public HLEModuleFunction sceAtracGetSoundSampleFunction;
+    @HLEFunction(nid = 0x31668BAA, version = 150) public HLEModuleFunction sceAtracGetChannelFunction;
+    @HLEFunction(nid = 0xD6A5F2F7, version = 150) public HLEModuleFunction sceAtracGetMaxSampleFunction;
+    @HLEFunction(nid = 0x36FAABFB, version = 150) public HLEModuleFunction sceAtracGetNextSampleFunction;
+    @HLEFunction(nid = 0xA554A158, version = 150) public HLEModuleFunction sceAtracGetBitrateFunction;
+    @HLEFunction(nid = 0xFAA4F89B, version = 150) public HLEModuleFunction sceAtracGetLoopStatusFunction;
+    @HLEFunction(nid = 0x868120B5, version = 150) public HLEModuleFunction sceAtracSetLoopNumFunction;
+    @HLEFunction(nid = 0xCA3CA3D2, version = 150) public HLEModuleFunction sceAtracGetBufferInfoForResetingFunction;
+    @HLEFunction(nid = 0x644E5607, version = 150) public HLEModuleFunction sceAtracResetPlayPositionFunction;
+    @HLEFunction(nid = 0xE88F759B, version = 150) public HLEModuleFunction sceAtracGetInternalErrorInfoFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracStartEntry(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracStartEntry(processor);";
-        }
-    };    @HLEFunction(nid = 0xD5C28CC0, version = 150)
-    public final HLEModuleFunction sceAtracEndEntryFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracEndEntry") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracEndEntry(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracEndEntry(processor);";
-        }
-    };    @HLEFunction(nid = 0x780F88D1, version = 150)
-    public final HLEModuleFunction sceAtracGetAtracIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetAtracID") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetAtracID(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetAtracID(processor);";
-        }
-    };    @HLEFunction(nid = 0x61EB33F5, version = 150)
-    public final HLEModuleFunction sceAtracReleaseAtracIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracReleaseAtracID") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracReleaseAtracID(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracReleaseAtracID(processor);";
-        }
-    };    @HLEFunction(nid = 0x0E2A73AB, version = 150)
-    public final HLEModuleFunction sceAtracSetDataFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetData") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracSetData(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetData(processor);";
-        }
-    };    @HLEFunction(nid = 0x3F6E26B5, version = 150)
-    public final HLEModuleFunction sceAtracSetHalfwayBufferFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetHalfwayBuffer") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracSetHalfwayBuffer(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetHalfwayBuffer(processor);";
-        }
-    };    @HLEFunction(nid = 0x7A20E7AF, version = 150)
-    public final HLEModuleFunction sceAtracSetDataAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetDataAndGetID") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracSetDataAndGetID(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetDataAndGetID(processor);";
-        }
-    };    @HLEFunction(nid = 0x0FAE370E, version = 150)
-    public final HLEModuleFunction sceAtracSetHalfwayBufferAndGetIDFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetHalfwayBufferAndGetID") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracSetHalfwayBufferAndGetID(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetHalfwayBufferAndGetID(processor);";
-        }
-    };    @HLEFunction(nid = 0x6A8C3CD5, version = 150)
-    public final HLEModuleFunction sceAtracDecodeDataFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracDecodeData") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracDecodeData(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracDecodeData(processor);";
-        }
-    };    @HLEFunction(nid = 0x9AE849A7, version = 150)
-    public final HLEModuleFunction sceAtracGetRemainFrameFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetRemainFrame") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetRemainFrame(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetRemainFrame(processor);";
-        }
-    };    @HLEFunction(nid = 0x5D268707, version = 150)
-    public final HLEModuleFunction sceAtracGetStreamDataInfoFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetStreamDataInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetStreamDataInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetStreamDataInfo(processor);";
-        }
-    };    @HLEFunction(nid = 0x7DB31251, version = 150)
-    public final HLEModuleFunction sceAtracAddStreamDataFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracAddStreamData") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracAddStreamData(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracAddStreamData(processor);";
-        }
-    };    @HLEFunction(nid = 0x83E85EA0, version = 150)
-    public final HLEModuleFunction sceAtracGetSecondBufferInfoFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetSecondBufferInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetSecondBufferInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetSecondBufferInfo(processor);";
-        }
-    };    @HLEFunction(nid = 0x83BF7AFD, version = 150)
-    public final HLEModuleFunction sceAtracSetSecondBufferFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetSecondBuffer") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracSetSecondBuffer(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetSecondBuffer(processor);";
-        }
-    };    @HLEFunction(nid = 0xE23E3A35, version = 150)
-    public final HLEModuleFunction sceAtracGetNextDecodePositionFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetNextDecodePosition") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetNextDecodePosition(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetNextDecodePosition(processor);";
-        }
-    };    @HLEFunction(nid = 0xA2BBA8BE, version = 150)
-    public final HLEModuleFunction sceAtracGetSoundSampleFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetSoundSample") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetSoundSample(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetSoundSample(processor);";
-        }
-    };    @HLEFunction(nid = 0x31668BAA, version = 150)
-    public final HLEModuleFunction sceAtracGetChannelFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetChannel") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetChannel(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetChannel(processor);";
-        }
-    };    @HLEFunction(nid = 0xD6A5F2F7, version = 150)
-    public final HLEModuleFunction sceAtracGetMaxSampleFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetMaxSample") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetMaxSample(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetMaxSample(processor);";
-        }
-    };    @HLEFunction(nid = 0x36FAABFB, version = 150)
-    public final HLEModuleFunction sceAtracGetNextSampleFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetNextSample") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetNextSample(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetNextSample(processor);";
-        }
-    };    @HLEFunction(nid = 0xA554A158, version = 150)
-    public final HLEModuleFunction sceAtracGetBitrateFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetBitrate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetBitrate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetBitrate(processor);";
-        }
-    };    @HLEFunction(nid = 0xFAA4F89B, version = 150)
-    public final HLEModuleFunction sceAtracGetLoopStatusFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetLoopStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetLoopStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetLoopStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x868120B5, version = 150)
-    public final HLEModuleFunction sceAtracSetLoopNumFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracSetLoopNum") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracSetLoopNum(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetLoopNum(processor);";
-        }
-    };    @HLEFunction(nid = 0xCA3CA3D2, version = 150)
-    public final HLEModuleFunction sceAtracGetBufferInfoForResetingFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetBufferInfoForReseting") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetBufferInfoForReseting(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetBufferInfoForReseting(processor);";
-        }
-    };    @HLEFunction(nid = 0x644E5607, version = 150)
-    public final HLEModuleFunction sceAtracResetPlayPositionFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracResetPlayPosition") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracResetPlayPosition(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracResetPlayPosition(processor);";
-        }
-    };    @HLEFunction(nid = 0xE88F759B, version = 150)
-    public final HLEModuleFunction sceAtracGetInternalErrorInfoFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracGetInternalErrorInfo") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceAtracGetInternalErrorInfo(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetInternalErrorInfo(processor);";
-        }
-    };
 }

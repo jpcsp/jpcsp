@@ -67,17 +67,6 @@ public class sceOpenPSID implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xC69BEBCE, version = 150)
-    public final HLEModuleFunction sceOpenPSIDGetOpenPSIDFunction = new HLEModuleFunction("sceOpenPSID", "sceOpenPSIDGetOpenPSID") {
+    @HLEFunction(nid = 0xC69BEBCE, version = 150) public HLEModuleFunction sceOpenPSIDGetOpenPSIDFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceOpenPSIDGetOpenPSID(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceOpenPSIDModule.sceOpenPSIDGetOpenPSID(processor);";
-        }
-    };
 }

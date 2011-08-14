@@ -4546,1509 +4546,134 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
 			return true;
 		}
     }
-    @HLEFunction(nid = 0x6E9EA350, version = 150)
-    public final HLEModuleFunction _sceKernelReturnFromCallbackFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelReturnFromCallback") {
+    @HLEFunction(nid = 0x6E9EA350, version = 150) public HLEModuleFunction _sceKernelReturnFromCallbackFunction;
+    @HLEFunction(nid = 0x0C106E53, version = 150) public HLEModuleFunction sceKernelRegisterThreadEventHandlerFunction;
+    @HLEFunction(nid = 0x72F3C145, version = 150) public HLEModuleFunction sceKernelReleaseThreadEventHandlerFunction;
+    @HLEFunction(nid = 0x369EEB6B, version = 150) public HLEModuleFunction sceKernelReferThreadEventHandlerStatusFunction;
+    @HLEFunction(nid = 0xE81CAF8F, version = 150) public HLEModuleFunction sceKernelCreateCallbackFunction;
+    @HLEFunction(nid = 0xEDBA5844, version = 150) public HLEModuleFunction sceKernelDeleteCallbackFunction;
+    @HLEFunction(nid = 0xC11BA8C4, version = 150) public HLEModuleFunction sceKernelNotifyCallbackFunction;
+    @HLEFunction(nid = 0xBA4051D6, version = 150) public HLEModuleFunction sceKernelCancelCallbackFunction;
+    @HLEFunction(nid = 0x2A3D44FF, version = 150) public HLEModuleFunction sceKernelGetCallbackCountFunction;
+    @HLEFunction(nid = 0x349D6D6C, version = 150) public HLEModuleFunction sceKernelCheckCallbackFunction;
+    @HLEFunction(nid = 0x730ED8BC, version = 150) public HLEModuleFunction sceKernelReferCallbackStatusFunction;
+    @HLEFunction(nid = 0x9ACE131E, version = 150) public HLEModuleFunction sceKernelSleepThreadFunction;
+    @HLEFunction(nid = 0x82826F70, version = 150) public HLEModuleFunction sceKernelSleepThreadCBFunction;
+    @HLEFunction(nid = 0xD59EAD2F, version = 150) public HLEModuleFunction sceKernelWakeupThreadFunction;
+    @HLEFunction(nid = 0xFCCFAD26, version = 150) public HLEModuleFunction sceKernelCancelWakeupThreadFunction;
+    @HLEFunction(nid = 0x9944F31F, version = 150) public HLEModuleFunction sceKernelSuspendThreadFunction;
+    @HLEFunction(nid = 0x75156E8F, version = 150) public HLEModuleFunction sceKernelResumeThreadFunction;
+    @HLEFunction(nid = 0x278C0DF5, version = 150) public HLEModuleFunction sceKernelWaitThreadEndFunction;
+    @HLEFunction(nid = 0x840E8133, version = 150) public HLEModuleFunction sceKernelWaitThreadEndCBFunction;
+    @HLEFunction(nid = 0xCEADEB47, version = 150) public HLEModuleFunction sceKernelDelayThreadFunction;
+    @HLEFunction(nid = 0x68DA9E36, version = 150) public HLEModuleFunction sceKernelDelayThreadCBFunction;
+    @HLEFunction(nid = 0xBD123D9E, version = 150) public HLEModuleFunction sceKernelDelaySysClockThreadFunction;
+    @HLEFunction(nid = 0x1181E963, version = 150) public HLEModuleFunction sceKernelDelaySysClockThreadCBFunction;
+    @HLEFunction(nid = 0xD6DA4BA1, version = 150) public HLEModuleFunction sceKernelCreateSemaFunction;
+    @HLEFunction(nid = 0x28B6489C, version = 150) public HLEModuleFunction sceKernelDeleteSemaFunction;
+    @HLEFunction(nid = 0x3F53E640, version = 150) public HLEModuleFunction sceKernelSignalSemaFunction;
+    @HLEFunction(nid = 0x4E3A1105, version = 150) public HLEModuleFunction sceKernelWaitSemaFunction;
+    @HLEFunction(nid = 0x6D212BAC, version = 150) public HLEModuleFunction sceKernelWaitSemaCBFunction;
+    @HLEFunction(nid = 0x58B1F937, version = 150) public HLEModuleFunction sceKernelPollSemaFunction;
+    @HLEFunction(nid = 0x8FFDF9A2, version = 150) public HLEModuleFunction sceKernelCancelSemaFunction;
+    @HLEFunction(nid = 0xBC6FEBC5, version = 150) public HLEModuleFunction sceKernelReferSemaStatusFunction;
+    @HLEFunction(nid = 0x55C20A00, version = 150) public HLEModuleFunction sceKernelCreateEventFlagFunction;
+    @HLEFunction(nid = 0xEF9E4C70, version = 150) public HLEModuleFunction sceKernelDeleteEventFlagFunction;
+    @HLEFunction(nid = 0x1FB15A32, version = 150) public HLEModuleFunction sceKernelSetEventFlagFunction;
+    @HLEFunction(nid = 0x812346E4, version = 150) public HLEModuleFunction sceKernelClearEventFlagFunction;
+    @HLEFunction(nid = 0x402FCF22, version = 150) public HLEModuleFunction sceKernelWaitEventFlagFunction;
+    @HLEFunction(nid = 0x328C546A, version = 150) public HLEModuleFunction sceKernelWaitEventFlagCBFunction;
+    @HLEFunction(nid = 0x30FD48F0, version = 150) public HLEModuleFunction sceKernelPollEventFlagFunction;
+    @HLEFunction(nid = 0xCD203292, version = 150) public HLEModuleFunction sceKernelCancelEventFlagFunction;
+    @HLEFunction(nid = 0xA66B0120, version = 150) public HLEModuleFunction sceKernelReferEventFlagStatusFunction;
+    @HLEFunction(nid = 0x8125221D, version = 150) public HLEModuleFunction sceKernelCreateMbxFunction;
+    @HLEFunction(nid = 0x86255ADA, version = 150) public HLEModuleFunction sceKernelDeleteMbxFunction;
+    @HLEFunction(nid = 0xE9B3061E, version = 150) public HLEModuleFunction sceKernelSendMbxFunction;
+    @HLEFunction(nid = 0x18260574, version = 150) public HLEModuleFunction sceKernelReceiveMbxFunction;
+    @HLEFunction(nid = 0xF3986382, version = 150) public HLEModuleFunction sceKernelReceiveMbxCBFunction;
+    @HLEFunction(nid = 0x0D81716A, version = 150) public HLEModuleFunction sceKernelPollMbxFunction;
+    @HLEFunction(nid = 0x87D4DD36, version = 150) public HLEModuleFunction sceKernelCancelReceiveMbxFunction;
+    @HLEFunction(nid = 0xA8E8C846, version = 150) public HLEModuleFunction sceKernelReferMbxStatusFunction;
+    @HLEFunction(nid = 0x7C0DC2A0, version = 150) public HLEModuleFunction sceKernelCreateMsgPipeFunction;
+    @HLEFunction(nid = 0xF0B7DA1C, version = 150) public HLEModuleFunction sceKernelDeleteMsgPipeFunction;
+    @HLEFunction(nid = 0x876DBFAD, version = 150) public HLEModuleFunction sceKernelSendMsgPipeFunction;
+    @HLEFunction(nid = 0x7C41F2C2, version = 150) public HLEModuleFunction sceKernelSendMsgPipeCBFunction;
+    @HLEFunction(nid = 0x884C9F90, version = 150) public HLEModuleFunction sceKernelTrySendMsgPipeFunction;
+    @HLEFunction(nid = 0x74829B76, version = 150) public HLEModuleFunction sceKernelReceiveMsgPipeFunction;
+    @HLEFunction(nid = 0xFBFA697D, version = 150) public HLEModuleFunction sceKernelReceiveMsgPipeCBFunction;
+    @HLEFunction(nid = 0xDF52098F, version = 150) public HLEModuleFunction sceKernelTryReceiveMsgPipeFunction;
+    @HLEFunction(nid = 0x349B864D, version = 150) public HLEModuleFunction sceKernelCancelMsgPipeFunction;
+    @HLEFunction(nid = 0x33BE4024, version = 150) public HLEModuleFunction sceKernelReferMsgPipeStatusFunction;
+    @HLEFunction(nid = 0x56C039B5, version = 150) public HLEModuleFunction sceKernelCreateVplFunction;
+    @HLEFunction(nid = 0x89B3D48C, version = 150) public HLEModuleFunction sceKernelDeleteVplFunction;
+    @HLEFunction(nid = 0xBED27435, version = 150) public HLEModuleFunction sceKernelAllocateVplFunction;
+    @HLEFunction(nid = 0xEC0A693F, version = 150) public HLEModuleFunction sceKernelAllocateVplCBFunction;
+    @HLEFunction(nid = 0xAF36D708, version = 150) public HLEModuleFunction sceKernelTryAllocateVplFunction;
+    @HLEFunction(nid = 0xB736E9FF, version = 150) public HLEModuleFunction sceKernelFreeVplFunction;
+    @HLEFunction(nid = 0x1D371B8A, version = 150) public HLEModuleFunction sceKernelCancelVplFunction;
+    @HLEFunction(nid = 0x39810265, version = 150) public HLEModuleFunction sceKernelReferVplStatusFunction;
+    @HLEFunction(nid = 0xC07BB470, version = 150) public HLEModuleFunction sceKernelCreateFplFunction;
+    @HLEFunction(nid = 0xED1410E0, version = 150) public HLEModuleFunction sceKernelDeleteFplFunction;
+    @HLEFunction(nid = 0xD979E9BF, version = 150) public HLEModuleFunction sceKernelAllocateFplFunction;
+    @HLEFunction(nid = 0xE7282CB6, version = 150) public HLEModuleFunction sceKernelAllocateFplCBFunction;
+    @HLEFunction(nid = 0x623AE665, version = 150) public HLEModuleFunction sceKernelTryAllocateFplFunction;
+    @HLEFunction(nid = 0xF6414A71, version = 150) public HLEModuleFunction sceKernelFreeFplFunction;
+    @HLEFunction(nid = 0xA8AA591F, version = 150) public HLEModuleFunction sceKernelCancelFplFunction;
+    @HLEFunction(nid = 0xD8199E4C, version = 150) public HLEModuleFunction sceKernelReferFplStatusFunction;
+    @HLEFunction(nid = 0x0E927AED, version = 150) public HLEModuleFunction _sceKernelReturnFromTimerHandlerFunction;
+    @HLEFunction(nid = 0x110DEC9A, version = 150) public HLEModuleFunction sceKernelUSec2SysClockFunction;
+    @HLEFunction(nid = 0xC8CD158C, version = 150) public HLEModuleFunction sceKernelUSec2SysClockWideFunction;
+    @HLEFunction(nid = 0xBA6B92E2, version = 150) public HLEModuleFunction sceKernelSysClock2USecFunction;
+    @HLEFunction(nid = 0xE1619D7C, version = 150) public HLEModuleFunction sceKernelSysClock2USecWideFunction;
+    @HLEFunction(nid = 0xDB738F35, version = 150) public HLEModuleFunction sceKernelGetSystemTimeFunction;
+    @HLEFunction(nid = 0x82BC5777, version = 150) public HLEModuleFunction sceKernelGetSystemTimeWideFunction;
+    @HLEFunction(nid = 0x369ED59D, version = 150) public HLEModuleFunction sceKernelGetSystemTimeLowFunction;
+    @HLEFunction(nid = 0x6652B8CA, version = 150) public HLEModuleFunction sceKernelSetAlarmFunction;
+    @HLEFunction(nid = 0xB2C25152, version = 150) public HLEModuleFunction sceKernelSetSysClockAlarmFunction;
+    @HLEFunction(nid = 0x7E65B999, version = 150) public HLEModuleFunction sceKernelCancelAlarmFunction;
+    @HLEFunction(nid = 0xDAA3F564, version = 150) public HLEModuleFunction sceKernelReferAlarmStatusFunction;
+    @HLEFunction(nid = 0x20FFF560, version = 150) public HLEModuleFunction sceKernelCreateVTimerFunction;
+    @HLEFunction(nid = 0x328F9E52, version = 150) public HLEModuleFunction sceKernelDeleteVTimerFunction;
+    @HLEFunction(nid = 0xB3A59970, version = 150) public HLEModuleFunction sceKernelGetVTimerBaseFunction;
+    @HLEFunction(nid = 0xB7C18B77, version = 150) public HLEModuleFunction sceKernelGetVTimerBaseWideFunction;
+    @HLEFunction(nid = 0x034A921F, version = 150) public HLEModuleFunction sceKernelGetVTimerTimeFunction;
+    @HLEFunction(nid = 0xC0B3FFD2, version = 150) public HLEModuleFunction sceKernelGetVTimerTimeWideFunction;
+    @HLEFunction(nid = 0x542AD630, version = 150) public HLEModuleFunction sceKernelSetVTimerTimeFunction;
+    @HLEFunction(nid = 0xFB6425C3, version = 150) public HLEModuleFunction sceKernelSetVTimerTimeWideFunction;
+    @HLEFunction(nid = 0xC68D9437, version = 150) public HLEModuleFunction sceKernelStartVTimerFunction;
+    @HLEFunction(nid = 0xD0AEEE87, version = 150) public HLEModuleFunction sceKernelStopVTimerFunction;
+    @HLEFunction(nid = 0xD8B299AE, version = 150) public HLEModuleFunction sceKernelSetVTimerHandlerFunction;
+    @HLEFunction(nid = 0x53B00E9A, version = 150) public HLEModuleFunction sceKernelSetVTimerHandlerWideFunction;
+    @HLEFunction(nid = 0xD2D615EF, version = 150) public HLEModuleFunction sceKernelCancelVTimerHandlerFunction;
+    @HLEFunction(nid = 0x5F32BEAA, version = 150) public HLEModuleFunction sceKernelReferVTimerStatusFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            _sceKernelReturnFromCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule._sceKernelReturnFromCallback(processor);";
-        }
-    };    @HLEFunction(nid = 0x0C106E53, version = 150)
-    public final HLEModuleFunction sceKernelRegisterThreadEventHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelRegisterThreadEventHandler") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelRegisterThreadEventHandler(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelRegisterThreadEventHandler(processor);";
-        }
-    };    @HLEFunction(nid = 0x72F3C145, version = 150)
-    public final HLEModuleFunction sceKernelReleaseThreadEventHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReleaseThreadEventHandler") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReleaseThreadEventHandler(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReleaseThreadEventHandler(processor);";
-        }
-    };    @HLEFunction(nid = 0x369EEB6B, version = 150)
-    public final HLEModuleFunction sceKernelReferThreadEventHandlerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadEventHandlerStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferThreadEventHandlerStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadEventHandlerStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0xE81CAF8F, version = 150)
-    public final HLEModuleFunction sceKernelCreateCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateCallback(processor);";
-        }
-    };    @HLEFunction(nid = 0xEDBA5844, version = 150)
-    public final HLEModuleFunction sceKernelDeleteCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteCallback(processor);";
-        }
-    };    @HLEFunction(nid = 0xC11BA8C4, version = 150)
-    public final HLEModuleFunction sceKernelNotifyCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelNotifyCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelNotifyCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelNotifyCallback(processor);";
-        }
-    };    @HLEFunction(nid = 0xBA4051D6, version = 150)
-    public final HLEModuleFunction sceKernelCancelCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelCallback(processor);";
-        }
-    };    @HLEFunction(nid = 0x2A3D44FF, version = 150)
-    public final HLEModuleFunction sceKernelGetCallbackCountFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetCallbackCount") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetCallbackCount(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetCallbackCount(processor);";
-        }
-    };    @HLEFunction(nid = 0x349D6D6C, version = 150)
-    public final HLEModuleFunction sceKernelCheckCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCheckCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCheckCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCheckCallback(processor);";
-        }
-    };    @HLEFunction(nid = 0x730ED8BC, version = 150)
-    public final HLEModuleFunction sceKernelReferCallbackStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferCallbackStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferCallbackStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferCallbackStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x9ACE131E, version = 150)
-    public final HLEModuleFunction sceKernelSleepThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSleepThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSleepThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSleepThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x82826F70, version = 150)
-    public final HLEModuleFunction sceKernelSleepThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSleepThreadCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSleepThreadCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSleepThreadCB(processor);";
-        }
-    };    @HLEFunction(nid = 0xD59EAD2F, version = 150)
-    public final HLEModuleFunction sceKernelWakeupThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWakeupThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelWakeupThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWakeupThread(processor);";
-        }
-    };    @HLEFunction(nid = 0xFCCFAD26, version = 150)
-    public final HLEModuleFunction sceKernelCancelWakeupThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelWakeupThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelWakeupThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelWakeupThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x9944F31F, version = 150)
-    public final HLEModuleFunction sceKernelSuspendThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSuspendThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSuspendThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSuspendThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x75156E8F, version = 150)
-    public final HLEModuleFunction sceKernelResumeThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelResumeThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelResumeThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelResumeThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x278C0DF5, version = 150)
-    public final HLEModuleFunction sceKernelWaitThreadEndFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitThreadEnd") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelWaitThreadEnd(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitThreadEnd(processor);";
-        }
-    };    @HLEFunction(nid = 0x840E8133, version = 150)
-    public final HLEModuleFunction sceKernelWaitThreadEndCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitThreadEndCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelWaitThreadEndCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitThreadEndCB(processor);";
-        }
-    };    @HLEFunction(nid = 0xCEADEB47, version = 150)
-    public final HLEModuleFunction sceKernelDelayThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelayThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDelayThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelayThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x68DA9E36, version = 150)
-    public final HLEModuleFunction sceKernelDelayThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelayThreadCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDelayThreadCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelayThreadCB(processor);";
-        }
-    };    @HLEFunction(nid = 0xBD123D9E, version = 150)
-    public final HLEModuleFunction sceKernelDelaySysClockThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelaySysClockThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDelaySysClockThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelaySysClockThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x1181E963, version = 150)
-    public final HLEModuleFunction sceKernelDelaySysClockThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelaySysClockThreadCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDelaySysClockThreadCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelaySysClockThreadCB(processor);";
-        }
-    };    @HLEFunction(nid = 0xD6DA4BA1, version = 150)
-    public final HLEModuleFunction sceKernelCreateSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateSema") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateSema(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateSema(processor);";
-        }
-    };    @HLEFunction(nid = 0x28B6489C, version = 150)
-    public final HLEModuleFunction sceKernelDeleteSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteSema") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteSema(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteSema(processor);";
-        }
-    };    @HLEFunction(nid = 0x3F53E640, version = 150)
-    public final HLEModuleFunction sceKernelSignalSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSignalSema") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSignalSema(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSignalSema(processor);";
-        }
-    };    @HLEFunction(nid = 0x4E3A1105, version = 150)
-    public final HLEModuleFunction sceKernelWaitSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitSema") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelWaitSema(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitSema(processor);";
-        }
-    };    @HLEFunction(nid = 0x6D212BAC, version = 150)
-    public final HLEModuleFunction sceKernelWaitSemaCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitSemaCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelWaitSemaCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitSemaCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x58B1F937, version = 150)
-    public final HLEModuleFunction sceKernelPollSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollSema") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelPollSema(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelPollSema(processor);";
-        }
-    };    @HLEFunction(nid = 0x8FFDF9A2, version = 150)
-    public final HLEModuleFunction sceKernelCancelSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelSema") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelSema(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelSema(processor);";
-        }
-    };    @HLEFunction(nid = 0xBC6FEBC5, version = 150)
-    public final HLEModuleFunction sceKernelReferSemaStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferSemaStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferSemaStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferSemaStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x55C20A00, version = 150)
-    public final HLEModuleFunction sceKernelCreateEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateEventFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateEventFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateEventFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0xEF9E4C70, version = 150)
-    public final HLEModuleFunction sceKernelDeleteEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteEventFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteEventFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteEventFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0x1FB15A32, version = 150)
-    public final HLEModuleFunction sceKernelSetEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetEventFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSetEventFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetEventFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0x812346E4, version = 150)
-    public final HLEModuleFunction sceKernelClearEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelClearEventFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelClearEventFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelClearEventFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0x402FCF22, version = 150)
-    public final HLEModuleFunction sceKernelWaitEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitEventFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelWaitEventFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitEventFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0x328C546A, version = 150)
-    public final HLEModuleFunction sceKernelWaitEventFlagCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitEventFlagCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelWaitEventFlagCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitEventFlagCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x30FD48F0, version = 150)
-    public final HLEModuleFunction sceKernelPollEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollEventFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelPollEventFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelPollEventFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0xCD203292, version = 150)
-    public final HLEModuleFunction sceKernelCancelEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelEventFlag") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelEventFlag(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelEventFlag(processor);";
-        }
-    };    @HLEFunction(nid = 0xA66B0120, version = 150)
-    public final HLEModuleFunction sceKernelReferEventFlagStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferEventFlagStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferEventFlagStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferEventFlagStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x8125221D, version = 150)
-    public final HLEModuleFunction sceKernelCreateMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateMbx") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateMbx(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateMbx(processor);";
-        }
-    };    @HLEFunction(nid = 0x86255ADA, version = 150)
-    public final HLEModuleFunction sceKernelDeleteMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteMbx") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteMbx(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteMbx(processor);";
-        }
-    };    @HLEFunction(nid = 0xE9B3061E, version = 150)
-    public final HLEModuleFunction sceKernelSendMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMbx") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSendMbx(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSendMbx(processor);";
-        }
-    };    @HLEFunction(nid = 0x18260574, version = 150)
-    public final HLEModuleFunction sceKernelReceiveMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMbx") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReceiveMbx(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMbx(processor);";
-        }
-    };    @HLEFunction(nid = 0xF3986382, version = 150)
-    public final HLEModuleFunction sceKernelReceiveMbxCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMbxCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReceiveMbxCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMbxCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x0D81716A, version = 150)
-    public final HLEModuleFunction sceKernelPollMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollMbx") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelPollMbx(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelPollMbx(processor);";
-        }
-    };    @HLEFunction(nid = 0x87D4DD36, version = 150)
-    public final HLEModuleFunction sceKernelCancelReceiveMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelReceiveMbx") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelReceiveMbx(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelReceiveMbx(processor);";
-        }
-    };    @HLEFunction(nid = 0xA8E8C846, version = 150)
-    public final HLEModuleFunction sceKernelReferMbxStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferMbxStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferMbxStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferMbxStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x7C0DC2A0, version = 150)
-    public final HLEModuleFunction sceKernelCreateMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateMsgPipe") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateMsgPipe(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateMsgPipe(processor);";
-        }
-    };    @HLEFunction(nid = 0xF0B7DA1C, version = 150)
-    public final HLEModuleFunction sceKernelDeleteMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteMsgPipe") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteMsgPipe(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteMsgPipe(processor);";
-        }
-    };    @HLEFunction(nid = 0x876DBFAD, version = 150)
-    public final HLEModuleFunction sceKernelSendMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMsgPipe") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSendMsgPipe(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSendMsgPipe(processor);";
-        }
-    };    @HLEFunction(nid = 0x7C41F2C2, version = 150)
-    public final HLEModuleFunction sceKernelSendMsgPipeCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMsgPipeCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSendMsgPipeCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSendMsgPipeCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x884C9F90, version = 150)
-    public final HLEModuleFunction sceKernelTrySendMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTrySendMsgPipe") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelTrySendMsgPipe(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTrySendMsgPipe(processor);";
-        }
-    };    @HLEFunction(nid = 0x74829B76, version = 150)
-    public final HLEModuleFunction sceKernelReceiveMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMsgPipe") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReceiveMsgPipe(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMsgPipe(processor);";
-        }
-    };    @HLEFunction(nid = 0xFBFA697D, version = 150)
-    public final HLEModuleFunction sceKernelReceiveMsgPipeCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMsgPipeCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReceiveMsgPipeCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMsgPipeCB(processor);";
-        }
-    };    @HLEFunction(nid = 0xDF52098F, version = 150)
-    public final HLEModuleFunction sceKernelTryReceiveMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryReceiveMsgPipe") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelTryReceiveMsgPipe(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTryReceiveMsgPipe(processor);";
-        }
-    };    @HLEFunction(nid = 0x349B864D, version = 150)
-    public final HLEModuleFunction sceKernelCancelMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelMsgPipe") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelMsgPipe(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelMsgPipe(processor);";
-        }
-    };    @HLEFunction(nid = 0x33BE4024, version = 150)
-    public final HLEModuleFunction sceKernelReferMsgPipeStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferMsgPipeStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferMsgPipeStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferMsgPipeStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x56C039B5, version = 150)
-    public final HLEModuleFunction sceKernelCreateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateVpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateVpl(processor);";
-        }
-    };    @HLEFunction(nid = 0x89B3D48C, version = 150)
-    public final HLEModuleFunction sceKernelDeleteVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteVpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteVpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xBED27435, version = 150)
-    public final HLEModuleFunction sceKernelAllocateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateVpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelAllocateVpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateVpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xEC0A693F, version = 150)
-    public final HLEModuleFunction sceKernelAllocateVplCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateVplCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelAllocateVplCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateVplCB(processor);";
-        }
-    };    @HLEFunction(nid = 0xAF36D708, version = 150)
-    public final HLEModuleFunction sceKernelTryAllocateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryAllocateVpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelTryAllocateVpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTryAllocateVpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xB736E9FF, version = 150)
-    public final HLEModuleFunction sceKernelFreeVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelFreeVpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelFreeVpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelFreeVpl(processor);";
-        }
-    };    @HLEFunction(nid = 0x1D371B8A, version = 150)
-    public final HLEModuleFunction sceKernelCancelVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelVpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelVpl(processor);";
-        }
-    };    @HLEFunction(nid = 0x39810265, version = 150)
-    public final HLEModuleFunction sceKernelReferVplStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVplStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferVplStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVplStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0xC07BB470, version = 150)
-    public final HLEModuleFunction sceKernelCreateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateFpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateFpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateFpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xED1410E0, version = 150)
-    public final HLEModuleFunction sceKernelDeleteFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteFpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteFpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteFpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xD979E9BF, version = 150)
-    public final HLEModuleFunction sceKernelAllocateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateFpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelAllocateFpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateFpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xE7282CB6, version = 150)
-    public final HLEModuleFunction sceKernelAllocateFplCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateFplCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelAllocateFplCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateFplCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x623AE665, version = 150)
-    public final HLEModuleFunction sceKernelTryAllocateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryAllocateFpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelTryAllocateFpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTryAllocateFpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xF6414A71, version = 150)
-    public final HLEModuleFunction sceKernelFreeFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelFreeFpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelFreeFpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelFreeFpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xA8AA591F, version = 150)
-    public final HLEModuleFunction sceKernelCancelFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelFpl") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelFpl(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelFpl(processor);";
-        }
-    };    @HLEFunction(nid = 0xD8199E4C, version = 150)
-    public final HLEModuleFunction sceKernelReferFplStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferFplStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferFplStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferFplStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x0E927AED, version = 150)
-    public final HLEModuleFunction _sceKernelReturnFromTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelReturnFromTimerHandler") {
-
-        @Override
-        public final void execute(Processor processor) {
-            _sceKernelReturnFromTimerHandler(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule._sceKernelReturnFromTimerHandler(processor);";
-        }
-    };    @HLEFunction(nid = 0x110DEC9A, version = 150)
-    public final HLEModuleFunction sceKernelUSec2SysClockFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelUSec2SysClock") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelUSec2SysClock(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelUSec2SysClock(processor);";
-        }
-    };    @HLEFunction(nid = 0xC8CD158C, version = 150)
-    public final HLEModuleFunction sceKernelUSec2SysClockWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelUSec2SysClockWide") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelUSec2SysClockWide(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelUSec2SysClockWide(processor);";
-        }
-    };    @HLEFunction(nid = 0xBA6B92E2, version = 150)
-    public final HLEModuleFunction sceKernelSysClock2USecFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSysClock2USec") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSysClock2USec(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSysClock2USec(processor);";
-        }
-    };    @HLEFunction(nid = 0xE1619D7C, version = 150)
-    public final HLEModuleFunction sceKernelSysClock2USecWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSysClock2USecWide") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSysClock2USecWide(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSysClock2USecWide(processor);";
-        }
-    };    @HLEFunction(nid = 0xDB738F35, version = 150)
-    public final HLEModuleFunction sceKernelGetSystemTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTime") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetSystemTime(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetSystemTime(processor);";
-        }
-    };    @HLEFunction(nid = 0x82BC5777, version = 150)
-    public final HLEModuleFunction sceKernelGetSystemTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTimeWide") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetSystemTimeWide(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetSystemTimeWide(processor);";
-        }
-    };    @HLEFunction(nid = 0x369ED59D, version = 150)
-    public final HLEModuleFunction sceKernelGetSystemTimeLowFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTimeLow") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetSystemTimeLow(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetSystemTimeLow(processor);";
-        }
-    };    @HLEFunction(nid = 0x6652B8CA, version = 150)
-    public final HLEModuleFunction sceKernelSetAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetAlarm") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSetAlarm(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetAlarm(processor);";
-        }
-    };    @HLEFunction(nid = 0xB2C25152, version = 150)
-    public final HLEModuleFunction sceKernelSetSysClockAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetSysClockAlarm") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSetSysClockAlarm(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetSysClockAlarm(processor);";
-        }
-    };    @HLEFunction(nid = 0x7E65B999, version = 150)
-    public final HLEModuleFunction sceKernelCancelAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelAlarm") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelAlarm(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelAlarm(processor);";
-        }
-    };    @HLEFunction(nid = 0xDAA3F564, version = 150)
-    public final HLEModuleFunction sceKernelReferAlarmStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferAlarmStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferAlarmStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferAlarmStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x20FFF560, version = 150)
-    public final HLEModuleFunction sceKernelCreateVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVTimer") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateVTimer(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateVTimer(processor);";
-        }
-    };    @HLEFunction(nid = 0x328F9E52, version = 150)
-    public final HLEModuleFunction sceKernelDeleteVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVTimer") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteVTimer(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteVTimer(processor);";
-        }
-    };    @HLEFunction(nid = 0xB3A59970, version = 150)
-    public final HLEModuleFunction sceKernelGetVTimerBaseFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBase") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetVTimerBase(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBase(processor);";
-        }
-    };    @HLEFunction(nid = 0xB7C18B77, version = 150)
-    public final HLEModuleFunction sceKernelGetVTimerBaseWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBaseWide") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetVTimerBaseWide(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBaseWide(processor);";
-        }
-    };    @HLEFunction(nid = 0x034A921F, version = 150)
-    public final HLEModuleFunction sceKernelGetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTime") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetVTimerTime(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTime(processor);";
-        }
-    };    @HLEFunction(nid = 0xC0B3FFD2, version = 150)
-    public final HLEModuleFunction sceKernelGetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTimeWide") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetVTimerTimeWide(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTimeWide(processor);";
-        }
-    };    @HLEFunction(nid = 0x542AD630, version = 150)
-    public final HLEModuleFunction sceKernelSetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTime") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSetVTimerTime(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTime(processor);";
-        }
-    };    @HLEFunction(nid = 0xFB6425C3, version = 150)
-    public final HLEModuleFunction sceKernelSetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTimeWide") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSetVTimerTimeWide(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTimeWide(processor);";
-        }
-    };    @HLEFunction(nid = 0xC68D9437, version = 150)
-    public final HLEModuleFunction sceKernelStartVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartVTimer") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStartVTimer(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStartVTimer(processor);";
-        }
-    };    @HLEFunction(nid = 0xD0AEEE87, version = 150)
-    public final HLEModuleFunction sceKernelStopVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStopVTimer") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStopVTimer(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStopVTimer(processor);";
-        }
-    };    @HLEFunction(nid = 0xD8B299AE, version = 150)
-    public final HLEModuleFunction sceKernelSetVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandler") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSetVTimerHandler(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandler(processor);";
-        }
-    };    @HLEFunction(nid = 0x53B00E9A, version = 150)
-    public final HLEModuleFunction sceKernelSetVTimerHandlerWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandlerWide") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSetVTimerHandlerWide(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandlerWide(processor);";
-        }
-    };    @HLEFunction(nid = 0xD2D615EF, version = 150)
-    public final HLEModuleFunction sceKernelCancelVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVTimerHandler") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelVTimerHandler(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelVTimerHandler(processor);";
-        }
-    };    @HLEFunction(nid = 0x5F32BEAA, version = 150)
-    public final HLEModuleFunction sceKernelReferVTimerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVTimerStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferVTimerStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
-        }
-    };
     
     @HLEFunction(nid = 0x446D8DE6, version = 150)
     public HLEModuleFunction sceKernelCreateThreadFunction;
-    @HLEFunction(nid = 0x9FA03CD3, version = 150)
-    public final HLEModuleFunction sceKernelDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteThread") {
+    @HLEFunction(nid = 0x9FA03CD3, version = 150) public HLEModuleFunction sceKernelDeleteThreadFunction;
+    @HLEFunction(nid = 0xF475845D, version = 150) public HLEModuleFunction sceKernelStartThreadFunction;
+    @HLEFunction(nid = 0x532A522E, version = 150) public HLEModuleFunction _sceKernelExitThreadFunction;
+    @HLEFunction(nid = 0xAA73C935, version = 150) public HLEModuleFunction sceKernelExitThreadFunction;
+    @HLEFunction(nid = 0x809CE29B, version = 150) public HLEModuleFunction sceKernelExitDeleteThreadFunction;
+    @HLEFunction(nid = 0x616403BA, version = 150) public HLEModuleFunction sceKernelTerminateThreadFunction;
+    @HLEFunction(nid = 0x383F7BCC, version = 150) public HLEModuleFunction sceKernelTerminateDeleteThreadFunction;
+    @HLEFunction(nid = 0x3AD58B8C, version = 150) public HLEModuleFunction sceKernelSuspendDispatchThreadFunction;
+    @HLEFunction(nid = 0x27E22EC2, version = 150) public HLEModuleFunction sceKernelResumeDispatchThreadFunction;
+    @HLEFunction(nid = 0xEA748E31, version = 150) public HLEModuleFunction sceKernelChangeCurrentThreadAttrFunction;
+    @HLEFunction(nid = 0x71BC9871, version = 150) public HLEModuleFunction sceKernelChangeThreadPriorityFunction;
+    @HLEFunction(nid = 0x912354A7, version = 150) public HLEModuleFunction sceKernelRotateThreadReadyQueueFunction;
+    @HLEFunction(nid = 0x2C34E053, version = 150) public HLEModuleFunction sceKernelReleaseWaitThreadFunction;
+    @HLEFunction(nid = 0x293B45B8, version = 150) public HLEModuleFunction sceKernelGetThreadIdFunction;
+    @HLEFunction(nid = 0x94AA61EE, version = 150) public HLEModuleFunction sceKernelGetThreadCurrentPriorityFunction;
+    @HLEFunction(nid = 0x3B183E26, version = 150) public HLEModuleFunction sceKernelGetThreadExitStatusFunction;
+    @HLEFunction(nid = 0xD13BDE95, version = 150) public HLEModuleFunction sceKernelCheckThreadStackFunction;
+    @HLEFunction(nid = 0x52089CA1, version = 150) public HLEModuleFunction sceKernelGetThreadStackFreeSizeFunction;
+    @HLEFunction(nid = 0x17C1684E, version = 150) public HLEModuleFunction sceKernelReferThreadStatusFunction;
+    @HLEFunction(nid = 0xFFC36A14, version = 150) public HLEModuleFunction sceKernelReferThreadRunStatusFunction;
+    @HLEFunction(nid = 0x627E6F3A, version = 150) public HLEModuleFunction sceKernelReferSystemStatusFunction;
+    @HLEFunction(nid = 0x94416130, version = 150) public HLEModuleFunction sceKernelGetThreadmanIdListFunction;
+    @HLEFunction(nid = 0x57CF62DD, version = 150) public HLEModuleFunction sceKernelGetThreadmanIdTypeFunction;
+    @HLEFunction(nid = 0x64D4540E, version = 150) public HLEModuleFunction sceKernelReferThreadProfilerFunction;
+    @HLEFunction(nid = 0x8218B4DD, version = 150) public HLEModuleFunction sceKernelReferGlobalProfilerFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteThread(processor);";
-        }
-    };    @HLEFunction(nid = 0xF475845D, version = 150)
-    public final HLEModuleFunction sceKernelStartThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStartThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStartThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x532A522E, version = 150)
-    public final HLEModuleFunction _sceKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelExitThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            _sceKernelExitThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule._sceKernelExitThread(processor);";
-        }
-    };    @HLEFunction(nid = 0xAA73C935, version = 150)
-    public final HLEModuleFunction sceKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExitThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelExitThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelExitThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x809CE29B, version = 150)
-    public final HLEModuleFunction sceKernelExitDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExitDeleteThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelExitDeleteThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelExitDeleteThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x616403BA, version = 150)
-    public final HLEModuleFunction sceKernelTerminateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTerminateThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelTerminateThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTerminateThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x383F7BCC, version = 150)
-    public final HLEModuleFunction sceKernelTerminateDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTerminateDeleteThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelTerminateDeleteThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTerminateDeleteThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x3AD58B8C, version = 150)
-    public final HLEModuleFunction sceKernelSuspendDispatchThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSuspendDispatchThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelSuspendDispatchThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSuspendDispatchThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x27E22EC2, version = 150)
-    public final HLEModuleFunction sceKernelResumeDispatchThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelResumeDispatchThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelResumeDispatchThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelResumeDispatchThread(processor);";
-        }
-    };    @HLEFunction(nid = 0xEA748E31, version = 150)
-    public final HLEModuleFunction sceKernelChangeCurrentThreadAttrFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelChangeCurrentThreadAttr") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelChangeCurrentThreadAttr(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelChangeCurrentThreadAttr(processor);";
-        }
-    };    @HLEFunction(nid = 0x71BC9871, version = 150)
-    public final HLEModuleFunction sceKernelChangeThreadPriorityFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelChangeThreadPriority") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelChangeThreadPriority(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelChangeThreadPriority(processor);";
-        }
-    };    @HLEFunction(nid = 0x912354A7, version = 150)
-    public final HLEModuleFunction sceKernelRotateThreadReadyQueueFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelRotateThreadReadyQueue") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelRotateThreadReadyQueue(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelRotateThreadReadyQueue(processor);";
-        }
-    };    @HLEFunction(nid = 0x2C34E053, version = 150)
-    public final HLEModuleFunction sceKernelReleaseWaitThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReleaseWaitThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReleaseWaitThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReleaseWaitThread(processor);";
-        }
-    };    @HLEFunction(nid = 0x293B45B8, version = 150)
-    public final HLEModuleFunction sceKernelGetThreadIdFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadId") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetThreadId(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadId(processor);";
-        }
-    };    @HLEFunction(nid = 0x94AA61EE, version = 150)
-    public final HLEModuleFunction sceKernelGetThreadCurrentPriorityFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadCurrentPriority") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetThreadCurrentPriority(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadCurrentPriority(processor);";
-        }
-    };    @HLEFunction(nid = 0x3B183E26, version = 150)
-    public final HLEModuleFunction sceKernelGetThreadExitStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadExitStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetThreadExitStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadExitStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0xD13BDE95, version = 150)
-    public final HLEModuleFunction sceKernelCheckThreadStackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCheckThreadStack") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCheckThreadStack(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCheckThreadStack(processor);";
-        }
-    };    @HLEFunction(nid = 0x52089CA1, version = 150)
-    public final HLEModuleFunction sceKernelGetThreadStackFreeSizeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadStackFreeSize") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetThreadStackFreeSize(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadStackFreeSize(processor);";
-        }
-    };    @HLEFunction(nid = 0x17C1684E, version = 150)
-    public final HLEModuleFunction sceKernelReferThreadStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferThreadStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0xFFC36A14, version = 150)
-    public final HLEModuleFunction sceKernelReferThreadRunStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadRunStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferThreadRunStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadRunStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x627E6F3A, version = 150)
-    public final HLEModuleFunction sceKernelReferSystemStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferSystemStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferSystemStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferSystemStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0x94416130, version = 150)
-    public final HLEModuleFunction sceKernelGetThreadmanIdListFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadmanIdList") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetThreadmanIdList(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadmanIdList(processor);";
-        }
-    };    @HLEFunction(nid = 0x57CF62DD, version = 150)
-    public final HLEModuleFunction sceKernelGetThreadmanIdTypeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadmanIdType") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelGetThreadmanIdType(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadmanIdType(processor);";
-        }
-    };    @HLEFunction(nid = 0x64D4540E, version = 150)
-    public final HLEModuleFunction sceKernelReferThreadProfilerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadProfiler") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferThreadProfiler(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadProfiler(processor);";
-        }
-    };    @HLEFunction(nid = 0x8218B4DD, version = 150)
-    public final HLEModuleFunction sceKernelReferGlobalProfilerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferGlobalProfiler") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferGlobalProfiler(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferGlobalProfiler(processor);";
-        }
-    };
 }

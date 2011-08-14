@@ -106,113 +106,14 @@ public class StdioForUser implements HLEModule {
 
         cpu.gpr[2] = IoFileMgrForUser.STDERR_ID;
     }
-    @HLEFunction(nid = 0x3054D478, version = 150)
-    public final HLEModuleFunction sceKernelStdioReadFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioRead") {
+    @HLEFunction(nid = 0x3054D478, version = 150) public HLEModuleFunction sceKernelStdioReadFunction;
+    @HLEFunction(nid = 0x0CBB0571, version = 150) public HLEModuleFunction sceKernelStdioLseekFunction;
+    @HLEFunction(nid = 0xA46785C9, version = 150) public HLEModuleFunction sceKernelStdioSendCharFunction;
+    @HLEFunction(nid = 0xA3B931DB, version = 150) public HLEModuleFunction sceKernelStdioWriteFunction;
+    @HLEFunction(nid = 0x9D061C19, version = 150) public HLEModuleFunction sceKernelStdioCloseFunction;
+    @HLEFunction(nid = 0x924ABA61, version = 150) public HLEModuleFunction sceKernelStdioOpenFunction;
+    @HLEFunction(nid = 0x172D316E, version = 150) public HLEModuleFunction sceKernelStdinFunction;
+    @HLEFunction(nid = 0xA6BAB2E9, version = 150) public HLEModuleFunction sceKernelStdoutFunction;
+    @HLEFunction(nid = 0xF78BA90A, version = 150) public HLEModuleFunction sceKernelStderrFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdioRead(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioRead(processor);";
-        }
-    };    @HLEFunction(nid = 0x0CBB0571, version = 150)
-    public final HLEModuleFunction sceKernelStdioLseekFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioLseek") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdioLseek(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioLseek(processor);";
-        }
-    };    @HLEFunction(nid = 0xA46785C9, version = 150)
-    public final HLEModuleFunction sceKernelStdioSendCharFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioSendChar") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdioSendChar(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioSendChar(processor);";
-        }
-    };    @HLEFunction(nid = 0xA3B931DB, version = 150)
-    public final HLEModuleFunction sceKernelStdioWriteFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioWrite") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdioWrite(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioWrite(processor);";
-        }
-    };    @HLEFunction(nid = 0x9D061C19, version = 150)
-    public final HLEModuleFunction sceKernelStdioCloseFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioClose") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdioClose(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioClose(processor);";
-        }
-    };    @HLEFunction(nid = 0x924ABA61, version = 150)
-    public final HLEModuleFunction sceKernelStdioOpenFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioOpen") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdioOpen(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioOpen(processor);";
-        }
-    };    @HLEFunction(nid = 0x172D316E, version = 150)
-    public final HLEModuleFunction sceKernelStdinFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdin") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdin(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdin(processor);";
-        }
-    };    @HLEFunction(nid = 0xA6BAB2E9, version = 150)
-    public final HLEModuleFunction sceKernelStdoutFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdout") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStdout(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdout(processor);";
-        }
-    };    @HLEFunction(nid = 0xF78BA90A, version = 150)
-    public final HLEModuleFunction sceKernelStderrFunction = new HLEModuleFunction("StdioForUser", "sceKernelStderr") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelStderr(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStderr(processor);";
-        }
-    };
 }

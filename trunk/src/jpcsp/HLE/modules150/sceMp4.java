@@ -103,56 +103,12 @@ public class sceMp4 implements HLEModule, HLEStartModule {
         }
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0x68651CBC, version = 150)
-    public final HLEModuleFunction sceMp4InitFunction = new HLEModuleFunction("sceMp4", "sceMp4Init") {
+    @HLEFunction(nid = 0x68651CBC, version = 150) public HLEModuleFunction sceMp4InitFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceMp4Init(processor);
-        }
+    @HLEFunction(nid = 0x9042B257, version = 150) public HLEModuleFunction sceMp4FinishFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp4Module.sceMp4Init(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x9042B257, version = 150)
-    public final HLEModuleFunction sceMp4FinishFunction = new HLEModuleFunction("sceMp4", "sceMp4Finish") {
+    @HLEFunction(nid = 0xB1221EE7, version = 150) public HLEModuleFunction sceMp4CreateFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceMp4Finish(processor);
-        }
+    @HLEFunction(nid = 0x538C2057, version = 150) public HLEModuleFunction sceMp4DeleteFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp4Module.sceMp4Finish(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xB1221EE7, version = 150)
-    public final HLEModuleFunction sceMp4CreateFunction = new HLEModuleFunction("sceMp4", "sceMp4Create") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp4Create(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp4Module.sceMp4Create(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x538C2057, version = 150)
-    public final HLEModuleFunction sceMp4DeleteFunction = new HLEModuleFunction("sceMp4", "sceMp4Delete") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceMp4Delete(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceMp4Module.sceMp4Delete(processor);";
-        }
-    };
 }

@@ -67,17 +67,6 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xA089ECA4, version = 150)
-    public final HLEModuleFunction sceKernelMemsetFunction = new HLEModuleFunction("SysMemForKernel", "sceKernelMemset") {
+    @HLEFunction(nid = 0xA089ECA4, version = 150) public HLEModuleFunction sceKernelMemsetFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelMemset(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelMemset(processor);";
-        }
-    };
 }

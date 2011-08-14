@@ -99,101 +99,13 @@ public class ThreadManForUser extends jpcsp.HLE.modules150.ThreadManForUser {
             return;
         }
         Managers.mutex.sceKernelDeleteMutex(gpr[4]);
-    }    @HLEFunction(nid = 0x0DDCD2C9, version = 271)
-    public final HLEModuleFunction sceKernelTryLockMutexFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryLockMutex") {
+    }    @HLEFunction(nid = 0x0DDCD2C9, version = 271) public HLEModuleFunction sceKernelTryLockMutexFunction;
+    @HLEFunction(nid = 0x5BF4DD27, version = 271) public HLEModuleFunction sceKernelLockMutexCBFunction;
+    @HLEFunction(nid = 0x6B30100F, version = 271) public HLEModuleFunction sceKernelUnlockMutexFunction;
+    @HLEFunction(nid = 0x87D9223C, version = 271) public HLEModuleFunction sceKernelCancelMutexFunction;
+    @HLEFunction(nid = 0xA9C2CB9A, version = 271) public HLEModuleFunction sceKernelReferMutexStatusFunction;
+    @HLEFunction(nid = 0xB011B11F, version = 271) public HLEModuleFunction sceKernelLockMutexFunction;
+    @HLEFunction(nid = 0xB7D098C6, version = 271) public HLEModuleFunction sceKernelCreateMutexFunction;
+    @HLEFunction(nid = 0xF8170FBE, version = 271) public HLEModuleFunction sceKernelDeleteMutexFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelTryLockMutex(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTryLockMutex(processor);";
-        }
-    };    @HLEFunction(nid = 0x5BF4DD27, version = 271)
-    public final HLEModuleFunction sceKernelLockMutexCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelLockMutexCB") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLockMutexCB(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelLockMutexCB(processor);";
-        }
-    };    @HLEFunction(nid = 0x6B30100F, version = 271)
-    public final HLEModuleFunction sceKernelUnlockMutexFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelUnlockMutex") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelUnlockMutex(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelUnlockMutex(processor);";
-        }
-    };    @HLEFunction(nid = 0x87D9223C, version = 271)
-    public final HLEModuleFunction sceKernelCancelMutexFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelMutex") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCancelMutex(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelMutex(processor);";
-        }
-    };    @HLEFunction(nid = 0xA9C2CB9A, version = 271)
-    public final HLEModuleFunction sceKernelReferMutexStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferMutexStatus") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelReferMutexStatus(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferMutexStatus(processor);";
-        }
-    };    @HLEFunction(nid = 0xB011B11F, version = 271)
-    public final HLEModuleFunction sceKernelLockMutexFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelLockMutex") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelLockMutex(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelLockMutex(processor);";
-        }
-    };    @HLEFunction(nid = 0xB7D098C6, version = 271)
-    public final HLEModuleFunction sceKernelCreateMutexFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateMutex") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateMutex(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateMutex(processor);";
-        }
-    };    @HLEFunction(nid = 0xF8170FBE, version = 271)
-    public final HLEModuleFunction sceKernelDeleteMutexFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteMutex") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelDeleteMutex(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteMutex(processor);";
-        }
-    };
 }

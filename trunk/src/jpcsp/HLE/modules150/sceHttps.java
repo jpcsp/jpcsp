@@ -328,121 +328,22 @@ public class sceHttps implements HLEModule {
             cpu.gpr[2] = 0;
         }
     }
-    @HLEFunction(nid = 0xE4D21302, version = 150)
-    public final HLEModuleFunction sceHttpsInitFunction = new HLEModuleFunction("sceHttps", "sceHttpsInit") {
+    @HLEFunction(nid = 0xE4D21302, version = 150) public HLEModuleFunction sceHttpsInitFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsInit(processor);
-        }
+    @HLEFunction(nid = 0x68AB0F86, version = 150) public HLEModuleFunction sceHttpsInitWithPathFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsInit(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x68AB0F86, version = 150)
-    public final HLEModuleFunction sceHttpsInitWithPathFunction = new HLEModuleFunction("sceHttps", "sceHttpsInitWithPath") {
+    @HLEFunction(nid = 0xF9D8EB63, version = 150) public HLEModuleFunction sceHttpsEndFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsInitWithPath(processor);
-        }
+    @HLEFunction(nid = 0x87797BDD, version = 150) public HLEModuleFunction sceHttpsLoadDefaultCertFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsInitWithPath(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF9D8EB63, version = 150)
-    public final HLEModuleFunction sceHttpsEndFunction = new HLEModuleFunction("sceHttps", "sceHttpsEnd") {
+    @HLEFunction(nid = 0xAB1540D5, version = 150) public HLEModuleFunction sceHttpsGetSslErrorFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsEnd(processor);
-        }
+    @HLEFunction(nid = 0xBAC31BF1, version = 150) public HLEModuleFunction sceHttpsEnableOptionFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsEnd(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x87797BDD, version = 150)
-    public final HLEModuleFunction sceHttpsLoadDefaultCertFunction = new HLEModuleFunction("sceHttps", "sceHttpsLoadDefaultCert") {
+    @HLEFunction(nid = 0xB3FAF831, version = 150) public HLEModuleFunction sceHttpsDisableOptionFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsLoadDefaultCert(processor);
-        }
+    @HLEFunction(nid = 0xD11DAB01, version = 150) public HLEModuleFunction sceHttpsGetCaListFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsLoadDefaultCert(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xAB1540D5, version = 150)
-    public final HLEModuleFunction sceHttpsGetSslErrorFunction = new HLEModuleFunction("sceHttps", "sceHttpsGetSslError") {
+    @HLEFunction(nid = 0x569A1481, version = 150) public HLEModuleFunction sceHttpsSetSslCallbackFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsGetSslError(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsGetSslError(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xBAC31BF1, version = 150)
-    public final HLEModuleFunction sceHttpsEnableOptionFunction = new HLEModuleFunction("sceHttps", "sceHttpsEnableOption") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsEnableOption(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsEnableOption(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xB3FAF831, version = 150)
-    public final HLEModuleFunction sceHttpsDisableOptionFunction = new HLEModuleFunction("sceHttps", "sceHttpsDisableOption") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsDisableOption(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsDisableOption(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xD11DAB01, version = 150)
-    public final HLEModuleFunction sceHttpsGetCaListFunction = new HLEModuleFunction("sceHttps", "sceHttpsGetCaList") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsGetCaList(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsGetCaList(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x569A1481, version = 150)
-    public final HLEModuleFunction sceHttpsSetSslCallbackFunction = new HLEModuleFunction("sceHttps", "sceHttpsSetSslCallback") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceHttpsSetSslCallback(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceHttpsModule.sceHttpsSetSslCallback(processor);";
-        }
-    };
 }

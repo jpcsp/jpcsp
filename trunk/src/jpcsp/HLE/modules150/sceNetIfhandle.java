@@ -85,30 +85,8 @@ public class sceNetIfhandle implements HLEModule {
         netDropDuration = dropDuration;
         cpu.gpr[2] = 0;
     }
-    @HLEFunction(nid = 0xC80181A2, version = 150)
-    public final HLEModuleFunction sceNetGetDropRateFunction = new HLEModuleFunction("sceNetIfhandle", "sceNetGetDropRate") {
+    @HLEFunction(nid = 0xC80181A2, version = 150) public HLEModuleFunction sceNetGetDropRateFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetGetDropRate(processor);
-        }
+    @HLEFunction(nid = 0xFD8585E1, version = 150) public HLEModuleFunction sceNetSetDropRateFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetIfhandleModule.sceNetGetDropRate(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xFD8585E1, version = 150)
-    public final HLEModuleFunction sceNetSetDropRateFunction = new HLEModuleFunction("sceNetIfhandle", "sceNetSetDropRate") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetSetDropRate(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetIfhandleModule.sceNetSetDropRate(processor);";
-        }
-    };
 }

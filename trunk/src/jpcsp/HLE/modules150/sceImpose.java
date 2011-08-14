@@ -206,114 +206,24 @@ public class sceImpose implements HLEModule, HLEStartModule {
 
 		cpu.gpr[2] = 0;
 	}
-	@HLEFunction(nid = 0x381BD9E7, version = 150)
-	public final HLEModuleFunction sceImposeHomeButtonFunction = new HLEModuleFunction("sceImpose", "sceImposeHomeButton") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeHomeButton(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeHomeButton(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x5595A71A, version = 150)
-	public final HLEModuleFunction sceImposeSetHomePopupFunction = new HLEModuleFunction("sceImpose", "sceImposeSetHomePopup") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeSetHomePopup(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeSetHomePopup(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x0F341BE4, version = 150)
-	public final HLEModuleFunction sceImposeGetHomePopupFunction = new HLEModuleFunction("sceImpose", "sceImposeGetHomePopup") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeGetHomePopup(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeGetHomePopup(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x72189C48, version = 150)
-	public final HLEModuleFunction sceImposeSetUMDPopupFunction = new HLEModuleFunction("sceImpose", "sceImposeSetUMDPopup") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeSetUMDPopup(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeSetUMDPopup(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xE0887BC8, version = 150)
-	public final HLEModuleFunction sceImposeGetUMDPopupFunction = new HLEModuleFunction("sceImpose", "sceImposeGetUMDPopup") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeGetUMDPopup(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeGetUMDPopup(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x36AA6E91, version = 150)
-	public final HLEModuleFunction sceImposeSetLanguageModeFunction = new HLEModuleFunction("sceImpose", "sceImposeSetLanguageMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeSetLanguageMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeSetLanguageMode(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x24FD7BCF, version = 150)
-	public final HLEModuleFunction sceImposeGetLanguageModeFunction = new HLEModuleFunction("sceImpose", "sceImposeGetLanguageMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeGetLanguageMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeGetLanguageMode(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x8C943191, version = 150)
-	public final HLEModuleFunction sceImposeGetBatteryIconStatusFunction = new HLEModuleFunction("sceImpose", "sceImposeGetBatteryIconStatus") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeGetBatteryIconStatus(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeGetBatteryIconStatus(processor);";
-		}
-	};
-    @HLEFunction(nid = 0x8F6E3518, version = 150)
-    public final HLEModuleFunction sceImposeGetBacklightOffTimeFunction = new HLEModuleFunction("sceImpose", "sceImposeGetBacklightOffTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeGetBacklightOffTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeGetBacklightOffTime(processor);";
-		}
-	};
-    @HLEFunction(nid = 0x967F6D4A, version = 150)
-    public final HLEModuleFunction sceImposeSetBacklightOffTimeFunction = new HLEModuleFunction("sceImpose", "sceImposeSetBacklightOffTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceImposeSetBacklightOffTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceImposeModule.sceImposeSetBacklightOffTime(processor);";
-		}
-	};
+	@HLEFunction(nid = 0x381BD9E7, version = 150) public HLEModuleFunction sceImposeHomeButtonFunction;
+
+	@HLEFunction(nid = 0x5595A71A, version = 150) public HLEModuleFunction sceImposeSetHomePopupFunction;
+
+	@HLEFunction(nid = 0x0F341BE4, version = 150) public HLEModuleFunction sceImposeGetHomePopupFunction;
+
+	@HLEFunction(nid = 0x72189C48, version = 150) public HLEModuleFunction sceImposeSetUMDPopupFunction;
+
+	@HLEFunction(nid = 0xE0887BC8, version = 150) public HLEModuleFunction sceImposeGetUMDPopupFunction;
+
+	@HLEFunction(nid = 0x36AA6E91, version = 150) public HLEModuleFunction sceImposeSetLanguageModeFunction;
+
+	@HLEFunction(nid = 0x24FD7BCF, version = 150) public HLEModuleFunction sceImposeGetLanguageModeFunction;
+
+	@HLEFunction(nid = 0x8C943191, version = 150) public HLEModuleFunction sceImposeGetBatteryIconStatusFunction;
+
+    @HLEFunction(nid = 0x8F6E3518, version = 150) public HLEModuleFunction sceImposeGetBacklightOffTimeFunction;
+
+    @HLEFunction(nid = 0x967F6D4A, version = 150) public HLEModuleFunction sceImposeSetBacklightOffTimeFunction;
+
 }

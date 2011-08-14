@@ -88,82 +88,16 @@ public class sceNetAdhocDiscover implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-    @HLEFunction(nid = 0x941B3877, version = 150)
-    public final HLEModuleFunction sceNetAdhocDiscoverInitStartFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverInitStart") {
+    @HLEFunction(nid = 0x941B3877, version = 150) public HLEModuleFunction sceNetAdhocDiscoverInitStartFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocDiscoverInitStart(processor);
-        }
+    @HLEFunction(nid = 0x52DE1B97, version = 150) public HLEModuleFunction sceNetAdhocDiscoverUpdateFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverInitStart(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x52DE1B97, version = 150)
-    public final HLEModuleFunction sceNetAdhocDiscoverUpdateFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverUpdate") {
+    @HLEFunction(nid = 0x944DDBC6, version = 150) public HLEModuleFunction sceNetAdhocDiscoverGetStatusFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocDiscoverUpdate(processor);
-        }
+    @HLEFunction(nid = 0xA2246614, version = 150) public HLEModuleFunction sceNetAdhocDiscoverTermFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverUpdate(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x944DDBC6, version = 150)
-    public final HLEModuleFunction sceNetAdhocDiscoverGetStatusFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverGetStatus") {
+    @HLEFunction(nid = 0xF7D13214, version = 150) public HLEModuleFunction sceNetAdhocDiscoverStopFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocDiscoverGetStatus(processor);
-        }
+    @HLEFunction(nid = 0xA423A21B, version = 150) public HLEModuleFunction sceNetAdhocDiscoverRequestSuspendFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverGetStatus(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xA2246614, version = 150)
-    public final HLEModuleFunction sceNetAdhocDiscoverTermFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverTerm") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocDiscoverTerm(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverTerm(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF7D13214, version = 150)
-    public final HLEModuleFunction sceNetAdhocDiscoverStopFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverStop") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocDiscoverStop(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverStop(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xA423A21B, version = 150)
-    public final HLEModuleFunction sceNetAdhocDiscoverRequestSuspendFunction = new HLEModuleFunction("sceNetAdhocDiscover", "sceNetAdhocDiscoverRequestSuspend") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceNetAdhocDiscoverRequestSuspend(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceNetAdhocDiscoverModule.sceNetAdhocDiscoverRequestSuspend(processor);";
-        }
-    };
 }

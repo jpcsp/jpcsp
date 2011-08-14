@@ -205,52 +205,12 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
         cpu.gpr[2] = result;
     }
-    @HLEFunction(nid = 0xC629AF26, version = 270)
-    public final HLEModuleFunction sceUtilityLoadAvModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadAvModule") {
+    @HLEFunction(nid = 0xC629AF26, version = 270) public HLEModuleFunction sceUtilityLoadAvModuleFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityLoadAvModule(processor);
-        }
+    @HLEFunction(nid = 0xF7D8D092, version = 270) public HLEModuleFunction sceUtilityUnloadAvModuleFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityLoadAvModule(processor);";
-        }
-    };
-    @HLEFunction(nid = 0xF7D8D092, version = 270)
-    public final HLEModuleFunction sceUtilityUnloadAvModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityUnloadAvModule") {
+    @HLEFunction(nid = 0x4928BD96, version = 270) public HLEModuleFunction sceUtilityMsgDialogAbortFunction;
 
-        @Override
-        public final void execute(Processor processor) {
-            sceUtilityUnloadAvModule(processor);
-        }
+    @HLEFunction(nid = 0x0D5BC6D2, version = 270) public HLEModuleFunction sceUtilityLoadUsbModuleFunction;
 
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityUnloadAvModule(processor);";
-        }
-    };
-    @HLEFunction(nid = 0x4928BD96, version = 270)
-    public final HLEModuleFunction sceUtilityMsgDialogAbortFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogAbort") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUtilityMsgDialogAbort(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogAbort(processor);";
-		}
-	};
-    @HLEFunction(nid = 0x0D5BC6D2, version = 270)
-    public final HLEModuleFunction sceUtilityLoadUsbModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadUsbModule") {
-		@Override
-		public final void execute(Processor processor) {
-			sceUtilityLoadUsbModule(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityLoadUsbModule(processor);";
-		}
-	};
 }

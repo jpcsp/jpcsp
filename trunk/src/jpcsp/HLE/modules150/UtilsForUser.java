@@ -598,290 +598,56 @@ public class UtilsForUser implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
 	}
-	@HLEFunction(nid = 0xBFA98062, version = 150)
-	public final HLEModuleFunction sceKernelDcacheInvalidateRangeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheInvalidateRange") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDcacheInvalidateRange(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelDcacheInvalidateRange(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xC2DF770E, version = 150)
-	public final HLEModuleFunction sceKernelIcacheInvalidateRangeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelIcacheInvalidateRange") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelIcacheInvalidateRange(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelIcacheInvalidateRange(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xC8186A58, version = 150)
-	public final HLEModuleFunction sceKernelUtilsMd5DigestFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsMd5Digest") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsMd5Digest(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsMd5Digest(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x9E5C5086, version = 150)
-	public final HLEModuleFunction sceKernelUtilsMd5BlockInitFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsMd5BlockInit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsMd5BlockInit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsMd5BlockInit(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x61E1E525, version = 150)
-	public final HLEModuleFunction sceKernelUtilsMd5BlockUpdateFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsMd5BlockUpdate") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsMd5BlockUpdate(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsMd5BlockUpdate(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xB8D24E78, version = 150)
-	public final HLEModuleFunction sceKernelUtilsMd5BlockResultFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsMd5BlockResult") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsMd5BlockResult(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsMd5BlockResult(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x840259F1, version = 150)
-	public final HLEModuleFunction sceKernelUtilsSha1DigestFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsSha1Digest") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsSha1Digest(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsSha1Digest(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xF8FCD5BA, version = 150)
-	public final HLEModuleFunction sceKernelUtilsSha1BlockInitFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsSha1BlockInit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsSha1BlockInit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsSha1BlockInit(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x346F6DA8, version = 150)
-	public final HLEModuleFunction sceKernelUtilsSha1BlockUpdateFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsSha1BlockUpdate") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsSha1BlockUpdate(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsSha1BlockUpdate(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x585F1C09, version = 150)
-	public final HLEModuleFunction sceKernelUtilsSha1BlockResultFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsSha1BlockResult") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsSha1BlockResult(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsSha1BlockResult(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xE860E75E, version = 150)
-	public final HLEModuleFunction sceKernelUtilsMt19937InitFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsMt19937Init") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsMt19937Init(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsMt19937Init(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x06FB8A63, version = 150)
-	public final HLEModuleFunction sceKernelUtilsMt19937UIntFunction = new HLEModuleFunction("UtilsForUser", "sceKernelUtilsMt19937UInt") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelUtilsMt19937UInt(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelUtilsMt19937UInt(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x37FB5C42, version = 150)
-	public final HLEModuleFunction sceKernelGetGPIFunction = new HLEModuleFunction("UtilsForUser", "sceKernelGetGPI") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelGetGPI(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelGetGPI(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x6AD345D7, version = 150)
-	public final HLEModuleFunction sceKernelSetGPOFunction = new HLEModuleFunction("UtilsForUser", "sceKernelSetGPO") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelSetGPO(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelSetGPO(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x91E4F6A7, version = 150)
-	public final HLEModuleFunction sceKernelLibcClockFunction = new HLEModuleFunction("UtilsForUser", "sceKernelLibcClock") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelLibcClock(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelLibcClock(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x27CC57F0, version = 150)
-	public final HLEModuleFunction sceKernelLibcTimeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelLibcTime") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelLibcTime(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelLibcTime(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x71EC4271, version = 150)
-	public final HLEModuleFunction sceKernelLibcGettimeofdayFunction = new HLEModuleFunction("UtilsForUser", "sceKernelLibcGettimeofday") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelLibcGettimeofday(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelLibcGettimeofday(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x79D1C3FA, version = 150)
-	public final HLEModuleFunction sceKernelDcacheWritebackAllFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheWritebackAll") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDcacheWritebackAll(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelDcacheWritebackAll(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xB435DEC5, version = 150)
-	public final HLEModuleFunction sceKernelDcacheWritebackInvalidateAllFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheWritebackInvalidateAll") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDcacheWritebackInvalidateAll(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelDcacheWritebackInvalidateAll(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x3EE30821, version = 150)
-	public final HLEModuleFunction sceKernelDcacheWritebackRangeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheWritebackRange") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDcacheWritebackRange(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelDcacheWritebackRange(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x34B9FA9E, version = 150)
-	public final HLEModuleFunction sceKernelDcacheWritebackInvalidateRangeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheWritebackInvalidateRange") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDcacheWritebackInvalidateRange(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelDcacheWritebackInvalidateRange(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x80001C4C, version = 150)
-	public final HLEModuleFunction sceKernelDcacheProbeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheProbe") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDcacheProbe(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelDcacheProbe(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x16641D70, version = 150)
-	public final HLEModuleFunction sceKernelDcacheReadTagFunction = new HLEModuleFunction("UtilsForUser", "sceKernelDcacheReadTag") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelDcacheReadTag(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelDcacheReadTag(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x920F104A, version = 150)
-	public final HLEModuleFunction sceKernelIcacheInvalidateAllFunction = new HLEModuleFunction("UtilsForUser", "sceKernelIcacheInvalidateAll") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelIcacheInvalidateAll(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelIcacheInvalidateAll(processor);";
-		}
-	};
-	@HLEFunction(nid = 0x4FD31C9D, version = 150)
-	public final HLEModuleFunction sceKernelIcacheProbeFunction = new HLEModuleFunction("UtilsForUser", "sceKernelIcacheProbe") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelIcacheProbe(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelIcacheProbe(processor);";
-		}
-	};
-	@HLEFunction(nid = 0xFB05FAD0, version = 150)
-	public final HLEModuleFunction sceKernelIcacheReadTagFunction = new HLEModuleFunction("UtilsForUser", "sceKernelIcacheReadTag") {
-		@Override
-		public final void execute(Processor processor) {
-			sceKernelIcacheReadTag(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.UtilsForUserModule.sceKernelIcacheReadTag(processor);";
-		}
-	};
+	@HLEFunction(nid = 0xBFA98062, version = 150) public HLEModuleFunction sceKernelDcacheInvalidateRangeFunction;
+
+	@HLEFunction(nid = 0xC2DF770E, version = 150) public HLEModuleFunction sceKernelIcacheInvalidateRangeFunction;
+
+	@HLEFunction(nid = 0xC8186A58, version = 150) public HLEModuleFunction sceKernelUtilsMd5DigestFunction;
+
+	@HLEFunction(nid = 0x9E5C5086, version = 150) public HLEModuleFunction sceKernelUtilsMd5BlockInitFunction;
+
+	@HLEFunction(nid = 0x61E1E525, version = 150) public HLEModuleFunction sceKernelUtilsMd5BlockUpdateFunction;
+
+	@HLEFunction(nid = 0xB8D24E78, version = 150) public HLEModuleFunction sceKernelUtilsMd5BlockResultFunction;
+
+	@HLEFunction(nid = 0x840259F1, version = 150) public HLEModuleFunction sceKernelUtilsSha1DigestFunction;
+
+	@HLEFunction(nid = 0xF8FCD5BA, version = 150) public HLEModuleFunction sceKernelUtilsSha1BlockInitFunction;
+
+	@HLEFunction(nid = 0x346F6DA8, version = 150) public HLEModuleFunction sceKernelUtilsSha1BlockUpdateFunction;
+
+	@HLEFunction(nid = 0x585F1C09, version = 150) public HLEModuleFunction sceKernelUtilsSha1BlockResultFunction;
+
+	@HLEFunction(nid = 0xE860E75E, version = 150) public HLEModuleFunction sceKernelUtilsMt19937InitFunction;
+
+	@HLEFunction(nid = 0x06FB8A63, version = 150) public HLEModuleFunction sceKernelUtilsMt19937UIntFunction;
+
+	@HLEFunction(nid = 0x37FB5C42, version = 150) public HLEModuleFunction sceKernelGetGPIFunction;
+
+	@HLEFunction(nid = 0x6AD345D7, version = 150) public HLEModuleFunction sceKernelSetGPOFunction;
+
+	@HLEFunction(nid = 0x91E4F6A7, version = 150) public HLEModuleFunction sceKernelLibcClockFunction;
+
+	@HLEFunction(nid = 0x27CC57F0, version = 150) public HLEModuleFunction sceKernelLibcTimeFunction;
+
+	@HLEFunction(nid = 0x71EC4271, version = 150) public HLEModuleFunction sceKernelLibcGettimeofdayFunction;
+
+	@HLEFunction(nid = 0x79D1C3FA, version = 150) public HLEModuleFunction sceKernelDcacheWritebackAllFunction;
+
+	@HLEFunction(nid = 0xB435DEC5, version = 150) public HLEModuleFunction sceKernelDcacheWritebackInvalidateAllFunction;
+
+	@HLEFunction(nid = 0x3EE30821, version = 150) public HLEModuleFunction sceKernelDcacheWritebackRangeFunction;
+
+	@HLEFunction(nid = 0x34B9FA9E, version = 150) public HLEModuleFunction sceKernelDcacheWritebackInvalidateRangeFunction;
+
+	@HLEFunction(nid = 0x80001C4C, version = 150) public HLEModuleFunction sceKernelDcacheProbeFunction;
+
+	@HLEFunction(nid = 0x16641D70, version = 150) public HLEModuleFunction sceKernelDcacheReadTagFunction;
+
+	@HLEFunction(nid = 0x920F104A, version = 150) public HLEModuleFunction sceKernelIcacheInvalidateAllFunction;
+
+	@HLEFunction(nid = 0x4FD31C9D, version = 150) public HLEModuleFunction sceKernelIcacheProbeFunction;
+
+	@HLEFunction(nid = 0xFB05FAD0, version = 150) public HLEModuleFunction sceKernelIcacheReadTagFunction;
+
 }
