@@ -227,134 +227,35 @@ public class sceCcc implements HLEModule {
 	}
 
 	@HLEFunction(nid = 0xC6A8BEE2, version = 150)
-	public final HLEModuleFunction sceCccDecodeUTF8Function = new HLEModuleFunction("sceCcc", "sceCccDecodeUTF8") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccDecodeUTF8(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccDecodeUTF8(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccDecodeUTF8Function;
     
 	@HLEFunction(nid = 0x8406F469, version = 150)
-	public final HLEModuleFunction sceCccEncodeUTF16Function = new HLEModuleFunction("sceCcc", "sceCccEncodeUTF16") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccEncodeUTF16(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccEncodeUTF16(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccEncodeUTF16Function;
     
 	@HLEFunction(nid = 0xB4D1CBBF, version = 150)
-	public final HLEModuleFunction sceCccSetTableFunction = new HLEModuleFunction("sceCcc", "sceCccSetTable") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccSetTable(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccSetTable(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccSetTableFunction;
 
 	@HLEFunction(nid = 0xE0CF8091, version = 150)
-	public final HLEModuleFunction sceCccDecodeUTF16Function = new HLEModuleFunction("sceCcc", "sceCccDecodeUTF16") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccDecodeUTF16(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccDecodeUTF16(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccDecodeUTF16Function;
     
 	@HLEFunction(nid = 0xBEB47224, version = 150)
-	public final HLEModuleFunction sceCccSJIStoUTF16Function = new HLEModuleFunction("sceCcc", "sceCccSJIStoUTF16") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccSJIStoUTF16(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccSJIStoUTF16(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccSJIStoUTF16Function;
     
 	@HLEFunction(nid = 0xD9392CCB, version = 150)
-	public final HLEModuleFunction sceCccStrlenSJISFunction = new HLEModuleFunction("sceCcc", "sceCccStrlenSJIS") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccStrlenSJIS(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccStrlenSJIS(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccStrlenSJISFunction;
     
 	@HLEFunction(nid = 0xF1B73D12, version = 150)
-	public final HLEModuleFunction sceCccUTF16toSJISFunction = new HLEModuleFunction("sceCcc", "sceCccUTF16toSJIS") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccUTF16toSJIS(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccUTF16toSJIS(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccUTF16toSJISFunction;
     
 	@HLEFunction(nid = 0x00D1378F, version = 150)
-	public final HLEModuleFunction sceCccUTF8toUTF16Function = new HLEModuleFunction("sceCcc", "sceCccUTF8toUTF16") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccUTF8toUTF16(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccUTF8toUTF16(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccUTF8toUTF16Function;
 
 	@HLEFunction(nid = 0xB7D3C112, version = 150)
-	public final HLEModuleFunction sceCccStrlenUTF8Function = new HLEModuleFunction("sceCcc", "sceCccStrlenUTF8") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccStrlenUTF8(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccStrlenUTF8(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccStrlenUTF8Function;
     
 	@HLEFunction(nid = 0x4BDEB2A8, version = 150)
-	public final HLEModuleFunction sceCccStrlenUTF16Function = new HLEModuleFunction("sceCcc", "sceCccStrlenUTF16") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccStrlenUTF16(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccStrlenUTF16(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccStrlenUTF16Function;
     
 	@HLEFunction(nid = 0x41B724A5, version = 150)
-	public final HLEModuleFunction sceCccUTF16toUTF8Function = new HLEModuleFunction("sceCcc", "sceCccUTF16toUTF8") {
-		@Override
-		public final void execute(Processor processor) {
-			sceCccUTF16toUTF8(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceCccModule.sceCccUTF16toUTF8(processor);";
-		}
-	};
+	public HLEModuleFunction sceCccUTF16toUTF8Function;
 }

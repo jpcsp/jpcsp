@@ -5749,18 +5749,7 @@ public class ThreadManForUser implements HLEModule, HLEStartModule {
     };
     
     @HLEFunction(nid = 0x446D8DE6, version = 150)
-    public final HLEModuleFunction sceKernelCreateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateThread") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceKernelCreateThread(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateThread(processor);";
-        }
-    };
+    public HLEModuleFunction sceKernelCreateThreadFunction;
     @HLEFunction(nid = 0x9FA03CD3, version = 150)
     public final HLEModuleFunction sceKernelDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteThread") {
 

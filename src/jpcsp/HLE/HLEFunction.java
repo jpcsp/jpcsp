@@ -9,4 +9,6 @@ public @interface HLEFunction {
 	public int implemented() default 1;
 	public int syscall() default 0; 
 	public int version() default 150;
+	public String moduleName() default "";
+	public String functionName() default "";
 }
