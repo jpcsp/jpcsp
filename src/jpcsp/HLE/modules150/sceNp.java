@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -37,40 +38,10 @@ public class sceNp implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            /*
-             * FIXME: The sceNp module uses a different
-             * NID resolve for it's functions' names.
-             * The public names reversed from several applications
-             * and modules are as follows:
-             *  - sceNpInit (sceNp_857B47D3)
-             *  - sceNpTerm
-             *  - sceNpGetNpId
-             *  - sceNpGetOnlineId
-             *  - sceNpGetUserProfile
-             *  - sceNpGetMyLanguages
-             *  - sceNpGetAccountRegion
-             *  - sceNpGetContentRatingFlag
-             *  - sceNpGetChatRestrictionFlag
-             * Since the generated NIDs do not match the names, it's necessary
-             * to find which nomencalture is being used for these functions
-             * (e.g.: _x_sceNpInit).
-             *
-             */
-            mm.addFunction(0x857B47D3, sceNp_857B47D3Function);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceNp_857B47D3Function);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceNp_857B47D3(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -83,7 +54,7 @@ public class sceNp implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x857B47D3, version = 150)
     public final HLEModuleFunction sceNp_857B47D3Function = new HLEModuleFunction("sceNp", "sceNp_857B47D3") {
 
         @Override

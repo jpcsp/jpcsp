@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules200;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.Calendar;
 
 import jpcsp.Memory;
@@ -30,32 +31,10 @@ import jpcsp.util.Utilities;
 
 public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-
-		if (version >= 200) {
-
-			mm.addFunction(0x203CEB0D, sceRtcGetLastReincarnatedTimeFunction);
-			mm.addFunction(0x62685E98, sceRtcGetLastAdjustedTimeFunction);
-			mm.addFunction(0x1909C99B, sceRtcSetTime64_tFunction);
-			mm.addFunction(0xE1C93E47, sceRtcGetTime64_tFunction);
-
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-
-		if (version >= 200) {
-
-			mm.removeFunction(sceRtcGetLastReincarnatedTimeFunction);
-			mm.removeFunction(sceRtcGetLastAdjustedTimeFunction);
-			mm.removeFunction(sceRtcSetTime64_tFunction);
-			mm.removeFunction(sceRtcGetTime64_tFunction);
-
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	public void sceRtcGetLastReincarnatedTime(Processor processor) {
 		CpuState cpu = processor.cpu;
@@ -129,7 +108,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
             cpu.gpr[2] = -1;
         }
 	}
-
+	@HLEFunction(nid = 0x203CEB0D, version = 200)
 	public final HLEModuleFunction sceRtcGetLastReincarnatedTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetLastReincarnatedTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -140,7 +119,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetLastReincarnatedTime(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x62685E98, version = 200)
 	public final HLEModuleFunction sceRtcGetLastAdjustedTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetLastAdjustedTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -151,7 +130,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetLastAdjustedTime(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x1909C99B, version = 200)
 	public final HLEModuleFunction sceRtcSetTime64_tFunction = new HLEModuleFunction("sceRtc", "sceRtcSetTime64_t") {
 		@Override
 		public final void execute(Processor processor) {
@@ -162,7 +141,7 @@ public class sceRtc extends jpcsp.HLE.modules150.sceRtc {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcSetTime64_t(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xE1C93E47, version = 200)
 	public final HLEModuleFunction sceRtcGetTime64_tFunction = new HLEModuleFunction("sceRtc", "sceRtcGetTime64_t") {
 		@Override
 		public final void execute(Processor processor) {

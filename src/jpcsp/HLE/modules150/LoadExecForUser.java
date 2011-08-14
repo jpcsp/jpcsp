@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -51,28 +52,10 @@ public class LoadExecForUser implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xBD2F1094, sceKernelLoadExecFunction);
-            mm.addFunction(0x2AC9954B, sceKernelExitGameWithStatusFunction);
-            mm.addFunction(0x05572A5F, sceKernelExitGameFunction);
-            mm.addFunction(0x4AC57943, sceKernelRegisterExitCallbackFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceKernelLoadExecFunction);
-            mm.removeFunction(sceKernelExitGameWithStatusFunction);
-            mm.removeFunction(sceKernelExitGameFunction);
-            mm.removeFunction(sceKernelRegisterExitCallbackFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     private SceKernelThreadInfo exitCbThread;
 
@@ -188,7 +171,7 @@ public class LoadExecForUser implements HLEModule {
         exitCbThread = threadMan.getCurrentThread();
 
         cpu.gpr[2] = 0;
-    }
+    }    @HLEFunction(nid = 0xBD2F1094, version = 150)
     public final HLEModuleFunction sceKernelLoadExecFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelLoadExec") {
 
         @Override
@@ -200,7 +183,7 @@ public class LoadExecForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelLoadExec(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2AC9954B, version = 150)
     public final HLEModuleFunction sceKernelExitGameWithStatusFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGameWithStatus") {
 
         @Override
@@ -212,7 +195,7 @@ public class LoadExecForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGameWithStatus(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x05572A5F, version = 150)
     public final HLEModuleFunction sceKernelExitGameFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelExitGame") {
 
         @Override
@@ -224,7 +207,7 @@ public class LoadExecForUser implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.LoadExecForUserModule.sceKernelExitGame(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x4AC57943, version = 150)
     public final HLEModuleFunction sceKernelRegisterExitCallbackFunction = new HLEModuleFunction("LoadExecForUser", "sceKernelRegisterExitCallback") {
 
         @Override

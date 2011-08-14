@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -24,26 +25,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 271) {
-
-            mm.addFunction(0xFEF27DC1, ModuleMgrForUser_FEF27DC1Function);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 271) {
-
-            mm.removeFunction(ModuleMgrForUser_FEF27DC1Function);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     // Export functions
 
@@ -55,7 +40,7 @@ public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0xFEF27DC1, version = 271)
     public final HLEModuleFunction ModuleMgrForUser_FEF27DC1Function = new HLEModuleFunction("ModuleMgrForUser", "ModuleMgrForUser_FEF27DC1") {
 
         @Override

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -39,22 +40,10 @@ public class sceWlan implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-            mm.addFunction(0x0C622081, sceWlanGetEtherAddrFunction);
-            mm.addFunction(0xD7763699, sceWlanGetSwitchStateFunction);
-            mm.addFunction(0x93440B11, sceWlanDevIsPowerOnFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-            mm.removeFunction(sceWlanGetEtherAddrFunction);
-            mm.removeFunction(sceWlanGetSwitchStateFunction);
-            mm.removeFunction(sceWlanDevIsPowerOnFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     /**
      * Get the Ethernet Address of the wlan controller
@@ -117,7 +106,7 @@ public class sceWlan implements HLEModule {
 
         cpu.gpr[2] = Wlan.getSwitchState();
     }
-
+    @HLEFunction(nid = 0x0C622081, version = 150)
     public final HLEModuleFunction sceWlanGetEtherAddrFunction = new HLEModuleFunction("sceWlan", "sceWlanGetEtherAddr") {
 
         @Override
@@ -130,7 +119,7 @@ public class sceWlan implements HLEModule {
             return "jpcsp.HLE.Modules.sceWlanModule.sceWlanGetEtherAddr(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xD7763699, version = 150)
     public final HLEModuleFunction sceWlanGetSwitchStateFunction = new HLEModuleFunction("sceWlan", "sceWlanGetSwitchState") {
 
         @Override
@@ -143,7 +132,7 @@ public class sceWlan implements HLEModule {
             return "jpcsp.HLE.Modules.sceWlanModule.sceWlanGetSwitchState(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x93440B11, version = 150)
     public final HLEModuleFunction sceWlanDevIsPowerOnFunction = new HLEModuleFunction("sceWlan", "sceWlanDevIsPowerOn") {
 
         @Override

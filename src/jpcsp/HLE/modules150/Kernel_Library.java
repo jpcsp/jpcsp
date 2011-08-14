@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -35,30 +36,10 @@ public class Kernel_Library implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x092968F4, sceKernelCpuSuspendIntrFunction);
-            mm.addFunction(0x5F10D406, sceKernelCpuResumeIntrFunction);
-            mm.addFunction(0x3B84732D, sceKernelCpuResumeIntrWithSyncFunction);
-            mm.addFunction(0x47A0B729, sceKernelIsCpuIntrSuspendedFunction);
-            mm.addFunction(0xB55249D2, sceKernelIsCpuIntrEnableFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceKernelCpuSuspendIntrFunction);
-            mm.removeFunction(sceKernelCpuResumeIntrFunction);
-            mm.removeFunction(sceKernelCpuResumeIntrWithSyncFunction);
-            mm.removeFunction(sceKernelIsCpuIntrSuspendedFunction);
-            mm.removeFunction(sceKernelIsCpuIntrEnableFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     private final int flagInterruptsEnabled = 1;
     private final int flagInterruptsDisabled = 0;
@@ -155,7 +136,7 @@ public class Kernel_Library implements HLEModule {
         	cpu.gpr[2] = 0;
         }
     }
-
+    @HLEFunction(nid = 0x092968F4, version = 150)
     public final HLEModuleFunction sceKernelCpuSuspendIntrFunction = new HLEModuleFunction("Kernel_Library", "sceKernelCpuSuspendIntr") {
 
         @Override
@@ -167,7 +148,7 @@ public class Kernel_Library implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelCpuSuspendIntr(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5F10D406, version = 150)
     public final HLEModuleFunction sceKernelCpuResumeIntrFunction = new HLEModuleFunction("Kernel_Library", "sceKernelCpuResumeIntr") {
 
         @Override
@@ -179,7 +160,7 @@ public class Kernel_Library implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelCpuResumeIntr(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3B84732D, version = 150)
     public final HLEModuleFunction sceKernelCpuResumeIntrWithSyncFunction = new HLEModuleFunction("Kernel_Library", "sceKernelCpuResumeIntrWithSync") {
 
         @Override
@@ -191,7 +172,7 @@ public class Kernel_Library implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelCpuResumeIntrWithSync(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x47A0B729, version = 150)
     public final HLEModuleFunction sceKernelIsCpuIntrSuspendedFunction = new HLEModuleFunction("Kernel_Library", "sceKernelIsCpuIntrSuspended") {
 
         @Override
@@ -203,7 +184,7 @@ public class Kernel_Library implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.Kernel_LibraryModule.sceKernelIsCpuIntrSuspended(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB55249D2, version = 150)
     public final HLEModuleFunction sceKernelIsCpuIntrEnableFunction = new HLEModuleFunction("Kernel_Library", "sceKernelIsCpuIntrEnable") {
 
         @Override

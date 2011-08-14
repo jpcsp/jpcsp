@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 
 import jpcsp.Memory;
@@ -42,60 +43,10 @@ public class sceNetAdhocctl implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-            mm.addFunction(0xE26F226E, sceNetAdhocctlInitFunction);
-            mm.addFunction(0x9D689E13, sceNetAdhocctlTermFunction);
-            mm.addFunction(0x0AD043ED, sceNetAdhocctlConnectFunction);
-            mm.addFunction(0xEC0635C1, sceNetAdhocctlCreateFunction);
-            mm.addFunction(0x5E7F79C9, sceNetAdhocctlJoinFunction);
-            mm.addFunction(0x08FFF7A0, sceNetAdhocctlScanFunction);
-            mm.addFunction(0x34401D65, sceNetAdhocctlDisconnectFunction);
-            mm.addFunction(0x20B317A0, sceNetAdhocctlAddHandlerFunction);
-            mm.addFunction(0x6402490B, sceNetAdhocctlDelHandlerFunction);
-            mm.addFunction(0x75ECD386, sceNetAdhocctlGetStateFunction);
-            mm.addFunction(0x362CBE8F, sceNetAdhocctlGetAdhocIdFunction);
-            mm.addFunction(0xE162CB14, sceNetAdhocctlGetPeerListFunction);
-            mm.addFunction(0x8DB83FDC, sceNetAdhocctlGetPeerInfoFunction);
-            mm.addFunction(0x99560ABE, sceNetAdhocctlGetAddrByNameFunction);
-            mm.addFunction(0x8916C003, sceNetAdhocctlGetNameByAddrFunction);
-            mm.addFunction(0xDED9D28E, sceNetAdhocctlGetParameterFunction);
-            mm.addFunction(0x81AEE1BE, sceNetAdhocctlGetScanInfoFunction);
-            mm.addFunction(0xA5C055CE, sceNetAdhocctlCreateEnterGameModeFunction);
-            mm.addFunction(0xB0B80E80, sceNetAdhocctlCreateEnterGameModeMinFunction);
-            mm.addFunction(0x1FF89745, sceNetAdhocctlJoinEnterGameModeFunction);
-            mm.addFunction(0xCF8E084D, sceNetAdhocctlExitGameModeFunction);
-            mm.addFunction(0x5A014CE0, sceNetAdhocctlGetGameModeInfoFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-            mm.removeFunction(sceNetAdhocctlInitFunction);
-            mm.removeFunction(sceNetAdhocctlTermFunction);
-            mm.removeFunction(sceNetAdhocctlConnectFunction);
-            mm.removeFunction(sceNetAdhocctlCreateFunction);
-            mm.removeFunction(sceNetAdhocctlJoinFunction);
-            mm.removeFunction(sceNetAdhocctlScanFunction);
-            mm.removeFunction(sceNetAdhocctlDisconnectFunction);
-            mm.removeFunction(sceNetAdhocctlAddHandlerFunction);
-            mm.removeFunction(sceNetAdhocctlDelHandlerFunction);
-            mm.removeFunction(sceNetAdhocctlGetStateFunction);
-            mm.removeFunction(sceNetAdhocctlGetAdhocIdFunction);
-            mm.removeFunction(sceNetAdhocctlGetPeerListFunction);
-            mm.removeFunction(sceNetAdhocctlGetPeerInfoFunction);
-            mm.removeFunction(sceNetAdhocctlGetAddrByNameFunction);
-            mm.removeFunction(sceNetAdhocctlGetNameByAddrFunction);
-            mm.removeFunction(sceNetAdhocctlGetParameterFunction);
-            mm.removeFunction(sceNetAdhocctlGetScanInfoFunction);
-            mm.removeFunction(sceNetAdhocctlCreateEnterGameModeFunction);
-            mm.removeFunction(sceNetAdhocctlCreateEnterGameModeMinFunction);
-            mm.removeFunction(sceNetAdhocctlJoinEnterGameModeFunction);
-            mm.removeFunction(sceNetAdhocctlExitGameModeFunction);
-            mm.removeFunction(sceNetAdhocctlGetGameModeInfoFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public static final int PSP_ADHOCCTL_EVENT_ERROR = 0;
     public static final int PSP_ADHOCCTL_EVENT_CONNECTED = 1;
@@ -444,7 +395,7 @@ public class sceNetAdhocctl implements HLEModule {
         log.warn("UNIMPLEMENTED: sceNetAdhocctlGetGameModeInfo");
 
         cpu.gpr[2] = 0xDEADC0DE;
-    }
+    }    @HLEFunction(nid = 0xE26F226E, version = 150)
     public final HLEModuleFunction sceNetAdhocctlInitFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlInit") {
 
         @Override
@@ -456,7 +407,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlInit(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9D689E13, version = 150)
     public final HLEModuleFunction sceNetAdhocctlTermFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlTerm") {
 
         @Override
@@ -468,7 +419,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlTerm(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0AD043ED, version = 150)
     public final HLEModuleFunction sceNetAdhocctlConnectFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlConnect") {
 
         @Override
@@ -480,7 +431,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlConnect(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEC0635C1, version = 150)
     public final HLEModuleFunction sceNetAdhocctlCreateFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlCreate") {
 
         @Override
@@ -492,7 +443,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlCreate(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5E7F79C9, version = 150)
     public final HLEModuleFunction sceNetAdhocctlJoinFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlJoin") {
 
         @Override
@@ -504,7 +455,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlJoin(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x08FFF7A0, version = 150)
     public final HLEModuleFunction sceNetAdhocctlScanFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlScan") {
 
         @Override
@@ -516,7 +467,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlScan(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x34401D65, version = 150)
     public final HLEModuleFunction sceNetAdhocctlDisconnectFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlDisconnect") {
 
         @Override
@@ -528,7 +479,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlDisconnect(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x20B317A0, version = 150)
     public final HLEModuleFunction sceNetAdhocctlAddHandlerFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlAddHandler") {
 
         @Override
@@ -540,7 +491,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlAddHandler(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x6402490B, version = 150)
     public final HLEModuleFunction sceNetAdhocctlDelHandlerFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlDelHandler") {
 
         @Override
@@ -552,7 +503,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlDelHandler(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x75ECD386, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetStateFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetState") {
 
         @Override
@@ -564,7 +515,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetState(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x362CBE8F, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetAdhocIdFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetAdhocId") {
 
         @Override
@@ -576,7 +527,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetAdhocId(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE162CB14, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetPeerListFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetPeerList") {
 
         @Override
@@ -588,7 +539,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetPeerList(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x8DB83FDC, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetPeerInfoFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetPeerInfo") {
 
         @Override
@@ -600,7 +551,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetPeerInfo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x99560ABE, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetAddrByNameFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetAddrByName") {
 
         @Override
@@ -612,7 +563,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetAddrByName(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x8916C003, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetNameByAddrFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetNameByAddr") {
 
         @Override
@@ -624,7 +575,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetNameByAddr(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDED9D28E, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetParameterFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetParameter") {
 
         @Override
@@ -636,7 +587,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetParameter(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x81AEE1BE, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetScanInfoFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetScanInfo") {
 
         @Override
@@ -648,7 +599,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlGetScanInfo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA5C055CE, version = 150)
     public final HLEModuleFunction sceNetAdhocctlCreateEnterGameModeFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlCreateEnterGameMode") {
 
         @Override
@@ -660,7 +611,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlCreateEnterGameMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB0B80E80, version = 150)
     public final HLEModuleFunction sceNetAdhocctlCreateEnterGameModeMinFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlCreateEnterGameModeMin") {
 
         @Override
@@ -672,7 +623,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlCreateEnterGameModeMin(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1FF89745, version = 150)
     public final HLEModuleFunction sceNetAdhocctlJoinEnterGameModeFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlJoinEnterGameMode") {
 
         @Override
@@ -684,7 +635,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlJoinEnterGameMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xCF8E084D, version = 150)
     public final HLEModuleFunction sceNetAdhocctlExitGameModeFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlExitGameMode") {
 
         @Override
@@ -696,7 +647,7 @@ public class sceNetAdhocctl implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceNetAdhocctlModule.sceNetAdhocctlExitGameMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x5A014CE0, version = 150)
     public final HLEModuleFunction sceNetAdhocctlGetGameModeInfoFunction = new HLEModuleFunction("sceNetAdhocctl", "sceNetAdhocctlGetGameModeInfo") {
 
         @Override

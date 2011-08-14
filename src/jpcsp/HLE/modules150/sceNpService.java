@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -38,42 +39,10 @@ public class sceNpService implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            /*
-             * FIXME: The sceNpService module uses a different
-             * NID resolve for it's functions' names.
-             * The public names reversed from several applications
-             * and modules are as follows:
-             *  - sceNpServiceInit (sceNpService_0F8F5821)
-             *  - sceNpServiceTerm
-             *  - sceNpManagerSigninUpdateInitStart
-             *  - sceNpManagerSigninUpdateGetStatus
-             *  - sceNpManagerSigninUpdateAbort
-             *  - sceNpManagerSigninUpdateShutdownStart
-             *  - sceNpServiceGetMemoryStat (sceNpService_00ACFAC3)
-             * Since the generated NIDs do not match the names, it's necessary
-             * to find which nomencalture is being used for these functions
-             * (e.g.: _x_sceNpServiceInit).
-             *
-             */
-
-            mm.addFunction(0x0F8F5821, sceNpService_0F8F5821Function);
-            mm.addFunction(0x00ACFAC3, sceNpService_00ACFAC3Function);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceNpService_0F8F5821Function);
-            mm.removeFunction(sceNpService_00ACFAC3Function);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     private int npManagerMemSize;            // Memory allocated by the NP Manager utility.
     private int npManagerMaxMemSize;  // Maximum memory used by the NP Manager utility.
@@ -119,7 +88,7 @@ public class sceNpService implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x0F8F5821, version = 150)
     public final HLEModuleFunction sceNpService_0F8F5821Function = new HLEModuleFunction("sceNpService", "sceNpService_0F8F5821") {
 
         @Override
@@ -132,7 +101,7 @@ public class sceNpService implements HLEModule {
             return "jpcsp.HLE.Modules.sceNpServiceModule.sceNpService_0F8F5821(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x00ACFAC3, version = 150)
     public final HLEModuleFunction sceNpService_00ACFAC3Function = new HLEModuleFunction("sceNpService", "sceNpService_00ACFAC3") {
 
         @Override

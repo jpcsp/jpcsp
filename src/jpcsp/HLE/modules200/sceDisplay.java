@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules200;
 
+import jpcsp.HLE.HLEFunction;
 import org.lwjgl.LWJGLException;
 
 import jpcsp.Processor;
@@ -35,30 +36,10 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 	public String getName() { return "sceDisplay"; }
 	
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-		
-		if (version >= 200) {
-		
-			mm.addFunction(0xBF79F646, sceDisplayGetResumeModeFunction);
-			mm.addFunction(0x69B53541, sceDisplayGetVblankRestFunction);
-			mm.addFunction(0x21038913, sceDisplayIsVsyncFunction);
-			
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 	
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-		
-		if (version >= 200) {
-		
-			mm.removeFunction(sceDisplayGetResumeModeFunction);
-			mm.removeFunction(sceDisplayGetVblankRestFunction);
-			mm.removeFunction(sceDisplayIsVsyncFunction);
-			
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 	
 	public void sceDisplayGetResumeMode(Processor processor) {
 		CpuState cpu = processor.cpu;
@@ -83,7 +64,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    
+    	@HLEFunction(nid = 0xBF79F646, version = 200)
 	public final HLEModuleFunction sceDisplayGetResumeModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetResumeMode") {
 		@Override
 		public final void execute(Processor processor) {
@@ -94,7 +75,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetResumeMode(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x69B53541, version = 200)
 	public final HLEModuleFunction sceDisplayGetVblankRestFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetVblankRest") {
 		@Override
 		public final void execute(Processor processor) {
@@ -105,7 +86,7 @@ public class sceDisplay extends jpcsp.HLE.modules150.sceDisplay {
 			return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetVblankRest(processor);";
 		}
 	};
-    
+    	@HLEFunction(nid = 0x21038913, version = 200)
 	public final HLEModuleFunction sceDisplayIsVsyncFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsVsync") {
 		@Override
 		public final void execute(Processor processor) {

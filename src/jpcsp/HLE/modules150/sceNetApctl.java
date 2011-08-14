@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -119,32 +120,10 @@ public class sceNetApctl implements HLEModule {
 	}
 	
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.addFunction(sceNetApctlInitFunction, 0xE2F91F9B);
-			mm.addFunction(sceNetApctlTermFunction, 0xB3EDD0EC);
-			mm.addFunction(sceNetApctlGetInfoFunction, 0x2BEFDF23);
-			mm.addFunction(sceNetApctlAddHandlerFunction, 0x8ABADD51);
-			mm.addFunction(sceNetApctlDelHandlerFunction, 0x5963991B);
-			mm.addFunction(sceNetApctlConnectFunction, 0xCFB957C6);
-			mm.addFunction(sceNetApctlDisconnectFunction, 0x24FE91A1);
-			mm.addFunction(sceNetApctlGetStateFunction, 0x5DEAC81B);
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 	
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.removeFunction(sceNetApctlInitFunction);
-			mm.removeFunction(sceNetApctlTermFunction);
-			mm.removeFunction(sceNetApctlGetInfoFunction);
-			mm.removeFunction(sceNetApctlAddHandlerFunction);
-			mm.removeFunction(sceNetApctlDelHandlerFunction);
-			mm.removeFunction(sceNetApctlConnectFunction);
-			mm.removeFunction(sceNetApctlDisconnectFunction);
-			mm.removeFunction(sceNetApctlGetStateFunction);
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected static final String uidPurpose = "sceNetApctl";
     protected int state = PSP_NET_APCTL_STATE_DISCONNECTED;
@@ -637,7 +616,7 @@ public class sceNetApctl implements HLEModule {
 			cpu.gpr[2] = 0;
 		}
 	}
-
+	@HLEFunction(nid = 0xE2F91F9B, version = 150)
 	public final HLEModuleFunction sceNetApctlInitFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlInit") {
 		@Override
 		public final void execute(Processor processor) {
@@ -648,7 +627,7 @@ public class sceNetApctl implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetApctlModule.sceNetApctlInit(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xB3EDD0EC, version = 150)
 	public final HLEModuleFunction sceNetApctlTermFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlTerm") {
 		@Override
 		public final void execute(Processor processor) {
@@ -659,7 +638,7 @@ public class sceNetApctl implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetApctlModule.sceNetApctlTerm(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x2BEFDF23, version = 150)
 	public final HLEModuleFunction sceNetApctlGetInfoFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlGetInfo") {
 		@Override
 		public final void execute(Processor processor) {
@@ -670,7 +649,7 @@ public class sceNetApctl implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetApctlModule.sceNetApctlGetInfo(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x8ABADD51, version = 150)
 	public final HLEModuleFunction sceNetApctlAddHandlerFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlAddHandler") {
 		@Override
 		public final void execute(Processor processor) {
@@ -681,7 +660,7 @@ public class sceNetApctl implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetApctlModule.sceNetApctlAddHandler(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x5963991B, version = 150)
 	public final HLEModuleFunction sceNetApctlDelHandlerFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlDelHandler") {
 		@Override
 		public final void execute(Processor processor) {
@@ -692,7 +671,7 @@ public class sceNetApctl implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetApctlModule.sceNetApctlDelHandler(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xCFB957C6, version = 150)
 	public final HLEModuleFunction sceNetApctlConnectFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlConnect") {
 		@Override
 		public final void execute(Processor processor) {
@@ -703,7 +682,7 @@ public class sceNetApctl implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetApctlModule.sceNetApctlConnect(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x24FE91A1, version = 150)
 	public final HLEModuleFunction sceNetApctlDisconnectFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlDisconnect") {
 		@Override
 		public final void execute(Processor processor) {
@@ -714,7 +693,7 @@ public class sceNetApctl implements HLEModule {
 			return "jpcsp.HLE.Modules.sceNetApctlModule.sceNetApctlDisconnect(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x5DEAC81B, version = 150)
 	public final HLEModuleFunction sceNetApctlGetStateFunction = new HLEModuleFunction("sceNetApctl", "sceNetApctlGetState") {
 		@Override
 		public final void execute(Processor processor) {

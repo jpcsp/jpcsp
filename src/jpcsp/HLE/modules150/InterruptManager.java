@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -34,38 +35,10 @@ public class InterruptManager implements HLEModule {
 	public String getName() { return "InterruptManager"; }
 	
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-		
-			mm.addFunction(0xCA04A2B9, sceKernelRegisterSubIntrHandlerFunction);
-			mm.addFunction(0xD61E6961, sceKernelReleaseSubIntrHandlerFunction);
-			mm.addFunction(0xFB8E22EC, sceKernelEnableSubIntrFunction);
-			mm.addFunction(0x8A389411, sceKernelDisableSubIntrFunction);
-			mm.addFunction(0x5CB5A78B, sceKernelSuspendSubIntrFunction);
-			mm.addFunction(0x7860E0DC, sceKernelResumeSubIntrFunction);
-			mm.addFunction(0xFC4374B8, sceKernelIsSubInterruptOccurredFunction);
-			mm.addFunction(0xD2E8363F, QueryIntrHandlerInfoFunction);
-			mm.addFunction(0xEEE43F47, sceKernelRegisterUserSpaceIntrStackFunction);
-			
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 	
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-		
-			mm.removeFunction(sceKernelRegisterSubIntrHandlerFunction);
-			mm.removeFunction(sceKernelReleaseSubIntrHandlerFunction);
-			mm.removeFunction(sceKernelEnableSubIntrFunction);
-			mm.removeFunction(sceKernelDisableSubIntrFunction);
-			mm.removeFunction(sceKernelSuspendSubIntrFunction);
-			mm.removeFunction(sceKernelResumeSubIntrFunction);
-			mm.removeFunction(sceKernelIsSubInterruptOccurredFunction);
-			mm.removeFunction(QueryIntrHandlerInfoFunction);
-			mm.removeFunction(sceKernelRegisterUserSpaceIntrStackFunction);
-			
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 	
 	public void sceKernelRegisterSubIntrHandler(Processor processor) {
 		int[] gpr = processor.cpu.gpr;
@@ -126,7 +99,7 @@ public class InterruptManager implements HLEModule {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-    
+	@HLEFunction(nid = 0xCA04A2B9, version = 150)
 	public final HLEModuleFunction sceKernelRegisterSubIntrHandlerFunction = new HLEModuleFunction("InterruptManager", "sceKernelRegisterSubIntrHandler") {
 		@Override
 		public final void execute(Processor processor) {
@@ -137,7 +110,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelRegisterSubIntrHandler(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0xD61E6961, version = 150)
 	public final HLEModuleFunction sceKernelReleaseSubIntrHandlerFunction = new HLEModuleFunction("InterruptManager", "sceKernelReleaseSubIntrHandler") {
 		@Override
 		public final void execute(Processor processor) {
@@ -148,7 +121,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelReleaseSubIntrHandler(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0xFB8E22EC, version = 150)
 	public final HLEModuleFunction sceKernelEnableSubIntrFunction = new HLEModuleFunction("InterruptManager", "sceKernelEnableSubIntr") {
 		@Override
 		public final void execute(Processor processor) {
@@ -159,7 +132,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelEnableSubIntr(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0x8A389411, version = 150)
 	public final HLEModuleFunction sceKernelDisableSubIntrFunction = new HLEModuleFunction("InterruptManager", "sceKernelDisableSubIntr") {
 		@Override
 		public final void execute(Processor processor) {
@@ -170,7 +143,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelDisableSubIntr(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0x5CB5A78B, version = 150)
 	public final HLEModuleFunction sceKernelSuspendSubIntrFunction = new HLEModuleFunction("InterruptManager", "sceKernelSuspendSubIntr") {
 		@Override
 		public final void execute(Processor processor) {
@@ -181,7 +154,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelSuspendSubIntr(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0x7860E0DC, version = 150)
 	public final HLEModuleFunction sceKernelResumeSubIntrFunction = new HLEModuleFunction("InterruptManager", "sceKernelResumeSubIntr") {
 		@Override
 		public final void execute(Processor processor) {
@@ -192,7 +165,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelResumeSubIntr(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0xFC4374B8, version = 150)
 	public final HLEModuleFunction sceKernelIsSubInterruptOccurredFunction = new HLEModuleFunction("InterruptManager", "sceKernelIsSubInterruptOccurred") {
 		@Override
 		public final void execute(Processor processor) {
@@ -203,7 +176,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.sceKernelIsSubInterruptOccurred(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0xD2E8363F, version = 150)
 	public final HLEModuleFunction QueryIntrHandlerInfoFunction = new HLEModuleFunction("InterruptManager", "QueryIntrHandlerInfo") {
 		@Override
 		public final void execute(Processor processor) {
@@ -214,7 +187,7 @@ public class InterruptManager implements HLEModule {
 			return "jpcsp.HLE.Modules.InterruptManagerModule.QueryIntrHandlerInfo(processor);";
 		}
 	};
-    
+	@HLEFunction(nid = 0xEEE43F47, version = 150)
 	public final HLEModuleFunction sceKernelRegisterUserSpaceIntrStackFunction = new HLEModuleFunction("InterruptManager", "sceKernelRegisterUserSpaceIntrStack") {
 		@Override
 		public final void execute(Processor processor) {

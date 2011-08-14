@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules200;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -27,32 +28,10 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
     protected int compilerVersion;
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-
-		if (version >= 200) {
-
-			mm.addFunction(0xFC114573, sceKernelGetCompiledSdkVersionFunction);
-			mm.addFunction(0x7591C7DB, sceKernelSetCompiledSdkVersionFunction);
-			mm.addFunction(0xF77D77CB, sceKernelSetCompilerVersionFunction);
-			mm.addFunction(0xA6848DF8, SysMemUserForUser_A6848DF8Function);
-
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-
-		if (version >= 200) {
-
-			mm.removeFunction(sceKernelGetCompiledSdkVersionFunction);
-			mm.removeFunction(sceKernelSetCompiledSdkVersionFunction);
-			mm.removeFunction(sceKernelSetCompilerVersionFunction);
-			mm.removeFunction(SysMemUserForUser_A6848DF8Function);
-
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	@Override
 	public void start() {
@@ -107,7 +86,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 
 		cpu.gpr[2] = 0xDEADC0DE;
 	}
-
+	@HLEFunction(nid = 0xFC114573, version = 200)
 	public final HLEModuleFunction sceKernelGetCompiledSdkVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelGetCompiledSdkVersion") {
 		@Override
 		public final void execute(Processor processor) {
@@ -118,7 +97,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelGetCompiledSdkVersion(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x7591C7DB, version = 200)
 	public final HLEModuleFunction sceKernelSetCompiledSdkVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelSetCompiledSdkVersion") {
 		@Override
 		public final void execute(Processor processor) {
@@ -129,7 +108,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelSetCompiledSdkVersion(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xF77D77CB, version = 200)
 	public final HLEModuleFunction sceKernelSetCompilerVersionFunction = new HLEModuleFunction("SysMemUserForUser", "sceKernelSetCompilerVersion") {
 		@Override
 		public final void execute(Processor processor) {
@@ -140,7 +119,7 @@ public class SysMemUserForUser extends jpcsp.HLE.modules150.SysMemUserForUser {
 			return "jpcsp.HLE.Modules.SysMemUserForUserModule.sceKernelSetCompilerVersion(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xA6848DF8, version = 200)
 	public final HLEModuleFunction SysMemUserForUser_A6848DF8Function = new HLEModuleFunction("SysMemUserForUser", "SysMemUserForUser_A6848DF8") {
 		@Override
 		public final void execute(Processor processor) {

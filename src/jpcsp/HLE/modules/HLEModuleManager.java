@@ -435,23 +435,39 @@ public class HLEModuleManager {
 	public HLEModuleFunction getSyscallFunction(int code) {
 		return allSyscallCodes.get(code);
 	}
-	
+
+	/**
+	 * Iterates over an object fields searching for HLEFunction annotations and if the specified
+	 * version is greater than the required version for that HLEFunction, it will install it.
+	 * 
+	 * @param object
+	 * @param version
+	 */
 	public void installModuleWithAnnotations(HLEModule object, int version) {
 		try {
 			for (Field field : object.getClass().getFields()) {
 				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
 				if (hleFunction != null) {
 					if (version >= hleFunction.version()) {
-						this.addFunction((HLEModuleFunction)field.get(object), hleFunction.nid());
+						if (hleFunction.syscall() != 0) {
+							this.addHLEFunction((HLEModuleFunction)field.get(object));
+						} else {
+							this.addFunction((HLEModuleFunction)field.get(object), hleFunction.nid());
+						}
 					}
 				}
 			}
 		} catch (Exception e) {
-			Modules.getLogger("ThreadManForUser").error("installModuleWithAnnotations : EXCEPTION");
 			e.printStackTrace();
 		}
 	}
 	
+	/**
+	 * Same as installModuleWithAnnotations but uninstalling.
+	 * 
+	 * @param object
+	 * @param version
+	 */
 	public void uninstallModuleWithAnnotations(HLEModule object, int version) {
 		try {
 			for (Field field : object.getClass().getFields()) {

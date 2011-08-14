@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -40,124 +41,10 @@ public class scePower implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x2B51FE2F, scePower_2B51FE2FFunction);
-            mm.addFunction(0x442BFBAC, scePowerGetBacklightMaximumFunction);
-            mm.addFunction(0xEFD3C963, scePowerTickFunction);
-            mm.addFunction(0xEDC13FE5, scePowerGetIdleTimerFunction);
-            mm.addFunction(0x7F30B3B1, scePowerIdleTimerEnableFunction);
-            mm.addFunction(0x972CE941, scePowerIdleTimerDisableFunction);
-            mm.addFunction(0x27F3292C, scePowerBatteryUpdateInfoFunction);
-            mm.addFunction(0xE8E4E204, scePowerGetForceSuspendCapacityFunction);
-            mm.addFunction(0xB999184C, scePowerGetLowBatteryCapacityFunction);
-            mm.addFunction(0x87440F5E, scePowerIsPowerOnlineFunction);
-            mm.addFunction(0x0AFD0D8B, scePowerIsBatteryExistFunction);
-            mm.addFunction(0x1E490401, scePowerIsBatteryChargingFunction);
-            mm.addFunction(0xB4432BC8, scePowerGetBatteryChargingStatusFunction);
-            mm.addFunction(0xD3075926, scePowerIsLowBatteryFunction);
-            mm.addFunction(0x78A1A796, scePowerIsSuspendRequiredFunction);
-            mm.addFunction(0x94F5A53F, scePowerGetBatteryRemainCapacityFunction);
-            mm.addFunction(0xFD18A0FF, scePowerGetBatteryFullCapacityFunction);
-            mm.addFunction(0x2085D15D, scePowerGetBatteryLifePercentFunction);
-            mm.addFunction(0x8EFB3FA2, scePowerGetBatteryLifeTimeFunction);
-            mm.addFunction(0x28E12023, scePowerGetBatteryTempFunction);
-            mm.addFunction(0x862AE1A6, scePowerGetBatteryElecFunction);
-            mm.addFunction(0x483CE86B, scePowerGetBatteryVoltFunction);
-            mm.addFunction(0x23436A4A, scePower_23436A4AFunction);
-            mm.addFunction(0x0CD21B1F, scePowerSetPowerSwModeFunction);
-            mm.addFunction(0x165CE085, scePowerGetPowerSwModeFunction);
-            mm.addFunction(0x23C31FFE, scePowerVolatileMemLockFunction);
-            mm.addFunction(0xFA97A599, scePowerVolatileMemTryLockFunction);
-            mm.addFunction(0xB3EDD801, scePowerVolatileMemUnlockFunction);
-            mm.addFunction(0xD6D016EF, scePowerLockFunction);
-            mm.addFunction(0xCA3D34C1, scePowerUnlockFunction);
-            mm.addFunction(0xDB62C9CF, scePowerCancelRequestFunction);
-            mm.addFunction(0x7FA406DD, scePowerIsRequestFunction);
-            mm.addFunction(0x2B7C7CF4, scePowerRequestStandbyFunction);
-            mm.addFunction(0xAC32C9CC, scePowerRequestSuspendFunction);
-            mm.addFunction(0x2875994B, scePower_2875994BFunction);
-            mm.addFunction(0x3951AF53, scePowerWaitRequestCompletionFunction);
-            mm.addFunction(0x0074EF9B, scePowerGetResumeCountFunction);
-            mm.addFunction(0x04B7766E, scePowerRegisterCallbackFunction);
-            mm.addFunction(0xDFA8BAF8, scePowerUnregisterCallbackFunction);
-            mm.addFunction(0xDB9D28DD, scePowerUnregitserCallbackFunction);
-            mm.addFunction(0x843FBF43, scePowerSetCpuClockFrequencyFunction);
-            mm.addFunction(0xB8D7B3FB, scePowerSetBusClockFrequencyFunction);
-            mm.addFunction(0xFEE03A2F, scePowerGetCpuClockFrequencyFunction);
-            mm.addFunction(0x478FE6F5, scePowerGetBusClockFrequencyFunction);
-            mm.addFunction(0xFDB5BFE9, scePowerGetCpuClockFrequencyIntFunction);
-            mm.addFunction(0xBD681969, scePowerGetBusClockFrequencyIntFunction);
-            mm.addFunction(0x34F9C463, scePowerGetPllClockFrequencyIntFunction);
-            mm.addFunction(0xB1A52C83, scePowerGetCpuClockFrequencyFloatFunction);
-            mm.addFunction(0x9BADB3EB, scePowerGetBusClockFrequencyFloatFunction);
-            mm.addFunction(0xEA382A27, scePowerGetPllClockFrequencyFloatFunction);
-            mm.addFunction(0x737486F2, scePowerSetClockFrequencyFunction);
-            mm.addFunction(0xEBD177D6, scePower_EBD177D6Function);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(scePower_2B51FE2FFunction);
-            mm.removeFunction(scePowerGetBacklightMaximumFunction);
-            mm.removeFunction(scePowerTickFunction);
-            mm.removeFunction(scePowerGetIdleTimerFunction);
-            mm.removeFunction(scePowerIdleTimerEnableFunction);
-            mm.removeFunction(scePowerIdleTimerDisableFunction);
-            mm.removeFunction(scePowerBatteryUpdateInfoFunction);
-            mm.removeFunction(scePowerGetForceSuspendCapacityFunction);
-            mm.removeFunction(scePowerGetLowBatteryCapacityFunction);
-            mm.removeFunction(scePowerIsPowerOnlineFunction);
-            mm.removeFunction(scePowerIsBatteryExistFunction);
-            mm.removeFunction(scePowerIsBatteryChargingFunction);
-            mm.removeFunction(scePowerGetBatteryChargingStatusFunction);
-            mm.removeFunction(scePowerIsLowBatteryFunction);
-            mm.removeFunction(scePowerIsSuspendRequiredFunction);
-            mm.removeFunction(scePowerGetBatteryRemainCapacityFunction);
-            mm.removeFunction(scePowerGetBatteryFullCapacityFunction);
-            mm.removeFunction(scePowerGetBatteryLifePercentFunction);
-            mm.removeFunction(scePowerGetBatteryLifeTimeFunction);
-            mm.removeFunction(scePowerGetBatteryTempFunction);
-            mm.removeFunction(scePowerGetBatteryElecFunction);
-            mm.removeFunction(scePowerGetBatteryVoltFunction);
-            mm.removeFunction(scePower_23436A4AFunction);
-            mm.removeFunction(scePowerSetPowerSwModeFunction);
-            mm.removeFunction(scePowerGetPowerSwModeFunction);
-            mm.removeFunction(scePowerVolatileMemLockFunction);
-            mm.removeFunction(scePowerVolatileMemTryLockFunction);
-            mm.removeFunction(scePowerVolatileMemUnlockFunction);
-            mm.removeFunction(scePowerLockFunction);
-            mm.removeFunction(scePowerUnlockFunction);
-            mm.removeFunction(scePowerCancelRequestFunction);
-            mm.removeFunction(scePowerIsRequestFunction);
-            mm.removeFunction(scePowerRequestStandbyFunction);
-            mm.removeFunction(scePowerRequestSuspendFunction);
-            mm.removeFunction(scePower_2875994BFunction);
-            mm.removeFunction(scePowerWaitRequestCompletionFunction);
-            mm.removeFunction(scePowerGetResumeCountFunction);
-            mm.removeFunction(scePowerRegisterCallbackFunction);
-            mm.removeFunction(scePowerUnregisterCallbackFunction);
-            mm.removeFunction(scePowerUnregitserCallbackFunction);
-            mm.removeFunction(scePowerSetCpuClockFrequencyFunction);
-            mm.removeFunction(scePowerSetBusClockFrequencyFunction);
-            mm.removeFunction(scePowerGetCpuClockFrequencyFunction);
-            mm.removeFunction(scePowerGetBusClockFrequencyFunction);
-            mm.removeFunction(scePowerGetCpuClockFrequencyIntFunction);
-            mm.removeFunction(scePowerGetBusClockFrequencyIntFunction);
-            mm.removeFunction(scePowerGetPllClockFrequencyIntFunction);
-            mm.removeFunction(scePowerGetCpuClockFrequencyFloatFunction);
-            mm.removeFunction(scePowerGetBusClockFrequencyFloatFunction);
-            mm.removeFunction(scePowerGetPllClockFrequencyFloatFunction);
-            mm.removeFunction(scePowerSetClockFrequencyFunction);
-            mm.removeFunction(scePower_EBD177D6Function);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     /**
      * Power callback flags
      */
@@ -716,7 +603,7 @@ public class scePower implements HLEModule {
         log.debug("scePower_EBD177D6 pll:" + pllClock + " cpu:" + cpuClock + " bus:" + busClock);
 
         cpu.gpr[2] = 0;
-    }
+    }    @HLEFunction(nid = 0x2B51FE2F, version = 150)
     public final HLEModuleFunction scePower_2B51FE2FFunction = new HLEModuleFunction("scePower", "scePower_2B51FE2F") {
 
         @Override
@@ -728,7 +615,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePower_2B51FE2F(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x442BFBAC, version = 150)
     public final HLEModuleFunction scePowerGetBacklightMaximumFunction = new HLEModuleFunction("scePower", "scePowerGetBacklightMaximum") {
 
         @Override
@@ -740,7 +627,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBacklightMaximum(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEFD3C963, version = 150)
     public final HLEModuleFunction scePowerTickFunction = new HLEModuleFunction("scePower", "scePowerTick") {
 
         @Override
@@ -752,7 +639,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerTick(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEDC13FE5, version = 150)
     public final HLEModuleFunction scePowerGetIdleTimerFunction = new HLEModuleFunction("scePower", "scePowerGetIdleTimer") {
 
         @Override
@@ -764,7 +651,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetIdleTimer(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x7F30B3B1, version = 150)
     public final HLEModuleFunction scePowerIdleTimerEnableFunction = new HLEModuleFunction("scePower", "scePowerIdleTimerEnable") {
 
         @Override
@@ -776,7 +663,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIdleTimerEnable(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x972CE941, version = 150)
     public final HLEModuleFunction scePowerIdleTimerDisableFunction = new HLEModuleFunction("scePower", "scePowerIdleTimerDisable") {
 
         @Override
@@ -788,7 +675,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIdleTimerDisable(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x27F3292C, version = 150)
     public final HLEModuleFunction scePowerBatteryUpdateInfoFunction = new HLEModuleFunction("scePower", "scePowerBatteryUpdateInfo") {
 
         @Override
@@ -800,7 +687,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerBatteryUpdateInfo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE8E4E204, version = 150)
     public final HLEModuleFunction scePowerGetForceSuspendCapacityFunction = new HLEModuleFunction("scePower", "scePowerGetForceSuspendCapacity") {
 
         @Override
@@ -812,7 +699,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetForceSuspendCapacity(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB999184C, version = 150)
     public final HLEModuleFunction scePowerGetLowBatteryCapacityFunction = new HLEModuleFunction("scePower", "scePowerGetLowBatteryCapacity") {
 
         @Override
@@ -824,7 +711,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetLowBatteryCapacity(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x87440F5E, version = 150)
     public final HLEModuleFunction scePowerIsPowerOnlineFunction = new HLEModuleFunction("scePower", "scePowerIsPowerOnline") {
 
         @Override
@@ -836,7 +723,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIsPowerOnline(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0AFD0D8B, version = 150)
     public final HLEModuleFunction scePowerIsBatteryExistFunction = new HLEModuleFunction("scePower", "scePowerIsBatteryExist") {
 
         @Override
@@ -848,7 +735,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIsBatteryExist(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1E490401, version = 150)
     public final HLEModuleFunction scePowerIsBatteryChargingFunction = new HLEModuleFunction("scePower", "scePowerIsBatteryCharging") {
 
         @Override
@@ -860,7 +747,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIsBatteryCharging(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB4432BC8, version = 150)
     public final HLEModuleFunction scePowerGetBatteryChargingStatusFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryChargingStatus") {
 
         @Override
@@ -872,7 +759,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryChargingStatus(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD3075926, version = 150)
     public final HLEModuleFunction scePowerIsLowBatteryFunction = new HLEModuleFunction("scePower", "scePowerIsLowBattery") {
 
         @Override
@@ -884,7 +771,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIsLowBattery(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x78A1A796, version = 150)
     public final HLEModuleFunction scePowerIsSuspendRequiredFunction = new HLEModuleFunction("scePower", "scePowerIsSuspendRequired") {
 
         @Override
@@ -896,7 +783,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIsSuspendRequired(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x94F5A53F, version = 150)
     public final HLEModuleFunction scePowerGetBatteryRemainCapacityFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryRemainCapacity") {
 
         @Override
@@ -908,7 +795,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryRemainCapacity(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xFD18A0FF, version = 150)
     public final HLEModuleFunction scePowerGetBatteryFullCapacityFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryFullCapacity") {
 
         @Override
@@ -920,7 +807,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryFullCapacity(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2085D15D, version = 150)
     public final HLEModuleFunction scePowerGetBatteryLifePercentFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryLifePercent") {
 
         @Override
@@ -932,7 +819,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryLifePercent(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x8EFB3FA2, version = 150)
     public final HLEModuleFunction scePowerGetBatteryLifeTimeFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryLifeTime") {
 
         @Override
@@ -944,7 +831,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryLifeTime(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x28E12023, version = 150)
     public final HLEModuleFunction scePowerGetBatteryTempFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryTemp") {
 
         @Override
@@ -956,7 +843,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryTemp(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x862AE1A6, version = 150)
     public final HLEModuleFunction scePowerGetBatteryElecFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryElec") {
 
         @Override
@@ -968,7 +855,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryElec(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x483CE86B, version = 150)
     public final HLEModuleFunction scePowerGetBatteryVoltFunction = new HLEModuleFunction("scePower", "scePowerGetBatteryVolt") {
 
         @Override
@@ -980,7 +867,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBatteryVolt(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x23436A4A, version = 150)
     public final HLEModuleFunction scePower_23436A4AFunction = new HLEModuleFunction("scePower", "scePower_23436A4A") {
 
         @Override
@@ -992,7 +879,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePower_23436A4A(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0CD21B1F, version = 150)
     public final HLEModuleFunction scePowerSetPowerSwModeFunction = new HLEModuleFunction("scePower", "scePowerSetPowerSwMode") {
 
         @Override
@@ -1004,7 +891,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerSetPowerSwMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x165CE085, version = 150)
     public final HLEModuleFunction scePowerGetPowerSwModeFunction = new HLEModuleFunction("scePower", "scePowerGetPowerSwMode") {
 
         @Override
@@ -1016,7 +903,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetPowerSwMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x23C31FFE, version = 150)
     public final HLEModuleFunction scePowerVolatileMemLockFunction = new HLEModuleFunction("scePower", "scePowerVolatileMemLock") {
 
         @Override
@@ -1028,7 +915,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerVolatileMemLock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xFA97A599, version = 150)
     public final HLEModuleFunction scePowerVolatileMemTryLockFunction = new HLEModuleFunction("scePower", "scePowerVolatileMemTryLock") {
 
         @Override
@@ -1040,7 +927,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerVolatileMemTryLock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB3EDD801, version = 150)
     public final HLEModuleFunction scePowerVolatileMemUnlockFunction = new HLEModuleFunction("scePower", "scePowerVolatileMemUnlock") {
 
         @Override
@@ -1052,7 +939,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerVolatileMemUnlock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xD6D016EF, version = 150)
     public final HLEModuleFunction scePowerLockFunction = new HLEModuleFunction("scePower", "scePowerLock") {
 
         @Override
@@ -1064,7 +951,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerLock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xCA3D34C1, version = 150)
     public final HLEModuleFunction scePowerUnlockFunction = new HLEModuleFunction("scePower", "scePowerUnlock") {
 
         @Override
@@ -1076,7 +963,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerUnlock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDB62C9CF, version = 150)
     public final HLEModuleFunction scePowerCancelRequestFunction = new HLEModuleFunction("scePower", "scePowerCancelRequest") {
 
         @Override
@@ -1088,7 +975,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerCancelRequest(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x7FA406DD, version = 150)
     public final HLEModuleFunction scePowerIsRequestFunction = new HLEModuleFunction("scePower", "scePowerIsRequest") {
 
         @Override
@@ -1100,7 +987,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerIsRequest(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2B7C7CF4, version = 150)
     public final HLEModuleFunction scePowerRequestStandbyFunction = new HLEModuleFunction("scePower", "scePowerRequestStandby") {
 
         @Override
@@ -1112,7 +999,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerRequestStandby(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xAC32C9CC, version = 150)
     public final HLEModuleFunction scePowerRequestSuspendFunction = new HLEModuleFunction("scePower", "scePowerRequestSuspend") {
 
         @Override
@@ -1124,7 +1011,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerRequestSuspend(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2875994B, version = 150)
     public final HLEModuleFunction scePower_2875994BFunction = new HLEModuleFunction("scePower", "scePower_2875994B") {
 
         @Override
@@ -1136,7 +1023,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePower_2875994B(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3951AF53, version = 150)
     public final HLEModuleFunction scePowerWaitRequestCompletionFunction = new HLEModuleFunction("scePower", "scePowerWaitRequestCompletion") {
 
         @Override
@@ -1148,7 +1035,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerWaitRequestCompletion(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0074EF9B, version = 150)
     public final HLEModuleFunction scePowerGetResumeCountFunction = new HLEModuleFunction("scePower", "scePowerGetResumeCount") {
 
         @Override
@@ -1160,7 +1047,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetResumeCount(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x04B7766E, version = 150)
     public final HLEModuleFunction scePowerRegisterCallbackFunction = new HLEModuleFunction("scePower", "scePowerRegisterCallback") {
 
         @Override
@@ -1172,7 +1059,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerRegisterCallback(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDFA8BAF8, version = 150)
     public final HLEModuleFunction scePowerUnregisterCallbackFunction = new HLEModuleFunction("scePower", "scePowerUnregisterCallback") {
 
         @Override
@@ -1184,7 +1071,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerUnregisterCallback(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDB9D28DD, version = 150)
     public final HLEModuleFunction scePowerUnregitserCallbackFunction = new HLEModuleFunction("scePower", "scePowerUnregitserCallback") {
 
         @Override
@@ -1196,7 +1083,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerUnregitserCallback(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x843FBF43, version = 150)
     public final HLEModuleFunction scePowerSetCpuClockFrequencyFunction = new HLEModuleFunction("scePower", "scePowerSetCpuClockFrequency") {
 
         @Override
@@ -1208,7 +1095,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerSetCpuClockFrequency(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB8D7B3FB, version = 150)
     public final HLEModuleFunction scePowerSetBusClockFrequencyFunction = new HLEModuleFunction("scePower", "scePowerSetBusClockFrequency") {
 
         @Override
@@ -1220,7 +1107,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerSetBusClockFrequency(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xFEE03A2F, version = 150)
     public final HLEModuleFunction scePowerGetCpuClockFrequencyFunction = new HLEModuleFunction("scePower", "scePowerGetCpuClockFrequency") {
 
         @Override
@@ -1232,7 +1119,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetCpuClockFrequency(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x478FE6F5, version = 150)
     public final HLEModuleFunction scePowerGetBusClockFrequencyFunction = new HLEModuleFunction("scePower", "scePowerGetBusClockFrequency") {
 
         @Override
@@ -1244,7 +1131,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBusClockFrequency(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xFDB5BFE9, version = 150)
     public final HLEModuleFunction scePowerGetCpuClockFrequencyIntFunction = new HLEModuleFunction("scePower", "scePowerGetCpuClockFrequencyInt") {
 
         @Override
@@ -1256,7 +1143,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetCpuClockFrequencyInt(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xBD681969, version = 150)
     public final HLEModuleFunction scePowerGetBusClockFrequencyIntFunction = new HLEModuleFunction("scePower", "scePowerGetBusClockFrequencyInt") {
 
         @Override
@@ -1268,7 +1155,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBusClockFrequencyInt(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x34F9C463, version = 150)
     public final HLEModuleFunction scePowerGetPllClockFrequencyIntFunction = new HLEModuleFunction("scePower", "scePowerGetPllClockFrequencyInt") {
 
         @Override
@@ -1280,7 +1167,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetPllClockFrequencyInt(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB1A52C83, version = 150)
     public final HLEModuleFunction scePowerGetCpuClockFrequencyFloatFunction = new HLEModuleFunction("scePower", "scePowerGetCpuClockFrequencyFloat") {
 
         @Override
@@ -1292,7 +1179,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetCpuClockFrequencyFloat(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9BADB3EB, version = 150)
     public final HLEModuleFunction scePowerGetBusClockFrequencyFloatFunction = new HLEModuleFunction("scePower", "scePowerGetBusClockFrequencyFloat") {
 
         @Override
@@ -1304,7 +1191,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBusClockFrequencyFloat(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEA382A27, version = 150)
     public final HLEModuleFunction scePowerGetPllClockFrequencyFloatFunction = new HLEModuleFunction("scePower", "scePowerGetPllClockFrequencyFloat") {
 
         @Override
@@ -1316,7 +1203,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerGetPllClockFrequencyFloat(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x737486F2, version = 150)
     public final HLEModuleFunction scePowerSetClockFrequencyFunction = new HLEModuleFunction("scePower", "scePowerSetClockFrequency") {
 
         @Override
@@ -1328,7 +1215,7 @@ public class scePower implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePowerModule.scePowerSetClockFrequency(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xEBD177D6, version = 150)
     public final HLEModuleFunction scePower_EBD177D6Function = new HLEModuleFunction("scePower", "scePower_EBD177D6") {
 
         @Override

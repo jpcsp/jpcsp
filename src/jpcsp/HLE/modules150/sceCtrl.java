@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -127,56 +128,10 @@ public class sceCtrl implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x6A2774F3, sceCtrlSetSamplingCycleFunction);
-            mm.addFunction(0x02BAAD91, sceCtrlGetSamplingCycleFunction);
-            mm.addFunction(0x1F4011E6, sceCtrlSetSamplingModeFunction);
-            mm.addFunction(0xDA6B76A1, sceCtrlGetSamplingModeFunction);
-            mm.addFunction(0x3A622550, sceCtrlPeekBufferPositiveFunction);
-            mm.addFunction(0xC152080A, sceCtrlPeekBufferNegativeFunction);
-            mm.addFunction(0x1F803938, sceCtrlReadBufferPositiveFunction);
-            mm.addFunction(0x60B81F86, sceCtrlReadBufferNegativeFunction);
-            mm.addFunction(0xB1D0E5CD, sceCtrlPeekLatchFunction);
-            mm.addFunction(0x0B588501, sceCtrlReadLatchFunction);
-            mm.addFunction(0xA7144800, sceCtrlSetIdleCancelThresholdFunction);
-            mm.addFunction(0x687660FA, sceCtrlGetIdleCancelThresholdFunction);
-            mm.addFunction(0x348D99D4, sceCtrl_348D99D4Function);
-            mm.addFunction(0xAF5960F3, sceCtrl_AF5960F3Function);
-            mm.addFunction(0xA68FD260, sceCtrlClearRapidFireFunction);
-            mm.addFunction(0x6841BE1A, sceCtrlSetRapidFireFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceCtrlSetSamplingCycleFunction);
-            mm.removeFunction(sceCtrlGetSamplingCycleFunction);
-            mm.removeFunction(sceCtrlSetSamplingModeFunction);
-            mm.removeFunction(sceCtrlGetSamplingModeFunction);
-            mm.removeFunction(sceCtrlPeekBufferPositiveFunction);
-            mm.removeFunction(sceCtrlPeekBufferNegativeFunction);
-            mm.removeFunction(sceCtrlReadBufferPositiveFunction);
-            mm.removeFunction(sceCtrlReadBufferNegativeFunction);
-            mm.removeFunction(sceCtrlPeekLatchFunction);
-            mm.removeFunction(sceCtrlReadLatchFunction);
-            mm.removeFunction(sceCtrlSetIdleCancelThresholdFunction);
-            mm.removeFunction(sceCtrlGetIdleCancelThresholdFunction);
-            mm.removeFunction(sceCtrl_348D99D4Function);
-            mm.removeFunction(sceCtrl_AF5960F3Function);
-            mm.removeFunction(sceCtrlClearRapidFireFunction);
-            mm.removeFunction(sceCtrlSetRapidFireFunction);
-
-            if (sampleAction != null) {
-                Managers.intr.removeVBlankAction(sampleAction);
-                sampleAction = null;
-            }
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
     public void start() {
@@ -596,7 +551,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-    }
+    }    @HLEFunction(nid = 0x6A2774F3, version = 150)
     public final HLEModuleFunction sceCtrlSetSamplingCycleFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetSamplingCycle") {
 
         @Override
@@ -608,7 +563,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlSetSamplingCycle(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x02BAAD91, version = 150)
     public final HLEModuleFunction sceCtrlGetSamplingCycleFunction = new HLEModuleFunction("sceCtrl", "sceCtrlGetSamplingCycle") {
 
         @Override
@@ -620,7 +575,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlGetSamplingCycle(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1F4011E6, version = 150)
     public final HLEModuleFunction sceCtrlSetSamplingModeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetSamplingMode") {
 
         @Override
@@ -632,7 +587,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlSetSamplingMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDA6B76A1, version = 150)
     public final HLEModuleFunction sceCtrlGetSamplingModeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlGetSamplingMode") {
 
         @Override
@@ -644,7 +599,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlGetSamplingMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3A622550, version = 150)
     public final HLEModuleFunction sceCtrlPeekBufferPositiveFunction = new HLEModuleFunction("sceCtrl", "sceCtrlPeekBufferPositive") {
 
         @Override
@@ -656,7 +611,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlPeekBufferPositive(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xC152080A, version = 150)
     public final HLEModuleFunction sceCtrlPeekBufferNegativeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlPeekBufferNegative") {
 
         @Override
@@ -668,7 +623,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlPeekBufferNegative(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1F803938, version = 150)
     public final HLEModuleFunction sceCtrlReadBufferPositiveFunction = new HLEModuleFunction("sceCtrl", "sceCtrlReadBufferPositive") {
 
         @Override
@@ -680,7 +635,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlReadBufferPositive(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x60B81F86, version = 150)
     public final HLEModuleFunction sceCtrlReadBufferNegativeFunction = new HLEModuleFunction("sceCtrl", "sceCtrlReadBufferNegative") {
 
         @Override
@@ -692,7 +647,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlReadBufferNegative(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB1D0E5CD, version = 150)
     public final HLEModuleFunction sceCtrlPeekLatchFunction = new HLEModuleFunction("sceCtrl", "sceCtrlPeekLatch") {
 
         @Override
@@ -704,7 +659,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlPeekLatch(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x0B588501, version = 150)
     public final HLEModuleFunction sceCtrlReadLatchFunction = new HLEModuleFunction("sceCtrl", "sceCtrlReadLatch") {
 
         @Override
@@ -716,7 +671,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlReadLatch(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA7144800, version = 150)
     public final HLEModuleFunction sceCtrlSetIdleCancelThresholdFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetIdleCancelThreshold") {
 
         @Override
@@ -728,7 +683,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlSetIdleCancelThreshold(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x687660FA, version = 150)
     public final HLEModuleFunction sceCtrlGetIdleCancelThresholdFunction = new HLEModuleFunction("sceCtrl", "sceCtrlGetIdleCancelThreshold") {
 
         @Override
@@ -740,7 +695,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlGetIdleCancelThreshold(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x348D99D4, version = 150)
     public final HLEModuleFunction sceCtrl_348D99D4Function = new HLEModuleFunction("sceCtrl", "sceCtrl_348D99D4") {
 
         @Override
@@ -752,7 +707,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrl_348D99D4(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xAF5960F3, version = 150)
     public final HLEModuleFunction sceCtrl_AF5960F3Function = new HLEModuleFunction("sceCtrl", "sceCtrl_AF5960F3") {
 
         @Override
@@ -764,7 +719,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrl_AF5960F3(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA68FD260, version = 150)
     public final HLEModuleFunction sceCtrlClearRapidFireFunction = new HLEModuleFunction("sceCtrl", "sceCtrlClearRapidFire") {
 
         @Override
@@ -776,7 +731,7 @@ public class sceCtrl implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceCtrlModule.sceCtrlClearRapidFire(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x6841BE1A, version = 150)
     public final HLEModuleFunction sceCtrlSetRapidFireFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetRapidFire") {
 
         @Override

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
@@ -38,28 +39,10 @@ public class sceMp4 implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x68651CBC, sceMp4InitFunction);
-            mm.addFunction(0x9042B257, sceMp4FinishFunction);
-            mm.addFunction(0xB1221EE7, sceMp4CreateFunction);
-            mm.addFunction(0x538C2057, sceMp4DeleteFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceMp4InitFunction);
-            mm.removeFunction(sceMp4FinishFunction);
-            mm.removeFunction(sceMp4CreateFunction);
-            mm.removeFunction(sceMp4DeleteFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
 	public void start() {
@@ -120,7 +103,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
         }
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x68651CBC, version = 150)
     public final HLEModuleFunction sceMp4InitFunction = new HLEModuleFunction("sceMp4", "sceMp4Init") {
 
         @Override
@@ -133,7 +116,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceMp4Module.sceMp4Init(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x9042B257, version = 150)
     public final HLEModuleFunction sceMp4FinishFunction = new HLEModuleFunction("sceMp4", "sceMp4Finish") {
 
         @Override
@@ -146,7 +129,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceMp4Module.sceMp4Finish(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xB1221EE7, version = 150)
     public final HLEModuleFunction sceMp4CreateFunction = new HLEModuleFunction("sceMp4", "sceMp4Create") {
 
         @Override
@@ -159,7 +142,7 @@ public class sceMp4 implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceMp4Module.sceMp4Create(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x538C2057, version = 150)
     public final HLEModuleFunction sceMp4DeleteFunction = new HLEModuleFunction("sceMp4", "sceMp4Delete") {
 
         @Override

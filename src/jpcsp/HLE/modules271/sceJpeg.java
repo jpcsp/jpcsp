@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
+import jpcsp.HLE.HLEFunction;
 import org.apache.log4j.Logger;
 
 import jpcsp.Processor;
@@ -38,33 +39,10 @@ public class sceJpeg implements HLEModule {
 	}
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 271) {
-			mm.addFunction(sceJpegMJpegCscFunction, 0x04B5AE02);
-			mm.addFunction(sceJpegDeleteMJpegFunction, 0x48B602B7);
-			mm.addFunction(sceJpegFinishMJpegFunction, 0x7D2F3D7F);
-			mm.addFunction(sceJpegDecodeMJpegYCbCrFunction, 0x91EED83C);
-			mm.addFunction(sceJpegCreateMJpegFunction, 0x9D47469C);
-			mm.addFunction(sceJpegInitMJpegFunction, 0xAC9E70E6);
-			mm.addFunction(sceJpegDecodeMJpegFunction, 0x04B93CEF);
-
-			jpegWidth = Screen.width;
-			jpegHeight = Screen.height;
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 271) {
-			mm.removeFunction(sceJpegMJpegCscFunction);
-			mm.removeFunction(sceJpegDeleteMJpegFunction);
-			mm.removeFunction(sceJpegFinishMJpegFunction);
-			mm.removeFunction(sceJpegDecodeMJpegYCbCrFunction);
-			mm.removeFunction(sceJpegCreateMJpegFunction);
-			mm.removeFunction(sceJpegInitMJpegFunction);
-			mm.removeFunction(sceJpegDecodeMJpegFunction);
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	protected int jpegWidth;
 	protected int jpegHeight;
@@ -208,7 +186,7 @@ public class sceJpeg implements HLEModule {
 		cpu.gpr[2] = (height << 16) | width;
 	}
 
-
+	@HLEFunction(nid = 0x04B5AE02, version = 271)
 	public final HLEModuleFunction sceJpegMJpegCscFunction = new HLEModuleFunction("sceJpeg", "sceJpegMJpegCsc") {
 		@Override
 		public final void execute(Processor processor) {
@@ -219,7 +197,7 @@ public class sceJpeg implements HLEModule {
 			return "jpcsp.HLE.Modules.sceJpegModule.sceJpegMJpegCsc(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x48B602B7, version = 271)
 	public final HLEModuleFunction sceJpegDeleteMJpegFunction = new HLEModuleFunction("sceJpeg", "sceJpegDeleteMJpeg") {
 		@Override
 		public final void execute(Processor processor) {
@@ -230,7 +208,7 @@ public class sceJpeg implements HLEModule {
 			return "jpcsp.HLE.Modules.sceJpegModule.sceJpegDeleteMJpeg(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x7D2F3D7F, version = 271)
 	public final HLEModuleFunction sceJpegFinishMJpegFunction = new HLEModuleFunction("sceJpeg", "sceJpegFinishMJpeg") {
 		@Override
 		public final void execute(Processor processor) {
@@ -241,7 +219,7 @@ public class sceJpeg implements HLEModule {
 			return "jpcsp.HLE.Modules.sceJpegModule.sceJpegFinishMJpeg(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x91EED83C, version = 271)
 	public final HLEModuleFunction sceJpegDecodeMJpegYCbCrFunction = new HLEModuleFunction("sceJpeg", "sceJpegDecodeMJpegYCbCr") {
 		@Override
 		public final void execute(Processor processor) {
@@ -252,7 +230,7 @@ public class sceJpeg implements HLEModule {
 			return "jpcsp.HLE.Modules.sceJpegModule.sceJpegDecodeMJpegYCbCr(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x9D47469C, version = 271)
 	public final HLEModuleFunction sceJpegCreateMJpegFunction = new HLEModuleFunction("sceJpeg", "sceJpegCreateMJpeg") {
 		@Override
 		public final void execute(Processor processor) {
@@ -263,7 +241,7 @@ public class sceJpeg implements HLEModule {
 			return "jpcsp.HLE.Modules.sceJpegModule.sceJpegCreateMJpeg(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xAC9E70E6, version = 271)
 	public final HLEModuleFunction sceJpegInitMJpegFunction = new HLEModuleFunction("sceJpeg", "sceJpegInitMJpeg") {
 		@Override
 		public final void execute(Processor processor) {
@@ -274,7 +252,7 @@ public class sceJpeg implements HLEModule {
 			return "jpcsp.HLE.Modules.sceJpegModule.sceJpegInitMJpeg(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x04B93CEF, version = 271)
 	public final HLEModuleFunction sceJpegDecodeMJpegFunction = new HLEModuleFunction("sceJpeg", "sceJpegDecodeMJpeg") {
 		@Override
 		public final void execute(Processor processor) {

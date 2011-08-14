@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules500;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 
 import static jpcsp.HLE.modules150.SysMemUserForUser.PSP_SMEM_Low;
@@ -45,36 +46,10 @@ public class sceHeap implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 500) {
-            mm.addFunction(0x0E875980, sceHeapReallocHeapMemoryFunction);
-            mm.addFunction(0x1C84B58D, sceHeapReallocHeapMemoryWithOptionFunction);
-            mm.addFunction(0x2ABADC63, sceHeapFreeHeapMemoryFunction);
-            mm.addFunction(0x2A0C2009, sceHeapGetMallinfoFunction);
-            mm.addFunction(0x2B7299D8, sceHeapAllocHeapMemoryWithOptionFunction);
-            mm.addFunction(0x4929B40D, sceHeapGetTotalFreeSizeFunction);
-            mm.addFunction(0x7012BBDD, sceHeapIsAllocatedHeapMemoryFunction);
-            mm.addFunction(0x70210B73, sceHeapDeleteHeapFunction);
-            mm.addFunction(0x7DE281C2, sceHeapCreateHeapFunction);
-            mm.addFunction(0xA8E102A0, sceHeapAllocHeapMemoryFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 500) {
-            mm.removeFunction(sceHeapReallocHeapMemoryFunction);
-            mm.removeFunction(sceHeapReallocHeapMemoryWithOptionFunction);
-            mm.removeFunction(sceHeapFreeHeapMemoryFunction);
-            mm.removeFunction(sceHeapGetMallinfoFunction);
-            mm.removeFunction(sceHeapAllocHeapMemoryWithOptionFunction);
-            mm.removeFunction(sceHeapGetTotalFreeSizeFunction);
-            mm.removeFunction(sceHeapIsAllocatedHeapMemoryFunction);
-            mm.removeFunction(sceHeapDeleteHeapFunction);
-            mm.removeFunction(sceHeapCreateHeapFunction);
-            mm.removeFunction(sceHeapAllocHeapMemoryFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     protected final static int PSP_HEAP_ATTR_ADDR_HIGH = 0x4000;       // Create the heap in high memory.
     protected final static int PSP_HEAP_ATTR_EXT =       0x8000;       // Automatically extend the heap's memory.
@@ -334,7 +309,7 @@ public class sceHeap implements HLEModule {
             cpu.gpr[2] = 0;
         }
     }
-
+    @HLEFunction(nid = 0x0E875980, version = 500)
     public final HLEModuleFunction sceHeapReallocHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapReallocHeapMemory") {
 
         @Override
@@ -347,7 +322,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapReallocHeapMemory(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x1C84B58D, version = 500)
     public final HLEModuleFunction sceHeapReallocHeapMemoryWithOptionFunction = new HLEModuleFunction("sceHeap", "sceHeapReallocHeapMemoryWithOption") {
 
         @Override
@@ -360,7 +335,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapReallocHeapMemoryWithOption(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x2ABADC63, version = 500)
     public final HLEModuleFunction sceHeapFreeHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapFreeHeapMemory") {
 
         @Override
@@ -373,7 +348,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapFreeHeapMemory(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x2A0C2009, version = 500)
     public final HLEModuleFunction sceHeapGetMallinfoFunction = new HLEModuleFunction("sceHeap", "sceHeapGetMallinfo") {
 
         @Override
@@ -386,7 +361,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapGetMallinfo(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x2B7299D8, version = 500)
     public final HLEModuleFunction sceHeapAllocHeapMemoryWithOptionFunction = new HLEModuleFunction("sceHeap", "sceHeapAllocHeapMemoryWithOption") {
 
         @Override
@@ -399,7 +374,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapAllocHeapMemoryWithOption(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x4929B40D, version = 500)
     public final HLEModuleFunction sceHeapGetTotalFreeSizeFunction = new HLEModuleFunction("sceHeap", "sceHeapGetTotalFreeSize") {
 
         @Override
@@ -412,7 +387,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapGetTotalFreeSize(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x7012BBDD, version = 500)
     public final HLEModuleFunction sceHeapIsAllocatedHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapIsAllocatedHeapMemory") {
 
         @Override
@@ -425,7 +400,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapIsAllocatedHeapMemory(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x70210B73, version = 500)
     public final HLEModuleFunction sceHeapDeleteHeapFunction = new HLEModuleFunction("sceHeap", "sceHeapDeleteHeap") {
 
         @Override
@@ -438,7 +413,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapDeleteHeap(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x7DE281C2, version = 500)
     public final HLEModuleFunction sceHeapCreateHeapFunction = new HLEModuleFunction("sceHeap", "sceHeapCreateHeap") {
 
         @Override
@@ -451,7 +426,7 @@ public class sceHeap implements HLEModule {
             return "jpcsp.HLE.Modules.sceHeapModule.sceHeapCreateHeap(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xA8E102A0, version = 500)
     public final HLEModuleFunction sceHeapAllocHeapMemoryFunction = new HLEModuleFunction("sceHeap", "sceHeapAllocHeapMemory") {
 
         @Override

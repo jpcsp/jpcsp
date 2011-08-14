@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules600;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -24,26 +25,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 600) {
-
-            mm.addFunction(0x180F7B62, sceUtilityGamedataInstallAbortFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 600) {
-
-            mm.removeFunction(sceUtilityGamedataInstallAbortFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceUtilityGamedataInstallAbort(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -53,7 +38,7 @@ public class sceUtility extends jpcsp.HLE.modules303.sceUtility {
 
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x180F7B62, version = 600)
     public final HLEModuleFunction sceUtilityGamedataInstallAbortFunction = new HLEModuleFunction("sceUtility", "sceUtilityGamedataInstallAbort") {
 
         @Override

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -46,30 +47,10 @@ public class sceVaudio implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x67585DFD, sceVaudioChReleaseFunction);
-            mm.addFunction(0x03B6807D, sceVaudioChReserveFunction);
-            mm.addFunction(0x8986295E, sceVaudioOutputBlockingFunction);
-            mm.addFunction(0x346FBE94, sceVaudioSetEffectTypeFunction);
-            mm.addFunction(0xCBD4AC51, sceVaudioSetAlcModeFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceVaudioChReleaseFunction);
-            mm.removeFunction(sceVaudioChReserveFunction);
-            mm.removeFunction(sceVaudioOutputBlockingFunction);
-            mm.removeFunction(sceVaudioSetEffectTypeFunction);
-            mm.removeFunction(sceVaudioSetAlcModeFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
 	public void start() {
@@ -274,7 +255,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
         }
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x67585DFD, version = 150)
     public final HLEModuleFunction sceVaudioChReleaseFunction = new HLEModuleFunction("sceVaudio", "sceVaudioChRelease") {
 
         @Override
@@ -287,7 +268,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioChRelease(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x03B6807D, version = 150)
     public final HLEModuleFunction sceVaudioChReserveFunction = new HLEModuleFunction("sceVaudio", "sceVaudioChReserve") {
 
         @Override
@@ -300,7 +281,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioChReserve(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x8986295E, version = 150)
     public final HLEModuleFunction sceVaudioOutputBlockingFunction = new HLEModuleFunction("sceVaudio", "sceVaudioOutputBlocking") {
 
         @Override
@@ -313,7 +294,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioOutputBlocking(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x346FBE94, version = 150)
     public final HLEModuleFunction sceVaudioSetEffectTypeFunction = new HLEModuleFunction("sceVaudio", "sceVaudioSetEffectType") {
 
         @Override
@@ -326,7 +307,7 @@ public class sceVaudio implements HLEModule, HLEStartModule {
             return "jpcsp.HLE.Modules.sceVaudioModule.sceVaudioSetEffectType(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xCBD4AC51, version = 150)
     public final HLEModuleFunction sceVaudioSetAlcModeFunction = new HLEModuleFunction("sceVaudio", "sceVaudioSetAlcMode") {
 
         @Override

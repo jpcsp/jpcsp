@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules352;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -29,22 +30,10 @@ public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
 	}
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-
-        if (version >= 352) {
-            mm.addFunction(0x769BEBB6, sceMpegRingbufferQueryPackNumFunction);
-        }
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.uninstallModule(mm, version);
-
-		if (version >= 352) {
-            mm.removeFunction(sceMpegRingbufferQueryPackNumFunction);
-        }
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceMpegRingbufferQueryPackNum(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -57,7 +46,7 @@ public class sceMpeg extends jpcsp.HLE.modules150.sceMpeg {
 
         cpu.gpr[2] = getPacketsFromSize(memorySize);
     }
-
+    @HLEFunction(nid = 0x769BEBB6, version = 352)
     public final HLEModuleFunction sceMpegRingbufferQueryPackNumFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferQueryPackNum") {
 
         @Override

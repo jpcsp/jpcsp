@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules271;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 
 import jpcsp.Processor;
@@ -31,35 +32,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 270) {
-
-            mm.addFunction(0xC629AF26, sceUtilityLoadAvModuleFunction);
-            mm.addFunction(0xF7D8D092, sceUtilityUnloadAvModuleFunction);
-            mm.addFunction(0x4928BD96, sceUtilityMsgDialogAbortFunction);
-            mm.addFunction(0x0D5BC6D2, sceUtilityLoadUsbModuleFunction);
-
-            loadedAvModules = new HashMap<Integer, SceModule>();
-            waitingAvModules = new HashMap<Integer, String>();
-            loadedUsbModules = new HashMap<Integer, SceModule>();
-            waitingUsbModules = new HashMap<Integer, String>();
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 270) {
-
-            mm.removeFunction(sceUtilityLoadAvModuleFunction);
-            mm.removeFunction(sceUtilityUnloadAvModuleFunction);
-            mm.removeFunction(sceUtilityMsgDialogAbortFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public static final String[] utilityAvModuleNames = new String[] {
         "PSP_AV_MODULE_AVCODEC",
@@ -229,7 +205,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
         }
         cpu.gpr[2] = result;
     }
-
+    @HLEFunction(nid = 0xC629AF26, version = 270)
     public final HLEModuleFunction sceUtilityLoadAvModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadAvModule") {
 
         @Override
@@ -242,7 +218,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityLoadAvModule(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xF7D8D092, version = 270)
     public final HLEModuleFunction sceUtilityUnloadAvModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityUnloadAvModule") {
 
         @Override
@@ -255,7 +231,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityUnloadAvModule(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x4928BD96, version = 270)
     public final HLEModuleFunction sceUtilityMsgDialogAbortFunction = new HLEModuleFunction("sceUtility", "sceUtilityMsgDialogAbort") {
 		@Override
 		public final void execute(Processor processor) {
@@ -266,7 +242,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogAbort(processor);";
 		}
 	};
-
+    @HLEFunction(nid = 0x0D5BC6D2, version = 270)
     public final HLEModuleFunction sceUtilityLoadUsbModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadUsbModule") {
 		@Override
 		public final void execute(Processor processor) {

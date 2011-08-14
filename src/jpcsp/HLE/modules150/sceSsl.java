@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -37,43 +38,10 @@ public class sceSsl implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x957ECBE2, sceSslInitFunction);
-            mm.addFunction(0x191CDEFF, sceSslEndFunction);
-            mm.addFunction(0x5BFB6B61, sceSslGetNotAfterFunction);
-            mm.addFunction(0x17A10DCC, sceSslGetNotBeforeFunction);
-            mm.addFunction(0x3DD5E023, sceSslGetSubjectNameFunction);
-            mm.addFunction(0x1B7C8191, sceSslGetIssuerNameFunction);
-            mm.addFunction(0xCC0919B0, sceSslGetSerialNumberFunction);
-            mm.addFunction(0x058D21C0, sceSslGetNameEntryCountFunction);
-            mm.addFunction(0xD6D097B4, sceSslGetNameEntryInfoFunction);
-            mm.addFunction(0xB99EDE6A, sceSslGetUsedMemoryMaxFunction);
-            mm.addFunction(0x0EB43B06, sceSslGetUsedMemoryCurrentFunction);
-            mm.addFunction(0xF57765D3, sceSslGetKeyUsageFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceSslInitFunction);
-            mm.removeFunction(sceSslEndFunction);
-            mm.removeFunction(sceSslGetNotAfterFunction);
-            mm.removeFunction(sceSslGetNotBeforeFunction);
-            mm.removeFunction(sceSslGetSubjectNameFunction);
-            mm.removeFunction(sceSslGetIssuerNameFunction);
-            mm.removeFunction(sceSslGetSerialNumberFunction);
-            mm.removeFunction(sceSslGetNameEntryCountFunction);
-            mm.removeFunction(sceSslGetNameEntryInfoFunction);
-            mm.removeFunction(sceSslGetUsedMemoryMaxFunction);
-            mm.removeFunction(sceSslGetUsedMemoryCurrentFunction);
-            mm.removeFunction(sceSslGetKeyUsageFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     private boolean isSslInit;
     private int maxMemSize;
@@ -218,7 +186,7 @@ public class sceSsl implements HLEModule {
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
-
+    @HLEFunction(nid = 0x957ECBE2, version = 150)
     public final HLEModuleFunction sceSslInitFunction = new HLEModuleFunction("sceSsl", "sceSslInit") {
 
         @Override
@@ -231,7 +199,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslInit(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x191CDEFF, version = 150)
     public final HLEModuleFunction sceSslEndFunction = new HLEModuleFunction("sceSsl", "sceSslEnd") {
 
         @Override
@@ -244,7 +212,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslEnd(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x5BFB6B61, version = 150)
     public final HLEModuleFunction sceSslGetNotAfterFunction = new HLEModuleFunction("sceSsl", "sceSslGetNotAfter") {
 
         @Override
@@ -257,7 +225,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNotAfter(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x17A10DCC, version = 150)
     public final HLEModuleFunction sceSslGetNotBeforeFunction = new HLEModuleFunction("sceSsl", "sceSslGetNotBefore") {
 
         @Override
@@ -270,7 +238,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNotBefore(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x3DD5E023, version = 150)
     public final HLEModuleFunction sceSslGetSubjectNameFunction = new HLEModuleFunction("sceSsl", "sceSslGetSubjectName") {
 
         @Override
@@ -283,7 +251,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetSubjectName(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x1B7C8191, version = 150)
     public final HLEModuleFunction sceSslGetIssuerNameFunction = new HLEModuleFunction("sceSsl", "sceSslGetIssuerName") {
 
         @Override
@@ -296,7 +264,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetIssuerName(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xCC0919B0, version = 150)
     public final HLEModuleFunction sceSslGetSerialNumberFunction = new HLEModuleFunction("sceSsl", "sceSslGetSerialNumber") {
 
         @Override
@@ -309,7 +277,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetSerialNumber(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x058D21C0, version = 150)
     public final HLEModuleFunction sceSslGetNameEntryCountFunction = new HLEModuleFunction("sceSsl", "sceSslGetNameEntryCount") {
 
         @Override
@@ -322,7 +290,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNameEntryCount(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xD6D097B4, version = 150)
     public final HLEModuleFunction sceSslGetNameEntryInfoFunction = new HLEModuleFunction("sceSsl", "sceSslGetNameEntryInfo") {
 
         @Override
@@ -335,7 +303,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetNameEntryInfo(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xB99EDE6A, version = 150)
     public final HLEModuleFunction sceSslGetUsedMemoryMaxFunction = new HLEModuleFunction("sceSsl", "sceSslGetUsedMemoryMax") {
 
         @Override
@@ -348,7 +316,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetUsedMemoryMax(processor);";
         }
     };
-
+    @HLEFunction(nid = 0x0EB43B06, version = 150)
     public final HLEModuleFunction sceSslGetUsedMemoryCurrentFunction = new HLEModuleFunction("sceSsl", "sceSslGetUsedMemoryCurrent") {
 
         @Override
@@ -361,7 +329,7 @@ public class sceSsl implements HLEModule {
             return "jpcsp.HLE.Modules.sceSslModule.sceSslGetUsedMemoryCurrent(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xF57765D3, version = 150)
     public final HLEModuleFunction sceSslGetKeyUsageFunction = new HLEModuleFunction("sceSsl", "sceSslGetKeyUsage") {
 
         @Override

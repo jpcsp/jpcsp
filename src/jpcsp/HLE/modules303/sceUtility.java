@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules303;
 
+import jpcsp.HLE.HLEFunction;
 import java.util.HashMap;
 
 import jpcsp.Processor;
@@ -31,30 +32,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 303) {
-
-            mm.addFunction(0x2A2B3DE0, sceUtilityLoadModuleFunction);
-            mm.addFunction(0xE49BFE92, sceUtilityUnloadModuleFunction);
-
-            loadedModules = new HashMap<Integer, SceModule>();
-            waitingModules = new HashMap<Integer, String>();
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 303) {
-
-            mm.removeFunction(sceUtilityLoadModuleFunction);
-            mm.removeFunction(sceUtilityUnloadModuleFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public static enum UtilityModule {
         PSP_MODULE_NET_COMMON(0x0100),
@@ -176,7 +157,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         cpu.gpr[2] = hleUtilityUnloadModule(module);
     }
-
+    @HLEFunction(nid = 0x2A2B3DE0, version = 303)
     public final HLEModuleFunction sceUtilityLoadModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadModule") {
 
         @Override
@@ -189,7 +170,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
             return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityLoadModule(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xE49BFE92, version = 303)
     public final HLEModuleFunction sceUtilityUnloadModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityUnloadModule") {
 
         @Override

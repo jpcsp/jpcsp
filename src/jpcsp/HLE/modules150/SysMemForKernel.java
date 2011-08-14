@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -37,22 +38,10 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xA089ECA4, sceKernelMemsetFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceKernelMemsetFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
     public void start() {
@@ -78,7 +67,7 @@ public class SysMemForKernel implements HLEModule, HLEStartModule {
 
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0xA089ECA4, version = 150)
     public final HLEModuleFunction sceKernelMemsetFunction = new HLEModuleFunction("SysMemForKernel", "sceKernelMemset") {
 
         @Override

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.kernel.managers.IntrManager;
@@ -38,42 +39,10 @@ public class sceNpAuth implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            /*
-             * FIXME: The sceNpAuth module uses a different
-             * NID resolve for it's functions' names.
-             * The public names reversed from several applications
-             * and modules are as follows:
-             *  - sceNpAuthInit (sceNpAuth_A1DE86F8)
-             *  - sceNpAuthTerm
-             *  - sceNpAuthCreateStartRequest
-             *  - sceNpAuthDestroyRequest
-             *  - sceNpAuthAbortRequest
-             *  - sceNpAuthGetTicket
-             *  - sceNpAuthGetMemoryStat (sceNpAuth_CD86A656)
-             * Since the generated NIDs do not match the names, it's necessary
-             * to find which nomencalture is being used for these functions
-             * (e.g.: _x_sceNpAuthInit).
-             *
-             */
-
-            mm.addFunction(0xA1DE86F8, sceNpAuth_A1DE86F8Function);
-            mm.addFunction(0xCD86A656, sceNpAuth_CD86A656Function);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceNpAuth_A1DE86F8Function);
-            mm.removeFunction(sceNpAuth_CD86A656Function);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     private int npMemSize;     // Memory allocated by the NP utility.
     private int npMaxMemSize;  // Maximum memory used by the NP utility.
@@ -119,7 +88,7 @@ public class sceNpAuth implements HLEModule {
         }
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0xA1DE86F8, version = 150)
     public final HLEModuleFunction sceNpAuth_A1DE86F8Function = new HLEModuleFunction("sceNpAuth", "sceNpAuth_A1DE86F8") {
 
         @Override
@@ -132,7 +101,7 @@ public class sceNpAuth implements HLEModule {
             return "jpcsp.HLE.Modules.sceNpAuthModule.sceNpAuth_A1DE86F8(processor);";
         }
     };
-
+    @HLEFunction(nid = 0xCD86A656, version = 150)
     public final HLEModuleFunction sceNpAuth_CD86A656Function = new HLEModuleFunction("sceNpAuth", "sceNpAuth_CD86A656") {
 
         @Override

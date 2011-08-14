@@ -18,6 +18,7 @@ package jpcsp.HLE.modules200;
 
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_UMD_NOT_READY;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -27,28 +28,10 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     protected boolean umdAllowReplace;
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 200) {
-
-            mm.addFunction(0x87533940, sceUmdReplaceProhibitFunction);
-            mm.addFunction(0xCBE9F02A, sceUmdReplacePermitFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 200) {
-
-            mm.removeFunction(sceUmdReplaceProhibitFunction);
-            mm.removeFunction(sceUmdReplacePermitFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void sceUmdReplaceProhibit(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -76,7 +59,7 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
         umdAllowReplace = true;
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x87533940, version = 200)
     public final HLEModuleFunction sceUmdReplaceProhibitFunction = new HLEModuleFunction("sceUmdUser", "sceUmdReplaceProhibit") {
 
         @Override
@@ -88,7 +71,7 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdReplaceProhibit(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xCBE9F02A, version = 200)
     public final HLEModuleFunction sceUmdReplacePermitFunction = new HLEModuleFunction("sceUmdUser", "sceUmdReplacePermit") {
 
         @Override

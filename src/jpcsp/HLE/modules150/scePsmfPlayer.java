@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -54,74 +55,10 @@ public class scePsmfPlayer implements HLEModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0x235D8787, scePsmfPlayerCreateFunction);
-            mm.addFunction(0x9B71A274, scePsmfPlayerDeleteFunction);
-            mm.addFunction(0x3D6D25A9, scePsmfPlayerSetPsmfFunction);
-            mm.addFunction(0x58B83577, scePsmfPlayerSetPsmfCBFunction);
-            mm.addFunction(0xE792CD94, scePsmfPlayerReleasePsmfFunction);
-            mm.addFunction(0x95A84EE5, scePsmfPlayerStartFunction);
-            mm.addFunction(0x3EA82A4B, scePsmfPlayerGetAudioOutSizeFunction);
-            mm.addFunction(0x1078C008, scePsmfPlayerStopFunction);
-            mm.addFunction(0xA0B8CA55, scePsmfPlayerUpdateFunction);
-            mm.addFunction(0x46F61F8B, scePsmfPlayerGetVideoDataFunction);
-            mm.addFunction(0xB9848A74, scePsmfPlayerGetAudioDataFunction);
-            mm.addFunction(0xF8EF08A6, scePsmfPlayerGetCurrentStatusFunction);
-            mm.addFunction(0xDF089680, scePsmfPlayerGetPsmfInfoFunction);
-            mm.addFunction(0x1E57A8E7, scePsmfPlayerConfigPlayerFunction);
-            mm.addFunction(0xA3D81169, scePsmfPlayerChangePlayModeFunction);
-            mm.addFunction(0x68F07175, scePsmfPlayerGetCurrentAudioStreamFunction);
-            mm.addFunction(0xF3EFAA91, scePsmfPlayerGetCurrentPlayModeFunction);
-            mm.addFunction(0x3ED62233, scePsmfPlayerGetCurrentPtsFunction);
-            mm.addFunction(0x9FF2B2E7, scePsmfPlayerGetCurrentVideoStreamFunction);
-            mm.addFunction(0x2BEB1569, scePsmfPlayerBreakFunction);
-            mm.addFunction(0x76C0F4AE, scePsmfPlayerSetPsmfOffsetFunction);
-            mm.addFunction(0xA72DB4F9, scePsmfPlayerSetPsmfOffsetCBFunction);
-            mm.addFunction(0x2D0E4E0A, scePsmfPlayerSetTempBufFunction);
-            mm.addFunction(0x75F03FA2, scePsmfPlayerSelectSpecificVideoFunction);
-            mm.addFunction(0x85461EFF, scePsmfPlayerSelectSpecificAudioFunction);
-            mm.addFunction(0x8A9EBDCD, scePsmfPlayerSelectVideoFunction);
-            mm.addFunction(0xB8D10C56, scePsmfPlayerSelectAudioFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(scePsmfPlayerCreateFunction);
-            mm.removeFunction(scePsmfPlayerDeleteFunction);
-            mm.removeFunction(scePsmfPlayerSetPsmfFunction);
-            mm.removeFunction(scePsmfPlayerSetPsmfCBFunction);
-            mm.removeFunction(scePsmfPlayerReleasePsmfFunction);
-            mm.removeFunction(scePsmfPlayerStartFunction);
-            mm.removeFunction(scePsmfPlayerGetAudioOutSizeFunction);
-            mm.removeFunction(scePsmfPlayerStopFunction);
-            mm.removeFunction(scePsmfPlayerUpdateFunction);
-            mm.removeFunction(scePsmfPlayerGetVideoDataFunction);
-            mm.removeFunction(scePsmfPlayerGetAudioDataFunction);
-            mm.removeFunction(scePsmfPlayerGetCurrentStatusFunction);
-            mm.removeFunction(scePsmfPlayerGetPsmfInfoFunction);
-            mm.removeFunction(scePsmfPlayerConfigPlayerFunction);
-            mm.removeFunction(scePsmfPlayerChangePlayModeFunction);
-            mm.removeFunction(scePsmfPlayerGetCurrentAudioStreamFunction);
-            mm.removeFunction(scePsmfPlayerGetCurrentPlayModeFunction);
-            mm.removeFunction(scePsmfPlayerGetCurrentPtsFunction);
-            mm.removeFunction(scePsmfPlayerGetCurrentVideoStreamFunction);
-            mm.removeFunction(scePsmfPlayerBreakFunction);
-            mm.removeFunction(scePsmfPlayerSetPsmfOffsetFunction);
-            mm.removeFunction(scePsmfPlayerSetPsmfOffsetCBFunction);
-            mm.removeFunction(scePsmfPlayerSetTempBufFunction);
-            mm.removeFunction(scePsmfPlayerSelectSpecificVideoFunction);
-            mm.removeFunction(scePsmfPlayerSelectSpecificAudioFunction);
-            mm.removeFunction(scePsmfPlayerSelectVideoFunction);
-            mm.removeFunction(scePsmfPlayerSelectAudioFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
     // PSMF Player timing management.
     protected static final int psmfPlayerVideoTimestampStep = sceMpeg.videoTimestampStep;
     protected static final int psmfPlayerAudioTimestampStep = sceMpeg.audioTimestampStep;
@@ -1011,7 +948,7 @@ public class scePsmfPlayer implements HLEModule {
         audioStreamNum++;
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x235D8787, version = 150)
     public final HLEModuleFunction scePsmfPlayerCreateFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerCreate") {
 
         @Override
@@ -1023,7 +960,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerCreate(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9B71A274, version = 150)
     public final HLEModuleFunction scePsmfPlayerDeleteFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerDelete") {
 
         @Override
@@ -1035,7 +972,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerDelete(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3D6D25A9, version = 150)
     public final HLEModuleFunction scePsmfPlayerSetPsmfFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmf") {
 
         @Override
@@ -1047,7 +984,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmf(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x58B83577, version = 150)
     public final HLEModuleFunction scePsmfPlayerSetPsmfCBFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfCB") {
 
         @Override
@@ -1059,7 +996,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfCB(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xE792CD94, version = 150)
     public final HLEModuleFunction scePsmfPlayerReleasePsmfFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerReleasePsmf") {
 
         @Override
@@ -1071,7 +1008,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerReleasePsmf(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x95A84EE5, version = 150)
     public final HLEModuleFunction scePsmfPlayerStartFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerStart") {
 
         @Override
@@ -1083,7 +1020,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerStart(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3EA82A4B, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetAudioOutSizeFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetAudioOutSize") {
 
         @Override
@@ -1095,7 +1032,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetAudioOutSize(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1078C008, version = 150)
     public final HLEModuleFunction scePsmfPlayerStopFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerStop") {
 
         @Override
@@ -1107,7 +1044,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerStop(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA0B8CA55, version = 150)
     public final HLEModuleFunction scePsmfPlayerUpdateFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerUpdate") {
 
         @Override
@@ -1119,7 +1056,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerUpdate(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x46F61F8B, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetVideoDataFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetVideoData") {
 
         @Override
@@ -1131,7 +1068,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetVideoData(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB9848A74, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetAudioDataFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetAudioData") {
 
         @Override
@@ -1143,7 +1080,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetAudioData(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xF8EF08A6, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetCurrentStatusFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentStatus") {
 
         @Override
@@ -1155,7 +1092,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetCurrentStatus(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xDF089680, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetPsmfInfoFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetPsmfInfo") {
 
         @Override
@@ -1167,7 +1104,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerGetPsmfInfo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x1E57A8E7, version = 150)
     public final HLEModuleFunction scePsmfPlayerConfigPlayerFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerConfigPlayer") {
 
         @Override
@@ -1179,7 +1116,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayerConfigPlayer(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA3D81169, version = 150)
     public final HLEModuleFunction scePsmfPlayerChangePlayModeFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerChangePlayMode") {
 
         @Override
@@ -1191,7 +1128,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayerChangePlayMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x68F07175, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetCurrentAudioStreamFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentAudioStream") {
 
         @Override
@@ -1203,7 +1140,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentAudioStream(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xF3EFAA91, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetCurrentPlayModeFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentPlayMode") {
 
         @Override
@@ -1215,7 +1152,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentPlayMode(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3ED62233, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetCurrentPtsFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentPts") {
 
         @Override
@@ -1227,7 +1164,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentPts(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x9FF2B2E7, version = 150)
     public final HLEModuleFunction scePsmfPlayerGetCurrentVideoStreamFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerGetCurrentVideoStream") {
 
         @Override
@@ -1239,7 +1176,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayerGetCurrentVideoStream(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2BEB1569, version = 150)
     public final HLEModuleFunction scePsmfPlayerBreakFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerBreak") {
 
         @Override
@@ -1251,7 +1188,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerBreak(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x76C0F4AE, version = 150)
     public final HLEModuleFunction scePsmfPlayerSetPsmfOffsetFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffset") {
 
         @Override
@@ -1263,7 +1200,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffset(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA72DB4F9, version = 150)
     public final HLEModuleFunction scePsmfPlayerSetPsmfOffsetCBFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetPsmfOffsetCB") {
 
         @Override
@@ -1275,7 +1212,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetPsmfOffsetCB(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x2D0E4E0A, version = 150)
     public final HLEModuleFunction scePsmfPlayerSetTempBufFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSetTempBuf") {
 
         @Override
@@ -1287,7 +1224,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSetTempBuf(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x75F03FA2, version = 150)
     public final HLEModuleFunction scePsmfPlayerSelectSpecificVideoFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSelectSpecificVideo") {
 
         @Override
@@ -1299,7 +1236,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSelectSpecificVideo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x85461EFF, version = 150)
     public final HLEModuleFunction scePsmfPlayerSelectSpecificAudioFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSelectSpecificAudio") {
 
         @Override
@@ -1311,7 +1248,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSelectSpecificAudio(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x8A9EBDCD, version = 150)
     public final HLEModuleFunction scePsmfPlayerSelectVideoFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSelectVideo") {
 
         @Override
@@ -1323,7 +1260,7 @@ public class scePsmfPlayer implements HLEModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.scePsmfPlayer.scePsmfPlayerSelectVideo(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xB8D10C56, version = 150)
     public final HLEModuleFunction scePsmfPlayerSelectAudioFunction = new HLEModuleFunction("scePsmfPlayer", "scePsmfPlayerSelectAudio") {
 
         @Override

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules630;
 
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -24,22 +25,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class scePower extends jpcsp.HLE.modules150.scePower {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        super.installModule(mm, version);
-
-        if (version >= 630) {
-            mm.addFunction(0x469989AD, scePower_469989ADFunction);
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        super.uninstallModule(mm, version);
-
-        if (version >= 630) {
-            mm.removeFunction(scePower_469989ADFunction);
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     public void scePower_469989AD(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -53,7 +42,7 @@ public class scePower extends jpcsp.HLE.modules150.scePower {
 
         cpu.gpr[2] = 0;
     }
-
+    @HLEFunction(nid = 0x469989AD, version = 630)
     public final HLEModuleFunction scePower_469989ADFunction = new HLEModuleFunction("scePower", "scePower_469989AD") {
 
         @Override

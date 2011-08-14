@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.HLEFunction;
 import org.apache.log4j.Logger;
 
 import jpcsp.Processor;
@@ -35,37 +36,10 @@ public class sceUsb implements HLEModule {
 	}
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.addFunction(sceUsbStartFunction, 0xAE5DE6AF);
-			mm.addFunction(sceUsbStopFunction, 0xC2464FA0);
-			mm.addFunction(sceUsbGetStateFunction, 0xC21645A4);
-			mm.addFunction(sceUsbGetDrvListFunction, 0x4E537366);
-			mm.addFunction(sceUsbGetDrvStateFunction, 0x112CC951);
-			mm.addFunction(sceUsbActivateFunction, 0x586DB82C);
-			mm.addFunction(sceUsbDeactivateFunction, 0xC572A9C8);
-			mm.addFunction(sceUsbWaitStateFunction, 0x5BE0E002);
-			mm.addFunction(sceUsbWaitCancelFunction, 0x1C360735);
-
-			usbActivated = false;
-			usbStarted = false;
-		}
-	}
+	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
 	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-			mm.removeFunction(sceUsbStartFunction);
-			mm.removeFunction(sceUsbStopFunction);
-			mm.removeFunction(sceUsbGetStateFunction);
-			mm.removeFunction(sceUsbGetDrvListFunction);
-			mm.removeFunction(sceUsbGetDrvStateFunction);
-			mm.removeFunction(sceUsbActivateFunction);
-			mm.removeFunction(sceUsbDeactivateFunction);
-			mm.removeFunction(sceUsbWaitStateFunction);
-			mm.removeFunction(sceUsbWaitCancelFunction);
-		}
-	}
+	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
 	public static final String PSP_USBBUS_DRIVERNAME = "USBBusDriver";
 
@@ -238,7 +212,7 @@ public class sceUsb implements HLEModule {
 
 		cpu.gpr[2] = 0;
 	}
-
+	@HLEFunction(nid = 0xAE5DE6AF, version = 150)
 	public final HLEModuleFunction sceUsbStartFunction = new HLEModuleFunction("sceUsb", "sceUsbStart") {
 		@Override
 		public final void execute(Processor processor) {
@@ -249,7 +223,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbStart(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xC2464FA0, version = 150)
 	public final HLEModuleFunction sceUsbStopFunction = new HLEModuleFunction("sceUsb", "sceUsbStop") {
 		@Override
 		public final void execute(Processor processor) {
@@ -260,7 +234,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbStop(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xC21645A4, version = 150)
 	public final HLEModuleFunction sceUsbGetStateFunction = new HLEModuleFunction("sceUsb", "sceUsbGetState") {
 		@Override
 		public final void execute(Processor processor) {
@@ -271,7 +245,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbGetState(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x4E537366, version = 150)
 	public final HLEModuleFunction sceUsbGetDrvListFunction = new HLEModuleFunction("sceUsb", "sceUsbGetDrvList") {
 		@Override
 		public final void execute(Processor processor) {
@@ -282,7 +256,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbGetDrvList(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x112CC951, version = 150)
 	public final HLEModuleFunction sceUsbGetDrvStateFunction = new HLEModuleFunction("sceUsb", "sceUsbGetDrvState") {
 		@Override
 		public final void execute(Processor processor) {
@@ -293,7 +267,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbGetDrvState(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x586DB82C, version = 150)
 	public final HLEModuleFunction sceUsbActivateFunction = new HLEModuleFunction("sceUsb", "sceUsbActivate") {
 		@Override
 		public final void execute(Processor processor) {
@@ -304,7 +278,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbActivate(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0xC572A9C8, version = 150)
 	public final HLEModuleFunction sceUsbDeactivateFunction = new HLEModuleFunction("sceUsb", "sceUsbDeactivate") {
 		@Override
 		public final void execute(Processor processor) {
@@ -315,7 +289,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbDeactivate(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x5BE0E002, version = 150)
 	public final HLEModuleFunction sceUsbWaitStateFunction = new HLEModuleFunction("sceUsb", "sceUsbWaitState") {
 		@Override
 		public final void execute(Processor processor) {
@@ -326,7 +300,7 @@ public class sceUsb implements HLEModule {
 			return "jpcsp.HLE.Modules.sceUsbModule.sceUsbWaitState(processor);";
 		}
 	};
-
+	@HLEFunction(nid = 0x1C360735, version = 150)
 	public final HLEModuleFunction sceUsbWaitCancelFunction = new HLEModuleFunction("sceUsb", "sceUsbWaitCancel") {
 		@Override
 		public final void execute(Processor processor) {

@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_INVALID_ARGUMENT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_KERNEL_CANNOT_BE_CALLED_FROM_INTERRUPT;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.ERROR_POWER_VMEM_IN_USE;
+import jpcsp.HLE.HLEFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -42,32 +43,10 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
     }
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.addFunction(0xEADB1BD7, sceKernelPowerLockFunction);
-            mm.addFunction(0x3AEE7261, sceKernelPowerUnlockFunction);
-            mm.addFunction(0x090CCB3F, sceKernelPowerTickFunction);
-            mm.addFunction(0x3E0271D3, sceKernelVolatileMemLockFunction);
-            mm.addFunction(0xA14F40B2, sceKernelVolatileMemTryLockFunction);
-            mm.addFunction(0xA569E425, sceKernelVolatileMemUnlockFunction);
-
-        }
-    }
+    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
 
     @Override
-    public void uninstallModule(HLEModuleManager mm, int version) {
-        if (version >= 150) {
-
-            mm.removeFunction(sceKernelPowerLockFunction);
-            mm.removeFunction(sceKernelPowerUnlockFunction);
-            mm.removeFunction(sceKernelPowerTickFunction);
-            mm.removeFunction(sceKernelVolatileMemLockFunction);
-            mm.removeFunction(sceKernelVolatileMemTryLockFunction);
-            mm.removeFunction(sceKernelVolatileMemUnlockFunction);
-
-        }
-    }
+    public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
     @Override
     public void start() {
@@ -213,7 +192,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
             volatileMemLocked = false;
             cpu.gpr[2] = 0;
         }
-    }
+    }    @HLEFunction(nid = 0xEADB1BD7, version = 150)
     public final HLEModuleFunction sceKernelPowerLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerLock") {
 
         @Override
@@ -225,7 +204,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerLock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3AEE7261, version = 150)
     public final HLEModuleFunction sceKernelPowerUnlockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerUnlock") {
 
         @Override
@@ -237,7 +216,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerUnlock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x090CCB3F, version = 150)
     public final HLEModuleFunction sceKernelPowerTickFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerTick") {
 
         @Override
@@ -249,7 +228,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelPowerTick(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0x3E0271D3, version = 150)
     public final HLEModuleFunction sceKernelVolatileMemLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemLock") {
 
         @Override
@@ -261,7 +240,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemLock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA14F40B2, version = 150)
     public final HLEModuleFunction sceKernelVolatileMemTryLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemTryLock") {
 
         @Override
@@ -273,7 +252,7 @@ public class sceSuspendForUser implements HLEModule, HLEStartModule {
         public final String compiledString() {
             return "jpcsp.HLE.Modules.sceSuspendForUserModule.sceKernelVolatileMemTryLock(processor);";
         }
-    };
+    };    @HLEFunction(nid = 0xA569E425, version = 150)
     public final HLEModuleFunction sceKernelVolatileMemUnlockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelVolatileMemUnlock") {
 
         @Override
