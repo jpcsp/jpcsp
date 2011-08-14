@@ -334,7 +334,7 @@ public class HLEModuleManager {
     public void addFunction(HLEModuleFunction func, int nid) {
     	addFunction(nid, func);
     }
-
+    
     public void addFunction(int nid, HLEModuleFunction func) {
         int code = getSyscallFromNid(nid);
     	if (code < syscallCodeToFunction.length && syscallCodeToFunction[code] != null) {
@@ -440,19 +440,46 @@ public class HLEModuleManager {
 	 * Iterates over an object fields searching for HLEFunction annotations and if the specified
 	 * version is greater than the required version for that HLEFunction, it will install it.
 	 * 
-	 * @param object
+	 * @param hleModule
 	 * @param version
 	 */
-	public void installModuleWithAnnotations(HLEModule object, int version) {
+	public void installModuleWithAnnotations(HLEModule hleModule, int version) {
 		try {
-			for (Field field : object.getClass().getFields()) {
+			@SuppressWarnings("rawtypes")
+			Class objectClass = hleModule.getClass();
+			String defaultModuleName = objectClass.getName();
+			defaultModuleName = defaultModuleName.substring(defaultModuleName.lastIndexOf('.') + 1);
+			
+			for (Field field : objectClass.getFields()) {
 				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
 				if (hleFunction != null) {
 					if (version >= hleFunction.version()) {
+						String moduleName = hleFunction.moduleName();
+						String functionName = hleFunction.functionName();
+						
+						if (moduleName.length() == 0) {
+							moduleName = defaultModuleName;
+						}
+
+						if (functionName.length() == 0) {
+							functionName = field.getName();
+							functionName = functionName.substring(0, functionName.length() - 8); // To remove "Function" tail.
+						}
+						
+						// We will create a generic function.
+						if (field.get(hleModule) == null) {
+							String methodName = field.getName();
+							methodName = methodName.substring(0, methodName.length() - 8); // To remove "Function" tail.
+							
+							field.set(hleModule, new HLEModuleFunctionReflection(moduleName, functionName, hleModule, methodName));
+						}
+						
+						//System.console().printf("%s :: %s\n", moduleName, functionName);
+
 						if (hleFunction.syscall() != 0) {
-							this.addHLEFunction((HLEModuleFunction)field.get(object));
+							this.addHLEFunction((HLEModuleFunction)field.get(hleModule));
 						} else {
-							this.addFunction((HLEModuleFunction)field.get(object), hleFunction.nid());
+							this.addFunction(hleFunction.nid(), (HLEModuleFunction)field.get(hleModule));
 						}
 					}
 				}
@@ -465,16 +492,16 @@ public class HLEModuleManager {
 	/**
 	 * Same as installModuleWithAnnotations but uninstalling.
 	 * 
-	 * @param object
+	 * @param hleModule
 	 * @param version
 	 */
-	public void uninstallModuleWithAnnotations(HLEModule object, int version) {
+	public void uninstallModuleWithAnnotations(HLEModule hleModule, int version) {
 		try {
-			for (Field field : object.getClass().getFields()) {
+			for (Field field : hleModule.getClass().getFields()) {
 				HLEFunction hleFunction = field.getAnnotation(HLEFunction.class);
 				if (hleFunction != null) {
 					if (version >= hleFunction.version()) {
-						this.removeFunction((HLEModuleFunction)field.get(object));
+						this.removeFunction((HLEModuleFunction)field.get(hleModule));
 					}
 				}
 			}
