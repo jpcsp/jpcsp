@@ -32,7 +32,9 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
+    public void installModule(HLEModuleManager mm, int version) {
+    	super.installModule(mm, version);
+    }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
@@ -76,8 +78,8 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         }
     }
 
-    protected HashMap<Integer, SceModule> loadedModules;
-    protected HashMap<Integer, String> waitingModules;
+    protected HashMap<Integer, SceModule> loadedModules = new HashMap<Integer, SceModule>();
+    protected HashMap<Integer, String> waitingModules = new HashMap<Integer, String>();
 
     protected String getModuleName(int module) {
         for (UtilityModule m : UtilityModule.values()) {

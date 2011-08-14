@@ -32,7 +32,9 @@ import jpcsp.HLE.modules.HLEModuleManager;
 public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
     @Override
-    public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
+    public void installModule(HLEModuleManager mm, int version) {
+    	super.installModule(mm, version);
+    }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
@@ -72,10 +74,10 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     public static final int PSP_USB_MODULE_CAM = 4;
     public static final int PSP_USB_MODULE_GPS = 5;
 
-    protected HashMap<Integer, SceModule> loadedAvModules;
-    protected HashMap<Integer, String> waitingAvModules;
-    protected HashMap<Integer, SceModule> loadedUsbModules;
-    protected HashMap<Integer, String> waitingUsbModules;
+    protected HashMap<Integer, SceModule> loadedAvModules = new HashMap<Integer, SceModule>();
+    protected HashMap<Integer, String> waitingAvModules = new HashMap<Integer, String>();
+    protected HashMap<Integer, SceModule> loadedUsbModules = new HashMap<Integer, SceModule>();
+    protected HashMap<Integer, String> waitingUsbModules = new HashMap<Integer, String>();
 
     private String getAvModuleName(int module) {
     	if (module < 0 || module >= utilityAvModuleNames.length) {

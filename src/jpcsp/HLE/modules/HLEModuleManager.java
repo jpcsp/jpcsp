@@ -445,8 +445,7 @@ public class HLEModuleManager {
 	 */
 	public void installModuleWithAnnotations(HLEModule hleModule, int version) {
 		try {
-			@SuppressWarnings("rawtypes")
-			Class objectClass = hleModule.getClass();
+			Class<? extends HLEModule> objectClass = hleModule.getClass();
 			String defaultModuleName = objectClass.getName();
 			defaultModuleName = defaultModuleName.substring(defaultModuleName.lastIndexOf('.') + 1);
 			

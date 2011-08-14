@@ -36,7 +36,9 @@ public class sceUsb implements HLEModule {
 	}
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
+	public void installModule(HLEModuleManager mm, int version) {
+		mm.installModuleWithAnnotations(this, version);
+	}
 
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
@@ -47,8 +49,8 @@ public class sceUsb implements HLEModule {
 	public static final int PSP_USB_CABLE_CONNECTED = 0x020;
 	public static final int PSP_USB_ACTIVATED = 0x200;
 
-	protected boolean usbActivated;
-	protected boolean usbStarted;
+	protected boolean usbActivated = false;
+	protected boolean usbStarted = false;
 
 	protected int getUsbState() {
 		// Simulate that a USB cacle is always connected

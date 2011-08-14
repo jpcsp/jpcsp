@@ -39,13 +39,15 @@ public class sceJpeg implements HLEModule {
 	}
 
 	@Override
-	public void installModule(HLEModuleManager mm, int version) { mm.installModuleWithAnnotations(this, version); }
+	public void installModule(HLEModuleManager mm, int version) {
+		mm.installModuleWithAnnotations(this, version);
+	}
 
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) { mm.uninstallModuleWithAnnotations(this, version); }
 
-	protected int jpegWidth;
-	protected int jpegHeight;
+	protected int jpegWidth = Screen.width;
+	protected int jpegHeight = Screen.height;
 
 	public void sceJpegMJpegCsc(Processor processor) {
 		CpuState cpu = processor.cpu;
